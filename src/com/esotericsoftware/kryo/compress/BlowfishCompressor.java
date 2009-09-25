@@ -18,7 +18,6 @@ import com.esotericsoftware.kryo.Serializer;
  */
 public class BlowfishCompressor extends Compressor {
 	private SecretKeySpec keySpec;
-	private final int bufferSize;
 
 	public BlowfishCompressor (Serializer serializer, byte[] key) {
 		this(serializer, key, 2048);
@@ -26,7 +25,6 @@ public class BlowfishCompressor extends Compressor {
 
 	public BlowfishCompressor (Serializer serializer, byte[] key, int bufferSize) {
 		super(serializer, bufferSize);
-		this.bufferSize = bufferSize;
 		keySpec = new SecretKeySpec(key, "Blowfish");
 	}
 
