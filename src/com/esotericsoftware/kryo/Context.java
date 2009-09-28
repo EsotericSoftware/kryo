@@ -11,13 +11,13 @@ import com.esotericsoftware.kryo.compress.DeltaCompressor;
  * Serves as thread local storage for serializers. A serializer instance can be used by multiple threads simultaneously, so should
  * be thread safe. This class provides scratch buffers and object storage that serializers can use to remain thread safe.
  * @see Kryo#getContext()
- * @see Serializer#getContext()
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class Context {
-	private HashMap<String, Object> map;
+	private HashMap<Object, Object> map;
 	private ArrayList<ByteBuffer> buffers = new ArrayList(2);
 	private int remoteEntityID;
+	private SerializerKey tempKey = new SerializerKey(null, null);
 
 	/**
 	 * Returns a non-direct buffer of at least the specified size.
@@ -64,7 +64,7 @@ public class Context {
 	}
 
 	/**
-	 * Places an object in thread local storage. This allows serializers to easily make repeated use of objects that are not thread
+	 * Stores an object in thread local storage. This allows serializers to easily make repeated use of objects that are not thread
 	 * safe.
 	 */
 	public void put (String key, Object value) {
@@ -74,10 +74,56 @@ public class Context {
 
 	/**
 	 * Returns an object from thread local storage, or null.
-	 * @see #put(String, Object)
+	 * @see #put(Serializer, String, Object)
 	 */
 	public Object get (String key) {
 		if (map == null) map = new HashMap();
 		return map.get(key);
+	}
+
+	/**
+	 * Stores an object for a serializer in thread local storage. This allows serializers to easily make repeated use of objects
+	 * that are not thread safe.
+	 */
+	public void put (Serializer serializer, String key, Object value) {
+		if (map == null) map = new HashMap();
+		map.put(new SerializerKey(serializer, key), value);
+	}
+
+	/**
+	 * Returns an object for a serializer from thread local storage, or null.
+	 * @see #put(Serializer, String, Object)
+	 */
+	public Object get (Serializer serializer, String key) {
+		if (map == null) map = new HashMap();
+		tempKey.serializer = serializer;
+		tempKey.key = key;
+		return map.get(tempKey);
+	}
+
+	static private class SerializerKey {
+		Serializer serializer;
+		String key;
+
+		public SerializerKey (Serializer serializer, String key) {
+			this.serializer = serializer;
+			this.key = key;
+		}
+
+		public int hashCode () {
+			int result = 31 + key.hashCode();
+			result = 31 * result + serializer.hashCode();
+			return result;
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			SerializerKey other = (SerializerKey)obj;
+			if (!key.equals(other.key)) return false;
+			if (!serializer.equals(other.serializer)) return false;
+			return true;
+		}
 	}
 }

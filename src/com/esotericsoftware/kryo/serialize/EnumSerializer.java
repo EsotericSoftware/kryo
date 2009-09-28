@@ -1,7 +1,7 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 
@@ -15,13 +15,13 @@ import com.esotericsoftware.kryo.Serializer;
 public class EnumSerializer extends Serializer {
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
 		T object = get(buffer, type);
-		if (level <= TRACE) trace("kryo", "Read enum: " + object);
+		if (TRACE) trace("kryo", "Read enum: " + object);
 		return object;
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
 		put(buffer, (Enum)object);
-		if (level <= TRACE) trace("kryo", "Wrote enum: " + object);
+		if (TRACE) trace("kryo", "Wrote enum: " + object);
 	}
 
 	static public void put (ByteBuffer buffer, Enum object) {

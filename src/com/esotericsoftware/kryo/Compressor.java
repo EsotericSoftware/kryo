@@ -1,7 +1,7 @@
 
 package com.esotericsoftware.kryo;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 
@@ -61,7 +61,7 @@ abstract public class Compressor extends Serializer {
 		buffer.position(start);
 		buffer.limit(end);
 
-		Context context = getContext();
+		Context context = Kryo.getContext();
 		ByteBuffer outputBuffer = context.getBuffer(bufferSize);
 
 		compress(buffer, object, outputBuffer);
@@ -71,7 +71,7 @@ abstract public class Compressor extends Serializer {
 		buffer.putShort((short)(outputBuffer.limit()));
 		buffer.put(outputBuffer);
 
-		if (level <= TRACE) {
+		if (TRACE) {
 			trace("kryo", "Compressed to " + ((int)(outputBuffer.limit() / (float)(end - start) * 10000) / 100f) + "% using: "
 				+ getClass().getName());
 		}
@@ -84,14 +84,14 @@ abstract public class Compressor extends Serializer {
 		int length = buffer.getShort();
 		buffer.limit(buffer.position() + length);
 
-		Context context = getContext();
+		Context context = Kryo.getContext();
 		ByteBuffer outputBuffer = context.getBuffer(bufferSize);
 
 		decompress(buffer, type, outputBuffer);
 		outputBuffer.flip();
 		buffer.limit(oldLimit);
 
-		if (level <= TRACE) trace("kryo", "Decompressed using using: " + getClass().getName());
+		if (TRACE) trace("kryo", "Decompressed using: " + getClass().getName());
 		return serializer.readObjectData(outputBuffer, type);
 	}
 

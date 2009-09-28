@@ -1,7 +1,7 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 
@@ -15,12 +15,12 @@ import com.esotericsoftware.kryo.Serializer;
 public class CharSerializer extends Serializer {
 	public Character readObjectData (ByteBuffer buffer, Class type) {
 		char ch = buffer.getChar();
-		if (level <= TRACE) trace("kryo", "Read char: " + ch);
+		if (TRACE) trace("kryo", "Read char: " + ch);
 		return ch;
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
 		buffer.putChar((Character)object);
-		if (level <= TRACE) trace("kryo", "Wrote char: " + object);
+		if (TRACE) trace("kryo", "Wrote char: " + object);
 	}
 }

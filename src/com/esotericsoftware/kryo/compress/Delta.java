@@ -26,7 +26,6 @@ package com.esotericsoftware.kryo.compress;
 
 import java.nio.ByteBuffer;
 
-import com.esotericsoftware.kryo.serialize.ByteSerializer;
 import com.esotericsoftware.kryo.serialize.IntSerializer;
 import com.esotericsoftware.kryo.util.LongToIntHashMap;
 
@@ -38,9 +37,9 @@ import com.esotericsoftware.kryo.util.LongToIntHashMap;
 public class Delta {
 	static private final boolean debug = false;
 
-	static private final int COMMAND_APPEND = 255;
-	static private final int COMMAND_COPY = 0; // Zero isn't useful as a length, so use it as a flag.
-	static private final int DATA_MAX = 254;
+	static private final byte COMMAND_APPEND = -1;
+	static private final byte COMMAND_COPY = 0;
+	static private final int DATA_MAX = 253;
 	static private final ByteBuffer emptyBuffer = ByteBuffer.allocate(0);
 
 	private int chunkSize;
@@ -103,7 +102,7 @@ public class Delta {
 					if (debug)
 						System.out.println("compress COPY at " + offset + ", length " + length + ": "
 							+ dump(sourceBuffer, offset, length));
-					ByteSerializer.putUnsigned(outputBuffer, COMMAND_COPY);
+					outputBuffer.put(COMMAND_COPY);
 					IntSerializer.put(outputBuffer, length, true);
 					IntSerializer.put(outputBuffer, offset, true);
 				} else
@@ -141,7 +140,7 @@ public class Delta {
 		if (length <= DATA_MAX)
 			outputBuffer.put((byte)length);
 		else {
-			IntSerializer.put(outputBuffer, COMMAND_APPEND, true);
+			outputBuffer.put(COMMAND_APPEND);
 			IntSerializer.put(outputBuffer, length, true);
 		}
 		for (int i = appendPosition, n = appendPosition + length; i < n; i++)
@@ -224,7 +223,7 @@ public class Delta {
 	 */
 	public void decompress (ByteBuffer oldData, ByteBuffer deltaData, ByteBuffer outputBuffer) {
 		while (deltaData.remaining() > 0) {
-			int command = ByteSerializer.getUnsigned(deltaData);
+			int command = deltaData.get();
 			int length;
 			if (command > 0 && command <= DATA_MAX) {
 				length = command;

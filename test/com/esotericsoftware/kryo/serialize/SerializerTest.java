@@ -1,30 +1,18 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import java.awt.Color;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 
 import junit.framework.TestCase;
 
 import org.junit.Assert;
 
-import com.esotericsoftware.kryo.Context;
-import com.esotericsoftware.kryo.CustomSerialization;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.serialize.ArraySerializer;
-import com.esotericsoftware.kryo.serialize.CollectionSerializer;
-import com.esotericsoftware.kryo.serialize.FieldSerializer;
-import com.esotericsoftware.kryo.serialize.IntSerializer;
-import com.esotericsoftware.kryo.serialize.MapSerializer;
-import com.esotericsoftware.kryo.serialize.ShortSerializer;
-import com.esotericsoftware.log.Log;
 
 // TODO - Write tests for all serializers.
 
@@ -48,42 +36,56 @@ public class SerializerTest extends TestCase {
 
 	public void testCollection () {
 		Kryo kryo = new Kryo();
-		roundTrip(new CollectionSerializer(kryo), 11, new ArrayList(Arrays.asList("1", "2", "3")));
-		roundTrip(new CollectionSerializer(kryo), 13, new ArrayList(Arrays.asList("1", "2", null, 1, 2)));
-		roundTrip(new CollectionSerializer(kryo), 15, new ArrayList(Arrays.asList("1", "2", null, 1, 2, 5)));
-		roundTrip(new CollectionSerializer(kryo, null, false), 11, new ArrayList(Arrays.asList("1", "2", "3")));
-		roundTrip(new CollectionSerializer(kryo, null, true), 11, new ArrayList(Arrays.asList("1", "2", "3")));
-		roundTrip(new CollectionSerializer(kryo, String.class, false), 11, new ArrayList(Arrays.asList("1", "2", "3")));
-		roundTrip(new CollectionSerializer(kryo, String.class, true), 8, new ArrayList(Arrays.asList("1", "2", "3")));
+		CollectionSerializer serializer = new CollectionSerializer(kryo);
+		roundTrip(serializer, 11, new ArrayList(Arrays.asList("1", "2", "3")));
+		roundTrip(serializer, 13, new ArrayList(Arrays.asList("1", "2", null, 1, 2)));
+		roundTrip(serializer, 15, new ArrayList(Arrays.asList("1", "2", null, 1, 2, 5)));
+		roundTrip(serializer, 11, new ArrayList(Arrays.asList("1", "2", "3")));
+		roundTrip(serializer, 11, new ArrayList(Arrays.asList("1", "2", "3")));
+		serializer.setElementClass(String.class);
+		roundTrip(serializer, 11, new ArrayList(Arrays.asList("1", "2", "3")));
+		serializer.setElementsCanBeNull(false);
+		roundTrip(serializer, 8, new ArrayList(Arrays.asList("1", "2", "3")));
 	}
 
 	public void testArray () {
 		Kryo kryo = new Kryo();
-		roundTrip(new ArraySerializer(kryo), 7, new int[] {1, 2, 3, 4});
-		roundTrip(new ArraySerializer(kryo), 11, new int[] {1, 2, -100, 4});
-		roundTrip(new ArraySerializer(kryo), 13, new int[] {1, 2, -100, 40000});
-		roundTrip(new ArraySerializer(kryo), 10, new int[][] { {1, 2}, {100, 4}});
-		roundTrip(new ArraySerializer(kryo), 12, new int[][] { {1}, {2}, {100}, {4}});
-		roundTrip(new ArraySerializer(kryo), 15, new int[][][] { { {1}, {2}}, { {100}, {4}}});
-		roundTrip(new ArraySerializer(kryo), 19, new String[] {"11", "2222", "3", "4"});
-		roundTrip(new ArraySerializer(kryo), 17, new String[] {"11", "2222", null, "4"});
-		roundTrip(new ArraySerializer(kryo, 1, false, true), 16, new String[] {"11", "2222", null, "4"});
-		roundTrip(new ArraySerializer(kryo, 1, false, false), 16, new String[] {"11", "2222", null, "4"});
+		ArraySerializer serializer = new ArraySerializer(kryo);
+		roundTrip(serializer, 7, new int[] {1, 2, 3, 4});
+		roundTrip(serializer, 11, new int[] {1, 2, -100, 4});
+		roundTrip(serializer, 13, new int[] {1, 2, -100, 40000});
+		roundTrip(serializer, 10, new int[][] { {1, 2}, {100, 4}});
+		roundTrip(serializer, 12, new int[][] { {1}, {2}, {100}, {4}});
+		roundTrip(serializer, 15, new int[][][] { { {1}, {2}}, { {100}, {4}}});
+		roundTrip(serializer, 19, new String[] {"11", "2222", "3", "4"});
+		roundTrip(serializer, 17, new String[] {"11", "2222", null, "4"});
+		serializer.setDimensionCount(1);
+		serializer.setElementsAreSameType(true);
+		roundTrip(serializer, 16, new String[] {"11", "2222", null, "4"});
+		serializer.setElementsAreSameType(false);
+		roundTrip(serializer, 16, new String[] {"11", "2222", null, "4"});
 		roundTrip(new ArraySerializer(kryo), 6, new String[] {null, null, null});
 		roundTrip(new ArraySerializer(kryo), 3, new String[] {});
-		roundTrip(new ArraySerializer(kryo, 1, false, true), 18, new String[] {"11", "2222", "3", "4"});
-		roundTrip(new ArraySerializer(kryo, 1, true, true), 14, new String[] {"11", "2222", "3", "4"});
+		serializer.setElementsCanBeNull(true);
+		serializer.setElementsAreSameType(true);
+		roundTrip(serializer, 18, new String[] {"11", "2222", "3", "4"});
+		serializer.setElementsCanBeNull(false);
+		roundTrip(serializer, 14, new String[] {"11", "2222", "3", "4"});
 	}
 
 	public void testMap () {
-		//Log.level = Log.TRACE;
 		Kryo kryo = new Kryo();
 		HashMap map = new HashMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(new MapSerializer(kryo), 22, map);
-		roundTrip(new MapSerializer(kryo, String.class, true, String.class, false), 20, map);
-		roundTrip(new MapSerializer(kryo, String.class, true, String.class, true), 18, map);
+		MapSerializer serializer = new MapSerializer(kryo);
+		roundTrip(serializer, 22, map);
+		serializer.setKeyClass(String.class);
+		serializer.setKeysCanBeNull(false);
+		serializer.setValueClass(String.class);
+		roundTrip(serializer, 20, map);
+		serializer.setValuesCanBeNull(false);
+		roundTrip(serializer, 18, map);
 	}
 
 	public void testShort () {

@@ -1,7 +1,7 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -19,7 +19,7 @@ import com.esotericsoftware.kryo.Serializer;
  */
 public class CollectionSerializer extends Serializer {
 	private final Kryo kryo;
-	private boolean elementsAreNotNull;
+	private boolean elementsCanBeNull = true;
 	private Serializer serializer;
 	private Class elementClass;
 
@@ -28,16 +28,30 @@ public class CollectionSerializer extends Serializer {
 	}
 
 	/**
-	 * @param elementsAreNotNull True if elements are not null. This saves 1 byte per element if elementClass is set. False if it
-	 *           is not known (default).
+	 * @param elementsCanBeNull False if all elements are not null. This saves 1 byte per element if elementClass is set. True if
+	 *           it is not known (default).
+	 */
+	public void setElementsCanBeNull (boolean elementsCanBeNull) {
+		this.elementsCanBeNull = elementsCanBeNull;
+	}
+
+	/**
+	 * @param elementClass The concrete class of each element. This saves 1-2 bytes per element. The serializer registered for the
+	 *           specified class will be used. Set to null if the class is not known or varies per element (default).
+	 */
+	public void setElementClass (Class elementClass) {
+		this.elementClass = elementClass;
+		this.serializer = elementClass == null ? null : kryo.getRegisteredClass(elementClass).serializer;
+	}
+
+	/**
 	 * @param elementClass The concrete class of each element. This saves 1-2 bytes per element. Set to null if the class is not
 	 *           known or varies per element (default).
+	 * @param serializer The serializer to use for each element.
 	 */
-	public CollectionSerializer (Kryo kryo, Class elementClass, boolean elementsAreNotNull) {
-		this.kryo = kryo;
+	public void setElementClass (Class elementClass, Serializer serializer) {
 		this.elementClass = elementClass;
-		this.elementsAreNotNull = elementsAreNotNull;
-		serializer = elementClass == null ? null : kryo.getRegisteredClass(elementClass).serializer;
+		this.serializer = serializer;
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
@@ -46,18 +60,18 @@ public class CollectionSerializer extends Serializer {
 		IntSerializer.put(buffer, length, true);
 		if (length == 0) return;
 		if (serializer != null) {
-			if (elementsAreNotNull) {
-				for (Object element : collection)
-					serializer.writeObjectData(buffer, element);
-			} else {
+			if (elementsCanBeNull) {
 				for (Object element : collection)
 					serializer.writeObject(buffer, element);
+			} else {
+				for (Object element : collection)
+					serializer.writeObjectData(buffer, element);
 			}
 		} else {
 			for (Object element : collection)
-				kryo.writeClassAndObject( buffer, element);
+				kryo.writeClassAndObject(buffer, element);
 		}
-		if (level <= TRACE) trace("kryo", "Wrote collection: " + object);
+		if (TRACE) trace("kryo", "Wrote collection: " + object);
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
@@ -65,18 +79,18 @@ public class CollectionSerializer extends Serializer {
 		Collection collection = (Collection)newInstance(type);
 		if (length == 0) return (T)collection;
 		if (serializer != null) {
-			if (elementsAreNotNull) {
-				for (int i = 0; i < length; i++)
-					collection.add(serializer.readObjectData(buffer, elementClass));
-			} else {
+			if (elementsCanBeNull) {
 				for (int i = 0; i < length; i++)
 					collection.add(serializer.readObject(buffer, elementClass));
+			} else {
+				for (int i = 0; i < length; i++)
+					collection.add(serializer.readObjectData(buffer, elementClass));
 			}
 		} else {
 			for (int i = 0; i < length; i++)
-				collection.add(kryo.readClassAndObject( buffer));
+				collection.add(kryo.readClassAndObject(buffer));
 		}
-		if (level <= TRACE) trace("kryo", "Read collection: " + collection);
+		if (TRACE) trace("kryo", "Read collection: " + collection);
 		return (T)collection;
 	}
 }

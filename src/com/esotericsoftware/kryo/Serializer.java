@@ -1,10 +1,11 @@
 
 package com.esotericsoftware.kryo;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Serializes objects to and from a {@link ByteBuffer}.
@@ -13,33 +14,6 @@ import java.nio.ByteBuffer;
  */
 abstract public class Serializer {
 	private boolean canBeNull = true;
-	Context context;
-	Kryo kryo;
-
-	/**
-	 * Returns the Kryo instance this serializer is registered with, or null if this serializer has not been registered.
-	 * @see Kryo#register(Class, Serializer)
-	 */
-	public Kryo getKryo () {
-		return kryo;
-	}
-
-	/**
-	 * Returns the context from {@link Kryo#getContext()} if this serializer is registered with a Kyro instance, else the context
-	 * set with {@link #setContext(Context)} is returned.
-	 */
-	public Context getContext () {
-		if (kryo != null) return kryo.getContext();
-		return context;
-	}
-
-	/**
-	 * Sets the context to use during serialization and deserialization. The context only needs to be set when using a serializer
-	 * that is not registered, and even then only for serializers that call {@link #getContext()}.
-	 */
-	public void setContext (Context context) {
-		this.context = context;
-	}
 
 	/**
 	 * When true, a byte will not be used to denote if the object is null. This is useful for primitives and objects that are known
@@ -56,7 +30,7 @@ abstract public class Serializer {
 	public final void writeObject (ByteBuffer buffer, Object object) {
 		if (canBeNull) {
 			if (object == null) {
-				if (level <= TRACE) trace("kryo", "Wrote object: null");
+				if (TRACE) trace("kryo", "Wrote object: null");
 				buffer.put((byte)0);
 				return;
 			}
@@ -77,7 +51,7 @@ abstract public class Serializer {
 	 */
 	public final <T> T readObject (ByteBuffer buffer, Class<T> type) {
 		if (canBeNull && buffer.get() == 0) {
-			if (level <= TRACE) trace("kryo", "Read object: null");
+			if (TRACE) trace("kryo", "Read object: null");
 			return null;
 		}
 		return readObjectData(buffer, type);

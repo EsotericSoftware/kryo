@@ -1,13 +1,12 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 
-import com.esotericsoftware.kryo.Context;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 
@@ -25,33 +24,35 @@ public class ArraySerializer extends Serializer {
 	private final Kryo kryo;
 	private Integer fixedDimensionCount;
 	private boolean elementsAreSameType;
-	private boolean elementsAreNotNull;
+	private boolean elementsCanBeNull = true;
 
 	public ArraySerializer (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
 	/**
-	 * @see ArraySerializer#ArraySerializer(Kryo, Integer, boolean, boolean)
+	 * @param dimensions Sets the number of dimensions. Saves 1 byte. Set to null to determine the number of dimensions (default).
 	 */
-	public ArraySerializer (Kryo kryo, Integer dimensions) {
-		this.kryo = kryo;
-		fixedDimensionCount = dimensions;
+	public void setDimensionCount (Integer dimensions) {
+		this.fixedDimensionCount = dimensions;
 	}
 
 	/**
-	 * @param dimensions Sets the number of dimensions. Saves 1 byte. Set to null to determine the number of dimensions (default).
-	 * @param elementsAreNotNull True if elements are not null. This saves 1 byte per element if the array type is final or
-	 *           elementsAreSameClassAsType is true. False if it is not known (default).
+	 * @param elementsCanBeNull False if all elements are not null. This saves 1 byte per element if the array type is final or
+	 *           elementsAreSameClassAsType is true. True if it is not known (default).
+	 */
+	public void setElementsCanBeNull (boolean elementsCanBeNull) {
+		this.elementsCanBeNull = elementsCanBeNull;
+	}
+
+	/**
 	 * @param elementsAreSameType True if all elements are the same type as the array (ie they don't extend the array type). This
 	 *           saves 1 byte per element if the array type is not final. Set to false if the array type is final or elements
 	 *           extend the array type (default).
 	 */
-	public ArraySerializer (Kryo kryo, Integer dimensions, boolean elementsAreNotNull, boolean elementsAreSameType) {
-		this.kryo = kryo;
-		this.fixedDimensionCount = dimensions;
-		this.elementsAreNotNull = elementsAreNotNull;
+	public void setElementsAreSameType (boolean elementsAreSameType) {
 		this.elementsAreSameType = elementsAreSameType;
+		// BOZO - Change to set type?
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object array) {
@@ -67,7 +68,7 @@ public class ArraySerializer extends Serializer {
 			elementSerializer = kryo.getRegisteredClass(elementClass).serializer;
 		// Write array data.
 		writeArray(buffer, array, elementSerializer, 0, dimensions.length);
-		if (level <= TRACE) {
+		if (TRACE) {
 			StringBuilder stringBuffer = new StringBuilder(16);
 			for (int i = 0, n = dimensions.length; i < n; i++) {
 				stringBuffer.append('[');
@@ -93,10 +94,10 @@ public class ArraySerializer extends Serializer {
 				if (element != null) writeArray(buffer, element, elementSerializer, dimension + 1, dimensionCount);
 			} else if (elementSerializer != null) {
 				// Use same serializer for all elements.
-				if (elementsAreNotNull)
-					elementSerializer.writeObjectData(buffer, element);
-				else
+				if (elementsCanBeNull)
 					elementSerializer.writeObject(buffer, element);
+				else
+					elementSerializer.writeObjectData(buffer, element);
 			} else {
 				// Each element could be a different type. Store the class with the object.
 				kryo.writeClassAndObject(buffer, element);
@@ -118,7 +119,7 @@ public class ArraySerializer extends Serializer {
 		// Create array and read in the data.
 		T array = (T)Array.newInstance(elementClass, dimensions);
 		readArray(buffer, array, elementSerializer, elementClass, 0, dimensions);
-		if (level <= TRACE) {
+		if (TRACE) {
 			StringBuilder stringBuffer = new StringBuilder(16);
 			for (int i = 0; i < dimensionCount; i++) {
 				stringBuffer.append('[');
@@ -145,10 +146,10 @@ public class ArraySerializer extends Serializer {
 				if (element != null) readArray(buffer, element, elementSerializer, elementClass, dimension + 1, dimensions);
 			} else if (elementSerializer != null) {
 				// Use same serializer (and class) for all elements.
-				if (elementsAreNotNull)
-					Array.set(array, i, elementSerializer.readObjectData(buffer, elementClass));
-				else
+				if (elementsCanBeNull)
 					Array.set(array, i, elementSerializer.readObject(buffer, elementClass));
+				else
+					Array.set(array, i, elementSerializer.readObjectData(buffer, elementClass));
 			} else {
 				// Each element could be a different type. Look up the class with the object.
 				Array.set(array, i, kryo.readClassAndObject(buffer));

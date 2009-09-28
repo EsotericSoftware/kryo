@@ -1,7 +1,7 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 
@@ -28,13 +28,13 @@ public class ShortSerializer extends Serializer {
 
 	public Short readObjectData (ByteBuffer buffer, Class type) {
 		short s = get(buffer, optimizePositive);
-		if (level <= TRACE) trace("kryo", "Read short: " + s);
+		if (TRACE) trace("kryo", "Read short: " + s);
 		return s;
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
 		put(buffer, (Short)object, optimizePositive);
-		if (level <= TRACE) trace("kryo", "Wrote short: " + object);
+		if (TRACE) trace("kryo", "Wrote short: " + object);
 	}
 
 	static private final byte SHORT = -128;

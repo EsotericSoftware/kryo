@@ -1,7 +1,7 @@
 
 package com.esotericsoftware.kryo;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -9,6 +9,8 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.esotericsoftware.kryo.serialize.ArraySerializer;
 import com.esotericsoftware.kryo.serialize.BooleanSerializer;
@@ -26,6 +28,7 @@ import com.esotericsoftware.kryo.serialize.MapSerializer;
 import com.esotericsoftware.kryo.serialize.ShortSerializer;
 import com.esotericsoftware.kryo.serialize.StringSerializer;
 import com.esotericsoftware.kryo.util.ShortHashMap;
+import com.esotericsoftware.minlog.Log;
 
 /**
  * Maps classes to serializers so object graphs can be serialized automatically.
@@ -33,6 +36,12 @@ import com.esotericsoftware.kryo.util.ShortHashMap;
  */
 public class Kryo {
 	static private final byte ID_NULL_OBJECT = 0;
+
+	static private ThreadLocal<Context> contextThreadLocal = new ThreadLocal<Context>() {
+		protected Context initialValue () {
+			return new Context();
+		}
+	};
 
 	private final ShortHashMap<RegisteredClass> idToRegisteredClass = new ShortHashMap(64);
 	private final HashMap<Class, RegisteredClass> classToRegisteredClass = new HashMap(64);
@@ -46,12 +55,6 @@ public class Kryo {
 	private final EnumSerializer enumSerializer = new EnumSerializer();
 	private final CollectionSerializer collectionSerializer = new CollectionSerializer(this);
 	private final MapSerializer mapSerializer = new MapSerializer(this);
-
-	private ThreadLocal<Context> contextThreadLocal = new ThreadLocal<Context>() {
-		protected Context initialValue () {
-			return new Context();
-		}
-	};
 
 	public Kryo () {
 		// Primitives.
@@ -102,10 +105,6 @@ public class Kryo {
 	public void register (Class type, Serializer serializer) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		if (serializer.kryo != null && serializer.kryo != this)
-			throw new IllegalArgumentException("serializer must not be registered with another Kryo instance.");
-		serializer.kryo = this;
-		serializer.context = null;
 		short id;
 		RegisteredClass existingRegisteredClass = classToRegisteredClass.get(type);
 		if (existingRegisteredClass != null)
@@ -113,7 +112,7 @@ public class Kryo {
 		else
 			id = nextClassID++;
 		register(type, id, serializer);
-		if (level <= TRACE) {
+		if (TRACE) {
 			String name = type.getName();
 			if (type.isArray()) {
 				Class elementClass = ArraySerializer.getElementClass(type);
@@ -208,6 +207,10 @@ public class Kryo {
 		return registeredClass;
 	}
 
+	public Serializer getSerializer (Class type) {
+		return getRegisteredClass(type).serializer;
+	}
+
 	/**
 	 * Writes the ID of the specified class to the buffer.
 	 * @param type Can be null (writes a special class ID for a null object).
@@ -216,7 +219,7 @@ public class Kryo {
 	public RegisteredClass writeClass (ByteBuffer buffer, Class type) {
 		RegisteredClass registeredClass = getRegisteredClass(type);
 		ShortSerializer.put(buffer, registeredClass.id, true);
-		if (level <= TRACE) trace("kryo", "Wrote class " + registeredClass.id + ": " + type.getName());
+		if (TRACE) trace("kryo", "Wrote class " + registeredClass.id + ": " + type.getName());
 		return registeredClass;
 	}
 
@@ -228,12 +231,12 @@ public class Kryo {
 	public RegisteredClass readClass (ByteBuffer buffer) {
 		short classID = ShortSerializer.get(buffer, true);
 		if (classID == ID_NULL_OBJECT) {
-			if (level <= TRACE) trace("kryo", "Read object: null");
+			if (TRACE) trace("kryo", "Read object: null");
 			return null;
 		}
 		RegisteredClass registeredClass = idToRegisteredClass.get(classID);
 		if (registeredClass == null) throw new SerializationException("Encountered unregistered class ID: " + classID);
-		if (level <= TRACE) trace("kryo", "Read class " + classID + ": " + registeredClass.type.getName());
+		if (TRACE) trace("kryo", "Read class " + classID + ": " + registeredClass.type.getName());
 		return registeredClass;
 	}
 
@@ -245,7 +248,7 @@ public class Kryo {
 	public void writeClassAndObject (ByteBuffer writeBuffer, Object object) {
 		if (object == null) {
 			writeBuffer.put(ID_NULL_OBJECT);
-			if (level <= TRACE) trace("kryo", "Wrote object: null");
+			if (TRACE) trace("kryo", "Wrote object: null");
 			return;
 		}
 		try {
@@ -263,7 +266,7 @@ public class Kryo {
 	public void writeObject (ByteBuffer writeBuffer, Object object) {
 		if (object == null) {
 			writeBuffer.put(ID_NULL_OBJECT);
-			if (level <= TRACE) trace("kryo", "Wrote object: null");
+			if (TRACE) trace("kryo", "Wrote object: null");
 			return;
 		}
 		try {
@@ -326,14 +329,6 @@ public class Kryo {
 		}
 	}
 
-	/**
-	 * Returns the thread local context for serialization and deserialization.
-	 * @see Context
-	 */
-	public Context getContext () {
-		return contextThreadLocal.get();
-	}
-
 	public void addListener (KryoListener listener) {
 		if (listener == null) throw new IllegalArgumentException("listener cannot be null.");
 		synchronized (listenerLock) {
@@ -341,12 +336,12 @@ public class Kryo {
 			int n = listeners.length;
 			for (int i = 0; i < n; i++)
 				if (listener == listeners[i]) return;
-			KryoListener[] newListeners = new KryoListener[n];
+			KryoListener[] newListeners = new KryoListener[n + 1];
 			newListeners[0] = listener;
 			System.arraycopy(listeners, 0, newListeners, 1, n);
 			this.listeners = newListeners;
 		}
-		if (level <= TRACE) trace("Kryo listener added: " + listener.getClass().getName());
+		if (TRACE) trace("kryo", "Kryo listener added: " + listener.getClass().getName());
 	}
 
 	public void removeListener (KryoListener listener) {
@@ -363,7 +358,7 @@ public class Kryo {
 			System.arraycopy(listeners, 0, newListeners, 1, n);
 			this.listeners = newListeners;
 		}
-		if (level <= TRACE) trace("Kryo listener removed: " + listener.getClass().getName());
+		if (TRACE) trace("kryo", "Kryo listener removed: " + listener.getClass().getName());
 	}
 
 	/**
@@ -373,9 +368,17 @@ public class Kryo {
 	 */
 	public void removeRemoteEntity (int remoteEntityID) {
 		KryoListener[] listeners = this.listeners;
-		if (level <= TRACE) trace("Remote ID removed: " + remoteEntityID);
+		if (TRACE) trace("kryo", "Remote ID removed: " + remoteEntityID);
 		for (int i = 0, n = listeners.length; i < n; i++)
 			listeners[i].remoteEntityRemoved(remoteEntityID);
+	}
+
+	/**
+	 * Returns the thread local context for serialization and deserialization.
+	 * @see Context
+	 */
+	static public Context getContext () {
+		return contextThreadLocal.get();
 	}
 
 	/**

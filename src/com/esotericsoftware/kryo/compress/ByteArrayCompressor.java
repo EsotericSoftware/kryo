@@ -22,7 +22,7 @@ public abstract class ByteArrayCompressor extends Compressor {
 	}
 
 	public void compress (ByteBuffer inputBuffer, Object object, ByteBuffer outputBuffer) {
-		Context context = getContext();
+		Context context = Kryo.getContext();
 		byte[] inputBytes = context.getBuffer(bufferSize).array();
 		int inputLength = inputBuffer.remaining();
 		inputBuffer.get(inputBytes, 0, inputLength);
@@ -36,7 +36,7 @@ public abstract class ByteArrayCompressor extends Compressor {
 	abstract public void compress (byte[] inputBytes, int inputLength, ByteBuffer outputBuffer);
 
 	public void decompress (ByteBuffer inputBuffer, Class type, ByteBuffer outputBuffer) {
-		Context context = getContext();
+		Context context = Kryo.getContext();
 		byte[] inputBytes = context.getBuffer(bufferSize).array();
 		int inputLength = inputBuffer.remaining();
 		inputBuffer.get(inputBytes, 0, inputLength);

@@ -9,6 +9,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import com.esotericsoftware.kryo.Compressor;
 import com.esotericsoftware.kryo.Context;
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.Serializer;
 
@@ -29,13 +30,13 @@ public class BlowfishCompressor extends Compressor {
 	}
 
 	public void compress (ByteBuffer inputBuffer, Object object, ByteBuffer outputBuffer) {
-		Context context = getContext();
-		Cipher encrypt = (Cipher)context.get("blowfishEncryptCipher");
+		Context context = Kryo.getContext();
+		Cipher encrypt = (Cipher)context.get(this, "encryptCipher");
 		try {
 			if (encrypt == null) {
 				encrypt = Cipher.getInstance("Blowfish");
 				encrypt.init(Cipher.ENCRYPT_MODE, keySpec);
-				context.put("blowfishEncryptCipher", encrypt);
+				context.put(this, "encryptCipher", encrypt);
 			}
 			encrypt.doFinal(inputBuffer, outputBuffer);
 		} catch (GeneralSecurityException ex) {
@@ -44,13 +45,13 @@ public class BlowfishCompressor extends Compressor {
 	}
 
 	public void decompress (ByteBuffer inputBuffer, Class type, ByteBuffer outputBuffer) {
-		Context context = getContext();
-		Cipher decrypt = (Cipher)context.get("blowfishEncryptCipher");
+		Context context = Kryo.getContext();
+		Cipher decrypt = (Cipher)context.get(this, "decryptCipher");
 		try {
 			if (decrypt == null) {
 				decrypt = Cipher.getInstance("Blowfish");
 				decrypt.init(Cipher.DECRYPT_MODE, keySpec);
-				context.put("blowfishEncryptCipher", decrypt);
+				context.put(this, "decryptCipher", decrypt);
 			}
 			decrypt.doFinal(inputBuffer, outputBuffer);
 		} catch (GeneralSecurityException ex) {

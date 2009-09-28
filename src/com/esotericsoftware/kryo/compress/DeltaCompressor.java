@@ -17,7 +17,8 @@ import com.esotericsoftware.kryo.util.IntHashMap;
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class DeltaCompressor extends Compressor {
-	private final Delta delta;
+	private final Kryo kryo;
+	private final int chunkSize;
 	private final IntHashMap<ByteBuffer> contextToRemoteData = new IntHashMap();
 	private final IntHashMap<ByteBuffer> contextToLocalData = new IntHashMap();
 
@@ -31,31 +32,37 @@ public class DeltaCompressor extends Compressor {
 	/**
 	 * Creates a DeltaCompressor with a buffer size of 2048 abd a chunk size of 8.
 	 */
-	public DeltaCompressor (Serializer serializer) {
-		this(serializer, 2048, 8);
+	public DeltaCompressor (Kryo kryo, Serializer serializer) {
+		this(kryo, serializer, 2048, 8);
 	}
 
 	/**
 	 * @see Delta#Delta(int, int)
 	 */
-	public DeltaCompressor (Serializer serializer, int bufferSize, int chunkSize) {
+	public DeltaCompressor (Kryo kryo, Serializer serializer, int bufferSize, int chunkSize) {
 		super(serializer, bufferSize);
-		delta = new Delta(bufferSize, chunkSize);
+		this.kryo = kryo;
+		this.chunkSize = chunkSize;
 	}
 
 	public void compress (ByteBuffer newData, Object object, ByteBuffer outputBuffer) {
 		int start = newData.position();
 
-		int remoteID = getContext().getRemoteEntityID();
+		Context context = Kryo.getContext();
+		int remoteID = context.getRemoteEntityID();
 		ByteBuffer remoteData = contextToRemoteData.get(remoteID);
 
+		Delta delta = (Delta)context.get(this, "delta");
+		if (delta == null) {
+			delta = new Delta(bufferSize, chunkSize);
+			context.put(this, "delta", delta);
+		}
 		delta.compress(remoteData, newData, outputBuffer);
 
 		if (remoteData == null) {
-			remoteData = ByteBuffer.allocateDirect(bufferSize);
+			remoteData = ByteBuffer.allocate(bufferSize);
 			contextToRemoteData.put(remoteID, remoteData);
-			Kryo kryo = getKryo();
-			if (kryo != null) kryo.addListener(removeBuffersListener);
+			kryo.addListener(removeBuffersListener);
 		}
 		remoteData.clear();
 		newData.position(start);
@@ -64,16 +71,21 @@ public class DeltaCompressor extends Compressor {
 	}
 
 	public void decompress (ByteBuffer deltaData, Class type, ByteBuffer outputBuffer) {
-		int remoteID = getContext().getRemoteEntityID();
+		Context context = Kryo.getContext();
+		int remoteID = context.getRemoteEntityID();
 		ByteBuffer localData = contextToLocalData.get(remoteID);
 
+		Delta delta = (Delta)context.get(this, "delta");
+		if (delta == null) {
+			delta = new Delta(bufferSize, chunkSize);
+			context.put(this, "delta", delta);
+		}
 		delta.decompress(localData, deltaData, outputBuffer);
 
 		if (localData == null) {
-			localData = ByteBuffer.allocateDirect(bufferSize);
+			localData = ByteBuffer.allocate(bufferSize);
 			contextToLocalData.put(remoteID, localData);
-			Kryo kryo = getKryo();
-			if (kryo != null) kryo.addListener(removeBuffersListener);
+			kryo.addListener(removeBuffersListener);
 		}
 		localData.clear();
 		outputBuffer.flip();

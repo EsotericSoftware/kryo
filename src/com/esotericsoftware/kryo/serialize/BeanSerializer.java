@@ -1,7 +1,7 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
@@ -109,7 +109,7 @@ public class BeanSerializer extends Serializer {
 			CachedMethod[] getterMethods = getGetterMethods(type);
 			for (int i = 0, n = getterMethods.length; i < n; i++) {
 				CachedMethod cachedMethod = getterMethods[i];
-				if (level <= TRACE) trace("kryo", "Writing property: " + cachedMethod + "(" + object.getClass() + ")");
+				if (TRACE) trace("kryo", "Writing property: " + cachedMethod + "(" + object.getClass() + ")");
 				Object value = cachedMethod.method.invoke(object, noArgs);
 				Serializer serializer = cachedMethod.serializer;
 				if (serializer != null)
@@ -122,7 +122,7 @@ public class BeanSerializer extends Serializer {
 		} catch (InvocationTargetException ex) {
 			throw new SerializationException("Error invoking getter method in class: " + type.getName(), ex);
 		}
-		if (level <= TRACE) trace("kryo", "Wrote bean: " + object);
+		if (TRACE) trace("kryo", "Wrote bean: " + object);
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
@@ -131,7 +131,7 @@ public class BeanSerializer extends Serializer {
 			CachedMethod[] setterMethods = getSetterMethods(object.getClass());
 			for (int i = 0, n = setterMethods.length; i < n; i++) {
 				CachedMethod cachedMethod = setterMethods[i];
-				if (level <= TRACE) trace("kryo", "Reading property: " + cachedMethod + "(" + object.getClass() + ")");
+				if (TRACE) trace("kryo", "Reading property: " + cachedMethod + "(" + object.getClass() + ")");
 				Object value;
 				Serializer serializer = cachedMethod.serializer;
 				if (serializer != null)
@@ -145,7 +145,7 @@ public class BeanSerializer extends Serializer {
 		} catch (InvocationTargetException ex) {
 			throw new SerializationException("Error invoking setter method in class: " + type.getName(), ex);
 		}
-		if (level <= TRACE) trace("kryo", "Read bean: " + object);
+		if (TRACE) trace("kryo", "Read bean: " + object);
 		return object;
 	}
 

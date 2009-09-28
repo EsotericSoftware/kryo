@@ -1,7 +1,7 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -20,6 +20,8 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.Kryo.RegisteredClass;
 
 // BOZO - Rework getField method. Javadoc.
+// BOZO - Change passing class to Serializer constructors to serializer, or both.
+// BOZO - Move constructor args to setters for cleanliness?
 
 /**
  * Serializes objects using direct field assignment. This is the most efficient mechanism for serializing objects, often as good
@@ -34,21 +36,25 @@ import com.esotericsoftware.kryo.Kryo.RegisteredClass;
 public class FieldSerializer extends Serializer {
 	private final Kryo kryo;
 	private final HashMap<Class, CachedField[]> fieldCache = new HashMap();
-	private boolean fieldsAreNotNull, setFieldsAsAccessible = true;
+	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 
 	public FieldSerializer (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
 	/**
-	 * @param fieldsAreNotNull True if none of the fields are null. Saves 1 byte per field. False if it is not known (default).
-	 * @param setFieldsAsAccessible If true, all fields (inlcuding private fields) will be serialized and
+	 * @param fieldsCanBeNull False if none of the fields are null. Saves 1 byte per field. True if it is not known (default).
+	 */
+	public void setFieldsCanBeNull (boolean fieldsCanBeNull) {
+		this.fieldsCanBeNull = fieldsCanBeNull;
+	}
+
+	/**
+	 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
 	 *           {@link Field#setAccessible(boolean) set as accessible} (default). If false, only fields in the public API will be
 	 *           serialized.
 	 */
-	public FieldSerializer (Kryo kryo, boolean fieldsAreNotNull, boolean setFieldsAsAccessible) {
-		this.kryo = kryo;
-		this.fieldsAreNotNull = fieldsAreNotNull;
+	public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
 		this.setFieldsAsAccessible = setFieldsAsAccessible;
 	}
 
@@ -81,15 +87,15 @@ public class FieldSerializer extends Serializer {
 
 			CachedField cachedField = new CachedField();
 			cachedField.field = field;
-			if (fieldsAreNotNull)
-				cachedField.canBeNull = false;
-			else
+			if (fieldsCanBeNull)
 				cachedField.canBeNull = !field.isAnnotationPresent(NotNull.class);
+			else
+				cachedField.canBeNull = false;
 
 			// Always use the same serializer for this field if the field's class is final.
 			Class fieldClass = field.getType();
 			if (Modifier.isFinal(fieldClass.getModifiers())) {
-				cachedField.concreteType = fieldClass;
+				cachedField.fieldClass = fieldClass;
 				cachedField.serializer = kryo.getRegisteredClass(fieldClass).serializer;
 			}
 
@@ -111,11 +117,12 @@ public class FieldSerializer extends Serializer {
 			if (fields == null) fields = cache(type);
 			for (int i = 0, n = fields.length; i < n; i++) {
 				CachedField cachedField = fields[i];
-				if (level <= TRACE) trace("kryo", "Writing field: " + cachedField + " (" + type.getName() + ")");
+				if (TRACE) trace("kryo", "Writing field: " + cachedField + " (" + type.getName() + ")");
+
 				Object value = cachedField.field.get(object);
 
 				Serializer serializer = cachedField.serializer;
-				if (cachedField.concreteType == null) {
+				if (cachedField.fieldClass == null) {
 					RegisteredClass registeredClass = kryo.writeClass(buffer, value.getClass());
 					if (serializer == null) serializer = registeredClass.serializer;
 				}
@@ -128,7 +135,7 @@ public class FieldSerializer extends Serializer {
 		} catch (IllegalAccessException ex) {
 			throw new SerializationException("Error accessing field in class: " + type.getName(), ex);
 		}
-		if (level <= TRACE) trace("kryo", "Wrote object: " + object);
+		if (TRACE) trace("kryo", "Wrote object: " + object);
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
@@ -138,11 +145,9 @@ public class FieldSerializer extends Serializer {
 			if (fields == null) fields = cache(type);
 			for (int i = 0, n = fields.length; i < n; i++) {
 				CachedField cachedField = fields[i];
-				if (level <= TRACE) trace("kryo", "Reading field: " + cachedField + " (" + type.getName() + ")");
-				Object value;
-				Field field = cachedField.field;
+				if (TRACE) trace("kryo", "Reading field: " + cachedField + " (" + type.getName() + ")");
 
-				Class concreteType = cachedField.concreteType;
+				Class concreteType = cachedField.fieldClass;
 				Serializer serializer = cachedField.serializer;
 				if (concreteType == null) {
 					RegisteredClass registeredClass = kryo.readClass(buffer);
@@ -150,24 +155,22 @@ public class FieldSerializer extends Serializer {
 					if (serializer == null) serializer = registeredClass.serializer;
 				}
 
+				Object value;
 				if (!cachedField.canBeNull)
 					value = serializer.readObjectData(buffer, concreteType);
 				else
 					value = serializer.readObject(buffer, concreteType);
-				field.set(object, value);
+				cachedField.field.set(object, value);
 			}
 		} catch (IllegalAccessException ex) {
 			throw new SerializationException("Error accessing field in class: " + type.getName(), ex);
 		}
-		if (level <= TRACE) trace("kryo", "Read object: " + object);
+		if (TRACE) trace("kryo", "Read object: " + object);
 		return object;
 	}
 
 	/**
-	 * Allows options to be set for a specific field.
-	 * @param serializer The serializer to use for the field's value.
-	 * @param canBeNull False if the field can never be null when it is serialized.
-	 * @return
+	 * Allows specific fields to be optimized.
 	 */
 	public CachedField getField (Class type, String fieldName) {
 		CachedField[] fields = fieldCache.get(type);
@@ -177,13 +180,38 @@ public class FieldSerializer extends Serializer {
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
 	}
 
-	// If a concreteType is set, a serializer should be set.
-	static public class CachedField {
-		// BOZO - Use methods.
-		public Field field;
-		public Class concreteType;
-		public Serializer serializer;
-		public boolean canBeNull;
+	/**
+	 * Controls how a field will be serialized.
+	 */
+	public class CachedField {
+		Field field;
+		Class fieldClass;
+		Serializer serializer;
+		boolean canBeNull;
+
+		/**
+		 * @param fieldClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for
+		 *           the specified class will be used. Set to null if the field type in the class definition is final or the values
+		 *           for this field vary (default).
+		 */
+		public void setClass (Class fieldClass) {
+			this.fieldClass = fieldClass;
+			this.serializer = fieldClass == null ? null : kryo.getRegisteredClass(fieldClass).serializer;
+		}
+
+		/**
+		 * @param fieldClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for
+		 *           the specified class will be used. Set to null if the field type in the class definition is final or the values
+		 *           for this field vary (default).
+		 */
+		public void setClass (Class fieldClass, Serializer serializer) {
+			this.fieldClass = fieldClass;
+			this.serializer = serializer;
+		}
+
+		public void setCanBeNull (boolean canBeNull) {
+			this.canBeNull = canBeNull;
+		}
 
 		public String toString () {
 			return field.getName();

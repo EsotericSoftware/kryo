@@ -1,7 +1,7 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -21,30 +21,64 @@ public class MapSerializer extends Serializer {
 	private final Kryo kryo;
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
-	private boolean keysAreNotNull, valuesAreNotNull;
+	private boolean keysCanBeNull = true, valuesCanBeNull = true;
 
 	public MapSerializer (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
 	/**
+	 * @param keysCanBeNull False if all keys are not null. This saves 1 byte per key if keyClass is set. True if it is not known
+	 *           (default).
+	 */
+	public void setKeysCanBeNull (boolean keysCanBeNull) {
+		this.keysCanBeNull = keysCanBeNull;
+	}
+
+	/**
+	 * @param keyClass The concrete class of each key. This saves 1 byte per key. The serializer registered for the specified class
+	 *           will be used. Set to null if the class is not known or varies per key (default).
+	 */
+	public void setKeyClass (Class keyClass) {
+		this.keyClass = keyClass;
+		keySerializer = keyClass == null ? null : kryo.getRegisteredClass(keyClass).serializer;
+	}
+
+	/**
 	 * @param keyClass The concrete class of each key. This saves 1 byte per key. Set to null if the class is not known or varies
 	 *           per key (default).
-	 * @param keysAreNotNull True if keys are not null. This saves 1 byte per key if keyClass is set. False if it is not known
-	 *           (default).
+	 * @param keySerializer The serializer to use for each key.
+	 */
+	public void setKeyClass (Class keyClass, Serializer keySerializer) {
+		this.keyClass = keyClass;
+		this.keySerializer = keySerializer;
+	}
+
+	/**
+	 * @param valueClass The concrete class of each value. This saves 1 byte per value. The serializer registered for the specified
+	 *           class will be used. Set to null if the class is not known or varies per value (default).
+	 */
+	public void setValueClass (Class valueClass) {
+		this.valueClass = valueClass;
+		valueSerializer = valueClass == null ? null : kryo.getRegisteredClass(valueClass).serializer;
+	}
+
+	/**
 	 * @param valueClass The concrete class of each value. This saves 1 byte per value. Set to null if the class is not known or
 	 *           varies per value (default).
-	 * @param valuesAreNotNull True if values are not null. This saves 1 byte per value if keyClass is set. False if it is not
-	 *           known (default).
+	 * @param valueSerializer The serializer to use for each value.
 	 */
-	public MapSerializer (Kryo kryo, Class keyClass, boolean keysAreNotNull, Class valueClass, boolean valuesAreNotNull) {
-		this.kryo = kryo;
-		this.keyClass = keyClass;
-		this.keysAreNotNull = keysAreNotNull;
-		keySerializer = keyClass == null ? null : kryo.getRegisteredClass(keyClass).serializer;
+	public void setValueClass (Class valueClass, Serializer valueSerializer) {
 		this.valueClass = valueClass;
-		this.valuesAreNotNull = valuesAreNotNull;
-		valueSerializer = valueClass == null ? null : kryo.getRegisteredClass(valueClass).serializer;
+		this.valueSerializer = valueSerializer;
+	}
+
+	/**
+	 * @param valuesCanBeNull True if values are not null. This saves 1 byte per value if keyClass is set. False if it is not known
+	 *           (default).
+	 */
+	public void setValuesCanBeNull (boolean valuesCanBeNull) {
+		this.valuesCanBeNull = valuesCanBeNull;
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
@@ -55,21 +89,21 @@ public class MapSerializer extends Serializer {
 		for (Iterator iter = map.entrySet().iterator(); iter.hasNext();) {
 			Entry entry = (Entry)iter.next();
 			if (keySerializer != null) {
-				if (keysAreNotNull)
-					keySerializer.writeObjectData(buffer, entry.getKey());
-				else
+				if (keysCanBeNull)
 					keySerializer.writeObject(buffer, entry.getKey());
+				else
+					keySerializer.writeObjectData(buffer, entry.getKey());
 			} else
 				kryo.writeClassAndObject(buffer, entry.getKey());
 			if (valueSerializer != null) {
-				if (valuesAreNotNull)
-					valueSerializer.writeObjectData(buffer, entry.getValue());
-				else
+				if (valuesCanBeNull)
 					valueSerializer.writeObject(buffer, entry.getValue());
+				else
+					valueSerializer.writeObjectData(buffer, entry.getValue());
 			} else
 				kryo.writeClassAndObject(buffer, entry.getValue());
 		}
-		if (level <= TRACE) trace("kryo", "Wrote map: " + object);
+		if (TRACE) trace("kryo", "Wrote map: " + object);
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
@@ -79,23 +113,23 @@ public class MapSerializer extends Serializer {
 		for (int i = 0; i < length; i++) {
 			Object key;
 			if (keySerializer != null) {
-				if (keysAreNotNull)
-					key = keySerializer.readObjectData(buffer, keyClass);
-				else
+				if (keysCanBeNull)
 					key = keySerializer.readObject(buffer, keyClass);
+				else
+					key = keySerializer.readObjectData(buffer, keyClass);
 			} else
 				key = kryo.readClassAndObject(buffer);
 			Object value;
 			if (valueSerializer != null) {
-				if (valuesAreNotNull)
-					value = valueSerializer.readObjectData(buffer, valueClass);
-				else
+				if (valuesCanBeNull)
 					value = valueSerializer.readObject(buffer, valueClass);
+				else
+					value = valueSerializer.readObjectData(buffer, valueClass);
 			} else
 				value = kryo.readClassAndObject(buffer);
 			map.put(key, value);
 		}
-		if (level <= TRACE) trace("kryo", "Read map: " + map);
+		if (TRACE) trace("kryo", "Read map: " + map);
 		return (T)map;
 	}
 }

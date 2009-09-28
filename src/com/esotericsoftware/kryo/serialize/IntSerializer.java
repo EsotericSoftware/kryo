@@ -1,11 +1,11 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.log.Log.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 
-import com.esotericsoftware.kryo.Context;
+import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.Serializer;
 
 /**
@@ -19,9 +19,39 @@ public class IntSerializer extends Serializer {
 	}
 
 	/**
-	 * @param optimizePositive If true, writes 1 byte if 0 <= value <= 253, 3 bytes if 0 <= value <= 65536, and 5 bytes otherwise
-	 *           (default). If false, writes 1 byte if -126 <= value <= 127, 3 bytes if -32768 <= value <= 32767, and 5 bytes
-	 *           otherwise. If null, 4 bytes are always written.
+	 * @param optimizePositive Determines how many bytes are written to serialize various ranges of integers:
+	 *           <table cellpadding=3>
+	 *           <tr>
+	 *           <td><b>Bytes</td>
+	 *           <td><b>true</td>
+	 *           <td><b>false</td>
+	 *           </tr>
+	 *           <tr>
+	 *           <td>1</td>
+	 *           <td>0 <= value <= 127</td>
+	 *           <td>-64 <= value <= 63</td>
+	 *           </tr>
+	 *           <tr>
+	 *           <td>2</td>
+	 *           <td>128 <= value <= 16383</td>
+	 *           <td>-8192 <= value <= 8191</td>
+	 *           </tr>
+	 *           <tr>
+	 *           <td>3</td>
+	 *           <td>16384 <= value <= 2097151</td>
+	 *           <td>-1048576 <= value <= 1048575</td>
+	 *           </tr>
+	 *           <tr>
+	 *           <td>4</td>
+	 *           <td>2097152 <= value <= 268435455</td>
+	 *           <td>-134217728 <= value <= 134217727</td>
+	 *           </tr>
+	 *           <tr>
+	 *           <td>5</td>
+	 *           <td>value < 0 || value > 268435455</td>
+	 *           <td>value < 134217728 || value > 134217727</td>
+	 *           </tr>
+	 *           </table>
 	 */
 	public IntSerializer (Boolean optimizePositive) {
 		this.optimizePositive = optimizePositive;
@@ -29,50 +59,47 @@ public class IntSerializer extends Serializer {
 
 	public Integer readObjectData (ByteBuffer buffer, Class type) {
 		int i = get(buffer, optimizePositive);
-		if (level <= TRACE) trace("kryo", "Read int: " + i);
+		if (TRACE) trace("kryo", "Read int: " + i);
 		return i;
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
 		put(buffer, (Integer)object, optimizePositive);
-		if (level <= TRACE) trace("kryo", "Wrote int: " + object);
+		if (TRACE) trace("kryo", "Wrote int: " + object);
 	}
 
-	static private final byte SHORT = -128;
-	static private final byte INT = -127;
-	static private final byte SHORT_POSITIVE = -1;
-	static private final byte INT_POSITIVE = -2;
-
 	/**
-	 * Writes the specified int to the buffer as a byte, short, or int depending on the size of the number.
-	 * @param optimizePositive If true, writes 1 byte if 0 <= value <= 253, 3 bytes if 0 <= value <= 65536, and 5 bytes otherwise.
-	 *           If false, writes 1 byte if -126 <= value <= 127, 3 bytes if -32768 <= value <= 32767, and 5 bytes otherwise.
+	 * Writes the specified int to the buffer using 1 to 5 bytes, depending on the size of the number.
+	 * @param optimizePositive See {@link #IntSerializer(Boolean)}.
 	 * @return the number of bytes written.
 	 */
 	static public int put (ByteBuffer buffer, int value, boolean optimizePositive) {
-		if (optimizePositive) {
-			if (value >= 0 && value <= 253) {
-				buffer.put((byte)value);
-				return 1;
-			} else if (value >= 0 && value < 65536) {
-				buffer.put(SHORT_POSITIVE);
-				buffer.putShort((short)value);
-				return 3;
-			}
-			buffer.put(INT_POSITIVE);
-			buffer.putInt(value);
-		} else {
-			if (value >= -126 && value <= 127) {
-				buffer.put((byte)value);
-				return 1;
-			} else if (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
-				buffer.put(SHORT);
-				buffer.putShort((short)value);
-				return 3;
-			}
-			buffer.put(INT);
-			buffer.putInt(value);
+		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
+		if ((value & ~0x7F) == 0) {
+			buffer.put((byte)value);
+			return 1;
 		}
+		buffer.put((byte)((value & 0x7F) | 0x80));
+		value >>>= 7;
+		if ((value & ~0x7F) == 0) {
+			buffer.put((byte)value);
+			return 2;
+		}
+		buffer.put((byte)((value & 0x7F) | 0x80));
+		value >>>= 7;
+		if ((value & ~0x7F) == 0) {
+			buffer.put((byte)value);
+			return 3;
+		}
+		buffer.put((byte)((value & 0x7F) | 0x80));
+		value >>>= 7;
+		if ((value & ~0x7F) == 0) {
+			buffer.put((byte)value);
+			return 4;
+		}
+		buffer.put((byte)((value & 0x7F) | 0x80));
+		value >>>= 7;
+		buffer.put((byte)value);
 		return 5;
 	}
 
@@ -80,26 +107,15 @@ public class IntSerializer extends Serializer {
 	 * Reads an int from the buffer that was written with {@link #put(ByteBuffer, int, boolean)}.
 	 */
 	static public int get (ByteBuffer buffer, boolean optimizePositive) {
-		byte value = buffer.get();
-		if (optimizePositive) {
-			switch (value) {
-			case SHORT_POSITIVE:
-				int shortValue = buffer.getShort();
-				if (shortValue < 0) return shortValue + 65536;
-				return shortValue;
-			case INT_POSITIVE:
-				return buffer.getInt();
-			}
-			if (value < 0) return value + 256;
-		} else {
-			switch (value) {
-			case SHORT:
-				return buffer.getShort();
-			case INT:
-				return buffer.getInt();
+		for (int offset = 0, result = 0; offset < 32; offset += 7) {
+			int b = buffer.get();
+			result |= (b & 0x7f) << offset;
+			if ((b & 0x80) == 0) {
+				if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
+				return result;
 			}
 		}
-		return value;
+		throw new SerializationException("Malformed integer.");
 	}
 
 	/**
@@ -108,22 +124,15 @@ public class IntSerializer extends Serializer {
 	static public boolean canRead (ByteBuffer buffer, boolean optimizePositive) {
 		int position = buffer.position();
 		byte value = buffer.get();
-		buffer.position(position);
-		if (optimizePositive) {
-			switch (value) {
-			case SHORT_POSITIVE:
-				return buffer.remaining() >= 2;
-			case INT_POSITIVE:
-				return buffer.remaining() >= 4;
+		try {
+			for (int offset = 0, result = 0; offset < 32; offset += 7) {
+				final int b = buffer.get();
+				result |= (b & 0x7f) << offset;
+				if ((b & 0x80) == 0) return true;
 			}
-		} else {
-			switch (value) {
-			case SHORT:
-				return buffer.remaining() >= 2;
-			case INT:
-				return buffer.remaining() >= 4;
-			}
+			return false;
+		} finally {
+			buffer.position(position);
 		}
-		return true;
 	}
 }
