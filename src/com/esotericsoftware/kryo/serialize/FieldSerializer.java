@@ -127,6 +127,10 @@ public class FieldSerializer extends Serializer {
 
 				Serializer serializer = cachedField.serializer;
 				if (cachedField.fieldClass == null) {
+					if (value == null) {
+						kryo.writeClass(buffer, null);
+						continue;
+					}
 					RegisteredClass registeredClass = kryo.writeClass(buffer, value.getClass());
 					if (serializer == null) serializer = registeredClass.serializer;
 				}
@@ -155,6 +159,10 @@ public class FieldSerializer extends Serializer {
 				Serializer serializer = cachedField.serializer;
 				if (concreteType == null) {
 					RegisteredClass registeredClass = kryo.readClass(buffer);
+					if (registeredClass == null) {
+						cachedField.field.set(object, null);
+						continue;
+					}
 					concreteType = registeredClass.type;
 					if (serializer == null) serializer = registeredClass.serializer;
 				}

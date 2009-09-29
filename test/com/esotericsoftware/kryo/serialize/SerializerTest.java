@@ -164,7 +164,7 @@ public class SerializerTest extends TestCase {
 		Kryo kryo = new Kryo();
 		FieldSerializer fieldSerializer = new FieldSerializer(kryo);
 
-		TestClass value = new TestClass();
+		StringTestClass value = new StringTestClass();
 		value.text = "moo";
 		NonNullTestClass nonNullValue = new NonNullTestClass();
 		nonNullValue.nonNullText = "moo";
@@ -180,12 +180,47 @@ public class SerializerTest extends TestCase {
 		assertEquals("Incorrect length.", 4, buffer.remaining());
 	}
 
+	public void testFieldSerializer () {
+		TestClass value = new TestClass();
+		value.child = new TestClass();
+
+		Kryo kryo = new Kryo();
+		kryo.register(TestClass.class);
+
+		roundTrip(new FieldSerializer(kryo), 36, value);
+	}
+
 	static public class NonNullTestClass {
 		@NotNull
 		public String nonNullText;
 	}
 
+	static public class StringTestClass {
+		public String text = "something";
+	}
+	
 	static public class TestClass {
-		public String text;
+		public String text = "something";
+		public String nullField;
+		public TestClass child;
+		public float abc = 1.2f;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			TestClass other = (TestClass)obj;
+			if (Float.floatToIntBits(abc) != Float.floatToIntBits(other.abc)) return false;
+			if (child == null) {
+				if (other.child != null) return false;
+			} else if (!child.equals(other.child)) return false;
+			if (nullField == null) {
+				if (other.nullField != null) return false;
+			} else if (!nullField.equals(other.nullField)) return false;
+			if (text == null) {
+				if (other.text != null) return false;
+			} else if (!text.equals(other.text)) return false;
+			return true;
+		}
 	}
 }

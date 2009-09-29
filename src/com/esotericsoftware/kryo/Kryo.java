@@ -211,9 +211,14 @@ public class Kryo {
 	/**
 	 * Writes the ID of the specified class to the buffer.
 	 * @param type Can be null (writes a special class ID for a null object).
-	 * @return The registered information for the class that was written.
+	 * @return The registered information for the class that was written, or null of the specified class was null.
 	 */
 	public RegisteredClass writeClass (ByteBuffer buffer, Class type) {
+		if (type == null) {
+			buffer.put(ID_NULL_OBJECT);
+			if (TRACE) trace("kryo", "Wrote object: null");
+			return null;
+		}
 		RegisteredClass registeredClass = getRegisteredClass(type);
 		ShortSerializer.put(buffer, registeredClass.id, true);
 		if (TRACE) trace("kryo", "Wrote class " + registeredClass.id + ": " + type.getName());
@@ -242,15 +247,15 @@ public class Kryo {
 	 * buffer.
 	 * @param object Can be null (writes a special class ID for a null object instead).
 	 */
-	public void writeClassAndObject (ByteBuffer writeBuffer, Object object) {
+	public void writeClassAndObject (ByteBuffer buffer, Object object) {
 		if (object == null) {
-			writeBuffer.put(ID_NULL_OBJECT);
+			buffer.put(ID_NULL_OBJECT);
 			if (TRACE) trace("kryo", "Wrote object: null");
 			return;
 		}
 		try {
-			RegisteredClass registeredClass = writeClass(writeBuffer, object.getClass());
-			registeredClass.serializer.writeObjectData(writeBuffer, object);
+			RegisteredClass registeredClass = writeClass(buffer, object.getClass());
+			registeredClass.serializer.writeObjectData(buffer, object);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
 		}
@@ -260,14 +265,14 @@ public class Kryo {
 	 * Uses the serializer registered for the object's class to write the object to the buffer.
 	 * @param object Can be null (writes a special class ID for a null object instead).
 	 */
-	public void writeObject (ByteBuffer writeBuffer, Object object) {
+	public void writeObject (ByteBuffer buffer, Object object) {
 		if (object == null) {
-			writeBuffer.put(ID_NULL_OBJECT);
+			buffer.put(ID_NULL_OBJECT);
 			if (TRACE) trace("kryo", "Wrote object: null");
 			return;
 		}
 		try {
-			getRegisteredClass(object.getClass()).serializer.writeObjectData(writeBuffer, object);
+			getRegisteredClass(object.getClass()).serializer.writeObjectData(buffer, object);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
 		}
@@ -277,9 +282,9 @@ public class Kryo {
 	 * Uses the serializer registered for the object's class to write the object to the buffer.
 	 * @param object Cannot be null.
 	 */
-	public void writeObjectData (ByteBuffer writeBuffer, Object object) {
+	public void writeObjectData (ByteBuffer buffer, Object object) {
 		try {
-			getRegisteredClass(object.getClass()).serializer.writeObjectData(writeBuffer, object);
+			getRegisteredClass(object.getClass()).serializer.writeObjectData(buffer, object);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
 		}
@@ -289,12 +294,12 @@ public class Kryo {
 	 * Reads a class ID from the buffer and uses the serializer registered for that class to read an object from the buffer.
 	 * @return The deserialized object, or null if the object read from the buffer was null.
 	 */
-	public Object readClassAndObject (ByteBuffer readBuffer) {
+	public Object readClassAndObject (ByteBuffer buffer) {
 		RegisteredClass registeredClass = null;
 		try {
-			registeredClass = readClass(readBuffer);
+			registeredClass = readClass(buffer);
 			if (registeredClass == null) return null;
-			return registeredClass.serializer.readObjectData(readBuffer, registeredClass.type);
+			return registeredClass.serializer.readObjectData(buffer, registeredClass.type);
 		} catch (SerializationException ex) {
 			if (registeredClass != null)
 				throw new SerializationException("Unable to deserialize object of type: " + registeredClass.type.getName(), ex);
@@ -306,9 +311,9 @@ public class Kryo {
 	 * Uses the serializer registered for the specified class to read an object from the buffer.
 	 * @return The deserialized object, or null if the object read from the buffer was null.
 	 */
-	public <T> T readObject (ByteBuffer readBuffer, Class<T> type) {
+	public <T> T readObject (ByteBuffer buffer, Class<T> type) {
 		try {
-			return getRegisteredClass(type).serializer.readObject(readBuffer, type);
+			return getRegisteredClass(type).serializer.readObject(buffer, type);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to deserialize object of type: " + type.getName(), ex);
 		}
@@ -318,9 +323,9 @@ public class Kryo {
 	 * Uses the serializer registered for the specified class to read an object from the buffer.
 	 * @return The deserialized object, never null.
 	 */
-	public <T> T readObjectData (ByteBuffer readBuffer, Class<T> type) {
+	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
 		try {
-			return getRegisteredClass(type).serializer.readObjectData(readBuffer, type);
+			return getRegisteredClass(type).serializer.readObjectData(buffer, type);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to deserialize object of type: " + type.getName(), ex);
 		}
