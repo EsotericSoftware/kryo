@@ -187,7 +187,7 @@ public class SerializerTest extends TestCase {
 		Kryo kryo = new Kryo();
 		kryo.register(TestClass.class);
 
-		roundTrip(new FieldSerializer(kryo), 36, value);
+		roundTrip(new FieldSerializer(kryo), 35, value);
 	}
 
 	static public class NonNullTestClass {

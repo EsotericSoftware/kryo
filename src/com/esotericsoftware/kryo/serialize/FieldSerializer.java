@@ -133,12 +133,13 @@ public class FieldSerializer extends Serializer {
 					}
 					RegisteredClass registeredClass = kryo.writeClass(buffer, value.getClass());
 					if (serializer == null) serializer = registeredClass.serializer;
-				}
-
-				if (!cachedField.canBeNull)
 					serializer.writeObjectData(buffer, value);
-				else
-					serializer.writeObject(buffer, value);
+				} else {
+					if (!cachedField.canBeNull)
+						serializer.writeObjectData(buffer, value);
+					else
+						serializer.writeObject(buffer, value);
+				}
 			}
 		} catch (IllegalAccessException ex) {
 			throw new SerializationException("Error accessing field in class: " + type.getName(), ex);
@@ -155,23 +156,26 @@ public class FieldSerializer extends Serializer {
 				CachedField cachedField = fields[i];
 				if (TRACE) trace("kryo", "Reading field: " + cachedField + " (" + type.getName() + ")");
 
+				Object value;
+
 				Class concreteType = cachedField.fieldClass;
 				Serializer serializer = cachedField.serializer;
 				if (concreteType == null) {
 					RegisteredClass registeredClass = kryo.readClass(buffer);
-					if (registeredClass == null) {
-						cachedField.field.set(object, null);
-						continue;
+					if (registeredClass == null)
+						value = null;
+					else {
+						concreteType = registeredClass.type;
+						if (serializer == null) serializer = registeredClass.serializer;
+						value = serializer.readObjectData(buffer, concreteType);
 					}
-					concreteType = registeredClass.type;
-					if (serializer == null) serializer = registeredClass.serializer;
+				} else {
+					if (!cachedField.canBeNull)
+						value = serializer.readObjectData(buffer, concreteType);
+					else
+						value = serializer.readObject(buffer, concreteType);
 				}
 
-				Object value;
-				if (!cachedField.canBeNull)
-					value = serializer.readObjectData(buffer, concreteType);
-				else
-					value = serializer.readObject(buffer, concreteType);
 				cachedField.field.set(object, value);
 			}
 		} catch (IllegalAccessException ex) {
