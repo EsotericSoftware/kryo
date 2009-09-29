@@ -137,7 +137,7 @@ public class SerializerTest extends TestCase {
 		assertEquals(shortResult, shortValue);
 	}
 
-	private void roundTrip (Serializer serializer, int length, Object object1) {
+	private <T> T roundTrip (Serializer serializer, int length, T object1) {
 		buffer.clear();
 		serializer.writeObject(buffer, object1);
 		buffer.flip();
@@ -158,6 +158,7 @@ public class SerializerTest extends TestCase {
 				fail();
 		} else
 			assertEquals(object1, object2);
+		return (T)object2;
 	}
 
 	public void testNonNull () {
@@ -185,9 +186,19 @@ public class SerializerTest extends TestCase {
 		value.child = new TestClass();
 
 		Kryo kryo = new Kryo();
-		kryo.register(TestClass.class);
 
-		roundTrip(new FieldSerializer(kryo), 35, value);
+		FieldSerializer serializer = new FieldSerializer(kryo);
+		serializer.removeField(TestClass.class, "optional");
+		value.optional = 123;
+		kryo.register(TestClass.class, serializer);
+		
+		TestClass value2 = roundTrip(serializer, 35, value);
+		assertEquals(0, value2.optional);
+
+		serializer = new FieldSerializer(kryo);
+		value.optional = 123;
+		value2 = roundTrip(serializer, 36, value);
+		assertEquals(123, value2.optional);
 	}
 
 	static public class NonNullTestClass {
@@ -204,6 +215,7 @@ public class SerializerTest extends TestCase {
 		public String nullField;
 		public TestClass child;
 		public float abc = 1.2f;
+		public int optional;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
