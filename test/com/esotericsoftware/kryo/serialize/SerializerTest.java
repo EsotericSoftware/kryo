@@ -71,6 +71,8 @@ public class SerializerTest extends TestCase {
 		roundTrip(serializer, 18, new String[] {"11", "2222", "3", "4"});
 		serializer.setElementsCanBeNull(false);
 		roundTrip(serializer, 14, new String[] {"11", "2222", "3", "4"});
+		serializer.setLength(4);
+		roundTrip(serializer, 13, new String[] {"11", "2222", "3", "4"});
 	}
 
 	public void testMap () {

@@ -25,7 +25,7 @@ import com.esotericsoftware.kryo.serialize.CustomSerializer;
  * @author Nathan Sweet <misc@n4te.com>
  */
 public interface CustomSerialization {
-	public void writeObjectData (ByteBuffer buffer);
+	public void writeObjectData (Kryo kryo, ByteBuffer buffer);
 
-	public void readObjectData (ByteBuffer buffer);
+	public void readObjectData (Kryo kryo, ByteBuffer buffer);
 }

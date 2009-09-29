@@ -25,16 +25,32 @@ public class ArraySerializer extends Serializer {
 	private Integer fixedDimensionCount;
 	private boolean elementsAreSameType;
 	private boolean elementsCanBeNull = true;
+	private int[] dimensions;
 
 	public ArraySerializer (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
 	/**
-	 * @param dimensions Sets the number of dimensions. Saves 1 byte. Set to null to determine the number of dimensions (default).
+	 * @param dimensions The number of dimensions. Saves 1 byte. Set to null to determine the number of dimensions (default).
 	 */
 	public void setDimensionCount (Integer dimensions) {
 		this.fixedDimensionCount = dimensions;
+	}
+
+	/**
+	 * Identical to calling {@link #setLengths(int[])} with: new int[] {length}
+	 */
+	public void setLength (int length) {
+		dimensions = new int[] {length};
+	}
+
+	/**
+	 * Sets both the number of dimensions and the lengths of each. Saves 2-6 bytes plus 1-5 bytes for each dimension beyond the
+	 * first.
+	 */
+	public void setLengths (int[] lengths) {
+		dimensions = lengths;
 	}
 
 	/**
@@ -57,10 +73,13 @@ public class ArraySerializer extends Serializer {
 
 	public void writeObjectData (ByteBuffer buffer, Object array) {
 		// Write dimensions.
-		int[] dimensions = getDimensions(array);
-		if (fixedDimensionCount == null) ByteSerializer.putUnsigned(buffer, dimensions.length);
-		for (int i = 0, n = dimensions.length; i < n; i++)
-			IntSerializer.put(buffer, dimensions[i], true);
+		int[] dimensions = this.dimensions;
+		if (dimensions == null) {
+			dimensions = getDimensions(array);
+			if (fixedDimensionCount == null) ByteSerializer.putUnsigned(buffer, dimensions.length);
+			for (int i = 0, n = dimensions.length; i < n; i++)
+				IntSerializer.put(buffer, dimensions[i], true);
+		}
 		// If element class is final (this includes primitives) then all elements are the same type.
 		Serializer elementSerializer = null;
 		Class elementClass = getElementClass(array.getClass());
@@ -107,10 +126,15 @@ public class ArraySerializer extends Serializer {
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
 		// Get dimensions.
-		int dimensionCount = fixedDimensionCount != null ? fixedDimensionCount : ByteSerializer.getUnsigned(buffer);
-		int[] dimensions = new int[dimensionCount];
-		for (int i = 0; i < dimensionCount; i++)
-			dimensions[i] = IntSerializer.get(buffer, true);
+		int[] dimensions = this.dimensions;
+		int dimensionCount;
+		if (dimensions == null) {
+			dimensionCount = fixedDimensionCount != null ? fixedDimensionCount : ByteSerializer.getUnsigned(buffer);
+			dimensions = new int[dimensionCount];
+			for (int i = 0; i < dimensionCount; i++)
+				dimensions[i] = IntSerializer.get(buffer, true);
+		} else
+			dimensionCount = dimensions.length;
 		// Get element serializer if all elements are the same type.
 		Serializer elementSerializer = null;
 		Class elementClass = getElementClass(type);

@@ -9,8 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.esotericsoftware.kryo.serialize.ArraySerializer;
 import com.esotericsoftware.kryo.serialize.BooleanSerializer;
@@ -28,7 +27,8 @@ import com.esotericsoftware.kryo.serialize.MapSerializer;
 import com.esotericsoftware.kryo.serialize.ShortSerializer;
 import com.esotericsoftware.kryo.serialize.StringSerializer;
 import com.esotericsoftware.kryo.util.ShortHashMap;
-import com.esotericsoftware.minlog.Log;
+
+// BOZO - Add multithreaded tests.
 
 /**
  * Maps classes to serializers so object graphs can be serialized automatically.
@@ -45,11 +45,11 @@ public class Kryo {
 
 	private final ShortHashMap<RegisteredClass> idToRegisteredClass = new ShortHashMap(64);
 	private final HashMap<Class, RegisteredClass> classToRegisteredClass = new HashMap(64);
-	private short nextClassID = 1;
+	private AtomicInteger nextClassID = new AtomicInteger(1);
 	private Object listenerLock = new Object();
 	private KryoListener[] listeners = {};
 
-	private final CustomSerializer customSerializer = new CustomSerializer();
+	private final CustomSerializer customSerializer = new CustomSerializer(this);
 	private final FieldSerializer fieldSerializer = new FieldSerializer(this);
 	private final ArraySerializer arraySerializer = new ArraySerializer(this);
 	private final EnumSerializer enumSerializer = new EnumSerializer();
@@ -57,33 +57,27 @@ public class Kryo {
 	private final MapSerializer mapSerializer = new MapSerializer(this);
 
 	public Kryo () {
+		Serializer serializer;
 		// Primitives.
-		register(boolean.class, nextClassID++, new BooleanSerializer()).setCanBeNull(false);
-		register(byte.class, nextClassID++, new ByteSerializer()).setCanBeNull(false);
-		register(char.class, nextClassID++, new CharSerializer()).setCanBeNull(false);
-		register(short.class, nextClassID++, new ShortSerializer()).setCanBeNull(false);
-		register(int.class, nextClassID++, new IntSerializer()).setCanBeNull(false);
-		register(long.class, nextClassID++, new LongSerializer()).setCanBeNull(false);
-		register(float.class, nextClassID++, new FloatSerializer()).setCanBeNull(false);
-		register(double.class, nextClassID++, new DoubleSerializer()).setCanBeNull(false);
+		register(boolean.class, new BooleanSerializer());
+		register(byte.class, new ByteSerializer());
+		register(char.class, new CharSerializer());
+		register(short.class, new ShortSerializer());
+		register(int.class, new IntSerializer());
+		register(long.class, new LongSerializer());
+		register(float.class, new FloatSerializer());
+		register(double.class, new DoubleSerializer());
 		// Primitive wrappers.
-		register(Boolean.class, nextClassID++, new BooleanSerializer());
-		register(Byte.class, nextClassID++, new ByteSerializer());
-		register(Character.class, nextClassID++, new CharSerializer());
-		register(Short.class, nextClassID++, new ShortSerializer());
-		register(Integer.class, nextClassID++, new IntSerializer());
-		register(Long.class, nextClassID++, new LongSerializer());
-		register(Float.class, nextClassID++, new FloatSerializer());
-		register(Double.class, nextClassID++, new DoubleSerializer());
+		register(Boolean.class, new BooleanSerializer());
+		register(Byte.class, new ByteSerializer());
+		register(Character.class, new CharSerializer());
+		register(Short.class, new ShortSerializer());
+		register(Integer.class, new IntSerializer());
+		register(Long.class, new LongSerializer());
+		register(Float.class, new FloatSerializer());
+		register(Double.class, new DoubleSerializer());
 		// Other.
-		register(String.class, nextClassID++, new StringSerializer());
-	}
-
-	private Serializer register (Class type, short id, Serializer serializer) {
-		RegisteredClass registeredClass = new RegisteredClass(type, id, serializer);
-		idToRegisteredClass.put(id, registeredClass);
-		classToRegisteredClass.put(type, registeredClass);
-		return serializer;
+		register(String.class, new StringSerializer());
 	}
 
 	/**
@@ -105,14 +99,17 @@ public class Kryo {
 	public void register (Class type, Serializer serializer) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
+		if (type.isPrimitive()) serializer.setCanBeNull(false);
 		short id;
 		RegisteredClass existingRegisteredClass = classToRegisteredClass.get(type);
 		if (existingRegisteredClass != null)
 			id = existingRegisteredClass.id;
 		else
-			id = nextClassID++;
-		register(type, id, serializer);
-		if (TRACE) {
+			id = (short)nextClassID.getAndIncrement();
+		RegisteredClass registeredClass = new RegisteredClass(type, id, serializer);
+		idToRegisteredClass.put(id, registeredClass);
+		classToRegisteredClass.put(type, registeredClass);
+		if (TRACE && id > 17) {
 			String name = type.getName();
 			if (type.isArray()) {
 				Class elementClass = ArraySerializer.getElementClass(type);
@@ -121,7 +118,7 @@ public class Kryo {
 					buffer.append("[]");
 				name = elementClass.getName() + buffer;
 			}
-			trace("kryo", "Registered class " + (nextClassID - 1) + ": " + name + " (" + serializer.getClass().getName() + ")");
+			trace("kryo", "Registered class " + id + ": " + name + " (" + serializer.getClass().getName() + ")");
 		}
 	}
 
@@ -194,7 +191,7 @@ public class Kryo {
 				for (int i = 0, n = ArraySerializer.getDimensionCount(type); i < n; i++)
 					buffer.append("[]");
 				throw new IllegalArgumentException("Class is not registered: " + type.getName()
-					+ "\nTo register this class use: Ninja.register(" + elementClass.getName() + buffer + ".class);");
+					+ "\nTo register this class use: kryo.register(" + elementClass.getName() + buffer + ".class);");
 			}
 			throw new IllegalArgumentException("Class is not registered: " + type.getName());
 		}
