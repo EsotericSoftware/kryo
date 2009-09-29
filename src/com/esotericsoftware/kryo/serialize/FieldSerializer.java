@@ -197,6 +197,25 @@ public class FieldSerializer extends Serializer {
 	}
 
 	/**
+	 * Removes a field so that it won't be serialized.
+	 */
+	public void removeField (Class type, String fieldName) {
+		CachedField[] fields = fieldCache.get(type);
+		if (fields == null) fields = cache(type);
+		for (int i = 0; i < fields.length; i++) {
+			CachedField cachedField = fields[i];
+			if (cachedField.field.getName().equals(fieldName)) {
+				CachedField[] newFields = new CachedField[fields.length - 1];
+				System.arraycopy(fields, 0, newFields, 0, i);
+				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
+				fieldCache.put(type, newFields);
+				return;
+			}
+		}
+		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
+	}
+
+	/**
 	 * Controls how a field will be serialized.
 	 */
 	public class CachedField {
