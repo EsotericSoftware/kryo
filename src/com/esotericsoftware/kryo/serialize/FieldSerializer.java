@@ -43,6 +43,8 @@ public class FieldSerializer extends Serializer {
 	}
 
 	/**
+	 * Sets the default value for {@link CachedField#setCanBeNull(boolean)}. Should not be called after any objects are serialized
+	 * or {@link #getField(Class, String)} is used.
 	 * @param fieldsCanBeNull False if none of the fields are null. Saves 1 byte per field. True if it is not known (default).
 	 */
 	public void setFieldsCanBeNull (boolean fieldsCanBeNull) {
@@ -50,6 +52,8 @@ public class FieldSerializer extends Serializer {
 	}
 
 	/**
+	 * Controls which fields are accessed. Should not be called after any objects are serialized or
+	 * {@link #getField(Class, String)} is used.
 	 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
 	 *           {@link Field#setAccessible(boolean) set as accessible} (default). If false, only fields in the public API will be
 	 *           serialized.
