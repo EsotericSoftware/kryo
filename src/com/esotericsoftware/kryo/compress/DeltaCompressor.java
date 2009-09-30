@@ -19,8 +19,8 @@ import com.esotericsoftware.kryo.util.IntHashMap;
 public class DeltaCompressor extends Compressor {
 	private final Kryo kryo;
 	private final int chunkSize;
-	private final IntHashMap<ByteBuffer> contextToRemoteData = new IntHashMap();
-	private final IntHashMap<ByteBuffer> contextToLocalData = new IntHashMap();
+	final IntHashMap<ByteBuffer> contextToRemoteData = new IntHashMap();
+	final IntHashMap<ByteBuffer> contextToLocalData = new IntHashMap();
 
 	private KryoListener removeBuffersListener = new KryoListener() {
 		public void remoteEntityRemoved (int id) {

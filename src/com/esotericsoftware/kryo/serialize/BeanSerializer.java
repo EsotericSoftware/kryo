@@ -149,7 +149,7 @@ public class BeanSerializer extends Serializer {
 		return object;
 	}
 
-	static private class CachedMethod {
+	static class CachedMethod {
 		public Method method;
 		public Serializer serializer;
 		public Class type; // Only populated for setter methods.

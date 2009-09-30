@@ -123,9 +123,10 @@ public class IntSerializer extends Serializer {
 	 */
 	static public boolean canRead (ByteBuffer buffer, boolean optimizePositive) {
 		int position = buffer.position();
-		byte value = buffer.get();
 		try {
-			for (int offset = 0, result = 0; offset < 32; offset += 7) {
+			int remaining = buffer.remaining();
+			int offset = 0, result = 0;
+			for (; offset < 32 && remaining > 0; offset += 7, remaining--) {
 				final int b = buffer.get();
 				result |= (b & 0x7f) << offset;
 				if ((b & 0x80) == 0) return true;

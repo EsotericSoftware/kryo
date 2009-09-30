@@ -34,7 +34,7 @@ import com.esotericsoftware.kryo.Kryo.RegisteredClass;
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class FieldSerializer extends Serializer {
-	private final Kryo kryo;
+	final Kryo kryo;
 	private final HashMap<Class, CachedField[]> fieldCache = new HashMap();
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 
