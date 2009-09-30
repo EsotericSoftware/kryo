@@ -14,7 +14,6 @@ import java.util.zip.GZIPOutputStream;
 
 import junit.framework.TestCase;
 
-import com.esotericsoftware.kryo.Context;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.serialize.StringSerializer;
 import com.esotericsoftware.minlog.Log;

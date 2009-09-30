@@ -5,7 +5,6 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 
-import com.esotericsoftware.kryo.Context;
 import com.esotericsoftware.kryo.Serializer;
 
 /**

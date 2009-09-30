@@ -5,7 +5,6 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Serializes objects to and from a {@link ByteBuffer}.

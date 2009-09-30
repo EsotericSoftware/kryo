@@ -1,13 +1,12 @@
 
 package com.esotericsoftware.kryo.compress;
 
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.minlog.Log.LEVEL_TRACE;
 
 import java.nio.ByteBuffer;
 
 import junit.framework.TestCase;
 
-import com.esotericsoftware.kryo.Context;
 import com.esotericsoftware.kryo.serialize.StringSerializer;
 import com.esotericsoftware.minlog.Log;
 

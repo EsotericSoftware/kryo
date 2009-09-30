@@ -5,8 +5,6 @@ import java.nio.ByteBuffer;
 
 import junit.framework.TestCase;
 
-import com.esotericsoftware.kryo.compress.Delta;
-
 public class DeltaTest extends TestCase {
 	private ByteBuffer oldData, newData;
 	private Delta delta = new Delta();

@@ -191,7 +191,7 @@ public class SerializerTest extends TestCase {
 		serializer.removeField(TestClass.class, "optional");
 		value.optional = 123;
 		kryo.register(TestClass.class, serializer);
-		
+
 		TestClass value2 = roundTrip(serializer, 35, value);
 		assertEquals(0, value2.optional);
 
@@ -209,7 +209,7 @@ public class SerializerTest extends TestCase {
 	static public class StringTestClass {
 		public String text = "something";
 	}
-	
+
 	static public class TestClass {
 		public String text = "something";
 		public String nullField;
