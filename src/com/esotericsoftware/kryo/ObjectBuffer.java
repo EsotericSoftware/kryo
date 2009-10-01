@@ -54,6 +54,16 @@ public class ObjectBuffer {
 	}
 
 	/**
+	 * Reads to the end of the stream and returns the deserialized object.
+	 * @see Kryo#readClassAndObject(ByteBuffer)
+	 */
+	public Object readClassAndObject (InputStream input) {
+		readToBuffer(input, -1);
+		return kryo.readClassAndObject(buffer);
+	}
+
+	/**
+	 * Reads the specified number of bytes and returns the deserialized object.
 	 * @see Kryo#readClassAndObject(ByteBuffer)
 	 */
 	public Object readClassAndObject (InputStream input, int contentLength) {
@@ -62,6 +72,16 @@ public class ObjectBuffer {
 	}
 
 	/**
+	 * Reads to the end of the stream and returns the deserialized object.
+	 * @see Kryo#readObject(ByteBuffer, Class)
+	 */
+	public <T> T readObject (InputStream input, Class<T> type) {
+		readToBuffer(input, -1);
+		return kryo.readObject(buffer, type);
+	}
+
+	/**
+	 * Reads the specified number of bytes and returns the deserialized object.
 	 * @see Kryo#readObject(ByteBuffer, Class)
 	 */
 	public <T> T readObject (InputStream input, int contentLength, Class<T> type) {
@@ -70,6 +90,16 @@ public class ObjectBuffer {
 	}
 
 	/**
+	 * Reads to the end of the stream and returns the deserialized object.
+	 * @see Kryo#readObjectData(ByteBuffer, Class)
+	 */
+	public <T> T readObjectData (InputStream input, Class<T> type) {
+		readToBuffer(input, -1);
+		return kryo.readObjectData(buffer, type);
+	}
+
+	/**
+	 * Reads the specified number of bytes and returns the deserialized object.
 	 * @see Kryo#readObjectData(ByteBuffer, Class)
 	 */
 	public <T> T readObjectData (InputStream input, int contentLength, Class<T> type) {

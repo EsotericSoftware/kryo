@@ -191,7 +191,7 @@ public class Kryo {
 				for (int i = 0, n = ArraySerializer.getDimensionCount(type); i < n; i++)
 					buffer.append("[]");
 				throw new IllegalArgumentException("Class is not registered: " + type.getName()
-					+ "\nTo register this class use: kryo.register(" + elementClass.getName() + buffer + ".class);");
+					+ "\nNote: To register this class use: kryo.register(" + elementClass.getName() + buffer + ".class);");
 			}
 			throw new IllegalArgumentException("Class is not registered: " + type.getName());
 		}

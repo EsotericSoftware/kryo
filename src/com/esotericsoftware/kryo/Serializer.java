@@ -66,7 +66,7 @@ abstract public class Serializer {
 	 * Returns an instance of the specified class.
 	 * @throws SerializationException if the class could not be constructed.
 	 */
-	static public <T> T newInstance (Class<T> type) {
+	public <T> T newInstance (Class<T> type) {
 		try {
 			return type.newInstance();
 		} catch (Exception ex) {
