@@ -4,6 +4,7 @@ package com.esotericsoftware.kryo.serialize;
 import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -76,7 +77,11 @@ public class CollectionSerializer extends Serializer {
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
 		int length = IntSerializer.get(buffer, true);
-		Collection collection = (Collection)newInstance(type);
+		Collection collection;
+		if (type == ArrayList.class)
+			collection = new ArrayList(length);
+		else
+			collection = (Collection)newInstance(type);
 		if (length == 0) return (T)collection;
 		if (serializer != null) {
 			if (elementsCanBeNull) {
