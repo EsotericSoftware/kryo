@@ -91,7 +91,7 @@ public class Kryo {
 	 * The {@link Serializer} specified will be used to serialize and deserialize objects of the specified type. Note that a
 	 * serializer can be wrapped with a {@link Compressor}.
 	 * <p>
-	 * A serializer may not be registered with more than one Kryo instance.
+	 * If the class is already registered, the serializer will be changed.
 	 * @see #register(Class)
 	 * @see Serializer
 	 * @see Compressor
@@ -162,6 +162,11 @@ public class Kryo {
 	 */
 	public void register (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		RegisteredClass existingRegisteredClass = classToRegisteredClass.get(type);
+		if (existingRegisteredClass != null && existingRegisteredClass.id >= 1 && existingRegisteredClass.id <= 17) {
+			if (WARN) warn("Registration unnecessary, class is registered by default: " + type.getName());
+			return;
+		}
 		Serializer serializer;
 		if (type.isArray())
 			serializer = arraySerializer;
