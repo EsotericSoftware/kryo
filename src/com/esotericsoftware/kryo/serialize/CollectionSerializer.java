@@ -23,6 +23,7 @@ public class CollectionSerializer extends Serializer {
 	private boolean elementsCanBeNull = true;
 	private Serializer serializer;
 	private Class elementClass;
+	private Integer length;
 
 	public CollectionSerializer (Kryo kryo) {
 		this.kryo = kryo;
@@ -46,6 +47,13 @@ public class CollectionSerializer extends Serializer {
 	}
 
 	/**
+	 * Sets the number of objects in the collection. Saves 1-2 bytes.
+	 */
+	public void setLength (int length) {
+		this.length = length;
+	}
+
+	/**
 	 * @param elementClass The concrete class of each element. This saves 1-2 bytes per element. Set to null if the class is not
 	 *           known or varies per element (default).
 	 * @param serializer The serializer to use for each element.
@@ -57,8 +65,13 @@ public class CollectionSerializer extends Serializer {
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
 		Collection collection = (Collection)object;
-		int length = collection.size();
-		IntSerializer.put(buffer, length, true);
+		int length;
+		if (this.length != null)
+			length = this.length;
+		else {
+			length = collection.size();
+			IntSerializer.put(buffer, length, true);
+		}
 		if (length == 0) return;
 		if (serializer != null) {
 			if (elementsCanBeNull) {
@@ -76,7 +89,11 @@ public class CollectionSerializer extends Serializer {
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
-		int length = IntSerializer.get(buffer, true);
+		int length;
+		if (this.length != null)
+			length = this.length;
+		else
+			length = IntSerializer.get(buffer, true);
 		Collection collection;
 		if (type == ArrayList.class)
 			collection = new ArrayList(length);
