@@ -26,7 +26,7 @@ import com.esotericsoftware.kryo.serialize.LongSerializer;
 import com.esotericsoftware.kryo.serialize.MapSerializer;
 import com.esotericsoftware.kryo.serialize.ShortSerializer;
 import com.esotericsoftware.kryo.serialize.StringSerializer;
-import com.esotericsoftware.kryo.util.ShortHashMap;
+import com.esotericsoftware.kryo.util.IntHashMap;
 
 // BOZO - Add multithreaded tests.
 
@@ -43,7 +43,7 @@ public class Kryo {
 		}
 	};
 
-	private final ShortHashMap<RegisteredClass> idToRegisteredClass = new ShortHashMap(64);
+	private final IntHashMap<RegisteredClass> idToRegisteredClass = new IntHashMap(64);
 	private final HashMap<Class, RegisteredClass> classToRegisteredClass = new HashMap(64);
 	private AtomicInteger nextClassID = new AtomicInteger(1);
 	private Object listenerLock = new Object();
@@ -100,12 +100,12 @@ public class Kryo {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		if (type.isPrimitive()) serializer.setCanBeNull(false);
-		short id;
+		int id;
 		RegisteredClass existingRegisteredClass = classToRegisteredClass.get(type);
 		if (existingRegisteredClass != null)
 			id = existingRegisteredClass.id;
 		else
-			id = (short)nextClassID.getAndIncrement();
+			id = nextClassID.getAndIncrement();
 		RegisteredClass registeredClass = new RegisteredClass(type, id, serializer);
 		idToRegisteredClass.put(id, registeredClass);
 		classToRegisteredClass.put(type, registeredClass);
@@ -158,15 +158,14 @@ public class Kryo {
 	 * <p>
 	 * Note that some serializers allow additional information to be specified to make serialization more efficient in some cases
 	 * (eg, {@link FieldSerializer#getField(Class, String)}).
+	 * @return The serializer registered for the class.
 	 * @see #register(Class, Serializer)
 	 */
-	public void register (Class type) {
+	public Serializer register (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		RegisteredClass existingRegisteredClass = classToRegisteredClass.get(type);
-		if (existingRegisteredClass != null && existingRegisteredClass.id >= 1 && existingRegisteredClass.id <= 17) {
-			if (WARN) warn("Registration unnecessary, class is registered by default: " + type.getName());
-			return;
-		}
+		if (existingRegisteredClass != null && existingRegisteredClass.id >= 1 && existingRegisteredClass.id <= 17)
+			throw new IllegalArgumentException("Class is registered by default: " + type.getName());
 		Serializer serializer;
 		if (type.isArray())
 			serializer = arraySerializer;
@@ -182,6 +181,7 @@ public class Kryo {
 			serializer = fieldSerializer;
 		}
 		register(type, serializer);
+		return serializer;
 	}
 
 	public RegisteredClass getRegisteredClass (Class type) {
@@ -203,7 +203,7 @@ public class Kryo {
 		return registeredClass;
 	}
 
-	public RegisteredClass getRegisteredClass (short classID) {
+	public RegisteredClass getRegisteredClass (int classID) {
 		RegisteredClass registeredClass = idToRegisteredClass.get(classID);
 		if (registeredClass == null) throw new IllegalArgumentException("Class ID is not registered: " + classID);
 		return registeredClass;
@@ -225,7 +225,7 @@ public class Kryo {
 			return null;
 		}
 		RegisteredClass registeredClass = getRegisteredClass(type);
-		ShortSerializer.put(buffer, registeredClass.id, true);
+		IntSerializer.put(buffer, registeredClass.id, true);
 		if (TRACE) trace("kryo", "Wrote class " + registeredClass.id + ": " + type.getName());
 		return registeredClass;
 	}
@@ -236,7 +236,7 @@ public class Kryo {
 	 *         object.
 	 */
 	public RegisteredClass readClass (ByteBuffer buffer) {
-		short classID = ShortSerializer.get(buffer, true);
+		int classID = IntSerializer.get(buffer, true);
 		if (classID == ID_NULL_OBJECT) {
 			if (TRACE) trace("kryo", "Read object: null");
 			return null;
@@ -393,10 +393,10 @@ public class Kryo {
 	 */
 	static public class RegisteredClass {
 		public final Class type;
-		public final short id;
+		public final int id;
 		public Serializer serializer;
 
-		RegisteredClass (Class type, short id, Serializer serializer) {
+		RegisteredClass (Class type, int id, Serializer serializer) {
 			this.type = type;
 			this.id = id;
 			this.serializer = serializer;
