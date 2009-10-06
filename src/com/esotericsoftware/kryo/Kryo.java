@@ -28,8 +28,6 @@ import com.esotericsoftware.kryo.serialize.ShortSerializer;
 import com.esotericsoftware.kryo.serialize.StringSerializer;
 import com.esotericsoftware.kryo.util.IntHashMap;
 
-// BOZO - Add multithreaded tests.
-
 /**
  * Maps classes to serializers so object graphs can be serialized automatically.
  * @author Nathan Sweet <misc@n4te.com>

@@ -10,8 +10,6 @@ import java.nio.ByteBuffer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 
-// BOZO - Change *AreNoteNull to canBeNull.
-
 /**
  * Serializes arrays.
  * <p>

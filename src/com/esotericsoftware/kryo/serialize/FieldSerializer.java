@@ -19,10 +19,6 @@ import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.Kryo.RegisteredClass;
 
-// BOZO - Rework getField method. Javadoc.
-// BOZO - Change passing class to Serializer constructors to serializer, or both.
-// BOZO - Move constructor args to setters for cleanliness?
-
 /**
  * Serializes objects using direct field assignment. This is the most efficient mechanism for serializing objects, often as good
  * as {@link CustomSerialization}. FieldSerializer is many times smaller and faster than Java serialization.
