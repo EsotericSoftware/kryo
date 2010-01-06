@@ -13,7 +13,6 @@ import org.junit.Assert;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.minlog.Log;
 
 // TODO - Write tests for all serializers.
 
@@ -34,6 +33,10 @@ public class SerializerTest extends TestCase {
 		65535, 65536, 65537, //
 		Integer.MAX_VALUE, Integer.MIN_VALUE, //
 	};
+
+	public void testStrings () {
+		roundTrip(new StringSerializer(), 12, "abcdefáéíóú");
+	}
 
 	public void testCollection () {
 		Kryo kryo = new Kryo();

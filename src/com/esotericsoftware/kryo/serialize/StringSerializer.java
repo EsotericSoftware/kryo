@@ -1,13 +1,15 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.trace;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
 
 import com.esotericsoftware.kryo.Context;
 import com.esotericsoftware.kryo.Kryo;
@@ -61,6 +63,6 @@ public class StringSerializer extends Serializer {
 		CharBuffer tempBuffer = CharBuffer.wrap(chars);
 		tempBuffer.limit(length);
 		decoder.decode(buffer, tempBuffer, true);
-		return new String(chars, 0, length);
+		return new String(chars, 0, tempBuffer.position());
 	}
 }
