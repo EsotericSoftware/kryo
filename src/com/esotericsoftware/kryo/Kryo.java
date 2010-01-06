@@ -275,7 +275,7 @@ public class Kryo {
 			return;
 		}
 		try {
-			getRegisteredClass(object.getClass()).serializer.writeObjectData(buffer, object);
+			getRegisteredClass(object.getClass()).serializer.writeObject(buffer, object);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
 		}

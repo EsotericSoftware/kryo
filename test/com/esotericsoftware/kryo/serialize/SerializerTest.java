@@ -13,6 +13,7 @@ import org.junit.Assert;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.minlog.Log;
 
 // TODO - Write tests for all serializers.
 
@@ -213,6 +214,16 @@ public class SerializerTest extends TestCase {
 				IntSerializer.put(buffer, object.constructorValue, true);
 			}
 		}, 2, object);
+	}
+
+	public void testArrayList () {
+		Kryo kryo = new Kryo();
+		kryo.register(ArrayList.class);
+		ArrayList list = new ArrayList(Arrays.asList("1", "2", "3"));
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+		kryo.writeObject(buffer, list);
+		buffer.flip();
+		kryo.readObject(buffer, ArrayList.class);
 	}
 
 	static public class NoDefaultConstructor {
