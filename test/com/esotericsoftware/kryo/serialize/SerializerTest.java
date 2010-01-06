@@ -201,6 +201,48 @@ public class SerializerTest extends TestCase {
 		assertEquals(123, value2.optional);
 	}
 
+	public void testNoDefaultConstructor () {
+		NoDefaultConstructor object = new NoDefaultConstructor(2);
+		Kryo kryo = new Kryo();
+		roundTrip(new SimpleSerializer<NoDefaultConstructor>() {
+			public NoDefaultConstructor read (ByteBuffer buffer) {
+				return new NoDefaultConstructor(IntSerializer.get(buffer, true));
+			}
+
+			public void write (ByteBuffer buffer, NoDefaultConstructor object) {
+				IntSerializer.put(buffer, object.constructorValue, true);
+			}
+		}, 2, object);
+	}
+
+	static public class NoDefaultConstructor {
+		private int constructorValue;
+
+		public NoDefaultConstructor (int constructorValue) {
+			this.constructorValue = constructorValue;
+		}
+
+		public int getConstructorValue () {
+			return constructorValue;
+		}
+
+		public int hashCode () {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + constructorValue;
+			return result;
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			NoDefaultConstructor other = (NoDefaultConstructor)obj;
+			if (constructorValue != other.constructorValue) return false;
+			return true;
+		}
+	}
+
 	static public class NonNullTestClass {
 		@NotNull
 		public String nonNullText;
