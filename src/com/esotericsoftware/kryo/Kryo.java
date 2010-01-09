@@ -1,7 +1,8 @@
 
 package com.esotericsoftware.kryo;
 
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.trace;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -34,6 +35,7 @@ import com.esotericsoftware.kryo.util.IntHashMap;
  */
 public class Kryo {
 	static private final byte ID_NULL_OBJECT = 0;
+	static private final int ID_CLASS_NAME = 16383;
 
 	static private ThreadLocal<Context> contextThreadLocal = new ThreadLocal<Context>() {
 		protected Context initialValue () {
@@ -46,6 +48,8 @@ public class Kryo {
 	private AtomicInteger nextClassID = new AtomicInteger(1);
 	private Object listenerLock = new Object();
 	private KryoListener[] listeners = {};
+	private boolean allowUnregisteredClasses;
+	private ClassLoader classLoader = getClass().getClassLoader();
 
 	private final CustomSerializer customSerializer = new CustomSerializer(this);
 	private final FieldSerializer fieldSerializer = new FieldSerializer(this);
@@ -79,10 +83,28 @@ public class Kryo {
 	}
 
 	/**
+	 * When true, classes that have not been {@link #register(Class, Serializer) registered} can be serialized. This is done by
+	 * writing the class name rather than the registered ordinal, which requires many more bytes. Classes may still be registered
+	 * when unregistered classes are enabled.
+	 */
+	public void setAllowUnregisteredClasses (boolean allowUnregisteredClasses) {
+		this.allowUnregisteredClasses = allowUnregisteredClasses;
+	}
+
+	/**
+	 * Sets the class loader used to resolve class names when {@link #setAllowUnregisteredClasses(boolean)
+	 * allowUnregisteredClasses} is true.
+	 */
+	public void setClassLoader (ClassLoader classLoader) {
+		this.classLoader = classLoader;
+	}
+
+	/**
 	 * Registers a class to be serialized. The exact same classes and serializers must be registered in exactly the same order when
 	 * the class is deserialized.
 	 * <p>
-	 * By default primitive types, primitive wrappers, and java.lang.String are registered. To transfer ANY other classes over the
+	 * By default primitive types, primitive wrappers, and java.lang.String are registered. When
+	 * {@link #setAllowUnregisteredClasses(boolean) allowUnregisteredClasses} is false, to transfer ANY other classes over the
 	 * network, those classes must be registered. Note that even JDK classes like ArrayList, HashMap, etc must be registered. Also,
 	 * array classes such as "int[].class" or "short[][].class" must be registered.
 	 * <p>
@@ -102,8 +124,10 @@ public class Kryo {
 		RegisteredClass existingRegisteredClass = classToRegisteredClass.get(type);
 		if (existingRegisteredClass != null)
 			id = existingRegisteredClass.id;
-		else
+		else {
 			id = nextClassID.getAndIncrement();
+			if (id == ID_CLASS_NAME) id = nextClassID.getAndIncrement();
+		}
 		RegisteredClass registeredClass = new RegisteredClass(type, id, serializer);
 		idToRegisteredClass.put(id, registeredClass);
 		classToRegisteredClass.put(type, registeredClass);
@@ -121,7 +145,22 @@ public class Kryo {
 	}
 
 	/**
-	 * Registers the class, automatically determining the serializer to use. A serializer will be chosen according to this table:
+	 * Registers the class with the serializer returned by {@link #getDefaultSerializer(Class)}.
+	 * @return The serializer registered for the class.
+	 * @see #register(Class, Serializer)
+	 */
+	public Serializer register (Class type) {
+		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		RegisteredClass existingRegisteredClass = classToRegisteredClass.get(type);
+		if (existingRegisteredClass != null && existingRegisteredClass.id >= 1 && existingRegisteredClass.id <= 17)
+			throw new IllegalArgumentException("Class is registered by default: " + type.getName());
+		Serializer serializer = getDefaultSerializer(type);
+		register(type, serializer);
+		return serializer;
+	}
+
+	/**
+	 * Automatically determines a serializer to use for the specified class. A serializer will be returned according to this table:
 	 * <p>
 	 * <table>
 	 * <tr>
@@ -155,39 +194,39 @@ public class Kryo {
 	 * </table>
 	 * <p>
 	 * Note that some serializers allow additional information to be specified to make serialization more efficient in some cases
-	 * (eg, {@link FieldSerializer#getField(Class, String)}).
-	 * @return The serializer registered for the class.
+	 * (eg, {@link FieldSerializer#getField(Class, String)}). Subclasses may override this method to change the default
+	 * serializers.
+	 * @see #register(Class)
 	 * @see #register(Class, Serializer)
 	 */
-	public Serializer register (Class type) {
+	public Serializer getDefaultSerializer (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		RegisteredClass existingRegisteredClass = classToRegisteredClass.get(type);
-		if (existingRegisteredClass != null && existingRegisteredClass.id >= 1 && existingRegisteredClass.id <= 17)
-			throw new IllegalArgumentException("Class is registered by default: " + type.getName());
 		Serializer serializer;
-		if (type.isArray())
-			serializer = arraySerializer;
-		else if (CustomSerialization.class.isAssignableFrom(type))
-			serializer = customSerializer;
-		else if (Collection.class.isAssignableFrom(type))
-			serializer = collectionSerializer;
-		else if (Map.class.isAssignableFrom(type))
-			serializer = mapSerializer;
-		else if (Enum.class.isAssignableFrom(type))
-			serializer = enumSerializer;
-		else {
-			serializer = fieldSerializer;
-		}
-		register(type, serializer);
-		return serializer;
+		if (type.isArray()) return arraySerializer;
+		if (CustomSerialization.class.isAssignableFrom(type)) return customSerializer;
+		if (Collection.class.isAssignableFrom(type)) return collectionSerializer;
+		if (Map.class.isAssignableFrom(type)) return mapSerializer;
+		if (Enum.class.isAssignableFrom(type)) return enumSerializer;
+		return fieldSerializer;
 	}
 
+	/**
+	 * Returns the registration information for the specified class. If {@link #setAllowUnregisteredClasses(boolean)
+	 * allowUnregisteredClasses} is true, null may be returned if the class is not registered. Otherwise IllegalArgumentException
+	 * is thrown.
+	 */
 	public RegisteredClass getRegisteredClass (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		RegisteredClass registeredClass = classToRegisteredClass.get(type);
 		if (registeredClass == null) {
 			// If a Proxy class, treat it like an InvocationHandler because the concrete class for a proxy is generated.
 			if (Proxy.isProxyClass(type)) return getRegisteredClass(InvocationHandler.class);
+			if (allowUnregisteredClasses) {
+				// Register the class without giving it an ID.
+				registeredClass = new RegisteredClass(type, 0, getDefaultSerializer(type));
+				classToRegisteredClass.put(type, registeredClass);
+				return registeredClass;
+			}
 			if (type.isArray()) {
 				Class elementClass = ArraySerializer.getElementClass(type);
 				StringBuilder buffer = new StringBuilder(16);
@@ -212,7 +251,9 @@ public class Kryo {
 	}
 
 	/**
-	 * Writes the ID of the specified class to the buffer.
+	 * Writes the ID of the specified class to the buffer. The ID will be an int for {@link #register(Class, Serializer) registered
+	 * classes}. If {@link #setAllowUnregisteredClasses(boolean) allowUnregisteredClasses} is true and the class was not explicitly
+	 * registered, the ID will be the class name String.
 	 * @param type Can be null (writes a special class ID for a null object).
 	 * @return The registered information for the class that was written, or null of the specified class was null.
 	 */
@@ -223,8 +264,14 @@ public class Kryo {
 			return null;
 		}
 		RegisteredClass registeredClass = getRegisteredClass(type);
-		IntSerializer.put(buffer, registeredClass.id, true);
-		if (TRACE) trace("kryo", "Wrote class " + registeredClass.id + ": " + type.getName());
+		if (!allowUnregisteredClasses || registeredClass.id != 0) {
+			IntSerializer.put(buffer, registeredClass.id, true);
+			if (TRACE) trace("kryo", "Wrote class " + registeredClass.id + ": " + type.getName());
+		} else {
+			IntSerializer.put(buffer, ID_CLASS_NAME, true);
+			StringSerializer.put(buffer, type.getName());
+			if (TRACE) trace("kryo", "Wrote class name: " + type.getName());
+		}
 		return registeredClass;
 	}
 
@@ -239,10 +286,21 @@ public class Kryo {
 			if (TRACE) trace("kryo", "Read object: null");
 			return null;
 		}
-		RegisteredClass registeredClass = idToRegisteredClass.get(classID);
-		if (registeredClass == null) throw new SerializationException("Encountered unregistered class ID: " + classID);
-		if (TRACE) trace("kryo", "Read class " + classID + ": " + registeredClass.type.getName());
-		return registeredClass;
+		if (classID == ID_CLASS_NAME) {
+			String className = StringSerializer.get(buffer);
+			try {
+				RegisteredClass registeredClass = getRegisteredClass(Class.forName(className, false, classLoader));
+				if (TRACE) trace("kryo", "Read class name: " + className);
+				return registeredClass;
+			} catch (ClassNotFoundException ex) {
+				throw new SerializationException("Unable to find class: " + className, ex);
+			}
+		} else {
+			RegisteredClass registeredClass = idToRegisteredClass.get(classID);
+			if (registeredClass == null) throw new SerializationException("Encountered unregistered class ID: " + classID);
+			if (TRACE) trace("kryo", "Read class " + classID + ": " + registeredClass.type.getName());
+			return registeredClass;
+		}
 	}
 
 	/**
@@ -391,8 +449,8 @@ public class Kryo {
 	 */
 	static public class RegisteredClass {
 		public final Class type;
-		public final int id;
 		public Serializer serializer;
+		public final int id;
 
 		RegisteredClass (Class type, int id, Serializer serializer) {
 			this.type = type;

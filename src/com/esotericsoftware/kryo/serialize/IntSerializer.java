@@ -1,7 +1,8 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.trace;
 
 import java.nio.ByteBuffer;
 
@@ -49,11 +50,11 @@ public class IntSerializer extends Serializer {
 	 *           <tr>
 	 *           <td>5</td>
 	 *           <td>value < 0 || value > 268435455</td>
-	 *           <td>value < 134217728 || value > 134217727</td>
+	 *           <td>value < -134217728 || value > 134217727</td>
 	 *           </tr>
 	 *           </table>
 	 */
-	public IntSerializer (Boolean optimizePositive) {
+	public IntSerializer (boolean optimizePositive) {
 		this.optimizePositive = optimizePositive;
 	}
 
@@ -109,7 +110,7 @@ public class IntSerializer extends Serializer {
 	static public int get (ByteBuffer buffer, boolean optimizePositive) {
 		for (int offset = 0, result = 0; offset < 32; offset += 7) {
 			int b = buffer.get();
-			result |= (b & 0x7f) << offset;
+			result |= (b & 0x7F) << offset;
 			if ((b & 0x80) == 0) {
 				if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
 				return result;
@@ -127,7 +128,7 @@ public class IntSerializer extends Serializer {
 			int remaining = buffer.remaining();
 			int offset = 0, result = 0;
 			for (; offset < 32 && remaining > 0; offset += 7, remaining--) {
-				final int b = buffer.get();
+				byte b = buffer.get();
 				result |= (b & 0x7f) << offset;
 				if ((b & 0x80) == 0) return true;
 			}

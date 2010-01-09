@@ -15,6 +15,7 @@ import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 
 // TODO - Write tests for all serializers.
+// TODO - Break this monolithic test into smaller tests.
 
 public class SerializerTest extends TestCase {
 	private ByteBuffer buffer = ByteBuffer.allocateDirect(500);
@@ -35,7 +36,7 @@ public class SerializerTest extends TestCase {
 	};
 
 	public void testStrings () {
-		roundTrip(new StringSerializer(), 12, "abcdefáéíóú");
+		roundTrip(new StringSerializer(), 18, "abcdefáéíóú");
 	}
 
 	public void testCollection () {
@@ -122,15 +123,44 @@ public class SerializerTest extends TestCase {
 			roundTrip(value, false);
 			roundTrip(value, true);
 		}
+		// now go through powers of 2
+		for (long value = 65536; value > 0; value /= 2) {
+			System.out.println(value);
+			roundTrip(value, false);
+			roundTrip(value, true);
+
+			roundTrip(value + 1, false);
+			roundTrip(value + 1, true);
+
+			roundTrip(value - 1, false);
+			roundTrip(value - 1, true);
+
+			roundTrip(-value, false);
+			roundTrip(-value, true);
+
+			roundTrip(-value + 1, false);
+			roundTrip(-value + 1, true);
+
+			roundTrip(-value - 1, false);
+			roundTrip(-value - 1, true);
+		}
 	}
 
-	private void roundTrip (int value, boolean optimizePositive) {
+	private void roundTrip (long value, boolean optimizePositive) {
 		buffer.clear();
-		IntSerializer.put(buffer, value, optimizePositive);
+		LongSerializer.put(buffer, value, optimizePositive);
 		buffer.flip();
-		int result = IntSerializer.get(buffer, optimizePositive);
-		System.out.println(value + " int bytes, " + optimizePositive + ": " + buffer.limit());
+		long result = LongSerializer.get(buffer, optimizePositive);
+		System.out.println(value + " long bytes, " + optimizePositive + ": " + buffer.limit());
 		assertEquals(result, value);
+
+		int intValue = (int)value;
+		buffer.clear();
+		IntSerializer.put(buffer, intValue, optimizePositive);
+		buffer.flip();
+		result = IntSerializer.get(buffer, optimizePositive);
+		System.out.println(intValue + " int bytes, " + optimizePositive + ": " + buffer.limit());
+		assertEquals(result, intValue);
 
 		short shortValue = (short)value;
 		buffer.clear();
@@ -227,6 +257,19 @@ public class SerializerTest extends TestCase {
 		kryo.writeObject(buffer, list);
 		buffer.flip();
 		kryo.readObject(buffer, ArrayList.class);
+	}
+
+	public void testUnregisteredClassNames () {
+		TestClass value = new TestClass();
+		value.child = new TestClass();
+		value.optional = 123;
+		Kryo kryo = new Kryo();
+		kryo.setAllowUnregisteredClasses(true);
+		buffer.clear();
+		kryo.writeClassAndObject(buffer, value);
+		buffer.flip();
+		TestClass value2 = (TestClass)kryo.readClassAndObject(buffer);
+		assertEquals(value, value2);
 	}
 
 	static public class NoDefaultConstructor {
