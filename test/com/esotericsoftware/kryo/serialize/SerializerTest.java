@@ -236,26 +236,6 @@ public class SerializerTest extends TestCase {
 		assertEquals(123, value2.optional);
 	}
 
-	public void testAsmFieldSerializer () {
-		TestClass value = new TestClass();
-		value.child = new TestClass();
-
-		Kryo kryo = new Kryo();
-
-		AsmFieldSerializer serializer = new AsmFieldSerializer(kryo);
-		serializer.removeField(TestClass.class, "optional");
-		value.optional = 123;
-		kryo.register(TestClass.class, serializer);
-
-		TestClass value2 = roundTrip(serializer, 35, value);
-		assertEquals(0, value2.optional);
-
-		serializer = new AsmFieldSerializer(kryo);
-		value.optional = 123;
-		value2 = roundTrip(serializer, 36, value);
-		assertEquals(123, value2.optional);
-	}
-
 	public void testNoDefaultConstructor () {
 		NoDefaultConstructor object = new NoDefaultConstructor(2);
 		Kryo kryo = new Kryo();
@@ -357,8 +337,8 @@ public class SerializerTest extends TestCase {
 	static public class TestClass {
 		public String text = "something";
 		public String nullField;
-		public TestClass child;
-		public float abc = 1.2f;
+		TestClass child;
+		private float abc = 1.2f;
 		public int optional;
 
 		public boolean equals (Object obj) {
