@@ -1,14 +1,12 @@
 
 package com.esotericsoftware.kryo;
 
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -197,6 +195,7 @@ public class Kryo {
 	 * Note that some serializers allow additional information to be specified to make serialization more efficient in some cases
 	 * (eg, {@link FieldSerializer#getField(Class, String)}). Subclasses may override this method to change the default
 	 * serializers.
+	 * @see DefaultSerializer
 	 * @see #register(Class)
 	 * @see #register(Class, Serializer)
 	 */
@@ -208,6 +207,19 @@ public class Kryo {
 		if (Collection.class.isAssignableFrom(type)) return collectionSerializer;
 		if (Map.class.isAssignableFrom(type)) return mapSerializer;
 		if (Enum.class.isAssignableFrom(type)) return enumSerializer;
+		if (type.isAnnotationPresent(DefaultSerializer.class)) {
+			Class<? extends Serializer> serializerClass = ((DefaultSerializer)type.getAnnotation(DefaultSerializer.class)).value();
+			try {
+				try {
+					return serializerClass.getConstructor(Kryo.class).newInstance(this);
+				} catch (NoSuchMethodException ex) {
+					return serializerClass.newInstance();
+				}
+			} catch (Exception ex) {
+				throw new IllegalArgumentException("Unable to create serializer \"" + serializerClass.getName() + "\" for class: "
+					+ type.getName(), ex);
+			}
+		}
 		return fieldSerializer;
 	}
 

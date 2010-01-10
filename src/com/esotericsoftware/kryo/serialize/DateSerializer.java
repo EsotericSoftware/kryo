@@ -1,8 +1,7 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 import java.util.Date;
@@ -16,13 +15,13 @@ public class DateSerializer extends Serializer {
 	static private LongSerializer longSerializer = new LongSerializer(true);
 
 	public Date readObjectData (ByteBuffer buffer, Class type) {
-		long l = longSerializer.readObjectData(buffer, long.class);
-		if (TRACE) trace("kryo", "Read date: " + l);
-		return new Date(l);
+		Date date = new Date(LongSerializer.get(buffer, true));
+		if (TRACE) trace("kryo", "Read date: " + date);
+		return date;
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
-		longSerializer.writeObjectData(buffer, ((Date)object).getTime());
+		LongSerializer.put(buffer, ((Date)object).getTime(), true);
 		if (TRACE) trace("kryo", "Wrote date: " + object);
 	}
 }
