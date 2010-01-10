@@ -21,8 +21,9 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.Kryo.RegisteredClass;
 
 /**
- * Serializes objects using direct field assignment. This is the most efficient mechanism for serializing objects, often as good
- * as {@link CustomSerialization}. FieldSerializer is many times smaller and faster than Java serialization.
+ * Serializes objects using direct field assignment. This is an efficient mechanism for serializing objects, often as good as
+ * {@link CustomSerialization}. FieldSerializer is many times smaller and faster than Java serialization.
+ * {@link AsmFieldSerializer} is faster but requires the fields to be public.
  * <p>
  * FieldSerializer does not write header data, only the object data is stored. If the type of a field is not final (note
  * primitives are final) then an extra byte is written for that field.
