@@ -36,7 +36,7 @@ public class IntHashMap<T> {
 		return false;
 	}
 
-	public boolean containsKey (long key) {
+	public boolean containsKey (int key) {
 		int index = ((int)key) & mask;
 		for (Entry e = table[index]; e != null; e = e.next)
 			if (e.key == key) return true;

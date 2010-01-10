@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.PriorityQueue;
 
 import com.esotericsoftware.kryo.CustomSerialization;
@@ -31,7 +32,7 @@ import com.esotericsoftware.kryo.Kryo.RegisteredClass;
  */
 public class FieldSerializer extends Serializer {
 	final Kryo kryo;
-	private final HashMap<Class, CachedField[]> fieldCache = new HashMap();
+	private final IdentityHashMap<Class, CachedField[]> fieldCache = new IdentityHashMap();
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 
 	public FieldSerializer (Kryo kryo) {
