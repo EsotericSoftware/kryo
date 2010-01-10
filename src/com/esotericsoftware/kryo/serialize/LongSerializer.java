@@ -36,7 +36,7 @@ public class LongSerializer extends Serializer {
 
 	/**
 	 * Writes the specified long to the buffer using 1 to 10 bytes, depending on the size of the number.
-	 * @param optimizePositive See {@link #LongSerializer(Boolean)}.
+	 * @param optimizePositive See {@link #LongSerializer(boolean)}.
 	 * @return the number of bytes written.
 	 */
 	static public long put (ByteBuffer buffer, long value, boolean optimizePositive) {

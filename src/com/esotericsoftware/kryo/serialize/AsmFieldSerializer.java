@@ -27,6 +27,11 @@ import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.Kryo.RegisteredClass;
 
+/**
+ * Serializes objects using direct field assignment through bytecode generation. This serializer is faster than
+ * {@link FieldSerializer} but can only serializer public fields, otherwise it behaves the same.
+ * @see FieldSerializer
+ */
 public class AsmFieldSerializer extends Serializer {
 	final Kryo kryo;
 	private final AccessLoader loader = new AccessLoader();

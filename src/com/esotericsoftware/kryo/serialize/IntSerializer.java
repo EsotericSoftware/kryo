@@ -71,7 +71,7 @@ public class IntSerializer extends Serializer {
 
 	/**
 	 * Writes the specified int to the buffer using 1 to 5 bytes, depending on the size of the number.
-	 * @param optimizePositive See {@link #IntSerializer(Boolean)}.
+	 * @param optimizePositive See {@link #IntSerializer(boolean)}.
 	 * @return the number of bytes written.
 	 */
 	static public int put (ByteBuffer buffer, int value, boolean optimizePositive) {
