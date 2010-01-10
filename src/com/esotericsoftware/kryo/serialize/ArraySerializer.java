@@ -81,10 +81,11 @@ public class ArraySerializer extends Serializer {
 		// If element class is final (this includes primitives) then all elements are the same type.
 		Serializer elementSerializer = null;
 		Class elementClass = getElementClass(array.getClass());
+		boolean elementsCanBeNull = this.elementsCanBeNull && !elementClass.isPrimitive();
 		if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers()))
 			elementSerializer = kryo.getRegisteredClass(elementClass).serializer;
 		// Write array data.
-		writeArray(buffer, array, elementSerializer, 0, dimensions.length);
+		writeArray(buffer, array, elementSerializer, 0, dimensions.length, elementsCanBeNull);
 		if (TRACE) {
 			StringBuilder stringBuffer = new StringBuilder(16);
 			for (int i = 0, n = dimensions.length; i < n; i++) {
@@ -96,7 +97,8 @@ public class ArraySerializer extends Serializer {
 		}
 	}
 
-	private void writeArray (ByteBuffer buffer, Object array, Serializer elementSerializer, int dimension, int dimensionCount) {
+	private void writeArray (ByteBuffer buffer, Object array, Serializer elementSerializer, int dimension, int dimensionCount,
+		boolean elementsCanBeNull) {
 		int length = Array.getLength(array);
 		if (dimension > 0) {
 			// Write array length. With Java's "jagged arrays" this could be less than the dimension size.
@@ -108,7 +110,8 @@ public class ArraySerializer extends Serializer {
 			Object element = Array.get(array, i);
 			if (elementsAreArrays) {
 				// Nested array.
-				if (element != null) writeArray(buffer, element, elementSerializer, dimension + 1, dimensionCount);
+				if (element != null)
+					writeArray(buffer, element, elementSerializer, dimension + 1, dimensionCount, elementsCanBeNull);
 			} else if (elementSerializer != null) {
 				// Use same serializer for all elements.
 				if (elementsCanBeNull)
@@ -136,11 +139,12 @@ public class ArraySerializer extends Serializer {
 		// Get element serializer if all elements are the same type.
 		Serializer elementSerializer = null;
 		Class elementClass = getElementClass(type);
+		boolean elementsCanBeNull = this.elementsCanBeNull && !elementClass.isPrimitive();
 		if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers()))
 			elementSerializer = kryo.getRegisteredClass(elementClass).serializer;
 		// Create array and read in the data.
 		T array = (T)Array.newInstance(elementClass, dimensions);
-		readArray(buffer, array, elementSerializer, elementClass, 0, dimensions);
+		readArray(buffer, array, elementSerializer, elementClass, 0, dimensions, elementsCanBeNull);
 		if (TRACE) {
 			StringBuilder stringBuffer = new StringBuilder(16);
 			for (int i = 0; i < dimensionCount; i++) {
@@ -154,7 +158,7 @@ public class ArraySerializer extends Serializer {
 	}
 
 	private void readArray (ByteBuffer buffer, Object array, Serializer elementSerializer, Class elementClass, int dimension,
-		int[] dimensions) {
+		int[] dimensions, boolean elementsCanBeNull) {
 		boolean elementsAreArrays = dimension < dimensions.length - 1;
 		int length;
 		if (dimension == 0)
@@ -165,7 +169,8 @@ public class ArraySerializer extends Serializer {
 			if (elementsAreArrays) {
 				// Nested array.
 				Object element = Array.get(array, i);
-				if (element != null) readArray(buffer, element, elementSerializer, elementClass, dimension + 1, dimensions);
+				if (element != null)
+					readArray(buffer, element, elementSerializer, elementClass, dimension + 1, dimensions, elementsCanBeNull);
 			} else if (elementSerializer != null) {
 				// Use same serializer (and class) for all elements.
 				if (elementsCanBeNull)

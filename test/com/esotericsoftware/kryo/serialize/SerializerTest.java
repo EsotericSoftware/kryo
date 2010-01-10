@@ -12,6 +12,7 @@ import org.junit.Assert;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
+import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.Serializer;
 
 // TODO - Write tests for all serializers.
@@ -235,6 +236,26 @@ public class SerializerTest extends TestCase {
 		assertEquals(123, value2.optional);
 	}
 
+	public void testAsmFieldSerializer () {
+		TestClass value = new TestClass();
+		value.child = new TestClass();
+
+		Kryo kryo = new Kryo();
+
+		AsmFieldSerializer serializer = new AsmFieldSerializer(kryo);
+		serializer.removeField(TestClass.class, "optional");
+		value.optional = 123;
+		kryo.register(TestClass.class, serializer);
+
+		TestClass value2 = roundTrip(serializer, 35, value);
+		assertEquals(0, value2.optional);
+
+		serializer = new AsmFieldSerializer(kryo);
+		value.optional = 123;
+		value2 = roundTrip(serializer, 36, value);
+		assertEquals(123, value2.optional);
+	}
+
 	public void testNoDefaultConstructor () {
 		NoDefaultConstructor object = new NoDefaultConstructor(2);
 		Kryo kryo = new Kryo();
@@ -254,9 +275,33 @@ public class SerializerTest extends TestCase {
 		kryo.register(ArrayList.class);
 		ArrayList list = new ArrayList(Arrays.asList("1", "2", "3"));
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
+
 		kryo.writeObject(buffer, list);
 		buffer.flip();
 		kryo.readObject(buffer, ArrayList.class);
+	}
+
+	public void testNulls () {
+		Kryo kryo = new Kryo();
+		kryo.register(ArrayList.class);
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
+
+		kryo.writeObject(buffer, null);
+		buffer.flip();
+		Object object = kryo.readObject(buffer, ArrayList.class);
+		assertNull(object);
+
+		buffer.clear();
+		kryo.writeClassAndObject(buffer, null);
+		buffer.flip();
+		object = kryo.readClassAndObject(buffer);
+		assertNull(object);
+
+		buffer.clear();
+		kryo.writeClass(buffer, null);
+		buffer.flip();
+		object = kryo.readClass(buffer);
+		assertNull(object);
 	}
 
 	public void testUnregisteredClassNames () {
@@ -273,7 +318,7 @@ public class SerializerTest extends TestCase {
 	}
 
 	static public class NoDefaultConstructor {
-		private int constructorValue;
+		int constructorValue;
 
 		public NoDefaultConstructor (int constructorValue) {
 			this.constructorValue = constructorValue;

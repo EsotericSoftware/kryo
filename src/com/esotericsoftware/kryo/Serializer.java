@@ -12,6 +12,9 @@ import java.nio.ByteBuffer;
  * @author Nathan Sweet <misc@n4te.com>
  */
 abstract public class Serializer {
+	static private final byte NULL_OBJECT = 0;
+	static private final byte NOT_NULL_OBJECT = 1;
+
 	private boolean canBeNull = true;
 
 	/**
@@ -30,10 +33,10 @@ abstract public class Serializer {
 		if (canBeNull) {
 			if (object == null) {
 				if (TRACE) trace("kryo", "Wrote object: null");
-				buffer.put((byte)0);
+				buffer.put(NULL_OBJECT);
 				return;
 			}
-			buffer.put((byte)1);
+			buffer.put(NOT_NULL_OBJECT);
 		}
 		writeObjectData(buffer, object);
 	}
@@ -49,7 +52,7 @@ abstract public class Serializer {
 	 * @return The deserialized object, or null if the object read from the buffer was a null.
 	 */
 	public final <T> T readObject (ByteBuffer buffer, Class<T> type) {
-		if (canBeNull && buffer.get() == 0) {
+		if (canBeNull && buffer.get() == NULL_OBJECT) {
 			if (TRACE) trace("kryo", "Read object: null");
 			return null;
 		}

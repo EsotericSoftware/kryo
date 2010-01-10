@@ -9,6 +9,7 @@ import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,7 +45,7 @@ public class Kryo {
 	};
 
 	private final IntHashMap<RegisteredClass> idToRegisteredClass = new IntHashMap(64);
-	private final HashMap<Class, RegisteredClass> classToRegisteredClass = new HashMap(64);
+	private final IdentityHashMap<Class, RegisteredClass> classToRegisteredClass = new IdentityHashMap(64);
 	private AtomicInteger nextClassID = new AtomicInteger(1);
 	private Object listenerLock = new Object();
 	private KryoListener[] listeners = {};
@@ -254,7 +255,7 @@ public class Kryo {
 	 * Writes the ID of the specified class to the buffer. The ID will be an int for {@link #register(Class, Serializer) registered
 	 * classes}. If {@link #setAllowUnregisteredClasses(boolean) allowUnregisteredClasses} is true and the class was not explicitly
 	 * registered, the ID will be the class name String.
-	 * @param type Can be null (writes a special class ID for a null object).
+	 * @param type Can be null (writes a special ID for a null object).
 	 * @return The registered information for the class that was written, or null of the specified class was null.
 	 */
 	public RegisteredClass writeClass (ByteBuffer buffer, Class type) {
@@ -306,7 +307,7 @@ public class Kryo {
 	/**
 	 * Writes the object's class ID to the buffer, then uses the serializer registered for that class to write the object to the
 	 * buffer.
-	 * @param object Can be null (writes a special class ID for a null object instead).
+	 * @param object Can be null (writes a special ID for a null object instead).
 	 */
 	public void writeClassAndObject (ByteBuffer buffer, Object object) {
 		if (object == null) {
@@ -324,7 +325,7 @@ public class Kryo {
 
 	/**
 	 * Uses the serializer registered for the object's class to write the object to the buffer.
-	 * @param object Can be null (writes a special class ID for a null object instead).
+	 * @param object Can be null (writes a special ID for a null object instead).
 	 */
 	public void writeObject (ByteBuffer buffer, Object object) {
 		if (object == null) {
