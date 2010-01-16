@@ -1,9 +1,13 @@
 
 package com.esotericsoftware.kryo;
 
+import static com.esotericsoftware.minlog.Log.DEBUG;
+import static com.esotericsoftware.minlog.Log.debug;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 /**
@@ -14,27 +18,39 @@ import java.nio.ByteBuffer;
  */
 public class ObjectBuffer {
 	private final Kryo kryo;
-	private final ByteBuffer buffer;
-	private final byte[] bytes;
+	private final int maxCapacity;
+	private ByteBuffer buffer;
+	private byte[] bytes;
 
 	/**
-	 * Creates an ObjectStream with a buffer size of 2048.
+	 * Creates an ObjectStream with an initial buffer size of 2KB and a maximum size of 16KB.
 	 */
 	public ObjectBuffer (Kryo kryo) {
-		this(kryo, 2048);
+		this(kryo, 2 * 1024, 16 * 1024);
 	}
 
 	/**
-	 * @param bufferSize The maximum size in bytes of an object that can be read or written.
+	 * @param maxCapacity The initial and maximum size in bytes of an object that can be read or written.
+	 * @see #ObjectBuffer(Kryo, int, int)
 	 */
-	public ObjectBuffer (Kryo kryo, int bufferSize) {
-		this.kryo = kryo;
-		buffer = ByteBuffer.allocate(bufferSize);
-		bytes = buffer.array();
+	public ObjectBuffer (Kryo kryo, int maxCapacity) {
+		this(kryo, maxCapacity, maxCapacity);
 	}
 
 	/**
-	 * Reads the specified number of bytes from the stream and returns a deserialized object.
+	 * @param initialCapacity The initial maximum size in bytes of an object that can be read or written.
+	 * @param maxCapacity The maximum size in bytes of an object that can be read or written. The capacity is doubled until the
+	 *           maxCapacity is exceeded, then BufferOverflowException is thrown by the read and write methods.
+	 */
+	public ObjectBuffer (Kryo kryo, int initialCapacity, int maxCapacity) {
+		this.kryo = kryo;
+		buffer = ByteBuffer.allocate(initialCapacity);
+		bytes = buffer.array();
+		this.maxCapacity = maxCapacity;
+	}
+
+	/**
+	 * Reads the specified number of bytes from the stream into the buffer.
 	 * @param contentLength The number of bytes to read, or -1 to read to the end of the stream.
 	 */
 	private void readToBuffer (InputStream input, int contentLength) {
@@ -45,6 +61,7 @@ public class ObjectBuffer {
 				int count = input.read(bytes, position, bytes.length - position);
 				if (count == -1) break;
 				position += count;
+				if (position >= bytes.length && !resizeBuffer(true)) throw new BufferOverflowException();
 			}
 			buffer.position(0);
 			buffer.limit(position);
@@ -112,7 +129,14 @@ public class ObjectBuffer {
 	 */
 	public void writeClassAndObject (OutputStream output, Object object) {
 		buffer.clear();
-		kryo.writeClassAndObject(buffer, object);
+		while (true) {
+			try {
+				kryo.writeClassAndObject(buffer, object);
+				break;
+			} catch (BufferOverflowException ex) {
+				if (!resizeBuffer(false)) throw ex;
+			}
+		}
 		writeToStream(output);
 	}
 
@@ -121,7 +145,14 @@ public class ObjectBuffer {
 	 */
 	public void writeObject (OutputStream output, Object object) {
 		buffer.clear();
-		kryo.writeObject(buffer, object);
+		while (true) {
+			try {
+				kryo.writeObject(buffer, object);
+				break;
+			} catch (BufferOverflowException ex) {
+				if (!resizeBuffer(false)) throw ex;
+			}
+		}
 		writeToStream(output);
 	}
 
@@ -130,7 +161,14 @@ public class ObjectBuffer {
 	 */
 	public void writeObjectData (OutputStream output, Object object) {
 		buffer.clear();
-		kryo.writeObjectData(buffer, object);
+		while (true) {
+			try {
+				kryo.writeObjectData(buffer, object);
+				break;
+			} catch (BufferOverflowException ex) {
+				if (!resizeBuffer(false)) throw ex;
+			}
+		}
 		writeToStream(output);
 	}
 
@@ -168,7 +206,14 @@ public class ObjectBuffer {
 	 */
 	public byte[] writeClassAndObject (Object object) {
 		buffer.clear();
-		kryo.writeClassAndObject(buffer, object);
+		while (true) {
+			try {
+				kryo.writeClassAndObject(buffer, object);
+				break;
+			} catch (BufferOverflowException ex) {
+				if (!resizeBuffer(false)) throw ex;
+			}
+		}
 		return writeToBytes();
 	}
 
@@ -177,7 +222,14 @@ public class ObjectBuffer {
 	 */
 	public byte[] writeObject (Object object) {
 		buffer.clear();
-		kryo.writeObject(buffer, object);
+		while (true) {
+			try {
+				kryo.writeObject(buffer, object);
+				break;
+			} catch (BufferOverflowException ex) {
+				if (!resizeBuffer(false)) throw ex;
+			}
+		}
 		return writeToBytes();
 	}
 
@@ -186,7 +238,14 @@ public class ObjectBuffer {
 	 */
 	public byte[] writeObjectData (Object object) {
 		buffer.clear();
-		kryo.writeObjectData(buffer, object);
+		while (true) {
+			try {
+				kryo.writeObjectData(buffer, object);
+				break;
+			} catch (BufferOverflowException ex) {
+				if (!resizeBuffer(false)) throw ex;
+			}
+		}
 		return writeToBytes();
 	}
 
@@ -194,5 +253,18 @@ public class ObjectBuffer {
 		byte[] objectBytes = new byte[buffer.position()];
 		System.arraycopy(bytes, 0, objectBytes, 0, objectBytes.length);
 		return objectBytes;
+	}
+
+	private boolean resizeBuffer (boolean preserveContents) {
+		int newCapacity = buffer.capacity() * 2;
+		if (newCapacity > maxCapacity) return false;
+
+		ByteBuffer newBuffer = ByteBuffer.allocate(newCapacity);
+		if (preserveContents) newBuffer.put(buffer);
+		buffer = newBuffer;
+		bytes = newBuffer.array();
+
+		if (DEBUG) debug("kryo", "Resized ObjectBuffer to: " + newCapacity);
+		return true;
 	}
 }
