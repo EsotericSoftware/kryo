@@ -43,7 +43,7 @@ public class CollectionSerializer extends Serializer {
 	 */
 	public void setElementClass (Class elementClass) {
 		this.elementClass = elementClass;
-		this.serializer = elementClass == null ? null : kryo.getRegisteredClass(elementClass).serializer;
+		this.serializer = elementClass == null ? null : kryo.getRegisteredClass(elementClass).getSerializer();
 	}
 
 	/**

@@ -41,7 +41,7 @@ public class MapSerializer extends Serializer {
 	 */
 	public void setKeyClass (Class keyClass) {
 		this.keyClass = keyClass;
-		keySerializer = keyClass == null ? null : kryo.getRegisteredClass(keyClass).serializer;
+		keySerializer = keyClass == null ? null : kryo.getRegisteredClass(keyClass).getSerializer();
 	}
 
 	/**
@@ -60,7 +60,7 @@ public class MapSerializer extends Serializer {
 	 */
 	public void setValueClass (Class valueClass) {
 		this.valueClass = valueClass;
-		valueSerializer = valueClass == null ? null : kryo.getRegisteredClass(valueClass).serializer;
+		valueSerializer = valueClass == null ? null : kryo.getRegisteredClass(valueClass).getSerializer();
 	}
 
 	/**

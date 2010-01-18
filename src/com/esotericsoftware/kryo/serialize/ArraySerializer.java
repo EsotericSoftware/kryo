@@ -83,7 +83,7 @@ public class ArraySerializer extends Serializer {
 		Class elementClass = getElementClass(array.getClass());
 		boolean elementsCanBeNull = this.elementsCanBeNull && !elementClass.isPrimitive();
 		if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers()))
-			elementSerializer = kryo.getRegisteredClass(elementClass).serializer;
+			elementSerializer = kryo.getRegisteredClass(elementClass).getSerializer();
 		// Write array data.
 		writeArray(buffer, array, elementSerializer, 0, dimensions.length, elementsCanBeNull);
 		if (TRACE) {
@@ -141,7 +141,7 @@ public class ArraySerializer extends Serializer {
 		Class elementClass = getElementClass(type);
 		boolean elementsCanBeNull = this.elementsCanBeNull && !elementClass.isPrimitive();
 		if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers()))
-			elementSerializer = kryo.getRegisteredClass(elementClass).serializer;
+			elementSerializer = kryo.getRegisteredClass(elementClass).getSerializer();
 		// Create array and read in the data.
 		T array = (T)Array.newInstance(elementClass, dimensions);
 		readArray(buffer, array, elementSerializer, elementClass, 0, dimensions, elementsCanBeNull);

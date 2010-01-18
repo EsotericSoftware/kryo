@@ -111,7 +111,7 @@ public class FieldSerializer extends Serializer {
 			Class fieldClass = field.getType();
 			if (Modifier.isFinal(fieldClass.getModifiers())) {
 				cachedField.fieldClass = fieldClass;
-				cachedField.serializer = kryo.getRegisteredClass(fieldClass).serializer;
+				cachedField.serializer = kryo.getRegisteredClass(fieldClass).getSerializer();
 			}
 
 			cachedFields.add(cachedField);
@@ -154,7 +154,7 @@ public class FieldSerializer extends Serializer {
 						continue;
 					}
 					RegisteredClass registeredClass = kryo.writeClass(buffer, value.getClass());
-					if (serializer == null) serializer = registeredClass.serializer;
+					if (serializer == null) serializer = registeredClass.getSerializer();
 					serializer.writeObjectData(buffer, value);
 				} else {
 					if (!cachedField.canBeNull)
@@ -187,8 +187,8 @@ public class FieldSerializer extends Serializer {
 					if (registeredClass == null)
 						value = null;
 					else {
-						concreteType = registeredClass.type;
-						if (serializer == null) serializer = registeredClass.serializer;
+						concreteType = registeredClass.getType();
+						if (serializer == null) serializer = registeredClass.getSerializer();
 						value = serializer.readObjectData(buffer, concreteType);
 					}
 				} else {
@@ -255,7 +255,7 @@ public class FieldSerializer extends Serializer {
 		 */
 		public void setClass (Class fieldClass) {
 			this.fieldClass = fieldClass;
-			this.serializer = fieldClass == null ? null : kryo.getRegisteredClass(fieldClass).serializer;
+			this.serializer = fieldClass == null ? null : kryo.getRegisteredClass(fieldClass).getSerializer();
 		}
 
 		/**

@@ -195,6 +195,8 @@ public class Kryo {
 	 * Note that some serializers allow additional information to be specified to make serialization more efficient in some cases
 	 * (eg, {@link FieldSerializer#getField(Class, String)}). Subclasses may override this method to change the default
 	 * serializers.
+	 * <p>
+	 * The {@link DefaultSerializer} annotation can be used to specify the serializer that this method returns.
 	 * @see DefaultSerializer
 	 * @see #register(Class)
 	 * @see #register(Class, Serializer)
@@ -261,6 +263,10 @@ public class Kryo {
 
 	public Serializer getSerializer (Class type) {
 		return getRegisteredClass(type).serializer;
+	}
+
+	public void setSerializer (Class type, Serializer serializer) {
+		getRegisteredClass(type).serializer = serializer;
 	}
 
 	/**
@@ -458,17 +464,33 @@ public class Kryo {
 	}
 
 	/**
-	 * Holds the registration information for a registered class.
+	 * Holds the registration information for a class.
 	 */
 	static public class RegisteredClass {
-		public final Class type;
-		public Serializer serializer;
-		public final int id;
+		final Class type;
+		Serializer serializer;
+		final int id;
 
 		RegisteredClass (Class type, int id, Serializer serializer) {
 			this.type = type;
 			this.id = id;
 			this.serializer = serializer;
+		}
+
+		public Serializer getSerializer () {
+			return serializer;
+		}
+
+		public void setSerializer (Serializer serializer) {
+			this.serializer = serializer;
+		}
+
+		public Class getType () {
+			return type;
+		}
+
+		public int getID () {
+			return id;
 		}
 	}
 }
