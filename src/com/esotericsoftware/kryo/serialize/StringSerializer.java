@@ -1,8 +1,7 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -11,7 +10,6 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 
-import com.esotericsoftware.kryo.Context;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 
@@ -54,16 +52,8 @@ public class StringSerializer extends Serializer {
 
 	static public String get (ByteBuffer buffer) {
 		int bytesToRead = IntSerializer.get(buffer, true);
-
-		Context context = Kryo.getContext();
-		char[] outputArray = (char[])context.get("charArray");
-		if (outputArray == null || outputArray.length < bytesToRead) {
-			outputArray = new char[bytesToRead];
-			context.put("charArray", outputArray);
-		}
-
+		char[] outputArray = Kryo.getContext().getCharArray(bytesToRead);
 		CharBuffer outputBuffer = CharBuffer.wrap(outputArray);
-		outputBuffer.limit(bytesToRead);
 
 		int oldLimit = buffer.limit();
 		buffer.limit(buffer.position() + bytesToRead);

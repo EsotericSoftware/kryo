@@ -7,7 +7,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -43,7 +43,7 @@ public class Kryo {
 	};
 
 	private final IntHashMap<RegisteredClass> idToRegisteredClass = new IntHashMap(64);
-	private final IdentityHashMap<Class, RegisteredClass> classToRegisteredClass = new IdentityHashMap(64);
+	private final HashMap<Class, RegisteredClass> classToRegisteredClass = new HashMap(64);
 	private AtomicInteger nextClassID = new AtomicInteger(1);
 	private Object listenerLock = new Object();
 	private KryoListener[] listeners = {};
@@ -53,7 +53,6 @@ public class Kryo {
 	private final CustomSerializer customSerializer = new CustomSerializer(this);
 	private final FieldSerializer fieldSerializer = new FieldSerializer(this);
 	private final ArraySerializer arraySerializer = new ArraySerializer(this);
-	private final EnumSerializer enumSerializer = new EnumSerializer();
 	private final CollectionSerializer collectionSerializer = new CollectionSerializer(this);
 	private final MapSerializer mapSerializer = new MapSerializer(this);
 
@@ -208,7 +207,7 @@ public class Kryo {
 		if (CustomSerialization.class.isAssignableFrom(type)) return customSerializer;
 		if (Collection.class.isAssignableFrom(type)) return collectionSerializer;
 		if (Map.class.isAssignableFrom(type)) return mapSerializer;
-		if (Enum.class.isAssignableFrom(type)) return enumSerializer;
+		if (Enum.class.isAssignableFrom(type)) return new EnumSerializer(type);
 		if (type.isAnnotationPresent(DefaultSerializer.class)) {
 			Class<? extends Serializer> serializerClass = ((DefaultSerializer)type.getAnnotation(DefaultSerializer.class)).value();
 			try {

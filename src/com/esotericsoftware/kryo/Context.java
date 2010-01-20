@@ -18,6 +18,7 @@ public class Context {
 	private ArrayList<ByteBuffer> buffers = new ArrayList(2);
 	private int remoteEntityID;
 	private SerializerKey tempKey = new SerializerKey(null, null);
+	private char[] charArray = new char[256];
 
 	/**
 	 * Returns a non-direct buffer of at least the specified size.
@@ -46,21 +47,11 @@ public class Context {
 	}
 
 	/**
-	 * Returns an identifier for the entity that either sent the serialized data or will be receiving the serialized data.
-	 * Serailizers can use this knowledge during serialization. For example, see {@link DeltaCompressor}.
-	 * @see Kryo#addListener(KryoListener)
+	 * Returns a char array of at least the specified size.
 	 */
-	public int getRemoteEntityID () {
-		return remoteEntityID;
-	}
-
-	/**
-	 * Sets the remote entity ID. Should be set before serialization or deserialization if a serializer is used that makes use of
-	 * the remote entity ID.
-	 * @see #getRemoteEntityID()
-	 */
-	public void setRemoteEntityID (int remoteEntityID) {
-		this.remoteEntityID = remoteEntityID;
+	public char[] getCharArray (int minimumSize) {
+		if (charArray.length < minimumSize) charArray = new char[minimumSize];
+		return charArray;
 	}
 
 	/**
@@ -99,6 +90,24 @@ public class Context {
 		tempKey.serializer = serializer;
 		tempKey.key = key;
 		return map.get(tempKey);
+	}
+
+	/**
+	 * Returns an identifier for the entity that either sent the serialized data or will be receiving the serialized data.
+	 * Serailizers can use this knowledge during serialization. For example, see {@link DeltaCompressor}.
+	 * @see Kryo#addListener(KryoListener)
+	 */
+	public int getRemoteEntityID () {
+		return remoteEntityID;
+	}
+
+	/**
+	 * Sets the remote entity ID. Should be set before serialization or deserialization if a serializer is used that makes use of
+	 * the remote entity ID.
+	 * @see #getRemoteEntityID()
+	 */
+	public void setRemoteEntityID (int remoteEntityID) {
+		this.remoteEntityID = remoteEntityID;
 	}
 
 	static private class SerializerKey {

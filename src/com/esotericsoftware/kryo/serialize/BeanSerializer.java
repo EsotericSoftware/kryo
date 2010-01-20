@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.SerializationException;
@@ -31,8 +31,8 @@ import com.esotericsoftware.kryo.Serializer;
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class BeanSerializer extends Serializer {
-	static private final IdentityHashMap<Class, CachedMethod[]> setterMethodCache = new IdentityHashMap();
-	static private final IdentityHashMap<Class, CachedMethod[]> getterMethodCache = new IdentityHashMap();
+	static private final HashMap<Class, CachedMethod[]> setterMethodCache = new HashMap();
+	static private final HashMap<Class, CachedMethod[]> getterMethodCache = new HashMap();
 
 	private final Kryo kryo;
 

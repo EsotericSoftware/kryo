@@ -10,7 +10,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
+import java.util.HashMap;
 import java.util.PriorityQueue;
 
 import org.objectweb.asm.AnnotationVisitor;
@@ -42,7 +43,7 @@ import com.esotericsoftware.kryo.Kryo.RegisteredClass;
 public class FieldSerializer extends Serializer {
 	final Kryo kryo;
 	private final AccessLoader accessLoader = new AccessLoader();
-	final IdentityHashMap<Class, CachedField[]> fieldCache = new IdentityHashMap();
+	final HashMap<Class, CachedField[]> fieldCache = new HashMap();
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 
 	public FieldSerializer (Kryo kryo) {
@@ -282,13 +283,15 @@ public class FieldSerializer extends Serializer {
 		}
 
 		void set (Object object, Object value) throws IllegalAccessException {
-			if (access != null) access.set(object, accessIndex, value);
-			field.set(object, value);
+			if (access != null)
+				access.set(object, accessIndex, value);
+			else
+				field.set(object, value);
 		}
 	}
 
 	class AccessLoader extends ClassLoader {
-		private IdentityHashMap<Class, Access> classToAccess = new IdentityHashMap();
+		private HashMap<Class, Access> classToAccess = new HashMap();
 
 		public Access createAccess (Class type, ArrayList<CachedField> publicFields) {
 			int fieldCount = publicFields.size();

@@ -13,10 +13,19 @@ import com.esotericsoftware.kryo.Serializer;
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class EnumSerializer extends Serializer {
+	private Object[] enumConstants;
+
+	public EnumSerializer (Class<? extends Enum> type) {
+		enumConstants = type.getEnumConstants();
+	}
+
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
-		T object = get(buffer, type);
-		if (TRACE) trace("kryo", "Read enum: " + object);
-		return object;
+		int ordinal = IntSerializer.get(buffer, true);
+		if (ordinal < 0 || ordinal > enumConstants.length - 1)
+			throw new SerializationException("Invalid ordinal for enum \"" + type.getName() + "\": " + ordinal);
+		Object constant = enumConstants[ordinal];
+		if (TRACE) trace("kryo", "Read enum: " + constant);
+		return (T)constant;
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
