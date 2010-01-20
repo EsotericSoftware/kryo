@@ -9,6 +9,8 @@ import java.util.zip.Inflater;
 import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.Serializer;
 
+// BOZO - Process in batches to avoid a large buffer size.
+
 /**
  * Compresses and decompresses using the "deflate" algorithm.
  * @author Nathan Sweet <misc@n4te.com>

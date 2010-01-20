@@ -43,26 +43,33 @@ public class StringSerializer extends Serializer {
 	}
 
 	static public void put (ByteBuffer buffer, String value) {
-		Context context = Kryo.getContext();
-		ByteBuffer tempBuffer = context.getBuffer(value.length() * maxBytesPerChar);
-		encoder.encode(CharBuffer.wrap(value), tempBuffer, true);
-		tempBuffer.flip();
-		int length = tempBuffer.limit();
-		IntSerializer.put(buffer, length, true);
-		buffer.put(tempBuffer);
+		ByteBuffer outputBuffer = Kryo.getContext().getBuffer(value.length() * maxBytesPerChar);
+		encoder.encode(CharBuffer.wrap(value), outputBuffer, true);
+		outputBuffer.flip();
+
+		int bytesWritten = outputBuffer.limit();
+		IntSerializer.put(buffer, bytesWritten, true);
+		buffer.put(outputBuffer);
 	}
 
 	static public String get (ByteBuffer buffer) {
-		int length = IntSerializer.get(buffer, true);
+		int bytesToRead = IntSerializer.get(buffer, true);
+
 		Context context = Kryo.getContext();
-		char[] chars = (char[])context.get("charArray");
-		if (chars == null || chars.length < length) {
-			chars = new char[length];
-			context.put("charArray", chars);
+		char[] outputArray = (char[])context.get("charArray");
+		if (outputArray == null || outputArray.length < bytesToRead) {
+			outputArray = new char[bytesToRead];
+			context.put("charArray", outputArray);
 		}
-		CharBuffer tempBuffer = CharBuffer.wrap(chars);
-		tempBuffer.limit(length);
-		decoder.decode(buffer, tempBuffer, true);
-		return new String(chars, 0, tempBuffer.position());
+
+		CharBuffer outputBuffer = CharBuffer.wrap(outputArray);
+		outputBuffer.limit(bytesToRead);
+
+		int oldLimit = buffer.limit();
+		buffer.limit(buffer.position() + bytesToRead);
+		decoder.decode(buffer, outputBuffer, true);
+		buffer.limit(oldLimit);
+
+		return new String(outputArray, 0, outputBuffer.position());
 	}
 }
