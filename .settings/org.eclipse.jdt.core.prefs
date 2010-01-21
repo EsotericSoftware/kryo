@@ -1,5 +1,6 @@
-#Wed Jan 20 15:05:53 PST 2010
+#Thu Jan 21 00:57:06 PST 2010
 eclipse.preferences.version=1
+org.eclipse.jdt.core.compiler.doc.comment.support=enabled
 org.eclipse.jdt.core.compiler.problem.annotationSuperInterface=warning
 org.eclipse.jdt.core.compiler.problem.autoboxing=ignore
 org.eclipse.jdt.core.compiler.problem.comparingIdentical=warning
@@ -19,10 +20,22 @@ org.eclipse.jdt.core.compiler.problem.hiddenCatchBlock=warning
 org.eclipse.jdt.core.compiler.problem.incompatibleNonInheritedInterfaceMethod=warning
 org.eclipse.jdt.core.compiler.problem.incompleteEnumSwitch=ignore
 org.eclipse.jdt.core.compiler.problem.indirectStaticAccess=ignore
+org.eclipse.jdt.core.compiler.problem.invalidJavadoc=warning
+org.eclipse.jdt.core.compiler.problem.invalidJavadocTags=enabled
+org.eclipse.jdt.core.compiler.problem.invalidJavadocTagsDeprecatedRef=enabled
+org.eclipse.jdt.core.compiler.problem.invalidJavadocTagsNotVisibleRef=enabled
+org.eclipse.jdt.core.compiler.problem.invalidJavadocTagsVisibility=private
 org.eclipse.jdt.core.compiler.problem.localVariableHiding=ignore
 org.eclipse.jdt.core.compiler.problem.methodWithConstructorName=warning
 org.eclipse.jdt.core.compiler.problem.missingDeprecatedAnnotation=ignore
 org.eclipse.jdt.core.compiler.problem.missingHashCodeMethod=ignore
+org.eclipse.jdt.core.compiler.problem.missingJavadocComments=ignore
+org.eclipse.jdt.core.compiler.problem.missingJavadocCommentsOverriding=enabled
+org.eclipse.jdt.core.compiler.problem.missingJavadocCommentsVisibility=public
+org.eclipse.jdt.core.compiler.problem.missingJavadocTagDescription=return_tag
+org.eclipse.jdt.core.compiler.problem.missingJavadocTags=ignore
+org.eclipse.jdt.core.compiler.problem.missingJavadocTagsOverriding=enabled
+org.eclipse.jdt.core.compiler.problem.missingJavadocTagsVisibility=private
 org.eclipse.jdt.core.compiler.problem.missingOverrideAnnotation=ignore
 org.eclipse.jdt.core.compiler.problem.missingSerialVersion=ignore
 org.eclipse.jdt.core.compiler.problem.missingSynchronizedOnInheritedMethod=ignore
