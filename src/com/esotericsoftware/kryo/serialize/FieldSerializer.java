@@ -49,7 +49,10 @@ public class FieldSerializer extends Serializer {
 	public FieldSerializer (Kryo kryo, Class type) {
 		this.kryo = kryo;
 		this.type = type;
+		rebuildCachedFields();
+	}
 
+	private void rebuildCachedFields () {
 		if (type.isInterface()) {
 			fields = new CachedField[0]; // No fields to serialize.
 			return;
@@ -118,23 +121,23 @@ public class FieldSerializer extends Serializer {
 	}
 
 	/**
-	 * Sets the default value for {@link CachedField#setCanBeNull(boolean)}. Should not be called after any objects are serialized
-	 * or {@link #getField(String)} is used.
+	 * Sets the default value for {@link CachedField#setCanBeNull(boolean)}.
 	 * @param fieldsCanBeNull False if none of the fields are null. Saves 1 byte per field. True if it is not known (default).
 	 */
 	public void setFieldsCanBeNull (boolean fieldsCanBeNull) {
 		this.fieldsCanBeNull = fieldsCanBeNull;
+		rebuildCachedFields();
 	}
 
 	/**
-	 * Controls which fields are accessed. Should not be called after any objects are serialized or {@link #getField(String)} is
-	 * used.
+	 * Controls which fields are accessed.
 	 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
 	 *           {@link Field#setAccessible(boolean) set as accessible} (default). If false, only fields in the public API will be
 	 *           serialized.
 	 */
 	public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
 		this.setFieldsAsAccessible = setFieldsAsAccessible;
+		rebuildCachedFields();
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
