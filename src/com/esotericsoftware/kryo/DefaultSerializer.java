@@ -6,8 +6,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.esotericsoftware.kryo.serialize.FieldSerializer;
-
 /**
  * Sets the default serializer to use for the annotated class. If the specified Serializer class has a constructor taking a Kryo
  * instance, it will be used. Otherwise the class must have a default constructor.

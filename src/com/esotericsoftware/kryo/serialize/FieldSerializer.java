@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashMap;
 import java.util.PriorityQueue;
 
 import org.objectweb.asm.AnnotationVisitor;
@@ -42,36 +41,19 @@ import com.esotericsoftware.kryo.Kryo.RegisteredClass;
  */
 public class FieldSerializer extends Serializer {
 	final Kryo kryo;
+	private final Class type;
+	private CachedField[] fields;
 	private final AccessLoader accessLoader = new AccessLoader();
-	final HashMap<Class, CachedField[]> fieldCache = new HashMap();
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 
-	public FieldSerializer (Kryo kryo) {
+	public FieldSerializer (Kryo kryo, Class type) {
 		this.kryo = kryo;
-	}
+		this.type = type;
 
-	/**
-	 * Sets the default value for {@link CachedField#setCanBeNull(boolean)}. Should not be called after any objects are serialized
-	 * or {@link #getField(Class, String)} is used.
-	 * @param fieldsCanBeNull False if none of the fields are null. Saves 1 byte per field. True if it is not known (default).
-	 */
-	public void setFieldsCanBeNull (boolean fieldsCanBeNull) {
-		this.fieldsCanBeNull = fieldsCanBeNull;
-	}
-
-	/**
-	 * Controls which fields are accessed. Should not be called after any objects are serialized or
-	 * {@link #getField(Class, String)} is used.
-	 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
-	 *           {@link Field#setAccessible(boolean) set as accessible} (default). If false, only fields in the public API will be
-	 *           serialized.
-	 */
-	public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
-		this.setFieldsAsAccessible = setFieldsAsAccessible;
-	}
-
-	CachedField[] cache (Class type) {
-		if (type.isInterface()) return new CachedField[0]; // No fields to serialize.
+		if (type.isInterface()) {
+			fields = new CachedField[0]; // No fields to serialize.
+			return;
+		}
 
 		// Collect all fields.
 		ArrayList<Field> allFields = new ArrayList();
@@ -130,18 +112,34 @@ public class FieldSerializer extends Serializer {
 		}
 
 		int fieldCount = cachedFields.size();
-		CachedField[] cachedFieldArray = new CachedField[fieldCount];
+		fields = new CachedField[fieldCount];
 		for (int i = 0; i < fieldCount; i++)
-			cachedFieldArray[i] = cachedFields.poll();
-		fieldCache.put(type, cachedFieldArray);
-		return cachedFieldArray;
+			fields[i] = cachedFields.poll();
+	}
+
+	/**
+	 * Sets the default value for {@link CachedField#setCanBeNull(boolean)}. Should not be called after any objects are serialized
+	 * or {@link #getField(String)} is used.
+	 * @param fieldsCanBeNull False if none of the fields are null. Saves 1 byte per field. True if it is not known (default).
+	 */
+	public void setFieldsCanBeNull (boolean fieldsCanBeNull) {
+		this.fieldsCanBeNull = fieldsCanBeNull;
+	}
+
+	/**
+	 * Controls which fields are accessed. Should not be called after any objects are serialized or {@link #getField(String)} is
+	 * used.
+	 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
+	 *           {@link Field#setAccessible(boolean) set as accessible} (default). If false, only fields in the public API will be
+	 *           serialized.
+	 */
+	public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
+		this.setFieldsAsAccessible = setFieldsAsAccessible;
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
 		Class type = object.getClass();
 		try {
-			CachedField[] fields = fieldCache.get(type);
-			if (fields == null) fields = cache(type);
 			for (int i = 0, n = fields.length; i < n; i++) {
 				CachedField cachedField = fields[i];
 				if (TRACE) trace("kryo", "Writing field: " + cachedField + " (" + type.getName() + ")");
@@ -171,10 +169,11 @@ public class FieldSerializer extends Serializer {
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
-		T object = newInstance(type);
+		return readObjectData(newInstance(type), buffer, type);
+	}
+
+	protected <T> T readObjectData (T object, ByteBuffer buffer, Class<T> type) {
 		try {
-			CachedField[] fields = fieldCache.get(type);
-			if (fields == null) fields = cache(type);
 			for (int i = 0, n = fields.length; i < n; i++) {
 				CachedField cachedField = fields[i];
 				if (TRACE) trace("kryo", "Reading field: " + cachedField + " (" + type.getName() + ")");
@@ -211,9 +210,7 @@ public class FieldSerializer extends Serializer {
 	/**
 	 * Allows specific fields to be optimized.
 	 */
-	public CachedField getField (Class type, String fieldName) {
-		CachedField[] fields = fieldCache.get(type);
-		if (fields == null) fields = cache(type);
+	public CachedField getField (String fieldName) {
 		for (CachedField cachedField : fields)
 			if (cachedField.field.getName().equals(fieldName)) return cachedField;
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
@@ -222,16 +219,14 @@ public class FieldSerializer extends Serializer {
 	/**
 	 * Removes a field so that it won't be serialized.
 	 */
-	public void removeField (Class type, String fieldName) {
-		CachedField[] fields = fieldCache.get(type);
-		if (fields == null) fields = cache(type);
+	public void removeField (String fieldName) {
 		for (int i = 0; i < fields.length; i++) {
 			CachedField cachedField = fields[i];
 			if (cachedField.field.getName().equals(fieldName)) {
 				CachedField[] newFields = new CachedField[fields.length - 1];
 				System.arraycopy(fields, 0, newFields, 0, i);
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
-				fieldCache.put(type, newFields);
+				fields = newFields;
 				return;
 			}
 		}

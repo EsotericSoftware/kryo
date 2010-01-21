@@ -5,7 +5,7 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 
-//BOZO - Grow the buffer size automatically?
+// BOZO - Grow the buffer size automatically?
 
 /**
  * Wraps another serializer in order to modify the bytes after they are serialized and before they are deserialized.

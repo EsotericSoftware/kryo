@@ -12,7 +12,6 @@ import org.junit.Assert;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
-import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.Serializer;
 
 // TODO - Write tests for all serializers.
@@ -198,19 +197,21 @@ public class SerializerTest extends TestCase {
 
 	public void testNonNull () {
 		Kryo kryo = new Kryo();
-		FieldSerializer fieldSerializer = new FieldSerializer(kryo);
 
 		StringTestClass value = new StringTestClass();
 		value.text = "moo";
-		NonNullTestClass nonNullValue = new NonNullTestClass();
-		nonNullValue.nonNullText = "moo";
 
 		buffer.clear();
+		FieldSerializer fieldSerializer = new FieldSerializer(kryo, StringTestClass.class);
 		fieldSerializer.writeObjectData(buffer, value);
 		buffer.flip();
 		assertEquals("Incorrect length.", 5, buffer.remaining());
 
+		NonNullTestClass nonNullValue = new NonNullTestClass();
+		nonNullValue.nonNullText = "moo";
+
 		buffer.clear();
+		fieldSerializer = new FieldSerializer(kryo, NonNullTestClass.class);
 		fieldSerializer.writeObjectData(buffer, nonNullValue);
 		buffer.flip();
 		assertEquals("Incorrect length.", 4, buffer.remaining());
@@ -222,15 +223,15 @@ public class SerializerTest extends TestCase {
 
 		Kryo kryo = new Kryo();
 
-		FieldSerializer serializer = new FieldSerializer(kryo);
-		serializer.removeField(TestClass.class, "optional");
+		FieldSerializer serializer = new FieldSerializer(kryo, TestClass.class);
+		serializer.removeField("optional");
 		value.optional = 123;
 		kryo.register(TestClass.class, serializer);
 
 		TestClass value2 = roundTrip(serializer, 35, value);
 		assertEquals(0, value2.optional);
 
-		serializer = new FieldSerializer(kryo);
+		serializer = new FieldSerializer(kryo, TestClass.class);
 		value.optional = 123;
 		value2 = roundTrip(serializer, 36, value);
 		assertEquals(123, value2.optional);

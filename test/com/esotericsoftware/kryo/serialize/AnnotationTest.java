@@ -6,8 +6,8 @@ import java.util.Date;
 
 import junit.framework.TestCase;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 
 public class AnnotationTest extends TestCase {

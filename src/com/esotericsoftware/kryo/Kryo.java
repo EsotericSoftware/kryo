@@ -51,7 +51,6 @@ public class Kryo {
 	private ClassLoader classLoader = getClass().getClassLoader();
 
 	private final CustomSerializer customSerializer = new CustomSerializer(this);
-	private final FieldSerializer fieldSerializer = new FieldSerializer(this);
 	private final ArraySerializer arraySerializer = new ArraySerializer(this);
 	private final CollectionSerializer collectionSerializer = new CollectionSerializer(this);
 	private final MapSerializer mapSerializer = new MapSerializer(this);
@@ -192,8 +191,7 @@ public class Kryo {
 	 * </table>
 	 * <p>
 	 * Note that some serializers allow additional information to be specified to make serialization more efficient in some cases
-	 * (eg, {@link FieldSerializer#getField(Class, String)}). Subclasses may override this method to change the default
-	 * serializers.
+	 * (eg, {@link FieldSerializer#getField(String)}). Subclasses may override this method to change the default serializers.
 	 * <p>
 	 * The {@link DefaultSerializer} annotation can be used to specify the serializer that this method returns.
 	 * @see DefaultSerializer
@@ -221,7 +219,7 @@ public class Kryo {
 					+ type.getName(), ex);
 			}
 		}
-		return fieldSerializer;
+		return new FieldSerializer(this, type);
 	}
 
 	/**

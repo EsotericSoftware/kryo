@@ -1,8 +1,7 @@
 
 package com.esotericsoftware.kryo;
 
-import static com.esotericsoftware.minlog.Log.DEBUG;
-import static com.esotericsoftware.minlog.Log.debug;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -1,8 +1,7 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
 
