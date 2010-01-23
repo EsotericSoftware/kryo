@@ -18,7 +18,9 @@ public class Context {
 	private ArrayList<ByteBuffer> buffers = new ArrayList(2);
 	private int remoteEntityID;
 	private SerializerKey tempKey = new SerializerKey(null, null);
+	private byte[] byteArray;
 	private char[] charArray = new char[256];
+	private int[] intArray;
 
 	/**
 	 * Returns a non-direct buffer of at least the specified size.
@@ -52,6 +54,22 @@ public class Context {
 	public char[] getCharArray (int minimumSize) {
 		if (charArray.length < minimumSize) charArray = new char[minimumSize];
 		return charArray;
+	}
+
+	/**
+	 * Returns an int array of at least the specified size.
+	 */
+	public int[] getIntArray (int minimumSize) {
+		if (intArray == null || intArray.length < minimumSize) intArray = new int[minimumSize];
+		return intArray;
+	}
+
+	/**
+	 * Returns a byte array of at least the specified size.
+	 */
+	public byte[] getByteArray (int minimumSize) {
+		if (byteArray == null || byteArray.length < minimumSize) byteArray = new byte[minimumSize];
+		return byteArray;
 	}
 
 	/**
