@@ -36,7 +36,7 @@ public class SerializerTest extends TestCase {
 	};
 
 	public void testStrings () {
-		roundTrip(new StringSerializer(), 18, "abcdefáéíóú");
+		roundTrip(new StringSerializer(), 21, "abcdefáéíóú\u1234");
 	}
 
 	public void testCollection () {
@@ -52,7 +52,7 @@ public class SerializerTest extends TestCase {
 		serializer.setElementsCanBeNull(false);
 		roundTrip(serializer, 8, new ArrayList(Arrays.asList("1", "2", "3")));
 	}
-	
+
 	public void testArray () {
 		Kryo kryo = new Kryo();
 		ArraySerializer serializer = new ArraySerializer(kryo);
