@@ -41,7 +41,7 @@ import com.esotericsoftware.kryo.Kryo.RegisteredClass;
  */
 public class FieldSerializer extends Serializer {
 	final Kryo kryo;
-	private final Class type;
+	final Class type;
 	private CachedField[] fields;
 	private final AccessLoader accessLoader = new AccessLoader();
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
@@ -290,6 +290,12 @@ public class FieldSerializer extends Serializer {
 
 	class AccessLoader extends ClassLoader {
 		private HashMap<Class, Access> classToAccess = new HashMap();
+
+		protected Class<?> findClass (String name) throws ClassNotFoundException {
+			if (name.equals(Access.class.getName())) return Access.class;
+			if (name.equals(type.getName())) return type;
+			return super.findClass(name);
+		}
 
 		public Access createAccess (Class type, ArrayList<CachedField> publicFields) {
 			int fieldCount = publicFields.size();
