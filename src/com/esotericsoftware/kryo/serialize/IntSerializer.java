@@ -125,12 +125,8 @@ public class IntSerializer extends Serializer {
 		int position = buffer.position();
 		try {
 			int remaining = buffer.remaining();
-			int offset = 0, result = 0;
-			for (; offset < 32 && remaining > 0; offset += 7, remaining--) {
-				byte b = buffer.get();
-				result |= (b & 0x7f) << offset;
-				if ((b & 0x80) == 0) return true;
-			}
+			for (int offset = 0; offset < 32 && remaining > 0; offset += 7, remaining--)
+				if ((buffer.get() & 0x80) == 0) return true;
 			return false;
 		} finally {
 			buffer.position(position);

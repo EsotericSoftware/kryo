@@ -4,6 +4,7 @@ package com.esotericsoftware.kryo.serialize;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 
 import junit.framework.TestCase;
@@ -217,6 +218,21 @@ public class SerializerTest extends TestCase {
 		assertEquals("Incorrect length.", 4, buffer.remaining());
 	}
 
+	public void testDateSerializer () {
+		Kryo kryo = new Kryo();
+		kryo.register(Date.class, new DateSerializer());
+		buffer.clear();
+		Date date = new Date(0);
+		kryo.writeClassAndObject(buffer, date);
+		buffer.flip();
+		assertEquals(date, kryo.readClassAndObject(buffer));
+		buffer.clear();
+		date = new Date(1234567);
+		kryo.writeClassAndObject(buffer, date);
+		buffer.flip();
+		assertEquals(date, kryo.readClassAndObject(buffer));
+	}
+
 	public void testFieldSerializer () {
 		TestClass value = new TestClass();
 		value.child = new TestClass();
@@ -238,17 +254,36 @@ public class SerializerTest extends TestCase {
 	}
 
 	public void testNoDefaultConstructor () {
-		NoDefaultConstructor object = new NoDefaultConstructor(2);
-		Kryo kryo = new Kryo();
-		roundTrip(new SimpleSerializer<NoDefaultConstructor>() {
-			public NoDefaultConstructor read (ByteBuffer buffer) {
-				return new NoDefaultConstructor(IntSerializer.get(buffer, true));
+		SimpleNoDefaultConstructor object1 = new SimpleNoDefaultConstructor(2);
+		roundTrip(new SimpleSerializer<SimpleNoDefaultConstructor>() {
+			public SimpleNoDefaultConstructor read (ByteBuffer buffer) {
+				return new SimpleNoDefaultConstructor(IntSerializer.get(buffer, true));
 			}
 
-			public void write (ByteBuffer buffer, NoDefaultConstructor object) {
+			public void write (ByteBuffer buffer, SimpleNoDefaultConstructor object) {
 				IntSerializer.put(buffer, object.constructorValue, true);
 			}
-		}, 2, object);
+		}, 2, object1);
+
+		Kryo kryo = new Kryo();
+		FieldSerializer complexSerializer = new FieldSerializer(kryo, ComplexNoDefaultConstructor.class) {
+			public ComplexNoDefaultConstructor readObjectData (ByteBuffer buffer, Class type) {
+				String name = StringSerializer.get(buffer);
+				ComplexNoDefaultConstructor object = new ComplexNoDefaultConstructor(name);
+				readObjectData(object, buffer, type);
+				return object;
+			}
+
+			public void writeObjectData (ByteBuffer buffer, Object object) {
+				ComplexNoDefaultConstructor complexObject = (ComplexNoDefaultConstructor)object;
+				StringSerializer.put(buffer, complexObject.name);
+				super.writeObjectData(buffer, complexObject);
+			}
+		};
+		ComplexNoDefaultConstructor object2 = new ComplexNoDefaultConstructor("has no zero arg constructor!");
+		object2.anotherField1 = 1234;
+		object2.anotherField2 = "abcd";
+		roundTrip(complexSerializer, 38, object2);
 	}
 
 	public void testArrayList () {
@@ -298,10 +333,10 @@ public class SerializerTest extends TestCase {
 		assertEquals(value, value2);
 	}
 
-	static public class NoDefaultConstructor {
+	static public class SimpleNoDefaultConstructor {
 		int constructorValue;
 
-		public NoDefaultConstructor (int constructorValue) {
+		public SimpleNoDefaultConstructor (int constructorValue) {
 			this.constructorValue = constructorValue;
 		}
 
@@ -320,8 +355,42 @@ public class SerializerTest extends TestCase {
 			if (this == obj) return true;
 			if (obj == null) return false;
 			if (getClass() != obj.getClass()) return false;
-			NoDefaultConstructor other = (NoDefaultConstructor)obj;
+			SimpleNoDefaultConstructor other = (SimpleNoDefaultConstructor)obj;
 			if (constructorValue != other.constructorValue) return false;
+			return true;
+		}
+	}
+
+	static public class ComplexNoDefaultConstructor {
+		public transient String name;
+		public int anotherField1;
+		public String anotherField2;
+
+		public ComplexNoDefaultConstructor (String name) {
+			this.name = name;
+		}
+
+		public int hashCode () {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + anotherField1;
+			result = prime * result + ((anotherField2 == null) ? 0 : anotherField2.hashCode());
+			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			return result;
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			ComplexNoDefaultConstructor other = (ComplexNoDefaultConstructor)obj;
+			if (anotherField1 != other.anotherField1) return false;
+			if (anotherField2 == null) {
+				if (other.anotherField2 != null) return false;
+			} else if (!anotherField2.equals(other.anotherField2)) return false;
+			if (name == null) {
+				if (other.name != null) return false;
+			} else if (!name.equals(other.name)) return false;
 			return true;
 		}
 	}
