@@ -95,10 +95,7 @@ public class FieldSerializer extends Serializer {
 
 			// Always use the same serializer for this field if the field's class is final.
 			Class fieldClass = field.getType();
-			if (Modifier.isFinal(fieldClass.getModifiers())) {
-				cachedField.fieldClass = fieldClass;
-				cachedField.serializer = kryo.getRegisteredClass(fieldClass).getSerializer();
-			}
+			if (Modifier.isFinal(fieldClass.getModifiers())) cachedField.fieldClass = fieldClass;
 
 			cachedFields.add(cachedField);
 			if (Modifier.isPublic(modifiers)) publicFields.add(cachedField);
@@ -150,6 +147,7 @@ public class FieldSerializer extends Serializer {
 				Object value = cachedField.get(object);
 
 				Serializer serializer = cachedField.serializer;
+
 				if (cachedField.fieldClass == null) {
 					if (value == null) {
 						kryo.writeClass(buffer, null);
@@ -159,6 +157,8 @@ public class FieldSerializer extends Serializer {
 					if (serializer == null) serializer = registeredClass.getSerializer();
 					serializer.writeObjectData(buffer, value);
 				} else {
+					if (serializer == null)
+						cachedField.serializer = serializer = kryo.getRegisteredClass(cachedField.fieldClass).getSerializer();
 					if (!cachedField.canBeNull)
 						serializer.writeObjectData(buffer, value);
 					else
@@ -195,6 +195,8 @@ public class FieldSerializer extends Serializer {
 						value = serializer.readObjectData(buffer, concreteType);
 					}
 				} else {
+					if (serializer == null)
+						cachedField.serializer = serializer = kryo.getRegisteredClass(concreteType).getSerializer();
 					if (!cachedField.canBeNull)
 						value = serializer.readObjectData(buffer, concreteType);
 					else
@@ -249,18 +251,17 @@ public class FieldSerializer extends Serializer {
 
 		/**
 		 * @param fieldClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for
-		 *           the specified class will be used. Set to null if the field type in the class definition is final or the values
-		 *           for this field vary (default).
+		 *           the specified class will be used. Only set to a non-null value if the field type in the class definition is
+		 *           final or the values for this field will not vary.
 		 */
 		public void setClass (Class fieldClass) {
 			this.fieldClass = fieldClass;
-			this.serializer = fieldClass == null ? null : kryo.getRegisteredClass(fieldClass).getSerializer();
+			this.serializer = null;
 		}
 
 		/**
-		 * @param fieldClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for
-		 *           the specified class will be used. Set to null if the field type in the class definition is final or the values
-		 *           for this field vary (default).
+		 * @param fieldClass The concrete class of the values for this field. This saves 1-2 bytes. Only set to a non-null value if
+		 *           the field type in the class definition is final or the values for this field will not vary.
 		 */
 		public void setClass (Class fieldClass, Serializer serializer) {
 			this.fieldClass = fieldClass;

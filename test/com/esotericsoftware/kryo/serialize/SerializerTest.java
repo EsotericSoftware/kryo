@@ -196,6 +196,18 @@ public class SerializerTest extends TestCase {
 		return (T)object2;
 	}
 
+	private <T> T roundTrip (Kryo kryo, int length, T object1) {
+		buffer.clear();
+		kryo.writeClassAndObject(buffer, object1);
+		buffer.flip();
+		System.out.println(object1 + " bytes: " + buffer.remaining());
+		assertEquals("Incorrect length.", length, buffer.remaining());
+
+		Object object2 = kryo.readClassAndObject(buffer);
+		assertEquals(object1, object2);
+		return (T)object2;
+	}
+
 	public void testNonNull () {
 		Kryo kryo = new Kryo();
 
@@ -251,6 +263,25 @@ public class SerializerTest extends TestCase {
 		value.optional = 123;
 		value2 = roundTrip(serializer, 36, value);
 		assertEquals(123, value2.optional);
+	}
+
+	public void testFieldSerializerRegistrationOrder () {
+		A a = new A();
+		a.value = 100;
+		a.b = new B();
+		a.b.value = 200;
+		a.b.a = new A();
+		a.b.a.value = 300;
+
+		Kryo kryo = new Kryo();
+		kryo.register(A.class);
+		kryo.register(B.class);
+		roundTrip(kryo, 9, a);
+
+		kryo = new Kryo();
+		kryo.register(B.class);
+		kryo.register(A.class);
+		roundTrip(kryo, 9, a);
 	}
 
 	public void testNoDefaultConstructor () {
@@ -426,6 +457,56 @@ public class SerializerTest extends TestCase {
 			if (text == null) {
 				if (other.text != null) return false;
 			} else if (!text.equals(other.text)) return false;
+			return true;
+		}
+	}
+
+	static public final class A {
+		public int value;
+		public B b;
+
+		public int hashCode () {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((b == null) ? 0 : b.hashCode());
+			result = prime * result + value;
+			return result;
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			A other = (A)obj;
+			if (b == null) {
+				if (other.b != null) return false;
+			} else if (!b.equals(other.b)) return false;
+			if (value != other.value) return false;
+			return true;
+		}
+	}
+
+	static public final class B {
+		public int value;
+		public A a;
+
+		public int hashCode () {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((a == null) ? 0 : a.hashCode());
+			result = prime * result + value;
+			return result;
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			B other = (B)obj;
+			if (a == null) {
+				if (other.a != null) return false;
+			} else if (!a.equals(other.a)) return false;
+			if (value != other.value) return false;
 			return true;
 		}
 	}
