@@ -9,7 +9,7 @@ import java.util.Date;
 import com.esotericsoftware.kryo.Serializer;
 
 /**
- * Serializes instances of java.util.Date.
+ * Serializes instances of {@link java.util.Date}.
  */
 public class DateSerializer extends Serializer {
 	static private LongSerializer longSerializer = new LongSerializer(true);
