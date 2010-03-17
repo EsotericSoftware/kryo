@@ -33,7 +33,7 @@ import com.esotericsoftware.kryo.util.IntHashMap;
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class Kryo {
-	static public final String version = "0.98";
+	static public final String version = "1.0";
 
 	static private final byte ID_NULL_OBJECT = 0;
 	static private final int ID_CLASS_NAME = 16383;
