@@ -325,7 +325,7 @@ public class FieldSerializer extends Serializer {
 					mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
 					mv.visitCode();
 					mv.visitVarInsn(ALOAD, 0);
-					mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V");
+					mv.visitMethodInsn(INVOKESPECIAL, "com/esotericsoftware/kryo/serialize/FieldSerializer$Access", "<init>", "()V");
 					mv.visitInsn(RETURN);
 					mv.visitMaxs(1, 1);
 					mv.visitEnd();
