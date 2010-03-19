@@ -337,9 +337,14 @@ public class Kryo {
 	 * @param object Can be null (writes a special ID for a null object instead).
 	 */
 	public void writeClassAndObject (ByteBuffer buffer, Object object) {
-		RegisteredClass registeredClass = writeClass(buffer, object.getClass());
-		if (registeredClass == null) return;
 		try {
+			if (object == null) {
+				buffer.put(ID_NULL_OBJECT);
+				if (TRACE) trace("kryo", "Wrote object: null");
+				return;
+			}
+			RegisteredClass registeredClass = writeClass(buffer, object.getClass());
+			if (registeredClass == null) return;
 			registeredClass.serializer.writeObjectData(buffer, object);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
