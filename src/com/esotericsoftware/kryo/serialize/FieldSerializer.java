@@ -317,7 +317,7 @@ public class FieldSerializer extends Serializer {
 				FieldVisitor fv;
 				MethodVisitor mv;
 				AnnotationVisitor av0;
-				cw.visit(V1_6, ACC_PUBLIC + ACC_SUPER, accessClassName.replace('.', '/'), null,
+				cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, accessClassName.replace('.', '/'), null,
 					"com/esotericsoftware/kryo/serialize/FieldSerializer$Access", null);
 				cw.visitInnerClass("com/esotericsoftware/kryo/serialize/FieldSerializer$Access",
 					"com/esotericsoftware/kryo/serialize/FieldSerializer", "Access", ACC_PUBLIC + ACC_STATIC + ACC_ABSTRACT);
