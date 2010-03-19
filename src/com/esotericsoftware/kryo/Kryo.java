@@ -5,6 +5,8 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
@@ -276,21 +278,25 @@ public class Kryo {
 	 * @return The registered information for the class that was written, or null of the specified class was null.
 	 */
 	public RegisteredClass writeClass (ByteBuffer buffer, Class type) {
-		if (type == null) {
-			buffer.put(ID_NULL_OBJECT);
-			if (TRACE) trace("kryo", "Wrote object: null");
-			return null;
+		try {
+			if (type == null) {
+				buffer.put(ID_NULL_OBJECT);
+				if (TRACE) trace("kryo", "Wrote object: null");
+				return null;
+			}
+			RegisteredClass registeredClass = getRegisteredClass(type);
+			if (!allowUnregisteredClasses || registeredClass.id != 0) {
+				IntSerializer.put(buffer, registeredClass.id, true);
+				if (TRACE) trace("kryo", "Wrote class " + registeredClass.id + ": " + type.getName());
+			} else {
+				IntSerializer.put(buffer, ID_CLASS_NAME, true);
+				StringSerializer.put(buffer, type.getName());
+				if (TRACE) trace("kryo", "Wrote class name: " + type.getName());
+			}
+			return registeredClass;
+		} catch (BufferOverflowException ex) {
+			throw new SerializationException("Buffer limit exceeded writing class ID: " + type, ex);
 		}
-		RegisteredClass registeredClass = getRegisteredClass(type);
-		if (!allowUnregisteredClasses || registeredClass.id != 0) {
-			IntSerializer.put(buffer, registeredClass.id, true);
-			if (TRACE) trace("kryo", "Wrote class " + registeredClass.id + ": " + type.getName());
-		} else {
-			IntSerializer.put(buffer, ID_CLASS_NAME, true);
-			StringSerializer.put(buffer, type.getName());
-			if (TRACE) trace("kryo", "Wrote class name: " + type.getName());
-		}
-		return registeredClass;
 	}
 
 	/**
@@ -299,26 +305,30 @@ public class Kryo {
 	 *         object.
 	 */
 	public RegisteredClass readClass (ByteBuffer buffer) {
-		int classID = IntSerializer.get(buffer, true);
-		if (classID == ID_NULL_OBJECT) {
-			if (TRACE) trace("kryo", "Read object: null");
-			return null;
-		}
-		if (classID == ID_CLASS_NAME) {
-			String className = StringSerializer.get(buffer);
-			try {
-				RegisteredClass registeredClass = getRegisteredClass(Class.forName(className, false, classLoader));
-				if (TRACE) trace("kryo", "Read class name: " + className);
-				return registeredClass;
-			} catch (ClassNotFoundException ex) {
-				throw new SerializationException("Unable to find class: " + className, ex);
+		int classID;
+		try {
+			classID = IntSerializer.get(buffer, true);
+			if (classID == ID_NULL_OBJECT) {
+				if (TRACE) trace("kryo", "Read object: null");
+				return null;
 			}
-		} else {
-			RegisteredClass registeredClass = idToRegisteredClass.get(classID);
-			if (registeredClass == null) throw new SerializationException("Encountered unregistered class ID: " + classID);
-			if (TRACE) trace("kryo", "Read class " + classID + ": " + registeredClass.type.getName());
-			return registeredClass;
+			if (classID == ID_CLASS_NAME) {
+				String className = StringSerializer.get(buffer);
+				try {
+					RegisteredClass registeredClass = getRegisteredClass(Class.forName(className, false, classLoader));
+					if (TRACE) trace("kryo", "Read class name: " + className);
+					return registeredClass;
+				} catch (ClassNotFoundException ex) {
+					throw new SerializationException("Unable to find class: " + className, ex);
+				}
+			}
+		} catch (BufferUnderflowException ex) {
+			throw new SerializationException("Buffer limit exceeded reading class ID.", ex);
 		}
+		RegisteredClass registeredClass = idToRegisteredClass.get(classID);
+		if (registeredClass == null) throw new SerializationException("Encountered unregistered class ID: " + classID);
+		if (TRACE) trace("kryo", "Read class " + classID + ": " + registeredClass.type.getName());
+		return registeredClass;
 	}
 
 	/**
@@ -327,16 +337,14 @@ public class Kryo {
 	 * @param object Can be null (writes a special ID for a null object instead).
 	 */
 	public void writeClassAndObject (ByteBuffer buffer, Object object) {
-		if (object == null) {
-			buffer.put(ID_NULL_OBJECT);
-			if (TRACE) trace("kryo", "Wrote object: null");
-			return;
-		}
+		RegisteredClass registeredClass = writeClass(buffer, object.getClass());
+		if (registeredClass == null) return;
 		try {
-			RegisteredClass registeredClass = writeClass(buffer, object.getClass());
 			registeredClass.serializer.writeObjectData(buffer, object);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
+		} catch (BufferOverflowException ex) {
+			throw new SerializationException("Buffer limit exceeded serializing object of type: " + object.getClass().getName(), ex);
 		}
 	}
 
@@ -345,15 +353,17 @@ public class Kryo {
 	 * @param object Can be null (writes a special ID for a null object instead).
 	 */
 	public void writeObject (ByteBuffer buffer, Object object) {
-		if (object == null) {
-			buffer.put(ID_NULL_OBJECT);
-			if (TRACE) trace("kryo", "Wrote object: null");
-			return;
-		}
 		try {
+			if (object == null) {
+				buffer.put(ID_NULL_OBJECT);
+				if (TRACE) trace("kryo", "Wrote object: null");
+				return;
+			}
 			getRegisteredClass(object.getClass()).serializer.writeObject(buffer, object);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
+		} catch (BufferOverflowException ex) {
+			throw new SerializationException("Buffer limit exceeded serializing object of type: " + object.getClass().getName(), ex);
 		}
 	}
 
@@ -366,6 +376,8 @@ public class Kryo {
 			getRegisteredClass(object.getClass()).serializer.writeObjectData(buffer, object);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
+		} catch (BufferOverflowException ex) {
+			throw new SerializationException("Buffer limit exceeded serializing object of type: " + object.getClass().getName(), ex);
 		}
 	}
 
@@ -374,15 +386,15 @@ public class Kryo {
 	 * @return The deserialized object, or null if the object read from the buffer was null.
 	 */
 	public Object readClassAndObject (ByteBuffer buffer) {
-		RegisteredClass registeredClass = null;
+		RegisteredClass registeredClass = readClass(buffer);
+		if (registeredClass == null) return null;
 		try {
-			registeredClass = readClass(buffer);
-			if (registeredClass == null) return null;
 			return registeredClass.serializer.readObjectData(buffer, registeredClass.type);
 		} catch (SerializationException ex) {
-			if (registeredClass != null)
-				throw new SerializationException("Unable to deserialize object of type: " + registeredClass.type.getName(), ex);
-			throw new SerializationException("Unable to deserialize an object.", ex);
+			throw new SerializationException("Unable to deserialize object of type: " + registeredClass.type.getName(), ex);
+		} catch (BufferUnderflowException ex) {
+			throw new SerializationException(
+				"Buffer limit exceeded deserializing object of type: " + registeredClass.type.getName(), ex);
 		}
 	}
 
@@ -395,6 +407,8 @@ public class Kryo {
 			return getRegisteredClass(type).serializer.readObject(buffer, type);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to deserialize object of type: " + type.getName(), ex);
+		} catch (BufferUnderflowException ex) {
+			throw new SerializationException("Buffer limit exceeded deserializing object of type: " + type.getName(), ex);
 		}
 	}
 
@@ -407,6 +421,8 @@ public class Kryo {
 			return getRegisteredClass(type).serializer.readObjectData(buffer, type);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to deserialize object of type: " + type.getName(), ex);
+		} catch (BufferUnderflowException ex) {
+			throw new SerializationException("Buffer limit exceeded deserializing object of type: " + type.getName(), ex);
 		}
 	}
 
