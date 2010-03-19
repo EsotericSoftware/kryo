@@ -37,7 +37,7 @@ public class SerializerTest extends TestCase {
 	};
 
 	public void testStrings () {
-		roundTrip(new StringSerializer(), 21, "abcdefáéíóú\u1234");
+		roundTrip(new StringSerializer(), 21, "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234");
 	}
 
 	public void testCollection () {
