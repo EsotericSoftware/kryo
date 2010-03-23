@@ -60,7 +60,7 @@ public class ObjectBuffer {
 				int count = input.read(bytes, position, bytes.length - position);
 				if (count == -1) break;
 				position += count;
-				if (position >= bytes.length && !resizeBuffer(true)) throw new BufferOverflowException();
+				if (position == bytes.length && !resizeBuffer(true)) throw new BufferOverflowException();
 			}
 			buffer.position(0);
 			buffer.limit(position);
@@ -255,13 +255,15 @@ public class ObjectBuffer {
 	}
 
 	private boolean resizeBuffer (boolean preserveContents) {
-		int newCapacity = buffer.capacity() * 2;
-		if (newCapacity > maxCapacity) return false;
+		int capacity = buffer.capacity();
+		if (capacity == maxCapacity) return false;
+		int newCapacity = Math.min(maxCapacity, capacity * 2);
 
 		ByteBuffer newBuffer = ByteBuffer.allocate(newCapacity);
-		if (preserveContents) newBuffer.put(buffer);
+		byte[] newArray = newBuffer.array();
+		if (preserveContents) System.arraycopy(bytes, 0, newArray, 0, bytes.length);
 		buffer = newBuffer;
-		bytes = newBuffer.array();
+		bytes = newArray;
 
 		if (DEBUG) debug("kryo", "Resized ObjectBuffer to: " + newCapacity);
 		return true;
