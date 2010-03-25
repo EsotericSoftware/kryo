@@ -356,7 +356,7 @@ public class SerializerTest extends TestCase {
 		value.child = new TestClass();
 		value.optional = 123;
 		Kryo kryo = new Kryo();
-		kryo.setAllowUnregisteredClasses(true);
+		kryo.setRegistrationOptional(true);
 		buffer.clear();
 		kryo.writeClassAndObject(buffer, value);
 		buffer.flip();

@@ -7,9 +7,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Sets the default serializer to use for the annotated class. If the specified Serializer class has a constructor taking a Kryo
- * instance, it will be used. Otherwise the class must have a default constructor.
- * @see Kryo#getDefaultSerializer(Class)
+ * Sets the default serializer to use for the annotated class. The specified Serializer class must have a constructor taking a
+ * Kryo instance and a class, a Kryo instance, a class, or no arguments.
+ * @see Kryo#register(Class)
  * @author Nathan Sweet <misc@n4te.com>
  */
 @Retention(RetentionPolicy.RUNTIME)
