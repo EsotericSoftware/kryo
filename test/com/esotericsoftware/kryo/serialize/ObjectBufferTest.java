@@ -15,11 +15,11 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.ObjectBuffer;
 
 public class ObjectBufferTest extends TestCase {
-	private ObjectBuffer buffer;
 	private TestObject testObject;
+	private Kryo kryo;
 
 	public ObjectBufferTest () {
-		Kryo kryo = new Kryo();
+		kryo = new Kryo();
 		kryo.register(TestObject.class);
 		kryo.register(TestEnum.class);
 		kryo.register(BigInteger.class, new BigIntegerSerializer());
@@ -34,7 +34,6 @@ public class ObjectBufferTest extends TestCase {
 				LongSerializer.put(buffer, ((Timestamp)object).getTime(), true);
 			}
 		});
-		buffer = new ObjectBuffer(kryo, 1024, 32 * 1024);
 
 		testObject = new TestObject();
 		testObject.valid = true;
@@ -49,6 +48,8 @@ public class ObjectBufferTest extends TestCase {
 	}
 
 	public void testStreams () {
+		ObjectBuffer buffer = new ObjectBuffer(kryo, 1024);
+
 		ByteArrayOutputStream output = new ByteArrayOutputStream(1024);
 		buffer.writeClassAndObject(output, testObject);
 
@@ -59,6 +60,14 @@ public class ObjectBufferTest extends TestCase {
 	}
 
 	public void testByteArrays () {
+		ObjectBuffer buffer = new ObjectBuffer(kryo, 1024);
+		byte[] input = buffer.writeClassAndObject(testObject);
+		Object resultObject = buffer.readClassAndObject(input);
+		assertEquals(testObject, resultObject);
+	}
+
+	public void testBufferResize () {
+		ObjectBuffer buffer = new ObjectBuffer(kryo, 2, 1024);
 		byte[] input = buffer.writeClassAndObject(testObject);
 		Object resultObject = buffer.readClassAndObject(input);
 		assertEquals(testObject, resultObject);

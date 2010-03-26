@@ -36,7 +36,7 @@ public class SerializableSerializer extends Serializer {
 
 	static public void put (ByteBuffer buffer, Object object) {
 		try {
-			ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+			ByteArrayOutputStream byteStream = new ByteArrayOutputStream(256);
 			ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
 			objectStream.writeObject(object);
 			objectStream.close();
