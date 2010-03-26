@@ -18,16 +18,16 @@ import com.esotericsoftware.kryo.util.IntHashMap;
  * an entire object graph. Eg:
  * <p>
  * <code>
- * Kryo.getContext().put("references", null);<br>
+ * ReferenceFieldSerializer.reset();<br>
  * byte[] bytes = objectBuffer.writeObjectData(someObject);<br>
  * // ...<br>
- * Kryo.getContext().put("references", null);<br>
+ * ReferenceFieldSerializer.reset();<br>
  * someObject =  objectBuffer.readObjectData(bytes, SomeObject.class);<br>
  * </code>
  * <p>
  * Note that serializing references can be convenient, but can sometimes be redundant information. If this is the case and
- * serialized size is a priority, references should not be serialized. Code can be hand written to reconstruct the references
- * after deserialization.
+ * serialized size is a priority, references should not be serialized. Code can sometimes be hand written to reconstruct the
+ * references after deserialization.
  * @see FieldSerializer
  * @author Nathan Sweet <misc@n4te.com>
  */
@@ -83,5 +83,14 @@ public class ReferenceFieldSerializer extends FieldSerializer {
 		public IdentityHashMap<Object, Integer> objectToReference = new IdentityHashMap();
 		public IntHashMap referenceToObject = new IntHashMap();
 		public int referenceCount = 1;
+	}
+
+	static public void reset () {
+		Context context = Kryo.getContext();
+		References references = (References)context.get("references");
+		if (references == null) return;
+		references.objectToReference.clear();
+		references.referenceToObject.clear();
+		references.referenceCount = 1;
 	}
 }

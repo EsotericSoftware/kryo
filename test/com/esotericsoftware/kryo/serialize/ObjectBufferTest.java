@@ -55,7 +55,10 @@ public class ObjectBufferTest extends TestCase {
 
 		ByteArrayInputStream input = new ByteArrayInputStream(output.toByteArray());
 		Object resultObject = buffer.readClassAndObject(input);
+		assertEquals(testObject, resultObject);
 
+		input = new ByteArrayInputStream(output.toByteArray());
+		resultObject = buffer.readClassAndObject(input);
 		assertEquals(testObject, resultObject);
 	}
 
@@ -64,12 +67,22 @@ public class ObjectBufferTest extends TestCase {
 		byte[] input = buffer.writeClassAndObject(testObject);
 		Object resultObject = buffer.readClassAndObject(input);
 		assertEquals(testObject, resultObject);
+
+		resultObject = buffer.readClassAndObject(input);
+		assertEquals(testObject, resultObject);
 	}
 
 	public void testBufferResize () {
 		ObjectBuffer buffer = new ObjectBuffer(kryo, 2, 1024);
 		byte[] input = buffer.writeClassAndObject(testObject);
 		Object resultObject = buffer.readClassAndObject(input);
+		assertEquals(testObject, resultObject);
+
+		resultObject = buffer.readClassAndObject(input);
+		assertEquals(testObject, resultObject);
+
+		input = buffer.writeClassAndObject(testObject);
+		resultObject = buffer.readClassAndObject(input);
 		assertEquals(testObject, resultObject);
 	}
 
