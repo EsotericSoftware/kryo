@@ -15,6 +15,7 @@ import com.esotericsoftware.kryo.compress.DeltaCompressor;
  */
 public class Context {
 	private HashMap<Object, Object> map;
+	private HashMap<Object, Object> tempMap;
 	private ArrayList<ByteBuffer> buffers = new ArrayList(2);
 	private int remoteEntityID;
 	private SerializerKey tempKey = new SerializerKey(null, null);
@@ -108,6 +109,51 @@ public class Context {
 		tempKey.serializer = serializer;
 		tempKey.key = key;
 		return map.get(tempKey);
+	}
+
+	/**
+	 * Stores an object in thread local storage. This allows serializers to easily make repeated use of objects that are not thread
+	 * safe.
+	 */
+	public void putTemp (String key, Object value) {
+		if (tempMap == null) tempMap = new HashMap();
+		tempMap.put(key, value);
+	}
+
+	/**
+	 * Returns an object from thread local storage, or null.
+	 * @see #put(Serializer, String, Object)
+	 */
+	public Object getTemp (String key) {
+		if (tempMap == null) tempMap = new HashMap();
+		return tempMap.get(key);
+	}
+
+	/**
+	 * Stores an object for a serializer in thread local storage. This allows serializers to easily make repeated use of objects
+	 * that are not thread safe.
+	 */
+	public void putTemp (Serializer serializer, String key, Object value) {
+		if (tempMap == null) tempMap = new HashMap();
+		tempMap.put(new SerializerKey(serializer, key), value);
+	}
+
+	/**
+	 * Returns an object for a serializer from thread local storage, or null.
+	 * @see #put(Serializer, String, Object)
+	 */
+	public Object getTemp (Serializer serializer, String key) {
+		if (tempMap == null) tempMap = new HashMap();
+		tempKey.serializer = serializer;
+		tempKey.key = key;
+		return tempMap.get(tempKey);
+	}
+
+	/**
+	 * Clears temporary values that are only needed for serialization or deserialization per object graph.
+	 */
+	public void reset () {
+		if (tempMap != null) tempMap.clear();
 	}
 
 	/**

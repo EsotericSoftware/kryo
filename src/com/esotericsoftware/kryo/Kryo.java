@@ -538,6 +538,14 @@ public class Kryo {
 	}
 
 	/**
+	 * Resets the thread local context's per object graph temporary storage.
+	 * @see Context#reset()
+	 */
+	static public void reset () {
+		contextThreadLocal.get().reset();
+	}
+
+	/**
 	 * Holds the registration information for a class.
 	 */
 	static public class RegisteredClass {

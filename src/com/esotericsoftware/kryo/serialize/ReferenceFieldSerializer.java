@@ -14,14 +14,14 @@ import com.esotericsoftware.kryo.util.IntHashMap;
  * Serializes objects using direct field assignment and handles object references. Each object serialized requires 1 byte more
  * than FieldSerializer. Each appearance of an object in the graph after the first is stored as an integer ordinal.
  * <p>
- * For this serializer to work correctly, the collected references must be reset before each serialization and deserialization of
- * an entire object graph. Eg:
+ * For this serializer to work correctly, the {@link Context} must be reset before each serialization and deserialization of an
+ * entire object graph. Eg:
  * <p>
  * <code>
- * ReferenceFieldSerializer.reset();<br>
+ * Kryo.reset();<br>
  * byte[] bytes = objectBuffer.writeObjectData(someObject);<br>
  * // ...<br>
- * ReferenceFieldSerializer.reset();<br>
+ * Kryo.reset();<br>
  * someObject =  objectBuffer.readObjectData(bytes, SomeObject.class);<br>
  * </code>
  * <p>
@@ -38,10 +38,10 @@ public class ReferenceFieldSerializer extends FieldSerializer {
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
 		Context context = Kryo.getContext();
-		References references = (References)context.get("references");
+		References references = (References)context.getTemp("references");
 		if (references == null) {
 			references = new References();
-			context.put("references", references);
+			context.putTemp("references", references);
 		}
 		Integer reference = references.objectToReference.get(object);
 		if (reference != null) {
@@ -59,10 +59,10 @@ public class ReferenceFieldSerializer extends FieldSerializer {
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
 		Context context = Kryo.getContext();
-		References references = (References)context.get("references");
+		References references = (References)context.getTemp("references");
 		if (references == null) {
 			references = new References();
-			context.put("references", references);
+			context.putTemp("references", references);
 		}
 		int reference = IntSerializer.get(buffer, true);
 		if (reference != 0) {
@@ -83,14 +83,5 @@ public class ReferenceFieldSerializer extends FieldSerializer {
 		public IdentityHashMap<Object, Integer> objectToReference = new IdentityHashMap();
 		public IntHashMap referenceToObject = new IntHashMap();
 		public int referenceCount = 1;
-	}
-
-	static public void reset () {
-		Context context = Kryo.getContext();
-		References references = (References)context.get("references");
-		if (references == null) return;
-		references.objectToReference.clear();
-		references.referenceToObject.clear();
-		references.referenceCount = 1;
 	}
 }
