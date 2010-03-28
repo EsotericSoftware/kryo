@@ -6,7 +6,6 @@ import static com.esotericsoftware.minlog.Log.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 /**
@@ -134,7 +133,7 @@ public class ObjectBuffer {
 				kryo.writeClassAndObject(buffer, object);
 				break;
 			} catch (SerializationException ex) {
-				if (!causedByBufferOverflow(ex)) throw ex;
+				if (!ex.causedByBufferOverflow()) throw ex;
 				if (!resizeBuffer(false)) {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
@@ -154,7 +153,7 @@ public class ObjectBuffer {
 				kryo.writeObject(buffer, object);
 				break;
 			} catch (SerializationException ex) {
-				if (!causedByBufferOverflow(ex)) throw ex;
+				if (!ex.causedByBufferOverflow()) throw ex;
 				if (!resizeBuffer(false)) {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
@@ -174,7 +173,7 @@ public class ObjectBuffer {
 				kryo.writeObjectData(buffer, object);
 				break;
 			} catch (SerializationException ex) {
-				if (!causedByBufferOverflow(ex)) throw ex;
+				if (!ex.causedByBufferOverflow()) throw ex;
 				if (!resizeBuffer(false)) {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
@@ -223,7 +222,7 @@ public class ObjectBuffer {
 				kryo.writeClassAndObject(buffer, object);
 				break;
 			} catch (SerializationException ex) {
-				if (!causedByBufferOverflow(ex)) throw ex;
+				if (!ex.causedByBufferOverflow()) throw ex;
 				if (!resizeBuffer(false)) {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
@@ -243,7 +242,7 @@ public class ObjectBuffer {
 				kryo.writeObject(buffer, object);
 				break;
 			} catch (SerializationException ex) {
-				if (!causedByBufferOverflow(ex)) throw ex;
+				if (!ex.causedByBufferOverflow()) throw ex;
 				if (!resizeBuffer(false)) {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
@@ -263,7 +262,7 @@ public class ObjectBuffer {
 				kryo.writeObjectData(buffer, object);
 				break;
 			} catch (SerializationException ex) {
-				if (!causedByBufferOverflow(ex)) throw ex;
+				if (!ex.causedByBufferOverflow()) throw ex;
 				if (!resizeBuffer(false)) {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
@@ -292,12 +291,5 @@ public class ObjectBuffer {
 
 		if (DEBUG) debug("kryo", "Resized ObjectBuffer to: " + newCapacity);
 		return true;
-	}
-
-	private boolean causedByBufferOverflow (Throwable ex) {
-		Throwable cause = ex.getCause();
-		if (cause == null || cause == ex) return false;
-		if (cause instanceof BufferOverflowException) return true;
-		return causedByBufferOverflow(cause);
 	}
 }

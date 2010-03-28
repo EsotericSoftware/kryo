@@ -40,8 +40,8 @@ public class ObjectBufferTest extends TestCase {
 		testObject.intValue = Integer.MIN_VALUE;
 		testObject.longWrapperValue = Long.valueOf(Long.MAX_VALUE);
 		testObject.bigInteger = BigInteger.TEN;
-		testObject.floatValue = Float.MIN_NORMAL;
-		testObject.doubleWrapperValue = Double.valueOf(Double.MIN_NORMAL);
+		testObject.floatValue = Float.MIN_VALUE;
+		testObject.doubleWrapperValue = Double.valueOf(Double.MIN_VALUE);
 		testObject.bigDecimal = BigDecimal.TEN;
 		testObject.date = new Date();
 		testObject.enumValue = TestEnum.USD;
