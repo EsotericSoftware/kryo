@@ -5,6 +5,7 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -132,7 +133,11 @@ public class CompatibleFieldSerializer extends Serializer {
 				}
 
 				int start = buffer.position();
-				buffer.position(start + 1);
+				try {
+					buffer.position(start + 1);
+				} catch (IllegalArgumentException ex) {
+					new BufferOverflowException();
+				}
 
 				Serializer serializer = cachedField.serializer;
 				if (cachedField.fieldClass == null) {
@@ -204,8 +209,12 @@ public class CompatibleFieldSerializer extends Serializer {
 
 				CachedField cachedField = fields[i];
 				if (cachedField == null) {
-					buffer.position(buffer.position() + dataLength);
 					if (TRACE) trace("kryo", "Skipping obsolete field bytes: " + dataLength);
+					try {
+						buffer.position(buffer.position() + dataLength);
+					} catch (IllegalArgumentException ex) {
+						new BufferOverflowException();
+					}
 					continue;
 				}
 

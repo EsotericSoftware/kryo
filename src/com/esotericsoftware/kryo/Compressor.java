@@ -3,6 +3,7 @@ package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 // BOZO - Grow the buffer size automatically?
@@ -55,7 +56,11 @@ abstract public class Compressor extends Serializer {
 		}
 
 		int start = buffer.position() + 2;
-		buffer.position(start);
+		try {
+			buffer.position(start);
+		} catch (IllegalArgumentException ex) {
+			new BufferOverflowException();
+		}
 
 		serializer.writeObjectData(buffer, object);
 		int end = buffer.position();
