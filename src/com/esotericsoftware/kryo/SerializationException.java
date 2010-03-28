@@ -28,7 +28,7 @@ public class SerializationException extends RuntimeException {
 	 * Returns true if any of the exceptions that caused this exception are {@link BufferOverflowException}.
 	 */
 	public boolean causedByBufferOverflow () {
-		return causedByBufferOverflow(getCause());
+		return causedByBufferOverflow(this);
 	}
 
 	private boolean causedByBufferOverflow (Throwable ex) {
