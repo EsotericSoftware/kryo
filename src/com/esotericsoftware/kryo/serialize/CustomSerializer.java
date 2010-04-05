@@ -19,7 +19,7 @@ public class CustomSerializer extends Serializer {
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
-		T object = newInstance(type);
+		T object = newInstance(kryo, type);
 		((CustomSerialization)object).readObjectData(kryo, buffer);
 		return object;
 	}

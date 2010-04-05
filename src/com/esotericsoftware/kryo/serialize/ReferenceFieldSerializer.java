@@ -71,7 +71,7 @@ public class ReferenceFieldSerializer extends FieldSerializer {
 			return (T)object;
 		}
 
-		T object = newInstance(type);
+		T object = newInstance(kryo, type);
 
 		references.referenceCount++;
 		references.referenceToObject.put(references.referenceCount, object);

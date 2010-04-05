@@ -98,7 +98,7 @@ public class CollectionSerializer extends Serializer {
 		if (type == ArrayList.class)
 			collection = new ArrayList(length);
 		else
-			collection = (Collection)newInstance(type);
+			collection = (Collection)newInstance(kryo, type);
 		if (length == 0) return (T)collection;
 		if (serializer != null) {
 			if (elementsCanBeNull) {

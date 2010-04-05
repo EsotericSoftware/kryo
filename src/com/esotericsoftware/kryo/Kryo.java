@@ -3,6 +3,7 @@ package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.nio.BufferOverflowException;
@@ -527,6 +528,32 @@ public class Kryo {
 		if (TRACE) trace("kryo", "Remote ID removed: " + remoteEntityID);
 		for (int i = 0, n = listeners.length; i < n; i++)
 			listeners[i].remoteEntityRemoved(remoteEntityID);
+	}
+
+	/**
+	 * Returns an instance of the specified class. Serializers that want to allow object construction to be customized by a
+	 * subclass should {@link Serializer#newInstance(Kryo, Class)} instead of calling this method directly.
+	 * @throws SerializationException if the class could not be constructed.
+	 */
+	public <T> T newInstance (Class<T> type) {
+		try {
+			return type.newInstance();
+		} catch (Exception ex) {
+			if (ex instanceof InstantiationException) {
+				Constructor[] constructors = type.getConstructors();
+				boolean hasZeroArgConstructor = false;
+				for (int i = 0, n = constructors.length; i < n; i++) {
+					Constructor constructor = constructors[i];
+					if (constructor.getParameterTypes().length == 0) {
+						hasZeroArgConstructor = true;
+						break;
+					}
+				}
+				if (!hasZeroArgConstructor)
+					throw new SerializationException("Class cannot be created (missing no-arg constructor): " + type.getName(), ex);
+			}
+			throw new SerializationException("Error constructing instance of class: " + type.getName(), ex);
+		}
 	}
 
 	/**

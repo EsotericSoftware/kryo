@@ -189,7 +189,7 @@ public class CompatibleFieldSerializer extends Serializer {
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
-		return readObjectData(newInstance(type), buffer, type);
+		return readObjectData(newInstance(kryo, type), buffer, type);
 	}
 
 	protected <T> T readObjectData (T object, ByteBuffer buffer, Class<T> type) {

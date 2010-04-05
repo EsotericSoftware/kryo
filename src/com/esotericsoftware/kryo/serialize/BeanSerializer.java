@@ -126,7 +126,7 @@ public class BeanSerializer extends Serializer {
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
-		T object = newInstance(type);
+		T object = newInstance(kryo, type);
 		try {
 			CachedMethod[] setterMethods = getSetterMethods(object.getClass());
 			for (int i = 0, n = setterMethods.length; i < n; i++) {

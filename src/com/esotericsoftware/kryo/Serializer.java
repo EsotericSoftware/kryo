@@ -66,27 +66,10 @@ abstract public class Serializer {
 	abstract public <T> T readObjectData (ByteBuffer buffer, Class<T> type);
 
 	/**
-	 * Returns an instance of the specified class.
+	 * Returns an instance of the specified class. The default implementation calls {@link Kryo#newInstance(Class)}.
 	 * @throws SerializationException if the class could not be constructed.
 	 */
-	public <T> T newInstance (Class<T> type) {
-		try {
-			return type.newInstance();
-		} catch (Exception ex) {
-			if (ex instanceof InstantiationException) {
-				Constructor[] constructors = type.getConstructors();
-				boolean hasZeroArgConstructor = false;
-				for (int i = 0, n = constructors.length; i < n; i++) {
-					Constructor constructor = constructors[i];
-					if (constructor.getParameterTypes().length == 0) {
-						hasZeroArgConstructor = true;
-						break;
-					}
-				}
-				if (!hasZeroArgConstructor)
-					throw new SerializationException("Class cannot be created (missing no-arg constructor): " + type.getName(), ex);
-			}
-			throw new SerializationException("Error constructing instance of class: " + type.getName(), ex);
-		}
+	public <T> T newInstance (Kryo kryo, Class<T> type) {
+		return kryo.newInstance(type);
 	}
 }

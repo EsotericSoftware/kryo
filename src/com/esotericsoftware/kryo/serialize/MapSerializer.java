@@ -107,7 +107,7 @@ public class MapSerializer extends Serializer {
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
-		Map map = (Map)newInstance(type);
+		Map map = (Map)newInstance(kryo, type);
 		int length = IntSerializer.get(buffer, true);
 		if (length == 0) return (T)map;
 		for (int i = 0; i < length; i++) {
