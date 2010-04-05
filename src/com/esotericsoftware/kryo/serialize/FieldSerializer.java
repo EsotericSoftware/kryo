@@ -2,7 +2,6 @@
 package com.esotericsoftware.kryo.serialize;
 
 import static com.esotericsoftware.minlog.Log.*;
-import static org.objectweb.asm.Opcodes.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -10,16 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.PriorityQueue;
-
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 import com.esotericsoftware.kryo.CustomSerialization;
 import com.esotericsoftware.kryo.Kryo;
@@ -27,6 +17,7 @@ import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.Kryo.RegisteredClass;
+import com.esotericsoftware.reflectasm.FieldAccess;
 
 /**
  * Serializes objects using direct field assignment. This is a very fast mechanism for serializing objects, often as good as
@@ -43,7 +34,6 @@ public class FieldSerializer extends Serializer {
 	final Kryo kryo;
 	final Class type;
 	private CachedField[] fields;
-	private final AccessLoader accessLoader = new AccessLoader();
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 
 	public FieldSerializer (Kryo kryo, Class type) {
@@ -101,13 +91,17 @@ public class FieldSerializer extends Serializer {
 			if (Modifier.isPublic(modifiers)) publicFields.add(cachedField);
 		}
 
-		// Generate an access class for any public fields.
 		if (!publicFields.isEmpty()) {
-			Access access = accessLoader.createAccess(type, publicFields);
-			for (int i = 0, n = publicFields.size(); i < n; i++) {
-				CachedField cachedField = publicFields.get(i);
-				cachedField.access = access;
-				cachedField.accessIndex = i;
+			// Use ReflectASM for any public fields.
+			try {
+				FieldAccess access = FieldAccess.get(type);
+				for (int i = 0, n = publicFields.size(); i < n; i++) {
+					CachedField cachedField = publicFields.get(i);
+					cachedField.access = access;
+					cachedField.accessIndex = access.getIndex(cachedField.field.getName());
+				}
+			} catch (Throwable ignored) {
+				// ReflectASM is not available on Android.
 			}
 		}
 
@@ -246,7 +240,7 @@ public class FieldSerializer extends Serializer {
 		Class fieldClass;
 		Serializer serializer;
 		boolean canBeNull;
-		Access access;
+		Object access;
 		int accessIndex;
 
 		/**
@@ -277,225 +271,15 @@ public class FieldSerializer extends Serializer {
 		}
 
 		Object get (Object object) throws IllegalAccessException {
-			if (access != null) return access.get(object, accessIndex);
+			if (access != null) return ((FieldAccess)access).get(object, accessIndex);
 			return field.get(object);
 		}
 
 		void set (Object object, Object value) throws IllegalAccessException {
 			if (access != null)
-				access.set(object, accessIndex, value);
+				((FieldAccess)access).set(object, accessIndex, value);
 			else
 				field.set(object, value);
 		}
-	}
-
-	class AccessLoader extends ClassLoader {
-		private HashMap<Class, Access> classToAccess = new HashMap();
-
-		protected Class<?> findClass (String name) throws ClassNotFoundException {
-			if (name.equals(Access.class.getName())) return Access.class;
-			if (name.equals(type.getName())) return type;
-			return super.findClass(name);
-		}
-
-		public Access createAccess (Class type, ArrayList<CachedField> publicFields) {
-			int fieldCount = publicFields.size();
-			Access access = classToAccess.get(type);
-			if (access != null) return access;
-
-			String className = type.getName();
-			String accessClassName = className + "Access";
-			Class accessClass = null;
-			try {
-				accessClass = loadClass(accessClassName);
-			} catch (ClassNotFoundException ignored) {
-			}
-			if (accessClass == null) {
-				String targetClassName = className.replace('.', '/');
-
-				ClassWriter cw = new ClassWriter(0);
-				FieldVisitor fv;
-				MethodVisitor mv;
-				AnnotationVisitor av0;
-				cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, accessClassName.replace('.', '/'), null,
-					"com/esotericsoftware/kryo/serialize/FieldSerializer$Access", null);
-				cw.visitInnerClass("com/esotericsoftware/kryo/serialize/FieldSerializer$Access",
-					"com/esotericsoftware/kryo/serialize/FieldSerializer", "Access", ACC_PUBLIC + ACC_STATIC + ACC_ABSTRACT);
-				{
-					mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
-					mv.visitCode();
-					mv.visitVarInsn(ALOAD, 0);
-					mv.visitMethodInsn(INVOKESPECIAL, "com/esotericsoftware/kryo/serialize/FieldSerializer$Access", "<init>", "()V");
-					mv.visitInsn(RETURN);
-					mv.visitMaxs(1, 1);
-					mv.visitEnd();
-				}
-				{
-					mv = cw.visitMethod(ACC_PUBLIC, "set", "(Ljava/lang/Object;ILjava/lang/Object;)V", null, null);
-					mv.visitCode();
-					mv.visitVarInsn(ILOAD, 2);
-
-					Label[] labels = new Label[fieldCount];
-					for (int i = 0, n = publicFields.size(); i < n; i++)
-						labels[i] = new Label();
-					Label defaultLabel = new Label();
-					mv.visitTableSwitchInsn(0, fieldCount - 1, defaultLabel, labels);
-
-					for (int i = 0; i < fieldCount; i++) {
-						Field field = publicFields.get(i).field;
-						Type fieldType = Type.getType(field.getType());
-
-						mv.visitLabel(labels[i]);
-						mv.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
-						mv.visitVarInsn(ALOAD, 1);
-						mv.visitTypeInsn(CHECKCAST, targetClassName);
-						mv.visitVarInsn(ALOAD, 3);
-
-						switch (fieldType.getSort()) {
-						case Type.BOOLEAN:
-							mv.visitTypeInsn(CHECKCAST, "java/lang/Boolean");
-							mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Boolean", "booleanValue", "()Z");
-							break;
-						case Type.BYTE:
-							mv.visitTypeInsn(CHECKCAST, "java/lang/Byte");
-							mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Byte", "byteValue", "()B");
-							break;
-						case Type.CHAR:
-							mv.visitTypeInsn(CHECKCAST, "java/lang/Character");
-							mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Character", "charValue", "()C");
-							break;
-						case Type.SHORT:
-							mv.visitTypeInsn(CHECKCAST, "java/lang/Short");
-							mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Short", "shortValue", "()S");
-							break;
-						case Type.INT:
-							mv.visitTypeInsn(CHECKCAST, "java/lang/Integer");
-							mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I");
-							break;
-						case Type.FLOAT:
-							mv.visitTypeInsn(CHECKCAST, "java/lang/Float");
-							mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F");
-							break;
-						case Type.LONG:
-							mv.visitTypeInsn(CHECKCAST, "java/lang/Long");
-							mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J");
-							break;
-						case Type.DOUBLE:
-							mv.visitTypeInsn(CHECKCAST, "java/lang/Double");
-							mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D");
-							break;
-						case Type.ARRAY:
-							mv.visitTypeInsn(CHECKCAST, fieldType.getDescriptor());
-							break;
-						case Type.OBJECT:
-							mv.visitTypeInsn(CHECKCAST, fieldType.getInternalName());
-							break;
-						}
-
-						mv.visitFieldInsn(PUTFIELD, targetClassName, field.getName(), fieldType.getDescriptor());
-						mv.visitInsn(RETURN);
-					}
-
-					mv.visitLabel(defaultLabel);
-					mv.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
-					mv.visitTypeInsn(NEW, "java/lang/IllegalArgumentException");
-					mv.visitInsn(DUP);
-					mv.visitTypeInsn(NEW, "java/lang/StringBuilder");
-					mv.visitInsn(DUP);
-					mv.visitLdcInsn("Field not found: ");
-					mv.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "(Ljava/lang/String;)V");
-					mv.visitVarInsn(ILOAD, 2);
-					mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(I)Ljava/lang/StringBuilder;");
-					mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;");
-					mv.visitMethodInsn(INVOKESPECIAL, "java/lang/IllegalArgumentException", "<init>", "(Ljava/lang/String;)V");
-					mv.visitInsn(ATHROW);
-					mv.visitMaxs(5, 4);
-					mv.visitEnd();
-				}
-				{
-					mv = cw.visitMethod(ACC_PUBLIC, "get", "(Ljava/lang/Object;I)Ljava/lang/Object;", null, null);
-					mv.visitCode();
-					mv.visitVarInsn(ILOAD, 2);
-
-					Label[] labels = new Label[fieldCount];
-					for (int i = 0, n = fieldCount; i < n; i++)
-						labels[i] = new Label();
-					Label defaultLabel = new Label();
-					mv.visitTableSwitchInsn(0, fieldCount - 1, defaultLabel, labels);
-
-					for (int i = 0; i < fieldCount; i++) {
-						Field field = publicFields.get(i).field;
-
-						mv.visitLabel(labels[i]);
-						mv.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
-						mv.visitVarInsn(ALOAD, 1);
-						mv.visitTypeInsn(CHECKCAST, targetClassName);
-						mv.visitFieldInsn(GETFIELD, targetClassName, field.getName(), Type.getDescriptor(field.getType()));
-
-						Type fieldType = Type.getType(field.getType());
-						switch (fieldType.getSort()) {
-						case Type.BOOLEAN:
-							mv.visitMethodInsn(INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;");
-							break;
-						case Type.BYTE:
-							mv.visitMethodInsn(INVOKESTATIC, "java/lang/Byte", "valueOf", "(B)Ljava/lang/Byte;");
-							break;
-						case Type.CHAR:
-							mv.visitMethodInsn(INVOKESTATIC, "java/lang/Character", "valueOf", "(C)Ljava/lang/Character;");
-							break;
-						case Type.SHORT:
-							mv.visitMethodInsn(INVOKESTATIC, "java/lang/Short", "valueOf", "(S)Ljava/lang/Short;");
-							break;
-						case Type.INT:
-							mv.visitMethodInsn(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;");
-							break;
-						case Type.FLOAT:
-							mv.visitMethodInsn(INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;");
-							break;
-						case Type.LONG:
-							mv.visitMethodInsn(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;");
-							break;
-						case Type.DOUBLE:
-							mv.visitMethodInsn(INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;");
-							break;
-						}
-
-						mv.visitInsn(ARETURN);
-					}
-
-					mv.visitLabel(defaultLabel);
-					mv.visitFrame(Opcodes.F_SAME, 0, null, 0, null);
-					mv.visitTypeInsn(NEW, "java/lang/IllegalArgumentException");
-					mv.visitInsn(DUP);
-					mv.visitTypeInsn(NEW, "java/lang/StringBuilder");
-					mv.visitInsn(DUP);
-					mv.visitLdcInsn("Field not found: ");
-					mv.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "(Ljava/lang/String;)V");
-					mv.visitVarInsn(ILOAD, 2);
-					mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(I)Ljava/lang/StringBuilder;");
-					mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;");
-					mv.visitMethodInsn(INVOKESPECIAL, "java/lang/IllegalArgumentException", "<init>", "(Ljava/lang/String;)V");
-					mv.visitInsn(ATHROW);
-					mv.visitMaxs(5, 3);
-					mv.visitEnd();
-				}
-				cw.visitEnd();
-				byte[] data = cw.toByteArray();
-				accessClass = super.defineClass(className + "Access", data, 0, data.length);
-			}
-			try {
-				access = (Access)accessClass.newInstance();
-				classToAccess.put(type, access);
-				return access;
-			} catch (Exception ex) {
-				throw new SerializationException("Error constructing ASM access class: " + accessClassName, ex);
-			}
-		}
-	}
-
-	static public abstract class Access {
-		abstract public void set (Object object, int fieldIndex, Object value);
-
-		abstract public Object get (Object object, int fieldIndex);
 	}
 }
