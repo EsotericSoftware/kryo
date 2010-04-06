@@ -1,13 +1,11 @@
 
-package com.esotericsoftware.kryo.serialize;
+package com.esotericsoftware.kryo;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Date;
 
-import com.esotericsoftware.kryo.DefaultSerializer;
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.serialize.LongSerializer;
 
 public class KryoTest extends KryoTestCase {
 	public void testNulls () {

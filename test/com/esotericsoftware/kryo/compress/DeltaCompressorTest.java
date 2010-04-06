@@ -3,12 +3,11 @@ package com.esotericsoftware.kryo.compress;
 
 import java.nio.ByteBuffer;
 
-import junit.framework.TestCase;
-
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serialize.StringSerializer;
 
-public class DeltaCompressorTest extends TestCase {
+public class DeltaCompressorTest extends KryoTestCase {
 	public void testDeltaCompressor () {
 		// Log.TRACE();
 
@@ -22,17 +21,17 @@ public class DeltaCompressorTest extends TestCase {
 		Kryo.getContext().setRemoteEntityID(123);
 
 		DeltaCompressor delta = new DeltaCompressor(kryo, new StringSerializer());
-		delta.writeObjectData(buffer, data);
-		buffer.flip();
-		String newData = delta.readObjectData(buffer, String.class);
-		assertEquals(data, newData);
-
+		roundTripOnce(delta, 419, data);
 		data += "abc";
-		buffer.clear();
-		delta.writeObjectData(buffer, data);
-		buffer.flip();
-		newData = delta.readObjectData(buffer, String.class);
-		assertEquals(data, newData);
+		roundTripOnce(delta, 25, data);
+		data = "abc" + data;
+		roundTripOnce(delta, 28, data);
+		data = "something and something else";
+		roundTripOnce(delta, 33, data);
+		data = "something and moo something else";
+		roundTripOnce(delta, 22, data);
+		data = "moo something and something else moo";
+		roundTripOnce(delta, 25, data);
 
 		kryo.removeRemoteEntity(123);
 	}

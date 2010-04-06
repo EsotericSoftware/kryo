@@ -26,6 +26,7 @@ package com.esotericsoftware.kryo.compress;
 
 import java.nio.ByteBuffer;
 
+import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.serialize.IntSerializer;
 import com.esotericsoftware.kryo.util.LongToIntHashMap;
 
@@ -35,7 +36,7 @@ import com.esotericsoftware.kryo.util.LongToIntHashMap;
  * Most of this code was originally from the "javaxdelta" project. It was heavily customized for efficiency when used with Kryo.
  */
 public class Delta {
-	static private final boolean debug = false;
+	static private final boolean debug = true;
 
 	static private final byte COMMAND_APPEND = -1;
 	static private final byte COMMAND_COPY = 0;
@@ -65,7 +66,7 @@ public class Delta {
 	 */
 	public Delta (int bufferSize, int chunkSize) {
 		this.chunkSize = chunkSize;
-		int blockSize = Math.min(1024 * 4, chunkSize * 4);
+		int blockSize = Math.min(1024 * 16, chunkSize * 4);
 		tbuf = ByteBuffer.allocate(blockSize);
 		sbuf = ByteBuffer.allocate(blockSize);
 	}
@@ -88,7 +89,8 @@ public class Delta {
 				high += low;
 			}
 			long checksum = (high & 0xffff) << 16 | low & 0xffff;
-			checksums.put(checksum, count++);
+			// Only use the position for the first time a checksum is found, since the last position is most likely shorter.
+			if (!checksums.containsKey(checksum)) checksums.put(checksum, count++);
 		}
 
 		while (!eof) {
@@ -105,10 +107,13 @@ public class Delta {
 					outputBuffer.put(COMMAND_COPY);
 					IntSerializer.put(outputBuffer, length, true);
 					IntSerializer.put(outputBuffer, offset, true);
-				} else
+				} else {
+					tbuf.position(tbuf.position() - length); // Move back the amount that can't be copied.
 					appendData();
-			} else
+				}
+			} else {
 				appendData();
+			}
 		}
 
 		writeAppend(outputBuffer);
@@ -230,19 +235,25 @@ public class Delta {
 				command = COMMAND_APPEND;
 			} else
 				length = IntSerializer.get(deltaData, true);
-			if (command == COMMAND_APPEND) {
+			switch (command) {
+			case COMMAND_APPEND:
 				if (debug) System.out.println("decompress APPEND " + length + ": " + dump(deltaData, deltaData.position(), length));
 				// Append new data.
 				while (length-- > 0)
 					outputBuffer.put(deltaData.get());
-			} else {
+				break;
+			case COMMAND_COPY:
 				// Copy old data.
+				if (oldData == null) throw new SerializationException("Delta copy command received without previous data.");
 				int offset = IntSerializer.get(deltaData, true);
 				if (debug)
 					System.out.println("decompress COPY at " + offset + ", length " + length + ": " + dump(oldData, offset, length));
 				oldData.position(offset);
 				while (length-- > 0)
 					outputBuffer.put(oldData.get());
+				break;
+			default:
+				throw new SerializationException("Invalid delta command: " + command);
 			}
 		}
 	}

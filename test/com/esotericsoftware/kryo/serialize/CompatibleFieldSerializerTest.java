@@ -4,6 +4,7 @@ package com.esotericsoftware.kryo.serialize;
 import java.io.FileNotFoundException;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
 
 public class CompatibleFieldSerializerTest extends KryoTestCase {
 	public void testAddedField () throws FileNotFoundException {

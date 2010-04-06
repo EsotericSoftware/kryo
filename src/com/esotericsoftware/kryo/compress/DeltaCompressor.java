@@ -29,7 +29,7 @@ public class DeltaCompressor extends Compressor {
 	};
 
 	/**
-	 * Creates a DeltaCompressor with a buffer size of 2048 abd a chunk size of 8.
+	 * Creates a DeltaCompressor with a buffer size of 2048 and a chunk size of 8.
 	 */
 	public DeltaCompressor (Kryo kryo, Serializer serializer) {
 		this(kryo, serializer, 2048, 8);

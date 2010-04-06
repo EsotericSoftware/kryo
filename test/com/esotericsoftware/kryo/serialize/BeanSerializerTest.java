@@ -2,6 +2,7 @@
 package com.esotericsoftware.kryo.serialize;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
 
 public class BeanSerializerTest extends KryoTestCase {
 	public void testBeanSerializer () {

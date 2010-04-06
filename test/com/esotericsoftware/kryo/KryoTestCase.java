@@ -1,5 +1,5 @@
 
-package com.esotericsoftware.kryo.serialize;
+package com.esotericsoftware.kryo;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -32,6 +32,19 @@ abstract public class KryoTestCase extends TestCase {
 		buffer.clear();
 		serializer.setCanBeNull(false);
 		return roundTripSerializer(serializer, length - 1, object1);
+	}
+
+	protected <T> T roundTripOnce (Serializer serializer, int length, T object1) {
+		buffer.clear();
+		Kryo.getContext().reset();
+		serializer.writeObject(buffer, object1);
+		assertEquals("Incorrect length.", length, buffer.position());
+		buffer.flip();
+		Kryo.getContext().reset();
+		Object object2 = serializer.readObject(buffer, object1.getClass());
+		assertEquals("Incorrect number of bytes read.", length, buffer.position());
+		assertEquals(object1, object2);
+		return (T)object2;
 	}
 
 	private <T> T roundTripSerializer (Serializer serializer, int length, T object1) {

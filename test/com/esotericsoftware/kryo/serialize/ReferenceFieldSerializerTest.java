@@ -1,7 +1,10 @@
 
 package com.esotericsoftware.kryo.serialize;
 
+import java.util.ArrayList;
+
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serialize.FieldSerializerTest.HasStringField;
 import com.esotericsoftware.kryo.serialize.FieldSerializerTest.TestClass;
 
@@ -32,6 +35,7 @@ public class ReferenceFieldSerializerTest extends KryoTestCase {
 
 	public void testReference () {
 		Kryo kryo = new Kryo();
+		kryo.register(ArrayList.class);
 		kryo.register(TestClass.class, new ReferenceFieldSerializer(kryo, TestClass.class));
 
 		TestClass test = new TestClass();

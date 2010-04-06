@@ -4,6 +4,7 @@ package com.esotericsoftware.kryo.serialize;
 import java.nio.ByteBuffer;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.NotNull;
 
 public class FieldSerializerTest extends KryoTestCase {
