@@ -16,16 +16,6 @@ import com.esotericsoftware.kryo.Serializer;
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class StringSerializer extends Serializer {
-	static private final CharsetEncoder encoder;
-	static private final CharsetDecoder decoder;
-	static private final int maxBytesPerChar;
-	static {
-		Charset charset = Charset.forName("UTF-8");
-		encoder = charset.newEncoder();
-		maxBytesPerChar = (int)Math.ceil(encoder.maxBytesPerChar());
-		decoder = charset.newDecoder();
-	}
-
 	public String readObjectData (ByteBuffer buffer, Class type) {
 		String s = get(buffer);
 		if (TRACE) trace("kryo", "Read string: " + s);

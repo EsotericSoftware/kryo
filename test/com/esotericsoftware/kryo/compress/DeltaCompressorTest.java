@@ -13,7 +13,7 @@ import com.esotericsoftware.minlog.Log;
 
 public class DeltaCompressorTest extends TestCase {
 	public void testDeltaCompressor () {
-		Log.set(LEVEL_TRACE);
+		// Log.TRACE();
 
 		ByteBuffer buffer = ByteBuffer.allocateDirect(2048);
 		String data = "this is some data this is some data this is some data this is some data this is some data "

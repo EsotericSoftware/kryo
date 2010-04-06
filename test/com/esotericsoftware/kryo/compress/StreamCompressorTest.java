@@ -20,7 +20,7 @@ import com.esotericsoftware.minlog.Log;
 
 public class StreamCompressorTest extends TestCase {
 	public void testDeflateCompressor () {
-		Log.set(LEVEL_TRACE);
+		// Log.TRACE();
 
 		ByteBuffer buffer = ByteBuffer.allocateDirect(2048);
 		String data = "this is some data this is some data this is some data this is some data this is some data "

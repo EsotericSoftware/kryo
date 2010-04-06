@@ -329,7 +329,7 @@ public class Kryo {
 				if (TRACE) trace("kryo", "Wrote object: null");
 				return null;
 			} catch (BufferOverflowException ex) {
-				throw new SerializationException("Buffer limit exceeded writing null object.");
+				throw new SerializationException("Buffer limit exceeded writing null object.", ex);
 			}
 		}
 		try {
@@ -391,7 +391,7 @@ public class Kryo {
 				if (TRACE) trace("kryo", "Wrote object: null");
 				return;
 			} catch (BufferOverflowException ex) {
-				throw new SerializationException("Buffer limit exceeded writing null object.");
+				throw new SerializationException("Buffer limit exceeded writing null object.", ex);
 			}
 		}
 		RegisteredClass registeredClass = writeClass(buffer, object.getClass());
@@ -416,7 +416,7 @@ public class Kryo {
 				if (TRACE) trace("kryo", "Wrote object: null");
 				return;
 			} catch (BufferOverflowException ex) {
-				throw new SerializationException("Buffer limit exceeded writing null object.");
+				throw new SerializationException("Buffer limit exceeded writing null object.", ex);
 			}
 		}
 		try {

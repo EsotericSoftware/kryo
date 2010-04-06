@@ -1,60 +1,39 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.nio.ByteBuffer;
 
-import junit.framework.TestCase;
-
-import org.junit.Assert;
-
-import com.esotericsoftware.kryo.Context;
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.ObjectBuffer;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.minlog.Log;
 
-// TODO - Write tests for all serializers.
-// TODO - Break this monolithic test into smaller tests.
-
-public class CompatibleFieldSerializerTest extends TestCase {
-	private ByteBuffer buffer = ByteBuffer.allocateDirect(500);
-
-	private <T> T roundTrip (Serializer serializer, int length, T object1) {
-		Kryo.reset();
-		buffer.clear();
-		serializer.writeObject(buffer, object1);
-		buffer.flip();
-		System.out.println(object1 + " bytes: " + buffer.remaining());
-		assertEquals("Incorrect length.", length, buffer.remaining());
-
-		Kryo.reset();
-		Object object2 = serializer.readObject(buffer, object1.getClass());
-		assertEquals(object1, object2);
-		return (T)object2;
-	}
-
-	public void testCompatibleFieldSerializer () throws FileNotFoundException {
-		Log.TRACE();
-
-		TestClass value = new TestClass();
-		value.child = new TestClass();
+public class CompatibleFieldSerializerTest extends KryoTestCase {
+	public void testAddedField () throws FileNotFoundException {
+		TestClass object1 = new TestClass();
+		object1.child = new TestClass();
 
 		Kryo kryo = new Kryo();
-		ObjectBuffer objectBuffer = new ObjectBuffer(kryo);
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
+		serializer.removeField("text");
+		kryo.register(TestClass.class, serializer);
+		roundTrip(kryo, 42, object1);
+
+		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
+		Object object2 = kryo.readClassAndObject(buffer);
+		assertEquals(object1, object2);
+	}
+
+	public void testRemovedField () throws FileNotFoundException {
+		TestClass object1 = new TestClass();
+		object1.child = new TestClass();
+
+		Kryo kryo = new Kryo();
+		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
+		roundTrip(kryo, 71, object1);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
-		// value.optional = 123;
+		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
-
-		// objectBuffer.writeClassAndObject(new FileOutputStream("test.bin"), value);
-
-		// Object value3 = objectBuffer.readClassAndObject(new FileInputStream("test.bin"));
-		// assertEquals(value, value3);
-
-		TestClass value2 = roundTrip(serializer, 71, value);
+		Object object2 = kryo.readClassAndObject(buffer);
+		assertEquals(object1, object2);
 	}
 
 	static public class TestClass {
