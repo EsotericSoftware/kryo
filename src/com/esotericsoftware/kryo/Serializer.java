@@ -3,7 +3,6 @@ package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.minlog.Log.*;
 
-import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 
 /**

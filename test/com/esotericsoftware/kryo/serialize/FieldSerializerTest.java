@@ -12,10 +12,10 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(TestClass.class);
 		kryo.register(HasStringField.class);
 
-		HasStringField hasStringField = new HasStringField();
-		hasStringField.text = "moo";
-		roundTrip(kryo, 6, hasStringField);
-		roundTrip(new FieldSerializer(kryo, HasStringField.class), 6, hasStringField);
+//		HasStringField hasStringField = new HasStringField();
+//		hasStringField.text = "moo";
+//		roundTrip(kryo, 6, hasStringField);
+//		roundTrip(new FieldSerializer(kryo, HasStringField.class), 6, hasStringField);
 
 		TestClass test = new TestClass();
 		test.optional = 12;

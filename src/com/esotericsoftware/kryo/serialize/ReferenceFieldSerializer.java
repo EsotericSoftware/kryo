@@ -14,17 +14,6 @@ import com.esotericsoftware.kryo.util.IntHashMap;
  * Serializes objects using direct field assignment and handles object references. Each object serialized requires 1 byte more
  * than FieldSerializer. Each appearance of an object in the graph after the first is stored as an integer ordinal.
  * <p>
- * For this serializer to work correctly, the {@link Context} must be reset before each serialization and deserialization of an
- * entire object graph. Eg:
- * <p>
- * <code>
- * Kryo.reset();<br>
- * byte[] bytes = objectBuffer.writeObjectData(someObject);<br>
- * // ...<br>
- * Kryo.reset();<br>
- * someObject =  objectBuffer.readObjectData(bytes, SomeObject.class);<br>
- * </code>
- * <p>
  * Note that serializing references can be convenient, but can sometimes be redundant information. If this is the case and
  * serialized size is a priority, references should not be serialized. Code can sometimes be hand written to reconstruct the
  * references after deserialization.
@@ -40,7 +29,12 @@ public class ReferenceFieldSerializer extends FieldSerializer {
 		Context context = Kryo.getContext();
 		References references = (References)context.getTemp("references");
 		if (references == null) {
-			references = new References();
+			// Use non-temporary storage to avoid repeated allocation.
+			references = (References)context.get("references");
+			if (references == null)
+				context.put("references", references = new References());
+			else
+				references.reset();
 			context.putTemp("references", references);
 		}
 		Integer reference = references.objectToReference.get(object);
@@ -61,7 +55,12 @@ public class ReferenceFieldSerializer extends FieldSerializer {
 		Context context = Kryo.getContext();
 		References references = (References)context.getTemp("references");
 		if (references == null) {
-			references = new References();
+			// Use non-temporary storage to avoid repeated allocation.
+			references = (References)context.get("references");
+			if (references == null)
+				context.put("references", references = new References());
+			else
+				references.reset();
 			context.putTemp("references", references);
 		}
 		int reference = IntSerializer.get(buffer, true);
@@ -83,5 +82,11 @@ public class ReferenceFieldSerializer extends FieldSerializer {
 		public IdentityHashMap<Object, Integer> objectToReference = new IdentityHashMap();
 		public IntHashMap referenceToObject = new IntHashMap();
 		public int referenceCount = 1;
+
+		public void reset () {
+			objectToReference.clear();
+			referenceToObject.clear();
+			referenceCount = 1;
+		}
 	}
 }

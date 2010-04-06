@@ -4,9 +4,6 @@ package com.esotericsoftware.kryo.serialize;
 import static com.esotericsoftware.minlog.Log.*;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CharsetEncoder;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;

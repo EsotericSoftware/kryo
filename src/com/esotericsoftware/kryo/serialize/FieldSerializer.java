@@ -17,6 +17,7 @@ import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.Kryo.RegisteredClass;
+import com.esotericsoftware.minlog.Log;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 /**
@@ -32,8 +33,9 @@ import com.esotericsoftware.reflectasm.FieldAccess;
  */
 public class FieldSerializer extends Serializer {
 	final Kryo kryo;
-	final Class type;
+	private final Class type;
 	private CachedField[] fields;
+	Object access;
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 
 	public FieldSerializer (Kryo kryo, Class type) {
@@ -67,7 +69,6 @@ public class FieldSerializer extends Serializer {
 			Field field = allFields.get(i);
 			int modifiers = field.getModifiers();
 			if (Modifier.isTransient(modifiers)) continue;
-			if (Modifier.isFinal(modifiers)) continue;
 			if (Modifier.isStatic(modifiers)) continue;
 			if (field.isSynthetic()) continue;
 			if (setFieldsAsAccessible)
@@ -94,11 +95,10 @@ public class FieldSerializer extends Serializer {
 		if (!publicFields.isEmpty()) {
 			// Use ReflectASM for any public fields.
 			try {
-				FieldAccess access = FieldAccess.get(type);
+				access = FieldAccess.get(type);
 				for (int i = 0, n = publicFields.size(); i < n; i++) {
 					CachedField cachedField = publicFields.get(i);
-					cachedField.access = access;
-					cachedField.accessIndex = access.getIndex(cachedField.field.getName());
+					cachedField.accessIndex = ((FieldAccess)access).getIndex(cachedField.field.getName());
 				}
 			} catch (Throwable ignored) {
 				// ReflectASM is not available on Android.
@@ -132,11 +132,11 @@ public class FieldSerializer extends Serializer {
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
-		Class type = object.getClass();
 		try {
+			Log.TRACE();
 			for (int i = 0, n = fields.length; i < n; i++) {
 				CachedField cachedField = fields[i];
-				if (TRACE) trace("kryo", "Writing field: " + cachedField + " (" + type.getName() + ")");
+				if (TRACE) trace("kryo", "Writing field: " + cachedField + " (" + object.getClass().getName() + ")");
 
 				Object value = cachedField.get(object);
 
@@ -160,7 +160,7 @@ public class FieldSerializer extends Serializer {
 				}
 			}
 		} catch (IllegalAccessException ex) {
-			throw new SerializationException("Error accessing field in class: " + type.getName(), ex);
+			throw new SerializationException("Error accessing field in class: " + object.getClass().getName(), ex);
 		}
 		if (TRACE) trace("kryo", "Wrote object: " + object);
 	}
@@ -240,8 +240,7 @@ public class FieldSerializer extends Serializer {
 		Class fieldClass;
 		Serializer serializer;
 		boolean canBeNull;
-		Object access;
-		int accessIndex;
+		int accessIndex = -1;
 
 		/**
 		 * @param fieldClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for
@@ -271,12 +270,12 @@ public class FieldSerializer extends Serializer {
 		}
 
 		Object get (Object object) throws IllegalAccessException {
-			if (access != null) return ((FieldAccess)access).get(object, accessIndex);
+			if (accessIndex != -1) return ((FieldAccess)access).get(object, accessIndex);
 			return field.get(object);
 		}
 
 		void set (Object object, Object value) throws IllegalAccessException {
-			if (access != null)
+			if (accessIndex != -1)
 				((FieldAccess)access).set(object, accessIndex, value);
 			else
 				field.set(object, value);

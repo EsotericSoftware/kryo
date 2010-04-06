@@ -51,7 +51,7 @@ public class Kryo {
 	private final HashMap<Class, RegisteredClass> classToRegisteredClass = new HashMap(64);
 	private AtomicInteger nextClassID = new AtomicInteger(1);
 	private Object listenerLock = new Object();
-	private KryoListener[] listeners = {};
+	private Listener[] listeners = {};
 	private boolean registrationOptional;
 	private ClassLoader classLoader = getClass().getClassLoader();
 
@@ -308,6 +308,10 @@ public class Kryo {
 		this.classLoader = classLoader;
 	}
 
+	public ClassLoader getClassLoader () {
+		return classLoader;
+	}
+
 	public Serializer getSerializer (Class type) {
 		return getRegisteredClass(type).serializer;
 	}
@@ -396,12 +400,17 @@ public class Kryo {
 		}
 		RegisteredClass registeredClass = writeClass(buffer, object.getClass());
 		if (registeredClass == null) return;
+		Context context = getContext();
+		context.objectGraphLevel++;
 		try {
 			registeredClass.serializer.writeObjectData(buffer, object);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
 		} catch (BufferOverflowException ex) {
 			throw new SerializationException("Buffer limit exceeded writing object of type: " + object.getClass().getName(), ex);
+		} finally {
+			context.objectGraphLevel--;
+			if (context.objectGraphLevel == 0) context.reset();
 		}
 	}
 
@@ -419,12 +428,17 @@ public class Kryo {
 				throw new SerializationException("Buffer limit exceeded writing null object.", ex);
 			}
 		}
+		Context context = getContext();
+		context.objectGraphLevel++;
 		try {
 			getRegisteredClass(object.getClass()).serializer.writeObject(buffer, object);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
 		} catch (BufferOverflowException ex) {
 			throw new SerializationException("Buffer limit exceeded writing object of type: " + object.getClass().getName(), ex);
+		} finally {
+			context.objectGraphLevel--;
+			if (context.objectGraphLevel == 0) context.reset();
 		}
 	}
 
@@ -433,12 +447,17 @@ public class Kryo {
 	 * @param object Cannot be null.
 	 */
 	public void writeObjectData (ByteBuffer buffer, Object object) {
+		Context context = getContext();
+		context.objectGraphLevel++;
 		try {
 			getRegisteredClass(object.getClass()).serializer.writeObjectData(buffer, object);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
 		} catch (BufferOverflowException ex) {
 			throw new SerializationException("Buffer limit exceeded writing object of type: " + object.getClass().getName(), ex);
+		} finally {
+			context.objectGraphLevel--;
+			if (context.objectGraphLevel == 0) context.reset();
 		}
 	}
 
@@ -449,12 +468,17 @@ public class Kryo {
 	public Object readClassAndObject (ByteBuffer buffer) {
 		RegisteredClass registeredClass = readClass(buffer);
 		if (registeredClass == null) return null;
+		Context context = getContext();
+		context.objectGraphLevel++;
 		try {
 			return registeredClass.serializer.readObjectData(buffer, registeredClass.type);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to deserialize object of type: " + registeredClass.type.getName(), ex);
 		} catch (BufferUnderflowException ex) {
 			throw new SerializationException("Buffer limit exceeded reading object of type: " + registeredClass.type.getName(), ex);
+		} finally {
+			context.objectGraphLevel--;
+			if (context.objectGraphLevel == 0) context.reset();
 		}
 	}
 
@@ -463,12 +487,17 @@ public class Kryo {
 	 * @return The deserialized object, or null if the object read from the buffer was null.
 	 */
 	public <T> T readObject (ByteBuffer buffer, Class<T> type) {
+		Context context = getContext();
+		context.objectGraphLevel++;
 		try {
 			return getRegisteredClass(type).serializer.readObject(buffer, type);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to deserialize object of type: " + type.getName(), ex);
 		} catch (BufferUnderflowException ex) {
 			throw new SerializationException("Buffer limit exceeded reading object of type: " + type.getName(), ex);
+		} finally {
+			context.objectGraphLevel--;
+			if (context.objectGraphLevel == 0) context.reset();
 		}
 	}
 
@@ -477,23 +506,28 @@ public class Kryo {
 	 * @return The deserialized object, never null.
 	 */
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
+		Context context = getContext();
+		context.objectGraphLevel++;
 		try {
 			return getRegisteredClass(type).serializer.readObjectData(buffer, type);
 		} catch (SerializationException ex) {
 			throw new SerializationException("Unable to deserialize object of type: " + type.getName(), ex);
 		} catch (BufferUnderflowException ex) {
 			throw new SerializationException("Buffer limit exceeded reading object of type: " + type.getName(), ex);
+		} finally {
+			context.objectGraphLevel--;
+			if (context.objectGraphLevel == 0) context.reset();
 		}
 	}
 
-	public void addListener (KryoListener listener) {
+	public void addListener (Listener listener) {
 		if (listener == null) throw new IllegalArgumentException("listener cannot be null.");
 		synchronized (listenerLock) {
-			KryoListener[] listeners = this.listeners;
+			Listener[] listeners = this.listeners;
 			int n = listeners.length;
 			for (int i = 0; i < n; i++)
 				if (listener == listeners[i]) return;
-			KryoListener[] newListeners = new KryoListener[n + 1];
+			Listener[] newListeners = new Listener[n + 1];
 			newListeners[0] = listener;
 			System.arraycopy(listeners, 0, newListeners, 1, n);
 			this.listeners = newListeners;
@@ -501,12 +535,12 @@ public class Kryo {
 		if (TRACE) trace("kryo", "Kryo listener added: " + listener.getClass().getName());
 	}
 
-	public void removeListener (KryoListener listener) {
+	public void removeListener (Listener listener) {
 		if (listener == null) throw new IllegalArgumentException("listener cannot be null.");
 		synchronized (listenerLock) {
-			KryoListener[] listeners = this.listeners;
+			Listener[] listeners = this.listeners;
 			int n = listeners.length;
-			KryoListener[] newListeners = new KryoListener[n - 1];
+			Listener[] newListeners = new Listener[n - 1];
 			for (int i = 0, ii = 0; i < n; i++) {
 				if (listener == listeners[i]) continue;
 				if (ii == n - 1) return;
@@ -521,10 +555,10 @@ public class Kryo {
 	/**
 	 * Notifies all listeners that the remote entity with the specified ID will no longer be available.
 	 * @see Context#getRemoteEntityID()
-	 * @see #addListener(KryoListener)
+	 * @see #addListener(Listener)
 	 */
 	public void removeRemoteEntity (int remoteEntityID) {
-		KryoListener[] listeners = this.listeners;
+		Listener[] listeners = this.listeners;
 		if (TRACE) trace("kryo", "Remote ID removed: " + remoteEntityID);
 		for (int i = 0, n = listeners.length; i < n; i++)
 			listeners[i].remoteEntityRemoved(remoteEntityID);
@@ -532,7 +566,7 @@ public class Kryo {
 
 	/**
 	 * Returns an instance of the specified class. Serializers that want to allow object construction to be customized by a
-	 * subclass should {@link Serializer#newInstance(Kryo, Class)} instead of calling this method directly.
+	 * subclass should use {@link Serializer#newInstance(Kryo, Class)} instead of calling this method directly.
 	 * @throws SerializationException if the class could not be constructed.
 	 */
 	public <T> T newInstance (Class<T> type) {
@@ -565,14 +599,6 @@ public class Kryo {
 	}
 
 	/**
-	 * Resets the thread local context's per object graph temporary storage.
-	 * @see Context#reset()
-	 */
-	static public void reset () {
-		contextThreadLocal.get().reset();
-	}
-
-	/**
 	 * Holds the registration information for a class.
 	 */
 	static public class RegisteredClass {
@@ -601,5 +627,18 @@ public class Kryo {
 		public int getID () {
 			return id;
 		}
+	}
+
+	/**
+	 * Provides notification of {@link Kryo} events.
+	 */
+	static public interface Listener {
+		/**
+		 * Called when a remote entity is no longer available. This allows, for example, a context to release any resources it may
+		 * be storing for the entity.
+		 * @see Context#getRemoteEntityID()
+		 * @see Kryo#removeListener(Listener)
+		 */
+		public void remoteEntityRemoved (int id);
 	}
 }

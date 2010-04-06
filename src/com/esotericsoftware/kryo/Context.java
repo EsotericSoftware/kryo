@@ -1,6 +1,8 @@
 
 package com.esotericsoftware.kryo;
 
+import static com.esotericsoftware.minlog.Log.*;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,11 +16,13 @@ import com.esotericsoftware.kryo.compress.DeltaCompressor;
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class Context {
+	int objectGraphLevel;
+
 	private HashMap<Object, Object> map;
 	private HashMap<Object, Object> tempMap;
-	private ArrayList<ByteBuffer> buffers = new ArrayList(2);
+	private final ArrayList<ByteBuffer> buffers = new ArrayList(2);
 	private int remoteEntityID;
-	private SerializerKey tempKey = new SerializerKey(null, null);
+	private final SerializerKey tempKey = new SerializerKey(null, null);
 	private byte[] byteArray;
 	private char[] charArray = new char[256];
 	private int[] intArray;
@@ -92,8 +96,8 @@ public class Context {
 	}
 
 	/**
-	 * Stores an object for a serializer in thread local storage. This allows serializers to easily make repeated use of objects
-	 * that are not thread safe.
+	 * Stores an object for a serializer instance in thread local storage. This allows serializers to easily make repeated use of
+	 * objects that are not thread safe.
 	 */
 	public void put (Serializer serializer, String key, Object value) {
 		if (map == null) map = new HashMap();
@@ -101,7 +105,7 @@ public class Context {
 	}
 
 	/**
-	 * Returns an object for a serializer from thread local storage, or null.
+	 * Returns an object for a serializer instance from thread local storage, or null.
 	 * @see #put(Serializer, String, Object)
 	 */
 	public Object get (Serializer serializer, String key) {
@@ -112,8 +116,8 @@ public class Context {
 	}
 
 	/**
-	 * Stores an object in thread local storage. This allows serializers to easily make repeated use of objects that are not thread
-	 * safe.
+	 * Stores a temporary object in thread local storage. This allows serializers to easily make repeated use of objects that are
+	 * not thread safe. The object will be removed after when the entire object graph has been serialized or deserialized.
 	 */
 	public void putTemp (String key, Object value) {
 		if (tempMap == null) tempMap = new HashMap();
@@ -121,7 +125,7 @@ public class Context {
 	}
 
 	/**
-	 * Returns an object from thread local storage, or null.
+	 * Returns a temporary object from thread local storage, or null.
 	 * @see #put(Serializer, String, Object)
 	 */
 	public Object getTemp (String key) {
@@ -130,8 +134,9 @@ public class Context {
 	}
 
 	/**
-	 * Stores an object for a serializer in thread local storage. This allows serializers to easily make repeated use of objects
-	 * that are not thread safe.
+	 * Stores a temporary object for a serializer instance in thread local storage. This allows serializers to easily make repeated
+	 * use of objects that are not thread safe. The object will be removed after when the entire object graph has been serialized
+	 * or deserialized.
 	 */
 	public void putTemp (Serializer serializer, String key, Object value) {
 		if (tempMap == null) tempMap = new HashMap();
@@ -139,7 +144,7 @@ public class Context {
 	}
 
 	/**
-	 * Returns an object for a serializer from thread local storage, or null.
+	 * Returns a temporary object for a serializer instance from thread local storage, or null.
 	 * @see #put(Serializer, String, Object)
 	 */
 	public Object getTemp (Serializer serializer, String key) {
@@ -150,16 +155,19 @@ public class Context {
 	}
 
 	/**
-	 * Clears temporary values that are only needed for serialization or deserialization per object graph.
+	 * Clears temporary values that are only needed for serialization or deserialization per object graph. When using the
+	 * {@link Kryo} read and write methods, the context is automatically reset after an entire object graph is serialized or
+	 * deserialized.
 	 */
 	public void reset () {
 		if (tempMap != null) tempMap.clear();
+		if (TRACE) trace("kryo", "Context reset.");
 	}
 
 	/**
 	 * Returns an identifier for the entity that either sent the serialized data or will be receiving the serialized data.
 	 * Serailizers can use this knowledge during serialization. For example, see {@link DeltaCompressor}.
-	 * @see Kryo#addListener(KryoListener)
+	 * @see Kryo#addListener(Kryo.Listener)
 	 */
 	public int getRemoteEntityID () {
 		return remoteEntityID;

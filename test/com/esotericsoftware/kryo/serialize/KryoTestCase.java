@@ -36,20 +36,20 @@ abstract public class KryoTestCase extends TestCase {
 
 	private <T> T roundTripSerializer (Serializer serializer, int length, T object1) {
 		int start = buffer.position();
-		Kryo.reset();
+		Kryo.getContext().reset();
 		serializer.writeObject(buffer, object1);
 		assertEquals("Incorrect length.", length, buffer.position() - start);
 		buffer.position(start);
-		Kryo.reset();
+		Kryo.getContext().reset();
 		Object object2 = serializer.readObject(buffer, object1.getClass());
 		assertEquals("Incorrect number of bytes read.", start + length, buffer.position());
 		assertEquals(object1, object2);
 
 		buffer.position(start);
-		Kryo.reset();
+		Kryo.getContext().reset();
 		serializer.writeObjectData(buffer, object1);
 		buffer.position(start);
-		Kryo.reset();
+		Kryo.getContext().reset();
 		object2 = serializer.readObjectData(buffer, object1.getClass());
 		assertEquals(object1, object2);
 
@@ -69,31 +69,25 @@ abstract public class KryoTestCase extends TestCase {
 
 	private <T> T roundTripKryo (Kryo kryo, int length, T object1) {
 		int start = buffer.position();
-		Kryo.reset();
 		kryo.writeClassAndObject(buffer, object1);
 		assertEquals("Incorrect length.", length, buffer.position() - start);
 		buffer.position(start);
 		byte[] bytes = new byte[length];
 		buffer.get(bytes);
 		buffer.position(start);
-		Kryo.reset();
 		Object object2 = kryo.readClassAndObject(buffer);
 		assertEquals("Incorrect number of bytes read.", start + length, buffer.position());
 		assertEquals(object1, object2);
 
 		buffer.position(start);
-		Kryo.reset();
 		kryo.writeObject(buffer, object1);
 		buffer.position(start);
-		Kryo.reset();
 		object2 = kryo.readObject(buffer, object1.getClass());
 		assertEquals(object1, object2);
 
 		buffer.position(start);
-		Kryo.reset();
 		kryo.writeObjectData(buffer, object1);
 		buffer.position(start);
-		Kryo.reset();
 		object2 = kryo.readObjectData(buffer, object1.getClass());
 		assertEquals(object1, object2);
 

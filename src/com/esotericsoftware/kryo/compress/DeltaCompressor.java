@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import com.esotericsoftware.kryo.Compressor;
 import com.esotericsoftware.kryo.Context;
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoListener;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.util.IntHashMap;
 
@@ -22,7 +21,7 @@ public class DeltaCompressor extends Compressor {
 	final IntHashMap<ByteBuffer> contextToRemoteData = new IntHashMap();
 	final IntHashMap<ByteBuffer> contextToLocalData = new IntHashMap();
 
-	private KryoListener removeBuffersListener = new KryoListener() {
+	private Kryo.Listener removeBuffersListener = new Kryo.Listener() {
 		public void remoteEntityRemoved (int id) {
 			contextToRemoteData.remove(id);
 			contextToLocalData.remove(id);

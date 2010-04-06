@@ -52,7 +52,6 @@ public class ObjectBuffer {
 	 * @param contentLength The number of bytes to read, or -1 to read to the end of the stream.
 	 */
 	private void readToBuffer (InputStream input, int contentLength) {
-		Kryo.reset();
 		if (contentLength == -1) contentLength = Integer.MAX_VALUE;
 		try {
 			int position = 0;
@@ -130,7 +129,6 @@ public class ObjectBuffer {
 	public void writeClassAndObject (OutputStream output, Object object) {
 		buffer.clear();
 		while (true) {
-			Kryo.reset();
 			try {
 				kryo.writeClassAndObject(buffer, object);
 				break;
@@ -151,7 +149,6 @@ public class ObjectBuffer {
 	public void writeObject (OutputStream output, Object object) {
 		buffer.clear();
 		while (true) {
-			Kryo.reset();
 			try {
 				kryo.writeObject(buffer, object);
 				break;
@@ -172,7 +169,6 @@ public class ObjectBuffer {
 	public void writeObjectData (OutputStream output, Object object) {
 		buffer.clear();
 		while (true) {
-			Kryo.reset();
 			try {
 				kryo.writeObjectData(buffer, object);
 				break;
@@ -199,7 +195,6 @@ public class ObjectBuffer {
 	 * @see Kryo#readClassAndObject(ByteBuffer)
 	 */
 	public Object readClassAndObject (byte[] objectBytes) {
-		Kryo.reset();
 		return kryo.readClassAndObject(ByteBuffer.wrap(objectBytes));
 	}
 
@@ -207,7 +202,6 @@ public class ObjectBuffer {
 	 * @see Kryo#readObject(ByteBuffer, Class)
 	 */
 	public <T> T readObject (byte[] objectBytes, Class<T> type) {
-		Kryo.reset();
 		return kryo.readObject(ByteBuffer.wrap(objectBytes), type);
 	}
 
@@ -215,7 +209,6 @@ public class ObjectBuffer {
 	 * @see Kryo#readObjectData(ByteBuffer, Class)
 	 */
 	public <T> T readObjectData (byte[] objectBytes, Class<T> type) {
-		Kryo.reset();
 		return kryo.readObjectData(ByteBuffer.wrap(objectBytes), type);
 	}
 
@@ -225,7 +218,6 @@ public class ObjectBuffer {
 	public byte[] writeClassAndObject (Object object) {
 		buffer.clear();
 		while (true) {
-			Kryo.reset();
 			try {
 				kryo.writeClassAndObject(buffer, object);
 				break;
@@ -246,7 +238,6 @@ public class ObjectBuffer {
 	public byte[] writeObject (Object object) {
 		buffer.clear();
 		while (true) {
-			Kryo.reset();
 			try {
 				kryo.writeObject(buffer, object);
 				break;
@@ -267,7 +258,6 @@ public class ObjectBuffer {
 	public byte[] writeObjectData (Object object) {
 		buffer.clear();
 		while (true) {
-			Kryo.reset();
 			try {
 				kryo.writeObjectData(buffer, object);
 				break;
