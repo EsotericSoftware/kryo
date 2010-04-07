@@ -38,6 +38,12 @@ public class KryoTest extends KryoTestCase {
 		roundTrip(kryo, 55, toList("1", "2", toList("3")));
 	}
 
+	public void testObjectCreation () {
+		Kryo kryo = new Kryo();
+		kryo.newInstance(HasPublicConstructor.class);
+		kryo.newInstance(HasPrivateConstructor.class);
+	}
+
 	public void testDefaultSerializerAnnotation () {
 		Kryo kryo = new Kryo();
 		kryo.register(HasDefaultSerializerAnnotation.class);
@@ -61,6 +67,14 @@ public class KryoTest extends KryoTestCase {
 
 		public void writeObjectData (ByteBuffer buffer, Object object) {
 			LongSerializer.put(buffer, ((Date)object).getTime(), true);
+		}
+	}
+
+	static public class HasPublicConstructor {
+	}
+
+	static public class HasPrivateConstructor {
+		private HasPrivateConstructor () {
 		}
 	}
 }

@@ -573,18 +573,16 @@ public class Kryo {
 		try {
 			return type.newInstance();
 		} catch (Exception ex) {
-			if (ex instanceof InstantiationException) {
-				Constructor[] constructors = type.getConstructors();
-				boolean hasZeroArgConstructor = false;
-				for (int i = 0, n = constructors.length; i < n; i++) {
-					Constructor constructor = constructors[i];
-					if (constructor.getParameterTypes().length == 0) {
-						hasZeroArgConstructor = true;
-						break;
-					}
-				}
-				if (!hasZeroArgConstructor)
-					throw new SerializationException("Class cannot be created (missing no-arg constructor): " + type.getName(), ex);
+			try {
+				// Try a private constructor.
+				Constructor<T> constructor = type.getDeclaredConstructor();
+				constructor.setAccessible(true);
+				return constructor.newInstance();
+			} catch (SecurityException ignored) {
+			} catch (NoSuchMethodException ignored) {
+				throw new SerializationException("Class cannot be created (missing no-arg constructor): " + type.getName(), ex);
+			} catch (Exception privateConstructorException) {
+				ex = privateConstructorException;
 			}
 			throw new SerializationException("Error constructing instance of class: " + type.getName(), ex);
 		}
