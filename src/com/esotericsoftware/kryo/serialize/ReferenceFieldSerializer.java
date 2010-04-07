@@ -3,6 +3,7 @@ package com.esotericsoftware.kryo.serialize;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.IdentityHashMap;
@@ -120,7 +121,12 @@ public class ReferenceFieldSerializer extends FieldSerializer {
 			if (TRACE) trace("kryo", "Reading enclosing instance.");
 			Object enclosingInstance = kryo.readObjectData(buffer, enclosingType);
 			try {
-				object = type.getConstructor(enclosingType).newInstance(enclosingInstance);
+				Constructor<T> constructor = type.getDeclaredConstructor(enclosingType);
+				try {
+					constructor.setAccessible(true);
+				} catch (SecurityException ignored) {
+				}
+				object = constructor.newInstance(enclosingInstance);
 			} catch (Exception ex) {
 				throw new SerializationException("Error constructing inner class instance: " + type.getName(), ex);
 			}

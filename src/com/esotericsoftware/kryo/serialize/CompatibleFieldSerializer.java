@@ -82,10 +82,10 @@ public class CompatibleFieldSerializer extends Serializer {
 			if (Modifier.isFinal(fieldClass.getModifiers())) cachedField.fieldClass = fieldClass;
 
 			cachedFields.add(cachedField);
-			if (Modifier.isPublic(modifiers)) publicFields.add(cachedField);
+			if (Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers())) publicFields.add(cachedField);
 		}
 
-		if (!publicFields.isEmpty()) {
+		if (Modifier.isPublic(type.getModifiers()) && !publicFields.isEmpty()) {
 			// Use ReflectASM for any public fields.
 			try {
 				access = FieldAccess.get(type);
