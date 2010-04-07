@@ -33,7 +33,7 @@ import com.esotericsoftware.reflectasm.FieldAccess;
  */
 public class FieldSerializer extends Serializer {
 	final Kryo kryo;
-	private final Class type;
+	final Class type;
 	private CachedField[] fields;
 	Object access;
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
@@ -133,7 +133,6 @@ public class FieldSerializer extends Serializer {
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
 		try {
-			Log.TRACE();
 			for (int i = 0, n = fields.length; i < n; i++) {
 				CachedField cachedField = fields[i];
 				if (TRACE) trace("kryo", "Writing field: " + cachedField + " (" + object.getClass().getName() + ")");
