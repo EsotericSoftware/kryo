@@ -36,6 +36,7 @@ public class FieldSerializer extends Serializer {
 	private CachedField[] fields;
 	Object access;
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
+	private boolean ignoreSyntheticFields = true;
 
 	public FieldSerializer (Kryo kryo, Class type) {
 		this.kryo = kryo;
@@ -69,7 +70,7 @@ public class FieldSerializer extends Serializer {
 			int modifiers = field.getModifiers();
 			if (Modifier.isTransient(modifiers)) continue;
 			if (Modifier.isStatic(modifiers)) continue;
-			if (field.isSynthetic()) continue;
+			if (field.isSynthetic() && ignoreSyntheticFields) continue;
 			if (setFieldsAsAccessible)
 				field.setAccessible(true);
 			else if (Modifier.isPrivate(modifiers)) {
@@ -120,13 +121,23 @@ public class FieldSerializer extends Serializer {
 	}
 
 	/**
-	 * Controls which fields are accessed.
+	 * Controls which fields are serialized.
 	 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
 	 *           {@link Field#setAccessible(boolean) set as accessible} (default). If false, only fields in the public API will be
 	 *           serialized.
 	 */
 	public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
 		this.setFieldsAsAccessible = setFieldsAsAccessible;
+		rebuildCachedFields();
+	}
+
+	/**
+	 * Controls if synthetic fields are serialized.
+	 * @param ignoreSyntheticFields If true, all non-synthetic fields will be serialized (default). If false, synthetic fields will
+	 *           also be serialized.
+	 */
+	public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
+		this.ignoreSyntheticFields = ignoreSyntheticFields;
 		rebuildCachedFields();
 	}
 
