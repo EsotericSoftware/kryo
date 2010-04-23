@@ -44,7 +44,7 @@ abstract public class Serializer {
 	 * Writes the object to the buffer.
 	 * @param object Cannot be null.
 	 */
-	public abstract void writeObjectData (ByteBuffer buffer, Object object);
+	abstract public void writeObjectData (ByteBuffer buffer, Object object);
 
 	/**
 	 * Reads an object from the buffer.
