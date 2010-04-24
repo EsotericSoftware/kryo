@@ -132,4 +132,20 @@ public class IntSerializer extends Serializer {
 			buffer.position(position);
 		}
 	}
+
+	/**
+	 * Reads true if the buffer contains enough data to read an int that was written with {@link #put(ByteBuffer, int, boolean)}.
+	 */
+	static public int length (int value, boolean optimizePositive) {
+		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
+		if ((value & ~0x7F) == 0) return 1;
+		value >>>= 7;
+		if ((value & ~0x7F) == 0) return 2;
+		value >>>= 7;
+		if ((value & ~0x7F) == 0) return 3;
+		value >>>= 7;
+		if ((value & ~0x7F) == 0) return 4;
+		value >>>= 7;
+		return 5;
+	}
 }
