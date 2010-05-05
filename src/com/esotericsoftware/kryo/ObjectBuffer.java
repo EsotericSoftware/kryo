@@ -138,6 +138,7 @@ public class ObjectBuffer {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
 				}
+				Kryo.getContext().reset();
 			}
 		}
 		writeToStream(output);
@@ -158,6 +159,7 @@ public class ObjectBuffer {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
 				}
+				Kryo.getContext().reset();
 			}
 		}
 		writeToStream(output);
@@ -178,6 +180,7 @@ public class ObjectBuffer {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
 				}
+				Kryo.getContext().reset();
 			}
 		}
 		writeToStream(output);
@@ -227,6 +230,7 @@ public class ObjectBuffer {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
 				}
+				Kryo.getContext().reset();
 			}
 		}
 		return writeToBytes();
@@ -247,6 +251,7 @@ public class ObjectBuffer {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
 				}
+				Kryo.getContext().reset();
 			}
 		}
 		return writeToBytes();
@@ -267,6 +272,7 @@ public class ObjectBuffer {
 					throw new SerializationException("Buffer limit exceeded serializing object of type: "
 						+ object.getClass().getName(), ex);
 				}
+				Kryo.getContext().reset();
 			}
 		}
 		return writeToBytes();

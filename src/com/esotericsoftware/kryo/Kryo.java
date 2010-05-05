@@ -95,12 +95,12 @@ public class Kryo {
 	/**
 	 * Registers a class for serialization.
 	 * <p>
-	 * If <tt>useClassNameString</tt> is true, the class name String will be written to the serialized bytes for objects of the
-	 * specified type.
+	 * If <tt>useClassNameString</tt> is true, the first time an object of the specified type is encountered, the class name String
+	 * will be written to the serialized bytes. Each appearance in the graph after the first is stored as an integer ordinal.
 	 * <p>
 	 * If <tt>useClassNameString</tt> is false, the class is assigned an ordinal which will be written to the serialized bytes for
-	 * objects of the specified type. This is much more efficient than using the class name String, but has the drawback that the
-	 * exact same classes must be registered in exactly the same order when the class is deserialized.
+	 * objects of the specified type. This is more efficient than using the class name String, but has the drawback that the exact
+	 * same classes must be registered in exactly the same order when the class is deserialized.
 	 * <p>
 	 * By default, primitive types, primitive wrappers, and java.lang.String are registered. All other classes must be registered
 	 * before they can be serialized. Note that JDK classes such as ArrayList, HashMap, etc and even array classes such as
@@ -340,6 +340,25 @@ public class Kryo {
 			RegisteredClass registeredClass = getRegisteredClass(type);
 			IntSerializer.put(buffer, registeredClass.id, true);
 			if (registeredClass.id == ID_CLASS_NAME) {
+				Context context = Kryo.getContext();
+				ClassReferences references = (ClassReferences)context.getTemp("classReferences");
+				if (references == null) {
+					// Use non-temporary storage to avoid repeated allocation.
+					references = (ClassReferences)context.get("classReferences");
+					if (references == null)
+						context.put("classReferences", references = new ClassReferences());
+					else
+						references.reset();
+					context.putTemp("classReferences", references);
+				}
+				Integer reference = references.classToReference.get(type);
+				if (reference != null) {
+					IntSerializer.put(buffer, reference, true);
+					if (TRACE) trace("kryo", "Wrote class name reference " + reference + ": " + type.getName());
+					return registeredClass;
+				}
+				buffer.put((byte)0);
+				references.classToReference.put(type, references.referenceCount++);
 				StringSerializer.put(buffer, type.getName());
 				if (TRACE) trace("kryo", "Wrote class name: " + type.getName());
 			} else {
@@ -365,14 +384,35 @@ public class Kryo {
 				return null;
 			}
 			if (classID == ID_CLASS_NAME) {
-				String className = StringSerializer.get(buffer);
-				try {
-					RegisteredClass registeredClass = getRegisteredClass(Class.forName(className, false, classLoader));
-					if (TRACE) trace("kryo", "Read class name: " + className);
-					return registeredClass;
-				} catch (ClassNotFoundException ex) {
-					throw new SerializationException("Unable to find class: " + className, ex);
+				Context context = Kryo.getContext();
+				ClassReferences references = (ClassReferences)context.getTemp("classReferences");
+				if (references == null) {
+					// Use non-temporary storage to avoid repeated allocation.
+					references = (ClassReferences)context.get("classReferences");
+					if (references == null)
+						context.put("classReferences", references = new ClassReferences());
+					else
+						references.reset();
+					context.putTemp("classReferences", references);
 				}
+
+				Class type;
+				int reference = IntSerializer.get(buffer, true);
+				if (reference != 0) {
+					type = (Class)references.referenceToClass.get(reference);
+					if (type == null) throw new SerializationException("Invalid class name reference: " + reference);
+					if (TRACE) trace("kryo", "Read class name reference " + reference + ": " + type.getName());
+				} else {
+					String className = StringSerializer.get(buffer);
+					if (TRACE) trace("kryo", "Read class name: " + className);
+					try {
+						type = Class.forName(className, false, classLoader);
+					} catch (ClassNotFoundException ex) {
+						throw new SerializationException("Unable to find class: " + className, ex);
+					}
+					references.referenceToClass.put(references.referenceCount++, type);
+				}
+				return getRegisteredClass(type);
 			}
 		} catch (BufferUnderflowException ex) {
 			throw new SerializationException("Buffer limit exceeded reading class ID.", ex);
@@ -638,5 +678,17 @@ public class Kryo {
 		 * @see Kryo#removeListener(Listener)
 		 */
 		public void remoteEntityRemoved (int id);
+	}
+
+	static class ClassReferences {
+		public HashMap<Class, Integer> classToReference = new HashMap();
+		public IntHashMap referenceToClass = new IntHashMap();
+		public int referenceCount = 1;
+
+		public void reset () {
+			classToReference.clear();
+			referenceToClass.clear();
+			referenceCount = 1;
+		}
 	}
 }

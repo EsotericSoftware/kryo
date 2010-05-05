@@ -34,8 +34,9 @@ public class KryoTest extends KryoTestCase {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationOptional(true);
 		roundTrip(kryo, 5, "abc");
-		roundTrip(kryo, 32, toList("1", "2", "3"));
-		roundTrip(kryo, 55, toList("1", "2", toList("3")));
+		roundTrip(kryo, 33, toList("1", "2", "3"));
+		roundTrip(kryo, 37, toList("1", "2", toList("3")));
+		roundTrip(kryo, 56, toList(toList("1"), toList("2"), toList("3"), toList(toList("4"))));
 	}
 
 	public void testObjectCreation () {
