@@ -89,7 +89,11 @@ abstract public class Compressor extends Serializer {
 
 		int oldLimit = buffer.limit();
 		int length = buffer.getShort();
-		buffer.limit(buffer.position() + length);
+		try {
+			buffer.limit(buffer.position() + length);
+		} catch (IllegalArgumentException ex) {
+			throw new SerializationException("Compressed data length exceeds buffer capacity: " + buffer.position() + length, ex);
+		}
 
 		Context context = Kryo.getContext();
 		ByteBuffer outputBuffer = context.getBuffer(bufferSize);
