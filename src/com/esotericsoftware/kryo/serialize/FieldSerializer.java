@@ -86,7 +86,7 @@ public class FieldSerializer extends Serializer {
 
 			// Always use the same serializer for this field if the field's class is final.
 			Class fieldClass = field.getType();
-			if (Modifier.isFinal(fieldClass.getModifiers())) cachedField.fieldClass = fieldClass;
+			if (isFinal(fieldClass)) cachedField.fieldClass = fieldClass;
 
 			cachedFields.add(cachedField);
 			if (Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers())) publicFields.add(cachedField);

@@ -3,7 +3,10 @@ package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
+
+import com.esotericsoftware.kryo.serialize.ArraySerializer;
 
 /**
  * Serializes objects to and from a {@link ByteBuffer}.
@@ -70,5 +73,13 @@ abstract public class Serializer {
 	 */
 	public <T> T newInstance (Kryo kryo, Class<T> type) {
 		return kryo.newInstance(type);
+	}
+
+	/**
+	 * Returns true if the specified type is final, or if it is an array of a final type.
+	 */
+	static public boolean isFinal (Class type) {
+		if (type.isArray()) return Modifier.isFinal(ArraySerializer.getElementClass(type).getModifiers());
+		return Modifier.isFinal(type.getModifiers());
 	}
 }

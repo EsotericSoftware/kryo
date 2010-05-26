@@ -66,7 +66,7 @@ public class BeanSerializer extends Serializer {
 			// Always use the same serializer for this property if the properties' class is final.
 			Serializer serializer = null;
 			Class returnType = getMethod.getReturnType();
-			if (Modifier.isFinal(returnType.getModifiers())) serializer = kryo.getRegisteredClass(returnType).getSerializer();
+			if (isFinal(returnType)) serializer = kryo.getRegisteredClass(returnType).getSerializer();
 
 			CachedProperty cachedProperty = new CachedProperty();
 			cachedProperty.name = name;
