@@ -176,6 +176,31 @@ public class Kryo {
 	}
 
 	/**
+	 * Registers a class with the ordinal of the specified registered class. This is useful when many classes can be serialized
+	 * with the same serializer instance, such as when code generation is being used to wrap the actual class being serialized.
+	 */
+	public void register (Class type, RegisteredClass registeredClass) {
+		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		if (registeredClass == null) throw new IllegalArgumentException("registeredClass cannot be null.");
+		classToRegisteredClass.put(type, registeredClass);
+		if (TRACE) {
+			String name = type.getName();
+			if (type.isArray()) {
+				Class elementClass = ArraySerializer.getElementClass(type);
+				StringBuilder buffer = new StringBuilder(16);
+				for (int i = 0, n = ArraySerializer.getDimensionCount(type); i < n; i++)
+					buffer.append("[]");
+				name = elementClass.getName() + buffer;
+			}
+			if (registeredClass.id == ID_CLASS_NAME)
+				trace("kryo", "Registered class name: " + name + " (" + registeredClass.serializer.getClass().getName() + ")");
+			else
+				trace("kryo", "Registered class ID " + registeredClass.id + ": " + name + " ("
+					+ registeredClass.serializer.getClass().getName() + ")");
+		}
+	}
+
+	/**
 	 * Returns a serializer for the specified type, determined according to this table:
 	 * <p>
 	 * <table>
