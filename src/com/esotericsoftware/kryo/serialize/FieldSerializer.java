@@ -17,6 +17,7 @@ import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.Kryo.RegisteredClass;
+import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 /**
@@ -92,16 +93,12 @@ public class FieldSerializer extends Serializer {
 			if (Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers())) publicFields.add(cachedField);
 		}
 
-		if (Modifier.isPublic(type.getModifiers()) && !publicFields.isEmpty()) {
+		if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && !publicFields.isEmpty()) {
 			// Use ReflectASM for any public fields.
-			try {
-				access = FieldAccess.get(type);
-				for (int i = 0, n = publicFields.size(); i < n; i++) {
-					CachedField cachedField = publicFields.get(i);
-					cachedField.accessIndex = ((FieldAccess)access).getIndex(cachedField.field.getName());
-				}
-			} catch (Throwable ignored) {
-				// ReflectASM is not available on Android.
+			access = FieldAccess.get(type);
+			for (int i = 0, n = publicFields.size(); i < n; i++) {
+				CachedField cachedField = publicFields.get(i);
+				cachedField.accessIndex = ((FieldAccess)access).getIndex(cachedField.field.getName());
 			}
 		}
 
