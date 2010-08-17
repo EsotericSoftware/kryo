@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.NotNull;
+import com.esotericsoftware.kryo.SerializationException;
 
 public class FieldSerializerTest extends KryoTestCase {
 	public void testFieldSerializer () {
@@ -13,10 +14,10 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(TestClass.class);
 		kryo.register(HasStringField.class);
 
-//		HasStringField hasStringField = new HasStringField();
-//		hasStringField.text = "moo";
-//		roundTrip(kryo, 6, hasStringField);
-//		roundTrip(new FieldSerializer(kryo, HasStringField.class), 6, hasStringField);
+		HasStringField hasStringField = new HasStringField();
+		hasStringField.text = "moo";
+		roundTrip(kryo, 6, hasStringField);
+		roundTrip(new FieldSerializer(kryo, HasStringField.class), 6, hasStringField);
 
 		TestClass test = new TestClass();
 		test.optional = 12;
@@ -90,6 +91,52 @@ public class FieldSerializerTest extends KryoTestCase {
 		object2.anotherField1 = 1234;
 		object2.anotherField2 = "abcd";
 		roundTrip(complexSerializer, 38, object2);
+	}
+
+	public void testSerializationExceptionTraceInfo () {
+		C c = new C();
+		c.a = new A();
+		c.a.value = 123;
+		c.a.b = new B();
+		c.a.b.value = 456;
+		c.d = new D();
+		c.d.e = new E();
+		c.d.e.f = new F();
+
+		Kryo kryoWithoutF = new Kryo();
+		kryoWithoutF.register(A.class);
+		kryoWithoutF.register(B.class);
+		kryoWithoutF.register(C.class);
+		kryoWithoutF.register(D.class);
+		kryoWithoutF.register(E.class);
+
+		buffer.clear();
+		try {
+			// Fail because F is not registered.
+			kryoWithoutF.writeClassAndObject(buffer, c);
+		} catch (SerializationException ex) {
+			ex.printStackTrace();
+		}
+
+		Kryo kryo = new Kryo();
+		kryo.register(A.class);
+		kryo.register(B.class);
+		kryo.register(C.class);
+		kryo.register(D.class);
+		kryo.register(E.class);
+		kryo.register(F.class);
+
+		buffer.clear();
+		kryo.writeClassAndObject(buffer, c);
+		buffer.flip();
+		assertEquals(11, buffer.limit());
+
+		try {
+			// Fail because F is not registered.
+			kryoWithoutF.readClassAndObject(buffer);
+		} catch (SerializationException ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	static public class HasStringField {
@@ -185,6 +232,23 @@ public class FieldSerializerTest extends KryoTestCase {
 			if (value != other.value) return false;
 			return true;
 		}
+	}
+
+	static public final class C {
+		public A a;
+		public D d;
+	}
+
+	static public final class D {
+		public E e;
+	}
+
+	static public final class E {
+		public F f;
+	}
+
+	static public final class F {
+		public int value;
 	}
 
 	static public class SimpleNoDefaultConstructor {

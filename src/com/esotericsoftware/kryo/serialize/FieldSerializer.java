@@ -139,9 +139,9 @@ public class FieldSerializer extends Serializer {
 	}
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
-		try {
-			for (int i = 0, n = fields.length; i < n; i++) {
-				CachedField cachedField = fields[i];
+		for (int i = 0, n = fields.length; i < n; i++) {
+			CachedField cachedField = fields[i];
+			try {
 				if (TRACE) trace("kryo", "Writing field: " + cachedField + " (" + object.getClass().getName() + ")");
 
 				Object value = cachedField.get(object);
@@ -164,9 +164,17 @@ public class FieldSerializer extends Serializer {
 					else
 						serializer.writeObject(buffer, value);
 				}
+			} catch (IllegalAccessException ex) {
+				throw new SerializationException("Error accessing field: " + cachedField + " (" + object.getClass().getName() + ")",
+					ex);
+			} catch (SerializationException ex) {
+				ex.addTrace(cachedField + " (" + object.getClass().getName() + ")");
+				throw ex;
+			} catch (RuntimeException runtimeEx) {
+				SerializationException ex = new SerializationException(runtimeEx);
+				ex.addTrace(cachedField + " (" + object.getClass().getName() + ")");
+				throw ex;
 			}
-		} catch (IllegalAccessException ex) {
-			throw new SerializationException("Error accessing field in class: " + object.getClass().getName(), ex);
 		}
 		if (TRACE) trace("kryo", "Wrote object: " + object);
 	}
@@ -176,9 +184,9 @@ public class FieldSerializer extends Serializer {
 	}
 
 	protected <T> T readObjectData (T object, ByteBuffer buffer, Class<T> type) {
-		try {
-			for (int i = 0, n = fields.length; i < n; i++) {
-				CachedField cachedField = fields[i];
+		for (int i = 0, n = fields.length; i < n; i++) {
+			CachedField cachedField = fields[i];
+			try {
 				if (TRACE) trace("kryo", "Reading field: " + cachedField + " (" + type.getName() + ")");
 
 				Object value;
@@ -204,9 +212,16 @@ public class FieldSerializer extends Serializer {
 				}
 
 				cachedField.set(object, value);
+			} catch (IllegalAccessException ex) {
+				throw new SerializationException("Error accessing field: " + cachedField + " (" + type.getName() + ")", ex);
+			} catch (SerializationException ex) {
+				ex.addTrace(cachedField + " (" + type.getName() + ")");
+				throw ex;
+			} catch (RuntimeException runtimeEx) {
+				SerializationException ex = new SerializationException(runtimeEx);
+				ex.addTrace(cachedField + " (" + type.getName() + ")");
+				throw ex;
 			}
-		} catch (IllegalAccessException ex) {
-			throw new SerializationException("Error accessing field in class: " + type.getName(), ex);
 		}
 		if (TRACE) trace("kryo", "Read object: " + object);
 		return object;

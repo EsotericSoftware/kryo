@@ -22,7 +22,13 @@ import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 /**
- * @see FieldSerializer
+ * Serializes objects using direct field assignment, with limited support for forward and backward compatibility. Fields can be
+ * added or removed without invalidating previously serialized bytes. Note that changing the type of a field is not supported.
+ * <p>
+ * There is additional overhead compared to {@link FieldSerializer}. A header is output the first time an object of a given type
+ * is serialized. The header consists of an int for the number of fields, then a String for each field name. Also, to support
+ * skipping the bytes for a field that no longer exists, for each field value an int is written that is the length of the value in
+ * bytes.
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class CompatibleFieldSerializer extends Serializer {
@@ -131,9 +137,9 @@ public class CompatibleFieldSerializer extends Serializer {
 				StringSerializer.put(buffer, fields[i].field.getName());
 		}
 
-		try {
-			for (int i = 0, n = fields.length; i < n; i++) {
-				CachedField cachedField = fields[i];
+		for (int i = 0, n = fields.length; i < n; i++) {
+			CachedField cachedField = fields[i];
+			try {
 				if (TRACE) trace("kryo", "Writing field: " + cachedField + " (" + object.getClass().getName() + ")");
 
 				Object value = cachedField.get(object);
@@ -176,9 +182,16 @@ public class CompatibleFieldSerializer extends Serializer {
 					IntSerializer.put(buffer, dataLength, true);
 					buffer.put(temp);
 				}
+			} catch (IllegalAccessException ex) {
+				throw new SerializationException("Error accessing field in class: " + object.getClass().getName(), ex);
+			} catch (SerializationException ex) {
+				ex.addTrace(cachedField + " (" + object.getClass().getName() + ")");
+				throw ex;
+			} catch (RuntimeException runtimeEx) {
+				SerializationException ex = new SerializationException(runtimeEx);
+				ex.addTrace(cachedField + " (" + object.getClass().getName() + ")");
+				throw ex;
 			}
-		} catch (IllegalAccessException ex) {
-			throw new SerializationException("Error accessing field in class: " + object.getClass().getName(), ex);
 		}
 		if (TRACE) trace("kryo", "Wrote object: " + object);
 	}
@@ -213,11 +226,11 @@ public class CompatibleFieldSerializer extends Serializer {
 			context.putTemp(this, "schema", fields);
 		}
 
-		try {
-			for (int i = 0, n = fields.length; i < n; i++) {
-				int dataLength = IntSerializer.get(buffer, true);
+		for (int i = 0, n = fields.length; i < n; i++) {
+			int dataLength = IntSerializer.get(buffer, true);
 
-				CachedField cachedField = fields[i];
+			CachedField cachedField = fields[i];
+			try {
 				if (cachedField == null) {
 					if (TRACE) trace("kryo", "Skipping obsolete field bytes: " + dataLength);
 					try {
@@ -257,9 +270,16 @@ public class CompatibleFieldSerializer extends Serializer {
 				}
 
 				cachedField.set(object, value);
+			} catch (IllegalAccessException ex) {
+				throw new SerializationException("Error accessing field in class: " + type.getName(), ex);
+			} catch (SerializationException ex) {
+				ex.addTrace(cachedField + " (" + type.getName() + ")");
+				throw ex;
+			} catch (RuntimeException runtimeEx) {
+				SerializationException ex = new SerializationException(runtimeEx);
+				ex.addTrace(cachedField + " (" + type.getName() + ")");
+				throw ex;
 			}
-		} catch (IllegalAccessException ex) {
-			throw new SerializationException("Error accessing field in class: " + type.getName(), ex);
 		}
 		if (TRACE) trace("kryo", "Read object: " + object);
 		return object;

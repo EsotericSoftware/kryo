@@ -390,6 +390,10 @@ public class Kryo {
 				if (TRACE) trace("kryo", "Wrote class " + registeredClass.id + ": " + type.getName());
 			}
 			return registeredClass;
+		} catch (SerializationException ex) {
+			if (ex.causedBy(BufferOverflowException.class))
+				throw new SerializationException("Buffer limit exceeded writing class ID: " + type, ex);
+			throw ex;
 		} catch (BufferOverflowException ex) {
 			throw new SerializationException("Buffer limit exceeded writing class ID: " + type, ex);
 		}
@@ -439,6 +443,10 @@ public class Kryo {
 				}
 				return getRegisteredClass(type);
 			}
+		} catch (SerializationException ex) {
+			if (ex.causedBy(BufferUnderflowException.class))
+				throw new SerializationException("Buffer limit exceeded reading class ID.", ex);
+			throw ex;
 		} catch (BufferUnderflowException ex) {
 			throw new SerializationException("Buffer limit exceeded reading class ID.", ex);
 		}
@@ -452,6 +460,7 @@ public class Kryo {
 	 * Writes the object's class to the buffer, then uses the serializer registered for that class to write the object to the
 	 * buffer.
 	 * @param object Can be null (writes a special ID for a null object instead).
+	 * @throws SerializationException if an error occurred during serialization.
 	 */
 	public void writeClassAndObject (ByteBuffer buffer, Object object) {
 		if (object == null) {
@@ -470,6 +479,8 @@ public class Kryo {
 		try {
 			registeredClass.serializer.writeObjectData(buffer, object);
 		} catch (SerializationException ex) {
+			if (ex.causedBy(BufferOverflowException.class))
+				throw new SerializationException("Buffer limit exceeded writing object of type: " + object.getClass().getName(), ex);
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
 		} catch (BufferOverflowException ex) {
 			throw new SerializationException("Buffer limit exceeded writing object of type: " + object.getClass().getName(), ex);
@@ -482,6 +493,7 @@ public class Kryo {
 	/**
 	 * Uses the serializer registered for the object's class to write the object to the buffer.
 	 * @param object Can be null (writes a special ID for a null object instead).
+	 * @throws SerializationException if an error occurred during serialization.
 	 */
 	public void writeObject (ByteBuffer buffer, Object object) {
 		if (object == null) {
@@ -498,6 +510,8 @@ public class Kryo {
 		try {
 			getRegisteredClass(object.getClass()).serializer.writeObject(buffer, object);
 		} catch (SerializationException ex) {
+			if (ex.causedBy(BufferOverflowException.class))
+				throw new SerializationException("Buffer limit exceeded writing object of type: " + object.getClass().getName(), ex);
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
 		} catch (BufferOverflowException ex) {
 			throw new SerializationException("Buffer limit exceeded writing object of type: " + object.getClass().getName(), ex);
@@ -510,6 +524,7 @@ public class Kryo {
 	/**
 	 * Uses the serializer registered for the object's class to write the object to the buffer.
 	 * @param object Cannot be null.
+	 * @throws SerializationException if an error occurred during serialization.
 	 */
 	public void writeObjectData (ByteBuffer buffer, Object object) {
 		Context context = getContext();
@@ -517,6 +532,8 @@ public class Kryo {
 		try {
 			getRegisteredClass(object.getClass()).serializer.writeObjectData(buffer, object);
 		} catch (SerializationException ex) {
+			if (ex.causedBy(BufferOverflowException.class))
+				throw new SerializationException("Buffer limit exceeded writing object of type: " + object.getClass().getName(), ex);
 			throw new SerializationException("Unable to serialize object of type: " + object.getClass().getName(), ex);
 		} catch (BufferOverflowException ex) {
 			throw new SerializationException("Buffer limit exceeded writing object of type: " + object.getClass().getName(), ex);
@@ -529,6 +546,7 @@ public class Kryo {
 	/**
 	 * Reads a class from the buffer and uses the serializer registered for that class to read an object from the buffer.
 	 * @return The deserialized object, or null if the object read from the buffer was null.
+	 * @throws SerializationException if an error occurred during deserialization.
 	 */
 	public Object readClassAndObject (ByteBuffer buffer) {
 		RegisteredClass registeredClass = readClass(buffer);
@@ -538,6 +556,9 @@ public class Kryo {
 		try {
 			return registeredClass.serializer.readObjectData(buffer, registeredClass.type);
 		} catch (SerializationException ex) {
+			if (ex.causedBy(BufferUnderflowException.class))
+				throw new SerializationException("Buffer limit exceeded reading object of type: " + registeredClass.type.getName(),
+					ex);
 			throw new SerializationException("Unable to deserialize object of type: " + registeredClass.type.getName(), ex);
 		} catch (BufferUnderflowException ex) {
 			throw new SerializationException("Buffer limit exceeded reading object of type: " + registeredClass.type.getName(), ex);
@@ -550,6 +571,7 @@ public class Kryo {
 	/**
 	 * Uses the serializer registered for the specified class to read an object from the buffer.
 	 * @return The deserialized object, or null if the object read from the buffer was null.
+	 * @throws SerializationException if an error occurred during deserialization.
 	 */
 	public <T> T readObject (ByteBuffer buffer, Class<T> type) {
 		Context context = getContext();
@@ -557,6 +579,8 @@ public class Kryo {
 		try {
 			return getRegisteredClass(type).serializer.readObject(buffer, type);
 		} catch (SerializationException ex) {
+			if (ex.causedBy(BufferUnderflowException.class))
+				throw new SerializationException("Buffer limit exceeded reading object of type: " + type.getName(), ex);
 			throw new SerializationException("Unable to deserialize object of type: " + type.getName(), ex);
 		} catch (BufferUnderflowException ex) {
 			throw new SerializationException("Buffer limit exceeded reading object of type: " + type.getName(), ex);
@@ -569,6 +593,7 @@ public class Kryo {
 	/**
 	 * Uses the serializer registered for the specified class to read an object from the buffer.
 	 * @return The deserialized object, never null.
+	 * @throws SerializationException if an error occurred during deserialization.
 	 */
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
 		Context context = getContext();
@@ -576,6 +601,8 @@ public class Kryo {
 		try {
 			return getRegisteredClass(type).serializer.readObjectData(buffer, type);
 		} catch (SerializationException ex) {
+			if (ex.causedBy(BufferUnderflowException.class))
+				throw new SerializationException("Buffer limit exceeded reading object of type: " + type.getName(), ex);
 			throw new SerializationException("Unable to deserialize object of type: " + type.getName(), ex);
 		} catch (BufferUnderflowException ex) {
 			throw new SerializationException("Buffer limit exceeded reading object of type: " + type.getName(), ex);

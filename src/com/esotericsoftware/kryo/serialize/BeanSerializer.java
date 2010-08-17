@@ -9,7 +9,6 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -93,21 +92,28 @@ public class BeanSerializer extends Serializer {
 
 	public void writeObjectData (ByteBuffer buffer, Object object) {
 		Class type = object.getClass();
-		try {
-			for (int i = 0, n = properties.length; i < n; i++) {
-				CachedProperty property = properties[i];
-				if (TRACE) trace("kryo", "Writing property: " + property + " (" + object.getClass() + ")");
+		for (int i = 0, n = properties.length; i < n; i++) {
+			CachedProperty property = properties[i];
+			try {
+				if (TRACE) trace("kryo", "Writing property: " + property + " (" + type.getName() + ")");
 				Object value = property.get(object);
 				Serializer serializer = property.serializer;
 				if (serializer != null)
 					serializer.writeObject(buffer, value);
 				else
 					kryo.writeClassAndObject(buffer, value);
+			} catch (IllegalAccessException ex) {
+				throw new SerializationException("Error accessing getter method: " + property + " (" + type.getName() + ")", ex);
+			} catch (InvocationTargetException ex) {
+				throw new SerializationException("Error invoking getter method: " + property + " (" + type.getName() + ")", ex);
+			} catch (SerializationException ex) {
+				ex.addTrace(property + " (" + type.getName() + ")");
+				throw ex;
+			} catch (RuntimeException runtimeEx) {
+				SerializationException ex = new SerializationException(runtimeEx);
+				ex.addTrace(property + " (" + type.getName() + ")");
+				throw ex;
 			}
-		} catch (IllegalAccessException ex) {
-			throw new SerializationException("Error accessing getter method in class: " + type.getName(), ex);
-		} catch (InvocationTargetException ex) {
-			throw new SerializationException("Error invoking getter method in class: " + type.getName(), ex);
 		}
 		if (TRACE) trace("kryo", "Wrote bean: " + object);
 	}
@@ -117,9 +123,9 @@ public class BeanSerializer extends Serializer {
 	}
 
 	protected <T> T readObjectData (T object, ByteBuffer buffer, Class<T> type) {
-		try {
-			for (int i = 0, n = properties.length; i < n; i++) {
-				CachedProperty property = properties[i];
+		for (int i = 0, n = properties.length; i < n; i++) {
+			CachedProperty property = properties[i];
+			try {
 				if (TRACE) trace("kryo", "Reading property: " + property + " (" + object.getClass() + ")");
 				Object value;
 				Serializer serializer = property.serializer;
@@ -128,11 +134,18 @@ public class BeanSerializer extends Serializer {
 				else
 					value = kryo.readClassAndObject(buffer);
 				property.set(object, value);
+			} catch (IllegalAccessException ex) {
+				throw new SerializationException("Error accessing setter method: " + property + " (" + type.getName() + ")", ex);
+			} catch (InvocationTargetException ex) {
+				throw new SerializationException("Error invoking setter method: " + property + " (" + type.getName() + ")", ex);
+			} catch (SerializationException ex) {
+				ex.addTrace(property + " (" + type.getName() + ")");
+				throw ex;
+			} catch (RuntimeException runtimeEx) {
+				SerializationException ex = new SerializationException(runtimeEx);
+				ex.addTrace(property + " (" + type.getName() + ")");
+				throw ex;
 			}
-		} catch (IllegalAccessException ex) {
-			throw new SerializationException("Error accessing setter method in class: " + type.getName(), ex);
-		} catch (InvocationTargetException ex) {
-			throw new SerializationException("Error invoking setter method in class: " + type.getName(), ex);
 		}
 		if (TRACE) trace("kryo", "Read bean: " + object);
 		return object;
