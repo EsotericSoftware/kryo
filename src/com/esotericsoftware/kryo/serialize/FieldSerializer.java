@@ -6,6 +6,7 @@ import static com.esotericsoftware.minlog.Log.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
+import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -72,10 +73,13 @@ public class FieldSerializer extends Serializer {
 			if (Modifier.isTransient(modifiers)) continue;
 			if (Modifier.isStatic(modifiers)) continue;
 			if (field.isSynthetic() && ignoreSyntheticFields) continue;
-			if (setFieldsAsAccessible)
-				field.setAccessible(true);
-			else if (Modifier.isPrivate(modifiers)) {
-				continue;
+			if (Modifier.isPrivate(modifiers)) {
+				if (!setFieldsAsAccessible) continue;
+				try {
+					field.setAccessible(true);
+				} catch (AccessControlException ex) {
+					continue;
+				}
 			}
 
 			CachedField cachedField = new CachedField();
@@ -95,10 +99,13 @@ public class FieldSerializer extends Serializer {
 
 		if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && !publicFields.isEmpty()) {
 			// Use ReflectASM for any public fields.
-			access = FieldAccess.get(type);
-			for (int i = 0, n = publicFields.size(); i < n; i++) {
-				CachedField cachedField = publicFields.get(i);
-				cachedField.accessIndex = ((FieldAccess)access).getIndex(cachedField.field.getName());
+			try {
+				access = FieldAccess.get(type);
+				for (int i = 0, n = publicFields.size(); i < n; i++) {
+					CachedField cachedField = publicFields.get(i);
+					cachedField.accessIndex = ((FieldAccess)access).getIndex(cachedField.field.getName());
+				}
+			} catch (AccessControlException ignored) {
 			}
 		}
 
