@@ -36,7 +36,7 @@ import com.esotericsoftware.kryo.util.IntHashMap;
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class Kryo {
-	static public final String version = "1.02";
+	static public final String version = "1.03a";
 
 	static private final byte ID_NULL_OBJECT = 0;
 	static private final int ID_CLASS_NAME = 16383;
@@ -632,6 +632,7 @@ public class Kryo {
 		synchronized (listenerLock) {
 			Listener[] listeners = this.listeners;
 			int n = listeners.length;
+			if (n == 0) return;
 			Listener[] newListeners = new Listener[n - 1];
 			for (int i = 0, ii = 0; i < n; i++) {
 				if (listener == listeners[i]) continue;
