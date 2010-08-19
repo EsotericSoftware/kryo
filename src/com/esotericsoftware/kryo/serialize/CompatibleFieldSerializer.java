@@ -72,7 +72,7 @@ public class CompatibleFieldSerializer extends Serializer {
 			if (Modifier.isTransient(modifiers)) continue;
 			if (Modifier.isStatic(modifiers)) continue;
 			if (field.isSynthetic()) continue;
-			if (Modifier.isPrivate(modifiers)) {
+			if (!Modifier.isPublic(modifiers) || Modifier.isFinal(modifiers)) {
 				if (!setFieldsAsAccessible) continue;
 				try {
 					field.setAccessible(true);

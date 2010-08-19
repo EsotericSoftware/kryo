@@ -73,7 +73,7 @@ public class FieldSerializer extends Serializer {
 			if (Modifier.isTransient(modifiers)) continue;
 			if (Modifier.isStatic(modifiers)) continue;
 			if (field.isSynthetic() && ignoreSyntheticFields) continue;
-			if (Modifier.isPrivate(modifiers)) {
+			if (!Modifier.isPublic(modifiers) || Modifier.isFinal(modifiers)) {
 				if (!setFieldsAsAccessible) continue;
 				try {
 					field.setAccessible(true);
