@@ -69,11 +69,17 @@ public class FieldSerializer extends Serializer {
 		});
 		for (int i = 0, n = allFields.size(); i < n; i++) {
 			Field field = allFields.get(i);
+
 			int modifiers = field.getModifiers();
 			if (Modifier.isTransient(modifiers)) continue;
 			if (Modifier.isStatic(modifiers)) continue;
 			if (field.isSynthetic() && ignoreSyntheticFields) continue;
-			if (!Modifier.isPublic(modifiers) || Modifier.isFinal(modifiers)) {
+
+			Class fieldClass = field.getType();
+			boolean isFinal = isFinal(fieldClass);
+			boolean isPublic = Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers());
+
+			if (!isPublic || isFinal) {
 				if (!setFieldsAsAccessible) continue;
 				try {
 					field.setAccessible(true);
@@ -90,11 +96,10 @@ public class FieldSerializer extends Serializer {
 				cachedField.canBeNull = false;
 
 			// Always use the same serializer for this field if the field's class is final.
-			Class fieldClass = field.getType();
-			if (isFinal(fieldClass)) cachedField.fieldClass = fieldClass;
+			if (isFinal) cachedField.fieldClass = fieldClass;
 
 			cachedFields.add(cachedField);
-			if (Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers())) publicFields.add(cachedField);
+			if (isPublic) publicFields.add(cachedField);
 		}
 
 		if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && !publicFields.isEmpty()) {
@@ -127,8 +132,8 @@ public class FieldSerializer extends Serializer {
 	/**
 	 * Controls which fields are serialized.
 	 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
-	 *           {@link Field#setAccessible(boolean) set as accessible} (default). If false, only fields in the public API will be
-	 *           serialized.
+	 *           {@link Field#setAccessible(boolean) set as accessible} if necessary (default). If false, only fields in the public
+	 *           API will be serialized.
 	 */
 	public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
 		this.setFieldsAsAccessible = setFieldsAsAccessible;
@@ -137,8 +142,8 @@ public class FieldSerializer extends Serializer {
 
 	/**
 	 * Controls if synthetic fields are serialized.
-	 * @param ignoreSyntheticFields If true, all non-synthetic fields will be serialized (default). If false, synthetic fields will
-	 *           also be serialized.
+	 * @param ignoreSyntheticFields If true, only non-synthetic fields will be serialized (default). If false, synthetic fields
+	 *           will also be serialized.
 	 */
 	public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
 		this.ignoreSyntheticFields = ignoreSyntheticFields;
