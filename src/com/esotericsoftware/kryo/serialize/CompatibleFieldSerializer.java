@@ -74,11 +74,7 @@ public class CompatibleFieldSerializer extends Serializer {
 			if (Modifier.isStatic(modifiers)) continue;
 			if (field.isSynthetic()) continue;
 
-			Class fieldClass = field.getType();
-			boolean isFinal = isFinal(fieldClass);
-			boolean isPublic = Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers());
-
-			if (!isPublic || isFinal) {
+			if (!field.isAccessible()) {
 				if (!setFieldsAsAccessible) continue;
 				try {
 					field.setAccessible(true);
@@ -95,10 +91,11 @@ public class CompatibleFieldSerializer extends Serializer {
 				cachedField.canBeNull = false;
 
 			// Always use the same serializer for this field if the field's class is final.
-			if (isFinal) cachedField.fieldClass = fieldClass;
+			Class fieldClass = field.getType();
+			if (isFinal(fieldClass)) cachedField.fieldClass = fieldClass;
 
 			cachedFields.add(cachedField);
-			if (isPublic) publicFields.add(cachedField);
+			if (Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers())) publicFields.add(cachedField);
 		}
 
 		if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && !publicFields.isEmpty()) {
