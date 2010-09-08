@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.esotericsoftware.kryo.serialize.ArraySerializer;
@@ -36,7 +37,7 @@ import com.esotericsoftware.kryo.util.IntHashMap;
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class Kryo {
-	static public final String version = "1.03a";
+	static public final String version = "1.03";
 
 	static private final byte ID_NULL_OBJECT = 0;
 	static private final int ID_CLASS_NAME = 16383;
@@ -47,8 +48,8 @@ public class Kryo {
 		}
 	};
 
-	private final IntHashMap<RegisteredClass> idToRegisteredClass = new IntHashMap(64);
-	private final HashMap<Class, RegisteredClass> classToRegisteredClass = new HashMap(64);
+	private final ConcurrentHashMap<Integer, RegisteredClass> idToRegisteredClass = new ConcurrentHashMap(64);
+	private final ConcurrentHashMap<Class, RegisteredClass> classToRegisteredClass = new ConcurrentHashMap(64);
 	private AtomicInteger nextClassID = new AtomicInteger(1);
 	private Object listenerLock = new Object();
 	private Listener[] listeners = {};
