@@ -6,6 +6,6 @@
 	<classpathentry kind="lib" path="build/junit-4.6.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/asm-3.2.jar" sourcepath="C:/Dev/Java/Misc/asm-3.2-src/src"/>
 	<classpathentry exported="true" kind="lib" path="lib/minlog-1.2.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/reflectasm-0.9.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/reflectasm-1.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
