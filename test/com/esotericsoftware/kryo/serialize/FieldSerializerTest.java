@@ -112,10 +112,9 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		buffer.clear();
 		try {
-			// Fail because F is not registered.
 			kryoWithoutF.writeClassAndObject(buffer, c);
-		} catch (SerializationException ex) {
-			ex.printStackTrace();
+			fail("Should have failed because F is not registered.");
+		} catch (SerializationException ignored) {
 		}
 
 		Kryo kryo = new Kryo();
@@ -132,10 +131,9 @@ public class FieldSerializerTest extends KryoTestCase {
 		assertEquals(11, buffer.limit());
 
 		try {
-			// Fail because F is not registered.
 			kryoWithoutF.readClassAndObject(buffer);
-		} catch (SerializationException ex) {
-			ex.printStackTrace();
+			fail("Should have failed because F is not registered.");
+		} catch (SerializationException ignored) {
 		}
 	}
 
