@@ -16,6 +16,7 @@ import java.util.PriorityQueue;
 import com.esotericsoftware.kryo.Context;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
+import com.esotericsoftware.kryo.Optional;
 import com.esotericsoftware.kryo.SerializationException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.Kryo.RegisteredClass;
@@ -66,6 +67,7 @@ public class CompatibleFieldSerializer extends Serializer {
 				return o1.field.getName().compareTo(o2.field.getName());
 			}
 		});
+		Context context = Kryo.getContext();
 		for (int i = 0, n = allFields.size(); i < n; i++) {
 			Field field = allFields.get(i);
 
@@ -83,15 +85,19 @@ public class CompatibleFieldSerializer extends Serializer {
 				}
 			}
 
+			Optional optional = field.getAnnotation(Optional.class);
+			if (optional != null && context.get(optional.value()) == null) continue;
+
+			Class fieldClass = field.getType();
+
 			CachedField cachedField = new CachedField();
 			cachedField.field = field;
 			if (fieldsCanBeNull)
-				cachedField.canBeNull = !field.isAnnotationPresent(NotNull.class);
+				cachedField.canBeNull = !fieldClass.isPrimitive() && !field.isAnnotationPresent(NotNull.class);
 			else
 				cachedField.canBeNull = false;
 
 			// Always use the same serializer for this field if the field's class is final.
-			Class fieldClass = field.getType();
 			if (isFinal(fieldClass)) cachedField.fieldClass = fieldClass;
 
 			cachedFields.add(cachedField);
@@ -221,7 +227,7 @@ public class CompatibleFieldSerializer extends Serializer {
 
 			fields = new CachedField[length];
 			CachedField[] allFields = this.fields;
-			outer: //
+			outer:
 			for (int i = 0, n = names.length; i < n; i++) {
 				String schemaName = names[i];
 				for (int ii = 0, nn = allFields.length; ii < nn; ii++) {

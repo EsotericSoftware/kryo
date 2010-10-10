@@ -36,7 +36,7 @@ import com.esotericsoftware.kryo.util.LongToIntHashMap;
  * Most of this code was originally from the "javaxdelta" project. It was heavily customized for efficiency when used with Kryo.
  */
 public class Delta {
-	static private final boolean debug = true;
+	static private final boolean debug = false;
 
 	static private final byte COMMAND_APPEND = -1;
 	static private final byte COMMAND_COPY = 0;

@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
  * @author Nathan Sweet <misc@n4te.com>
  */
 public class ObjectBuffer {
-	private final Kryo kryo;
+	private Kryo kryo;
 	private final int maxCapacity;
 	private ByteBuffer buffer;
 	private byte[] bytes;
@@ -48,6 +48,10 @@ public class ObjectBuffer {
 		this.maxCapacity = maxCapacity;
 	}
 
+	public void setKryo (Kryo kryo) {
+		this.kryo = kryo;
+	}
+	
 	/**
 	 * Reads the specified number of bytes from the stream into the buffer.
 	 * @param contentLength The number of bytes to read, or -1 to read to the end of the stream.

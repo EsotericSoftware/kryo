@@ -9,11 +9,12 @@ import java.lang.annotation.Target;
 import com.esotericsoftware.kryo.serialize.FieldSerializer;
 
 /**
- * Indicates a field can never be null when it is being serialized and deserialized. This optimization allows
- * {@link FieldSerializer} to save 1 byte.
+ * Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has a
+ * value set for specified key.
  * @author Nathan Sweet <misc@n4te.com>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface NotNull {
+public @interface Optional {
+	public String value();
 }

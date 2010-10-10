@@ -5,6 +5,7 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
@@ -52,7 +53,7 @@ public class Kryo {
 	private final ConcurrentHashMap<Class, RegisteredClass> classToRegisteredClass = new ConcurrentHashMap(64);
 	private AtomicInteger nextClassID = new AtomicInteger(1);
 	private Object listenerLock = new Object();
-	private Listener[] listeners = {};
+	private volatile Listener[] listeners = {};
 	private boolean registrationOptional;
 	private ClassLoader classLoader = getClass().getClassLoader();
 
