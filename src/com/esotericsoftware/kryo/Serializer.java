@@ -76,10 +76,11 @@ abstract public class Serializer {
 	}
 
 	/**
-	 * Returns true if the specified type is final, or if it is an array of a final type.
+	 * Returns true if the specified type is final, or if it is an array of a final type. Serializers call this rather than
+	 * {@link Kryo#isFinal(Class)}, allowing a subclass to customize the behavior (eg, an application may decide that all
+	 * java.util.ArrayList instances should be considered final).
 	 */
-	static public boolean isFinal (Class type) {
-		if (type.isArray()) return Modifier.isFinal(ArraySerializer.getElementClass(type).getModifiers());
-		return Modifier.isFinal(type.getModifiers());
+	public boolean isFinal (Class type) {
+		return Kryo.isFinal(type);
 	}
 }

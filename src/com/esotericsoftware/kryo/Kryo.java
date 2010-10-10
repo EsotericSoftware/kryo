@@ -684,6 +684,14 @@ public class Kryo {
 	}
 
 	/**
+	 * Returns true if the specified type is final, or if it is an array of a final type.
+	 */
+	static public boolean isFinal (Class type) {
+		if (type.isArray()) return Modifier.isFinal(ArraySerializer.getElementClass(type).getModifiers());
+		return Modifier.isFinal(type.getModifiers());
+	}
+
+	/**
 	 * Returns the thread local context for serialization and deserialization.
 	 * @see Context
 	 */
