@@ -114,7 +114,7 @@ public class FieldSerializer extends Serializer {
 					CachedField cachedField = publicFields.get(i);
 					cachedField.accessIndex = ((FieldAccess)access).getIndex(cachedField.field.getName());
 				}
-			} catch (AccessControlException ignored) {
+			} catch (RuntimeException ignored) {
 			}
 		}
 
