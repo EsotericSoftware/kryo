@@ -675,7 +675,11 @@ public class Kryo {
 				return constructor.newInstance();
 			} catch (SecurityException ignored) {
 			} catch (NoSuchMethodException ignored) {
-				throw new SerializationException("Class cannot be created (missing no-arg constructor): " + type.getName(), ex);
+				if (type.isMemberClass()) {
+					throw new SerializationException("Class cannot be created (member classes not allowed, no enclosing instance): "
+						+ type.getName(), ex);
+				} else
+					throw new SerializationException("Class cannot be created (missing no-arg constructor): " + type.getName(), ex);
 			} catch (Exception privateConstructorException) {
 				ex = privateConstructorException;
 			}
