@@ -61,7 +61,7 @@ public class ObjectBuffer {
 		try {
 			int position = 0;
 			while (position < contentLength) {
-				int count = input.read(bytes, position, bytes.length - position);
+				int count = input.read(bytes, position, contentLength - position);
 				if (count == -1) break;
 				position += count;
 				if (position == bytes.length && !resizeBuffer(true))
