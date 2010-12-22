@@ -195,7 +195,7 @@ public class CompatibleFieldSerializer extends Serializer {
 					buffer.get(temp);
 					buffer.position(start);
 					IntSerializer.put(buffer, dataLength, true);
-					buffer.put(temp);
+					buffer.put(temp, 0, dataLength);
 				}
 			} catch (IllegalAccessException ex) {
 				throw new SerializationException("Error accessing field in class: " + object.getClass().getName(), ex);
