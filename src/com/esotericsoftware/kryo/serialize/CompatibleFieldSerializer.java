@@ -192,7 +192,7 @@ public class CompatibleFieldSerializer extends Serializer {
 					// Shift the data over to make room for the length.
 					byte[] temp = context.getByteArray(dataLength);
 					buffer.position(start + 1);
-					buffer.get(temp);
+					buffer.get(temp, 0, dataLength);
 					buffer.position(start);
 					IntSerializer.put(buffer, dataLength, true);
 					buffer.put(temp, 0, dataLength);
