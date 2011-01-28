@@ -17,6 +17,7 @@ public class EnumSerializer extends Serializer {
 
 	public EnumSerializer (Class<? extends Enum> type) {
 		enumConstants = type.getEnumConstants();
+		if (enumConstants == null) throw new IllegalArgumentException("The type must be an enum: " + type);
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {

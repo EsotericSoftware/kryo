@@ -51,7 +51,7 @@ public class ObjectBuffer {
 	public void setKryo (Kryo kryo) {
 		this.kryo = kryo;
 	}
-	
+
 	/**
 	 * Reads the specified number of bytes from the stream into the buffer.
 	 * @param contentLength The number of bytes to read, or -1 to read to the end of the stream.
@@ -61,7 +61,7 @@ public class ObjectBuffer {
 		try {
 			int position = 0;
 			while (position < contentLength) {
-				int count = input.read(bytes, position, contentLength - position);
+				int count = input.read(bytes, position, Math.min(bytes.length - position, contentLength - position));
 				if (count == -1) break;
 				position += count;
 				if (position == bytes.length && !resizeBuffer(true))
