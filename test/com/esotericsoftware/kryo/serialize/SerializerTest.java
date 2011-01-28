@@ -148,6 +148,13 @@ public class SerializerTest extends KryoTestCase {
 		roundTrip(new EnumSerializer(TestEnum.class), 2, TestEnum.a);
 		roundTrip(new EnumSerializer(TestEnum.class), 2, TestEnum.b);
 		roundTrip(new EnumSerializer(TestEnum.class), 2, TestEnum.c);
+
+		Kryo kryo = new Kryo();
+		kryo.setRegistrationOptional(true);
+		// 2 bytes identifying its a class name
+		// 61 bytes for the class name string
+		// 1 byte for the enum value
+		roundTrip(kryo, 64, TestEnum.c);
 	}
 
 	public void testFloatSerializer () {
