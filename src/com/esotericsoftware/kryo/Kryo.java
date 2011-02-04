@@ -1,8 +1,6 @@
 
 package com.esotericsoftware.kryo;
 
-import static com.esotericsoftware.minlog.Log.*;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
@@ -32,6 +30,8 @@ import com.esotericsoftware.kryo.serialize.MapSerializer;
 import com.esotericsoftware.kryo.serialize.ShortSerializer;
 import com.esotericsoftware.kryo.serialize.StringSerializer;
 import com.esotericsoftware.kryo.util.IntHashMap;
+
+import static com.esotericsoftware.minlog.Log.*;
 
 /**
  * Maps classes to serializers so object graphs can be serialized automatically.
@@ -293,6 +293,13 @@ public class Kryo {
 
 		// If a Proxy class, treat it like an InvocationHandler because the concrete class for a proxy is generated.
 		if (Proxy.isProxyClass(type)) return getRegisteredClass(InvocationHandler.class);
+
+		// This handles an enum value that is an inner class. Eg: enum A {b{}};
+		if (!type.isEnum() && Enum.class.isAssignableFrom(type)) {
+			type = type.getEnclosingClass();
+			registeredClass = classToRegisteredClass.get(type);
+			if (registeredClass != null) return registeredClass;
+		}
 
 		if (registrationOptional) {
 			handleUnregisteredClass(type);
