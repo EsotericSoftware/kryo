@@ -4,8 +4,8 @@
 	<classpathentry excluding="**/.svn/*" kind="src" path="test"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="build/junit-4.6.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/asm-3.2.jar" sourcepath="C:/Dev/Java/Misc/asm-3.2-src/src"/>
 	<classpathentry exported="true" kind="lib" path="lib/minlog-1.2.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/reflectasm-1.0.jar"/>
+	<classpathentry kind="lib" path="lib/asm-3.3.1.jar"/>
+	<classpathentry kind="lib" path="lib/reflectasm-1.01.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

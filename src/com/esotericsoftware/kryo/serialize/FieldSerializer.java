@@ -62,7 +62,7 @@ public class FieldSerializer extends Serializer {
 			nextClass = nextClass.getSuperclass();
 		}
 
-		ArrayList<CachedField> publicFields = new ArrayList();
+		ArrayList<CachedField> asmFields = new ArrayList();
 		PriorityQueue<CachedField> cachedFields = new PriorityQueue(Math.max(1, allFields.size()), new Comparator<CachedField>() {
 			public int compare (CachedField o1, CachedField o2) {
 				// Fields are sorted by alpha so the order of the data is known.
@@ -103,15 +103,16 @@ public class FieldSerializer extends Serializer {
 			if (isFinal(fieldClass)) cachedField.fieldClass = fieldClass;
 
 			cachedFields.add(cachedField);
-			if (Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers())) publicFields.add(cachedField);
+			if (!Modifier.isFinal(modifiers) && Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers()))
+				asmFields.add(cachedField);
 		}
 
-		if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && !publicFields.isEmpty()) {
+		if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && !asmFields.isEmpty()) {
 			// Use ReflectASM for any public fields.
 			try {
 				access = FieldAccess.get(type);
-				for (int i = 0, n = publicFields.size(); i < n; i++) {
-					CachedField cachedField = publicFields.get(i);
+				for (int i = 0, n = asmFields.size(); i < n; i++) {
+					CachedField cachedField = asmFields.get(i);
 					cachedField.accessIndex = ((FieldAccess)access).getIndex(cachedField.field.getName());
 				}
 			} catch (RuntimeException ignored) {

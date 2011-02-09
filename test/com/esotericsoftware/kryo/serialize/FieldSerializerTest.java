@@ -128,7 +128,8 @@ public class FieldSerializerTest extends KryoTestCase {
 		buffer.clear();
 		kryo.writeClassAndObject(buffer, c);
 		buffer.flip();
-		assertEquals(11, buffer.limit());
+		assertEquals(12, buffer.limit());
+		kryo.readClassAndObject(buffer);
 
 		try {
 			kryoWithoutF.readClassAndObject(buffer);
@@ -247,6 +248,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	static public final class F {
 		public int value;
+		public final int finalValue = 12;
 	}
 
 	static public class SimpleNoDefaultConstructor {
