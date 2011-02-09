@@ -1,4 +1,7 @@
-version: 1.03
+version: 1.04
 dependencies:
 - ../reflectasm
 - ../minlog
+---
+build(project);
+oneJAR(project);
