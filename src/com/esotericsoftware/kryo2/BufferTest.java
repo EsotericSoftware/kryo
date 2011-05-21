@@ -135,27 +135,105 @@ public class BufferTest extends KryoTestCase {
 			11, 22, 33, 44, 55, 66, 44, 55, 77, 88, 99});
 	}
 
-	public void testStrings () {
-		runStringTest(new WriteBuffer());
-		runStringTest(new WriteBuffer(2, 200));
+	public void testUTF () {
+		runUTFTest(new WriteBuffer());
+		runUTFTest(new WriteBuffer(2, 200));
 	}
 
-	public void runStringTest (WriteBuffer write) {
+	public void runUTFTest (WriteBuffer write) {
 		String value1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*";
 		String value2 = "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234";
 
-		write.writeString("uno");
-		write.writeString("dos");
-		write.writeString("tres");
-		write.writeString(value1);
-		write.writeString(value2);
+		write.writeUTF("uno");
+		write.writeUTF("dos");
+		write.writeUTF("tres");
+		write.writeUTF(value1);
+		write.writeUTF(value2);
+		write.writeChars("uno");
+		write.writeChars("dos");
+		write.writeChars("tres");
+		write.writeChars(value1);
 
 		ReadBuffer read = new ReadBuffer(write.toBytes());
-		assertEquals("uno", read.readString());
-		assertEquals("dos", read.readString());
-		assertEquals("tres", read.readString());
-		assertEquals(value1, read.readString());
-		assertEquals(value2, read.readString());
+		assertEquals("uno", read.readUTF());
+		assertEquals("dos", read.readUTF());
+		assertEquals("tres", read.readUTF());
+		assertEquals(value1, read.readUTF());
+		assertEquals(value2, read.readUTF());
+		assertEquals("uno", read.readChars());
+		assertEquals("dos", read.readChars());
+		assertEquals("tres", read.readChars());
+		assertEquals(value1, read.readChars());
+	}
+
+	public void testCanReadInt () {
+		WriteBuffer write = new WriteBuffer(2, 200);
+		write.writeByte(255);
+
+		ReadBuffer read = new ReadBuffer(write.toBytes());
+		assertEquals(false, read.canReadInt());
+
+		write.writeByte(255);
+
+		read = new ReadBuffer(write.toBytes());
+		assertEquals(false, read.canReadInt());
+
+		write.writeByte(255);
+
+		read = new ReadBuffer(write.toBytes());
+		assertEquals(false, read.canReadInt());
+
+		write.writeByte(255);
+
+		read = new ReadBuffer(write.toBytes());
+		assertEquals(false, read.canReadInt());
+
+		write.writeByte(255);
+
+		read = new ReadBuffer(write.toBytes());
+		assertEquals(true, read.canReadInt());
+
+		//
+
+		write.clear();
+		write.writeByte(0);
+
+		read = new ReadBuffer(write.toBytes());
+		assertEquals(true, read.canReadInt());
+
+		write.clear();
+		write.writeByte(255);
+		write.writeByte(0);
+
+		read = new ReadBuffer(write.toBytes());
+		assertEquals(true, read.canReadInt());
+
+		write.clear();
+		write.writeByte(255);
+		write.writeByte(255);
+		write.writeByte(0);
+
+		read = new ReadBuffer(write.toBytes());
+		assertEquals(true, read.canReadInt());
+
+		write.clear();
+		write.writeByte(255);
+		write.writeByte(255);
+		write.writeByte(255);
+		write.writeByte(0);
+
+		read = new ReadBuffer(write.toBytes());
+		assertEquals(true, read.canReadInt());
+
+		write.clear();
+		write.writeByte(255);
+		write.writeByte(255);
+		write.writeByte(255);
+		write.writeByte(255);
+		write.writeByte(0);
+
+		read = new ReadBuffer(write.toBytes());
+		assertEquals(true, read.canReadInt());
 	}
 
 	public void testInts () {

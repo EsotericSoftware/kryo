@@ -50,6 +50,8 @@ public class WriteBuffer {
 	public void clear () {
 		bufferIndex = 0;
 		position = 0;
+		buffer = buffers.get(0);
+		marks = 0;
 	}
 
 	private void bufferFull () {
@@ -131,16 +133,61 @@ public class WriteBuffer {
 	// int
 
 	public void writeInt (int value) {
-		// BOZO - Faster with temp?
-		writeByte(value >> 24);
-		writeByte(value >> 16);
-		writeByte(value >> 8);
-		writeByte(value);
+		if (bufferSize - position < 4)
+			writeInt_slow(value);
+		else {
+			byte[] buffer = this.buffer;
+			buffer[position++] = (byte)(value >> 24);
+			buffer[position++] = (byte)(value >> 16);
+			buffer[position++] = (byte)(value >> 8);
+			buffer[position++] = (byte)value;
+		}
+	}
+
+	private void writeInt_slow (int value) {
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value >> 24);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value >> 16);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value >> 8);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)value;
 	}
 
 	public int writeInt (int value, boolean optimizePositive) {
-		// BOZO - Faster with temp?
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
+		if (bufferSize - position < 5) return writeInt_slow_var(value);
+		byte[] buffer = this.buffer;
+		if ((value & ~0x7F) == 0) {
+			buffer[position++] = (byte)value;
+			return 1;
+		}
+		buffer[position++] = (byte)((value & 0x7F) | 0x80);
+		value >>>= 7;
+		if ((value & ~0x7F) == 0) {
+			buffer[position++] = (byte)value;
+			return 2;
+		}
+		buffer[position++] = (byte)((value & 0x7F) | 0x80);
+		value >>>= 7;
+		if ((value & ~0x7F) == 0) {
+			buffer[position++] = (byte)value;
+			return 3;
+		}
+		buffer[position++] = (byte)((value & 0x7F) | 0x80);
+		value >>>= 7;
+		if ((value & ~0x7F) == 0) {
+			buffer[position++] = (byte)value;
+			return 4;
+		}
+		buffer[position++] = (byte)((value & 0x7F) | 0x80);
+		value >>>= 7;
+		buffer[position++] = (byte)value;
+		return 5;
+	}
+
+	private int writeInt_slow_var (int value) {
 		if ((value & ~0x7F) == 0) {
 			writeByte(value);
 			return 1;
@@ -171,21 +218,66 @@ public class WriteBuffer {
 
 	// string
 
-	public void writeString (String value) {
+	public void writeChars (String value) {
 		int charCount = value.length();
 		writeInt(charCount, true);
-		// BOZO - Faster with temp?
-		for (int i = 0; i < charCount; i++) {
-			int c = value.charAt(i);
+		if (bufferSize - position < charCount)
+			writeChars_slow(value);
+		else {
+			byte[] buffer = this.buffer;
+			for (int i = 0; i < charCount; i++)
+				buffer[position++] = (byte)value.charAt(i);
+		}
+	}
+
+	private void writeChars_slow (String value) {
+		for (int i = 0, n = value.length(); i < n; i++) {
+			if (position == bufferSize) bufferFull();
+			buffer[position++] = (byte)value.charAt(i);
+		}
+	}
+
+	public void writeUTF (String value) {
+		int charCount = value.length();
+		writeInt(charCount, true);
+		if (bufferSize - position < charCount * 3)
+			writeUTF_slow(value);
+		else {
+			byte[] buffer = this.buffer;
+			int c;
+			for (int i = 0; i < charCount; i++) {
+				c = value.charAt(i);
+				if (c <= 0x007F) {
+					buffer[position++] = (byte)c;
+				} else if (c > 0x07FF) {
+					buffer[position++] = (byte)(0xE0 | c >> 12 & 0x0F);
+					buffer[position++] = (byte)(0x80 | c >> 6 & 0x3F);
+					buffer[position++] = (byte)(0x80 | c & 0x3F);
+				} else {
+					buffer[position++] = (byte)(0xC0 | c >> 6 & 0x1F);
+					buffer[position++] = (byte)(0x80 | c & 0x3F);
+				}
+			}
+		}
+	}
+
+	private void writeUTF_slow (String value) {
+		int c;
+		for (int i = 0, n = value.length(); i < n; i++) {
+			c = value.charAt(i);
+			if (position == bufferSize) bufferFull();
 			if (c <= 0x007F)
-				writeByte(c);
+				buffer[position++] = (byte)c;
 			else if (c > 0x07FF) {
-				writeByte(0xE0 | c >> 12 & 0x0F);
-				writeByte(0x80 | c >> 6 & 0x3F);
-				writeByte(0x80 | c >> 0 & 0x3F);
+				buffer[position++] = (byte)(0xE0 | c >> 12 & 0x0F);
+				if (position == bufferSize) bufferFull();
+				buffer[position++] = (byte)(0x80 | c >> 6 & 0x3F);
+				if (position == bufferSize) bufferFull();
+				buffer[position++] = (byte)(0x80 | c & 0x3F);
 			} else {
-				writeByte(0xC0 | c >> 6 & 0x1F);
-				writeByte(0x80 | c >> 0 & 0x3F);
+				buffer[position++] = (byte)(0xC0 | c >> 6 & 0x1F);
+				if (position == bufferSize) bufferFull();
+				buffer[position++] = (byte)(0x80 | c & 0x3F);
 			}
 		}
 	}
@@ -193,12 +285,7 @@ public class WriteBuffer {
 	// float
 
 	public void writeFloat (float value) {
-		// BOZO - Faster with temp?
-		int i = Float.floatToIntBits(value);
-		writeByte(i >> 24);
-		writeByte(i >> 16);
-		writeByte(i >> 8);
-		writeByte(i);
+		writeInt(Float.floatToIntBits(value));
 	}
 
 	public int writeFloat (float value, float precision, boolean optimizePositive) {
@@ -208,46 +295,134 @@ public class WriteBuffer {
 	// short
 
 	public void writeShort (int value) {
-		writeByte((value >>> 8) & 0xFF);
-		writeByte(value & 0xFF);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)((value >>> 8) & 0xFF);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value & 0xFF);
 	}
 
 	public int writeShort (int value, boolean optimizePositive) {
+		if (position == bufferSize) bufferFull();
 		if (optimizePositive) {
 			if (value >= 0 && value <= 254) {
-				writeByte(value);
+				buffer[position++] = (byte)value;
 				return 1;
 			}
-			writeByte(-1); // short positive
-			writeShort(value);
+			buffer[position++] = -1; // short positive
 		} else {
 			if (value >= -127 && value <= 127) {
-				writeByte(value);
+				buffer[position++] = (byte)value;
 				return 1;
 			}
-			writeByte(-128); // short
-			writeShort(value);
+			buffer[position++] = -128; // short
 		}
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)((value >>> 8) & 0xFF);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value & 0xFF);
 		return 3;
 	}
 
 	// long
 
 	public void writeLong (long value) {
-		temp[0] = (byte)(value >>> 56);
-		temp[1] = (byte)(value >>> 48);
-		temp[2] = (byte)(value >>> 40);
-		temp[3] = (byte)(value >>> 32);
-		temp[4] = (byte)(value >>> 24);
-		temp[5] = (byte)(value >>> 16);
-		temp[6] = (byte)(value >>> 8);
-		temp[7] = (byte)(value >>> 0);
-		writeBytes(temp, 0, 8);
+		if (bufferSize - position < 8) {
+			writeLong_slow(value);
+			return;
+		}
+		byte[] buffer = this.buffer;
+		buffer[position++] = (byte)(value >>> 56);
+		buffer[position++] = (byte)(value >>> 48);
+		buffer[position++] = (byte)(value >>> 40);
+		buffer[position++] = (byte)(value >>> 32);
+		buffer[position++] = (byte)(value >>> 24);
+		buffer[position++] = (byte)(value >>> 16);
+		buffer[position++] = (byte)(value >>> 8);
+		buffer[position++] = (byte)(value);
+	}
+
+	private void writeLong_slow (long value) {
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value >>> 56);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value >>> 48);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value >>> 40);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value >>> 32);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value >>> 24);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value >>> 16);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value >>> 8);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)value;
 	}
 
 	public int writeLong (long value, boolean optimizePositive) {
-		// BOZO - Faster with temp?
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
+		if (bufferSize - position < 8) return writeLong_slow_var(value);
+		byte[] buffer = this.buffer;
+		if ((value & ~0x7FL) == 0) {
+			buffer[position++] = (byte)value;
+			return 1;
+		}
+		buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+		value >>>= 7;
+		if ((value & ~0x7FL) == 0) {
+			buffer[position++] = (byte)value;
+			return 2;
+		}
+		buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+		value >>>= 7;
+		if ((value & ~0x7FL) == 0) {
+			buffer[position++] = (byte)value;
+			return 3;
+		}
+		buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+		value >>>= 7;
+		if ((value & ~0x7FL) == 0) {
+			buffer[position++] = (byte)value;
+			return 4;
+		}
+		buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+		value >>>= 7;
+		if ((value & ~0x7FL) == 0) {
+			buffer[position++] = (byte)value;
+			return 5;
+		}
+		buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+		value >>>= 7;
+		if ((value & ~0x7FL) == 0) {
+			buffer[position++] = (byte)value;
+			return 6;
+		}
+		buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+		value >>>= 7;
+		if ((value & ~0x7FL) == 0) {
+			buffer[position++] = (byte)value;
+			return 7;
+		}
+		buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+		value >>>= 7;
+		if ((value & ~0x7FL) == 0) {
+			buffer[position++] = (byte)value;
+			return 8;
+		}
+		buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+		value >>>= 7;
+		if ((value & ~0x7FL) == 0) {
+			buffer[position++] = (byte)value;
+			return 9;
+		}
+		buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+		value >>>= 7;
+		buffer[position++] = (byte)value;
+		return 10;
+	}
+
+	private int writeLong_slow_var (long value) {
 		if ((value & ~0x7FL) == 0) {
 			writeByte((int)value);
 			return 1;
@@ -309,29 +484,23 @@ public class WriteBuffer {
 	// boolean
 
 	public void writeBoolean (boolean value) {
-		writeByte(value ? 1 : 0);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value ? 1 : 0);
 	}
 
 	// char
 
 	public void writeChar (char value) {
-		writeByte((value >>> 8) & 0xFF);
-		writeByte(value & 0xFF);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)((value >>> 8) & 0xFF);
+		if (position == bufferSize) bufferFull();
+		buffer[position++] = (byte)(value & 0xFF);
 	}
 
 	// double
 
 	public void writeDouble (double value) {
-		long i = Double.doubleToLongBits(value);
-		temp[0] = (byte)(i >>> 56);
-		temp[1] = (byte)(i >>> 48);
-		temp[2] = (byte)(i >>> 40);
-		temp[3] = (byte)(i >>> 32);
-		temp[4] = (byte)(i >>> 24);
-		temp[5] = (byte)(i >>> 16);
-		temp[6] = (byte)(i >>> 8);
-		temp[7] = (byte)(i >>> 0);
-		writeBytes(temp, 0, 8);
+		writeLong(Double.doubleToLongBits(value));
 	}
 
 	public int writeDouble (double value, double precision, boolean optimizePositive) {

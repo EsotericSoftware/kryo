@@ -28,11 +28,15 @@ public class InputStreamBuffer extends ReadBuffer {
 		this.input = input;
 	}
 
-	protected int input (byte[] buffer) {
+	protected int input (byte[] bytes) {
 		try {
-			return input.read(buffer);
+			return input.read(bytes);
 		} catch (IOException ex) {
 			throw new SerializationException(ex);
 		}
+	}
+
+	public InputStream getInputStream () {
+		return input;
 	}
 }
