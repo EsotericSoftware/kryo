@@ -17,7 +17,6 @@ public class ReadBuffer {
 	private int lastBufferIndex;
 	private int marks;
 	private char[] chars = new char[64];
-	private byte[] temp = new byte[8];
 
 	public ReadBuffer () {
 		this(4096, 4, 4);

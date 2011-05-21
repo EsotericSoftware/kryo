@@ -1,6 +1,8 @@
 
 package com.esotericsoftware.kryo2;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 
 import com.esotericsoftware.kryo.SerializationException;
@@ -11,7 +13,6 @@ public class WriteBuffer {
 	private byte[] buffer;
 	private int bufferIndex, position;
 	private int marks;
-	private byte[] temp = new byte[8];
 
 	public WriteBuffer () {
 		this(4096, 4, -1);
