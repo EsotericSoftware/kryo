@@ -14,6 +14,7 @@ public class ReadBuffer {
 	private int lastBufferIndex;
 	private int marks;
 	private char[] chars = new char[64];
+	private byte[] temp = new byte[8];
 
 	public ReadBuffer () {
 		this(4096, 4, 4);
@@ -110,7 +111,7 @@ public class ReadBuffer {
 		return -1;
 	}
 
-	//
+	// byte
 
 	public byte readByte () {
 		if (position == buffer.count) bufferEmpty();
@@ -129,7 +130,7 @@ public class ReadBuffer {
 	public void readBytes (byte[] bytes, int offset, int count) {
 		while (true) {
 			int copyCount = Math.min(buffer.count - position, count);
-			System.arraycopy(buffer, position, bytes, offset, copyCount);
+			System.arraycopy(buffer.bytes, position, bytes, offset, copyCount);
 			position += copyCount;
 			count -= copyCount;
 			if (count == 0) break;
@@ -138,13 +139,15 @@ public class ReadBuffer {
 		}
 	}
 
-	//
+	// int
 
 	public int readInt () {
+		// BOZO - Avoid method calls?
 		return (readByte() & 0xFF) << 24 | (readByte() & 0xFF) << 16 | (readByte() & 0xFF) << 8 | readByte() & 0xFF;
 	}
 
 	public int readInt (boolean optimizePositive) {
+		// BOZO - Unroll?
 		for (int offset = 0, result = 0; offset < 32; offset += 7) {
 			int b = readByte();
 			result |= (b & 0x7F) << offset;
@@ -168,7 +171,7 @@ public class ReadBuffer {
 		return false;
 	}
 
-	//
+	// string
 
 	public String readString () {
 		int charCount = readInt(true);
@@ -206,6 +209,86 @@ public class ReadBuffer {
 			}
 		}
 		return new String(chars, 0, charCount);
+	}
+
+	// float
+
+	public float readFloat () {
+		return Float.intBitsToFloat(readInt());
+	}
+
+	public float readFloat (float precision, boolean optimizePositive) {
+		return readInt(optimizePositive) / (float)precision;
+	}
+
+	// short
+
+	public short readShort () {
+		return (short)((readUnsignedByte() << 8) + readUnsignedByte());
+	}
+
+	public int readUnsignedShort () {
+		return (readByte() << 8) + readByte();
+	}
+
+	public short readShort (boolean optimizePositive) {
+		byte value = readByte();
+		if (optimizePositive) {
+			if (value == -1) return readShort(); // short positive
+			return (short)(value & 0xFF);
+		}
+		if (value == -128) return readShort(); // short
+		return value;
+	}
+
+	// long
+
+	public long readLong () {
+		readBytes(temp, 0, 8);
+		return (((long)temp[0] << 56) //
+			+ ((long)(temp[1] & 255) << 48) //
+			+ ((long)(temp[2] & 255) << 40) //
+			+ ((long)(temp[3] & 255) << 32) //
+			+ ((long)(temp[4] & 255) << 24) //
+			+ ((temp[5] & 255) << 16) //
+			+ ((temp[6] & 255) << 8) //
+		+ ((temp[7] & 255) << 0));
+	}
+
+	public long readLong (boolean optimizePositive) {
+		long result = 0;
+		for (int offset = 0; offset < 64; offset += 7) {
+			byte b = readByte();
+			result |= (long)(b & 0x7F) << offset;
+			if ((b & 0x80) == 0) {
+				if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
+				return result;
+			}
+		}
+		throw new SerializationException("Malformed long.");
+	}
+
+	// boolean
+
+	public boolean readBoolean () {
+		if (position == buffer.count) bufferEmpty();
+		return buffer.bytes[position++] == 1;
+	}
+
+	// char
+
+	public char readChar () {
+		return (char)((readUnsignedByte() << 8) + readUnsignedByte());
+	}
+
+	// double
+
+	public double readDouble () {
+		return Double.longBitsToDouble(readLong());
+	}
+
+	public double readDouble (double precision, boolean optimizePositive) {
+		return readLong(optimizePositive) / (double)precision;
 	}
 
 	//

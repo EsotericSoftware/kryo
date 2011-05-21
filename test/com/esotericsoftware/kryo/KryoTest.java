@@ -1,6 +1,8 @@
 
 package com.esotericsoftware.kryo;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Date;
@@ -8,6 +10,20 @@ import java.util.Date;
 import com.esotericsoftware.kryo.serialize.LongSerializer;
 
 public class KryoTest extends KryoTestCase {
+	public static void main (String[] args) {
+		Kryo kryo = new Kryo();
+		// write two values
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		ObjectBuffer buffer = new ObjectBuffer(kryo);
+		buffer.writeObject(outputStream, Integer.valueOf(6));
+		buffer.writeObject(outputStream, Integer.valueOf(6));
+		// read the values
+		ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+		System.out.println(buffer.readObject(inputStream, Integer.class));
+		System.out.println(buffer.readObject(inputStream, Integer.class));
+
+	}
+
 	public void testNulls () {
 		Kryo kryo = new Kryo();
 		kryo.register(ArrayList.class);
@@ -53,8 +69,8 @@ public class KryoTest extends KryoTestCase {
 		roundTrip(kryo, 3, someClass);
 	}
 
-	@DefaultSerializer(HasDefaultSerializerAnnotationSerializer.class)
-	static public class HasDefaultSerializerAnnotation extends Date {
+	@DefaultSerializer(HasDefaultSerializerAnnotationSerializer.class) static public class HasDefaultSerializerAnnotation extends
+		Date {
 	}
 
 	static public class HasDefaultSerializerAnnotationSerializer extends Serializer {

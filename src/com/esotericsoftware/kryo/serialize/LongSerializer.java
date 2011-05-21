@@ -38,7 +38,7 @@ public class LongSerializer extends Serializer {
 	 * @param optimizePositive See {@link #LongSerializer(boolean)}.
 	 * @return the number of bytes written.
 	 */
-	static public long put (ByteBuffer buffer, long value, boolean optimizePositive) {
+	static public int put (ByteBuffer buffer, long value, boolean optimizePositive) {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		if ((value & ~0x7FL) == 0) {
 			buffer.put((byte)value);
