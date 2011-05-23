@@ -145,7 +145,6 @@ public class IntSerializer extends Serializer {
 		if ((value & ~0x7F) == 0) return 3;
 		value >>>= 7;
 		if ((value & ~0x7F) == 0) return 4;
-		value >>>= 7;
 		return 5;
 	}
 }
