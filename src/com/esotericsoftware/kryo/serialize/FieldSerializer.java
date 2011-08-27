@@ -48,7 +48,7 @@ public class FieldSerializer extends Serializer {
 		rebuildCachedFields();
 	}
 
-	private void rebuildCachedFields () {
+	protected void rebuildCachedFields () {
 		if (type.isInterface()) {
 			fields = new CachedField[0]; // No fields to serialize.
 			return;
