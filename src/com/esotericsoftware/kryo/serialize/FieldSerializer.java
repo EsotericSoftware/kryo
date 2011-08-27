@@ -270,6 +270,10 @@ public class FieldSerializer extends Serializer {
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
 	}
 
+	public CachedField[] getFields () {
+		return fields;
+	}
+	
 	/**
 	 * Controls how a field will be serialized.
 	 */
