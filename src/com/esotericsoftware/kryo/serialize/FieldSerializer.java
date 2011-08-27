@@ -307,6 +307,10 @@ public class FieldSerializer extends Serializer {
 			this.canBeNull = canBeNull;
 		}
 
+		public Field getField () {
+			return field;
+		}
+
 		public String toString () {
 			return field.getName();
 		}
