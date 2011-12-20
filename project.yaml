@@ -3,5 +3,5 @@ dependencies:
 - ../reflectasm
 - ../minlog
 ---
-build(project);
-oneJAR(project);
+Build.build(project);
+Build.oneJAR(project);
