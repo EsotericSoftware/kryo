@@ -1,8 +1,6 @@
 
 package com.esotericsoftware.kryo.serialize;
 
-import static com.esotericsoftware.minlog.Log.*;
-
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
@@ -10,14 +8,14 @@ import java.nio.ByteBuffer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 
-/**
- * Serializes arrays.
+import static com.esotericsoftware.minlog.Log.*;
+
+/** Serializes arrays.
  * <p>
  * With the default constructor, an array requires a header of 2-4 bytes plus 2 bytes for each dimension beyond the first. If the
  * array type is not final then an extra byte is written for each element.
  * @see Kryo#register(Class, Serializer)
- * @author Nathan Sweet <misc@n4te.com>
- */
+ * @author Nathan Sweet <misc@n4te.com> */
 public class ArraySerializer extends Serializer {
 	private final Kryo kryo;
 	private Integer fixedDimensionCount;
@@ -29,41 +27,31 @@ public class ArraySerializer extends Serializer {
 		this.kryo = kryo;
 	}
 
-	/**
-	 * @param dimensions The number of dimensions. Saves 1 byte. Set to null to determine the number of dimensions (default).
-	 */
+	/** @param dimensions The number of dimensions. Saves 1 byte. Set to null to determine the number of dimensions (default). */
 	public void setDimensionCount (Integer dimensions) {
 		this.fixedDimensionCount = dimensions;
 	}
 
-	/**
-	 * Identical to calling {@link #setLengths(int[])} with: new int[] {length}
-	 */
+	/** Identical to calling {@link #setLengths(int[])} with: new int[] {length} */
 	public void setLength (int length) {
 		dimensions = new int[] {length};
 	}
 
-	/**
-	 * Sets both the number of dimensions and the lengths of each. Saves 2-6 bytes plus 1-5 bytes for each dimension beyond the
-	 * first.
-	 */
+	/** Sets both the number of dimensions and the lengths of each. Saves 2-6 bytes plus 1-5 bytes for each dimension beyond the
+	 * first. */
 	public void setLengths (int[] lengths) {
 		dimensions = lengths;
 	}
 
-	/**
-	 * @param elementsCanBeNull False if all elements are not null. This saves 1 byte per element if the array type is final or
-	 *           elementsAreSameClassAsType is true. True if it is not known (default).
-	 */
+	/** @param elementsCanBeNull False if all elements are not null. This saves 1 byte per element if the array type is final or
+	 *           elementsAreSameClassAsType is true. True if it is not known (default). */
 	public void setElementsCanBeNull (boolean elementsCanBeNull) {
 		this.elementsCanBeNull = elementsCanBeNull;
 	}
 
-	/**
-	 * @param elementsAreSameType True if all elements are the same type as the array (ie they don't extend the array type). This
+	/** @param elementsAreSameType True if all elements are the same type as the array (ie they don't extend the array type). This
 	 *           saves 1 byte per element if the array type is not final. Set to false if the array type is final or elements
-	 *           extend the array type (default).
-	 */
+	 *           extend the array type (default). */
 	public void setElementsAreSameType (boolean elementsAreSameType) {
 		this.elementsAreSameType = elementsAreSameType;
 		// BOZO - Change to set type?
@@ -102,7 +90,7 @@ public class ArraySerializer extends Serializer {
 		int length = Array.getLength(array);
 		if (dimension > 0) {
 			// Write array length. With Java's "jagged arrays" this could be less than the dimension size.
-			IntSerializer.put(buffer, length, true);
+			IntSerializer.put(buffer, length + 1, true);
 		}
 		// Write array data.
 		boolean elementsAreArrays = dimension < dimensionCount - 1;
@@ -112,6 +100,8 @@ public class ArraySerializer extends Serializer {
 				// Nested array.
 				if (element != null)
 					writeArray(buffer, element, elementSerializer, dimension + 1, dimensionCount, elementsCanBeNull);
+				else
+					IntSerializer.put(buffer, 0, true);
 			} else if (elementSerializer != null) {
 				// Use same serializer for all elements.
 				if (elementsCanBeNull)
@@ -144,7 +134,7 @@ public class ArraySerializer extends Serializer {
 			elementSerializer = kryo.getRegisteredClass(elementClass).getSerializer();
 		// Create array and read in the data.
 		T array = (T)Array.newInstance(elementClass, dimensions);
-		readArray(buffer, array, elementSerializer, elementClass, 0, dimensions, elementsCanBeNull);
+		readArray(buffer, array, dimensions[0], elementSerializer, elementClass, 0, dimensions, elementsCanBeNull);
 		if (TRACE) {
 			StringBuilder stringBuffer = new StringBuilder(16);
 			for (int i = 0; i < dimensionCount; i++) {
@@ -157,20 +147,29 @@ public class ArraySerializer extends Serializer {
 		return array;
 	}
 
-	private void readArray (ByteBuffer buffer, Object array, Serializer elementSerializer, Class elementClass, int dimension,
-		int[] dimensions, boolean elementsCanBeNull) {
+	private void readArray (ByteBuffer buffer, Object array, int length, Serializer elementSerializer, Class elementClass,
+		int dimension, int[] dimensions, boolean elementsCanBeNull) {
 		boolean elementsAreArrays = dimension < dimensions.length - 1;
-		int length;
-		if (dimension == 0)
-			length = dimensions[0];
-		else
-			length = IntSerializer.get(buffer, true);
 		for (int i = 0; i < length; i++) {
 			if (elementsAreArrays) {
 				// Nested array.
-				Object element = Array.get(array, i);
-				if (element != null)
-					readArray(buffer, element, elementSerializer, elementClass, dimension + 1, dimensions, elementsCanBeNull);
+				int nestedLength = IntSerializer.get(buffer, true) - 1;
+				if (nestedLength == -1)
+					Array.set(array, i, null);
+				else {
+					Object element = Array.get(array, i);
+					int nestedDimension = dimension + 1;
+					if (nestedLength != dimensions[nestedDimension]) {
+						// Nested array length is different from the dimensions.
+						int[] nestedDimensions = new int[dimensions.length - nestedDimension];
+						System.arraycopy(dimensions, nestedDimension, nestedDimensions, 0, nestedDimensions.length);
+						nestedDimensions[0] = nestedLength;
+						element = Array.newInstance(elementClass, nestedDimensions);
+						Array.set(array, i, element);
+					}
+					readArray(buffer, element, nestedLength, elementSerializer, elementClass, dimension + 1, dimensions,
+						elementsCanBeNull);
+				}
 			} else if (elementSerializer != null) {
 				// Use same serializer (and class) for all elements.
 				if (elementsCanBeNull)

@@ -13,9 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 
-/**
- * Tests all the simple serializers.
- */
+/** Tests all the simple serializers. */
 public class SerializerTest extends KryoTestCase {
 	public void testStringSerializer () {
 		roundTrip(new StringSerializer(), 3, "a");
@@ -81,6 +79,15 @@ public class SerializerTest extends KryoTestCase {
 		roundTrip(kryo, 14, new String[] {"11", "2222", "3", "4"});
 		serializer.setLength(4);
 		roundTrip(kryo, 13, new String[] {"11", "2222", "3", "4"});
+
+		serializer = new ArraySerializer(kryo);
+		kryo.register(float[][].class, serializer);
+		float[][] array = new float[4][];
+		array[0] = new float[] {0.0f, 1.0f};
+		array[1] = null;
+		array[2] = new float[] {2.0f, 3.0f};
+		array[3] = new float[] {3.0f};
+		roundTrip(kryo, 28, array);
 	}
 
 	public void testMapSerializer () {
