@@ -1,0 +1,411 @@
+
+package com.esotericsoftware.kryo;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.KryoInput;
+import com.esotericsoftware.kryo.KryoOutput;
+import com.esotericsoftware.kryo.NotNull;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
+
+public class FieldSerializerTest extends KryoTestCase {
+	public void testDefaultTypes () {
+		kryo.register(DefaultTypes.class);
+		kryo.register(byte[].class);
+		//kryo.setRegistrationRequired(true);
+		DefaultTypes test = new DefaultTypes();
+		test.booleanField = true;
+		test.byteField = 123;
+		test.charField = 1234;
+		test.shortField = 12345;
+		test.intField = 123456;
+		test.longField = 123456789;
+		test.floatField = 123.456f;
+		test.doubleField = 1.23456d;
+		test.BooleanField = true;
+		test.ByteField = -12;
+		test.CharacterField = 123;
+		test.ShortField = -12345;
+		test.IntegerField = -123456;
+		test.LongField = -123456789l;
+		test.FloatField = -123.3f;
+		test.DoubleField = -0.121231d;
+		test.StringField = "stringvalue";
+		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
+		roundTrip(81, test);
+	}
+
+	public void testFieldRemoval () {
+		kryo.register(DefaultTypes.class);
+		kryo.register(byte[].class);
+		kryo.register(HasStringField.class);
+
+		HasStringField hasStringField = new HasStringField();
+		hasStringField.text = "moo";
+		roundTrip(6, hasStringField);
+
+		DefaultTypes test = new DefaultTypes();
+		test.intField = 12;
+		test.StringField = "value";
+		test.CharacterField = 'X';
+		test.child = new DefaultTypes();
+		roundTrip(73, test);
+		test.StringField = null;
+		roundTrip(67, test);
+
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(DefaultTypes.class);
+		serializer.removeField("LongField");
+		serializer.removeField("floatField");
+		serializer.removeField("FloatField");
+		roundTrip(55, test);
+	}
+
+	public void testOptionalRegistration () {
+		kryo.setRegistrationRequired(false);
+		DefaultTypes test = new DefaultTypes();
+		test.intField = 12;
+		test.StringField = "value";
+		test.CharacterField = 'X';
+		test.hasStringField = new HasStringField();
+		test.child = new DefaultTypes();
+		test.child.hasStringField = new HasStringField();
+		roundTrip(203, test);
+		test.hasStringField = null;
+		roundTrip(200, test);
+	}
+
+	public void testRegistrationOrder () {
+		A a = new A();
+		a.value = 100;
+		a.b = new B();
+		a.b.value = 200;
+		a.b.a = new A();
+		a.b.a.value = 300;
+
+		kryo.register(A.class);
+		kryo.register(B.class);
+		roundTrip(10, a);
+
+		kryo = new Kryo();
+		kryo.setReferences(false);
+		kryo.register(B.class);
+		kryo.register(A.class);
+		roundTrip(10, a);
+	}
+
+	public void testExceptionTrace () {
+		C c = new C();
+		c.a = new A();
+		c.a.value = 123;
+		c.a.b = new B();
+		c.a.b.value = 456;
+		c.d = new D();
+		c.d.e = new E();
+		c.d.e.f = new F();
+
+		Kryo kryoWithoutF = new Kryo();
+		kryoWithoutF.setReferences(false);
+		kryoWithoutF.setRegistrationRequired(true);
+		kryoWithoutF.register(A.class);
+		kryoWithoutF.register(B.class);
+		kryoWithoutF.register(C.class);
+		kryoWithoutF.register(D.class);
+		kryoWithoutF.register(E.class);
+
+		KryoOutput output = new KryoOutput(512);
+		try {
+			kryoWithoutF.writeClassAndObject(output, c);
+			fail("Should have failed because F is not registered.");
+		} catch (KryoException ignored) {
+		}
+
+		kryo.register(A.class);
+		kryo.register(B.class);
+		kryo.register(C.class);
+		kryo.register(D.class);
+		kryo.register(E.class);
+		kryo.register(F.class);
+		kryo.setRegistrationRequired(true);
+
+		output.clear();
+		kryo.writeClassAndObject(output, c);
+		assertEquals(13, output.total());
+
+		KryoInput input = new KryoInput(output.getBytes());
+		kryo.readClassAndObject(input);
+
+		try {
+			input.setPosition(0);
+			kryoWithoutF.readClassAndObject(input);
+			fail("Should have failed because F is not registered.");
+		} catch (KryoException ignored) {
+		}
+	}
+
+	public void testNoDefaultConstructor () {
+		kryo.register(SimpleNoDefaultConstructor.class, new Serializer<SimpleNoDefaultConstructor>() {
+			public SimpleNoDefaultConstructor read (Kryo kryo, KryoInput input, Class<SimpleNoDefaultConstructor> type) {
+				return new SimpleNoDefaultConstructor(input.readInt(true));
+			}
+
+			public void write (Kryo kryo, KryoOutput output, SimpleNoDefaultConstructor object) {
+				output.writeInt(object.constructorValue, true);
+			}
+		});
+		SimpleNoDefaultConstructor object1 = new SimpleNoDefaultConstructor(2);
+		roundTrip(2, object1);
+
+		kryo.register(ComplexNoDefaultConstructor.class, new FieldSerializer(kryo, ComplexNoDefaultConstructor.class) {
+			public void write (Kryo kryo, KryoOutput output, Object object) {
+				ComplexNoDefaultConstructor complexObject = (ComplexNoDefaultConstructor)object;
+				output.writeString(complexObject.name);
+				super.write(kryo, output, object);
+			}
+
+			public Object newInstance (Kryo kryo, KryoInput input, Class type) {
+				String name = input.readString();
+				ComplexNoDefaultConstructor object = new ComplexNoDefaultConstructor(name);
+				return object;
+			}
+		});
+		ComplexNoDefaultConstructor object2 = new ComplexNoDefaultConstructor("has no zero arg constructor!");
+		object2.anotherField1 = 1234;
+		object2.anotherField2 = "abcd";
+		roundTrip(38, object2);
+	}
+
+	public void testNonNull () {
+		kryo.register(HasNonNull.class);
+		HasNonNull nonNullValue = new HasNonNull();
+		nonNullValue.nonNullText = "moo";
+		roundTrip(5, nonNullValue);
+	}
+
+	static public class DefaultTypes {
+		// Primitives.
+		public boolean booleanField;
+		public byte byteField;
+		public char charField;
+		public short shortField;
+		public int intField;
+		public long longField;
+		public float floatField;
+		public double doubleField;
+		// Primitive wrappers.
+		public Boolean BooleanField;
+		public Byte ByteField;
+		public Character CharacterField;
+		public Short ShortField;
+		public Integer IntegerField;
+		public Long LongField;
+		public Float FloatField;
+		public Double DoubleField;
+		// Other.
+		public String StringField;
+		public byte[] byteArrayField;
+
+		DefaultTypes child;
+		HasStringField hasStringField;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			DefaultTypes other = (DefaultTypes)obj;
+			if (BooleanField == null) {
+				if (other.BooleanField != null) return false;
+			} else if (!BooleanField.equals(other.BooleanField)) return false;
+			if (ByteField == null) {
+				if (other.ByteField != null) return false;
+			} else if (!ByteField.equals(other.ByteField)) return false;
+			if (CharacterField == null) {
+				if (other.CharacterField != null) return false;
+			} else if (!CharacterField.equals(other.CharacterField)) return false;
+			if (DoubleField == null) {
+				if (other.DoubleField != null) return false;
+			} else if (!DoubleField.equals(other.DoubleField)) return false;
+			if (FloatField == null) {
+				if (other.FloatField != null) return false;
+			} else if (!FloatField.equals(other.FloatField)) return false;
+			if (IntegerField == null) {
+				if (other.IntegerField != null) return false;
+			} else if (!IntegerField.equals(other.IntegerField)) return false;
+			if (LongField == null) {
+				if (other.LongField != null) return false;
+			} else if (!LongField.equals(other.LongField)) return false;
+			if (ShortField == null) {
+				if (other.ShortField != null) return false;
+			} else if (!ShortField.equals(other.ShortField)) return false;
+			if (StringField == null) {
+				if (other.StringField != null) return false;
+			} else if (!StringField.equals(other.StringField)) return false;
+			if (booleanField != other.booleanField) return false;
+
+			Object list1 = arrayToList(byteArrayField);
+			Object list2 = arrayToList(other.byteArrayField);
+			if (list1 != list2) {
+				if (list1 == null || list2 == null) return false;
+				if (!list1.equals(list2)) return false;
+			}
+
+			if (child != other.child) {
+				if (child == null || other.child == null) return false;
+				if (!child.equals(other.child)) return false;
+			}
+
+			if (byteField != other.byteField) return false;
+			if (charField != other.charField) return false;
+			if (Double.doubleToLongBits(doubleField) != Double.doubleToLongBits(other.doubleField)) return false;
+			if (Float.floatToIntBits(floatField) != Float.floatToIntBits(other.floatField)) return false;
+			if (intField != other.intField) return false;
+			if (longField != other.longField) return false;
+			if (shortField != other.shortField) return false;
+			return true;
+		}
+	}
+
+	static public final class A {
+		public int value;
+		public B b;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			A other = (A)obj;
+			if (b == null) {
+				if (other.b != null) return false;
+			} else if (!b.equals(other.b)) return false;
+			if (value != other.value) return false;
+			return true;
+		}
+	}
+
+	static public final class B {
+		public int value;
+		public A a;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			B other = (B)obj;
+			if (a == null) {
+				if (other.a != null) return false;
+			} else if (!a.equals(other.a)) return false;
+			if (value != other.value) return false;
+			return true;
+		}
+	}
+
+	static public final class C {
+		public A a;
+		public D d;
+	}
+
+	static public final class D {
+		public E e;
+	}
+
+	static public final class E {
+		public F f;
+	}
+
+	static public final class F {
+		public int value;
+		public final int finalValue = 12;
+	}
+
+	static public class SimpleNoDefaultConstructor {
+		int constructorValue;
+
+		public SimpleNoDefaultConstructor (int constructorValue) {
+			this.constructorValue = constructorValue;
+		}
+
+		public int getConstructorValue () {
+			return constructorValue;
+		}
+
+		public int hashCode () {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + constructorValue;
+			return result;
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			SimpleNoDefaultConstructor other = (SimpleNoDefaultConstructor)obj;
+			if (constructorValue != other.constructorValue) return false;
+			return true;
+		}
+	}
+
+	static public class ComplexNoDefaultConstructor {
+		public transient String name;
+		public int anotherField1;
+		public String anotherField2;
+
+		public ComplexNoDefaultConstructor (String name) {
+			this.name = name;
+		}
+
+		public int hashCode () {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + anotherField1;
+			result = prime * result + ((anotherField2 == null) ? 0 : anotherField2.hashCode());
+			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			return result;
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			ComplexNoDefaultConstructor other = (ComplexNoDefaultConstructor)obj;
+			if (anotherField1 != other.anotherField1) return false;
+			if (anotherField2 == null) {
+				if (other.anotherField2 != null) return false;
+			} else if (!anotherField2.equals(other.anotherField2)) return false;
+			if (name == null) {
+				if (other.name != null) return false;
+			} else if (!name.equals(other.name)) return false;
+			return true;
+		}
+	}
+
+	static public class HasNonNull {
+		@NotNull public String nonNullText;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			HasNonNull other = (HasNonNull)obj;
+			if (nonNullText == null) {
+				if (other.nonNullText != null) return false;
+			} else if (!nonNullText.equals(other.nonNullText)) return false;
+			return true;
+		}
+	}
+
+	static public class HasStringField {
+		public String text;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			HasStringField other = (HasStringField)obj;
+			if (text == null) {
+				if (other.text != null) return false;
+			} else if (!text.equals(other.text)) return false;
+			return true;
+		}
+	}
+}
