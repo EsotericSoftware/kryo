@@ -189,7 +189,7 @@ public class KryoInput extends InputStream {
 		return buffer[position++];
 	}
 
-	public int readUnsignedByte () throws KryoException {
+	public int readByteUnsigned () throws KryoException {
 		require(1, 1);
 		return buffer[position++] & 0xFF;
 	}
@@ -371,7 +371,7 @@ public class KryoInput extends InputStream {
 		return (short)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF));
 	}
 
-	public int readUnsignedShort () throws KryoException {
+	public int readShortUnsigned () throws KryoException {
 		return ((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF);
 	}
 

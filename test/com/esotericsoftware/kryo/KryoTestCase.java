@@ -47,7 +47,7 @@ abstract public class KryoTestCase extends TestCase {
 		return list;
 	}
 
-	static public ArrayList toList (Object... items) {
+	static public ArrayList list (Object... items) {
 		ArrayList list = new ArrayList();
 		for (Object item : items)
 			list.add(item);

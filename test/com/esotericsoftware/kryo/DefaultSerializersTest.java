@@ -1,7 +1,11 @@
 
 package com.esotericsoftware.kryo;
 
-public class KryoTest extends KryoTestCase {
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Date;
+
+public class DefaultSerializersTest extends KryoTestCase {
 	public void testBoolean () {
 		roundTrip(2, true);
 		roundTrip(2, false);
@@ -109,5 +113,63 @@ public class KryoTest extends KryoTestCase {
 
 		kryo.setReferences(false);
 		roundTrip(1, null);
+	}
+
+	public void testDateSerializer () {
+		kryo.register(Date.class);
+		roundTrip(2, new Date(0));
+		roundTrip(4, new Date(1234567));
+		roundTrip(11, new Date(-1234567));
+	}
+
+	public void testBigDecimalSerializer () {
+		kryo.register(BigDecimal.class);
+		roundTrip(5, BigDecimal.valueOf(12345, 2));
+	}
+
+	public void testBigIntegerSerializer () {
+		kryo.register(BigInteger.class);
+		roundTrip(8, BigInteger.valueOf(1270507903945L));
+	}
+
+	public void testEnumSerializer () {
+		kryo.register(TestEnum.class);
+		roundTrip(2, TestEnum.a);
+		roundTrip(2, TestEnum.b);
+		roundTrip(2, TestEnum.c);
+
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		// 2 bytes identifying it's a class name
+		// 1 byte for the class name id
+		// 1 byte for the class name string length
+		// 57 bytes for the class name characters
+		// 1 byte for the reference id
+		// 1 byte for the enum value
+		roundTrip(63, TestEnum.c);
+	}
+
+	public void testEnumSerializerWithMethods () {
+		kryo.register(TestEnumWithMethods.class);
+		roundTrip(2, TestEnumWithMethods.a);
+		roundTrip(2, TestEnumWithMethods.b);
+		roundTrip(2, TestEnumWithMethods.c);
+
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		roundTrip(76, TestEnumWithMethods.c);
+	}
+
+	public enum TestEnum {
+		a, b, c
+	}
+
+	public enum TestEnumWithMethods {
+		a {
+		},
+		b {
+		},
+		c {
+		}
 	}
 }

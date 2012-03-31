@@ -33,7 +33,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.DoubleField = -0.121231d;
 		test.StringField = "stringvalue";
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
-		roundTrip(81, test);
+		roundTrip(82, test);
 	}
 
 	public void testFieldRemoval () {

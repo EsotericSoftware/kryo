@@ -2,7 +2,9 @@
 package com.esotericsoftware.kryo;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -11,7 +13,8 @@ import java.util.Currency;
 import java.util.Date;
 import java.util.Map;
 
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.ArraySerializer;
+import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigIntegerSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BooleanSerializer;
@@ -30,6 +33,8 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.util.IntMap;
 import com.esotericsoftware.kryo.util.ObjectIntMap;
 import com.esotericsoftware.kryo.util.ObjectMap;
@@ -50,6 +55,7 @@ public class Kryo {
 
 	private Class<? extends Serializer> defaultSerializer = FieldSerializer.class;
 	private final ArrayList<DefaultSerializer> defaultSerializers = new ArrayList(32);
+	private ArraySerializer arraySerializer = new ArraySerializer();
 
 	private int depth;
 	private int nextID = 1;
@@ -95,6 +101,8 @@ public class Kryo {
 		addDefaultSerializer(Currency.class, CurrencySerializer.class);
 		addDefaultSerializer(StringBuffer.class, StringBufferSerializer.class);
 		addDefaultSerializer(StringBuilder.class, StringBuilderSerializer.class);
+		addDefaultSerializer(Collection.class, CollectionSerializer.class);
+		addDefaultSerializer(Map.class, MapSerializer.class);
 
 		// Primitives, primitive wrappers, and string. Wrappers use the same registration.
 		classToRegistration.put(Boolean.class, register(boolean.class));
@@ -171,6 +179,9 @@ public class Kryo {
 	/** Returns the best matching serializer for a class. */
 	public Serializer getDefaultSerializer (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+
+		if (type.isArray()) return arraySerializer;
+
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			DefaultSerializer entry = defaultSerializers.get(i);
 			if (entry.type.isAssignableFrom(type)) {
@@ -186,7 +197,15 @@ public class Kryo {
 			try {
 				return serializerClass.getConstructor(Kryo.class, Class.class).newInstance(this, type);
 			} catch (NoSuchMethodException ex1) {
-				return serializerClass.newInstance();
+				try {
+					return serializerClass.getConstructor(Kryo.class).newInstance(this);
+				} catch (NoSuchMethodException ex2) {
+					try {
+						return serializerClass.getConstructor(Class.class).newInstance(type);
+					} catch (NoSuchMethodException ex3) {
+						return serializerClass.newInstance();
+					}
+				}
 			}
 		} catch (Exception ex) {
 			throw new IllegalArgumentException("Unable to create serializer \"" + serializerClass.getName() + "\" for class: "
@@ -248,12 +267,19 @@ public class Kryo {
 
 	public Registration getRegistration (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+
 		Registration registration = classToRegistration.get(type);
-		if (registration == null) {
-			if (registrationRequired) throw new IllegalArgumentException("Class is not registered: " + type.getName());
-			return registerInternal(type, getDefaultSerializer(type), NAME);
-		}
-		return registration;
+		if (registration != null) return registration;
+
+		// If a Proxy class, treat it like an InvocationHandler because the concrete class for a proxy is generated.
+		if (Proxy.isProxyClass(type)) return getRegistration(InvocationHandler.class);
+
+		// This handles an enum value that is an inner class. Eg: enum A {b{}};
+		if (!type.isEnum() && Enum.class.isAssignableFrom(type)) return getRegistration(type.getEnclosingClass());
+
+		if (registrationRequired) throw new IllegalArgumentException("Class is not registered: " + type.getName());
+
+		return registerInternal(type, getDefaultSerializer(type), NAME);
 	}
 
 	public Registration getRegistration (int classID) {
@@ -564,6 +590,10 @@ public class Kryo {
 		this.references = references;
 	}
 
+	public void setArraySerializer (ArraySerializer arraySerializer) {
+		this.arraySerializer = arraySerializer;
+	}
+
 	// --- Utility ---
 
 	public <T> T newInstance (Class<T> type) {
@@ -592,8 +622,7 @@ public class Kryo {
 	/** Returns true if the specified type is final, or if it is an array of a final type. */
 	public boolean isFinal (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		// FIXME - Uncomment after porting ArraySerializer.
-		// if (type.isArray()) return Modifier.isFinal(ArraySerializer.getElementClass(type).getModifiers());
+		if (type.isArray()) return Modifier.isFinal(ArraySerializer.getElementClass(type).getModifiers());
 		return Modifier.isFinal(type.getModifiers());
 	}
 

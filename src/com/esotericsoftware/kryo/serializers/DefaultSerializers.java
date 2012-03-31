@@ -127,8 +127,7 @@ public class DefaultSerializers {
 
 		public BigInteger read (Kryo kryo, KryoInput input, Class<BigInteger> type) {
 			int length = input.readInt(true);
-			byte[] bytes = new byte[length];
-			input.readBytes(length);
+			byte[] bytes = input.readBytes(length);
 			BigInteger value = new BigInteger(bytes);
 			if (TRACE) trace("kryo", "Read BigInteger: " + value);
 			return value;
