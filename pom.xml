@@ -1,54 +1,81 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+		http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.esotericsoftware</groupId>
-	<version>1.1-SNAPSHOT</version>
+	<groupId>com.esotericsoftware.kryo</groupId>
 	<artifactId>kryo</artifactId>
+	<version>1.04</version>
 	<packaging>jar</packaging>
-	<name>kryo</name>
+	<name>Kryo</name>
+	<description>Fast, efficient Java serialization</description>
+	<url>http://code.google.com/p/kryo/</url>
+
+	<licenses>
+		<license>
+			<name>New BSD License</name>
+			<url>http://www.opensource.org/licenses/bsd-license.php</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<scm>
+		<url>http://kryo.googlecode.com/svn/</url>
+		<connection>scm:svn:http://kryo.googlecode.com/svn/</connection>
+	</scm>
+
+	<developers>
+		<developer>
+			<id>nathan.sweet</id>
+			<name>Nathan Sweet</name>
+			<email>nathan.sweet@gmail.com</email>
+		</developer>
+	</developers>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
 
 	<dependencies>
 		<dependency>
-			<groupId>asm</groupId>
-			<artifactId>asm</artifactId>
-			<version>3.2</version>
-			<scope>runtime</scope>
+			<groupId>com.esotericsoftware.reflectasm</groupId>
+			<artifactId>reflectasm</artifactId>
+			<version>1.01</version>
 		</dependency>
 		<dependency>
-			<groupId>com.esotericsoftware</groupId>
-			<artifactId>reflectasm</artifactId>
-			<version>0.8</version>
-			<scope>compile</scope>
-		 </dependency>
-		<dependency>
-			<groupId>com.esotericsoftware</groupId>
+			<groupId>com.esotericsoftware.minlog</groupId>
 			<artifactId>minlog</artifactId>
 			<version>1.2</version>
-			<scope>compile</scope>
-		 </dependency>
+		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.7</version>
+			<version>4.8.2</version>
 			<scope>test</scope>
-		 </dependency>
+		</dependency>
 	</dependencies>
 
 	<build>
+		<!-- Set nonstandard source and test source dirs -->
 		<sourceDirectory>src</sourceDirectory>
 		<testSourceDirectory>test</testSourceDirectory>
+
 		<plugins>
+			<!-- Disable resources (project has none) -->
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<inherited>true</inherited>
-				<configuration>
-					<source>1.5</source>
-					<target>1.5</target>
-				</configuration>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.5</version>
+				<executions>
+					<execution>
+						<id>default-resources</id>
+						<phase>none</phase>
+					</execution>
+					<execution>
+						<id>default-testResources</id>
+						<phase>none</phase>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
-
 </project>
