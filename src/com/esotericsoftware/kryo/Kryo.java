@@ -104,15 +104,15 @@ public class Kryo {
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
 
-		// Primitives, primitive wrappers, and string. Wrappers use the same registration.
-		classToRegistration.put(Boolean.class, register(boolean.class));
-		classToRegistration.put(Byte.class, register(byte.class));
-		classToRegistration.put(Character.class, register(char.class));
-		classToRegistration.put(Short.class, register(short.class));
-		classToRegistration.put(Integer.class, register(int.class));
-		classToRegistration.put(Long.class, register(long.class));
-		classToRegistration.put(Float.class, register(float.class));
-		classToRegistration.put(Double.class, register(double.class));
+		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
+		register(boolean.class);
+		register(byte.class);
+		register(char.class);
+		register(short.class);
+		register(int.class);
+		register(long.class);
+		register(float.class);
+		register(double.class);
 		register(String.class);
 	}
 
@@ -217,7 +217,8 @@ public class Kryo {
 
 	/** Registers the class using the next available, lowest integer ID and the {@link #getDefaultSerializer(Class) default
 	 * serializer}. If the class is already registered, the existing entry is updated with the new serializer. Because the ID
-	 * assigned is affected by the IDs registered before it, the order classes are registered is important when using this method. */
+	 * assigned is affected by the IDs registered before it, the order classes are registered is important when using this method.
+	 * Registering a primitive also affects the corresponding primitive wrapper. */
 	public Registration register (Class type) {
 		return register(type, getDefaultSerializer(type));
 	}
@@ -225,7 +226,7 @@ public class Kryo {
 	/** Registers the class using the specified ID and the {@link #getDefaultSerializer(Class) default serializer}. If the ID is
 	 * already in use by the same type, the old entry is overwritten. If the ID is already in use by a different type, a
 	 * {@link KryoException} is thrown. IDs are written with {@link KryoOutput#writeInt(int, boolean)} called with true, so smaller
-	 * positive integers use fewer bytes.
+	 * positive integers use fewer bytes. Registering a primitive also affects the corresponding primitive wrapper.
 	 * @param id Must not be 0 or {@value #NAME}. */
 	public Registration register (Class type, int id) {
 		return register(type, getDefaultSerializer(type), id);
@@ -233,7 +234,7 @@ public class Kryo {
 
 	/** Registers the class using the next available, lowest integer ID. If the class is already registered, the existing entry is
 	 * updated with the new serializer. Because the ID assigned is affected by the IDs registered before it, the order classes are
-	 * registered is important when using this method. */
+	 * registered is important when using this method. Registering a primitive also affects the corresponding primitive wrapper. */
 	public Registration register (Class type, Serializer serializer) {
 		Registration registration = classToRegistration.get(type);
 		if (registration != null) {
@@ -251,7 +252,8 @@ public class Kryo {
 
 	/** Registers the class using the specified ID. If the ID is already in use by the same type, the old entry is overwritten. If
 	 * the ID is already in use by a different type, a {@link KryoException} is thrown. IDs are written with
-	 * {@link KryoOutput#writeInt(int, boolean)} called with true, so smaller positive integers use fewer bytes.
+	 * {@link KryoOutput#writeInt(int, boolean)} called with true, so smaller positive integers use fewer bytes. Registering a
+	 * primitive also affects the corresponding primitive wrapper.
 	 * @param id Must not be 0 or {@value #NAME}. */
 	public Registration register (Class type, Serializer serializer, int id) {
 		if (id == 0 || id == NAME) throw new IllegalArgumentException("id cannot be 0 or " + NAME);
@@ -262,6 +264,26 @@ public class Kryo {
 		Registration registration = new Registration(type, id, serializer);
 		classToRegistration.put(type, registration);
 		idToRegistration.put(id, registration);
+		if (type.isPrimitive()) {
+			Class wrapperClass;
+			if (type == boolean.class)
+				wrapperClass = Boolean.class;
+			else if (type == byte.class)
+				wrapperClass = Byte.class;
+			else if (type == char.class)
+				wrapperClass = Character.class;
+			else if (type == short.class)
+				wrapperClass = Short.class;
+			else if (type == int.class)
+				wrapperClass = Integer.class;
+			else if (type == long.class)
+				wrapperClass = Long.class;
+			else if (type == float.class)
+				wrapperClass = Float.class;
+			else
+				wrapperClass = Double.class;
+			classToRegistration.put(wrapperClass, registration);
+		}
 		return registration;
 	}
 
