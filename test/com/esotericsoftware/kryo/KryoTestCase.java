@@ -9,28 +9,35 @@ import junit.framework.TestCase;
 import org.junit.Assert;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoInput;
-import com.esotericsoftware.kryo.KryoOutput;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.minlog.Log;
 
 /** Convenience methods for round tripping objects. */
 abstract public class KryoTestCase extends TestCase {
 	protected Kryo kryo;
+	protected Output output;
+	protected Input input;
 
 	protected void setUp () throws Exception {
 		kryo = new Kryo();
 		kryo.setReferences(false);
 		kryo.setRegistrationRequired(true);
+		
+		Log.TRACE();
 	}
 
 	public <T> T roundTrip (int length, T object1) {
-		KryoOutput output = new KryoOutput(length * 2, -1);
+		output = new Output(length * 2, -1);
 		kryo.writeClassAndObject(output, object1);
 
-		KryoInput input = new KryoInput(output.toBytes());
+		input = new Input(output.toBytes());
 		Object object2 = kryo.readClassAndObject(input);
 		assertEquals(object1, object2);
+		output.flush();
 		assertEquals("Incorrect length.", length, output.total());
 		assertEquals("Incorrect number of bytes read.", length, input.total());
+		input.rewind();
 
 		return (T)object2;
 	}

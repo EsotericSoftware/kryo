@@ -1,89 +1,41 @@
 
-package com.esotericsoftware.kryo;
+package com.esotericsoftware.kryo.io;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-public class KryoInput extends InputStream {
-	private byte[] buffer;
-	private int bufferSize, position, bufferCount, total;
-	private char[] chars = new char[0];
-	private InputStream input;
-	private ByteBuffer byteBuffer;
+import com.esotericsoftware.kryo.KryoException;
 
-	public KryoInput (int bufferSize) {
-		this.bufferSize = bufferSize;
+public class Input extends InputStream {
+	private byte[] buffer;
+	private int capacity, position, limit, total;
+	private char[] chars = new char[0];
+	private InputStream inputStream;
+
+	public Input (int bufferSize) {
+		this.capacity = bufferSize;
 		buffer = new byte[bufferSize];
 	}
 
-	public KryoInput (byte[] bytes) {
+	public Input (byte[] bytes) {
 		setBytes(bytes, 0, bytes.length);
 	}
 
-	public KryoInput (byte[] bytes, int offset, int count) {
+	public Input (byte[] bytes, int offset, int count) {
 		setBytes(bytes, offset, count);
 	}
 
-	public KryoInput (InputStream input) {
+	public Input (InputStream inputStream) {
 		this(4096);
-		if (input == null) throw new IllegalArgumentException("input cannot be null.");
-		this.input = input;
+		if (inputStream == null) throw new IllegalArgumentException("inputStream cannot be null.");
+		this.inputStream = inputStream;
 	}
 
-	public KryoInput (InputStream input, int bufferSize) {
+	public Input (InputStream inputStream, int bufferSize) {
 		this(bufferSize);
-		if (input == null) throw new IllegalArgumentException("input cannot be null.");
-		this.input = input;
-	}
-
-	public KryoInput (ByteBuffer byteBuffer) {
-		this(4096);
-		if (byteBuffer == null) throw new IllegalArgumentException("byteBuffer cannot be null.");
-		this.byteBuffer = byteBuffer;
-	}
-
-	public KryoInput (ByteBuffer byteBuffer, int bufferSize) {
-		this(bufferSize);
-		if (byteBuffer == null) throw new IllegalArgumentException("byteBuffer cannot be null.");
-		this.byteBuffer = byteBuffer;
-	}
-
-	public void skip (int count) throws KryoException {
-		int skipCount = Math.min(bufferCount - position, count);
-		while (true) {
-			position += skipCount;
-			count -= skipCount;
-			if (count == 0) break;
-			skipCount = Math.min(count, bufferSize);
-			require(skipCount, skipCount);
-		}
-	}
-
-	protected int fillBuffer (byte[] bytes, int offset, int count) throws KryoException {
-		if (input != null)
-			try {
-				return input.read(bytes, offset, count);
-			} catch (IOException ex) {
-				throw new KryoException(ex);
-			}
-		else if (byteBuffer != null) {
-			count = Math.min(count, byteBuffer.remaining());
-			byteBuffer.get(bytes, offset, count);
-			return count;
-		} else
-			return -1;
-	}
-
-	private void require (int required, int optional) throws KryoException {
-		int remaining = bufferCount - position;
-		if (remaining >= optional) return;
-		remaining = Math.max(0, remaining);
-		System.arraycopy(buffer, position, buffer, 0, remaining);
-		bufferCount = remaining + Math.max(0, fillBuffer(buffer, remaining, bufferSize - remaining));
-		if (bufferCount < required) throw new KryoException("Buffer underflow.");
-		total += position;
-		position = 0;
+		if (inputStream == null) throw new IllegalArgumentException("inputStream cannot be null.");
+		this.inputStream = inputStream;
 	}
 
 	public void setBytes (byte[] bytes) {
@@ -94,37 +46,21 @@ public class KryoInput extends InputStream {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		buffer = bytes;
 		position = offset;
-		bufferCount = count;
-		bufferSize = bytes.length;
+		limit = count;
+		capacity = bytes.length;
 		total = 0;
-		input = null;
-		byteBuffer = null;
+		inputStream = null;
 	}
 
 	public InputStream getInputStream () {
-		return input;
+		return inputStream;
 	}
 
-	public void setInputStream (InputStream input) {
-		if (input == null) throw new IllegalArgumentException("input cannot be null.");
-		this.input = input;
-		byteBuffer = null;
-		position = 0;
-		bufferCount = 0;
-		total = 0;
-	}
-
-	public ByteBuffer getByteBuffer () {
-		return byteBuffer;
-	}
-
-	public void setByteBuffer (ByteBuffer buffer) {
-		if (byteBuffer == null) throw new IllegalArgumentException("byteBuffer cannot be null.");
-		this.byteBuffer = buffer;
-		input = null;
-		position = 0;
-		bufferCount = 0;
-		total = 0;
+	public void setInputStream (InputStream inputStream) {
+		if (inputStream == null) throw new IllegalArgumentException("inputStream cannot be null.");
+		this.inputStream = inputStream;
+		limit = 0;
+		rewind();
 	}
 
 	public int total () {
@@ -133,6 +69,52 @@ public class KryoInput extends InputStream {
 
 	public void setPosition (int position) {
 		this.position = position;
+	}
+
+	public void rewind () {
+		position = 0;
+		total = 0;
+	}
+
+	public void skip (int count) throws KryoException {
+		int skipCount = Math.min(limit - position, count);
+		while (true) {
+			position += skipCount;
+			count -= skipCount;
+			if (count == 0) break;
+			skipCount = Math.min(count, capacity);
+			require(skipCount, skipCount);
+		}
+	}
+
+	protected int fill (byte[] buffer, int offset, int count) throws KryoException {
+		if (inputStream == null) return -1;
+		try {
+			return inputStream.read(buffer, offset, count);
+		} catch (IOException ex) {
+			throw new KryoException(ex);
+		}
+	}
+
+	/** @param required Must have at least this many bytes in buffer.
+	 * @param optional Try to fill at least this many bytes in buffer. */
+	private void require (int required, int optional) throws KryoException {
+		int remaining = limit - position;
+		if (remaining >= optional) return;
+		remaining = Math.max(0, remaining);
+		System.arraycopy(buffer, position, buffer, 0, remaining);
+		while (true) {
+			int count = fill(buffer, remaining, capacity - remaining);
+			if (count == -1) {
+				if (remaining >= required) break;
+				throw new KryoException("Buffer underflow.");
+			}
+			remaining += count;
+			if (remaining >= optional) break;
+		}
+		limit = remaining;
+		total += position;
+		position = 0;
 	}
 
 	// InputStream
@@ -149,16 +131,16 @@ public class KryoInput extends InputStream {
 	public int read (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int startingCount = count;
-		int copyCount = Math.min(bufferCount - position, count);
+		int copyCount = Math.min(limit - position, count);
 		while (true) {
 			System.arraycopy(buffer, position, bytes, offset, copyCount);
 			position += copyCount;
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = Math.min(count, bufferSize);
+			copyCount = Math.min(count, capacity);
 			require(0, copyCount);
-			if (position == bufferCount) break;
+			if (position == limit) break;
 		}
 		return startingCount - count;
 	}
@@ -174,9 +156,9 @@ public class KryoInput extends InputStream {
 	}
 
 	public void close () throws KryoException {
-		if (input != null) {
+		if (inputStream != null) {
 			try {
-				input.close();
+				inputStream.close();
 			} catch (IOException ignored) {
 			}
 		}
@@ -206,14 +188,14 @@ public class KryoInput extends InputStream {
 
 	public void readBytes (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
-		int copyCount = Math.min(bufferCount - position, count);
+		int copyCount = Math.min(limit - position, count);
 		while (true) {
 			System.arraycopy(buffer, position, bytes, offset, copyCount);
 			position += copyCount;
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = Math.min(count, bufferSize);
+			copyCount = Math.min(count, capacity);
 			require(copyCount, copyCount);
 		}
 	}
@@ -257,18 +239,18 @@ public class KryoInput extends InputStream {
 	}
 
 	public boolean canReadInt () throws KryoException {
-		if (bufferCount - position >= 5) return true;
+		if (limit - position >= 5) return true;
 		require(0, 4);
 		int p = position;
-		if (p == bufferCount) return false;
+		if (p == limit) return false;
 		if ((buffer[p++] & 0x80) == 0) return true;
-		if (p == bufferCount) return false;
+		if (p == limit) return false;
 		if ((buffer[p++] & 0x80) == 0) return true;
-		if (p == bufferCount) return false;
+		if (p == limit) return false;
 		if ((buffer[p++] & 0x80) == 0) return true;
-		if (p == bufferCount) return false;
+		if (p == limit) return false;
 		if ((buffer[p++] & 0x80) == 0) return true;
-		if (p == bufferCount) return false;
+		if (p == limit) return false;
 		return true;
 	}
 
@@ -277,7 +259,7 @@ public class KryoInput extends InputStream {
 	public String readChars () throws KryoException {
 		int charCount = readInt(true);
 		if (chars.length < charCount) chars = new char[charCount];
-		if (charCount > bufferSize) return readChars_slow(charCount);
+		if (charCount > capacity) return readChars_slow(charCount);
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		require(charCount, charCount);
@@ -289,12 +271,12 @@ public class KryoInput extends InputStream {
 
 	private String readChars_slow (int charCount) throws KryoException {
 		char[] chars = this.chars;
-		int charsToRead = bufferCount - position;
+		int charsToRead = limit - position;
 		int charIndex = 0;
 		while (charIndex < charCount) {
 			for (int n = charIndex + charsToRead; charIndex < n; charIndex++)
 				chars[charIndex++] = (char)(buffer[position++] & 0xFF);
-			charsToRead = Math.min(charCount - charIndex, bufferSize);
+			charsToRead = Math.min(charCount - charIndex, capacity);
 			require(charsToRead, charsToRead);
 		}
 		return new String(chars, 0, charCount);
@@ -319,8 +301,8 @@ public class KryoInput extends InputStream {
 	private String readString_slow (int charCount, int charIndex, int c) throws KryoException {
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
-		int charsPerBuffer = bufferSize / 3;
-		int charsToRead = Math.min(charCount - charIndex, (bufferCount - position) / 3);
+		int charsPerBuffer = capacity / 3;
+		int charsToRead = Math.min(charCount - charIndex, (limit - position) / 3);
 		while (true) {
 			int endIndex = charIndex + charsToRead;
 			while (true) {
@@ -347,7 +329,7 @@ public class KryoInput extends InputStream {
 				c = buffer[position++] & 0xFF;
 			}
 			if (charIndex == charCount) break;
-			charsToRead = Math.min(charCount - charIndex, bufferSize);
+			charsToRead = Math.min(charCount - charIndex, capacity);
 			require(charsToRead, charsToRead);
 			c = buffer[position++] & 0xFF;
 		}

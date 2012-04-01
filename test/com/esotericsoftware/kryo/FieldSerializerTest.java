@@ -3,17 +3,17 @@ package com.esotericsoftware.kryo;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.KryoInput;
-import com.esotericsoftware.kryo.KryoOutput;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
 public class FieldSerializerTest extends KryoTestCase {
 	public void testDefaultTypes () {
 		kryo.register(DefaultTypes.class);
 		kryo.register(byte[].class);
-		//kryo.setRegistrationRequired(true);
+		// kryo.setRegistrationRequired(true);
 		DefaultTypes test = new DefaultTypes();
 		test.booleanField = true;
 		test.byteField = 123;
@@ -113,7 +113,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryoWithoutF.register(D.class);
 		kryoWithoutF.register(E.class);
 
-		KryoOutput output = new KryoOutput(512);
+		Output output = new Output(512);
 		try {
 			kryoWithoutF.writeClassAndObject(output, c);
 			fail("Should have failed because F is not registered.");
@@ -130,9 +130,10 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		output.clear();
 		kryo.writeClassAndObject(output, c);
+		output.flush();
 		assertEquals(13, output.total());
 
-		KryoInput input = new KryoInput(output.getBytes());
+		Input input = new Input(output.getBytes());
 		kryo.readClassAndObject(input);
 
 		try {
@@ -145,11 +146,11 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	public void testNoDefaultConstructor () {
 		kryo.register(SimpleNoDefaultConstructor.class, new Serializer<SimpleNoDefaultConstructor>() {
-			public SimpleNoDefaultConstructor read (Kryo kryo, KryoInput input, Class<SimpleNoDefaultConstructor> type) {
+			public SimpleNoDefaultConstructor read (Kryo kryo, Input input, Class<SimpleNoDefaultConstructor> type) {
 				return new SimpleNoDefaultConstructor(input.readInt(true));
 			}
 
-			public void write (Kryo kryo, KryoOutput output, SimpleNoDefaultConstructor object) {
+			public void write (Kryo kryo, Output output, SimpleNoDefaultConstructor object) {
 				output.writeInt(object.constructorValue, true);
 			}
 		});
@@ -157,13 +158,13 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(2, object1);
 
 		kryo.register(ComplexNoDefaultConstructor.class, new FieldSerializer(kryo, ComplexNoDefaultConstructor.class) {
-			public void write (Kryo kryo, KryoOutput output, Object object) {
+			public void write (Kryo kryo, Output output, Object object) {
 				ComplexNoDefaultConstructor complexObject = (ComplexNoDefaultConstructor)object;
 				output.writeString(complexObject.name);
 				super.write(kryo, output, object);
 			}
 
-			public Object newInstance (Kryo kryo, KryoInput input, Class type) {
+			public Object newInstance (Kryo kryo, Input input, Class type) {
 				String name = input.readString();
 				ComplexNoDefaultConstructor object = new ComplexNoDefaultConstructor(name);
 				return object;

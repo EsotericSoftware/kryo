@@ -1,75 +1,60 @@
 
-package com.esotericsoftware.kryo;
+package com.esotericsoftware.kryo.io;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
 
-public class KryoOutput extends OutputStream {
-	private final int maxBufferSize;
-	private int bufferSize, position, total;
+import com.esotericsoftware.kryo.KryoException;
+
+// DataOutputStream, BufferedOutputStream, FilteredOutputStream, ByteArrayOutputStream, stream to ByteBuffer.
+public class Output extends OutputStream {
+	private final int maxCapacity;
+	private int capacity, position, total;
 	private byte[] buffer;
-	private OutputStream output;
-	private ByteBuffer byteBuffer;
+	private OutputStream outputStream;
 
-	public KryoOutput (int bufferSize) {
+	public Output (int bufferSize) {
 		this(bufferSize, bufferSize);
 	}
 
-	public KryoOutput (int bufferSize, int maxBufferSize) {
-		this.bufferSize = bufferSize;
-		this.maxBufferSize = maxBufferSize == -1 ? Integer.MAX_VALUE : maxBufferSize;
+	public Output (int bufferSize, int maxBufferSize) {
+		this.capacity = bufferSize;
+		this.maxCapacity = maxBufferSize == -1 ? Integer.MAX_VALUE : maxBufferSize;
 		buffer = new byte[bufferSize];
 	}
 
-	public KryoOutput (byte[] buffer) {
+	public Output (byte[] buffer) {
 		this(buffer, buffer.length);
 	}
 
-	public KryoOutput (byte[] buffer, int maxBufferSize) {
+	public Output (byte[] buffer, int maxBufferSize) {
 		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
 		this.buffer = buffer;
-		this.maxBufferSize = maxBufferSize;
-		bufferSize = buffer.length;
+		this.maxCapacity = maxBufferSize;
+		capacity = buffer.length;
 	}
 
-	public KryoOutput (OutputStream output) {
+	public Output (OutputStream outputStream) {
 		this(4096, 4096);
-		if (output == null) throw new IllegalArgumentException("output cannot be null.");
-		this.output = output;
+		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
+		this.outputStream = outputStream;
 	}
 
-	public KryoOutput (OutputStream output, int bufferSize) {
+	public Output (OutputStream outputStream, int bufferSize) {
 		this(bufferSize, bufferSize);
-		if (output == null) throw new IllegalArgumentException("output cannot be null.");
-		this.output = output;
+		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
+		this.outputStream = outputStream;
 	}
 
-	public KryoOutput (ByteBuffer byteBuffer) {
-		this(4096, 4096);
-		if (byteBuffer == null) throw new IllegalArgumentException("byteBuffer cannot be null.");
-		this.byteBuffer = byteBuffer;
+	public OutputStream getOutputStream () {
+		return outputStream;
 	}
 
-	public KryoOutput (ByteBuffer byteBuffer, int bufferSize) {
-		this(bufferSize, bufferSize);
-		if (byteBuffer == null) throw new IllegalArgumentException("byteBuffer cannot be null.");
-		this.byteBuffer = byteBuffer;
-	}
-
-	private boolean require (int count) throws KryoException {
-		if (bufferSize - position >= count) return false;
-		flush();
-		while (bufferSize - position < count) {
-			if (bufferSize == maxBufferSize) throw new KryoException("Buffer overflow.");
-			// Grow buffer.
-			bufferSize = Math.min(bufferSize * 2, maxBufferSize);
-			byte[] newBuffer = new byte[bufferSize];
-			System.arraycopy(buffer, 0, newBuffer, 0, position);
-			buffer = newBuffer;
-		}
-		return true;
+	public void setOutputStream (OutputStream outputStream) {
+		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
+		this.outputStream = outputStream;
+		position = 0;
+		total = 0;
 	}
 
 	public byte[] getBytes () {
@@ -82,32 +67,12 @@ public class KryoOutput extends OutputStream {
 		return newBuffer;
 	}
 
-	public OutputStream getOutputStream () {
-		return output;
-	}
-
-	public void setOutputStream (OutputStream output) {
-		if (output == null) throw new IllegalArgumentException("output cannot be null.");
-		this.output = output;
-		byteBuffer = null;
-		position = 0;
-		total = 0;
-	}
-
-	public ByteBuffer getByteBuffer () {
-		return byteBuffer;
-	}
-
-	public void setByteBuffer (ByteBuffer buffer) {
-		if (byteBuffer == null) throw new IllegalArgumentException("byteBuffer cannot be null.");
-		this.byteBuffer = buffer;
-		output = null;
-		position = 0;
-		total = 0;
+	public int position () {
+		return position;
 	}
 
 	public int total () {
-		return total + position;
+		return total;
 	}
 
 	public void clear () {
@@ -115,32 +80,45 @@ public class KryoOutput extends OutputStream {
 		total = 0;
 	}
 
+	private boolean require (int count) throws KryoException {
+		if (capacity - position >= count) return false;
+		flush();
+		while (capacity - position < count) {
+			if (capacity == maxCapacity) throw new KryoException("Buffer overflow.");
+			// Grow buffer.
+			capacity = Math.min(capacity * 2, maxCapacity);
+			byte[] newBuffer = new byte[capacity];
+			System.arraycopy(buffer, 0, newBuffer, 0, position);
+			buffer = newBuffer;
+		}
+		return true;
+	}
+
 	// OutputStream
 
 	public void flush () throws KryoException {
-		if (output != null) {
+		total += position;
+		if (outputStream == null) return;
+		try {
+			outputStream.write(buffer, 0, position);
+		} catch (IOException ex) {
+			throw new KryoException(ex);
+		}
+		position = 0;
+	}
+
+	public void close () throws KryoException {
+		flush();
+		if (outputStream != null) {
 			try {
-				output.write(buffer, 0, position);
-			} catch (BufferOverflowException ex) {
-				throw new KryoException("Buffer overflow.", ex);
-			} catch (IOException ex) {
-				throw new KryoException(ex);
+				outputStream.close();
+			} catch (IOException ignored) {
 			}
-			total += position;
-			position = 0;
-		} else if (byteBuffer != null) {
-			try {
-				byteBuffer.put(buffer, 0, position);
-			} catch (BufferOverflowException ex) {
-				throw new KryoException("Buffer overflow.", ex);
-			}
-			total += position;
-			position = 0;
 		}
 	}
 
 	public void write (int value) throws KryoException {
-		if (position == bufferSize) require(1);
+		if (position == capacity) require(1);
 		buffer[position++] = (byte)value;
 	}
 
@@ -152,20 +130,10 @@ public class KryoOutput extends OutputStream {
 		writeBytes(bytes, offset, length);
 	}
 
-	public void close () throws KryoException {
-		flush();
-		if (output != null) {
-			try {
-				output.close();
-			} catch (IOException ignored) {
-			}
-		}
-	}
-
 	// byte
 
 	public void writeByte (int value) throws KryoException {
-		if (position == bufferSize) require(1);
+		if (position == capacity) require(1);
 		buffer[position++] = (byte)value;
 	}
 
@@ -175,15 +143,15 @@ public class KryoOutput extends OutputStream {
 
 	public void writeBytes (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
-		int copyCount = Math.min(bufferSize - position, count);
+		int copyCount = Math.min(capacity - position, count);
 		while (true) {
 			System.arraycopy(bytes, offset, buffer, position, copyCount);
 			position += copyCount;
 			count -= copyCount;
 			if (count == 0) return;
-			require(bufferSize);
+			require(capacity);
 			offset += copyCount;
-			copyCount = Math.min(bufferSize, count);
+			copyCount = Math.min(capacity, count);
 		}
 	}
 
@@ -215,16 +183,16 @@ public class KryoOutput extends OutputStream {
 		byte[] buffer = this.buffer;
 		switch (length) {
 		case 5:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
 			value >>>= 7;
 		case 4:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
 			value >>>= 7;
 		case 3:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
 			value >>>= 7;
 		case 2:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
 			value >>>= 7;
 		case 1:
 			buffer[position++] = (byte)value;
@@ -238,7 +206,7 @@ public class KryoOutput extends OutputStream {
 		if (value == null) throw new IllegalArgumentException("value cannot be null.");
 		int charCount = value.length();
 		writeInt(charCount, true);
-		if (bufferSize < charCount)
+		if (capacity < charCount)
 			writeChars_slow(value, charCount);
 		else {
 			require(charCount);
@@ -250,12 +218,12 @@ public class KryoOutput extends OutputStream {
 
 	private void writeChars_slow (String value, int charCount) throws KryoException {
 		byte[] buffer = this.buffer;
-		int charsToWrite = bufferSize - position;
+		int charsToWrite = capacity - position;
 		int charIndex = 0;
 		while (charIndex < charCount) {
 			for (int n = charIndex + charsToWrite; charIndex < n; charIndex++)
 				buffer[position++] = (byte)value.charAt(charIndex);
-			charsToWrite = Math.min(charCount - charIndex, bufferSize);
+			charsToWrite = Math.min(charCount - charIndex, capacity);
 			if (require(charsToWrite)) buffer = this.buffer;
 		}
 	}
@@ -264,7 +232,7 @@ public class KryoOutput extends OutputStream {
 		if (value == null) throw new IllegalArgumentException("value cannot be null.");
 		int charCount = value.length();
 		writeInt(charCount, true);
-		if (bufferSize < charCount * 3)
+		if (capacity < charCount * 3)
 			writeString_slow(value, charCount);
 		else {
 			require(charCount);
@@ -288,8 +256,8 @@ public class KryoOutput extends OutputStream {
 
 	private void writeString_slow (String value, int charCount) throws KryoException {
 		byte[] buffer = this.buffer;
-		int charsPerBuffer = bufferSize / 3;
-		int charsToWrite = (bufferSize - position) / 3;
+		int charsPerBuffer = capacity / 3;
+		int charsToWrite = (capacity - position) / 3;
 		int charIndex = 0;
 		while (charIndex < charCount) {
 			for (int n = charIndex + charsToWrite; charIndex < n; charIndex++) {

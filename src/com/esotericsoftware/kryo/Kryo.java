@@ -13,6 +13,8 @@ import java.util.Currency;
 import java.util.Date;
 import java.util.Map;
 
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ArraySerializer;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerializer;
@@ -29,6 +31,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.FloatSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.IntSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.SerializableSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSerializer;
@@ -54,13 +57,14 @@ public class Kryo {
 	}
 
 	private Class<? extends Serializer> defaultSerializer = FieldSerializer.class;
-	private final ArrayList<DefaultSerializer> defaultSerializers = new ArrayList(32);
+	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
 	private ArraySerializer arraySerializer = new ArraySerializer();
 
 	private int depth;
 	private int nextID = 1;
 	private final IntMap<Registration> idToRegistration = new IntMap();
 	private final ObjectMap<Class, Registration> classToRegistration = new ObjectMap();
+	private ObjectMap context, graphContext;
 
 	private boolean registrationRequired;
 	private final ObjectIntMap<Class> classToNameId = new ObjectIntMap();
@@ -103,6 +107,7 @@ public class Kryo {
 		addDefaultSerializer(StringBuilder.class, StringBuilderSerializer.class);
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
+		addDefaultSerializer(Serializable.class, SerializableSerializer.class);
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
 		register(boolean.class);
@@ -150,8 +155,8 @@ public class Kryo {
 	 * <td>{@link MapSerializer}</td>
 	 * </tr>
 	 * <tr>
-	 * <td>{@link CustomSerialization}</td>
-	 * <td>{@link CustomSerializer}</td>
+	 * <td>{@link Serializable}</td>
+	 * <td>{@link SerializableSerializer}</td>
 	 * </tr>
 	 * <tr>
 	 * <td>class with {@link DefaultSerializer} annotation</td>
@@ -161,7 +166,7 @@ public class Kryo {
 	public void addDefaultSerializer (Class type, Serializer serializer) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		DefaultSerializer entry = new DefaultSerializer();
+		DefaultSerializerEntry entry = new DefaultSerializerEntry();
 		entry.type = type;
 		entry.serializer = serializer;
 		defaultSerializers.add(entry);
@@ -170,7 +175,7 @@ public class Kryo {
 	public void addDefaultSerializer (Class type, Class<? extends Serializer> serializerClass) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerClass == null) throw new IllegalArgumentException("serializerClass cannot be null.");
-		DefaultSerializer entry = new DefaultSerializer();
+		DefaultSerializerEntry entry = new DefaultSerializerEntry();
 		entry.type = type;
 		entry.serializerClass = serializerClass;
 		defaultSerializers.add(entry);
@@ -182,8 +187,11 @@ public class Kryo {
 
 		if (type.isArray()) return arraySerializer;
 
+		if (type.isAnnotationPresent(DefaultSerializer.class))
+			return newSerializer(((DefaultSerializer)type.getAnnotation(DefaultSerializer.class)).value(), type);
+
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
-			DefaultSerializer entry = defaultSerializers.get(i);
+			DefaultSerializerEntry entry = defaultSerializers.get(i);
 			if (entry.type.isAssignableFrom(type)) {
 				if (entry.serializer != null) return entry.serializer;
 				return newSerializer(entry.serializerClass, type);
@@ -225,7 +233,7 @@ public class Kryo {
 
 	/** Registers the class using the specified ID and the {@link #getDefaultSerializer(Class) default serializer}. If the ID is
 	 * already in use by the same type, the old entry is overwritten. If the ID is already in use by a different type, a
-	 * {@link KryoException} is thrown. IDs are written with {@link KryoOutput#writeInt(int, boolean)} called with true, so smaller
+	 * {@link KryoException} is thrown. IDs are written with {@link Output#writeInt(int, boolean)} called with true, so smaller
 	 * positive integers use fewer bytes. Registering a primitive also affects the corresponding primitive wrapper.
 	 * @param id Must not be 0 or {@value #NAME}. */
 	public Registration register (Class type, int id) {
@@ -252,7 +260,7 @@ public class Kryo {
 
 	/** Registers the class using the specified ID. If the ID is already in use by the same type, the old entry is overwritten. If
 	 * the ID is already in use by a different type, a {@link KryoException} is thrown. IDs are written with
-	 * {@link KryoOutput#writeInt(int, boolean)} called with true, so smaller positive integers use fewer bytes. Registering a
+	 * {@link Output#writeInt(int, boolean)} called with true, so smaller positive integers use fewer bytes. Registering a
 	 * primitive also affects the corresponding primitive wrapper.
 	 * @param id Must not be 0 or {@value #NAME}. */
 	public Registration register (Class type, Serializer serializer, int id) {
@@ -323,7 +331,7 @@ public class Kryo {
 	/** Writes a class and returns its registration.
 	 * @param type May be null.
 	 * @return Will be null if type is null. */
-	public Registration writeClass (KryoOutput output, Class type) {
+	public Registration writeClass (Output output, Class type) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		try {
 			if (type == null) {
@@ -351,7 +359,7 @@ public class Kryo {
 	}
 
 	/** Writes an object using the registered serializer. */
-	public void writeObject (KryoOutput output, Object object) {
+	public void writeObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
 		depth++;
@@ -364,7 +372,7 @@ public class Kryo {
 	}
 
 	/** Writes an object using the specified serializer. */
-	public void writeObject (KryoOutput output, Object object, Serializer serializer) {
+	public void writeObject (Output output, Object object, Serializer serializer) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
@@ -379,7 +387,7 @@ public class Kryo {
 
 	/** Writes an object using the registered serializer.
 	 * @param object May be null. */
-	public void writeObjectOrNull (KryoOutput output, Object object) {
+	public void writeObjectOrNull (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		depth++;
 		try {
@@ -397,7 +405,7 @@ public class Kryo {
 
 	/** Writes an object using the specified serializer.
 	 * @param object May be null. */
-	public void writeObjectOrNull (KryoOutput output, Object object, Serializer serializer) {
+	public void writeObjectOrNull (Output output, Object object, Serializer serializer) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		depth++;
@@ -416,7 +424,7 @@ public class Kryo {
 
 	/** Writes the class and object using the registered serializer.
 	 * @param object May be null. */
-	public void writeClassAndObject (KryoOutput output, Object object) {
+	public void writeClassAndObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		depth++;
 		try {
@@ -432,7 +440,7 @@ public class Kryo {
 		}
 	}
 
-	private boolean writeReference (KryoOutput output, Object object) {
+	private boolean writeReference (Output output, Object object) {
 		int instanceId = objectToInstanceId.get(object, -1);
 		if (instanceId != -1) {
 			output.writeInt(instanceId, true);
@@ -447,7 +455,7 @@ public class Kryo {
 
 	/** Reads a class and returns its registration.
 	 * @return May be null. */
-	public Registration readClass (KryoInput input) {
+	public Registration readClass (Input input) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		try {
 			int classID = input.readInt(true);
@@ -477,7 +485,7 @@ public class Kryo {
 
 	/** Reads an object using the registered serializer.
 	 * @return May be null. */
-	public <T> T readObject (KryoInput input, Class<T> type) {
+	public <T> T readObject (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		depth++;
@@ -498,7 +506,7 @@ public class Kryo {
 
 	/** Reads an object using the specified serializer.
 	 * @return May be null. */
-	public <T> T readObject (KryoInput input, Class<T> type, Serializer serializer) {
+	public <T> T readObject (Input input, Class<T> type, Serializer serializer) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
@@ -520,7 +528,7 @@ public class Kryo {
 
 	/** Reads an object using the registered serializer.
 	 * @return May be null. */
-	public <T> T readObjectOrNull (KryoInput input, Class<T> type) {
+	public <T> T readObjectOrNull (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		depth++;
@@ -542,7 +550,7 @@ public class Kryo {
 
 	/** Reads an object using the specified serializer.
 	 * @return May be null. */
-	public <T> T readObjectOrNull (KryoInput input, Class<T> type, Serializer serializer) {
+	public <T> T readObjectOrNull (Input input, Class<T> type, Serializer serializer) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
@@ -565,7 +573,7 @@ public class Kryo {
 
 	/** Reads the class and object using the registered serializer.
 	 * @return May be null. */
-	public Object readClassAndObject (KryoInput input) {
+	public Object readClassAndObject (Input input) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		depth++;
 		try {
@@ -590,6 +598,7 @@ public class Kryo {
 	 * to be reset. */
 	protected void reset () {
 		depth = 0;
+		if (graphContext != null) graphContext.clear();
 		if (!registrationRequired) {
 			classToNameId.clear();
 			nameIdToClass.clear();
@@ -614,6 +623,16 @@ public class Kryo {
 
 	public void setArraySerializer (ArraySerializer arraySerializer) {
 		this.arraySerializer = arraySerializer;
+	}
+
+	public ObjectMap getContext () {
+		if (context == null) context = new ObjectMap();
+		return context;
+	}
+
+	public ObjectMap getGraphContext () {
+		if (graphContext == null) graphContext = new ObjectMap();
+		return graphContext;
 	}
 
 	// --- Utility ---
@@ -670,7 +689,7 @@ public class Kryo {
 		}
 	}
 
-	static final class DefaultSerializer {
+	static final class DefaultSerializerEntry {
 		Class type;
 		Serializer serializer;
 		Class<? extends Serializer> serializerClass;

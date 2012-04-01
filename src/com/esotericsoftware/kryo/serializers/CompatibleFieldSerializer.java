@@ -15,35 +15,36 @@ import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.io.OutputChunked;
+import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 import static com.esotericsoftware.minlog.Log.*;
 
-/** Serializes objects using direct field assignment. This is a very fast mechanism for serializing objects, often as good as
- * {@link CustomSerialization}. FieldSerializer is many times smaller and faster than Java serialization. The fields should be
- * public for optimal performance, which allows bytecode generation to be used instead of reflection.
+/** Serializes objects using direct field assignment, with limited support for forward and backward compatibility. Fields can be
+ * added or removed without invalidating previously serialized bytes. Note that changing the type of a field is not supported.
  * <p>
- * FieldSerializer does not write header data, only the object data is stored. If the type of a field is not final (note
- * primitives are final) then an extra byte is written for that field.
- * @see Serializer
- * @see Kryo#register(Class, Serializer)
+ * There is additional overhead compared to {@link FieldSerializer}. A header is output the first time an object of a given type
+ * is serialized. The header consists of an int for the number of fields, then a String for each field name. Also, to support
+ * skipping the bytes for a field that no longer exists, for each field value an int is written that is the length of the value in
+ * bytes.
  * @author Nathan Sweet <misc@n4te.com> */
-public class FieldSerializer extends Serializer {
-	private final Class type;
-	private final Kryo kryo;
+public class CompatibleFieldSerializer extends Serializer {
+	final Kryo kryo;
+	final Class type;
 	private CachedField[] fields;
 	Object access;
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
-	private boolean ignoreSyntheticFields = true;
 
-	public FieldSerializer (Kryo kryo, Class type) {
+	public CompatibleFieldSerializer (Kryo kryo, Class type) {
 		this.kryo = kryo;
 		this.type = type;
 		rebuildCachedFields();
 	}
 
-	protected void rebuildCachedFields () {
+	private void rebuildCachedFields () {
 		if (type.isInterface()) {
 			fields = new CachedField[0]; // No fields to serialize.
 			return;
@@ -57,7 +58,7 @@ public class FieldSerializer extends Serializer {
 			nextClass = nextClass.getSuperclass();
 		}
 
-		ArrayList<CachedField> asmFields = new ArrayList();
+		ArrayList<CachedField> publicFields = new ArrayList();
 		PriorityQueue<CachedField> cachedFields = new PriorityQueue(Math.max(1, allFields.size()), new Comparator<CachedField>() {
 			public int compare (CachedField o1, CachedField o2) {
 				// Fields are sorted by alpha so the order of the data is known.
@@ -70,7 +71,7 @@ public class FieldSerializer extends Serializer {
 			int modifiers = field.getModifiers();
 			if (Modifier.isTransient(modifiers)) continue;
 			if (Modifier.isStatic(modifiers)) continue;
-			if (field.isSynthetic() && ignoreSyntheticFields) continue;
+			if (field.isSynthetic()) continue;
 
 			if (!field.isAccessible()) {
 				if (!setFieldsAsAccessible) continue;
@@ -94,16 +95,15 @@ public class FieldSerializer extends Serializer {
 			if (kryo.isFinal(fieldClass)) cachedField.fieldClass = fieldClass;
 
 			cachedFields.add(cachedField);
-			if (!Modifier.isFinal(modifiers) && Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers()))
-				asmFields.add(cachedField);
+			if (Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers())) publicFields.add(cachedField);
 		}
 
-		if (!Kryo.isAndroid && Modifier.isPublic(type.getModifiers()) && !asmFields.isEmpty()) {
+		if (!Kryo.isAndroid && Modifier.isPublic(type.getModifiers()) && !publicFields.isEmpty()) {
 			// Use ReflectASM for any public fields.
 			try {
 				access = FieldAccess.get(type);
-				for (int i = 0, n = asmFields.size(); i < n; i++) {
-					CachedField cachedField = asmFields.get(i);
+				for (int i = 0, n = publicFields.size(); i < n; i++) {
+					CachedField cachedField = publicFields.get(i);
 					cachedField.accessIndex = ((FieldAccess)access).getIndex(cachedField.field.getName());
 				}
 			} catch (RuntimeException ignored) {
@@ -123,54 +123,55 @@ public class FieldSerializer extends Serializer {
 		rebuildCachedFields();
 	}
 
-	/** Controls which fields are serialized.
+	/** Controls which fields are accessed.
 	 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
-	 *           {@link Field#setAccessible(boolean) set as accessible} if necessary (default). If false, only fields in the public
-	 *           API will be serialized. */
+	 *           {@link Field#setAccessible(boolean) set as accessible} (default). If false, only fields in the public API will be
+	 *           serialized. */
 	public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
 		this.setFieldsAsAccessible = setFieldsAsAccessible;
 		rebuildCachedFields();
 	}
 
-	/** Controls if synthetic fields are serialized. Default is true.
-	 * @param ignoreSyntheticFields If true, only non-synthetic fields will be serialized. */
-	public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
-		this.ignoreSyntheticFields = ignoreSyntheticFields;
-		rebuildCachedFields();
-	}
-
 	public void write (Kryo kryo, Output output, Object object) {
+		ObjectMap context = kryo.getGraphContext();
+		if (!context.containsKey("schemaWritten")) {
+			context.put("schemaWritten", null);
+			if (TRACE) trace("kryo", "Writing " + fields.length + " field names.");
+			output.writeInt(fields.length, true);
+			for (int i = 0, n = fields.length; i < n; i++)
+				output.writeString(fields[i].field.getName());
+		}
+
+		OutputChunked outputChunked = new OutputChunked(output);
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			try {
 				if (TRACE) trace("kryo", "Writing field: " + cachedField + " (" + object.getClass().getName() + ")");
 
 				Object value = cachedField.get(object);
+				if (value == null) {
+					kryo.writeClass(outputChunked, null);
+					outputChunked.endChunks();
+					continue;
+				}
 
 				Serializer serializer = cachedField.serializer;
-
 				if (cachedField.fieldClass == null) {
-					if (value == null) {
-						kryo.writeClass(output, null);
-						continue;
-					}
-					Registration registration = kryo.writeClass(output, value.getClass());
+					Registration registration = kryo.writeClass(outputChunked, value.getClass());
 					if (serializer == null) serializer = registration.getSerializer();
-					kryo.writeObject(output, value, serializer);
+					kryo.writeObject(outputChunked, value, serializer);
 				} else {
-					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(cachedField.fieldClass);
-					if (cachedField.canBeNull) {
-						kryo.writeObjectOrNull(output, value, serializer);
-					} else {
-						if (value == null) {
-							throw new KryoException("Field value is null but canBeNull is false: " + cachedField + " ("
-								+ object.getClass().getName() + ")");
-						}
-						kryo.writeObject(output, value, serializer);
-					}
+					if (serializer == null)
+						cachedField.serializer = serializer = kryo.getRegistration(cachedField.fieldClass).getSerializer();
+					if (!cachedField.canBeNull)
+						kryo.writeObject(outputChunked, value, serializer);
+					else
+						kryo.writeObjectOrNull(outputChunked, value, serializer);
 				}
+
+				outputChunked.endChunks();
 			} catch (IllegalAccessException ex) {
-				throw new KryoException("Error accessing field: " + cachedField + " (" + object.getClass().getName() + ")", ex);
+				throw new KryoException("Error accessing field in class: " + object.getClass().getName(), ex);
 			} catch (KryoException ex) {
 				ex.addTrace(cachedField + " (" + object.getClass().getName() + ")");
 				throw ex;
@@ -184,34 +185,70 @@ public class FieldSerializer extends Serializer {
 	}
 
 	public Object read (Kryo kryo, Input input, Class type) {
+		ObjectMap context = kryo.getGraphContext();
+		CachedField[] fields = (CachedField[])context.get("schema");
+		if (fields == null) {
+			int length = input.readInt(true);
+			if (TRACE) trace("kryo", "Reading " + length + " field names.");
+			String[] names = new String[length];
+			for (int i = 0; i < length; i++)
+				names[i] = input.readString();
+
+			fields = new CachedField[length];
+			CachedField[] allFields = this.fields;
+			outer:
+			for (int i = 0, n = names.length; i < n; i++) {
+				String schemaName = names[i];
+				for (int ii = 0, nn = allFields.length; ii < nn; ii++) {
+					if (allFields[ii].field.getName().equals(schemaName)) {
+						fields[i] = allFields[ii];
+						continue outer;
+					}
+				}
+				if (TRACE) trace("kryo", "Ignoring obsolete field: " + schemaName);
+			}
+			context.put("schema", fields);
+		}
+
 		Object object = newInstance(kryo, input, type);
+		InputChunked inputChunked = new InputChunked(input);
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			try {
+				if (cachedField == null) {
+					if (TRACE) trace("kryo", "Skipping obsolete field.");
+					inputChunked.nextChunks();
+					continue;
+				}
+
 				if (TRACE) trace("kryo", "Reading field: " + cachedField + " (" + type.getName() + ")");
 
-				Object value = null;
+				Object value;
 
 				Class concreteType = cachedField.fieldClass;
 				Serializer serializer = cachedField.serializer;
 				if (concreteType == null) {
-					Registration registration = kryo.readClass(input);
-					if (registration != null) {
+					Registration registration = kryo.readClass(inputChunked);
+					if (registration == null)
+						value = null;
+					else {
 						concreteType = registration.getType();
 						if (serializer == null) serializer = registration.getSerializer();
-						value = kryo.readObject(input, concreteType, serializer);
+						value = kryo.readObject(inputChunked, concreteType, serializer);
 					}
 				} else {
-					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(concreteType);
-					if (cachedField.canBeNull)
-						value = kryo.readObjectOrNull(input, concreteType, serializer);
+					if (serializer == null) cachedField.serializer = serializer = kryo.getRegistration(concreteType).getSerializer();
+					if (!cachedField.canBeNull)
+						value = kryo.readObject(inputChunked, concreteType, serializer);
 					else
-						value = kryo.readObject(input, concreteType, serializer);
+						value = kryo.readObjectOrNull(inputChunked, concreteType, serializer);
 				}
 
 				cachedField.set(object, value);
+
+				inputChunked.nextChunks();
 			} catch (IllegalAccessException ex) {
-				throw new KryoException("Error accessing field: " + cachedField + " (" + type.getName() + ")", ex);
+				throw new KryoException("Error accessing field in class: " + type.getName(), ex);
 			} catch (KryoException ex) {
 				ex.addTrace(cachedField + " (" + type.getName() + ")");
 				throw ex;
@@ -247,10 +284,6 @@ public class FieldSerializer extends Serializer {
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
 	}
 
-	public CachedField[] getFields () {
-		return fields;
-	}
-
 	/** Controls how a field will be serialized. */
 	public class CachedField {
 		Field field;
@@ -276,10 +309,6 @@ public class FieldSerializer extends Serializer {
 
 		public void setCanBeNull (boolean canBeNull) {
 			this.canBeNull = canBeNull;
-		}
-
-		public Field getField () {
-			return field;
 		}
 
 		public String toString () {

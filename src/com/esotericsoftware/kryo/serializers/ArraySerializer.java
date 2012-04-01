@@ -5,9 +5,9 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoInput;
-import com.esotericsoftware.kryo.KryoOutput;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 import static com.esotericsoftware.minlog.Log.*;
 
@@ -53,7 +53,7 @@ public class ArraySerializer extends Serializer {
 		// BOZO - Change to set type?
 	}
 
-	public void write (Kryo kryo, KryoOutput output, Object array) {
+	public void write (Kryo kryo, Output output, Object array) {
 		// Write dimensions.
 		int[] dimensions = this.dimensions;
 		if (dimensions == null) {
@@ -81,7 +81,7 @@ public class ArraySerializer extends Serializer {
 		}
 	}
 
-	private void writeArray (Kryo kryo, KryoOutput output, Object array, Serializer elementSerializer, int dimension,
+	private void writeArray (Kryo kryo, Output output, Object array, Serializer elementSerializer, int dimension,
 		int dimensionCount, boolean elementsCanBeNull) {
 		int length = Array.getLength(array);
 		if (dimension > 0) {
@@ -111,7 +111,7 @@ public class ArraySerializer extends Serializer {
 		}
 	}
 
-	public Object read (Kryo kryo, KryoInput input, Class type) {
+	public Object read (Kryo kryo, Input input, Class type) {
 		// Get dimensions.
 		int[] dimensions = this.dimensions;
 		int dimensionCount;
@@ -143,7 +143,7 @@ public class ArraySerializer extends Serializer {
 		return array;
 	}
 
-	private void readArray (Kryo kryo, KryoInput input, Object array, int length, Serializer elementSerializer,
+	private void readArray (Kryo kryo, Input input, Object array, int length, Serializer elementSerializer,
 		Class elementClass, int dimension, int[] dimensions, boolean elementsCanBeNull) {
 		boolean elementsAreArrays = dimension < dimensions.length - 1;
 		for (int i = 0; i < length; i++) {

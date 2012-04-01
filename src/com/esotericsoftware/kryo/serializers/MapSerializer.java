@@ -6,9 +6,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoInput;
-import com.esotericsoftware.kryo.KryoOutput;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 import static com.esotericsoftware.minlog.Log.*;
 
@@ -68,7 +68,7 @@ public class MapSerializer extends Serializer<Map> {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
 
-	public void write (Kryo kryo, KryoOutput output, Map map) {
+	public void write (Kryo kryo, Output output, Map map) {
 		int length = map.size();
 		output.writeInt(length, true);
 		if (length == 0) return;
@@ -92,7 +92,7 @@ public class MapSerializer extends Serializer<Map> {
 		if (TRACE) trace("kryo", "Wrote map: " + map);
 	}
 
-	public Map read (Kryo kryo, KryoInput input, Class type) {
+	public Map read (Kryo kryo, Input input, Class type) {
 		Map map = newInstance(kryo, input, type);
 		int length = input.readInt(true);
 		if (length == 0) return map;

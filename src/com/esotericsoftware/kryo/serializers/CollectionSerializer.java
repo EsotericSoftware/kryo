@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoInput;
-import com.esotericsoftware.kryo.KryoOutput;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 import static com.esotericsoftware.minlog.Log.*;
 
@@ -54,7 +54,7 @@ public class CollectionSerializer extends Serializer<Collection> {
 		this.serializer = serializer;
 	}
 
-	public void write (Kryo kryo, KryoOutput output, Collection object) {
+	public void write (Kryo kryo, Output output, Collection object) {
 		Collection collection = (Collection)object;
 		int length;
 		if (this.length != null)
@@ -79,7 +79,7 @@ public class CollectionSerializer extends Serializer<Collection> {
 		if (TRACE) trace("kryo", "Wrote collection: " + object);
 	}
 
-	public Collection read (Kryo kryo, KryoInput input, Class<Collection> type) {
+	public Collection read (Kryo kryo, Input input, Class<Collection> type) {
 		int length;
 		if (this.length != null)
 			length = this.length;
