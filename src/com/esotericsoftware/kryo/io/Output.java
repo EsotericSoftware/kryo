@@ -72,7 +72,7 @@ public class Output extends OutputStream {
 	}
 
 	public int total () {
-		return total;
+		return total + position;
 	}
 
 	public void clear () {
@@ -80,10 +80,12 @@ public class Output extends OutputStream {
 		total = 0;
 	}
 
-	private boolean require (int count) throws KryoException {
-		if (capacity - position >= count) return false;
+	/** @return true if the buffer has been resized. */
+	private boolean require (int required) throws KryoException {
+		if (capacity - position >= required) return false;
+		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
 		flush();
-		while (capacity - position < count) {
+		while (capacity - position < required) {
 			if (capacity == maxCapacity) throw new KryoException("Buffer overflow.");
 			// Grow buffer.
 			capacity = Math.min(capacity * 2, maxCapacity);
@@ -97,13 +99,13 @@ public class Output extends OutputStream {
 	// OutputStream
 
 	public void flush () throws KryoException {
-		total += position;
 		if (outputStream == null) return;
 		try {
 			outputStream.write(buffer, 0, position);
 		} catch (IOException ex) {
 			throw new KryoException(ex);
 		}
+		total += position;
 		position = 0;
 	}
 
@@ -149,9 +151,9 @@ public class Output extends OutputStream {
 			position += copyCount;
 			count -= copyCount;
 			if (count == 0) return;
-			require(capacity);
 			offset += copyCount;
 			copyCount = Math.min(capacity, count);
+			require(copyCount);
 		}
 	}
 
@@ -232,49 +234,35 @@ public class Output extends OutputStream {
 		if (value == null) throw new IllegalArgumentException("value cannot be null.");
 		int charCount = value.length();
 		writeInt(charCount, true);
-		if (capacity < charCount * 3)
-			writeString_slow(value, charCount);
-		else {
+		int charIndex = 0;
+		if (capacity >= charCount) {
+			// Try to write 8 bit chars.
 			require(charCount);
-			byte[] buffer = this.buffer;
-			int c;
-			for (int i = 0; i < charCount; i++) {
-				c = value.charAt(i);
-				if (c <= 0x007F) {
-					buffer[position++] = (byte)c;
-				} else if (c > 0x07FF) {
-					buffer[position++] = (byte)(0xE0 | c >> 12 & 0x0F);
-					buffer[position++] = (byte)(0x80 | c >> 6 & 0x3F);
-					buffer[position++] = (byte)(0x80 | c & 0x3F);
-				} else {
-					buffer[position++] = (byte)(0xC0 | c >> 6 & 0x1F);
-					buffer[position++] = (byte)(0x80 | c & 0x3F);
-				}
+			for (; charIndex < charCount; charIndex++) {
+				int c = value.charAt(charIndex);
+				if (c > 127) break;
+				buffer[position++] = (byte)c;
 			}
 		}
+		if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
 	}
 
-	private void writeString_slow (String value, int charCount) throws KryoException {
-		byte[] buffer = this.buffer;
-		int charsPerBuffer = capacity / 3;
-		int charsToWrite = (capacity - position) / 3;
-		int charIndex = 0;
-		while (charIndex < charCount) {
-			for (int n = charIndex + charsToWrite; charIndex < n; charIndex++) {
-				int c = value.charAt(charIndex);
-				if (c <= 0x007F) {
-					buffer[position++] = (byte)c;
-				} else if (c > 0x07FF) {
-					buffer[position++] = (byte)(0xE0 | c >> 12 & 0x0F);
-					buffer[position++] = (byte)(0x80 | c >> 6 & 0x3F);
-					buffer[position++] = (byte)(0x80 | c & 0x3F);
-				} else {
-					buffer[position++] = (byte)(0xC0 | c >> 6 & 0x1F);
-					buffer[position++] = (byte)(0x80 | c & 0x3F);
-				}
+	private void writeString_slow (String value, int charCount, int charIndex) {
+		for (; charIndex < charCount; charIndex++) {
+			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
+			int c = value.charAt(charIndex);
+			if (c <= 0x007F) {
+				buffer[position++] = (byte)c;
+			} else if (c > 0x07FF) {
+				buffer[position++] = (byte)(0xE0 | c >> 12 & 0x0F);
+				require(2);
+				buffer[position++] = (byte)(0x80 | c >> 6 & 0x3F);
+				buffer[position++] = (byte)(0x80 | c & 0x3F);
+			} else {
+				buffer[position++] = (byte)(0xC0 | c >> 6 & 0x1F);
+				require(1);
+				buffer[position++] = (byte)(0x80 | c & 0x3F);
 			}
-			charsToWrite = Math.min(charCount - charIndex, charsPerBuffer);
-			if (require(charsToWrite)) buffer = this.buffer;
 		}
 	}
 

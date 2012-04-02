@@ -1,6 +1,8 @@
 
 package com.esotericsoftware.kryo;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 
@@ -8,33 +10,61 @@ import junit.framework.TestCase;
 
 import org.junit.Assert;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.minlog.Log;
 
 /** Convenience methods for round tripping objects. */
 abstract public class KryoTestCase extends TestCase {
 	protected Kryo kryo;
 	protected Output output;
 	protected Input input;
+	protected Object object1, object2;
 
 	protected void setUp () throws Exception {
+		// Log.TRACE();
+
 		kryo = new Kryo();
 		kryo.setReferences(false);
 		kryo.setRegistrationRequired(true);
-		
-		Log.TRACE();
 	}
 
 	public <T> T roundTrip (int length, T object1) {
+		this.object1 = object1;
+
+		// Test output to stream, large buffer.
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		output = new Output(outStream, 4096);
+		kryo.writeClassAndObject(output, object1);
+		output.flush();
+
+		// Test input from stream, large buffer.
+		input = new Input(new ByteArrayInputStream(outStream.toByteArray()), 4096);
+		object2 = kryo.readClassAndObject(input);
+		assertEquals(object1, object2);
+		assertEquals("Incorrect number of bytes read.", length, input.total());
+		assertEquals("Incorrect number of bytes read.", length, output.total());
+
+		// Test output to stream, small buffer.
+		outStream = new ByteArrayOutputStream();
+		output = new Output(outStream, 10);
+		kryo.writeClassAndObject(output, object1);
+		output.flush();
+
+		// Test input from stream, small buffer.
+		input = new Input(new ByteArrayInputStream(outStream.toByteArray()), 10);
+		object2 = kryo.readClassAndObject(input);
+		assertEquals(object1, object2);
+		assertEquals("Incorrect number of bytes read.", length, input.total());
+
+		// Test output to byte array.
 		output = new Output(length * 2, -1);
 		kryo.writeClassAndObject(output, object1);
-
-		input = new Input(output.toBytes());
-		Object object2 = kryo.readClassAndObject(input);
-		assertEquals(object1, object2);
 		output.flush();
+
+		// Test input from byte array.
+		input = new Input(output.toBytes());
+		object2 = kryo.readClassAndObject(input);
+		assertEquals(object1, object2);
 		assertEquals("Incorrect length.", length, output.total());
 		assertEquals("Incorrect number of bytes read.", length, input.total());
 		input.rewind();

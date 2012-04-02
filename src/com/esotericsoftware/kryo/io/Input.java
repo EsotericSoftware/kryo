@@ -3,7 +3,6 @@ package com.esotericsoftware.kryo.io;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 
 import com.esotericsoftware.kryo.KryoException;
 
@@ -96,25 +95,39 @@ public class Input extends InputStream {
 		}
 	}
 
-	/** @param required Must have at least this many bytes in buffer.
-	 * @param optional Try to fill at least this many bytes in buffer. */
-	private void require (int required, int optional) throws KryoException {
+	/** @param required Must have at least this many bytes in buffer, else buffer underflow is thrown. May be zero to never throw
+	 *           buffer underflow.
+	 * @param optional Try to fill at least this many bytes in buffer.
+	 * @return -1 if the end of the data is reached and buffer underflow was not thrown, else the number of bytes remaining between
+	 *         required and optional exclusive. */
+	private int require (int required, int optional) throws KryoException {
 		int remaining = limit - position;
-		if (remaining >= optional) return;
-		remaining = Math.max(0, remaining);
+		if (remaining >= optional) return optional;
+		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
+		optional = Math.min(optional, capacity);
+
+		// Compact.
 		System.arraycopy(buffer, position, buffer, 0, remaining);
+		total += position;
+		position = 0;
+
+		boolean eof = false;
 		while (true) {
 			int count = fill(buffer, remaining, capacity - remaining);
 			if (count == -1) {
-				if (remaining >= required) break;
+				// End of data.
+				if (required == 0 || remaining >= required) {
+					eof = true;
+					break;
+				}
 				throw new KryoException("Buffer underflow.");
 			}
 			remaining += count;
+			// Enough has been read.
 			if (remaining >= optional) break;
 		}
 		limit = remaining;
-		total += position;
-		position = 0;
+		return eof ? -1 : Math.min(remaining, optional);
 	}
 
 	// InputStream
@@ -139,7 +152,11 @@ public class Input extends InputStream {
 			if (count == 0) break;
 			offset += copyCount;
 			copyCount = Math.min(count, capacity);
-			require(0, copyCount);
+			if (require(0, copyCount) == -1) {
+				// End of data.
+				if (startingCount == count) return -1;
+				break;
+			}
 			if (position == limit) break;
 		}
 		return startingCount - count;
@@ -259,25 +276,21 @@ public class Input extends InputStream {
 	public String readChars () throws KryoException {
 		int charCount = readInt(true);
 		if (chars.length < charCount) chars = new char[charCount];
-		if (charCount > capacity) return readChars_slow(charCount);
+		if (charCount > require(0, charCount)) return readChars_slow(charCount);
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
-		require(charCount, charCount);
-		int charIndex = 0;
-		while (charIndex < charCount)
+		for (int charIndex = 0; charIndex < charCount;)
 			chars[charIndex++] = (char)(buffer[position++] & 0xFF);
 		return new String(chars, 0, charCount);
 	}
 
 	private String readChars_slow (int charCount) throws KryoException {
 		char[] chars = this.chars;
-		int charsToRead = limit - position;
-		int charIndex = 0;
-		while (charIndex < charCount) {
-			for (int n = charIndex + charsToRead; charIndex < n; charIndex++)
-				chars[charIndex++] = (char)(buffer[position++] & 0xFF);
-			charsToRead = Math.min(charCount - charIndex, capacity);
-			require(charsToRead, charsToRead);
+		byte[] buffer = this.buffer;
+		for (int charIndex = 0; charIndex < charCount;) {
+			int count = require(1, Math.min(charCount - charIndex, capacity));
+			for (int n = charIndex + count; charIndex < n; charIndex++)
+				chars[charIndex] = (char)(buffer[position++] & 0xFF);
 		}
 		return new String(chars, 0, charCount);
 	}
@@ -287,51 +300,50 @@ public class Input extends InputStream {
 		if (chars.length < charCount) chars = new char[charCount];
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
-		require(charCount, charCount);
-		int c = 0, charIndex = 0;
-		while (charIndex < charCount) {
-			c = buffer[position++] & 0xFF;
-			if (c > 127) break;
-			chars[charIndex++] = (char)c;
+		// Try to read 8 bit chars.
+		int charIndex = 0, b;
+		int count = require(0, charCount);
+		while (charIndex < count) {
+			b = buffer[position++] & 0xFF;
+			if (b > 127) {
+				position--;
+				break;
+			}
+			chars[charIndex++] = (char)b;
 		}
-		if (charIndex < charCount) return readString_slow(charCount, charIndex, c);
+		// If buffer couldn't hold all chars or any were not 8 bit, use slow path.
+		if (charIndex < charCount) return readString_slow(charCount, charIndex);
 		return new String(chars, 0, charCount);
 	}
 
-	private String readString_slow (int charCount, int charIndex, int c) throws KryoException {
+	private String readString_slow (int charCount, int charIndex) throws KryoException {
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
-		int charsPerBuffer = capacity / 3;
-		int charsToRead = Math.min(charCount - charIndex, (limit - position) / 3);
-		while (true) {
-			int endIndex = charIndex + charsToRead;
-			while (true) {
-				switch (c >> 4) {
-				case 0:
-				case 1:
-				case 2:
-				case 3:
-				case 4:
-				case 5:
-				case 6:
-				case 7:
-					chars[charIndex] = (char)c;
-					break;
-				case 12:
-				case 13:
-					chars[charIndex] = (char)((c & 0x1F) << 6 | buffer[position++] & 0x3F);
-					break;
-				case 14:
-					chars[charIndex] = (char)((c & 0x0F) << 12 | (buffer[position++] & 0x3F) << 6 | buffer[position++] & 0x3F);
-					break;
-				}
-				if (++charIndex == endIndex) break;
-				c = buffer[position++] & 0xFF;
+		while (charIndex < charCount) {
+			if (position == limit) require(1, charCount - charIndex);
+			int b = buffer[position++] & 0xFF;
+			switch (b >> 4) {
+			case 0:
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+			case 5:
+			case 6:
+			case 7:
+				chars[charIndex] = (char)b;
+				break;
+			case 12:
+			case 13:
+				require(1, 1);
+				chars[charIndex] = (char)((b & 0x1F) << 6 | buffer[position++] & 0x3F);
+				break;
+			case 14:
+				require(2, 2);
+				chars[charIndex] = (char)((b & 0x0F) << 12 | (buffer[position++] & 0x3F) << 6 | buffer[position++] & 0x3F);
+				break;
 			}
-			if (charIndex == charCount) break;
-			charsToRead = Math.min(charCount - charIndex, capacity);
-			require(charsToRead, charsToRead);
-			c = buffer[position++] & 0xFF;
+			charIndex++;
 		}
 		return new String(chars, 0, charCount);
 	}

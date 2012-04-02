@@ -5,6 +5,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
 public class DefaultSerializersTest extends KryoTestCase {
 	public void testBoolean () {
 		roundTrip(2, true);
@@ -95,6 +98,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	public void testString () {
 		kryo.setReferences(true);
 		roundTrip(7, "meow");
+		roundTrip(69, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 
 		kryo.setReferences(false);
 		roundTrip(6, "meow");
@@ -105,6 +109,30 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(99, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
 
 		roundTrip(21, "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u7C9F");
+	}
+
+	public void testChars () {
+		kryo.register(String.class, new Serializer<String>() {
+			public void write (Kryo kryo, Output output, String object) {
+				output.writeChars(object);
+			}
+
+			public String read (Kryo kryo, Input input, Class<String> type) {
+				return input.readChars();
+			}
+		});
+
+		kryo.setReferences(true);
+		roundTrip(7, "meow");
+		roundTrip(69, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+
+		kryo.setReferences(false);
+		roundTrip(6, "meow");
+
+		roundTrip(3, "a");
+		roundTrip(3, "\n");
+		roundTrip(2, "");
+		roundTrip(99, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
 	}
 
 	public void testNull () {
