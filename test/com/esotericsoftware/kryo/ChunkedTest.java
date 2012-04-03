@@ -24,7 +24,7 @@ public class ChunkedTest extends KryoTestCase {
 		output.writeInt(5678);
 		output.close();
 
-		Input input = new Input(output.getBytes());
+		Input input = new Input(output.getBuffer());
 		assertEquals(1234, input.readInt());
 		InputChunked inputChunked = new InputChunked(input);
 		assertEquals(1, inputChunked.readInt());

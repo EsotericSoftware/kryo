@@ -6,27 +6,37 @@ import java.io.OutputStream;
 
 import com.esotericsoftware.kryo.KryoException;
 
-// DataOutputStream, BufferedOutputStream, FilteredOutputStream, ByteArrayOutputStream, stream to ByteBuffer.
+/** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
+ * for efficiently writing primitive types and strings. */
 public class Output extends OutputStream {
 	private final int maxCapacity;
 	private int capacity, position, total;
 	private byte[] buffer;
 	private OutputStream outputStream;
 
+	/** Creates a new Output for writing to a byte array.
+	 * @param bufferSize The initial and maximum size of the buffer. An exception is thrown if this size is exceeded. */
 	public Output (int bufferSize) {
 		this(bufferSize, bufferSize);
 	}
 
+	/** Creates a new Output for writing to a byte array.
+	 * @param bufferSize The initial size of the buffer.
+	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. */
 	public Output (int bufferSize, int maxBufferSize) {
 		this.capacity = bufferSize;
 		this.maxCapacity = maxBufferSize == -1 ? Integer.MAX_VALUE : maxBufferSize;
 		buffer = new byte[bufferSize];
 	}
 
+	/** Creates a new Output for writing to a byte array.
+	 * @param buffer An exception is thrown if more bytes are written than the length of this buffer. */
 	public Output (byte[] buffer) {
 		this(buffer, buffer.length);
 	}
 
+	/** Creates a new Output for writing to a byte array.
+	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. */
 	public Output (byte[] buffer, int maxBufferSize) {
 		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
 		this.buffer = buffer;
@@ -34,12 +44,14 @@ public class Output extends OutputStream {
 		capacity = buffer.length;
 	}
 
+	/** Creates a new Output for writing to an OutputStream. A buffer size of 4096 is used. */
 	public Output (OutputStream outputStream) {
 		this(4096, 4096);
 		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
 		this.outputStream = outputStream;
 	}
 
+	/** Creates a new Output for writing to an OutputStream. */
 	public Output (OutputStream outputStream, int bufferSize) {
 		this(bufferSize, bufferSize);
 		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
@@ -50,6 +62,7 @@ public class Output extends OutputStream {
 		return outputStream;
 	}
 
+	/** Sets a new OutputStream. The position and total are reset, discarding any buffered bytes. */
 	public void setOutputStream (OutputStream outputStream) {
 		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
 		this.outputStream = outputStream;
@@ -57,24 +70,28 @@ public class Output extends OutputStream {
 		total = 0;
 	}
 
-	public byte[] getBytes () {
+	public byte[] getBuffer () {
 		return buffer;
 	}
 
+	/** Returns a new byte array containing the bytes currently in the buffer. */
 	public byte[] toBytes () {
 		byte[] newBuffer = new byte[position];
 		System.arraycopy(buffer, 0, newBuffer, 0, position);
 		return newBuffer;
 	}
 
+	/** Returns the current position in the buffer. This is the number of bytes that have not been flushed. */
 	public int position () {
 		return position;
 	}
 
+	/** Returns the total number of bytes written. This may include bytes that have not been flushed. */
 	public int total () {
 		return total + position;
 	}
 
+	/** Sets the position and total to zero. */
 	public void clear () {
 		position = 0;
 		total = 0;
@@ -83,10 +100,12 @@ public class Output extends OutputStream {
 	/** @return true if the buffer has been resized. */
 	private boolean require (int required) throws KryoException {
 		if (capacity - position >= required) return false;
-		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
+		if (required > maxCapacity)
+			throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
 		flush();
 		while (capacity - position < required) {
-			if (capacity == maxCapacity) throw new KryoException("Buffer overflow.");
+			if (capacity == maxCapacity)
+				throw new KryoException("Buffer overflow. Available: " + (capacity - position) + ", required: " + required);
 			// Grow buffer.
 			capacity = Math.min(capacity * 2, maxCapacity);
 			byte[] newBuffer = new byte[capacity];
@@ -98,6 +117,7 @@ public class Output extends OutputStream {
 
 	// OutputStream
 
+	/** Writes the buffered bytes to the underlying OutputStream, if any. */
 	public void flush () throws KryoException {
 		if (outputStream == null) return;
 		try {
@@ -109,6 +129,7 @@ public class Output extends OutputStream {
 		position = 0;
 	}
 
+	/** Flushes any buffered bytes and closes the underlying OutputStream, if any. */
 	public void close () throws KryoException {
 		flush();
 		if (outputStream != null) {
@@ -119,6 +140,7 @@ public class Output extends OutputStream {
 		}
 	}
 
+	/** Writes a byte. */
 	public void write (int value) throws KryoException {
 		if (position == capacity) require(1);
 		buffer[position++] = (byte)value;
@@ -159,6 +181,7 @@ public class Output extends OutputStream {
 
 	// int
 
+	/** Writes a 4 byte int. */
 	public void writeInt (int value) throws KryoException {
 		require(4);
 		byte[] buffer = this.buffer;
@@ -168,6 +191,9 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
+	/** Writes a 1-5 byte int.
+	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
+	 *           inefficient (5 bytes). */
 	public int writeInt (int value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
 		int length;
@@ -204,6 +230,7 @@ public class Output extends OutputStream {
 
 	// string
 
+	/** Writes the length and string using 1 byte per character. */
 	public void writeChars (String value) throws KryoException {
 		if (value == null) throw new IllegalArgumentException("value cannot be null.");
 		int charCount = value.length();
@@ -230,6 +257,7 @@ public class Output extends OutputStream {
 		}
 	}
 
+	/** Writes the length and string using UTF8. */
 	public void writeString (String value) throws KryoException {
 		if (value == null) throw new IllegalArgumentException("value cannot be null.");
 		int charCount = value.length();
@@ -268,22 +296,30 @@ public class Output extends OutputStream {
 
 	// float
 
+	/** Writes a 4 byte float. */
 	public void writeFloat (float value) throws KryoException {
 		writeInt(Float.floatToIntBits(value));
 	}
 
+	/** Writes a 1-5 byte float with reduced precision.
+	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
+	 *           inefficient (5 bytes). */
 	public int writeFloat (float value, float precision, boolean optimizePositive) throws KryoException {
 		return writeInt((int)(value * precision), optimizePositive);
 	}
 
 	// short
 
+	/** Writes a 2 byte short. */
 	public void writeShort (int value) throws KryoException {
 		require(2);
 		buffer[position++] = (byte)(value >>> 8);
 		buffer[position++] = (byte)value;
 	}
 
+	/** Writes a 1-3 byte short.
+	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
+	 *           inefficient (3 bytes). */
 	public int writeShort (int value, boolean optimizePositive) throws KryoException {
 		if (optimizePositive) {
 			if (value >= 0 && value <= 254) {
@@ -309,6 +345,7 @@ public class Output extends OutputStream {
 
 	// long
 
+	/** Writes an 8 byte long. */
 	public void writeLong (long value) throws KryoException {
 		require(8);
 		byte[] buffer = this.buffer;
@@ -322,6 +359,9 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
+	/** Writes a 1-10 byte long.
+	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
+	 *           inefficient (10 bytes). */
 	public int writeLong (long value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		int length;
@@ -383,6 +423,7 @@ public class Output extends OutputStream {
 
 	// boolean
 
+	/** Writes a 1 byte boolean. */
 	public void writeBoolean (boolean value) throws KryoException {
 		require(1);
 		buffer[position++] = (byte)(value ? 1 : 0);
@@ -390,6 +431,7 @@ public class Output extends OutputStream {
 
 	// char
 
+	/** Writes a 2 byte char. */
 	public void writeChar (char value) throws KryoException {
 		require(2);
 		buffer[position++] = (byte)(value >>> 8);
@@ -398,10 +440,14 @@ public class Output extends OutputStream {
 
 	// double
 
+	/** Writes an 8 byte double. */
 	public void writeDouble (double value) throws KryoException {
 		writeLong(Double.doubleToLongBits(value));
 	}
 
+	/** Writes a 1-10 byte double with reduced precision.
+	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
+	 *           inefficient (10 bytes). */
 	public int writeDouble (double value, double precision, boolean optimizePositive) throws KryoException {
 		return writeLong((long)(value * precision), optimizePositive);
 	}

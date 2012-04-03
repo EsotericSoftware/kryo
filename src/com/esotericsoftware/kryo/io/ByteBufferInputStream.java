@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+/** An InputStream whose source is a {@link ByteBuffer}. */
 public class ByteBufferInputStream extends InputStream {
 	private ByteBuffer byteBuffer;
 

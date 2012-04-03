@@ -42,10 +42,12 @@ import com.esotericsoftware.kryo.util.IntMap;
 import com.esotericsoftware.kryo.util.ObjectIntMap;
 import com.esotericsoftware.kryo.util.ObjectMap;
 
+/** Maps classes to serializers so object graphs can be serialized automatically.
+ * @author Nathan Sweet <misc@n4te.com> */
 public class Kryo {
 	static private final byte NULL = 0;
 	static private final byte NOT_NULL = 1;
-	static private final int NAME = 16383;
+	static public final int NAME = 16383;
 
 	static public boolean isAndroid;
 	static {
@@ -123,46 +125,15 @@ public class Kryo {
 
 	// --- Default serializers ---
 
-	/** Sets the serailzer to use when no serializers added with {@link #addDefaultSerializer(Class, Serializer)} match an object's
-	 * type. Default is {@link FieldSerializer}. */
+	/** Sets the serailzer to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's type.
+	 * Default is {@link FieldSerializer}. */
 	public void setDefaultSerializer (Class<Serializer> serializer) {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		defaultSerializer = serializer;
 	}
 
-	/** Any objects that are of the type or super type of the specified class will use the specified serializer. Note that the order
-	 * default serializers are added is important. The following are defaults:
-	 * <p>
-	 * <table border="1">
-	 * <tr>
-	 * <th>Type</th>
-	 * <th>Serializer</th>
-	 * </tr>
-	 * <tr>
-	 * <td>array (any number of dimensions)</td>
-	 * <td>{@link ArraySerializer}</td>
-	 * </tr>
-	 * <tr>
-	 * <td>{@link Enum}</td>
-	 * <td>{@link EnumSerializer}</td>
-	 * </tr>
-	 * <tr>
-	 * <td>{@link Collection}</td>
-	 * <td>{@link CollectionSerializer}</td>
-	 * </tr>
-	 * <tr>
-	 * <td>{@link Map}</td>
-	 * <td>{@link MapSerializer}</td>
-	 * </tr>
-	 * <tr>
-	 * <td>{@link Serializable}</td>
-	 * <td>{@link SerializableSerializer}</td>
-	 * </tr>
-	 * <tr>
-	 * <td>class with {@link DefaultSerializer} annotation</td>
-	 * <td>serializer specified in annotiation</td>
-	 * </tr>
-	 * </table> */
+	/** Instances of the specified class will use the specified serializer.
+	 * @see #setDefaultSerializer(Class) */
 	public void addDefaultSerializer (Class type, Serializer serializer) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
@@ -172,6 +143,51 @@ public class Kryo {
 		defaultSerializers.add(entry);
 	}
 
+	/** Instances of the specified class will use the specified serializer. Note that the order default serializers are added is
+	 * important for a class with multiple super types registered. Serializer instances are created as needed via
+	 * {@link #newSerializer(Class, Class)}. By default, the following classes have a default serializer set:
+	 * <p>
+	 * <table>
+	 * <tr>
+	 * <td>boolean</td>
+	 * <td>Boolean</td>
+	 * <td>byte</td>
+	 * <td>Byte</td>
+	 * <td>char</td>
+	 * <td>Character</td>
+	 * <tr>
+	 * </tr>
+	 * <td>short</td>
+	 * <td>Short</td>
+	 * <td>int</td>
+	 * <td>Integer</td>
+	 * <td>long</td>
+	 * <td>Long</td>
+	 * <tr>
+	 * </tr>
+	 * <td>float</td>
+	 * <td>Float</td>
+	 * <td>double</td>
+	 * <td>Double</td>
+	 * <td>byte[]</td>
+	 * <td>String</td>
+	 * <tr>
+	 * </tr>
+	 * <td>BigInteger</td>
+	 * <td>BigDecimal</td>
+	 * <td>Class</td>
+	 * <td>Date</td>
+	 * <td>Enum</td>
+	 * <td>Currency</td>
+	 * <tr>
+	 * </tr>
+	 * <td>StringBuffer</td>
+	 * <td>StringBuilder</td>
+	 * <td>Collection</td>
+	 * <td>Map</td>
+	 * <td>Serializable</td>
+	 * </tr>
+	 * </table> */
 	public void addDefaultSerializer (Class type, Class<? extends Serializer> serializerClass) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerClass == null) throw new IllegalArgumentException("serializerClass cannot be null.");
@@ -181,11 +197,10 @@ public class Kryo {
 		defaultSerializers.add(entry);
 	}
 
-	/** Returns the best matching serializer for a class. */
+	/** Returns the best matching serializer for a class. This method can be overridden to implement custom logic to choose a
+	 * serializer. */
 	public Serializer getDefaultSerializer (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-
-		if (type.isArray()) return arraySerializer;
 
 		if (type.isAnnotationPresent(DefaultSerializer.class))
 			return newSerializer(((DefaultSerializer)type.getAnnotation(DefaultSerializer.class)).value(), type);
@@ -197,9 +212,13 @@ public class Kryo {
 				return newSerializer(entry.serializerClass, type);
 			}
 		}
+
+		if (type.isArray()) return arraySerializer;
+
 		return newSerializer(defaultSerializer, type);
 	}
 
+	/** Creates a new instance of the specified serializer for serializing the specified class. Serializers */
 	public Serializer newSerializer (Class<? extends Serializer> serializerClass, Class type) {
 		try {
 			try {
@@ -226,7 +245,8 @@ public class Kryo {
 	/** Registers the class using the next available, lowest integer ID and the {@link #getDefaultSerializer(Class) default
 	 * serializer}. If the class is already registered, the existing entry is updated with the new serializer. Because the ID
 	 * assigned is affected by the IDs registered before it, the order classes are registered is important when using this method.
-	 * Registering a primitive also affects the corresponding primitive wrapper. */
+	 * The order must be the same at deserialization as it was for serialization. Registering a primitive also affects the
+	 * corresponding primitive wrapper. */
 	public Registration register (Class type) {
 		return register(type, getDefaultSerializer(type));
 	}
@@ -234,7 +254,8 @@ public class Kryo {
 	/** Registers the class using the specified ID and the {@link #getDefaultSerializer(Class) default serializer}. If the ID is
 	 * already in use by the same type, the old entry is overwritten. If the ID is already in use by a different type, a
 	 * {@link KryoException} is thrown. IDs are written with {@link Output#writeInt(int, boolean)} called with true, so smaller
-	 * positive integers use fewer bytes. Registering a primitive also affects the corresponding primitive wrapper.
+	 * positive integers use fewer bytes. IDs must be the same at deserialization as they were for serialization. Registering a
+	 * primitive also affects the corresponding primitive wrapper.
 	 * @param id Must not be 0 or {@value #NAME}. */
 	public Registration register (Class type, int id) {
 		return register(type, getDefaultSerializer(type), id);
@@ -242,7 +263,8 @@ public class Kryo {
 
 	/** Registers the class using the next available, lowest integer ID. If the class is already registered, the existing entry is
 	 * updated with the new serializer. Because the ID assigned is affected by the IDs registered before it, the order classes are
-	 * registered is important when using this method. Registering a primitive also affects the corresponding primitive wrapper. */
+	 * registered is important when using this method. The order must be the same at deserialization as it was for serialization.
+	 * Registering a primitive also affects the corresponding primitive wrapper. */
 	public Registration register (Class type, Serializer serializer) {
 		Registration registration = classToRegistration.get(type);
 		if (registration != null) {
@@ -260,8 +282,8 @@ public class Kryo {
 
 	/** Registers the class using the specified ID. If the ID is already in use by the same type, the old entry is overwritten. If
 	 * the ID is already in use by a different type, a {@link KryoException} is thrown. IDs are written with
-	 * {@link Output#writeInt(int, boolean)} called with true, so smaller positive integers use fewer bytes. Registering a
-	 * primitive also affects the corresponding primitive wrapper.
+	 * {@link Output#writeInt(int, boolean)} called with true, so smaller positive integers use fewer bytes. IDs must be the same
+	 * at deserialization as they were for serialization. Registering a primitive also affects the corresponding primitive wrapper.
 	 * @param id Must not be 0 or {@value #NAME}. */
 	public Registration register (Class type, Serializer serializer, int id) {
 		if (id == 0 || id == NAME) throw new IllegalArgumentException("id cannot be 0 or " + NAME);
@@ -276,24 +298,9 @@ public class Kryo {
 		return registration;
 	}
 
-	private Class getWrapperClass (Class type) {
-		if (type == boolean.class)
-			return Boolean.class;
-		else if (type == byte.class)
-			return Byte.class;
-		else if (type == char.class)
-			return Character.class;
-		else if (type == short.class)
-			return Short.class;
-		else if (type == int.class)
-			return Integer.class;
-		else if (type == long.class)
-			return Long.class;
-		else if (type == float.class) //
-			return Float.class;
-		return Double.class;
-	}
-
+	/** Returns the registration for the specified class. If the class is not registered {@link #setRegistrationRequired(boolean)}
+	 * is false, it is automatically registered using the {@link #addDefaultSerializer(Class, Class) default serializer}.
+	 * @throws IllegalArgumentException if the class is not registered and {@link #setRegistrationRequired(boolean)} is true. */
 	public Registration getRegistration (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 
@@ -311,18 +318,16 @@ public class Kryo {
 		return registerInternal(type, getDefaultSerializer(type), NAME);
 	}
 
+	/** Returns the registration for the specified ID, or null if no class is registered with that ID. */
 	public Registration getRegistration (int classID) {
-		Registration registration = idToRegistration.get(classID);
-		if (registration == null) throw new IllegalArgumentException("Class ID is not registered: " + classID);
-		return registration;
+		return idToRegistration.get(classID);
 	}
 
+	/** Returns the serializer for the registration for the specified class.
+	 * @see #getRegistration(Class)
+	 * @see Registration#getSerializer() */
 	public Serializer getSerializer (Class type) {
 		return getRegistration(type).getSerializer();
-	}
-
-	public void setRegistrationRequired (boolean registrationRequired) {
-		this.registrationRequired = registrationRequired;
 	}
 
 	// --- Serialization ---
@@ -370,7 +375,7 @@ public class Kryo {
 		}
 	}
 
-	/** Writes an object using the specified serializer. */
+	/** Writes an object using the specified serializer. The registered serializer is ignored. */
 	public void writeObject (Output output, Object object, Serializer serializer) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
@@ -384,7 +389,7 @@ public class Kryo {
 		}
 	}
 
-	/** Writes an object using the registered serializer.
+	/** Writes an object or null using the registered serializer.
 	 * @param object May be null. */
 	public void writeObjectOrNull (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
@@ -402,7 +407,7 @@ public class Kryo {
 		}
 	}
 
-	/** Writes an object using the specified serializer.
+	/** Writes an object or null using the specified serializer. The registered serializer is ignored.
 	 * @param object May be null. */
 	public void writeObjectOrNull (Output output, Object object, Serializer serializer) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
@@ -421,7 +426,7 @@ public class Kryo {
 		}
 	}
 
-	/** Writes the class and object using the registered serializer.
+	/** Writes the class and object or null using the registered serializer.
 	 * @param object May be null. */
 	public void writeClassAndObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
@@ -484,8 +489,7 @@ public class Kryo {
 		}
 	}
 
-	/** Reads an object using the registered serializer.
-	 * @return May be null. */
+	/** Reads an object using the registered serializer. */
 	public <T> T readObject (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
@@ -506,8 +510,7 @@ public class Kryo {
 		}
 	}
 
-	/** Reads an object using the specified serializer.
-	 * @return May be null. */
+	/** Reads an object using the specified serializer. The registered serializer is ignored. */
 	public <T> T readObject (Input input, Class<T> type, Serializer serializer) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
@@ -529,7 +532,7 @@ public class Kryo {
 		}
 	}
 
-	/** Reads an object using the registered serializer.
+	/** Reads an object or null using the registered serializer.
 	 * @return May be null. */
 	public <T> T readObjectOrNull (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
@@ -553,7 +556,7 @@ public class Kryo {
 		}
 	}
 
-	/** Reads an object using the specified serializer.
+	/** Reads an object or null using the specified serializer. The registered serializer is ignored.
 	 * @return May be null. */
 	public <T> T readObjectOrNull (Input input, Class<T> type, Serializer serializer) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
@@ -578,7 +581,7 @@ public class Kryo {
 		}
 	}
 
-	/** Reads the class and object using the registered serializer.
+	/** Reads the class and object or null using the registered serializer.
 	 * @return May be null. */
 	public Object readClassAndObject (Input input) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
@@ -618,7 +621,7 @@ public class Kryo {
 	}
 
 	/** Called when an object graph has been completely serialized or deserialized, allowing any state only needed per object graph
-	 * to be reset. */
+	 * to be reset. If overridden, the super method must be called. */
 	protected void reset () {
 		depth = 0;
 		if (graphContext != null) graphContext.clear();
@@ -634,25 +637,43 @@ public class Kryo {
 		}
 	}
 
+	/** Sets the classloader to resolve unregistered class names to classes. */
 	public void setClassLoader (ClassLoader classLoader) {
 		if (classLoader == null) throw new IllegalArgumentException("classLoader cannot be null.");
 		this.classLoader = classLoader;
 	}
 
-	/** If true, each appearance of an object in the graph after the first is stored as an integer ordinal. Default is false. */
+	/** If true, an exception is thrown when an unregistered class is encountered. Default is false.
+	 * <p>
+	 * If false, when an unregistered class is encountered, its fully qualified class name will be serialized and the
+	 * {@link #addDefaultSerializer(Class, Class) default serializer} for the class used to serialize the object. Subsequent
+	 * appearances of the class within the same object graph are serialized as an int id.
+	 * <p>
+	 * Registered classes are serialized as an int id, avoiding the overhead of serializing the class name, but have the drawback
+	 * of needing to know the classes to be serialized up front. */
+	public void setRegistrationRequired (boolean registrationRequired) {
+		this.registrationRequired = registrationRequired;
+	}
+
+	/** If true, each appearance of an object in the graph after the first is stored as an integer ordinal. This enables references
+	 * to the same object and cyclic graphs to be serialized, but has the overhead of one byte per object. Default is true. */
 	public void setReferences (boolean references) {
 		this.references = references;
 	}
 
+	/** Sets the serializer to use for arrays. */
 	public void setArraySerializer (ArraySerializer arraySerializer) {
 		this.arraySerializer = arraySerializer;
 	}
 
+	/** Name/value pairs that are available to all serializers. */
 	public ObjectMap getContext () {
 		if (context == null) context = new ObjectMap();
 		return context;
 	}
 
+	/** Name/value pairs that are available to all serializers and are cleared after each object graph is serialized or
+	 * deserialized. */
 	public ObjectMap getGraphContext () {
 		if (graphContext == null) graphContext = new ObjectMap();
 		return graphContext;
@@ -660,6 +681,10 @@ public class Kryo {
 
 	// --- Utility ---
 
+	/** Returns a new instance of the specified class. Generally serializers should call
+	 * {@link Serializer#newInstance(Kryo, Input, Class)} to create an new object instance via reflection, which by default calls
+	 * this method. This allows object creation to be customized per serializer by overridding the serializer method, or globally
+	 * by overridding this method. */
 	public <T> T newInstance (Class<T> type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		try {
@@ -683,11 +708,34 @@ public class Kryo {
 		}
 	}
 
-	/** Returns true if the specified type is final, or if it is an array of a final type. */
+	/** Returns true if the specified type is final, or if it is an array of a final type. Final types can be serialized more
+	 * efficiently because they are non-polymorphic.
+	 * <p>
+	 * This can be overridden to force non-final classes to be treated as final. Eg, if an application uses ArrayList extensively
+	 * but never uses an ArrayList subclass, treating ArrayList as final would allow FieldSerializer to save 1-2 bytes per
+	 * ArrayList field. */
 	public boolean isFinal (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (type.isArray()) return Modifier.isFinal(ArraySerializer.getElementClass(type).getModifiers());
 		return Modifier.isFinal(type.getModifiers());
+	}
+
+	private Class getWrapperClass (Class type) {
+		if (type == boolean.class)
+			return Boolean.class;
+		else if (type == byte.class)
+			return Byte.class;
+		else if (type == char.class)
+			return Character.class;
+		else if (type == short.class)
+			return Short.class;
+		else if (type == int.class)
+			return Integer.class;
+		else if (type == long.class)
+			return Long.class;
+		else if (type == float.class) //
+			return Float.class;
+		return Double.class;
 	}
 
 	static final class InstanceId {

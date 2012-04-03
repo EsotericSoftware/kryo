@@ -196,7 +196,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		output.flush();
 		assertEquals(14, output.total());
 
-		Input input = new Input(output.getBytes());
+		Input input = new Input(output.getBuffer());
 		kryo.readClassAndObject(input);
 
 		try {

@@ -6,42 +6,54 @@ import java.io.InputStream;
 
 import com.esotericsoftware.kryo.KryoException;
 
+/** An InputStream that reads data from a byte array and optionally fills the byte array from another OutputStream as needed.
+ * Utility methods are provided for efficiently reading primitive types and strings. */
 public class Input extends InputStream {
 	private byte[] buffer;
 	private int capacity, position, limit, total;
 	private char[] chars = new char[0];
 	private InputStream inputStream;
 
+	/** Creates a new Input for reading from a byte array.
+	 * @param bufferSize The size of the buffer. An exception is thrown if more bytes than this are read. */
 	public Input (int bufferSize) {
 		this.capacity = bufferSize;
 		buffer = new byte[bufferSize];
 	}
 
-	public Input (byte[] bytes) {
-		setBytes(bytes, 0, bytes.length);
+	/** Creates a new Input for reading from a byte array.
+	 * @param buffer An exception is thrown if more bytes than this are read. */
+	public Input (byte[] buffer) {
+		setBuffer(buffer, 0, buffer.length);
 	}
 
-	public Input (byte[] bytes, int offset, int count) {
-		setBytes(bytes, offset, count);
+	/** Creates a new Input for reading from a byte array.
+	 * @param buffer An exception is thrown if more bytes than this are read. */
+	public Input (byte[] buffer, int offset, int count) {
+		setBuffer(buffer, offset, count);
 	}
 
+	/** Creates a new Input for reading from an InputStream with a buffer size of 4096. */
 	public Input (InputStream inputStream) {
 		this(4096);
 		if (inputStream == null) throw new IllegalArgumentException("inputStream cannot be null.");
 		this.inputStream = inputStream;
 	}
 
+	/** Creates a new Input for reading from an InputStream. */
 	public Input (InputStream inputStream, int bufferSize) {
 		this(bufferSize);
 		if (inputStream == null) throw new IllegalArgumentException("inputStream cannot be null.");
 		this.inputStream = inputStream;
 	}
 
-	public void setBytes (byte[] bytes) {
-		setBytes(bytes, 0, bytes.length);
+	/** Sets a new buffer. The position and total are reset, discarding any buffered bytes. */
+	public void setBuffer (byte[] bytes) {
+		setBuffer(bytes, 0, bytes.length);
 	}
 
-	public void setBytes (byte[] bytes, int offset, int count) {
+	/** Sets a new buffer. The position and total are reset, discarding any buffered bytes. */
+	public void setBuffer (byte[] bytes, int offset, int count) {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		buffer = bytes;
 		position = offset;
@@ -55,6 +67,7 @@ public class Input extends InputStream {
 		return inputStream;
 	}
 
+	/** Sets a new InputStream. The position and total are reset, discarding any buffered bytes. */
 	public void setInputStream (InputStream inputStream) {
 		if (inputStream == null) throw new IllegalArgumentException("inputStream cannot be null.");
 		this.inputStream = inputStream;
@@ -62,19 +75,28 @@ public class Input extends InputStream {
 		rewind();
 	}
 
+	/** Returns the number of bytes read. */
 	public int total () {
 		return total + position;
 	}
 
+	/** Returns the current position in the buffer. */
+	public int position () {
+		return position;
+	}
+
+	/** Sets the current position in the buffer. */
 	public void setPosition (int position) {
 		this.position = position;
 	}
 
+	/** Sets the position and total to zero. */
 	public void rewind () {
 		position = 0;
 		total = 0;
 	}
 
+	/** Discards the specified number of bytes. */
 	public void skip (int count) throws KryoException {
 		int skipCount = Math.min(limit - position, count);
 		while (true) {
@@ -86,6 +108,7 @@ public class Input extends InputStream {
 		}
 	}
 
+	/** Fills the buffer with more bytes. Can be overridden to fill the bytes from a source other than the InputStream. */
 	protected int fill (byte[] buffer, int offset, int count) throws KryoException {
 		if (inputStream == null) return -1;
 		try {
@@ -132,6 +155,7 @@ public class Input extends InputStream {
 
 	// InputStream
 
+	/** Reads a byte. */
 	public int read () throws KryoException {
 		require(1, 1);
 		return buffer[position++];
@@ -162,6 +186,7 @@ public class Input extends InputStream {
 		return startingCount - count;
 	}
 
+	/** Discards the specified number of bytes. */
 	public long skip (long count) throws KryoException {
 		long remaining = count;
 		while (remaining > 0) {
@@ -172,6 +197,7 @@ public class Input extends InputStream {
 		return count;
 	}
 
+	/** Closes the underlying InputStream, if any. */
 	public void close () throws KryoException {
 		if (inputStream != null) {
 			try {
@@ -188,6 +214,7 @@ public class Input extends InputStream {
 		return buffer[position++];
 	}
 
+	/** Reads a byte as an int from 0 to 255. */
 	public int readByteUnsigned () throws KryoException {
 		require(1, 1);
 		return buffer[position++] & 0xFF;
@@ -219,6 +246,7 @@ public class Input extends InputStream {
 
 	// int
 
+	/** Reads a 4 byte int. */
 	public int readInt () throws KryoException {
 		require(4, 4);
 		byte[] buffer = this.buffer;
@@ -228,6 +256,7 @@ public class Input extends InputStream {
 			| buffer[position++] & 0xFF;
 	}
 
+	/** Reads a 1-5 byte int. */
 	public int readInt (boolean optimizePositive) throws KryoException {
 		require(1, 5);
 		int b = buffer[position++];
@@ -255,6 +284,7 @@ public class Input extends InputStream {
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
+	/** Returns true if enough bytes are available to read an int with {@link #readInt(boolean)}. */
 	public boolean canReadInt () throws KryoException {
 		if (limit - position >= 5) return true;
 		require(0, 4);
@@ -273,6 +303,7 @@ public class Input extends InputStream {
 
 	// string
 
+	/** Reads the length and string of 8 bit characters. */
 	public String readChars () throws KryoException {
 		int charCount = readInt(true);
 		if (chars.length < charCount) chars = new char[charCount];
@@ -295,6 +326,7 @@ public class Input extends InputStream {
 		return new String(chars, 0, charCount);
 	}
 
+	/** Reads the length and string of UTF8 characters. */
 	public String readString () throws KryoException {
 		int charCount = readInt(true);
 		if (chars.length < charCount) chars = new char[charCount];
@@ -350,25 +382,30 @@ public class Input extends InputStream {
 
 	// float
 
+	/** Reads a 4 byte float. */
 	public float readFloat () throws KryoException {
 		return Float.intBitsToFloat(readInt());
 	}
 
+	/** Reads a 1-5 byte float with reduced precision. */
 	public float readFloat (float precision, boolean optimizePositive) throws KryoException {
 		return readInt(optimizePositive) / (float)precision;
 	}
 
 	// short
 
+	/** Reads a 2 byte short. */
 	public short readShort () throws KryoException {
 		require(2, 2);
 		return (short)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF));
 	}
 
+	/** Reads a 2 byte short as an int from 0 to 65535. */
 	public int readShortUnsigned () throws KryoException {
 		return ((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF);
 	}
 
+	/** Reads a 1-3 byte short. */
 	public short readShort (boolean optimizePositive) throws KryoException {
 		require(1, 3);
 		byte value = buffer[position++];
@@ -386,6 +423,7 @@ public class Input extends InputStream {
 
 	// long
 
+	/** Reads an 8 byte long. */
 	public long readLong () throws KryoException {
 		require(8, 8);
 		byte[] buffer = this.buffer;
@@ -400,6 +438,7 @@ public class Input extends InputStream {
 
 	}
 
+	/** Reads a 1-10 byte long. */
 	public long readLong (boolean optimizePositive) throws KryoException {
 		byte[] buffer = this.buffer;
 		require(1, 10);
@@ -451,6 +490,7 @@ public class Input extends InputStream {
 
 	// boolean
 
+	/** Reads a 1 byte boolean. */
 	public boolean readBoolean () throws KryoException {
 		require(1, 1);
 		return buffer[position++] == 1;
@@ -458,6 +498,7 @@ public class Input extends InputStream {
 
 	// char
 
+	/** Reads a 2 byte char. */
 	public char readChar () throws KryoException {
 		require(2, 2);
 		return (char)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF));
@@ -465,10 +506,12 @@ public class Input extends InputStream {
 
 	// double
 
+	/** Reads an 8 bytes double. */
 	public double readDouble () throws KryoException {
 		return Double.longBitsToDouble(readLong());
 	}
 
+	/** Reads a 1-10 byte double with reduced precision. */
 	public double readDouble (double precision, boolean optimizePositive) throws KryoException {
 		return readLong(optimizePositive) / (double)precision;
 	}

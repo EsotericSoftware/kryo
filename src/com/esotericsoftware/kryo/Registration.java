@@ -1,7 +1,7 @@
 
 package com.esotericsoftware.kryo;
 
-/** Describes the {@link Serializer} to use for a class. */
+/** Describes the {@link Serializer} and class ID to use for a class. */
 public class Registration {
 	private final Class type;
 	private final int id;
@@ -17,6 +17,8 @@ public class Registration {
 		return type;
 	}
 
+	/** Returns the registered class ID. Will be {@link Kryo#NAME} if the class was registered automatically.
+	 * @see Kryo#register(Class) */
 	public int getId () {
 		return id;
 	}

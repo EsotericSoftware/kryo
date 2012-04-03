@@ -6,17 +6,21 @@ import java.io.InputStream;
 
 import com.esotericsoftware.kryo.KryoException;
 
+/** An InputStream that reads lengths and chunks of data from another OutputStream, allowing chunks to be skipped. */
 public class InputChunked extends Input {
 	private int chunkSize = -1;
 
+	/** Creates an uninitialized InputChunked with a buffer size of 1024. The InputStream must be set before it can be used. */
 	public InputChunked () {
 		super(1024);
 	}
 
+	/** Creates an uninitialized InputChunked. The InputStream must be set before it can be used. */
 	public InputChunked (int bufferSize) {
 		super(bufferSize);
 	}
 
+	/** Creates an InputChunked with a buffer size of 1024. */
 	public InputChunked (InputStream inputStream) {
 		super(inputStream);
 	}
@@ -54,6 +58,8 @@ public class InputChunked extends Input {
 		throw new KryoException("Malformed integer.");
 	}
 
+	/** Advances the stream to the next set of chunks. InputChunked will appear to hit the end of the data until this method is
+	 * called. */
 	public void nextChunks () {
 		if (chunkSize == -1) readChunkSize(); // No current chunk, expect a new chunk.
 		while (chunkSize > 0)
