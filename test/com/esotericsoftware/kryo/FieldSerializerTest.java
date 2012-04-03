@@ -1,10 +1,6 @@
 
 package com.esotericsoftware.kryo;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.NotNull;
-import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
@@ -73,6 +69,73 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(203, test);
 		test.hasStringField = null;
 		roundTrip(200, test);
+
+		test = new DefaultTypes();
+		test.booleanField = true;
+		test.byteField = 123;
+		test.charField = 1234;
+		test.shortField = 12345;
+		test.intField = 123456;
+		test.longField = 123456789;
+		test.floatField = 123.456f;
+		test.doubleField = 1.23456d;
+		test.BooleanField = true;
+		test.ByteField = -12;
+		test.CharacterField = 123;
+		test.ShortField = -12345;
+		test.IntegerField = -123456;
+		test.LongField = -123456789l;
+		test.FloatField = -123.3f;
+		test.DoubleField = -0.121231d;
+		test.StringField = "stringvalue";
+		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
+
+		kryo = new Kryo();
+		roundTrip(154, test);
+
+		C c = new C();
+		c.a = new A();
+		c.a.value = 123;
+		c.a.b = new B();
+		c.a.b.value = 456;
+		c.d = new D();
+		c.d.e = new E();
+		c.d.e.f = new F();
+		roundTrip(74, c);
+	}
+
+	public void testReferences () {
+		C c = new C();
+		c.a = new A();
+		c.a.value = 123;
+		c.a.b = new B();
+		c.a.b.value = 456;
+		c.d = new D();
+		c.d.e = new E();
+		c.d.e.f = new F();
+		c.d.e.f.a = c.a;
+
+		kryo = new Kryo();
+		roundTrip(75, c);
+		C c2 = (C)object2;
+		assertTrue(c2.a == c2.d.e.f.a);
+
+		// Test reset clears unregistered class names.
+		roundTrip(75, c);
+		c2 = (C)object2;
+		assertTrue(c2.a == c2.d.e.f.a);
+
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(true);
+		kryo.register(A.class);
+		kryo.register(B.class);
+		kryo.register(C.class);
+		kryo.register(D.class);
+		kryo.register(E.class);
+		kryo.register(F.class);
+		roundTrip(25, c);
+		c2 = (C)object2;
+		assertTrue(c2.a == c2.d.e.f.a);
 	}
 
 	public void testRegistrationOrder () {
@@ -131,7 +194,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		output.clear();
 		kryo.writeClassAndObject(output, c);
 		output.flush();
-		assertEquals(13, output.total());
+		assertEquals(14, output.total());
 
 		Input input = new Input(output.getBytes());
 		kryo.readClassAndObject(input);
@@ -303,19 +366,66 @@ public class FieldSerializerTest extends KryoTestCase {
 	static public final class C {
 		public A a;
 		public D d;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			C other = (C)obj;
+			if (a == null) {
+				if (other.a != null) return false;
+			} else if (!a.equals(other.a)) return false;
+			if (d == null) {
+				if (other.d != null) return false;
+			} else if (!d.equals(other.d)) return false;
+			return true;
+		}
 	}
 
 	static public final class D {
 		public E e;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			D other = (D)obj;
+			if (e == null) {
+				if (other.e != null) return false;
+			} else if (!e.equals(other.e)) return false;
+			return true;
+		}
 	}
 
 	static public final class E {
 		public F f;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			E other = (E)obj;
+			if (f == null) {
+				if (other.f != null) return false;
+			} else if (!f.equals(other.f)) return false;
+			return true;
+		}
 	}
 
 	static public final class F {
 		public int value;
 		public final int finalValue = 12;
+		public A a;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			F other = (F)obj;
+			if (finalValue != other.finalValue) return false;
+			if (value != other.value) return false;
+			return true;
+		}
 	}
 
 	static public class SimpleNoDefaultConstructor {

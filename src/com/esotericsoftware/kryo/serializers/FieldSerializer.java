@@ -196,10 +196,9 @@ public class FieldSerializer extends Serializer {
 				Serializer serializer = cachedField.serializer;
 				if (concreteType == null) {
 					Registration registration = kryo.readClass(input);
-					if (registration != null) {
-						concreteType = registration.getType();
+					if (registration != null) { // Else value is null.
 						if (serializer == null) serializer = registration.getSerializer();
-						value = kryo.readObject(input, concreteType, serializer);
+						value = kryo.readObject(input, registration.getType(), serializer);
 					}
 				} else {
 					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(concreteType);
