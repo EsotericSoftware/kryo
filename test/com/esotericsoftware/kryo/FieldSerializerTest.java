@@ -4,6 +4,7 @@ package com.esotericsoftware.kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 
 public class FieldSerializerTest extends KryoTestCase {
 	public void testDefaultTypes () {
@@ -243,6 +244,19 @@ public class FieldSerializerTest extends KryoTestCase {
 		HasNonNull nonNullValue = new HasNonNull();
 		nonNullValue.nonNullText = "moo";
 		roundTrip(5, nonNullValue);
+	}
+
+	public void testDefaultSerializerAnnotation () {
+		kryo = new Kryo();
+		roundTrip(82, new HasDefaultSerializerAnnotation(123));
+	}
+
+	public void testOptionalAnnotation () {
+		kryo = new Kryo();
+		roundTrip(72, new HasOptionalAnnotation());
+		kryo = new Kryo();
+		kryo.getContext().put("smurf", null);
+		roundTrip(74, new HasOptionalAnnotation());
 	}
 
 	static public class DefaultTypes {
@@ -516,6 +530,47 @@ public class FieldSerializerTest extends KryoTestCase {
 				if (other.text != null) return false;
 			} else if (!text.equals(other.text)) return false;
 			return true;
+		}
+	}
+
+	static public class HasOptionalAnnotation {
+		@Optional("smurf") int moo;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			HasOptionalAnnotation other = (HasOptionalAnnotation)obj;
+			if (moo != other.moo) return false;
+			return true;
+		}
+	}
+
+	@DefaultSerializer(HasDefaultSerializerAnnotationSerializer.class)
+	static public class HasDefaultSerializerAnnotation {
+		long time;
+
+		public HasDefaultSerializerAnnotation (long time) {
+			this.time = time;
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			HasDefaultSerializerAnnotation other = (HasDefaultSerializerAnnotation)obj;
+			if (time != other.time) return false;
+			return true;
+		}
+	}
+
+	static public class HasDefaultSerializerAnnotationSerializer extends Serializer {
+		public void write (Kryo kryo, Output output, Object object) {
+			output.writeLong(((HasDefaultSerializerAnnotation)object).time, true);
+		}
+
+		public Object read (Kryo kryo, Input input, Class type) {
+			return new HasDefaultSerializerAnnotation(input.readLong(true));
 		}
 	}
 }

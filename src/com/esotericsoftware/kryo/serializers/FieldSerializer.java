@@ -1,6 +1,10 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.security.AccessControlException;
@@ -13,16 +17,18 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.Serializable;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 import static com.esotericsoftware.minlog.Log.*;
 
 /** Serializes objects using direct field assignment. This is a very fast mechanism for serializing objects, often as good as
- * {@link CustomSerialization}. FieldSerializer is many times smaller and faster than Java serialization. The fields should be
- * public for optimal performance, which allows bytecode generation to be used instead of reflection.
+ * {@link Serializable}. FieldSerializer is many times smaller and faster than Java serialization. The fields should be public for
+ * optimal performance, which allows bytecode generation to be used instead of reflection.
  * <p>
  * FieldSerializer does not write header data, only the object data is stored. If the type of a field is not final (note
  * primitives are final) then an extra byte is written for that field.
@@ -57,6 +63,7 @@ public class FieldSerializer extends Serializer {
 			nextClass = nextClass.getSuperclass();
 		}
 
+		ObjectMap context = kryo.getContext();
 		ArrayList<CachedField> asmFields = new ArrayList();
 		PriorityQueue<CachedField> cachedFields = new PriorityQueue(Math.max(1, allFields.size()), new Comparator<CachedField>() {
 			public int compare (CachedField o1, CachedField o2) {
@@ -80,6 +87,9 @@ public class FieldSerializer extends Serializer {
 					continue;
 				}
 			}
+
+			Optional optional = field.getAnnotation(Optional.class);
+			if (optional != null && !context.containsKey(optional.value())) continue;
 
 			Class fieldClass = field.getType();
 
@@ -296,5 +306,16 @@ public class FieldSerializer extends Serializer {
 			else
 				field.set(object, value);
 		}
+	}
+
+	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
+	 * a value set for specified key. This can be useful to useful when a field must be serialized for one purpose, but not for
+	 * another. Eg, a class for a networked application might have a field that should not be serialized and sent to clients, but
+	 * should be serialized when stored on the server.
+	 * @author Nathan Sweet <misc@n4te.com> */
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.FIELD)
+	static public @interface Optional {
+		public String value();
 	}
 }

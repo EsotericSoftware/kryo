@@ -9,6 +9,7 @@ import java.nio.BufferOverflowException;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Serializable;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -19,7 +20,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * possible.
  * @see Serializer
  * @see FieldSerializer
- * @see CustomSerialization
+ * @see Serializable
  * @author Nathan Sweet <misc@n4te.com> */
 public class JavaSerializer extends Serializer {
 	public void write (Kryo kryo, Output output, Object object) {
