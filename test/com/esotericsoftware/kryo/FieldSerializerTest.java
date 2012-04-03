@@ -9,7 +9,6 @@ public class FieldSerializerTest extends KryoTestCase {
 	public void testDefaultTypes () {
 		kryo.register(DefaultTypes.class);
 		kryo.register(byte[].class);
-		// kryo.setRegistrationRequired(true);
 		DefaultTypes test = new DefaultTypes();
 		test.booleanField = true;
 		test.byteField = 123;
