@@ -64,6 +64,7 @@ public class FieldSerializer extends Serializer {
 		}
 
 		ObjectMap context = kryo.getContext();
+
 		ArrayList<CachedField> asmFields = new ArrayList();
 		PriorityQueue<CachedField> cachedFields = new PriorityQueue(Math.max(1, allFields.size()), new Comparator<CachedField>() {
 			public int compare (CachedField o1, CachedField o2) {

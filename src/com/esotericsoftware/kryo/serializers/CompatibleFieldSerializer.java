@@ -18,6 +18,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
@@ -58,6 +59,8 @@ public class CompatibleFieldSerializer extends Serializer {
 			nextClass = nextClass.getSuperclass();
 		}
 
+		ObjectMap context = kryo.getContext();
+
 		ArrayList<CachedField> publicFields = new ArrayList();
 		PriorityQueue<CachedField> cachedFields = new PriorityQueue(Math.max(1, allFields.size()), new Comparator<CachedField>() {
 			public int compare (CachedField o1, CachedField o2) {
@@ -81,6 +84,9 @@ public class CompatibleFieldSerializer extends Serializer {
 					continue;
 				}
 			}
+
+			Optional optional = field.getAnnotation(Optional.class);
+			if (optional != null && !context.containsKey(optional.value())) continue;
 
 			Class fieldClass = field.getType();
 
