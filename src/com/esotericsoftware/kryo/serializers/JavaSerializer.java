@@ -22,7 +22,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * @see FieldSerializer
  * @see Serializable
  * @author Nathan Sweet <misc@n4te.com> */
-public class JavaSerializer extends Serializer {
+public class JavaSerializer implements Serializer {
 	public void write (Kryo kryo, Output output, Object object) {
 		try {
 			ByteArrayOutputStream byteStream = new ByteArrayOutputStream(256);

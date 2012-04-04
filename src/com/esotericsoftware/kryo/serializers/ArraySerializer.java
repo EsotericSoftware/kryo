@@ -17,7 +17,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * array type is not final then an extra byte is written for each element.
  * @see Kryo#register(Class, Serializer)
  * @author Nathan Sweet <misc@n4te.com> */
-public class ArraySerializer extends Serializer {
+public class ArraySerializer implements Serializer {
 	private Integer fixedDimensionCount;
 	private boolean elementsAreSameType;
 	private boolean elementsCanBeNull = true;
@@ -143,8 +143,8 @@ public class ArraySerializer extends Serializer {
 		return array;
 	}
 
-	private void readArray (Kryo kryo, Input input, Object array, int length, Serializer elementSerializer,
-		Class elementClass, int dimension, int[] dimensions, boolean elementsCanBeNull) {
+	private void readArray (Kryo kryo, Input input, Object array, int length, Serializer elementSerializer, Class elementClass,
+		int dimension, int[] dimensions, boolean elementsCanBeNull) {
 		boolean elementsAreArrays = dimension < dimensions.length - 1;
 		for (int i = 0; i < length; i++) {
 			if (elementsAreArrays) {

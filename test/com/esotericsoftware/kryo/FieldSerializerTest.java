@@ -66,9 +66,9 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.hasStringField = new HasStringField();
 		test.child = new DefaultTypes();
 		test.child.hasStringField = new HasStringField();
-		roundTrip(203, test);
+		roundTrip(199, test);
 		test.hasStringField = null;
-		roundTrip(200, test);
+		roundTrip(197, test);
 
 		test = new DefaultTypes();
 		test.booleanField = true;
@@ -91,7 +91,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
 
 		kryo = new Kryo();
-		roundTrip(153, test);
+		roundTrip(152, test);
 
 		C c = new C();
 		c.a = new A();
@@ -101,7 +101,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d = new D();
 		c.d.e = new E();
 		c.d.e.f = new F();
-		roundTrip(74, c);
+		roundTrip(73, c);
 	}
 
 	public void testReferences () {
@@ -116,12 +116,12 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d.e.f.a = c.a;
 
 		kryo = new Kryo();
-		roundTrip(75, c);
+		roundTrip(74, c);
 		C c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
 
 		// Test reset clears unregistered class names.
-		roundTrip(75, c);
+		roundTrip(74, c);
 		c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
 
@@ -248,15 +248,15 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	public void testDefaultSerializerAnnotation () {
 		kryo = new Kryo();
-		roundTrip(82, new HasDefaultSerializerAnnotation(123));
+		roundTrip(81, new HasDefaultSerializerAnnotation(123));
 	}
 
 	public void testOptionalAnnotation () {
 		kryo = new Kryo();
-		roundTrip(72, new HasOptionalAnnotation());
+		roundTrip(71, new HasOptionalAnnotation());
 		kryo = new Kryo();
 		kryo.getContext().put("smurf", null);
-		roundTrip(74, new HasOptionalAnnotation());
+		roundTrip(73, new HasOptionalAnnotation());
 	}
 
 	static public class DefaultTypes {
@@ -564,7 +564,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class HasDefaultSerializerAnnotationSerializer extends Serializer {
+	static public class HasDefaultSerializerAnnotationSerializer implements Serializer {
 		public void write (Kryo kryo, Output output, Object object) {
 			output.writeLong(((HasDefaultSerializerAnnotation)object).time, true);
 		}

@@ -16,7 +16,7 @@ import com.esotericsoftware.kryo.io.Output;
 
 /** Encrypts data using the blowfish cipher.
  * @author Nathan Sweet <misc@n4te.com> */
-public class BlowfishSerializer extends Serializer {
+public class BlowfishSerializer implements Serializer {
 	private final Serializer serializer;
 	static private SecretKeySpec keySpec;
 

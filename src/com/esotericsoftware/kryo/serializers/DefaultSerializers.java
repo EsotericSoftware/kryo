@@ -16,7 +16,7 @@ import com.esotericsoftware.kryo.io.Output;
 import static com.esotericsoftware.minlog.Log.*;
 
 public class DefaultSerializers {
-	static public class BooleanSerializer extends Serializer<Boolean> {
+	static public class BooleanSerializer implements Serializer<Boolean> {
 		public void write (Kryo kryo, Output output, Boolean object) {
 			output.writeBoolean(object);
 		}
@@ -26,7 +26,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class ByteSerializer extends Serializer<Byte> {
+	static public class ByteSerializer implements Serializer<Byte> {
 		public void write (Kryo kryo, Output output, Byte object) {
 			output.writeByte(object);
 		}
@@ -36,7 +36,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class CharSerializer extends Serializer<Character> {
+	static public class CharSerializer implements Serializer<Character> {
 		public void write (Kryo kryo, Output output, Character object) {
 			output.writeChar(object);
 		}
@@ -46,7 +46,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class ShortSerializer extends Serializer<Short> {
+	static public class ShortSerializer implements Serializer<Short> {
 		public void write (Kryo kryo, Output output, Short object) {
 			output.writeShort(object);
 		}
@@ -56,7 +56,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class IntSerializer extends Serializer<Integer> {
+	static public class IntSerializer implements Serializer<Integer> {
 		public void write (Kryo kryo, Output output, Integer object) {
 			output.writeInt(object, false);
 		}
@@ -66,7 +66,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class LongSerializer extends Serializer<Long> {
+	static public class LongSerializer implements Serializer<Long> {
 		public void write (Kryo kryo, Output output, Long object) {
 			output.writeLong(object, false);
 		}
@@ -76,7 +76,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class FloatSerializer extends Serializer<Float> {
+	static public class FloatSerializer implements Serializer<Float> {
 		public void write (Kryo kryo, Output output, Float object) {
 			output.writeFloat(object);
 		}
@@ -86,7 +86,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class DoubleSerializer extends Serializer<Double> {
+	static public class DoubleSerializer implements Serializer<Double> {
 		public void write (Kryo kryo, Output output, Double object) {
 			output.writeDouble(object);
 		}
@@ -96,7 +96,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class StringSerializer extends Serializer<String> {
+	static public class StringSerializer implements Serializer<String> {
 		public void write (Kryo kryo, Output output, String object) {
 			output.writeString(object);
 		}
@@ -106,7 +106,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class ByteArraySerializer extends Serializer<byte[]> {
+	static public class ByteArraySerializer implements Serializer<byte[]> {
 		public void write (Kryo kryo, Output output, byte[] object) {
 			output.writeInt(object.length, true);
 			output.writeBytes(object);
@@ -117,7 +117,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class BigIntegerSerializer extends Serializer<BigInteger> {
+	static public class BigIntegerSerializer implements Serializer<BigInteger> {
 		public void write (Kryo kryo, Output output, BigInteger object) {
 			BigInteger value = (BigInteger)object;
 			byte[] bytes = value.toByteArray();
@@ -135,7 +135,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class BigDecimalSerializer extends Serializer<BigDecimal> {
+	static public class BigDecimalSerializer implements Serializer<BigDecimal> {
 		private BigIntegerSerializer bigIntegerSerializer = new BigIntegerSerializer();
 
 		public void write (Kryo kryo, Output output, BigDecimal object) {
@@ -154,7 +154,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class ClassSerializer extends Serializer<Class> {
+	static public class ClassSerializer implements Serializer<Class> {
 		public void write (Kryo kryo, Output output, Class object) {
 			kryo.writeClass(output, object);
 		}
@@ -164,9 +164,9 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class DateSerializer extends Serializer<Date> {
+	static public class DateSerializer implements Serializer<Date> {
 		public void write (Kryo kryo, Output output, Date object) {
-			output.writeLong(((Date)object).getTime(), true);
+			output.writeLong(object.getTime(), true);
 			if (TRACE) trace("kryo", "Wrote date: " + object);
 		}
 
@@ -177,7 +177,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class EnumSerializer extends Serializer<Enum> {
+	static public class EnumSerializer implements Serializer<Enum> {
 		private Object[] enumConstants;
 
 		public EnumSerializer (Kryo kryo, Class<? extends Enum> type) {
@@ -201,7 +201,7 @@ public class DefaultSerializers {
 	}
 
 	/** @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	public class CurrencySerializer extends Serializer<Currency> {
+	public class CurrencySerializer implements Serializer<Currency> {
 		public void write (Kryo kryo, Output output, Currency object) {
 			output.writeString(object.getCurrencyCode());
 		}
@@ -212,7 +212,7 @@ public class DefaultSerializers {
 	}
 
 	/** @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	public class StringBufferSerializer extends Serializer<StringBuffer> {
+	public class StringBufferSerializer implements Serializer<StringBuffer> {
 		public void write (Kryo kryo, Output output, StringBuffer object) {
 			output.writeString(object.toString());
 		}
@@ -223,7 +223,7 @@ public class DefaultSerializers {
 	}
 
 	/** @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	public class StringBuilderSerializer extends Serializer<StringBuilder> {
+	public class StringBuilderSerializer implements Serializer<StringBuilder> {
 		public void write (Kryo kryo, Output output, StringBuilder object) {
 			output.writeString(object.toString());
 		}
@@ -233,7 +233,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	public class SerializableSerializer extends Serializer<Serializable> {
+	public class SerializableSerializer implements Serializer<Serializable> {
 		public void write (Kryo kryo, Output output, Serializable object) {
 			object.write(kryo, output);
 		}
@@ -242,6 +242,12 @@ public class DefaultSerializers {
 			Serializable object = newInstance(kryo, input, type);
 			object.read(kryo, input);
 			return object;
+		}
+
+		/** Instance creation can be customized by overridding this method. The default implementaion calls
+		 * {@link Kryo#newInstance(Class)}. */
+		public <T> T newInstance (Kryo kryo, Input input, Class<T> type) {
+			return kryo.newInstance(type);
 		}
 	}
 }

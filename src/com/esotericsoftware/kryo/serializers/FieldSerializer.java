@@ -35,7 +35,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
  * @author Nathan Sweet <misc@n4te.com> */
-public class FieldSerializer extends Serializer {
+public class FieldSerializer implements Serializer {
 	private final Class type;
 	private final Kryo kryo;
 	private CachedField[] fields;
@@ -259,6 +259,12 @@ public class FieldSerializer extends Serializer {
 
 	public CachedField[] getFields () {
 		return fields;
+	}
+
+	/** Instance creation can be customized by overridding this method. The default implementaion calls
+	 * {@link Kryo#newInstance(Class)}. */
+	public <T> T newInstance (Kryo kryo, Input input, Class<T> type) {
+		return kryo.newInstance(type);
 	}
 
 	/** Controls how a field will be serialized. */

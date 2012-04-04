@@ -16,7 +16,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * <p>
  * With the default constructor, a map requires a 1-3 byte header and an extra 4 bytes is written for each key/value pair.
  * @author Nathan Sweet <misc@n4te.com> */
-public class MapSerializer extends Serializer<Map> {
+public class MapSerializer implements Serializer<Map> {
 	private final Kryo kryo;
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
@@ -117,5 +117,11 @@ public class MapSerializer extends Serializer<Map> {
 		}
 		if (TRACE) trace("kryo", "Read map: " + map);
 		return map;
+	}
+
+	/** Instance creation can be customized by overridding this method. The default implementaion calls
+	 * {@link Kryo#newInstance(Class)}. */
+	public <T> T newInstance (Kryo kryo, Input input, Class<T> type) {
+		return kryo.newInstance(type);
 	}
 }

@@ -29,7 +29,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
  * @author Nathan Sweet <misc@n4te.com> */
-public class BeanSerializer extends Serializer {
+public class BeanSerializer implements Serializer {
 	static final Object[] noArgs = {};
 
 	private final Kryo kryo;
@@ -145,6 +145,12 @@ public class BeanSerializer extends Serializer {
 		}
 		if (TRACE) trace("kryo", "Read bean: " + object);
 		return object;
+	}
+
+	/** Instance creation can be customized by overridding this method. The default implementaion calls
+	 * {@link Kryo#newInstance(Class)}. */
+	public <T> T newInstance (Kryo kryo, Input input, Class<T> type) {
+		return kryo.newInstance(type);
 	}
 
 	class CachedProperty {

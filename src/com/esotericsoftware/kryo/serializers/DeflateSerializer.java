@@ -15,7 +15,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-public class DeflateSerializer extends Serializer {
+public class DeflateSerializer implements Serializer {
 	private final Serializer serializer;
 	private boolean noHeaders = true;
 	private int compressionLevel = 6;

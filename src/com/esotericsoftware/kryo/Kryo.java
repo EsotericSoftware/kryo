@@ -47,7 +47,7 @@ import com.esotericsoftware.kryo.util.ObjectMap;
 public class Kryo {
 	static private final byte NULL = 0;
 	static private final byte NOT_NULL = 1;
-	static public final int NAME = 16383;
+	static public final byte NAME = -1;
 
 	static public boolean isAndroid;
 	static {
@@ -256,7 +256,7 @@ public class Kryo {
 	 * {@link KryoException} is thrown. IDs are written with {@link Output#writeInt(int, boolean)} called with true, so smaller
 	 * positive integers use fewer bytes. IDs must be the same at deserialization as they were for serialization. Registering a
 	 * primitive also affects the corresponding primitive wrapper.
-	 * @param id Must not be 0 or {@value #NAME}. */
+	 * @param id Must not be -1 or -2. */
 	public Registration register (Class type, int id) {
 		return register(type, getDefaultSerializer(type), id);
 	}
@@ -274,7 +274,7 @@ public class Kryo {
 		int id;
 		while (true) {
 			id = nextID++;
-			if (nextID == NAME) nextID++;
+			if (nextID == -2) nextID = 0; // Disallow -1 and -2, which are used for NAME and NULL (stored as id + 2 == 1 and 0).
 			if (!idToRegistration.containsKey(id)) break;
 		}
 		return registerInternal(type, serializer, id);
@@ -284,9 +284,9 @@ public class Kryo {
 	 * the ID is already in use by a different type, a {@link KryoException} is thrown. IDs are written with
 	 * {@link Output#writeInt(int, boolean)} called with true, so smaller positive integers use fewer bytes. IDs must be the same
 	 * at deserialization as they were for serialization. Registering a primitive also affects the corresponding primitive wrapper.
-	 * @param id Must not be 0 or {@value #NAME}. */
+	 * @param id Must not be -1 or -2. */
 	public Registration register (Class type, Serializer serializer, int id) {
-		if (id == 0 || id == NAME) throw new IllegalArgumentException("id cannot be 0 or " + NAME);
+		if (id == -1 || id == -2) throw new IllegalArgumentException("id cannot be -1 or -2");
 		return registerInternal(type, serializer, id);
 	}
 
@@ -343,8 +343,8 @@ public class Kryo {
 				return null;
 			}
 			Registration registration = getRegistration(type);
-			output.writeInt(registration.getId(), true);
 			if (registration.getId() == NAME) {
+				output.writeByte(NAME + 2);
 				int nameId = classToNameId.get(type, -1);
 				if (nameId != -1) {
 					output.writeInt(nameId, true);
@@ -355,7 +355,8 @@ public class Kryo {
 				classToNameId.put(type, nameId);
 				output.write(nameId);
 				output.writeString(type.getName());
-			}
+			} else
+				output.writeInt(registration.getId() + 2, true);
 			return registration;
 		} finally {
 			if (depth == 0) reset();
@@ -466,6 +467,7 @@ public class Kryo {
 		try {
 			int classID = input.readInt(true);
 			if (classID == Kryo.NULL) return null;
+			classID -= 2;
 			if (classID == NAME) {
 				int nameId = input.readInt(true);
 				Class type = nameIdToClass.get(nameId);
@@ -681,10 +683,8 @@ public class Kryo {
 
 	// --- Utility ---
 
-	/** Returns a new instance of the specified class. Generally serializers should call
-	 * {@link Serializer#newInstance(Kryo, Input, Class)} to create an new object instance via reflection, which by default calls
-	 * this method. This allows object creation to be customized per serializer by overridding the serializer method, or globally
-	 * by overridding this method. */
+	/** Returns a new instance of the specified class. Generally serializers should use this method to create an new object instance
+	 * via reflection, which by default calls this method. This allows object creation to be customized globally. */
 	public <T> T newInstance (Class<T> type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		try {

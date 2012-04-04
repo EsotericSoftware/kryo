@@ -17,7 +17,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * collection. The alternate constructor can be used to improve efficiency to match that of using an array instead of a
  * collection.
  * @author Nathan Sweet <misc@n4te.com> */
-public class CollectionSerializer extends Serializer<Collection> {
+public class CollectionSerializer implements Serializer<Collection> {
 	private final Kryo kryo;
 	private boolean elementsCanBeNull = true;
 	private Serializer serializer;
@@ -105,5 +105,11 @@ public class CollectionSerializer extends Serializer<Collection> {
 		}
 		if (TRACE) trace("kryo", "Read collection: " + collection);
 		return collection;
+	}
+
+	/** Instance creation can be customized by overridding this method. The default implementaion calls
+	 * {@link Kryo#newInstance(Class)}. */
+	public <T> T newInstance (Kryo kryo, Input input, Class<T> type) {
+		return kryo.newInstance(type);
 	}
 }

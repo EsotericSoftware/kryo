@@ -32,7 +32,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * skipping the bytes for a field that no longer exists, for each field value an int is written that is the length of the value in
  * bytes.
  * @author Nathan Sweet <misc@n4te.com> */
-public class CompatibleFieldSerializer extends Serializer {
+public class CompatibleFieldSerializer implements Serializer {
 	final Kryo kryo;
 	final Class type;
 	private CachedField[] fields;
@@ -288,6 +288,12 @@ public class CompatibleFieldSerializer extends Serializer {
 			}
 		}
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
+	}
+
+	/** Instance creation can be customized by overridding this method. The default implementaion calls
+	 * {@link Kryo#newInstance(Class)}. */
+	public <T> T newInstance (Kryo kryo, Input input, Class<T> type) {
+		return kryo.newInstance(type);
 	}
 
 	/** Controls how a field will be serialized. */
