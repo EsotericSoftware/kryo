@@ -29,7 +29,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.DoubleField = -0.121231d;
 		test.StringField = "stringvalue";
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
-		roundTrip(82, test);
+		roundTrip(81, test);
 	}
 
 	public void testFieldRemoval () {
@@ -91,7 +91,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
 
 		kryo = new Kryo();
-		roundTrip(154, test);
+		roundTrip(153, test);
 
 		C c = new C();
 		c.a = new A();
