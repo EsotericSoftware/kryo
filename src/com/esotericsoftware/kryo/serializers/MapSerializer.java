@@ -90,7 +90,7 @@ public class MapSerializer implements Serializer<Map> {
 	}
 
 	public Map read (Kryo kryo, Input input, Class type) {
-		Map map = newInstance(kryo, input, type);
+		Map map = (Map)newInstance(kryo, input, type);
 		int length = input.readInt(true);
 		if (length == 0) return map;
 		for (int i = 0; i < length; i++) {

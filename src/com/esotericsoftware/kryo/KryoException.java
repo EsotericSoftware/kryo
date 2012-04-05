@@ -1,8 +1,6 @@
 
 package com.esotericsoftware.kryo;
 
-import com.sun.xml.internal.ws.encoding.soap.SerializationException;
-
 public class KryoException extends RuntimeException {
 	private StringBuffer trace;
 
@@ -33,7 +31,7 @@ public class KryoException extends RuntimeException {
 	}
 
 	/** Adds information to the exception message about where in the the object graph serialization failure occurred.
-	 * {@link Serializer Serializers} can catch {@link SerializationException}, add trace information, and rethrow the exception. */
+	 * {@link Serializer Serializers} can catch {@link KryoException}, add trace information, and rethrow the exception. */
 	public void addTrace (String info) {
 		if (info == null) throw new IllegalArgumentException("info cannot be null.");
 		if (trace == null) trace = new StringBuffer(512);
