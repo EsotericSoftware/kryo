@@ -14,8 +14,6 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import static com.esotericsoftware.minlog.Log.*;
-
 /** Serializes objects using Java's built in serialization mechanism. Note that this is very inefficient and should be avoided if
  * possible.
  * @see Serializer
@@ -37,15 +35,12 @@ public class JavaSerializer implements Serializer {
 		} catch (Exception ex) {
 			throw new KryoException("Error during Java serialization.", ex);
 		}
-		if (TRACE) trace("kryo", "Wrote object: " + object);
 	}
 
 	public Object read (Kryo kryo, Input input, Class type) {
 		byte[] array = input.readBytes(input.readInt(true));
 		try {
-			Object object = new ObjectInputStream(new ByteArrayInputStream(array)).readObject();
-			if (TRACE) trace("kryo", "Read object: " + object);
-			return object;
+			return new ObjectInputStream(new ByteArrayInputStream(array)).readObject();
 		} catch (Exception ex) {
 			throw new KryoException("Error during Java deserialization.", ex);
 		}

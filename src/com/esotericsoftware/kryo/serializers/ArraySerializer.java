@@ -9,8 +9,6 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import static com.esotericsoftware.minlog.Log.*;
-
 /** Serializes arrays.
  * <p>
  * With the default constructor, an array requires a header of 2-4 bytes plus 2 bytes for each dimension beyond the first. If the
@@ -50,7 +48,6 @@ public class ArraySerializer implements Serializer {
 	 *           extend the array type (default). */
 	public void setElementsAreSameType (boolean elementsAreSameType) {
 		this.elementsAreSameType = elementsAreSameType;
-		// BOZO - Change to set type?
 	}
 
 	public void write (Kryo kryo, Output output, Object array) {
@@ -70,15 +67,6 @@ public class ArraySerializer implements Serializer {
 			elementSerializer = kryo.getRegistration(elementClass).getSerializer();
 		// Write array data.
 		writeArray(kryo, output, array, elementSerializer, 0, dimensions.length, elementsCanBeNull);
-		if (TRACE) {
-			StringBuilder stringBuffer = new StringBuilder(16);
-			for (int i = 0, n = dimensions.length; i < n; i++) {
-				stringBuffer.append('[');
-				stringBuffer.append(dimensions[i]);
-				stringBuffer.append(']');
-			}
-			trace("kryo", "Wrote array: " + elementClass.getName() + stringBuffer);
-		}
 	}
 
 	private void writeArray (Kryo kryo, Output output, Object array, Serializer elementSerializer, int dimension,
@@ -131,15 +119,6 @@ public class ArraySerializer implements Serializer {
 		// Create array and read in the data.
 		Object array = Array.newInstance(elementClass, dimensions);
 		readArray(kryo, input, array, dimensions[0], elementSerializer, elementClass, 0, dimensions, elementsCanBeNull);
-		if (TRACE) {
-			StringBuilder stringBuffer = new StringBuilder(16);
-			for (int i = 0; i < dimensionCount; i++) {
-				stringBuffer.append('[');
-				stringBuffer.append(dimensions[i]);
-				stringBuffer.append(']');
-			}
-			trace("kryo", "Read array: " + elementClass.getName() + stringBuffer);
-		}
 		return array;
 	}
 

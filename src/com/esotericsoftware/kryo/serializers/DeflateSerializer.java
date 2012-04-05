@@ -3,11 +3,9 @@ package com.esotericsoftware.kryo.serializers;
 
 import java.io.IOException;
 import java.util.zip.Deflater;
-import java.util.zip.DeflaterInputStream;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-import java.util.zip.InflaterOutputStream;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;

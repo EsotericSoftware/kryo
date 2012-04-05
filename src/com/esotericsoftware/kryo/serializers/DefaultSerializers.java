@@ -13,8 +13,6 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import static com.esotericsoftware.minlog.Log.*;
-
 public class DefaultSerializers {
 	static public class BooleanSerializer implements Serializer<Boolean> {
 		public void write (Kryo kryo, Output output, Boolean object) {
@@ -123,14 +121,12 @@ public class DefaultSerializers {
 			byte[] bytes = value.toByteArray();
 			output.writeInt(bytes.length, true);
 			output.writeBytes(bytes);
-			if (TRACE) trace("kryo", "Wrote BigInteger: " + value);
 		}
 
 		public BigInteger read (Kryo kryo, Input input, Class<BigInteger> type) {
 			int length = input.readInt(true);
 			byte[] bytes = input.readBytes(length);
 			BigInteger value = new BigInteger(bytes);
-			if (TRACE) trace("kryo", "Read BigInteger: " + value);
 			return value;
 		}
 	}
@@ -142,14 +138,12 @@ public class DefaultSerializers {
 			BigDecimal value = (BigDecimal)object;
 			bigIntegerSerializer.write(kryo, output, value.unscaledValue());
 			output.writeInt(value.scale(), false);
-			if (TRACE) trace("kryo", "Wrote BigDecimal: " + value);
 		}
 
 		public BigDecimal read (Kryo kryo, Input input, Class<BigDecimal> type) {
 			BigInteger unscaledValue = bigIntegerSerializer.read(kryo, input, null);
 			int scale = input.readInt(false);
 			BigDecimal value = new BigDecimal(unscaledValue, scale);
-			if (TRACE) trace("kryo", "Read BigDecimal: " + value);
 			return value;
 		}
 	}
@@ -167,12 +161,10 @@ public class DefaultSerializers {
 	static public class DateSerializer implements Serializer<Date> {
 		public void write (Kryo kryo, Output output, Date object) {
 			output.writeLong(object.getTime(), true);
-			if (TRACE) trace("kryo", "Wrote date: " + object);
 		}
 
 		public Date read (Kryo kryo, Input input, Class<Date> type) {
 			Date date = new Date(input.readLong(true));
-			if (TRACE) trace("kryo", "Read date: " + date);
 			return date;
 		}
 	}
@@ -187,7 +179,6 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, Enum object) {
 			output.writeInt(object.ordinal(), true);
-			if (TRACE) trace("kryo", "Wrote enum: " + object);
 		}
 
 		public Enum read (Kryo kryo, Input input, Class<Enum> type) {
@@ -195,7 +186,6 @@ public class DefaultSerializers {
 			if (ordinal < 0 || ordinal > enumConstants.length - 1)
 				throw new KryoException("Invalid ordinal for enum \"" + type.getName() + "\": " + ordinal);
 			Object constant = enumConstants[ordinal];
-			if (TRACE) trace("kryo", "Read enum: " + constant);
 			return (Enum)constant;
 		}
 	}

@@ -142,7 +142,7 @@ public class CompatibleFieldSerializer implements Serializer {
 		ObjectMap context = kryo.getGraphContext();
 		if (!context.containsKey("schemaWritten")) {
 			context.put("schemaWritten", null);
-			if (TRACE) trace("kryo", "Writing " + fields.length + " field names.");
+			if (TRACE) trace("kryo", "Write " + fields.length + " field names.");
 			output.writeInt(fields.length, true);
 			for (int i = 0, n = fields.length; i < n; i++)
 				output.writeString(fields[i].field.getName());
@@ -152,7 +152,7 @@ public class CompatibleFieldSerializer implements Serializer {
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			try {
-				if (TRACE) trace("kryo", "Writing field: " + cachedField + " (" + object.getClass().getName() + ")");
+				if (TRACE) trace("kryo", "Write field: " + cachedField + " (" + object.getClass().getName() + ")");
 
 				Object value = cachedField.get(object);
 				if (value == null) {
@@ -187,7 +187,6 @@ public class CompatibleFieldSerializer implements Serializer {
 				throw ex;
 			}
 		}
-		if (TRACE) trace("kryo", "Wrote object: " + object);
 	}
 
 	public Object read (Kryo kryo, Input input, Class type) {
@@ -195,7 +194,7 @@ public class CompatibleFieldSerializer implements Serializer {
 		CachedField[] fields = (CachedField[])context.get("schema");
 		if (fields == null) {
 			int length = input.readInt(true);
-			if (TRACE) trace("kryo", "Reading " + length + " field names.");
+			if (TRACE) trace("kryo", "Read " + length + " field names.");
 			String[] names = new String[length];
 			for (int i = 0; i < length; i++)
 				names[i] = input.readString();
@@ -211,7 +210,7 @@ public class CompatibleFieldSerializer implements Serializer {
 						continue outer;
 					}
 				}
-				if (TRACE) trace("kryo", "Ignoring obsolete field: " + schemaName);
+				if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
 			}
 			context.put("schema", fields);
 		}
@@ -222,12 +221,12 @@ public class CompatibleFieldSerializer implements Serializer {
 			CachedField cachedField = fields[i];
 			try {
 				if (cachedField == null) {
-					if (TRACE) trace("kryo", "Skipping obsolete field.");
+					if (TRACE) trace("kryo", "Skip obsolete field.");
 					inputChunked.nextChunks();
 					continue;
 				}
 
-				if (TRACE) trace("kryo", "Reading field: " + cachedField + " (" + type.getName() + ")");
+				if (TRACE) trace("kryo", "Read field: " + cachedField + " (" + type.getName() + ")");
 
 				Object value;
 
@@ -264,7 +263,6 @@ public class CompatibleFieldSerializer implements Serializer {
 				throw ex;
 			}
 		}
-		if (TRACE) trace("kryo", "Read object: " + object);
 		return object;
 	}
 

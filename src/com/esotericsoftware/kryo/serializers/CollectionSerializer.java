@@ -9,8 +9,6 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import static com.esotericsoftware.minlog.Log.*;
-
 /** Serializes objects that implement the {@link Collection} interface.
  * <p>
  * With the default constructor, a collection requires a 1-3 byte header and an extra 2-3 bytes is written for each element in the
@@ -76,7 +74,6 @@ public class CollectionSerializer implements Serializer<Collection> {
 			for (Object element : collection)
 				kryo.writeClassAndObject(output, element);
 		}
-		if (TRACE) trace("kryo", "Wrote collection: " + object);
 	}
 
 	public Collection read (Kryo kryo, Input input, Class<Collection> type) {
@@ -103,7 +100,6 @@ public class CollectionSerializer implements Serializer<Collection> {
 			for (int i = 0; i < length; i++)
 				collection.add(kryo.readClassAndObject(input));
 		}
-		if (TRACE) trace("kryo", "Read collection: " + collection);
 		return collection;
 	}
 

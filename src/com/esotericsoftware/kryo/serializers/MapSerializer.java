@@ -10,8 +10,6 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import static com.esotericsoftware.minlog.Log.*;
-
 /** Serializes objects that implement the {@link Map} interface.
  * <p>
  * With the default constructor, a map requires a 1-3 byte header and an extra 4 bytes is written for each key/value pair.
@@ -89,7 +87,6 @@ public class MapSerializer implements Serializer<Map> {
 			} else
 				kryo.writeClassAndObject(output, entry.getValue());
 		}
-		if (TRACE) trace("kryo", "Wrote map: " + map);
 	}
 
 	public Map read (Kryo kryo, Input input, Class type) {
@@ -115,7 +112,6 @@ public class MapSerializer implements Serializer<Map> {
 				value = kryo.readClassAndObject(input);
 			map.put(key, value);
 		}
-		if (TRACE) trace("kryo", "Read map: " + map);
 		return map;
 	}
 

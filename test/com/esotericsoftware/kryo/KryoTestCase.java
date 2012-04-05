@@ -22,7 +22,7 @@ abstract public class KryoTestCase extends TestCase {
 	protected Object object1, object2;
 
 	protected void setUp () throws Exception {
-		// Log.DEBUG();
+		Log.TRACE();
 
 		kryo = new Kryo();
 		kryo.setReferences(false);

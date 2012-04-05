@@ -6,6 +6,8 @@ import java.io.InputStream;
 
 import com.esotericsoftware.kryo.KryoException;
 
+import static com.esotericsoftware.minlog.Log.*;
+
 /** An InputStream that reads lengths and chunks of data from another OutputStream, allowing chunks to be skipped. */
 public class InputChunked extends Input {
 	private int chunkSize = -1;
@@ -48,6 +50,7 @@ public class InputChunked extends Input {
 				if (b == -1) throw new KryoException("Buffer underflow.");
 				result |= (b & 0x7F) << offset;
 				if ((b & 0x80) == 0) {
+					if (TRACE) trace("kryo", "Read chunk: " + chunkSize);
 					chunkSize = result;
 					return;
 				}
@@ -65,5 +68,6 @@ public class InputChunked extends Input {
 		while (chunkSize > 0)
 			skip(chunkSize);
 		chunkSize = -1;
+		if (TRACE) trace("kryo", "Next chunks.");
 	}
 }

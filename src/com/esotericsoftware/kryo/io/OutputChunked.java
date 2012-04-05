@@ -6,6 +6,8 @@ import java.io.OutputStream;
 
 import com.esotericsoftware.kryo.KryoException;
 
+import static com.esotericsoftware.minlog.Log.*;
+
 /** An OutputStream that buffers data in a byte array and flushes to another OutputStream, writing the length before each flush.
  * The length allows the chunks to be skipped when reading. */
 public class OutputChunked extends Output {
@@ -44,6 +46,7 @@ public class OutputChunked extends Output {
 
 	private void writeChunkSize () throws IOException {
 		int size = position();
+		if (TRACE) trace("kryo", "Write chunk: " + size);
 		OutputStream outputStream = getOutputStream();
 		if ((size & ~0x7F) == 0) {
 			outputStream.write(size);
@@ -76,6 +79,7 @@ public class OutputChunked extends Output {
 	 * reading. */
 	public void endChunks () {
 		flush(); // Flush any partial chunk.
+		if (TRACE) trace("kryo", "End chunks.");
 		try {
 			getOutputStream().write(0); // Zero length chunk.
 		} catch (IOException ex) {

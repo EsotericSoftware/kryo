@@ -94,7 +94,7 @@ public class BeanSerializer implements Serializer {
 		for (int i = 0, n = properties.length; i < n; i++) {
 			CachedProperty property = properties[i];
 			try {
-				if (TRACE) trace("kryo", "Writing property: " + property + " (" + type.getName() + ")");
+				if (TRACE) trace("kryo", "Write property: " + property + " (" + type.getName() + ")");
 				Object value = property.get(object);
 				Serializer serializer = property.serializer;
 				if (serializer != null)
@@ -114,7 +114,6 @@ public class BeanSerializer implements Serializer {
 				throw ex;
 			}
 		}
-		if (TRACE) trace("kryo", "Wrote bean: " + object);
 	}
 
 	public Object read (Kryo kryo, Input input, Class type) {
@@ -122,7 +121,7 @@ public class BeanSerializer implements Serializer {
 		for (int i = 0, n = properties.length; i < n; i++) {
 			CachedProperty property = properties[i];
 			try {
-				if (TRACE) trace("kryo", "Reading property: " + property + " (" + object.getClass() + ")");
+				if (TRACE) trace("kryo", "Read property: " + property + " (" + object.getClass() + ")");
 				Object value;
 				Serializer serializer = property.serializer;
 				if (serializer != null)
@@ -143,7 +142,6 @@ public class BeanSerializer implements Serializer {
 				throw ex;
 			}
 		}
-		if (TRACE) trace("kryo", "Read bean: " + object);
 		return object;
 	}
 

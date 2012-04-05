@@ -154,7 +154,7 @@ public class FieldSerializer implements Serializer {
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			try {
-				if (TRACE) trace("kryo", "Writing field: " + cachedField + " (" + object.getClass().getName() + ")");
+				if (TRACE) trace("kryo", "Write field: " + cachedField + " (" + object.getClass().getName() + ")");
 
 				Object value = cachedField.get(object);
 
@@ -191,7 +191,6 @@ public class FieldSerializer implements Serializer {
 				throw ex;
 			}
 		}
-		if (TRACE) trace("kryo", "Wrote object: " + object);
 	}
 
 	public Object read (Kryo kryo, Input input, Class type) {
@@ -199,7 +198,7 @@ public class FieldSerializer implements Serializer {
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			try {
-				if (TRACE) trace("kryo", "Reading field: " + cachedField + " (" + type.getName() + ")");
+				if (TRACE) trace("kryo", "Read field: " + cachedField + " (" + type.getName() + ")");
 
 				Object value = null;
 
@@ -231,7 +230,6 @@ public class FieldSerializer implements Serializer {
 				throw ex;
 			}
 		}
-		if (TRACE) trace("kryo", "Read object: " + object);
 		return object;
 	}
 

@@ -1,6 +1,8 @@
 
 package com.esotericsoftware.kryo;
 
+import static com.esotericsoftware.minlog.Log.*;
+
 /** Describes the {@link Serializer} and class ID to use for a class. */
 public class Registration {
 	private final Class type;
@@ -29,5 +31,6 @@ public class Registration {
 
 	public void setSerializer (Serializer serializer) {
 		this.serializer = serializer;
+		if (TRACE) trace("kryo", "Update registered serializer: " + type.getName() + " (" + serializer.getClass().getName() + ")");
 	}
 }
