@@ -124,7 +124,7 @@ public class Input extends InputStream {
 	 * @throws KryoException if EOS is reached before required bytes is read (buffer underflow). */
 	private int require (int required, int optional) throws KryoException {
 		int remaining = limit - position;
-		if (remaining >= optional) return optional;
+		if (remaining >= required) return Math.min(remaining, optional);
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
 		optional = Math.min(optional, capacity);
 
