@@ -118,11 +118,10 @@ public class Input extends InputStream {
 		}
 	}
 
-	/** @param required Must have at least this many bytes in buffer, else buffer underflow is thrown. May be zero to never throw
-	 *           buffer underflow.
+	/** @param required Must be > 0. The buffer is filled until it has at least this many bytes.
 	 * @param optional Try to fill at least this many bytes in buffer.
-	 * @return -1 if the end of the data is reached and buffer underflow was not thrown, else the number of bytes remaining between
-	 *         required and optional exclusive. */
+	 * @return the number of bytes remaining, but not more than optional.
+	 * @throws KryoException if EOS is reached before required bytes is read (buffer underflow). */
 	private int require (int required, int optional) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= optional) return optional;
@@ -134,23 +133,39 @@ public class Input extends InputStream {
 		total += position;
 		position = 0;
 
-		boolean eof = false;
 		while (true) {
 			int count = fill(buffer, remaining, capacity - remaining);
 			if (count == -1) {
-				// End of data.
-				if (required == 0 || remaining >= required) {
-					eof = true;
-					break;
-				}
+				if (remaining >= required) break;
 				throw new KryoException("Buffer underflow.");
 			}
 			remaining += count;
-			// Enough has been read.
-			if (remaining >= optional) break;
+			if (remaining >= optional) break; // Enough has been read.
 		}
 		limit = remaining;
-		return eof ? -1 : Math.min(remaining, optional);
+		return Math.min(remaining, optional);
+	}
+
+	/** @param optional Try to fill the buffer with this many bytes.
+	 * @return the number of bytes remaining, but not more than optional, or -1 if the EOS was reached and the buffer is empty. */
+	private int optional (int optional) throws KryoException {
+		int remaining = limit - position;
+		if (remaining >= optional) return optional;
+		optional = Math.min(optional, capacity);
+
+		// Compact.
+		System.arraycopy(buffer, position, buffer, 0, remaining);
+		total += position;
+		position = 0;
+
+		while (true) {
+			int count = fill(buffer, remaining, capacity - remaining);
+			if (count == -1) break;
+			remaining += count;
+			if (remaining >= optional) break; // Enough has been read.
+		}
+		limit = remaining;
+		return remaining == 0 ? -1 : Math.min(remaining, optional);
 	}
 
 	// InputStream
@@ -175,8 +190,8 @@ public class Input extends InputStream {
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = Math.min(count, capacity);
-			if (require(0, copyCount) == -1) {
+			copyCount = optional(count);
+			if (copyCount == -1) {
 				// End of data.
 				if (startingCount == count) return -1;
 				break;
@@ -258,27 +273,51 @@ public class Input extends InputStream {
 
 	/** Reads a 1-5 byte int. */
 	public int readInt (boolean optimizePositive) throws KryoException {
-		require(1, 5);
+		int mneow = require(1, 5);
+		if (mneow < 5) return readInt_slow(optimizePositive);
 		int b = buffer[position++];
 		int result = b & 0x7F;
 		if ((b & 0x80) != 0) {
-			try {
+			b = buffer[position++];
+			result |= (b & 0x7F) << 7;
+			if ((b & 0x80) != 0) {
 				b = buffer[position++];
-				result |= (b & 0x7F) << 7;
+				result |= (b & 0x7F) << 14;
 				if ((b & 0x80) != 0) {
 					b = buffer[position++];
-					result |= (b & 0x7F) << 14;
+					result |= (b & 0x7F) << 21;
 					if ((b & 0x80) != 0) {
 						b = buffer[position++];
-						result |= (b & 0x7F) << 21;
-						if ((b & 0x80) != 0) {
-							b = buffer[position++];
-							result |= (b & 0x7F) << 28;
-						}
+						result |= (b & 0x7F) << 28;
 					}
 				}
-			} catch (ArrayIndexOutOfBoundsException ex) {
-				throw new KryoException("Buffer underflow.");
+			}
+		}
+		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
+	}
+
+	private int readInt_slow (boolean optimizePositive) {
+		// The buffer is guaranteed to have at least 1 byte.
+		int b = buffer[position++];
+		int result = b & 0x7F;
+		if ((b & 0x80) != 0) {
+			require(1, 4);
+			b = buffer[position++];
+			result |= (b & 0x7F) << 7;
+			if ((b & 0x80) != 0) {
+				require(1, 3);
+				b = buffer[position++];
+				result |= (b & 0x7F) << 14;
+				if ((b & 0x80) != 0) {
+					require(1, 2);
+					b = buffer[position++];
+					result |= (b & 0x7F) << 21;
+					if ((b & 0x80) != 0) {
+						require(1, 1);
+						b = buffer[position++];
+						result |= (b & 0x7F) << 28;
+					}
+				}
 			}
 		}
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
@@ -287,9 +326,8 @@ public class Input extends InputStream {
 	/** Returns true if enough bytes are available to read an int with {@link #readInt(boolean)}. */
 	public boolean canReadInt () throws KryoException {
 		if (limit - position >= 5) return true;
-		require(0, 4);
+		if (optional(5) <= 0) return false;
 		int p = position;
-		if (p == limit) return false;
 		if ((buffer[p++] & 0x80) == 0) return true;
 		if (p == limit) return false;
 		if ((buffer[p++] & 0x80) == 0) return true;
@@ -306,8 +344,9 @@ public class Input extends InputStream {
 	/** Reads the length and string of 8 bit characters. */
 	public String readChars () throws KryoException {
 		int charCount = readInt(true);
+		if (charCount == 0) return "";
 		if (chars.length < charCount) chars = new char[charCount];
-		if (charCount > require(0, charCount)) return readChars_slow(charCount);
+		if (charCount > require(1, charCount)) return readChars_slow(charCount);
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		for (int charIndex = 0; charIndex < charCount;)
@@ -315,7 +354,7 @@ public class Input extends InputStream {
 		return new String(chars, 0, charCount);
 	}
 
-	private String readChars_slow (int charCount) throws KryoException {
+	private String readChars_slow (int charCount) {
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		for (int charIndex = 0; charIndex < charCount;) {
@@ -329,12 +368,13 @@ public class Input extends InputStream {
 	/** Reads the length and string of UTF8 characters. */
 	public String readString () throws KryoException {
 		int charCount = readInt(true);
+		if (charCount == 0) return "";
 		if (chars.length < charCount) chars = new char[charCount];
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		// Try to read 8 bit chars.
 		int charIndex = 0, b;
-		int count = require(0, charCount);
+		int count = require(1, charCount);
 		while (charIndex < count) {
 			b = buffer[position++] & 0xFF;
 			if (b > 127) {
@@ -348,7 +388,7 @@ public class Input extends InputStream {
 		return new String(chars, 0, charCount);
 	}
 
-	private String readString_slow (int charCount, int charIndex) throws KryoException {
+	private String readString_slow (int charCount, int charIndex) {
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		while (charIndex < charCount) {
@@ -402,23 +442,21 @@ public class Input extends InputStream {
 
 	/** Reads a 2 byte short as an int from 0 to 65535. */
 	public int readShortUnsigned () throws KryoException {
+		require(2, 2);
 		return ((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF);
 	}
 
 	/** Reads a 1-3 byte short. */
 	public short readShort (boolean optimizePositive) throws KryoException {
-		require(1, 3);
+		int available = require(1, 3);
 		byte value = buffer[position++];
-		try {
-			if (optimizePositive) {
-				if (value == -1) return (short)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF)); // short positive
-				return (short)(value & 0xFF);
-			}
-			if (value == -128) return (short)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF)); // short
-		} catch (ArrayIndexOutOfBoundsException ex) {
-			throw new KryoException("Buffer underflow.");
+		if (optimizePositive) {
+			if (value != -1) return (short)(value & 0xFF);
+		} else {
+			if (value != -128) return value;
 		}
-		return value;
+		if (available < 3) require(2, 2);
+		return (short)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF));
 	}
 
 	// long
@@ -441,38 +479,36 @@ public class Input extends InputStream {
 	/** Reads a 1-10 byte long. */
 	public long readLong (boolean optimizePositive) throws KryoException {
 		byte[] buffer = this.buffer;
-		require(1, 10);
+		if (require(1, 10) < 10) return readLong_slow(optimizePositive);
 		int b = buffer[position++];
 		long result = b & 0x7F;
 		if ((b & 0x80) != 0) {
-			try {
+			b = buffer[position++];
+			result |= (long)(b & 0x7F) << 7;
+			if ((b & 0x80) != 0) {
 				b = buffer[position++];
-				result |= (long)(b & 0x7F) << 7;
+				result |= (long)(b & 0x7F) << 14;
 				if ((b & 0x80) != 0) {
 					b = buffer[position++];
-					result |= (long)(b & 0x7F) << 14;
+					result |= (long)(b & 0x7F) << 21;
 					if ((b & 0x80) != 0) {
 						b = buffer[position++];
-						result |= (long)(b & 0x7F) << 21;
+						result |= (long)(b & 0x7F) << 28;
 						if ((b & 0x80) != 0) {
 							b = buffer[position++];
-							result |= (long)(b & 0x7F) << 28;
+							result |= (long)(b & 0x7F) << 35;
 							if ((b & 0x80) != 0) {
 								b = buffer[position++];
-								result |= (long)(b & 0x7F) << 35;
+								result |= (long)(b & 0x7F) << 42;
 								if ((b & 0x80) != 0) {
 									b = buffer[position++];
-									result |= (long)(b & 0x7F) << 42;
+									result |= (long)(b & 0x7F) << 49;
 									if ((b & 0x80) != 0) {
 										b = buffer[position++];
-										result |= (long)(b & 0x7F) << 49;
+										result |= (long)(b & 0x7F) << 56;
 										if ((b & 0x80) != 0) {
 											b = buffer[position++];
-											result |= (long)(b & 0x7F) << 56;
-											if ((b & 0x80) != 0) {
-												b = buffer[position++];
-												result |= (long)(b & 0x7F) << 63;
-											}
+											result |= (long)(b & 0x7F) << 63;
 										}
 									}
 								}
@@ -480,8 +516,59 @@ public class Input extends InputStream {
 						}
 					}
 				}
-			} catch (ArrayIndexOutOfBoundsException ex) {
-				throw new KryoException("Buffer underflow.");
+			}
+		}
+		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
+		return result;
+	}
+
+	private long readLong_slow (boolean optimizePositive) {
+		// The buffer is guaranteed to have at least 1 byte.
+		int b = buffer[position++];
+		long result = b & 0x7F;
+		if ((b & 0x80) != 0) {
+			require(1, 9);
+			b = buffer[position++];
+			result |= (long)(b & 0x7F) << 7;
+			if ((b & 0x80) != 0) {
+				require(1, 8);
+				b = buffer[position++];
+				result |= (long)(b & 0x7F) << 14;
+				if ((b & 0x80) != 0) {
+					require(1, 7);
+					b = buffer[position++];
+					result |= (long)(b & 0x7F) << 21;
+					if ((b & 0x80) != 0) {
+						require(1, 6);
+						b = buffer[position++];
+						result |= (long)(b & 0x7F) << 28;
+						if ((b & 0x80) != 0) {
+							require(1, 5);
+							b = buffer[position++];
+							result |= (long)(b & 0x7F) << 35;
+							if ((b & 0x80) != 0) {
+								require(1, 4);
+								b = buffer[position++];
+								result |= (long)(b & 0x7F) << 42;
+								if ((b & 0x80) != 0) {
+									require(1, 3);
+									b = buffer[position++];
+									result |= (long)(b & 0x7F) << 49;
+									if ((b & 0x80) != 0) {
+										require(1, 2);
+										b = buffer[position++];
+										result |= (long)(b & 0x7F) << 56;
+										if ((b & 0x80) != 0) {
+											require(1, 1);
+											b = buffer[position++];
+											result |= (long)(b & 0x7F) << 63;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
