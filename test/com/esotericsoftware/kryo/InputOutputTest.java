@@ -87,22 +87,26 @@ public class InputOutputTest extends KryoTestCase {
 		write.writeString("uno");
 		write.writeString("dos");
 		write.writeString("tres");
+		write.writeString(null);
 		write.writeString(value1);
 		write.writeString(value2);
 		write.writeChars("uno");
 		write.writeChars("dos");
 		write.writeChars("tres");
+		write.writeChars(null);
 		write.writeChars(value1);
 
 		Input read = new Input(write.toBytes());
 		assertEquals("uno", read.readString());
 		assertEquals("dos", read.readString());
 		assertEquals("tres", read.readString());
+		assertEquals(null, read.readString());
 		assertEquals(value1, read.readString());
 		assertEquals(value2, read.readString());
 		assertEquals("uno", read.readChars());
 		assertEquals("dos", read.readChars());
 		assertEquals("tres", read.readChars());
+		assertEquals(null, read.readChars());
 		assertEquals(value1, read.readChars());
 	}
 

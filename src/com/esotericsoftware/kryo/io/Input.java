@@ -344,7 +344,13 @@ public class Input extends InputStream {
 	/** Reads the length and string of 8 bit characters. */
 	public String readChars () throws KryoException {
 		int charCount = readInt(true);
-		if (charCount == 0) return "";
+		switch (charCount) {
+		case 0:
+			return null;
+		case 1:
+			return "";
+		}
+		charCount--;
 		if (chars.length < charCount) chars = new char[charCount];
 		if (charCount > require(1, charCount)) return readChars_slow(charCount);
 		char[] chars = this.chars;
@@ -368,7 +374,13 @@ public class Input extends InputStream {
 	/** Reads the length and string of UTF8 characters. */
 	public String readString () throws KryoException {
 		int charCount = readInt(true);
-		if (charCount == 0) return "";
+		switch (charCount) {
+		case 0:
+			return null;
+		case 1:
+			return "";
+		}
+		charCount--;
 		if (chars.length < charCount) chars = new char[charCount];
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;

@@ -232,9 +232,12 @@ public class Output extends OutputStream {
 
 	/** Writes the length and string using 1 byte per character. */
 	public void writeChars (String value) throws KryoException {
-		if (value == null) throw new IllegalArgumentException("value cannot be null.");
+		if (value == null) {
+			writeByte(0);
+			return;
+		}
 		int charCount = value.length();
-		writeInt(charCount, true);
+		writeInt(charCount + 1, true);
 		if (capacity < charCount)
 			writeChars_slow(value, charCount);
 		else {
@@ -257,11 +260,15 @@ public class Output extends OutputStream {
 		}
 	}
 
-	/** Writes the length and string using UTF8. */
+	/** Writes the length and string using UTF8, or null.
+	 * @param value May be null. */
 	public void writeString (String value) throws KryoException {
-		if (value == null) throw new IllegalArgumentException("value cannot be null.");
+		if (value == null) {
+			writeByte(0);
+			return;
+		}
 		int charCount = value.length();
-		writeInt(charCount, true);
+		writeInt(charCount + 1, true);
 		int charIndex = 0;
 		if (capacity >= charCount) {
 			// Try to write 8 bit chars.
