@@ -191,7 +191,7 @@ public class DefaultSerializers {
 	}
 
 	/** @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	public class CurrencySerializer implements Serializer<Currency> {
+	static public class CurrencySerializer implements Serializer<Currency> {
 		public void write (Kryo kryo, Output output, Currency object) {
 			output.writeString(object.getCurrencyCode());
 		}
@@ -202,7 +202,7 @@ public class DefaultSerializers {
 	}
 
 	/** @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	public class StringBufferSerializer implements Serializer<StringBuffer> {
+	static public class StringBufferSerializer implements Serializer<StringBuffer> {
 		public void write (Kryo kryo, Output output, StringBuffer object) {
 			output.writeString(object.toString());
 		}
@@ -213,7 +213,7 @@ public class DefaultSerializers {
 	}
 
 	/** @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	public class StringBuilderSerializer implements Serializer<StringBuilder> {
+	static public class StringBuilderSerializer implements Serializer<StringBuilder> {
 		public void write (Kryo kryo, Output output, StringBuilder object) {
 			output.writeString(object.toString());
 		}
@@ -223,7 +223,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	public class SerializableSerializer implements Serializer<Serializable> {
+	static public class SerializableSerializer implements Serializer<Serializable> {
 		public void write (Kryo kryo, Output output, Serializable object) {
 			object.write(kryo, output);
 		}

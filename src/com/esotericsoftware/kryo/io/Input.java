@@ -121,10 +121,11 @@ public class Input extends InputStream {
 	/** @param required Must be > 0. The buffer is filled until it has at least this many bytes.
 	 * @param optional Try to fill at least this many bytes in buffer.
 	 * @return the number of bytes remaining, but not more than optional.
-	 * @throws KryoException if EOS is reached before required bytes is read (buffer underflow). */
+	 * @throws KryoException if EOS is reached before required bytes are read (buffer underflow). */
 	private int require (int required, int optional) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= required) return Math.min(remaining, optional);
+
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
 		optional = Math.min(optional, capacity);
 
@@ -140,7 +141,7 @@ public class Input extends InputStream {
 				throw new KryoException("Buffer underflow.");
 			}
 			remaining += count;
-			if (remaining >= optional) break; // Enough has been read.
+			if (remaining >= required) break; // Enough has been read.
 		}
 		limit = remaining;
 		return Math.min(remaining, optional);
@@ -273,8 +274,7 @@ public class Input extends InputStream {
 
 	/** Reads a 1-5 byte int. */
 	public int readInt (boolean optimizePositive) throws KryoException {
-		int mneow = require(1, 5);
-		if (mneow < 5) return readInt_slow(optimizePositive);
+		if (require(1, 5) < 5) return readInt_slow(optimizePositive);
 		int b = buffer[position++];
 		int result = b & 0x7F;
 		if ((b & 0x80) != 0) {

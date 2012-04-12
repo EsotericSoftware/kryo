@@ -12,6 +12,13 @@ public class ByteBufferInputStream extends InputStream {
 	public ByteBufferInputStream () {
 	}
 
+	/** Creates a stream with a new non-direct buffer of the specified size. The position and limit of the buffer is zero. */
+	public ByteBufferInputStream (int bufferSize) {
+		this(ByteBuffer.allocate(bufferSize));
+		byteBuffer.flip();
+	}
+
+	/** Creates an uninitialized stream that cannot be used until {@link #setByteBuffer(ByteBuffer)} is called. */
 	public ByteBufferInputStream (ByteBuffer byteBuffer) {
 		this.byteBuffer = byteBuffer;
 	}
@@ -33,5 +40,9 @@ public class ByteBufferInputStream extends InputStream {
 		if (count == 0) return -1;
 		byteBuffer.get(bytes, offset, length);
 		return count;
+	}
+
+	public int available () throws IOException {
+		return byteBuffer.remaining();
 	}
 }

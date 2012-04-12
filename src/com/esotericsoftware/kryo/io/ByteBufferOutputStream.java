@@ -9,7 +9,13 @@ import java.nio.ByteBuffer;
 public class ByteBufferOutputStream extends OutputStream {
 	private ByteBuffer byteBuffer;
 
+	/** Creates an uninitialized stream that cannot be used until {@link #setByteBuffer(ByteBuffer)} is called. */
 	public ByteBufferOutputStream () {
+	}
+
+	/** Creates a stream with a new non-direct buffer of the specified size. */
+	public ByteBufferOutputStream (int bufferSize) {
+		this(ByteBuffer.allocate(bufferSize));
 	}
 
 	public ByteBufferOutputStream (ByteBuffer byteBuffer) {
