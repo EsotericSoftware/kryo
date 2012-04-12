@@ -117,7 +117,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 				output.writeChars(object);
 			}
 
-			public String read (Kryo kryo, Input input, Class<String> type) {
+			public String create (Kryo kryo, Input input, Class<String> type) {
 				return input.readChars();
 			}
 		});

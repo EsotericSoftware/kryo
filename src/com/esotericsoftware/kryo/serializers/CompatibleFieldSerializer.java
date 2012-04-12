@@ -32,7 +32,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * skipping the bytes for a field that no longer exists, for each field value an int is written that is the length of the value in
  * bytes.
  * @author Nathan Sweet <misc@n4te.com> */
-public class CompatibleFieldSerializer implements Serializer {
+public class CompatibleFieldSerializer extends Serializer {
 	final Kryo kryo;
 	final Class type;
 	private CachedField[] fields;
@@ -189,7 +189,7 @@ public class CompatibleFieldSerializer implements Serializer {
 		}
 	}
 
-	public Object read (Kryo kryo, Input input, Class type) {
+	public void read (Kryo kryo, Input input, Object object) {
 		ObjectMap context = kryo.getGraphContext();
 		CachedField[] fields = (CachedField[])context.get("schema");
 		if (fields == null) {
@@ -215,7 +215,6 @@ public class CompatibleFieldSerializer implements Serializer {
 			context.put("schema", fields);
 		}
 
-		Object object = newInstance(kryo, input, type);
 		InputChunked inputChunked = new InputChunked(input);
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
@@ -263,7 +262,6 @@ public class CompatibleFieldSerializer implements Serializer {
 				throw ex;
 			}
 		}
-		return object;
 	}
 
 	/** Allows specific fields to be optimized. */
@@ -286,12 +284,6 @@ public class CompatibleFieldSerializer implements Serializer {
 			}
 		}
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
-	}
-
-	/** Instance creation can be customized by overridding this method. The default implementaion calls
-	 * {@link Kryo#newInstance(Class)}. */
-	public <T> T newInstance (Kryo kryo, Input input, Class<T> type) {
-		return kryo.newInstance(type);
 	}
 
 	/** Controls how a field will be serialized. */

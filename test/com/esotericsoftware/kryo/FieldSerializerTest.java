@@ -209,7 +209,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	public void testNoDefaultConstructor () {
 		kryo.register(SimpleNoDefaultConstructor.class, new Serializer<SimpleNoDefaultConstructor>() {
-			public SimpleNoDefaultConstructor read (Kryo kryo, Input input, Class<SimpleNoDefaultConstructor> type) {
+			public SimpleNoDefaultConstructor create (Kryo kryo, Input input, Class<SimpleNoDefaultConstructor> type) {
 				return new SimpleNoDefaultConstructor(input.readInt(true));
 			}
 
@@ -227,7 +227,7 @@ public class FieldSerializerTest extends KryoTestCase {
 				super.write(kryo, output, object);
 			}
 
-			public Object newInstance (Kryo kryo, Input input, Class type) {
+			public Object create (Kryo kryo, Input input, Class type) {
 				String name = input.readString();
 				ComplexNoDefaultConstructor object = new ComplexNoDefaultConstructor(name);
 				return object;
@@ -257,6 +257,15 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo = new Kryo();
 		kryo.getContext().put("smurf", null);
 		roundTrip(73, new HasOptionalAnnotation());
+	}
+
+	public void testCyclicGrgaph () throws Exception {
+		kryo.register(DefaultTypes.class);
+		kryo.register(byte[].class);
+		kryo.setReferences(true);
+		DefaultTypes test = new DefaultTypes();
+		test.child = test;
+		roundTrip(39, test);
 	}
 
 	static public class DefaultTypes {
@@ -328,7 +337,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 			if (child != other.child) {
 				if (child == null || other.child == null) return false;
-				if (!child.equals(other.child)) return false;
+				if (child != this && !child.equals(other.child)) return false;
 			}
 
 			if (byteField != other.byteField) return false;
@@ -564,12 +573,12 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class HasDefaultSerializerAnnotationSerializer implements Serializer {
+	static public class HasDefaultSerializerAnnotationSerializer extends Serializer {
 		public void write (Kryo kryo, Output output, Object object) {
 			output.writeLong(((HasDefaultSerializerAnnotation)object).time, true);
 		}
 
-		public Object read (Kryo kryo, Input input, Class type) {
+		public Object create (Kryo kryo, Input input, Class type) {
 			return new HasDefaultSerializerAnnotation(input.readLong(true));
 		}
 	}

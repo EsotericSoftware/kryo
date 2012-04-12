@@ -479,6 +479,7 @@ public class Kryo {
 		}
 		// Only write the object the first time encountered in object graph.
 		instanceId = classToNextInstanceId.getAndIncrement(type, 0, 1);
+		if (TRACE) trace("kryo", "Write initial object reference " + instanceId + ": " + toString(object));
 		objectToInstanceId.put(object, instanceId);
 		output.writeInt(instanceId, true);
 		return false;
@@ -534,10 +535,12 @@ public class Kryo {
 				if (instanceId != null && instanceId.object != null) return (T)instanceId.object;
 			}
 
-			T object = (T)getRegistration(type).getSerializer().read(this, input, type);
-			if (DEBUG) log("Read", object);
-
+			Serializer serializer = getRegistration(type).getSerializer();
+			T object = (T)serializer.create(this, input, type);
 			if (instanceId != null) instanceIdToObject.put(instanceId, object);
+
+			serializer.read(this, input, object);
+			if (DEBUG) log("Read", object);
 			return object;
 		} finally {
 			if (--depth == 0) reset();
@@ -557,10 +560,11 @@ public class Kryo {
 				if (instanceId != null && instanceId.object != null) return (T)instanceId.object;
 			}
 
-			T object = (T)serializer.read(this, input, type);
-			if (DEBUG) log("Read", object);
-
+			T object = (T)serializer.create(this, input, type);
 			if (instanceId != null) instanceIdToObject.put(instanceId, object);
+
+			serializer.read(this, input, object);
+			if (DEBUG) log("Read", object);
 			return object;
 		} finally {
 			if (--depth == 0) reset();
@@ -585,10 +589,12 @@ public class Kryo {
 				if (instanceId != null && instanceId.object != null) return (T)instanceId.object;
 			}
 
-			T object = (T)getRegistration(type).getSerializer().read(this, input, type);
-			if (DEBUG) log("Read", object);
-
+			Serializer serializer = getRegistration(type).getSerializer();
+			T object = (T)serializer.create(this, input, type);
 			if (instanceId != null) instanceIdToObject.put(instanceId, object);
+
+			serializer.read(this, input, object);
+			if (DEBUG) log("Read", object);
 			return object;
 		} finally {
 			if (--depth == 0) reset();
@@ -614,10 +620,11 @@ public class Kryo {
 				if (instanceId != null && instanceId.object != null) return (T)instanceId.object;
 			}
 
-			T object = (T)serializer.read(this, input, type);
-			if (DEBUG) log("Read", object);
-
+			T object = (T)serializer.create(this, input, type);
 			if (instanceId != null) instanceIdToObject.put(instanceId, object);
+
+			serializer.read(this, input, object);
+			if (DEBUG) log("Read", object);
 			return object;
 		} finally {
 			if (--depth == 0) reset();
@@ -640,10 +647,12 @@ public class Kryo {
 				if (instanceId != null && instanceId.object != null) return instanceId.object;
 			}
 
-			Object object = registration.getSerializer().read(this, input, type);
-			if (DEBUG) log("Read", object);
-
+			Serializer serializer = registration.getSerializer();
+			Object object = serializer.create(this, input, type);
 			if (instanceId != null) instanceIdToObject.put(instanceId, object);
+
+			serializer.read(this, input, object);
+			if (DEBUG) log("Read", object);
 			return object;
 		} finally {
 			if (--depth == 0) reset();
@@ -662,6 +671,7 @@ public class Kryo {
 			instanceId.object = object;
 			return instanceId;
 		}
+		if (TRACE) trace("kryo", "Read initial object reference " + instanceId.id + ": " + toString(type));
 		return new InstanceId(type, instanceId.id);
 	}
 
@@ -792,7 +802,7 @@ public class Kryo {
 		}
 		Class type = object.getClass();
 		if (type.isPrimitive() || type == Boolean.class || type == Byte.class || type == Character.class || type == Short.class
-			|| type == Integer.class || type == Long.class || type == Float.class || type == Double.class || type == String.class) {
+			|| type == Integer.class || type == Long.class || type == Float.class || type == Double.class) {
 			if (TRACE) trace("kryo", message + ": " + type.getSimpleName());
 			return;
 		}

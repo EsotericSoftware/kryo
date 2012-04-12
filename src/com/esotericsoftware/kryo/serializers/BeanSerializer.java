@@ -29,7 +29,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
  * @author Nathan Sweet <misc@n4te.com> */
-public class BeanSerializer implements Serializer {
+public class BeanSerializer extends Serializer {
 	static final Object[] noArgs = {};
 
 	private final Kryo kryo;
@@ -116,8 +116,7 @@ public class BeanSerializer implements Serializer {
 		}
 	}
 
-	public Object read (Kryo kryo, Input input, Class type) {
-		Object object = newInstance(kryo, input, type);
+	public void read (Kryo kryo, Input input, Object object) {
 		for (int i = 0, n = properties.length; i < n; i++) {
 			CachedProperty property = properties[i];
 			try {
@@ -130,25 +129,18 @@ public class BeanSerializer implements Serializer {
 					value = kryo.readClassAndObject(input);
 				property.set(object, value);
 			} catch (IllegalAccessException ex) {
-				throw new KryoException("Error accessing setter method: " + property + " (" + type.getName() + ")", ex);
+				throw new KryoException("Error accessing setter method: " + property + " (" + object.getClass().getName() + ")", ex);
 			} catch (InvocationTargetException ex) {
-				throw new KryoException("Error invoking setter method: " + property + " (" + type.getName() + ")", ex);
+				throw new KryoException("Error invoking setter method: " + property + " (" + object.getClass().getName() + ")", ex);
 			} catch (KryoException ex) {
-				ex.addTrace(property + " (" + type.getName() + ")");
+				ex.addTrace(property + " (" + object.getClass().getName() + ")");
 				throw ex;
 			} catch (RuntimeException runtimeEx) {
 				KryoException ex = new KryoException(runtimeEx);
-				ex.addTrace(property + " (" + type.getName() + ")");
+				ex.addTrace(property + " (" + object.getClass().getName() + ")");
 				throw ex;
 			}
 		}
-		return object;
-	}
-
-	/** Instance creation can be customized by overridding this method. The default implementaion calls
-	 * {@link Kryo#newInstance(Class)}. */
-	public <T> T newInstance (Kryo kryo, Input input, Class<T> type) {
-		return kryo.newInstance(type);
 	}
 
 	class CachedProperty {

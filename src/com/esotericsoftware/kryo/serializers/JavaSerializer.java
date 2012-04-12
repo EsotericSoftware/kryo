@@ -20,7 +20,7 @@ import com.esotericsoftware.kryo.io.Output;
  * @see FieldSerializer
  * @see Serializable
  * @author Nathan Sweet <misc@n4te.com> */
-public class JavaSerializer implements Serializer {
+public class JavaSerializer extends Serializer {
 	public void write (Kryo kryo, Output output, Object object) {
 		try {
 			ByteArrayOutputStream byteStream = new ByteArrayOutputStream(256);
@@ -37,7 +37,7 @@ public class JavaSerializer implements Serializer {
 		}
 	}
 
-	public Object read (Kryo kryo, Input input, Class type) {
+	public Object create (Kryo kryo, Input input, Class type) {
 		byte[] array = input.readBytes(input.readInt(true));
 		try {
 			return new ObjectInputStream(new ByteArrayInputStream(array)).readObject();
