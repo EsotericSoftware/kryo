@@ -12,9 +12,9 @@ public class BeanSerializerTest extends KryoTestCase {
 		test.setNullField("value");
 		test.setText("123");
 		test.setChild(new TestClass());
-		roundTrip(43, test);
+		roundTrip(40, test);
 		test.setNullField(null);
-		roundTrip(37, test);
+		roundTrip(35, test);
 	}
 
 	static public class TestClass {

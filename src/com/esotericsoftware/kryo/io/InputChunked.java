@@ -50,8 +50,8 @@ public class InputChunked extends Input {
 				if (b == -1) throw new KryoException("Buffer underflow.");
 				result |= (b & 0x7F) << offset;
 				if ((b & 0x80) == 0) {
-					if (TRACE) trace("kryo", "Read chunk: " + chunkSize);
 					chunkSize = result;
+					if (TRACE) trace("kryo", "Read chunk: " + chunkSize);
 					return;
 				}
 			}

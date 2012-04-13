@@ -23,7 +23,7 @@ public class MapSerializerTest extends KryoTestCase {
 		serializer.setKeyClass(String.class);
 		serializer.setKeysCanBeNull(false);
 		serializer.setValueClass(String.class);
-		roundTrip(20, map);
+		roundTrip(18, map);
 		serializer.setValuesCanBeNull(false);
 		roundTrip(18, map);
 	}

@@ -13,7 +13,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		DefaultTypes test = new DefaultTypes();
 		test.booleanField = true;
 		test.byteField = 123;
-		test.charField = 1234;
+		test.charField = 'Z';
 		test.shortField = 12345;
 		test.intField = 123456;
 		test.longField = 123456789;
@@ -21,7 +21,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.doubleField = 1.23456d;
 		test.BooleanField = true;
 		test.ByteField = -12;
-		test.CharacterField = 123;
+		test.CharacterField = 'X';
 		test.ShortField = -12345;
 		test.IntegerField = -123456;
 		test.LongField = -123456789l;
@@ -29,7 +29,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.DoubleField = -0.121231d;
 		test.StringField = "stringvalue";
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
-		roundTrip(81, test);
+		roundTrip(79, test);
 	}
 
 	public void testFieldRemoval () {
@@ -39,14 +39,14 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		HasStringField hasStringField = new HasStringField();
 		hasStringField.text = "moo";
-		roundTrip(6, hasStringField);
+		roundTrip(5, hasStringField);
 
 		DefaultTypes test = new DefaultTypes();
 		test.intField = 12;
 		test.StringField = "value";
 		test.CharacterField = 'X';
 		test.child = new DefaultTypes();
-		roundTrip(73, test);
+		roundTrip(72, test);
 		test.StringField = null;
 		roundTrip(67, test);
 
@@ -66,9 +66,9 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.hasStringField = new HasStringField();
 		test.child = new DefaultTypes();
 		test.child.hasStringField = new HasStringField();
-		roundTrip(199, test);
+		roundTrip(198, test);
 		test.hasStringField = null;
-		roundTrip(197, test);
+		roundTrip(196, test);
 
 		test = new DefaultTypes();
 		test.booleanField = true;
@@ -91,7 +91,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
 
 		kryo = new Kryo();
-		roundTrip(152, test);
+		roundTrip(146, test);
 
 		C c = new C();
 		c.a = new A();
@@ -101,7 +101,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d = new D();
 		c.d.e = new E();
 		c.d.e.f = new F();
-		roundTrip(73, c);
+		roundTrip(68, c);
 	}
 
 	public void testReferences () {
@@ -116,12 +116,12 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d.e.f.a = c.a;
 
 		kryo = new Kryo();
-		roundTrip(74, c);
+		roundTrip(68, c);
 		C c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
 
 		// Test reset clears unregistered class names.
-		roundTrip(74, c);
+		roundTrip(68, c);
 		c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
 
@@ -133,7 +133,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(D.class);
 		kryo.register(E.class);
 		kryo.register(F.class);
-		roundTrip(25, c);
+		roundTrip(19, c);
 		c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
 	}
@@ -236,7 +236,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		ComplexNoDefaultConstructor object2 = new ComplexNoDefaultConstructor("has no zero arg constructor!");
 		object2.anotherField1 = 1234;
 		object2.anotherField2 = "abcd";
-		roundTrip(38, object2);
+		roundTrip(37, object2);
 	}
 
 	public void testNonNull () {
