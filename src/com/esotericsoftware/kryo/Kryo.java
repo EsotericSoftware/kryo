@@ -39,7 +39,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.util.IntMap;
-import com.esotericsoftware.kryo.util.ObjectIntMap;
+import com.esotericsoftware.kryo.util.IdentityObjectIntMap;
 import com.esotericsoftware.kryo.util.ObjectMap;
 
 import static com.esotericsoftware.minlog.Log.*;
@@ -70,15 +70,15 @@ public class Kryo {
 	private ObjectMap context, graphContext;
 
 	private boolean registrationRequired;
-	private final ObjectIntMap<Class> classToNameId = new ObjectIntMap();
+	private final IdentityObjectIntMap<Class> classToNameId = new IdentityObjectIntMap();
 	private final IntMap<Class> nameIdToClass = new IntMap();
 	private int nextNameId;
 	private ClassLoader classLoader = getClass().getClassLoader();
 
 	private boolean references = true;
 	private final InstanceId instanceId = new InstanceId(null, 0);
-	private final ObjectIntMap<Class> classToNextInstanceId = new ObjectIntMap();
-	private final ObjectIntMap objectToInstanceId = new ObjectIntMap();
+	private final IdentityObjectIntMap<Class> classToNextInstanceId = new IdentityObjectIntMap();
+	private final IdentityObjectIntMap objectToInstanceId = new IdentityObjectIntMap();
 	private final ObjectMap<InstanceId, Object> instanceIdToObject = new ObjectMap();
 
 	public Kryo () {

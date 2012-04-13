@@ -8,7 +8,7 @@ package com.esotericsoftware.kryo.util;
  * depending on hash collisions. Load factors greater than 0.91 greatly increase the chances the map will have to rehash to the
  * next higher POT size.
  * @author Nathan Sweet */
-public class ObjectIntMap<K> {
+public class IdentityObjectIntMap<K> {
 	private static final int PRIME1 = 0xbe1f14b1;
 	private static final int PRIME2 = 0xb4b82e39;
 	private static final int PRIME3 = 0xced1c241;
@@ -26,19 +26,19 @@ public class ObjectIntMap<K> {
 
 	/** Creates a new map with an initial capacity of 32 and a load factor of 0.8. This map will hold 25 items before growing the
 	 * backing table. */
-	public ObjectIntMap () {
+	public IdentityObjectIntMap () {
 		this(32, 0.8f);
 	}
 
 	/** Creates a new map with a load factor of 0.8. This map will hold initialCapacity * 0.8 items before growing the backing
 	 * table. */
-	public ObjectIntMap (int initialCapacity) {
+	public IdentityObjectIntMap (int initialCapacity) {
 		this(initialCapacity, 0.8f);
 	}
 
 	/** Creates a new map with the specified initial capacity and load factor. This map will hold initialCapacity * loadFactor items
 	 * before growing the backing table. */
-	public ObjectIntMap (int initialCapacity, float loadFactor) {
+	public IdentityObjectIntMap (int initialCapacity, float loadFactor) {
 		if (initialCapacity < 0) throw new IllegalArgumentException("initialCapacity must be >= 0: " + initialCapacity);
 		if (capacity > 1 << 30) throw new IllegalArgumentException("initialCapacity is too large: " + initialCapacity);
 		capacity = ObjectMap.nextPowerOfTwo(initialCapacity);
@@ -60,7 +60,7 @@ public class ObjectIntMap<K> {
 		if (key == null) throw new IllegalArgumentException("key cannot be null.");
 
 		// Check for existing keys.
-		int hashCode = key.hashCode();
+		int hashCode = System.identityHashCode(key);
 		int index1 = hashCode & mask;
 		K key1 = keyTable[index1];
 		if (key.equals(key1)) {
@@ -114,7 +114,7 @@ public class ObjectIntMap<K> {
 	/** Skips checks for existing keys. */
 	private void putResize (K key, int value) {
 		// Check for empty buckets.
-		int hashCode = key.hashCode();
+		int hashCode = System.identityHashCode(key);
 		int index1 = hashCode & mask;
 		K key1 = keyTable[index1];
 		if (key1 == null) {
@@ -178,7 +178,7 @@ public class ObjectIntMap<K> {
 			}
 
 			// If the evicted key hashes to an empty bucket, put it there and stop.
-			int hashCode = evictedKey.hashCode();
+			int hashCode = System.identityHashCode(evictedKey);
 			index1 = hashCode & mask;
 			key1 = keyTable[index1];
 			if (key1 == null) {
@@ -239,7 +239,7 @@ public class ObjectIntMap<K> {
 
 	/** @param defaultValue Returned if the key was not associated with a value. */
 	public int get (K key, int defaultValue) {
-		int hashCode = key.hashCode();
+		int hashCode = System.identityHashCode(key);
 		int index = hashCode & mask;
 		if (!key.equals(keyTable[index])) {
 			index = hash2(hashCode);
@@ -261,7 +261,7 @@ public class ObjectIntMap<K> {
 	/** Returns the key's current value and increments the stored value. If the key is not in the map, defaultValue + increment is
 	 * put into the map. */
 	public int getAndIncrement (K key, int defaultValue, int increment) {
-		int hashCode = key.hashCode();
+		int hashCode = System.identityHashCode(key);
 		int index = hashCode & mask;
 		if (!key.equals(keyTable[index])) {
 			index = hash2(hashCode);
@@ -288,7 +288,7 @@ public class ObjectIntMap<K> {
 	}
 
 	public int remove (K key, int defaultValue) {
-		int hashCode = key.hashCode();
+		int hashCode = System.identityHashCode(key);
 		int index = hashCode & mask;
 		if (key.equals(keyTable[index])) {
 			keyTable[index] = null;
@@ -359,7 +359,7 @@ public class ObjectIntMap<K> {
 	}
 
 	public boolean containsKey (K key) {
-		int hashCode = key.hashCode();
+		int hashCode = System.identityHashCode(key);
 		int index = hashCode & mask;
 		if (!key.equals(keyTable[index])) {
 			index = hash2(hashCode);
