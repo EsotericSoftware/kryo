@@ -268,6 +268,12 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(39, test);
 	}
 
+	public void testConstructors () {
+		kryo.register(HasArgumentConstructor.class);
+		HasArgumentConstructor test = new HasArgumentConstructor("cow");
+		roundTrip(5, test);
+	}
+
 	static public class DefaultTypes {
 		// Primitives.
 		public boolean booleanField;
@@ -580,6 +586,25 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		public Object create (Kryo kryo, Input input, Class type) {
 			return new HasDefaultSerializerAnnotation(input.readLong(true));
+		}
+	}
+
+	static public class HasArgumentConstructor {
+		public String moo;
+
+		public HasArgumentConstructor (String moo) {
+			this.moo = moo;
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			HasArgumentConstructor other = (HasArgumentConstructor)obj;
+			if (moo == null) {
+				if (other.moo != null) return false;
+			} else if (!moo.equals(other.moo)) return false;
+			return true;
 		}
 	}
 }

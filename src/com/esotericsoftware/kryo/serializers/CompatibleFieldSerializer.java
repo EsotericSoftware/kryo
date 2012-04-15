@@ -14,6 +14,7 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.Util;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
@@ -104,7 +105,7 @@ public class CompatibleFieldSerializer extends Serializer {
 			if (Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers())) publicFields.add(cachedField);
 		}
 
-		if (!Kryo.isAndroid && Modifier.isPublic(type.getModifiers()) && !publicFields.isEmpty()) {
+		if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && !publicFields.isEmpty()) {
 			// Use ReflectASM for any public fields.
 			try {
 				access = FieldAccess.get(type);

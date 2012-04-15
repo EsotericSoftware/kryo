@@ -19,6 +19,7 @@ import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializable;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.Util;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.ObjectMap;
@@ -109,7 +110,7 @@ public class FieldSerializer extends Serializer {
 				asmFields.add(cachedField);
 		}
 
-		if (!Kryo.isAndroid && Modifier.isPublic(type.getModifiers()) && !asmFields.isEmpty()) {
+		if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && !asmFields.isEmpty()) {
 			// Use ReflectASM for any public fields.
 			try {
 				access = FieldAccess.get(type);
