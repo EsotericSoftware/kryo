@@ -9,12 +9,13 @@ import com.esotericsoftware.kryo.KryoException;
 import static com.esotericsoftware.minlog.Log.*;
 
 /** An OutputStream that buffers data in a byte array and flushes to another OutputStream, writing the length before each flush.
- * The length allows the chunks to be skipped when reading. */
+ * The length allows the chunks to be skipped when reading.
+ * @author Nathan Sweet <misc@n4te.com> */
 public class OutputChunked extends Output {
-	/** Creates an uninitialized OutputChunked with a maximum chunk size of 1024. The OutputStream must be set before it can be
+	/** Creates an uninitialized OutputChunked with a maximum chunk size of 2048. The OutputStream must be set before it can be
 	 * used. */
 	public OutputChunked () {
-		super(1024);
+		super(2048);
 	}
 
 	/** Creates an uninitialized OutputChunked. The OutputStream must be set before it can be used.
@@ -23,9 +24,9 @@ public class OutputChunked extends Output {
 		super(bufferSize);
 	}
 
-	/** Creates an OutputChunked with a maximum chunk size of 1024. */
+	/** Creates an OutputChunked with a maximum chunk size of 2048. */
 	public OutputChunked (OutputStream outputStream) {
-		super(outputStream, 1024);
+		super(outputStream, 2048);
 	}
 
 	/** @param bufferSize The maximum size of a chunk. */

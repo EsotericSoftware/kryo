@@ -7,11 +7,12 @@ import java.io.InputStream;
 import com.esotericsoftware.kryo.KryoException;
 
 /** An InputStream that reads data from a byte array and optionally fills the byte array from another OutputStream as needed.
- * Utility methods are provided for efficiently reading primitive types and strings. */
+ * Utility methods are provided for efficiently reading primitive types and strings.
+ * @author Nathan Sweet <misc@n4te.com> */
 public class Input extends InputStream {
 	private byte[] buffer;
 	private int capacity, position, limit, total;
-	private char[] chars = new char[0];
+	private char[] chars = new char[32];
 	private InputStream inputStream;
 
 	/** Creates a new Input for reading from a byte array.
@@ -104,7 +105,7 @@ public class Input extends InputStream {
 			count -= skipCount;
 			if (count == 0) break;
 			skipCount = Math.min(count, capacity);
-			require(skipCount, skipCount);
+			require(skipCount);
 		}
 	}
 
@@ -119,15 +120,12 @@ public class Input extends InputStream {
 	}
 
 	/** @param required Must be > 0. The buffer is filled until it has at least this many bytes.
-	 * @param optional Try to fill at least this many bytes in buffer.
-	 * @return the number of bytes remaining, but not more than optional.
+	 * @return the number of bytes remaining.
 	 * @throws KryoException if EOS is reached before required bytes are read (buffer underflow). */
-	private int require (int required, int optional) throws KryoException {
+	private int require (int required) throws KryoException {
 		int remaining = limit - position;
-		if (remaining >= required) return Math.min(remaining, optional);
-
+		if (remaining >= required) return remaining;
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
-		optional = Math.min(optional, capacity);
 
 		// Compact.
 		System.arraycopy(buffer, position, buffer, 0, remaining);
@@ -144,7 +142,7 @@ public class Input extends InputStream {
 			if (remaining >= required) break; // Enough has been read.
 		}
 		limit = remaining;
-		return Math.min(remaining, optional);
+		return remaining;
 	}
 
 	/** @param optional Try to fill the buffer with this many bytes.
@@ -173,7 +171,7 @@ public class Input extends InputStream {
 
 	/** Reads a byte. */
 	public int read () throws KryoException {
-		require(1, 1);
+		require(1);
 		return buffer[position++];
 	}
 
@@ -226,13 +224,13 @@ public class Input extends InputStream {
 	// byte
 
 	public byte readByte () throws KryoException {
-		require(1, 1);
+		require(1);
 		return buffer[position++];
 	}
 
 	/** Reads a byte as an int from 0 to 255. */
 	public int readByteUnsigned () throws KryoException {
-		require(1, 1);
+		require(1);
 		return buffer[position++] & 0xFF;
 	}
 
@@ -256,7 +254,7 @@ public class Input extends InputStream {
 			if (count == 0) break;
 			offset += copyCount;
 			copyCount = Math.min(count, capacity);
-			require(copyCount, copyCount);
+			require(copyCount);
 		}
 	}
 
@@ -264,7 +262,7 @@ public class Input extends InputStream {
 
 	/** Reads a 4 byte int. */
 	public int readInt () throws KryoException {
-		require(4, 4);
+		require(4);
 		byte[] buffer = this.buffer;
 		return (buffer[position++] & 0xFF) << 24 //
 			| (buffer[position++] & 0xFF) << 16 //
@@ -274,7 +272,7 @@ public class Input extends InputStream {
 
 	/** Reads a 1-5 byte int. */
 	public int readInt (boolean optimizePositive) throws KryoException {
-		if (require(1, 5) < 5) return readInt_slow(optimizePositive);
+		if (require(1) < 5) return readInt_slow(optimizePositive);
 		int b = buffer[position++];
 		int result = b & 0x7F;
 		if ((b & 0x80) != 0) {
@@ -301,19 +299,19 @@ public class Input extends InputStream {
 		int b = buffer[position++];
 		int result = b & 0x7F;
 		if ((b & 0x80) != 0) {
-			require(1, 4);
+			require(1);
 			b = buffer[position++];
 			result |= (b & 0x7F) << 7;
 			if ((b & 0x80) != 0) {
-				require(1, 3);
+				require(1);
 				b = buffer[position++];
 				result |= (b & 0x7F) << 14;
 				if ((b & 0x80) != 0) {
-					require(1, 2);
+					require(1);
 					b = buffer[position++];
 					result |= (b & 0x7F) << 21;
 					if ((b & 0x80) != 0) {
-						require(1, 1);
+						require(1);
 						b = buffer[position++];
 						result |= (b & 0x7F) << 28;
 					}
@@ -341,37 +339,8 @@ public class Input extends InputStream {
 
 	// string
 
-	/** Reads the length and string of 8 bit characters. */
-	public String readChars () throws KryoException {
-		int charCount = readInt(true);
-		switch (charCount) {
-		case 0:
-			return null;
-		case 1:
-			return "";
-		}
-		charCount--;
-		if (chars.length < charCount) chars = new char[charCount];
-		if (charCount > require(1, charCount)) return readChars_slow(charCount);
-		char[] chars = this.chars;
-		byte[] buffer = this.buffer;
-		for (int charIndex = 0; charIndex < charCount;)
-			chars[charIndex++] = (char)(buffer[position++] & 0xFF);
-		return new String(chars, 0, charCount);
-	}
-
-	private String readChars_slow (int charCount) {
-		char[] chars = this.chars;
-		byte[] buffer = this.buffer;
-		for (int charIndex = 0; charIndex < charCount;) {
-			int count = require(1, Math.min(charCount - charIndex, capacity));
-			for (int n = charIndex + count; charIndex < n; charIndex++)
-				chars[charIndex] = (char)(buffer[position++] & 0xFF);
-		}
-		return new String(chars, 0, charCount);
-	}
-
-	/** Reads the length and string of UTF8 characters. */
+	/** Reads the length and string of UTF8 characters, or null.
+	 * @return May be null. */
 	public String readString () throws KryoException {
 		int charCount = readInt(true);
 		switch (charCount) {
@@ -386,7 +355,7 @@ public class Input extends InputStream {
 		byte[] buffer = this.buffer;
 		// Try to read 8 bit chars.
 		int charIndex = 0, b;
-		int count = require(1, charCount);
+		int count = Math.min(require(1), charCount);
 		while (charIndex < count) {
 			b = buffer[position++] & 0xFF;
 			if (b > 127) {
@@ -404,7 +373,7 @@ public class Input extends InputStream {
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		while (charIndex < charCount) {
-			if (position == limit) require(1, charCount - charIndex);
+			if (position == limit) require(1);
 			int b = buffer[position++] & 0xFF;
 			switch (b >> 4) {
 			case 0:
@@ -419,15 +388,90 @@ public class Input extends InputStream {
 				break;
 			case 12:
 			case 13:
-				require(1, 1);
+				require(1);
 				chars[charIndex] = (char)((b & 0x1F) << 6 | buffer[position++] & 0x3F);
 				break;
 			case 14:
-				require(2, 2);
+				require(2);
 				chars[charIndex] = (char)((b & 0x0F) << 12 | (buffer[position++] & 0x3F) << 6 | buffer[position++] & 0x3F);
 				break;
 			}
 			charIndex++;
+		}
+		return new String(chars, 0, charCount);
+	}
+
+	/** Reads the length and string of 8 bit characters, or null.
+	 * @return May be null.
+	 * @see Output#writeString8(String) */
+	public String readString8 () throws KryoException {
+		int charCount = readInt(true);
+		switch (charCount) {
+		case 0:
+			return null;
+		case 1:
+			return "";
+		}
+		charCount--;
+		if (chars.length < charCount) chars = new char[charCount];
+		if (charCount > require(1)) return readString8_slow(charCount);
+		char[] chars = this.chars;
+		byte[] buffer = this.buffer;
+		for (int charIndex = 0; charIndex < charCount;)
+			chars[charIndex++] = (char)(buffer[position++] & 0xFF);
+		return new String(chars, 0, charCount);
+	}
+
+	private String readString8_slow (int charCount) {
+		char[] chars = this.chars;
+		byte[] buffer = this.buffer;
+		for (int charIndex = 0; charIndex < charCount;) {
+			int count = Math.min(require(1), charCount - charIndex);
+			for (int n = charIndex + count; charIndex < n; charIndex++)
+				chars[charIndex] = (char)(buffer[position++] & 0xFF);
+		}
+		return new String(chars, 0, charCount);
+	}
+
+	/** Reads a string of 7 bit characters. The remaining bit is used to denote if another character is available. The string will
+	 * not contain characters 0 (used for empty string) or 7F (used for null).
+	 * @return May be null.
+	 * @see Output#writeString7(String) */
+	public String readString7 () throws KryoException {
+		int b = readByte();
+		switch (b) {
+		case 0:
+			return "";
+		case -1:
+			return null;
+		}
+		char[] chars = this.chars;
+		byte[] buffer = this.buffer;
+		int remaining = limit - position;
+		chars[0] = (char)(b & 0x7F);
+		int charCount = 1;
+		while ((b & 0x80) == 0) {
+			if (remaining-- == 0 || charCount == chars.length) return readString7_slow(charCount);
+			b = buffer[position++];
+			chars[charCount++] = (char)(b & 0x7F);
+		}
+		return new String(chars, 0, charCount);
+	}
+
+	private String readString7_slow (int charCount) {
+		char[] chars = this.chars;
+		byte[] buffer = this.buffer;
+		while (true) {
+			require(1);
+			int b = buffer[position++];
+			if (charCount == chars.length) {
+				char[] newChars = new char[charCount * 2];
+				System.arraycopy(chars, 0, newChars, 0, charCount);
+				chars = newChars;
+				this.chars = newChars;
+			}
+			chars[charCount++] = (char)(b & 0x7F);
+			if ((b & 0x80) == 0x80) break;
 		}
 		return new String(chars, 0, charCount);
 	}
@@ -448,26 +492,26 @@ public class Input extends InputStream {
 
 	/** Reads a 2 byte short. */
 	public short readShort () throws KryoException {
-		require(2, 2);
+		require(2);
 		return (short)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF));
 	}
 
 	/** Reads a 2 byte short as an int from 0 to 65535. */
 	public int readShortUnsigned () throws KryoException {
-		require(2, 2);
+		require(2);
 		return ((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF);
 	}
 
 	/** Reads a 1-3 byte short. */
 	public short readShort (boolean optimizePositive) throws KryoException {
-		int available = require(1, 3);
+		int available = require(1);
 		byte value = buffer[position++];
 		if (optimizePositive) {
 			if (value != -1) return (short)(value & 0xFF);
 		} else {
 			if (value != -128) return value;
 		}
-		if (available < 3) require(2, 2);
+		if (available < 3) require(2);
 		return (short)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF));
 	}
 
@@ -475,7 +519,7 @@ public class Input extends InputStream {
 
 	/** Reads an 8 byte long. */
 	public long readLong () throws KryoException {
-		require(8, 8);
+		require(8);
 		byte[] buffer = this.buffer;
 		return (long)buffer[position++] << 56 //
 			| (long)(buffer[position++] & 0xFF) << 48 //
@@ -491,7 +535,7 @@ public class Input extends InputStream {
 	/** Reads a 1-10 byte long. */
 	public long readLong (boolean optimizePositive) throws KryoException {
 		byte[] buffer = this.buffer;
-		if (require(1, 10) < 10) return readLong_slow(optimizePositive);
+		if (require(1) < 10) return readLong_slow(optimizePositive);
 		int b = buffer[position++];
 		long result = b & 0x7F;
 		if ((b & 0x80) != 0) {
@@ -539,39 +583,39 @@ public class Input extends InputStream {
 		int b = buffer[position++];
 		long result = b & 0x7F;
 		if ((b & 0x80) != 0) {
-			require(1, 9);
+			require(1);
 			b = buffer[position++];
 			result |= (long)(b & 0x7F) << 7;
 			if ((b & 0x80) != 0) {
-				require(1, 8);
+				require(1);
 				b = buffer[position++];
 				result |= (long)(b & 0x7F) << 14;
 				if ((b & 0x80) != 0) {
-					require(1, 7);
+					require(1);
 					b = buffer[position++];
 					result |= (long)(b & 0x7F) << 21;
 					if ((b & 0x80) != 0) {
-						require(1, 6);
+						require(1);
 						b = buffer[position++];
 						result |= (long)(b & 0x7F) << 28;
 						if ((b & 0x80) != 0) {
-							require(1, 5);
+							require(1);
 							b = buffer[position++];
 							result |= (long)(b & 0x7F) << 35;
 							if ((b & 0x80) != 0) {
-								require(1, 4);
+								require(1);
 								b = buffer[position++];
 								result |= (long)(b & 0x7F) << 42;
 								if ((b & 0x80) != 0) {
-									require(1, 3);
+									require(1);
 									b = buffer[position++];
 									result |= (long)(b & 0x7F) << 49;
 									if ((b & 0x80) != 0) {
-										require(1, 2);
+										require(1);
 										b = buffer[position++];
 										result |= (long)(b & 0x7F) << 56;
 										if ((b & 0x80) != 0) {
-											require(1, 1);
+											require(1);
 											b = buffer[position++];
 											result |= (long)(b & 0x7F) << 63;
 										}
@@ -591,7 +635,7 @@ public class Input extends InputStream {
 
 	/** Reads a 1 byte boolean. */
 	public boolean readBoolean () throws KryoException {
-		require(1, 1);
+		require(1);
 		return buffer[position++] == 1;
 	}
 
@@ -599,7 +643,7 @@ public class Input extends InputStream {
 
 	/** Reads a 2 byte char. */
 	public char readChar () throws KryoException {
-		require(2, 2);
+		require(2);
 		return (char)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF));
 	}
 

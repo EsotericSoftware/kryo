@@ -16,7 +16,7 @@ import com.esotericsoftware.kryo.io.Output;
 public class DeflateSerializer extends Serializer {
 	private final Serializer serializer;
 	private boolean noHeaders = true;
-	private int compressionLevel = 6;
+	private int compressionLevel = 4;
 
 	public DeflateSerializer (Serializer serializer) {
 		this.serializer = serializer;
@@ -45,6 +45,8 @@ public class DeflateSerializer extends Serializer {
 		this.noHeaders = noHeaders;
 	}
 
+	/** Default is 4.
+	 * @see Deflater#setLevel(int) */
 	public void setCompressionLevel (int compressionLevel) {
 		this.compressionLevel = compressionLevel;
 	}

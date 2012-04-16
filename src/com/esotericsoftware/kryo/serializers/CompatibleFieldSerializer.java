@@ -149,7 +149,7 @@ public class CompatibleFieldSerializer extends Serializer {
 				output.writeString(fields[i].field.getName());
 		}
 
-		OutputChunked outputChunked = new OutputChunked(output);
+		OutputChunked outputChunked = new OutputChunked(output, 1024);
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			try {
@@ -216,7 +216,7 @@ public class CompatibleFieldSerializer extends Serializer {
 			context.put("schema", fields);
 		}
 
-		InputChunked inputChunked = new InputChunked(input);
+		InputChunked inputChunked = new InputChunked(input, 1024);
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			try {

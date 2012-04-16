@@ -8,13 +8,15 @@ import java.util.Date;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.Serializable;
+import com.esotericsoftware.kryo.KryoSerializable;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import static com.esotericsoftware.kryo.Kryo.*;
 
+/** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
+ * @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializers {
 	static public class BooleanSerializer extends Serializer<Boolean> {
 		public void write (Kryo kryo, Output output, Boolean object) {
@@ -96,6 +98,7 @@ public class DefaultSerializers {
 		}
 	}
 
+	/** @see Output#writeString(String) */
 	static public class StringSerializer extends Serializer<String> {
 		{
 			setAcceptsNull(true);
@@ -277,12 +280,12 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class SerializableSerializer extends Serializer<Serializable> {
-		public void write (Kryo kryo, Output output, Serializable object) {
+	static public class KryoSerializableSerializer extends Serializer<KryoSerializable> {
+		public void write (Kryo kryo, Output output, KryoSerializable object) {
 			object.write(kryo, output);
 		}
 
-		public void read (Kryo kryo, Input input, Serializable object) {
+		public void read (Kryo kryo, Input input, KryoSerializable object) {
 			object.read(kryo, input);
 		}
 	}

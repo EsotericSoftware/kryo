@@ -35,8 +35,8 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.DoubleSerializer
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.FloatSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.IntSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.SerializableSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSerializer;
@@ -53,9 +53,9 @@ import static com.esotericsoftware.minlog.Log.*;
 /** Maps classes to serializers so object graphs can be serialized automatically.
  * @author Nathan Sweet <misc@n4te.com> */
 public class Kryo {
+	static public final byte NAME = -1;
 	static public final byte NULL = 0;
 	static public final byte NOT_NULL = 1;
-	static public final byte NAME = -1;
 
 	private Class<? extends Serializer> defaultSerializer = FieldSerializer.class;
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
@@ -111,7 +111,7 @@ public class Kryo {
 		addDefaultSerializer(StringBuilder.class, StringBuilderSerializer.class);
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
-		addDefaultSerializer(Serializable.class, SerializableSerializer.class);
+		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
 		register(boolean.class);
@@ -535,12 +535,11 @@ public class Kryo {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		try {
 			int classID = input.readInt(true);
-			if (classID == NULL) {
+			switch (classID) {
+			case NULL:
 				if (DEBUG) log("Read", null);
 				return null;
-			}
-			classID -= 2;
-			if (classID == NAME) {
+			case NAME + 2: // Offset for NAME and NULL.
 				int nameId = input.readInt(true);
 				Class type = nameIdToClass.get(nameId);
 				if (type == null) {
@@ -558,9 +557,9 @@ public class Kryo {
 				}
 				return getRegistration(type);
 			}
-			Registration registration = idToRegistration.get(classID);
-			if (registration == null) throw new KryoException("Encountered unregistered class ID: " + classID);
-			if (TRACE) trace("kryo", "Read class " + classID + ": " + className(registration.getType()));
+			Registration registration = idToRegistration.get(classID - 2);
+			if (registration == null) throw new KryoException("Encountered unregistered class ID: " + (classID - 2));
+			if (TRACE) trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()));
 			return registration;
 		} finally {
 			if (depth == 0) reset();

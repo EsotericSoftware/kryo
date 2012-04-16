@@ -6,6 +6,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 
+/** @author Nathan Sweet <misc@n4te.com> */
 public class FieldSerializerTest extends KryoTestCase {
 	public void testDefaultTypes () {
 		kryo.register(DefaultTypes.class);
@@ -29,6 +30,15 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.DoubleField = -0.121231d;
 		test.StringField = "stringvalue";
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
+		roundTrip(79, test);
+
+		kryo.register(HasStringField.class);
+		test.hasStringField = new HasStringField();
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(DefaultTypes.class);
+		serializer.getField("hasStringField").setCanBeNull(false);
+		roundTrip(80, test);
+		serializer.setFixedFieldTypes(true);
+		serializer.getField("hasStringField").setCanBeNull(false);
 		roundTrip(79, test);
 	}
 

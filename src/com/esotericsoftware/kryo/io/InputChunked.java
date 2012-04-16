@@ -8,13 +8,14 @@ import com.esotericsoftware.kryo.KryoException;
 
 import static com.esotericsoftware.minlog.Log.*;
 
-/** An InputStream that reads lengths and chunks of data from another OutputStream, allowing chunks to be skipped. */
+/** An InputStream that reads lengths and chunks of data from another OutputStream, allowing chunks to be skipped.
+ * @author Nathan Sweet <misc@n4te.com> */
 public class InputChunked extends Input {
 	private int chunkSize = -1;
 
-	/** Creates an uninitialized InputChunked with a buffer size of 1024. The InputStream must be set before it can be used. */
+	/** Creates an uninitialized InputChunked with a buffer size of 2048. The InputStream must be set before it can be used. */
 	public InputChunked () {
-		super(1024);
+		super(2048);
 	}
 
 	/** Creates an uninitialized InputChunked. The InputStream must be set before it can be used. */
@@ -22,13 +23,28 @@ public class InputChunked extends Input {
 		super(bufferSize);
 	}
 
-	/** Creates an InputChunked with a buffer size of 1024. */
+	/** Creates an InputChunked with a buffer size of 2048. */
 	public InputChunked (InputStream inputStream) {
-		super(inputStream);
+		super(inputStream, 2048);
 	}
 
 	public InputChunked (InputStream inputStream, int bufferSize) {
 		super(inputStream, bufferSize);
+	}
+
+	public void setInputStream (InputStream inputStream) {
+		super.setInputStream(inputStream);
+		chunkSize = -1;
+	}
+
+	public void setBuffer (byte[] bytes, int offset, int count) {
+		super.setBuffer(bytes, offset, count);
+		chunkSize = -1;
+	}
+
+	public void rewind () {
+		super.rewind();
+		chunkSize = -1;
 	}
 
 	protected int fill (byte[] buffer, int offset, int count) throws KryoException {

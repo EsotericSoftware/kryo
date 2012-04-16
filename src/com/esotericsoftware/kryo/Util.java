@@ -5,6 +5,8 @@ import com.esotericsoftware.kryo.serializers.ArraySerializer;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+/** A few utility methods, mostly private.
+ * @author Nathan Sweet <misc@n4te.com> */
 public class Util {
 	static public boolean isAndroid;
 	static {

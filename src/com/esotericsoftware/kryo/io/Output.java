@@ -7,12 +7,14 @@ import java.io.OutputStream;
 import com.esotericsoftware.kryo.KryoException;
 
 /** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
- * for efficiently writing primitive types and strings. */
+ * for efficiently writing primitive types and strings.
+ * @author Nathan Sweet <misc@n4te.com> */
 public class Output extends OutputStream {
 	private final int maxCapacity;
 	private int capacity, position, total;
 	private byte[] buffer;
 	private OutputStream outputStream;
+	private char[] chars = new char[32];
 
 	/** Creates a new Output for writing to a byte array.
 	 * @param bufferSize The initial and maximum size of the buffer. An exception is thrown if this size is exceeded. */
@@ -156,6 +158,11 @@ public class Output extends OutputStream {
 
 	// byte
 
+	public void writeByte (byte value) throws KryoException {
+		if (position == capacity) require(1);
+		buffer[position++] = value;
+	}
+
 	public void writeByte (int value) throws KryoException {
 		if (position == capacity) require(1);
 		buffer[position++] = (byte)value;
@@ -230,36 +237,6 @@ public class Output extends OutputStream {
 
 	// string
 
-	/** Writes the length and string using 1 byte per character. */
-	public void writeChars (String value) throws KryoException {
-		if (value == null) {
-			writeByte(0);
-			return;
-		}
-		int charCount = value.length();
-		writeInt(charCount + 1, true);
-		if (capacity < charCount)
-			writeChars_slow(value, charCount);
-		else {
-			require(charCount);
-			byte[] buffer = this.buffer;
-			for (int i = 0; i < charCount; i++)
-				buffer[position++] = (byte)value.charAt(i);
-		}
-	}
-
-	private void writeChars_slow (String value, int charCount) throws KryoException {
-		byte[] buffer = this.buffer;
-		int charsToWrite = capacity - position;
-		int charIndex = 0;
-		while (charIndex < charCount) {
-			for (int n = charIndex + charsToWrite; charIndex < n; charIndex++)
-				buffer[position++] = (byte)value.charAt(charIndex);
-			charsToWrite = Math.min(charCount - charIndex, capacity);
-			if (require(charsToWrite)) buffer = this.buffer;
-		}
-	}
-
 	/** Writes the length and string using UTF8, or null.
 	 * @param value May be null. */
 	public void writeString (String value) throws KryoException {
@@ -268,24 +245,27 @@ public class Output extends OutputStream {
 			return;
 		}
 		int charCount = value.length();
+		if (chars.length < charCount) chars = new char[charCount];
+		char[] chars = this.chars;
+		value.getChars(0, charCount, chars, 0);
 		writeInt(charCount + 1, true);
 		int charIndex = 0;
-		if (capacity >= charCount) {
+		if (capacity - position >= charCount) {
 			// Try to write 8 bit chars.
-			require(charCount);
 			for (; charIndex < charCount; charIndex++) {
-				int c = value.charAt(charIndex);
+				int c = chars[charIndex];
 				if (c > 127) break;
 				buffer[position++] = (byte)c;
 			}
 		}
-		if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
+		if (charIndex < charCount) writeString_slow(charCount, charIndex);
 	}
 
-	private void writeString_slow (String value, int charCount, int charIndex) {
+	private void writeString_slow (int charCount, int charIndex) {
+		char[] chars = this.chars;
 		for (; charIndex < charCount; charIndex++) {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
-			int c = value.charAt(charIndex);
+			int c = chars[charIndex];
 			if (c <= 0x007F) {
 				buffer[position++] = (byte)c;
 			} else if (c > 0x07FF) {
@@ -299,6 +279,75 @@ public class Output extends OutputStream {
 				buffer[position++] = (byte)(0x80 | c & 0x3F);
 			}
 		}
+	}
+
+	/** Writes the length and string using 8 bits per character, or null. This is slightly less space efficient and very slightly
+	 * faster than {@link #writeString7(String)}.
+	 * @param value May be null. */
+	public void writeString8 (String value) throws KryoException {
+		if (value == null) {
+			writeByte(0);
+			return;
+		}
+		int charCount = value.length();
+		writeInt(charCount + 1, true);
+		if (capacity - position < charCount)
+			writeString8_slow(value, charCount);
+		else {
+			value.getBytes(0, charCount, buffer, position);
+			position += charCount;
+		}
+	}
+
+	private void writeString8_slow (String value, int charCount) throws KryoException {
+		byte[] buffer = this.buffer;
+		int charsToWrite = capacity - position;
+		int charIndex = 0;
+		while (charIndex < charCount) {
+			value.getBytes(charIndex, charIndex + charsToWrite, buffer, position);
+			charIndex += charsToWrite;
+			position += charsToWrite;
+			charsToWrite = Math.min(charCount - charIndex, capacity);
+			if (require(charsToWrite)) buffer = this.buffer;
+		}
+	}
+
+	/** Writes the string using 7 bits per character. The remaining bit is used to denote if another character is available. The
+	 * string must not contain characters 0 (used for empty string) or 7F (used for null). This is slightly more space efficient
+	 * and very slightly slower than {@link #writeString8(String)}.
+	 * @param value May be null. */
+	public void writeString7 (String value) throws KryoException {
+		if (value == null) {
+			writeByte(-1);
+			return;
+		}
+		int charCount = value.length();
+		if (charCount == 0) {
+			writeByte(0);
+			return;
+		}
+		if (capacity - position < charCount)
+			writeString7_slow(value, charCount);
+		else {
+			value.getBytes(0, charCount, buffer, position);
+			position += charCount;
+			buffer[position - 1] |= 0x80;
+		}
+	}
+
+	private void writeString7_slow (String value, int charCount) throws KryoException {
+		byte[] buffer = this.buffer;
+		int charsToWrite = capacity - position;
+		int charIndex = 0;
+		charCount--;
+		while (charIndex < charCount) {
+			value.getBytes(charIndex, charIndex + charsToWrite, buffer, position);
+			charIndex += charsToWrite;
+			position += charsToWrite;
+			charsToWrite = Math.min(charCount - charIndex, capacity);
+			if (require(charsToWrite)) buffer = this.buffer;
+		}
+		writeByte(value.charAt(charCount) | 0x80);
 	}
 
 	// float

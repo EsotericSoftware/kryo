@@ -8,6 +8,7 @@ import java.io.IOException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+/** @author Nathan Sweet <misc@n4te.com> */
 public class InputOutputTest extends KryoTestCase {
 	public void testOutputStream () throws IOException {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -70,7 +71,7 @@ public class InputOutputTest extends KryoTestCase {
 
 	public void testUTF () throws IOException {
 		runUTFTest(new Output(4096));
-		runUTFTest(new Output(300));
+		runUTFTest(new Output(400));
 		runUTFTest(new Output(new ByteArrayOutputStream()));
 
 		Output write = new Output(21);
@@ -84,30 +85,58 @@ public class InputOutputTest extends KryoTestCase {
 		String value1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*";
 		String value2 = "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234";
 
+		write.writeString("");
+		write.writeString("1");
+		write.writeString("22");
 		write.writeString("uno");
 		write.writeString("dos");
 		write.writeString("tres");
 		write.writeString(null);
 		write.writeString(value1);
 		write.writeString(value2);
-		write.writeChars("uno");
-		write.writeChars("dos");
-		write.writeChars("tres");
-		write.writeChars(null);
-		write.writeChars(value1);
+		write.writeString8("");
+		write.writeString8("1");
+		write.writeString8("22");
+		write.writeString8("uno");
+		write.writeString8("dos");
+		write.writeString8("tres");
+		write.writeString8(null);
+		write.writeString8(value1);
+		write.writeString7("");
+		write.writeString7("1");
+		write.writeString7("22");
+		write.writeString7("uno");
+		write.writeString7("dos");
+		write.writeString7("tres");
+		write.writeString7(null);
+		write.writeString7(value1);
 
 		Input read = new Input(write.toBytes());
+		assertEquals("", read.readString());
+		assertEquals("1", read.readString());
+		assertEquals("22", read.readString());
 		assertEquals("uno", read.readString());
 		assertEquals("dos", read.readString());
 		assertEquals("tres", read.readString());
 		assertEquals(null, read.readString());
 		assertEquals(value1, read.readString());
 		assertEquals(value2, read.readString());
-		assertEquals("uno", read.readChars());
-		assertEquals("dos", read.readChars());
-		assertEquals("tres", read.readChars());
-		assertEquals(null, read.readChars());
-		assertEquals(value1, read.readChars());
+		assertEquals("", read.readString8());
+		assertEquals("1", read.readString8());
+		assertEquals("22", read.readString8());
+		assertEquals("uno", read.readString8());
+		assertEquals("dos", read.readString8());
+		assertEquals("tres", read.readString8());
+		assertEquals(null, read.readString8());
+		assertEquals(value1, read.readString8());
+		assertEquals("", read.readString7());
+		assertEquals("1", read.readString7());
+		assertEquals("22", read.readString7());
+		assertEquals("uno", read.readString7());
+		assertEquals("dos", read.readString7());
+		assertEquals("tres", read.readString7());
+		assertEquals(null, read.readString7());
+		assertEquals(value1, read.readString7());
 	}
 
 	public void testCanReadInt () throws IOException {

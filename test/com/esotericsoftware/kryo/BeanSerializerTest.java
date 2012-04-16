@@ -3,6 +3,7 @@ package com.esotericsoftware.kryo;
 
 import com.esotericsoftware.kryo.serializers.BeanSerializer;
 
+/** @author Nathan Sweet <misc@n4te.com> */
 public class BeanSerializerTest extends KryoTestCase {
 	public void testBeanSerializer () {
 		kryo.register(TestClass.class, new BeanSerializer(kryo, TestClass.class));

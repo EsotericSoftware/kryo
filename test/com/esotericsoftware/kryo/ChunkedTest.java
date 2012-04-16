@@ -6,6 +6,7 @@ import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
 
+/** @author Nathan Sweet <misc@n4te.com> */
 public class ChunkedTest extends KryoTestCase {
 	public void testChunks () {
 		Output output = new Output(512);

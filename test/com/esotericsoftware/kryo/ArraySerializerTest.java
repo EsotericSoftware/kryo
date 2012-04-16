@@ -3,6 +3,7 @@ package com.esotericsoftware.kryo;
 
 import com.esotericsoftware.kryo.serializers.ArraySerializer;
 
+/** @author Nathan Sweet <misc@n4te.com> */
 public class ArraySerializerTest extends KryoTestCase {
 	public void testArrays () {
 		kryo.register(int[].class);

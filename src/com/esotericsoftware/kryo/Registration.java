@@ -6,7 +6,8 @@ import org.objenesis.instantiator.ObjectInstantiator;
 import static com.esotericsoftware.kryo.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
-/** Describes the {@link Serializer} and class ID to use for a class. */
+/** Describes the {@link Serializer} and class ID to use for a class.
+ * @author Nathan Sweet <misc@n4te.com> */
 public class Registration {
 	private final Class type;
 	private final int id;

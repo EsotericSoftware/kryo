@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 
+/** @author Nathan Sweet <misc@n4te.com> */
 public class MapSerializerTest extends KryoTestCase {
 	public void testMaps () {
 		kryo.register(HashMap.class);

@@ -4,7 +4,8 @@ package com.esotericsoftware.kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-/** Reads and writes objects to and from bytes. */
+/** Reads and writes objects to and from bytes.
+ * @author Nathan Sweet <misc@n4te.com> */
 public abstract class Serializer<T> {
 	private boolean acceptsNull;
 

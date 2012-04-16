@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 
+/** @author Nathan Sweet <misc@n4te.com> */
 public class CompatibleFieldSerializerTest extends KryoTestCase {
 	public void testAddedField () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
