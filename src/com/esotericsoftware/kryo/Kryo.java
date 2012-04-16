@@ -61,7 +61,7 @@ public class Kryo {
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
 	private ArraySerializer arraySerializer = new ArraySerializer();
 	private boolean reflection = true;
-	private InstantiatorStrategy strategy = new StdInstantiatorStrategy();
+	private InstantiatorStrategy strategy;
 
 	private int depth, nextRegisterID;
 	private final IntMap<Registration> idToRegistration = new IntMap();
