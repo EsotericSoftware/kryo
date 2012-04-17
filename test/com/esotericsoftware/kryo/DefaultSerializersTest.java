@@ -3,8 +3,11 @@ package com.esotericsoftware.kryo;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
+import com.esotericsoftware.kryo.serializers.ArraysAsListSerializer;
 import com.esotericsoftware.kryo.serializers.String7Serializer;
 import com.esotericsoftware.kryo.serializers.String8Serializer;
 
@@ -197,6 +200,13 @@ public class DefaultSerializersTest extends KryoTestCase {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		roundTrip(75, TestEnumWithMethods.c);
+	}
+
+	public void testArraysAsList () {
+		kryo.setRegistrationRequired(false);
+		kryo.addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer.class);
+		List<Integer> test = Arrays.asList(1, 2, 3);
+		roundTrip(36, test);
 	}
 
 	public enum TestEnum {

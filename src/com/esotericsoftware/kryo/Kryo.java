@@ -8,6 +8,7 @@ import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Currency;
 import java.util.Date;
@@ -21,6 +22,7 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ArraySerializer;
+import com.esotericsoftware.kryo.serializers.ArraysAsListSerializer;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigIntegerSerializer;
@@ -92,6 +94,7 @@ public class Kryo {
 		addDefaultSerializer(Currency.class, CurrencySerializer.class);
 		addDefaultSerializer(StringBuffer.class, StringBufferSerializer.class);
 		addDefaultSerializer(StringBuilder.class, StringBuilderSerializer.class);
+		addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer.class);
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
 		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
@@ -171,11 +174,12 @@ public class Kryo {
 	 * <td>Collection</td>
 	 * <td>Map</td>
 	 * <td>Serializable</td>
+	 * <td>Arrays.asList</td>
 	 * </tr>
 	 * </table>
 	 * <p>
 	 * Note that the order default serializers are added is important for a class that may match multiple types. The above default
-	 * serializers always have a lower priority than subsequent default serializers. */
+	 * serializers always have a lower priority than subsequent default serializers that are added. */
 	public void addDefaultSerializer (Class type, Class<? extends Serializer> serializerClass) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerClass == null) throw new IllegalArgumentException("serializerClass cannot be null.");
@@ -183,16 +187,6 @@ public class Kryo {
 		entry.type = type;
 		entry.serializerClass = serializerClass;
 		defaultSerializers.add(defaultSerializers.size() - defaultSerializerCount, entry);
-	}
-
-	/** Convenience method for using {@link Class#forName(String)} to call {@link #addDefaultSerializer(Class, Serializer)}. This
-	 * can be useful when setting a serializer for a private class, such as Arrays$ArrayList. */
-	public void addDefaultSerializer (String className, Class<? extends Serializer> serializerClass) {
-		try {
-			addDefaultSerializer(Class.forName(className), serializerClass);
-		} catch (ClassNotFoundException ex) {
-			throw new KryoException(ex);
-		}
 	}
 
 	/** Returns the best matching serializer for a class. This method can be overridden to implement custom logic to choose a
