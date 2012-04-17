@@ -204,7 +204,6 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 	public void testArraysAsList () {
 		kryo.setRegistrationRequired(false);
-		kryo.addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer.class);
 		List<Integer> test = Arrays.asList(1, 2, 3);
 		roundTrip(36, test);
 	}
