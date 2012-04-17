@@ -3,6 +3,9 @@ package com.esotericsoftware.kryo.serializers;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Currency;
 import java.util.Date;
 
@@ -287,6 +290,17 @@ public class DefaultSerializers {
 
 		public void read (Kryo kryo, Input input, KryoSerializable object) {
 			object.read(kryo, input);
+		}
+	}
+
+	/** Serializer for lists created via {@link Arrays#asList(Object...)}. */
+	public class ArraysAsListSerializer extends CollectionSerializer {
+		public ArraysAsListSerializer (Kryo kryo) {
+			super(kryo);
+		}
+
+		public Collection create (Kryo kryo, Input input, Class type) {
+			return new ArrayList();
 		}
 	}
 }

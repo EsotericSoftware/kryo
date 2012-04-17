@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import com.esotericsoftware.kryo.serializers.ArraysAsListSerializer;
 import com.esotericsoftware.kryo.serializers.String7Serializer;
 import com.esotericsoftware.kryo.serializers.String8Serializer;
 
