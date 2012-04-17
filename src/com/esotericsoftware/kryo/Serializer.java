@@ -15,11 +15,10 @@ public abstract class Serializer<T> {
 
 	/** Creates a new object of the specified type. The object may be uninitialized. This method may read from input to populate the
 	 * object, but it must not call {@link Kryo} methods to deserialize nested objects. That must be done in
-	 * {@link #read(Kryo, Input, Object)}. The default implementation uses {@link Registration#getInstantiator()} to create a new
-	 * object.
+	 * {@link #read(Kryo, Input, Object)}. The default implementation uses {@link Kryo#newInstance(Class)} to create a new object.
 	 * @return May be null if {@link #getAcceptsNull()} is true. */
 	public T create (Kryo kryo, Input input, Class<T> type) {
-		return (T)kryo.getRegistration(type).getInstantiator().newInstance();
+		return kryo.newInstance(type);
 	}
 
 	/** Populates the object. This method may call {@link Kryo} methods to deserialize nested objects, unlike

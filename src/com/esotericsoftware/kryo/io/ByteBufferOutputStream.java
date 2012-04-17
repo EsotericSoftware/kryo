@@ -5,7 +5,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-/** An OutputStream whose target is a {@link ByteBuffer}.
+/** An OutputStream whose target is a {@link ByteBuffer}. If bytes would be written that would overflow the buffer,
+ * {@link #flush()} is called. Subclasses can override flush to empty the buffer.
  * @author Nathan Sweet <misc@n4te.com> */
 public class ByteBufferOutputStream extends OutputStream {
 	private ByteBuffer byteBuffer;
@@ -32,10 +33,12 @@ public class ByteBufferOutputStream extends OutputStream {
 	}
 
 	public void write (int b) throws IOException {
+		if (!byteBuffer.hasRemaining()) flush();
 		byteBuffer.put((byte)b);
 	}
 
 	public void write (byte[] bytes, int offset, int length) throws IOException {
+		if (byteBuffer.remaining() < length) flush();
 		byteBuffer.put(bytes, offset, length);
 	}
 }

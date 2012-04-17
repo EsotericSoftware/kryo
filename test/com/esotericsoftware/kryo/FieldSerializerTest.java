@@ -1,6 +1,11 @@
 
 package com.esotericsoftware.kryo;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.objenesis.strategy.StdInstantiatorStrategy;
+
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
@@ -278,8 +283,9 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(39, test);
 	}
 
-	public void testConstructors () {
+	public void testInstantiatorStrategy () {
 		kryo.register(HasArgumentConstructor.class);
+		kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
 		HasArgumentConstructor test = new HasArgumentConstructor("cow");
 		roundTrip(5, test);
 	}

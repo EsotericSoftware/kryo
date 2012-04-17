@@ -59,8 +59,8 @@ public class Kryo {
 
 	private Class<? extends Serializer> defaultSerializer = FieldSerializer.class;
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
+	private int defaultSerializerCount;
 	private ArraySerializer arraySerializer = new ArraySerializer();
-	private boolean reflection = true;
 	private InstantiatorStrategy strategy;
 
 	private int depth, nextRegisterID;
@@ -83,24 +83,7 @@ public class Kryo {
 	private final ObjectMap<InstanceId, Object> instanceIdToObject = new ObjectMap();
 
 	public Kryo () {
-		addDefaultSerializer(boolean.class, BooleanSerializer.class);
-		addDefaultSerializer(Boolean.class, BooleanSerializer.class);
-		addDefaultSerializer(byte.class, ByteSerializer.class);
-		addDefaultSerializer(Byte.class, ByteSerializer.class);
-		addDefaultSerializer(char.class, CharSerializer.class);
-		addDefaultSerializer(Character.class, CharSerializer.class);
-		addDefaultSerializer(short.class, ShortSerializer.class);
-		addDefaultSerializer(Short.class, ShortSerializer.class);
-		addDefaultSerializer(int.class, IntSerializer.class);
-		addDefaultSerializer(Integer.class, IntSerializer.class);
-		addDefaultSerializer(long.class, LongSerializer.class);
-		addDefaultSerializer(Long.class, LongSerializer.class);
-		addDefaultSerializer(float.class, FloatSerializer.class);
-		addDefaultSerializer(Float.class, FloatSerializer.class);
-		addDefaultSerializer(double.class, DoubleSerializer.class);
-		addDefaultSerializer(Double.class, DoubleSerializer.class);
 		addDefaultSerializer(byte[].class, ByteArraySerializer.class);
-		addDefaultSerializer(String.class, StringSerializer.class);
 		addDefaultSerializer(BigInteger.class, BigIntegerSerializer.class);
 		addDefaultSerializer(BigDecimal.class, BigDecimalSerializer.class);
 		addDefaultSerializer(Class.class, ClassSerializer.class);
@@ -112,17 +95,18 @@ public class Kryo {
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
 		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
+		defaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
-		register(boolean.class);
-		register(byte.class);
-		register(char.class);
-		register(short.class);
-		register(int.class);
-		register(long.class);
-		register(float.class);
-		register(double.class);
-		register(String.class);
+		register(boolean.class, new BooleanSerializer());
+		register(byte.class, new ByteSerializer());
+		register(char.class, new CharSerializer());
+		register(short.class, new ShortSerializer());
+		register(int.class, new IntSerializer());
+		register(long.class, new LongSerializer());
+		register(float.class, new FloatSerializer());
+		register(double.class, new DoubleSerializer());
+		register(String.class, new StringSerializer());
 	}
 
 	// --- Default serializers ---
@@ -142,11 +126,10 @@ public class Kryo {
 		DefaultSerializerEntry entry = new DefaultSerializerEntry();
 		entry.type = type;
 		entry.serializer = serializer;
-		defaultSerializers.add(entry);
+		defaultSerializers.add(defaultSerializers.size() - defaultSerializerCount, entry);
 	}
 
-	/** Instances of the specified class will use the specified serializer. Note that the order default serializers are added is
-	 * important for a class with multiple super types registered. Serializer instances are created as needed via
+	/** Instances of the specified class will use the specified serializer. Serializer instances are created as needed via
 	 * {@link #newSerializer(Class, Class)}. By default, the following classes have a default serializer set:
 	 * <p>
 	 * <table>
@@ -189,14 +172,27 @@ public class Kryo {
 	 * <td>Map</td>
 	 * <td>Serializable</td>
 	 * </tr>
-	 * </table> */
+	 * </table>
+	 * <p>
+	 * Note that the order default serializers are added is important for a class that may match multiple types. The above default
+	 * serializers always have a lower priority than subsequent default serializers. */
 	public void addDefaultSerializer (Class type, Class<? extends Serializer> serializerClass) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerClass == null) throw new IllegalArgumentException("serializerClass cannot be null.");
 		DefaultSerializerEntry entry = new DefaultSerializerEntry();
 		entry.type = type;
 		entry.serializerClass = serializerClass;
-		defaultSerializers.add(entry);
+		defaultSerializers.add(defaultSerializers.size() - defaultSerializerCount, entry);
+	}
+
+	/** Convenience method for using {@link Class#forName(String)} to call {@link #addDefaultSerializer(Class, Serializer)}. This
+	 * can be useful when setting a serializer for a private class, such as Arrays$ArrayList. */
+	public void addDefaultSerializer (String className, Class<? extends Serializer> serializerClass) {
+		try {
+			addDefaultSerializer(Class.forName(className), serializerClass);
+		} catch (ClassNotFoundException ex) {
+			throw new KryoException(ex);
+		}
 	}
 
 	/** Returns the best matching serializer for a class. This method can be overridden to implement custom logic to choose a
@@ -324,7 +320,6 @@ public class Kryo {
 					+ registration.getSerializer().getClass().getName() + ")");
 			}
 		}
-		if (registration.getInstantiator() == null) registration.setInstantiator(newInstantiator(registration.getType()));
 		classToRegistration.put(registration.getType(), registration);
 		idToRegistration.put(registration.getId(), registration);
 		if (registration.getType().isPrimitive()) classToRegistration.put(getWrapperClass(registration.getType()), registration);
@@ -786,57 +781,54 @@ public class Kryo {
 		if (TRACE) trace("kryo", "Array serializer set: " + arraySerializer.getClass().getName());
 	}
 
-	/** If true, {@link #newInstantiator(Class)} will return an instantiator that uses reflection to call the zero argument
-	 * constructor. If false or there is no zero argument constructor, the {@link #setInstantiatorStrategy(InstantiatorStrategy)
-	 * instantiator strategy} is used. Reflection is always used for {@link #useReflection(Class) some classes}. Default is true. */
-	public void setReflection (boolean reflection) {
-		this.reflection = reflection;
+	public ArraySerializer getArraySerializer () {
+		return arraySerializer;
 	}
 
-	/** Returns true if reflection should always be used by {@link #newInstantiator(Class)} for the specified class, even if
-	 * {@link #setReflection(boolean)} is false. The default implementation returns true for class names starting with "java." or
-	 * "javax.". */
-	protected boolean useReflection (Class type) {
-		return type.getName().startsWith("java.") || type.getName().startsWith("javax.");
-	}
-
-	/** Sets the strategy used by {@link #newInstantiator(Class)} for creating objects, if {@link #setReflection(boolean)
-	 * reflection} was not used. The default uses {@link StdInstantiatorStrategy}, which attempts to create objects via without
-	 * calling any constructor. {@link SerializingInstantiatorStrategy} can be used to mimic Java's built-in serialization.
-	 * @param strategy If null, an exception will be thrown for classes that don't have a zero argument constructor or otherwise
-	 *           can't be instantiated via reflection. */
+	/** Sets the strategy used by {@link #newInstantiator(Class)} for creating objects. See {@link StdInstantiatorStrategy} to
+	 * create objects via without calling any constructor. See {@link SerializingInstantiatorStrategy} to mimic Java's built-in
+	 * serialization.
+	 * @param strategy May be null. */
 	public void setInstantiatorStrategy (InstantiatorStrategy strategy) {
 		this.strategy = strategy;
 	}
 
-	/** Returns a new instantiator for creating new instances of the specified type.
-	 * @see #setReflection(boolean)
-	 * @see #setInstantiatorStrategy(InstantiatorStrategy)
-	 * @see Registration#getInstantiator() */
+	/** Returns a new instantiator for creating new instances of the specified type. By default, an instantiator is returned that
+	 * uses reflection if the class has a zero argument constructor, an exception is thrown. If a
+	 * {@link #setInstantiatorStrategy(InstantiatorStrategy) strategy} is set, it will be used instead of throwing an exception. */
 	protected ObjectInstantiator newInstantiator (final Class type) {
-		if (reflection || useReflection(type)) {
-			try {
-				final Constructor constructor = type.getDeclaredConstructor((Class[])null);
-				return new ObjectInstantiator() {
-					public Object newInstance () {
-						try {
-							return constructor.newInstance();
-						} catch (Exception ex) {
-							throw new KryoException("Error constructing instance of class: " + className(type), ex);
-						}
+		try {
+			final Constructor constructor = type.getDeclaredConstructor((Class[])null);
+			return new ObjectInstantiator() {
+				public Object newInstance () {
+					try {
+						return constructor.newInstance();
+					} catch (Exception ex) {
+						throw new KryoException("Error constructing instance of class: " + className(type), ex);
 					}
-				};
-			} catch (Exception ignored) {
-			}
-			if (strategy == null) {
-				if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()))
-					throw new KryoException("Class cannot be created (non-static member class): " + className(type));
-				else
-					throw new KryoException("Class cannot be created (missing no-arg constructor): " + className(type));
-			}
+				}
+			};
+		} catch (Exception ignored) {
 		}
-		if (strategy == null) throw new IllegalStateException("Constructors are disabled and no strategy is set.");
+		if (strategy == null) {
+			if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()))
+				throw new KryoException("Class cannot be created (non-static member class): " + className(type));
+			else
+				throw new KryoException("Class cannot be created (missing no-arg constructor): " + className(type));
+		}
 		return strategy.newInstantiatorOf(type);
+	}
+
+	/** Creates a new instance of a class using {@link Registration#getInstantiator()}. If the registration's instantiator is null,
+	 * a new one is set using {@link #newInstantiator(Class)}. */
+	public <T> T newInstance (Class<T> type) {
+		Registration registration = getRegistration(type);
+		ObjectInstantiator instantiator = registration.getInstantiator();
+		if (instantiator == null) {
+			instantiator = newInstantiator(type);
+			registration.setInstantiator(instantiator);
+		}
+		return (T)instantiator.newInstance();
 	}
 
 	/** Name/value pairs that are available to all serializers. */

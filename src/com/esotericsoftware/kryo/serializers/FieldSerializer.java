@@ -294,6 +294,10 @@ public class FieldSerializer extends Serializer {
 			this.serializer = serializer;
 		}
 
+		public void setSerializer (Serializer serializer) {
+			this.serializer = serializer;
+		}
+
 		public void setCanBeNull (boolean canBeNull) {
 			this.canBeNull = canBeNull;
 		}

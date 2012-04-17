@@ -42,14 +42,12 @@ public class Registration {
 		if (TRACE) trace("kryo", "Update registered serializer: " + type.getName() + " (" + serializer.getClass().getName() + ")");
 	}
 
-	/** Returns the instantiator that will create a new instance of the type. By default, Kryo assigns an instantiator from
-	 * {@link Kryo#newInstantiator(Class)}. */
+	/** @return May be null if not yet set. */
 	public ObjectInstantiator getInstantiator () {
 		return instantiator;
 	}
 
-	/** Sets the instantiator that will create a new instance of the type. By default, Kryo assigns an instantiator from
-	 * {@link Kryo#newInstantiator(Class)}. */
+	/** Sets the instantiator that will create a new instance of the type in {@link Kryo#newInstance(Class)}. */
 	public void setInstantiator (ObjectInstantiator instantiator) {
 		if (instantiator == null) throw new IllegalArgumentException("instantiator cannot be null.");
 		this.instantiator = instantiator;
