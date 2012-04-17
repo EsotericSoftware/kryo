@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Currency;
 import java.util.Date;
 import java.util.Map;
@@ -31,6 +32,12 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.ByteArraySeriali
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ByteSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CharSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ClassSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsEmptyListSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsEmptyMapSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsEmptySetSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonListSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonMapSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonSetSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CurrencySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DateSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DoubleSerializer;
@@ -61,7 +68,7 @@ public class Kryo {
 
 	private Class<? extends Serializer> defaultSerializer = FieldSerializer.class;
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
-	private int defaultSerializerCount;
+	private int lowPriorityDefaultSerializerCount;
 	private ArraySerializer arraySerializer = new ArraySerializer();
 	private InstantiatorStrategy strategy;
 
@@ -95,10 +102,16 @@ public class Kryo {
 		addDefaultSerializer(StringBuffer.class, StringBufferSerializer.class);
 		addDefaultSerializer(StringBuilder.class, StringBuilderSerializer.class);
 		addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer.class);
+		addDefaultSerializer(Collections.EMPTY_LIST.getClass(), CollectionsEmptyListSerializer.class);
+		addDefaultSerializer(Collections.EMPTY_MAP.getClass(), CollectionsEmptyMapSerializer.class);
+		addDefaultSerializer(Collections.EMPTY_SET.getClass(), CollectionsEmptySetSerializer.class);
+		addDefaultSerializer(Collections.singletonList(null).getClass(), CollectionsSingletonListSerializer.class);
+		addDefaultSerializer(Collections.singletonMap(null, null).getClass(), CollectionsSingletonMapSerializer.class);
+		addDefaultSerializer(Collections.singleton(null).getClass(), CollectionsSingletonSetSerializer.class);
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
 		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
-		defaultSerializerCount = defaultSerializers.size();
+		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
 		register(boolean.class, new BooleanSerializer());
@@ -129,7 +142,7 @@ public class Kryo {
 		DefaultSerializerEntry entry = new DefaultSerializerEntry();
 		entry.type = type;
 		entry.serializer = serializer;
-		defaultSerializers.add(defaultSerializers.size() - defaultSerializerCount, entry);
+		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
 	}
 
 	/** Instances of the specified class will use the specified serializer. Serializer instances are created as needed via
@@ -186,7 +199,7 @@ public class Kryo {
 		DefaultSerializerEntry entry = new DefaultSerializerEntry();
 		entry.type = type;
 		entry.serializerClass = serializerClass;
-		defaultSerializers.add(defaultSerializers.size() - defaultSerializerCount, entry);
+		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
 	}
 
 	/** Returns the best matching serializer for a class. This method can be overridden to implement custom logic to choose a

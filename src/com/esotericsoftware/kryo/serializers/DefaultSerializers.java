@@ -6,8 +6,13 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Currency;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -294,13 +299,87 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for lists created via {@link Arrays#asList(Object...)}. */
-	public class ArraysAsListSerializer extends CollectionSerializer {
+	static public class ArraysAsListSerializer extends CollectionSerializer {
 		public ArraysAsListSerializer (Kryo kryo) {
 			super(kryo);
 		}
 
 		public Collection create (Kryo kryo, Input input, Class type) {
 			return new ArrayList();
+		}
+	}
+
+	/** Serializer for lists created via {@link Collections#emptyList()} or that were just assigned the
+	 * {@link Collections#EMPTY_LIST}.
+	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
+	static public class CollectionsEmptyListSerializer extends Serializer {
+		public void write (Kryo kryo, Output output, Object object) {
+		}
+
+		public Object create (Kryo kryo, Input input, Class type) {
+			return Collections.EMPTY_LIST;
+		}
+	}
+
+	/** Serializer for maps created via {@link Collections#emptyMap()} or that were just assigned the {@link Collections#EMPTY_MAP}.
+	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
+	static public class CollectionsEmptyMapSerializer extends Serializer {
+		public void write (Kryo kryo, Output output, Object object) {
+		}
+
+		public Object create (Kryo kryo, Input input, Class type) {
+			return Collections.EMPTY_MAP;
+		}
+	}
+
+	/** Serializer for sets created via {@link Collections#emptySet()} or that were just assigned the {@link Collections#EMPTY_SET}.
+	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
+	static public class CollectionsEmptySetSerializer extends Serializer {
+		public void write (Kryo kryo, Output output, Object object) {
+		}
+
+		public Object create (Kryo kryo, Input input, Class type) {
+			return Collections.EMPTY_SET;
+		}
+	}
+
+	/** Serializer for lists created via {@link Collections#singletonList(Object)}.
+	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
+	static public class CollectionsSingletonListSerializer extends Serializer<List> {
+		public void write (Kryo kryo, Output output, List object) {
+			kryo.writeClassAndObject(output, object.get(0));
+		}
+
+		public List create (Kryo kryo, Input input, Class type) {
+			return Collections.singletonList(kryo.readClassAndObject(input));
+		}
+	}
+
+	/** Serializer for maps created via {@link Collections#singletonMap(Object, Object)}.
+	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
+	static public class CollectionsSingletonMapSerializer extends Serializer<Map> {
+		public void write (Kryo kryo, Output output, Map object) {
+			Entry entry = (Entry)object.entrySet().iterator().next();
+			kryo.writeClassAndObject(output, entry.getKey());
+			kryo.writeClassAndObject(output, entry.getValue());
+		}
+
+		public Map create (Kryo kryo, Input input, Class type) {
+			Object key = kryo.readClassAndObject(input);
+			Object value = kryo.readClassAndObject(input);
+			return Collections.singletonMap(key, value);
+		}
+	}
+
+	/** Serializer for sets created via {@link Collections#singleton(Object)}.
+	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
+	static public class CollectionsSingletonSetSerializer extends Serializer<Set> {
+		public void write (Kryo kryo, Output output, Set object) {
+			kryo.writeClassAndObject(output, object.iterator().next());
+		}
+
+		public Set create (Kryo kryo, Input input, Class type) {
+			return Collections.singleton(kryo.readClassAndObject(input));
 		}
 	}
 }

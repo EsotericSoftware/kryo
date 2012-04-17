@@ -3,7 +3,9 @@ package com.esotericsoftware.kryo;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -205,6 +207,18 @@ public class DefaultSerializersTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		List<Integer> test = Arrays.asList(1, 2, 3);
 		roundTrip(36, test);
+	}
+
+	public void testCollectionsMethods () {
+		kryo.setRegistrationRequired(false);
+		ArrayList test = new ArrayList();
+		test.add(Collections.EMPTY_LIST);
+		test.add(Collections.EMPTY_MAP);
+		test.add(Collections.EMPTY_SET);
+		test.add(Collections.singletonList("meow"));
+		test.add(Collections.singletonMap("moo", 1234));
+		test.add(Collections.singleton(12.34));
+		roundTrip(258, test);
 	}
 
 	public enum TestEnum {
