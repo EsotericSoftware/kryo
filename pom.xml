@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.esotericsoftware.kryo</groupId>
 	<artifactId>kryo</artifactId>
-	<version>2.01</version>
+	<version>2.05</version>
 	<packaging>jar</packaging>
 	<name>Kryo</name>
 	<description>Fast, efficient Java serialization</description>
@@ -45,6 +45,11 @@
 		<dependency>
 			<groupId>com.esotericsoftware.minlog</groupId>
 			<artifactId>minlog</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.objenesis</groupId>
+			<artifactId>objenesis</artifactId>
 			<version>1.2</version>
 		</dependency>
 		<dependency>

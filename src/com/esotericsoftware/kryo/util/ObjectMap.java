@@ -1,21 +1,9 @@
-/*******************************************************************************
- * Copyright 2011 See AUTHORS file.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *   http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- ******************************************************************************/
 
 package com.esotericsoftware.kryo.util;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Random;
 
 /** An unordered map. This implementation is a cuckoo hash map using 3 hashes, random walking, and a small stash for problematic
@@ -29,6 +17,7 @@ public class ObjectMap<K, V> {
 	static private final int PRIME1 = 0xbe1f14b1;
 	static private final int PRIME2 = 0xb4b82e39;
 	static private final int PRIME3 = 0xced1c241;
+
 	static Random random = new Random();
 
 	public int size;
@@ -41,6 +30,10 @@ public class ObjectMap<K, V> {
 	private int hashShift, mask, threshold;
 	private int stashCapacity;
 	private int pushIterations;
+
+	private Entries entries;
+	private Values values;
+	private Keys keys;
 
 	/** Creates a new map with an initial capacity of 32 and a load factor of 0.8. This map will hold 25 items before growing the
 	 * backing table. */
@@ -131,6 +124,11 @@ public class ObjectMap<K, V> {
 
 		push(key, value, index1, key1, index2, key2, index3, key3);
 		return null;
+	}
+
+	public void putAll (ObjectMap<K, V> map) {
+		for (Entry<K, V> entry : map.entries())
+			put(entry.key, entry.value);
 	}
 
 	/** Skips checks for existing keys. */
@@ -476,7 +474,180 @@ public class ObjectMap<K, V> {
 		return buffer.toString();
 	}
 
-	static int nextPowerOfTwo (int value) {
+	/** Returns an iterator for the entries in the map. Remove is supported. Note that the same iterator instance is returned each
+	 * time this method is called. Use the {@link Entries} constructor for nested or multithreaded iteration. */
+	public Entries<K, V> entries () {
+		if (entries == null)
+			entries = new Entries(this);
+		else
+			entries.reset();
+		return entries;
+	}
+
+	/** Returns an iterator for the values in the map. Remove is supported. Note that the same iterator instance is returned each
+	 * time this method is called. Use the {@link Entries} constructor for nested or multithreaded iteration. */
+	public Values<V> values () {
+		if (values == null)
+			values = new Values(this);
+		else
+			values.reset();
+		return values;
+	}
+
+	/** Returns an iterator for the keys in the map. Remove is supported. Note that the same iterator instance is returned each time
+	 * this method is called. Use the {@link Entries} constructor for nested or multithreaded iteration. */
+	public Keys<K> keys () {
+		if (keys == null)
+			keys = new Keys(this);
+		else
+			keys.reset();
+		return keys;
+	}
+
+	static public class Entry<K, V> {
+		public K key;
+		public V value;
+
+		public String toString () {
+			return key + "=" + value;
+		}
+	}
+
+	static private class MapIterator<K, V> {
+		public boolean hasNext;
+
+		protected final ObjectMap<K, V> map;
+		int currentIndex;
+		protected int nextIndex;
+
+		public MapIterator (ObjectMap<K, V> map) {
+			this.map = map;
+			reset();
+		}
+
+		public void reset () {
+			currentIndex = -1;
+			nextIndex = -1;
+			advance();
+		}
+
+		protected void advance () {
+			hasNext = false;
+			K[] keyTable = map.keyTable;
+			for (int n = map.capacity + map.stashSize; ++nextIndex < n;) {
+				if (keyTable[nextIndex] != null) {
+					hasNext = true;
+					break;
+				}
+			}
+		}
+
+		public void remove () {
+			if (currentIndex < 0) throw new IllegalStateException("next must be called before remove.");
+			if (currentIndex >= map.capacity) {
+				map.removeStashIndex(currentIndex);
+			} else {
+				map.keyTable[currentIndex] = null;
+				map.valueTable[currentIndex] = null;
+			}
+			currentIndex = -1;
+			map.size--;
+		}
+	}
+
+	static public class Entries<K, V> extends MapIterator<K, V> implements Iterable<Entry<K, V>>, Iterator<Entry<K, V>> {
+		protected Entry<K, V> entry = new Entry();
+
+		public Entries (ObjectMap<K, V> map) {
+			super(map);
+		}
+
+		/** Note the same entry instance is returned each time this method is called. */
+		public Entry<K, V> next () {
+			if (!hasNext) throw new NoSuchElementException();
+			K[] keyTable = map.keyTable;
+			entry.key = keyTable[nextIndex];
+			entry.value = map.valueTable[nextIndex];
+			currentIndex = nextIndex;
+			advance();
+			return entry;
+		}
+
+		public boolean hasNext () {
+			return hasNext;
+		}
+
+		public Iterator<Entry<K, V>> iterator () {
+			return this;
+		}
+	}
+
+	static public class Values<V> extends MapIterator<Object, V> implements Iterable<V>, Iterator<V> {
+		public Values (ObjectMap<?, V> map) {
+			super((ObjectMap<Object, V>)map);
+		}
+
+		public boolean hasNext () {
+			return hasNext;
+		}
+
+		public V next () {
+			V value = map.valueTable[nextIndex];
+			currentIndex = nextIndex;
+			advance();
+			return value;
+		}
+
+		public Iterator<V> iterator () {
+			return this;
+		}
+
+		/** Returns a new array containing the remaining values. */
+		public ArrayList<V> toArray () {
+			ArrayList array = new ArrayList(map.size);
+			while (hasNext)
+				array.add(next());
+			return array;
+		}
+
+		/** Adds the value entries to the given array.
+		 * @param array */
+		public void toArray (ArrayList<V> array) {
+			while (hasNext)
+				array.add(next());
+		}
+	}
+
+	static public class Keys<K> extends MapIterator<K, Object> implements Iterable<K>, Iterator<K> {
+		public Keys (ObjectMap<K, ?> map) {
+			super((ObjectMap<K, Object>)map);
+		}
+
+		public boolean hasNext () {
+			return hasNext;
+		}
+
+		public K next () {
+			K key = map.keyTable[nextIndex];
+			currentIndex = nextIndex;
+			advance();
+			return key;
+		}
+
+		public Iterator<K> iterator () {
+			return this;
+		}
+
+		/** Returns a new array containing the remaining keys. */
+		public ArrayList<K> toArray () {
+			ArrayList array = new ArrayList(map.size);
+			while (hasNext)
+				array.add(next());
+			return array;
+		}
+	}
+
+	static public int nextPowerOfTwo (int value) {
 		if (value == 0) return 1;
 		value--;
 		value |= value >> 1;

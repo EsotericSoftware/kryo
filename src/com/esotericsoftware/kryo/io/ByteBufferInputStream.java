@@ -40,7 +40,7 @@ public class ByteBufferInputStream extends InputStream {
 	public int read (byte[] bytes, int offset, int length) throws IOException {
 		int count = Math.min(byteBuffer.remaining(), length);
 		if (count == 0) return -1;
-		byteBuffer.get(bytes, offset, length);
+		byteBuffer.get(bytes, offset, count);
 		return count;
 	}
 

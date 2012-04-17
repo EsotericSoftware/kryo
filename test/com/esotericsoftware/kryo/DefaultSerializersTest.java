@@ -203,12 +203,6 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(75, TestEnumWithMethods.c);
 	}
 
-	public void testArraysAsList () {
-		kryo.setRegistrationRequired(false);
-		List<Integer> test = Arrays.asList(1, 2, 3);
-		roundTrip(36, test);
-	}
-
 	public void testCollectionsMethods () {
 		kryo.setRegistrationRequired(false);
 		ArrayList test = new ArrayList();

@@ -8,7 +8,6 @@ import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Currency;
@@ -24,7 +23,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ArraySerializer;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.ArraysAsListSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigIntegerSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BooleanSerializer;
@@ -101,7 +99,6 @@ public class Kryo {
 		addDefaultSerializer(Currency.class, CurrencySerializer.class);
 		addDefaultSerializer(StringBuffer.class, StringBufferSerializer.class);
 		addDefaultSerializer(StringBuilder.class, StringBuilderSerializer.class);
-		addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer.class);
 		addDefaultSerializer(Collections.EMPTY_LIST.getClass(), CollectionsEmptyListSerializer.class);
 		addDefaultSerializer(Collections.EMPTY_MAP.getClass(), CollectionsEmptyMapSerializer.class);
 		addDefaultSerializer(Collections.EMPTY_SET.getClass(), CollectionsEmptySetSerializer.class);
@@ -180,14 +177,21 @@ public class Kryo {
 	 * <td>Date</td>
 	 * <td>Enum</td>
 	 * <td>Currency</td>
-	 * <tr>
 	 * </tr>
+	 * <tr>
+	 * <td>Map</td>
+	 * <td>Collection</td>
+	 * <td>Collections.emptyList</td>
+	 * <td>Collections.emptyMap</td>
+	 * <td>Collections.emptySet</td>
+	 * <td>KryoSerializable</td>
+	 * </tr>
+	 * <tr>
 	 * <td>StringBuffer</td>
 	 * <td>StringBuilder</td>
-	 * <td>Collection</td>
-	 * <td>Map</td>
-	 * <td>Serializable</td>
-	 * <td>Arrays.asList</td>
+	 * <td>Collections.singletonList</td>
+	 * <td>Collections.singletonMap</td>
+	 * <td>Collections.singleton</td>
 	 * </tr>
 	 * </table>
 	 * <p>
