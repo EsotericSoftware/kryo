@@ -126,7 +126,7 @@ public class Kryo {
 
 	/** Sets the serailzer to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's type.
 	 * Default is {@link FieldSerializer}. */
-	public void setDefaultSerializer (Class<Serializer> serializer) {
+	public void setDefaultSerializer (Class<? extends Serializer> serializer) {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		defaultSerializer = serializer;
 	}
@@ -152,46 +152,48 @@ public class Kryo {
 	 * <td>byte</td>
 	 * <td>Byte</td>
 	 * <td>char</td>
-	 * <td>Character</td>
 	 * <tr>
 	 * </tr>
+	 * <td>Character</td>
 	 * <td>short</td>
 	 * <td>Short</td>
 	 * <td>int</td>
 	 * <td>Integer</td>
-	 * <td>long</td>
-	 * <td>Long</td>
 	 * <tr>
 	 * </tr>
+	 * <td>long</td>
+	 * <td>Long</td>
 	 * <td>float</td>
 	 * <td>Float</td>
 	 * <td>double</td>
+	 * <tr>
+	 * </tr>
 	 * <td>Double</td>
 	 * <td>byte[]</td>
 	 * <td>String</td>
-	 * <tr>
-	 * </tr>
 	 * <td>BigInteger</td>
 	 * <td>BigDecimal</td>
-	 * <td>Class</td>
-	 * <td>Date</td>
-	 * <td>Enum</td>
-	 * <td>Currency</td>
 	 * </tr>
 	 * <tr>
-	 * <td>Map</td>
 	 * <td>Collection</td>
+	 * <td>Date</td>
 	 * <td>Collections.emptyList</td>
+	 * <td>Collections.singleton</td>
+	 * <td>Map</td>
+	 * </tr>
+	 * <tr>
+	 * <td>StringBuilder</td>
+	 * <td>Enum</td>
 	 * <td>Collections.emptyMap</td>
 	 * <td>Collections.emptySet</td>
 	 * <td>KryoSerializable</td>
 	 * </tr>
 	 * <tr>
 	 * <td>StringBuffer</td>
-	 * <td>StringBuilder</td>
+	 * <td>Class</td>
 	 * <td>Collections.singletonList</td>
 	 * <td>Collections.singletonMap</td>
-	 * <td>Collections.singleton</td>
+	 * <td>Currency</td>
 	 * </tr>
 	 * </table>
 	 * <p>
