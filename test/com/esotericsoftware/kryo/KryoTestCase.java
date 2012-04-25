@@ -58,6 +58,18 @@ abstract public class KryoTestCase extends TestCase {
 		assertEquals(object1, object2);
 		assertEquals("Incorrect number of bytes read.", length, input.total());
 
+		// Test null.
+		if (object1 != null) {
+			output.clear();
+			outStream.reset();
+			kryo.writeObjectOrNull(output, null, kryo.getRegistration(object1.getClass()).getSerializer());
+			output.flush();
+
+			// Test null from byte array.
+			input = new Input(new ByteArrayInputStream(outStream.toByteArray()), 10);
+			assertEquals(null, kryo.readObjectOrNull(input, object1.getClass()));
+		}
+
 		// Test output to byte array.
 		output = new Output(length * 2, -1);
 		kryo.writeClassAndObject(output, object1);

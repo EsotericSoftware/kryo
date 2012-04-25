@@ -811,7 +811,14 @@ public class Kryo {
 	 * {@link #setInstantiatorStrategy(InstantiatorStrategy) strategy} is set, it will be used instead of throwing an exception. */
 	protected ObjectInstantiator newInstantiator (final Class type) {
 		try {
-			final Constructor constructor = type.getDeclaredConstructor((Class[])null);
+			Constructor ctor;
+			try {
+				ctor = type.getConstructor((Class[])null);
+			} catch (Exception ex) {
+				ctor = type.getDeclaredConstructor((Class[])null);
+				ctor.setAccessible(true);
+			}
+			final Constructor constructor = ctor;
 			return new ObjectInstantiator() {
 				public Object newInstance () {
 					try {

@@ -283,10 +283,15 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(39, test);
 	}
 
+	@SuppressWarnings("synthetic-access")
 	public void testInstantiatorStrategy () {
 		kryo.register(HasArgumentConstructor.class);
 		kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
 		HasArgumentConstructor test = new HasArgumentConstructor("cow");
+		roundTrip(5, test);
+
+		kryo.register(HasPrivateConstructor.class);
+		test = new HasPrivateConstructor();
 		roundTrip(5, test);
 	}
 
@@ -621,6 +626,12 @@ public class FieldSerializerTest extends KryoTestCase {
 				if (other.moo != null) return false;
 			} else if (!moo.equals(other.moo)) return false;
 			return true;
+		}
+	}
+
+	static public class HasPrivateConstructor extends HasArgumentConstructor {
+		private HasPrivateConstructor () {
+			super("cow");
 		}
 	}
 }
