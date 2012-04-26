@@ -3,7 +3,6 @@ package com.esotericsoftware.kryo.io;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 
 import com.esotericsoftware.kryo.KryoException;
 
@@ -14,7 +13,6 @@ public class Output extends OutputStream {
 	private int maxCapacity, capacity, position, total;
 	private byte[] buffer;
 	private OutputStream outputStream;
-	private char[] chars = new char[32];
 
 	/** Creates an uninitialized Output. {@link #setBuffer(byte[], int)} must be called before the Output is used. */
 	public Output () {
@@ -30,6 +28,7 @@ public class Output extends OutputStream {
 	 * @param bufferSize The initial size of the buffer.
 	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. */
 	public Output (int bufferSize, int maxBufferSize) {
+		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.capacity = bufferSize;
 		this.maxCapacity = maxBufferSize == -1 ? Integer.MAX_VALUE : maxBufferSize;
 		buffer = new byte[bufferSize];
@@ -85,6 +84,7 @@ public class Output extends OutputStream {
 	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. */
 	public void setBuffer (byte[] buffer, int maxBufferSize) {
 		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
+		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.buffer = buffer;
 		this.maxCapacity = maxBufferSize;
 		capacity = buffer.length;
@@ -132,6 +132,7 @@ public class Output extends OutputStream {
 				throw new KryoException("Buffer overflow. Available: " + (capacity - position) + ", required: " + required);
 			// Grow buffer.
 			capacity = Math.min(capacity * 2, maxCapacity);
+			if (capacity < 0) capacity = maxCapacity;
 			byte[] newBuffer = new byte[capacity];
 			System.arraycopy(buffer, 0, newBuffer, 0, position);
 			buffer = newBuffer;
@@ -267,9 +268,6 @@ public class Output extends OutputStream {
 			return;
 		}
 		int charCount = value.length();
-		if (chars.length < charCount) chars = new char[charCount];
-		char[] chars = this.chars;
-		value.getChars(0, charCount, chars, 0);
 		writeInt(charCount + 1, true);
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
@@ -277,20 +275,19 @@ public class Output extends OutputStream {
 			byte[] buffer = this.buffer;
 			int position = this.position;
 			for (; charIndex < charCount; charIndex++) {
-				int c = chars[charIndex];
+				int c = value.charAt(charIndex);
 				if (c > 127) break;
 				buffer[position++] = (byte)c;
 			}
 			this.position = position;
 		}
-		if (charIndex < charCount) writeString_slow(charCount, charIndex);
+		if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
 	}
 
-	private void writeString_slow (int charCount, int charIndex) {
-		char[] chars = this.chars;
+	private void writeString_slow (String value, int charCount, int charIndex) {
 		for (; charIndex < charCount; charIndex++) {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
-			int c = chars[charIndex];
+			int c = value.charAt(charIndex);
 			if (c <= 0x007F) {
 				buffer[position++] = (byte)c;
 			} else if (c > 0x07FF) {
