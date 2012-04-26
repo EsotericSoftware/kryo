@@ -39,8 +39,8 @@ import static com.esotericsoftware.minlog.Log.*;
  *
  */
 public class FieldSerializer extends Serializer {
-	private final Class type;
 	private final Kryo kryo;
+	private final Class type;
 	private CachedField[] fields;
 	Object access;
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;

@@ -7,14 +7,28 @@ import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class CompatibleFieldSerializerTest extends KryoTestCase {
+	public void testCompatibleFieldSerializer () throws FileNotFoundException {
+		TestClass object1 = new TestClass();
+		object1.child = new TestClass();
+		object1.other = new AnotherClass();
+		object1.other.value = "meow";
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(TestClass.class);
+		kryo.register(AnotherClass.class);
+		roundTrip(110, object1);
+	}
+
 	public void testAddedField () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();
+		object1.other = new AnotherClass();
+		object1.other.value = "meow";
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
-		roundTrip(55, object1);
+		kryo.register(AnotherClass.class, new CompatibleFieldSerializer(kryo, AnotherClass.class));
+		roundTrip(81, object1);
 
 		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
 		Object object2 = kryo.readClassAndObject(input);
@@ -26,7 +40,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.child = new TestClass();
 
 		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
-		roundTrip(84, object1);
+		roundTrip(96, object1);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
 		serializer.removeField("text");
@@ -41,6 +55,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		public long moo2 = 1234120;
 		public TestClass child;
 		public int zzz = 123;
+		public AnotherClass other;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -58,5 +73,9 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 			if (zzz != other.zzz) return false;
 			return true;
 		}
+	}
+
+	static public class AnotherClass {
+		String value;
 	}
 }

@@ -34,11 +34,13 @@ import static com.esotericsoftware.minlog.Log.*;
  * bytes.
  * @author Nathan Sweet <misc@n4te.com> */
 public class CompatibleFieldSerializer extends Serializer {
-	final Kryo kryo;
-	final Class type;
+	private final Kryo kryo;
+	private final Class type;
 	private CachedField[] fields;
 	Object access;
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
+	private boolean ignoreSyntheticFields = true;
+	private boolean finalFieldTypes;
 
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
 		this.kryo = kryo;
@@ -46,7 +48,7 @@ public class CompatibleFieldSerializer extends Serializer {
 		rebuildCachedFields();
 	}
 
-	private void rebuildCachedFields () {
+	protected void rebuildCachedFields () {
 		if (type.isInterface()) {
 			fields = new CachedField[0]; // No fields to serialize.
 			return;
@@ -62,7 +64,7 @@ public class CompatibleFieldSerializer extends Serializer {
 
 		ObjectMap context = kryo.getContext();
 
-		ArrayList<CachedField> publicFields = new ArrayList();
+		ArrayList<CachedField> asmFields = new ArrayList();
 		PriorityQueue<CachedField> cachedFields = new PriorityQueue(Math.max(1, allFields.size()), new Comparator<CachedField>() {
 			public int compare (CachedField o1, CachedField o2) {
 				// Fields are sorted by alpha so the order of the data is known.
@@ -75,7 +77,7 @@ public class CompatibleFieldSerializer extends Serializer {
 			int modifiers = field.getModifiers();
 			if (Modifier.isTransient(modifiers)) continue;
 			if (Modifier.isStatic(modifiers)) continue;
-			if (field.isSynthetic()) continue;
+			if (field.isSynthetic() && ignoreSyntheticFields) continue;
 
 			if (!field.isAccessible()) {
 				if (!setFieldsAsAccessible) continue;
@@ -99,18 +101,19 @@ public class CompatibleFieldSerializer extends Serializer {
 				cachedField.canBeNull = false;
 
 			// Always use the same serializer for this field if the field's class is final.
-			if (kryo.isFinal(fieldClass)) cachedField.fieldClass = fieldClass;
+			if (kryo.isFinal(fieldClass) || finalFieldTypes) cachedField.fieldClass = fieldClass;
 
 			cachedFields.add(cachedField);
-			if (Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers())) publicFields.add(cachedField);
+			if (!Modifier.isFinal(modifiers) && Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers()))
+				asmFields.add(cachedField);
 		}
 
-		if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && !publicFields.isEmpty()) {
+		if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && !asmFields.isEmpty()) {
 			// Use ReflectASM for any public fields.
 			try {
 				access = FieldAccess.get(type);
-				for (int i = 0, n = publicFields.size(); i < n; i++) {
-					CachedField cachedField = publicFields.get(i);
+				for (int i = 0, n = asmFields.size(); i < n; i++) {
+					CachedField cachedField = asmFields.get(i);
 					cachedField.accessIndex = ((FieldAccess)access).getIndex(cachedField.field.getName());
 				}
 			} catch (RuntimeException ignored) {
@@ -123,26 +126,43 @@ public class CompatibleFieldSerializer extends Serializer {
 			fields[i] = cachedFields.poll();
 	}
 
-	/** Sets the default value for {@link CachedField#setCanBeNull(boolean)}.
-	 * @param fieldsCanBeNull False if none of the fields are null. Saves 1 byte per field. True if it is not known (default). */
+	/** Sets the default value for {@link CachedField#setCanBeNull(boolean)}. Calling this method resets the {@link #getFields()
+	 * cached fields}.
+	 * @param fieldsCanBeNull False if none of the fields are null. Saves 0-1 byte per field. True if it is not known (default). */
 	public void setFieldsCanBeNull (boolean fieldsCanBeNull) {
 		this.fieldsCanBeNull = fieldsCanBeNull;
 		rebuildCachedFields();
 	}
 
-	/** Controls which fields are accessed.
+	/** Controls which fields are serialized. Calling this method resets the {@link #getFields() cached fields}.
 	 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
-	 *           {@link Field#setAccessible(boolean) set as accessible} (default). If false, only fields in the public API will be
-	 *           serialized. */
+	 *           {@link Field#setAccessible(boolean) set as accessible} if necessary (default). If false, only fields in the public
+	 *           API will be serialized. */
 	public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
 		this.setFieldsAsAccessible = setFieldsAsAccessible;
 		rebuildCachedFields();
 	}
 
+	/** Controls if synthetic fields are serialized. Default is true. Calling this method resets the {@link #getFields() cached
+	 * fields}.
+	 * @param ignoreSyntheticFields If true, only non-synthetic fields will be serialized. */
+	public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
+		this.ignoreSyntheticFields = ignoreSyntheticFields;
+		rebuildCachedFields();
+	}
+
+	/** Sets the default value for {@link CachedField#setClass(Class)} to the field's declared type. This allows FieldSerializer to
+	 * be more efficient, since it knows field values will not be a subclass of their declared type. Default is false. Calling this
+	 * method resets the {@link #getFields() cached fields}. */
+	public void setFixedFieldTypes (boolean finalFieldTypes) {
+		this.finalFieldTypes = finalFieldTypes;
+		rebuildCachedFields();
+	}
+
 	public void write (Kryo kryo, Output output, Object object) {
 		ObjectMap context = kryo.getGraphContext();
-		if (!context.containsKey("schemaWritten")) {
-			context.put("schemaWritten", null);
+		if (!context.containsKey(this)) {
+			context.put(this, null);
 			if (TRACE) trace("kryo", "Write " + fields.length + " field names.");
 			output.writeInt(fields.length, true);
 			for (int i = 0, n = fields.length; i < n; i++)
@@ -192,7 +212,7 @@ public class CompatibleFieldSerializer extends Serializer {
 
 	public void read (Kryo kryo, Input input, Object object) {
 		ObjectMap context = kryo.getGraphContext();
-		CachedField[] fields = (CachedField[])context.get("schema");
+		CachedField[] fields = (CachedField[])context.get(this);
 		if (fields == null) {
 			int length = input.readInt(true);
 			if (TRACE) trace("kryo", "Read " + length + " field names.");
@@ -213,7 +233,7 @@ public class CompatibleFieldSerializer extends Serializer {
 				}
 				if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
 			}
-			context.put("schema", fields);
+			context.put(this, fields);
 		}
 
 		InputChunked inputChunked = new InputChunked(input, 1024);
@@ -287,6 +307,10 @@ public class CompatibleFieldSerializer extends Serializer {
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
 	}
 
+	public CachedField[] getFields () {
+		return fields;
+	}
+
 	/** Controls how a field will be serialized. */
 	public class CachedField {
 		Field field;
@@ -310,8 +334,16 @@ public class CompatibleFieldSerializer extends Serializer {
 			this.serializer = serializer;
 		}
 
+		public void setSerializer (Serializer serializer) {
+			this.serializer = serializer;
+		}
+
 		public void setCanBeNull (boolean canBeNull) {
 			this.canBeNull = canBeNull;
+		}
+
+		public Field getField () {
+			return field;
 		}
 
 		public String toString () {
