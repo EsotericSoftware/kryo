@@ -125,7 +125,8 @@ public class Kryo {
 	// --- Default serializers ---
 
 	/** Sets the serailzer to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's type.
-	 * Default is {@link FieldSerializer}. */
+	 * Default is {@link FieldSerializer}.
+	 * @see #newDefaultSerializer(Class) */
 	public void setDefaultSerializer (Class<? extends Serializer> serializer) {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		defaultSerializer = serializer;
@@ -226,6 +227,13 @@ public class Kryo {
 
 		if (type.isArray()) return arraySerializer;
 
+		return newDefaultSerializer(type);
+	}
+
+	/** Called by {@link #getDefaultSerializer(Class)} when no default serializers matched the type. Subclasses can override this
+	 * method to customize behavior. The default implementation calls {@link #newSerializer(Class, Class)} using the
+	 * {@link #setDefaultSerializer(Class) default serializer}. */
+	protected Serializer newDefaultSerializer (Class type) {
 		return newSerializer(defaultSerializer, type);
 	}
 
