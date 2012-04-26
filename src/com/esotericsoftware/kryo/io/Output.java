@@ -3,6 +3,7 @@ package com.esotericsoftware.kryo.io;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 
 import com.esotericsoftware.kryo.KryoException;
 
@@ -10,11 +11,14 @@ import com.esotericsoftware.kryo.KryoException;
  * for efficiently writing primitive types and strings.
  * @author Nathan Sweet <misc@n4te.com> */
 public class Output extends OutputStream {
-	private final int maxCapacity;
-	private int capacity, position, total;
+	private int maxCapacity, capacity, position, total;
 	private byte[] buffer;
 	private OutputStream outputStream;
 	private char[] chars = new char[32];
+
+	/** Creates an uninitialized Output. {@link #setBuffer(byte[], int)} must be called before the Output is used. */
+	public Output () {
+	}
 
 	/** Creates a new Output for writing to a byte array.
 	 * @param bufferSize The initial and maximum size of the buffer. An exception is thrown if this size is exceeded. */
@@ -32,18 +36,16 @@ public class Output extends OutputStream {
 	}
 
 	/** Creates a new Output for writing to a byte array.
-	 * @param buffer An exception is thrown if more bytes are written than the length of this buffer. */
+	 * @see #setBuffer(byte[]) */
 	public Output (byte[] buffer) {
 		this(buffer, buffer.length);
 	}
 
 	/** Creates a new Output for writing to a byte array.
-	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. */
+	 * @see #setBuffer(byte[], int) */
 	public Output (byte[] buffer, int maxBufferSize) {
 		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
-		this.buffer = buffer;
-		this.maxCapacity = maxBufferSize;
-		capacity = buffer.length;
+		setBuffer(buffer, maxBufferSize);
 	}
 
 	/** Creates a new Output for writing to an OutputStream. A buffer size of 4096 is used. */
@@ -72,11 +74,31 @@ public class Output extends OutputStream {
 		total = 0;
 	}
 
+	/** Sets the buffer that will be written to. {@link #setBuffer(byte[], int)} is called with the specified buffer's length as the
+	 * maxBufferSize. */
+	public void setBuffer (byte[] buffer) {
+		setBuffer(buffer, buffer.length);
+	}
+
+	/** Sets the buffer that will be written to. The position and total are reset, discarding any buffered bytes. The
+	 * {@link #setOutputStream(OutputStream) OutputStream} is set to null.
+	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. */
+	public void setBuffer (byte[] buffer, int maxBufferSize) {
+		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
+		this.buffer = buffer;
+		this.maxCapacity = maxBufferSize;
+		capacity = buffer.length;
+		position = 0;
+		total = 0;
+		outputStream = null;
+	}
+
+	/** Returns the buffer. The bytes between zero and {@link #position()} are the data that has been written. */
 	public byte[] getBuffer () {
 		return buffer;
 	}
 
-	/** Returns a new byte array containing the bytes currently in the buffer. */
+	/** Returns a new byte array containing the bytes currently in the buffer between zero and {@link #position()}. */
 	public byte[] toBytes () {
 		byte[] newBuffer = new byte[position];
 		System.arraycopy(buffer, 0, newBuffer, 0, position);
@@ -252,11 +274,14 @@ public class Output extends OutputStream {
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
 			// Try to write 8 bit chars.
+			byte[] buffer = this.buffer;
+			int position = this.position;
 			for (; charIndex < charCount; charIndex++) {
 				int c = chars[charIndex];
 				if (c > 127) break;
 				buffer[position++] = (byte)c;
 			}
+			this.position = position;
 		}
 		if (charIndex < charCount) writeString_slow(charCount, charIndex);
 	}
@@ -281,53 +306,29 @@ public class Output extends OutputStream {
 		}
 	}
 
-	/** Writes the length and string using 8 bits per character, or null. This is slightly less space efficient and very slightly
-	 * faster than {@link #writeString7(String)}.
+	/** Writes a string of ASCII characters. 7 bits are used per character and the remaining bit denotes if another character is
+	 * available. The string should only contain characters from 0 to 127. No error is thrown for characters outside this range,
+	 * but they will not be deserialized as the same character.
 	 * @param value May be null. */
-	public void writeString8 (String value) throws KryoException {
+	public void writeAscii (String value) throws KryoException {
 		if (value == null) {
 			writeByte(0);
-			return;
-		}
-		int charCount = value.length();
-		writeInt(charCount + 1, true);
-		if (capacity - position < charCount)
-			writeString8_slow(value, charCount);
-		else {
-			value.getBytes(0, charCount, buffer, position);
-			position += charCount;
-		}
-	}
-
-	private void writeString8_slow (String value, int charCount) throws KryoException {
-		byte[] buffer = this.buffer;
-		int charsToWrite = capacity - position;
-		int charIndex = 0;
-		while (charIndex < charCount) {
-			value.getBytes(charIndex, charIndex + charsToWrite, buffer, position);
-			charIndex += charsToWrite;
-			position += charsToWrite;
-			charsToWrite = Math.min(charCount - charIndex, capacity);
-			if (require(charsToWrite)) buffer = this.buffer;
-		}
-	}
-
-	/** Writes the string using 7 bits per character. The remaining bit is used to denote if another character is available. The
-	 * string must not contain characters 0 (used for empty string) or 7F (used for null). This is slightly more space efficient
-	 * and very slightly slower than {@link #writeString8(String)}.
-	 * @param value May be null. */
-	public void writeString7 (String value) throws KryoException {
-		if (value == null) {
-			writeByte(-1);
 			return;
 		}
 		int charCount = value.length();
 		if (charCount == 0) {
-			writeByte(0);
+			writeByte(1);
 			return;
 		}
+		switch (value.charAt(0)) {
+		case 0:
+		case 1:
+		case 2:
+			writeByte(2);
+			break;
+		}
 		if (capacity - position < charCount)
-			writeString7_slow(value, charCount);
+			writeAscii_slow(value, charCount);
 		else {
 			value.getBytes(0, charCount, buffer, position);
 			position += charCount;
@@ -335,10 +336,10 @@ public class Output extends OutputStream {
 		}
 	}
 
-	private void writeString7_slow (String value, int charCount) throws KryoException {
+	private void writeAscii_slow (String value, int charCount) throws KryoException {
 		byte[] buffer = this.buffer;
-		int charsToWrite = capacity - position;
 		int charIndex = 0;
+		int charsToWrite = Math.min(charCount - charIndex, capacity - position);
 		charCount--;
 		while (charIndex < charCount) {
 			value.getBytes(charIndex, charIndex + charsToWrite, buffer, position);

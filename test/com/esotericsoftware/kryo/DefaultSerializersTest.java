@@ -4,13 +4,10 @@ package com.esotericsoftware.kryo;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 
-import com.esotericsoftware.kryo.serializers.String7Serializer;
-import com.esotericsoftware.kryo.serializers.String8Serializer;
+import com.esotericsoftware.kryo.serializers.AsciiSerializer;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest extends KryoTestCase {
@@ -116,24 +113,8 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(21, "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u7C9F");
 	}
 
-	public void testString8 () {
-		kryo.register(String.class, new String8Serializer());
-
-		kryo.setReferences(true);
-		roundTrip(7, "meow");
-		roundTrip(69, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
-
-		kryo.setReferences(false);
-		roundTrip(6, "meow");
-
-		roundTrip(3, "a");
-		roundTrip(3, "\n");
-		roundTrip(2, "");
-		roundTrip(99, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
-	}
-
-	public void testString7 () {
-		kryo.register(String.class, new String7Serializer());
+	public void testAscii () {
+		kryo.register(String.class, new AsciiSerializer());
 
 		kryo.setReferences(true);
 		roundTrip(6, "meow");
@@ -145,8 +126,11 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(2, "a");
 		roundTrip(2, "\n");
 		roundTrip(2, "");
-		roundTrip(2, String.valueOf((char)1));
-		roundTrip(2, String.valueOf((char)0x7E));
+		roundTrip(3, String.valueOf((char)0));
+		roundTrip(3, String.valueOf((char)1));
+		roundTrip(3, String.valueOf((char)2));
+		roundTrip(2, String.valueOf((char)3));
+		roundTrip(2, String.valueOf((char)127));
 		roundTrip(98, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
 	}
 

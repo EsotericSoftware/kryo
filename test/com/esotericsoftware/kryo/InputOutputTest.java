@@ -69,10 +69,10 @@ public class InputOutputTest extends KryoTestCase {
 				61, 62, 63, 64, 65}, buffer.toBytes());
 	}
 
-	public void testUTF () throws IOException {
-		runUTFTest(new Output(4096));
-		runUTFTest(new Output(400));
-		runUTFTest(new Output(new ByteArrayOutputStream()));
+	public void testStrings () throws IOException {
+		runStringTest(new Output(4096));
+		runStringTest(new Output(892));
+		runStringTest(new Output(new ByteArrayOutputStream()));
 
 		Output write = new Output(21);
 		String value2 = "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234";
@@ -81,7 +81,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(value2, read.readString());
 	}
 
-	public void runUTFTest (Output write) throws IOException {
+	public void runStringTest (Output write) throws IOException {
 		String value1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*";
 		String value2 = "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234";
 
@@ -94,22 +94,18 @@ public class InputOutputTest extends KryoTestCase {
 		write.writeString(null);
 		write.writeString(value1);
 		write.writeString(value2);
-		write.writeString8("");
-		write.writeString8("1");
-		write.writeString8("22");
-		write.writeString8("uno");
-		write.writeString8("dos");
-		write.writeString8("tres");
-		write.writeString8(null);
-		write.writeString8(value1);
-		write.writeString7("");
-		write.writeString7("1");
-		write.writeString7("22");
-		write.writeString7("uno");
-		write.writeString7("dos");
-		write.writeString7("tres");
-		write.writeString7(null);
-		write.writeString7(value1);
+		for (int i = 0; i < 127; i++)
+			write.writeAscii(String.valueOf((char)i));
+		for (int i = 0; i < 127; i++)
+			write.writeAscii(String.valueOf((char)i) + "abc");
+		write.writeAscii("");
+		write.writeAscii("1");
+		write.writeAscii("22");
+		write.writeAscii("uno");
+		write.writeAscii("dos");
+		write.writeAscii("tres");
+		write.writeAscii(null);
+		write.writeAscii(value1);
 
 		Input read = new Input(write.toBytes());
 		assertEquals("", read.readString());
@@ -121,22 +117,18 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(null, read.readString());
 		assertEquals(value1, read.readString());
 		assertEquals(value2, read.readString());
-		assertEquals("", read.readString8());
-		assertEquals("1", read.readString8());
-		assertEquals("22", read.readString8());
-		assertEquals("uno", read.readString8());
-		assertEquals("dos", read.readString8());
-		assertEquals("tres", read.readString8());
-		assertEquals(null, read.readString8());
-		assertEquals(value1, read.readString8());
-		assertEquals("", read.readString7());
-		assertEquals("1", read.readString7());
-		assertEquals("22", read.readString7());
-		assertEquals("uno", read.readString7());
-		assertEquals("dos", read.readString7());
-		assertEquals("tres", read.readString7());
-		assertEquals(null, read.readString7());
-		assertEquals(value1, read.readString7());
+		for (int i = 0; i < 127; i++)
+			assertEquals(String.valueOf((char)i), read.readAscii());
+		for (int i = 0; i < 127; i++)
+			assertEquals(String.valueOf((char)i) + "abc", read.readAscii());
+		assertEquals("", read.readAscii());
+		assertEquals("1", read.readAscii());
+		assertEquals("22", read.readAscii());
+		assertEquals("uno", read.readAscii());
+		assertEquals("dos", read.readAscii());
+		assertEquals("tres", read.readAscii());
+		assertEquals(null, read.readAscii());
+		assertEquals(value1, read.readAscii());
 	}
 
 	public void testCanReadInt () throws IOException {

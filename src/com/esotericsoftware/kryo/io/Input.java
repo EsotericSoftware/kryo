@@ -15,6 +15,10 @@ public class Input extends InputStream {
 	private char[] chars = new char[32];
 	private InputStream inputStream;
 
+	/** Creates an uninitialized Input. {@link #setBuffer(byte[])} must be called before the Input is used. */
+	public Input () {
+	}
+
 	/** Creates a new Input for reading from a byte array.
 	 * @param bufferSize The size of the buffer. An exception is thrown if more bytes than this are read. */
 	public Input (int bufferSize) {
@@ -264,10 +268,12 @@ public class Input extends InputStream {
 	public int readInt () throws KryoException {
 		require(4);
 		byte[] buffer = this.buffer;
-		return (buffer[position++] & 0xFF) << 24 //
-			| (buffer[position++] & 0xFF) << 16 //
-			| (buffer[position++] & 0xFF) << 8 //
-			| buffer[position++] & 0xFF;
+		int position = this.position;
+		this.position = position + 4;
+		return (buffer[position] & 0xFF) << 24 //
+			| (buffer[position + 1] & 0xFF) << 16 //
+			| (buffer[position + 2] & 0xFF) << 8 //
+			| buffer[position + 3] & 0xFF;
 	}
 
 	/** Reads a 1-5 byte int. */
@@ -354,17 +360,19 @@ public class Input extends InputStream {
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		// Try to read 8 bit chars.
-		int charIndex = 0, b;
+		int b, charIndex = 0;
 		int count = Math.min(require(1), charCount);
+		int position = this.position;
 		while (charIndex < count) {
-			b = buffer[position++] & 0xFF;
-			if (b > 127) {
+			b = buffer[position++];
+			if (b < 0) {
 				position--;
 				break;
 			}
 			chars[charIndex++] = (char)b;
 		}
-		// If buffer couldn't hold all chars or any were not 8 bit, use slow path.
+		this.position = position;
+		// If buffer couldn't hold all chars or any were not 8 bit, use slow path for remainder.
 		if (charIndex < charCount) return readString_slow(charCount, charIndex);
 		return new String(chars, 0, charCount);
 	}
@@ -401,64 +409,37 @@ public class Input extends InputStream {
 		return new String(chars, 0, charCount);
 	}
 
-	/** Reads the length and string of 8 bit characters, or null.
+	/** Reads a string of ASCII characters.
 	 * @return May be null.
-	 * @see Output#writeString8(String) */
-	public String readString8 () throws KryoException {
-		int charCount = readInt(true);
-		switch (charCount) {
+	 * @see Output#writeAscii(String) */
+	public String readAscii () throws KryoException {
+		int b = readByte();
+		switch (b) {
 		case 0:
 			return null;
 		case 1:
 			return "";
+		case 2:
+			b = readByte();
 		}
-		charCount--;
-		if (chars.length < charCount) chars = new char[charCount];
-		if (charCount > require(1)) return readString8_slow(charCount);
-		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
-		for (int charIndex = 0; charIndex < charCount;)
-			chars[charIndex++] = (char)(buffer[position++] & 0xFF);
-		return new String(chars, 0, charCount);
-	}
-
-	private String readString8_slow (int charCount) {
-		char[] chars = this.chars;
-		byte[] buffer = this.buffer;
-		for (int charIndex = 0; charIndex < charCount;) {
-			int count = Math.min(require(1), charCount - charIndex);
-			for (int n = charIndex + count; charIndex < n; charIndex++)
-				chars[charIndex] = (char)(buffer[position++] & 0xFF);
-		}
-		return new String(chars, 0, charCount);
-	}
-
-	/** Reads a string of 7 bit characters. The remaining bit is used to denote if another character is available. The string will
-	 * not contain characters 0 (used for empty string) or 7F (used for null).
-	 * @return May be null.
-	 * @see Output#writeString7(String) */
-	public String readString7 () throws KryoException {
-		int b = readByte();
-		switch (b) {
-		case 0:
-			return "";
-		case -1:
-			return null;
-		}
-		char[] chars = this.chars;
-		byte[] buffer = this.buffer;
-		int remaining = limit - position;
-		chars[0] = (char)(b & 0x7F);
-		int charCount = 1;
+		int end = position;
+		int start = end - 1;
+		int limit = this.limit;
 		while ((b & 0x80) == 0) {
-			if (remaining-- == 0 || charCount == chars.length) return readString7_slow(charCount);
-			b = buffer[position++];
-			chars[charCount++] = (char)(b & 0x7F);
+			if (end == limit) return readAscii_slow();
+			b = buffer[end++];
 		}
-		return new String(chars, 0, charCount);
+		buffer[end - 1] = (byte)(b & 0x7F);
+		String value = new String(buffer, 0, start, end - start);
+		buffer[end - 1] = (byte)b;
+		position = end;
+		return value;
 	}
 
-	private String readString7_slow (int charCount) {
+	private String readAscii_slow () {
+		position--; // Reread the first char.
+		int charCount = 0;
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		while (true) {
@@ -473,6 +454,7 @@ public class Input extends InputStream {
 			chars[charCount++] = (char)(b & 0x7F);
 			if ((b & 0x80) == 0x80) break;
 		}
+		System.out.println(new String(chars, 0, charCount));
 		return new String(chars, 0, charCount);
 	}
 
