@@ -393,17 +393,17 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(5, write.writeLong(268435456l, true));
 		assertEquals(5, write.writeLong(268435456l, false));
 		assertEquals(1, write.writeLong(-64, false));
-		assertEquals(10, write.writeLong(-64, true));
+		assertEquals(9, write.writeLong(-64, true));
 		assertEquals(2, write.writeLong(-65, false));
-		assertEquals(10, write.writeLong(-65, true));
+		assertEquals(9, write.writeLong(-65, true));
 		assertEquals(2, write.writeLong(-8192, false));
-		assertEquals(10, write.writeLong(-8192, true));
+		assertEquals(9, write.writeLong(-8192, true));
 		assertEquals(3, write.writeLong(-1048576, false));
-		assertEquals(10, write.writeLong(-1048576, true));
+		assertEquals(9, write.writeLong(-1048576, true));
 		assertEquals(4, write.writeLong(-134217728, false));
-		assertEquals(10, write.writeLong(-134217728, true));
+		assertEquals(9, write.writeLong(-134217728, true));
 		assertEquals(5, write.writeLong(-134217729, false));
-		assertEquals(10, write.writeLong(-134217729, true));
+		assertEquals(9, write.writeLong(-134217729, true));
 
 		Input read = new Input(write.toBytes());
 		assertEquals(0, read.readLong());
@@ -695,11 +695,11 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(4, write.writeDouble(32767, 1000, true));
 		assertEquals(4, write.writeDouble(32767, 1000, false));
 		assertEquals(3, write.writeDouble(-64, 1000, false));
-		assertEquals(10, write.writeDouble(-64, 1000, true));
+		assertEquals(9, write.writeDouble(-64, 1000, true));
 		assertEquals(3, write.writeDouble(-65, 1000, false));
-		assertEquals(10, write.writeDouble(-65, 1000, true));
+		assertEquals(9, write.writeDouble(-65, 1000, true));
 		assertEquals(4, write.writeDouble(-8192, 1000, false));
-		assertEquals(10, write.writeDouble(-8192, 1000, true));
+		assertEquals(9, write.writeDouble(-8192, 1000, true));
 		write.writeDouble(1.23456d);
 
 		Input read = new Input(write.toBytes());

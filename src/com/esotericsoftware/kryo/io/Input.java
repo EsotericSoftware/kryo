@@ -514,10 +514,10 @@ public class Input extends InputStream {
 
 	}
 
-	/** Reads a 1-10 byte long. */
+	/** Reads a 1-9 byte long. */
 	public long readLong (boolean optimizePositive) throws KryoException {
 		byte[] buffer = this.buffer;
-		if (require(1) < 10) return readLong_slow(optimizePositive);
+		if (require(1) < 9) return readLong_slow(optimizePositive);
 		int b = buffer[position++];
 		long result = b & 0x7F;
 		if ((b & 0x80) != 0) {
@@ -543,11 +543,7 @@ public class Input extends InputStream {
 									result |= (long)(b & 0x7F) << 49;
 									if ((b & 0x80) != 0) {
 										b = buffer[position++];
-										result |= (long)(b & 0x7F) << 56;
-										if ((b & 0x80) != 0) {
-											b = buffer[position++];
-											result |= (long)(b & 0x7F) << 63;
-										}
+										result |= (long)b << 56;
 									}
 								}
 							}
@@ -595,12 +591,7 @@ public class Input extends InputStream {
 									if ((b & 0x80) != 0) {
 										require(1);
 										b = buffer[position++];
-										result |= (long)(b & 0x7F) << 56;
-										if ((b & 0x80) != 0) {
-											require(1);
-											b = buffer[position++];
-											result |= (long)(b & 0x7F) << 63;
-										}
+										result |= (long)b << 56;
 									}
 								}
 							}
@@ -636,7 +627,7 @@ public class Input extends InputStream {
 		return Double.longBitsToDouble(readLong());
 	}
 
-	/** Reads a 1-10 byte double with reduced precision. */
+	/** Reads a 1-9 byte double with reduced precision. */
 	public double readDouble (double precision, boolean optimizePositive) throws KryoException {
 		return readLong(optimizePositive) / (double)precision;
 	}

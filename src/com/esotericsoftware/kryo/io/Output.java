@@ -413,9 +413,9 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
-	/** Writes a 1-10 byte long.
+	/** Writes a 1-9 byte long.
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (10 bytes). */
+	 *           inefficient (9 bytes). */
 	public int writeLong (long value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		int length;
@@ -435,16 +435,11 @@ public class Output extends OutputStream {
 			length = 7;
 		else if ((value >>> 49 & ~0x7Fl) == 0)
 			length = 8;
-		else if ((value >>> 56 & ~0x7Fl) == 0)
-			length = 9;
 		else
-			length = 10;
+			length = 9;
 		require(length);
 		byte[] buffer = this.buffer;
 		switch (length) {
-		case 10:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
-			value >>>= 7;
 		case 9:
 			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
 			value >>>= 7;
@@ -499,9 +494,9 @@ public class Output extends OutputStream {
 		writeLong(Double.doubleToLongBits(value));
 	}
 
-	/** Writes a 1-10 byte double with reduced precision.
+	/** Writes a 1-9 byte double with reduced precision.
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (10 bytes). */
+	 *           inefficient (9 bytes). */
 	public int writeDouble (double value, double precision, boolean optimizePositive) throws KryoException {
 		return writeLong((long)(value * precision), optimizePositive);
 	}

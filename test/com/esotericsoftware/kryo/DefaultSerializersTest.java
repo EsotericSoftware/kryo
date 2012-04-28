@@ -150,7 +150,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		kryo.register(Date.class);
 		roundTrip(2, new Date(0));
 		roundTrip(4, new Date(1234567));
-		roundTrip(11, new Date(-1234567));
+		roundTrip(10, new Date(-1234567));
 	}
 
 	public void testBigDecimalSerializer () {
