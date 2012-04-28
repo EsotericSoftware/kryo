@@ -8,6 +8,10 @@ import com.esotericsoftware.kryo.serializers.MapSerializer;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class MapSerializerTest extends KryoTestCase {
+	{
+		supportsCopy = true;
+	}
+
 	public void testMaps () {
 		kryo.register(HashMap.class);
 		kryo.register(LinkedHashMap.class);

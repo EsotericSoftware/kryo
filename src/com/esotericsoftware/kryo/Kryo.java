@@ -50,9 +50,11 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSer
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
+import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IdentityObjectIntMap;
 import com.esotericsoftware.kryo.util.IntMap;
 import com.esotericsoftware.kryo.util.ObjectMap;
+import com.esotericsoftware.reflectasm.ConstructorAccess;
 
 import static com.esotericsoftware.kryo.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
@@ -88,6 +90,9 @@ public class Kryo {
 	private final IdentityObjectIntMap<Class> classToNextInstanceId = new IdentityObjectIntMap();
 	private final IdentityObjectIntMap objectToInstanceId = new IdentityObjectIntMap();
 	private final ObjectMap<InstanceId, Object> instanceIdToObject = new ObjectMap();
+
+	private boolean copyShallow;
+	private IdentityMap originalToCopy;
 
 	public Kryo () {
 		addDefaultSerializer(byte[].class, ByteArraySerializer.class);
@@ -394,7 +399,7 @@ public class Kryo {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		try {
 			if (type == null) {
-				if (DEBUG) log("Write", null);
+				if (TRACE || (DEBUG && depth == 1)) log("Write", null);
 				output.writeByte(NULL);
 				return null;
 			}
@@ -430,7 +435,7 @@ public class Kryo {
 		depth++;
 		try {
 			if (references && writeReferenceOrNull(output, object, false)) return;
-			if (DEBUG) log("Write", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			getRegistration(object.getClass()).getSerializer().write(this, output, object);
 		} finally {
 			if (--depth == 0) reset();
@@ -445,7 +450,7 @@ public class Kryo {
 		depth++;
 		try {
 			if (references && writeReferenceOrNull(output, object, false)) return;
-			if (DEBUG) log("Write", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			serializer.write(this, output, object);
 		} finally {
 			if (--depth == 0) reset();
@@ -463,13 +468,13 @@ public class Kryo {
 				if (writeReferenceOrNull(output, object, true)) return;
 			} else if (!serializer.getAcceptsNull()) {
 				if (object == null) {
-					if (DEBUG) log("Write", object);
+					if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 					output.writeByte(NULL);
 					return;
 				}
 				output.writeByte(Kryo.NOT_NULL);
 			}
-			if (DEBUG) log("Write", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			serializer.write(this, output, object);
 		} finally {
 			if (--depth == 0) reset();
@@ -487,13 +492,13 @@ public class Kryo {
 				if (writeReferenceOrNull(output, object, true)) return;
 			} else if (!serializer.getAcceptsNull()) {
 				if (object == null) {
-					if (DEBUG) log("Write", null);
+					if (TRACE || (DEBUG && depth == 1)) log("Write", null);
 					output.writeByte(NULL);
 					return;
 				}
 				output.writeByte(Kryo.NOT_NULL);
 			}
-			if (DEBUG) log("Write", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			serializer.write(this, output, object);
 		} finally {
 			if (--depth == 0) reset();
@@ -512,7 +517,7 @@ public class Kryo {
 			}
 			Registration registration = writeClass(output, object.getClass());
 			if (references && writeReferenceOrNull(output, object, false)) return;
-			if (DEBUG) log("Write", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			registration.getSerializer().write(this, output, object);
 		} finally {
 			if (--depth == 0) reset();
@@ -522,7 +527,7 @@ public class Kryo {
 	/** @param object May be null if mayBeNull is true. */
 	private boolean writeReferenceOrNull (Output output, Object object, boolean mayBeNull) {
 		if (object == null) {
-			if (DEBUG) log("Write", null);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", null);
 			output.writeByte(NULL);
 			return true;
 		}
@@ -553,7 +558,7 @@ public class Kryo {
 			int classID = input.readInt(true);
 			switch (classID) {
 			case NULL:
-				if (DEBUG) log("Read", null);
+				if (TRACE || (DEBUG && depth == 1)) log("Read", null);
 				return null;
 			case NAME + 2: // Offset for NAME and NULL.
 				int nameId = input.readInt(true);
@@ -597,8 +602,8 @@ public class Kryo {
 			Serializer serializer = getRegistration(type).getSerializer();
 			T object = (T)serializer.create(this, input, type);
 			if (instanceId != null) instanceIdToObject.put(instanceId, object);
-			serializer.read(this, input, object);
-			if (DEBUG) log("Read", object);
+			if (object != null) serializer.read(this, input, object);
+			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
 			if (--depth == 0) reset();
@@ -620,8 +625,8 @@ public class Kryo {
 
 			T object = (T)serializer.create(this, input, type);
 			if (instanceId != null) instanceIdToObject.put(instanceId, object);
-			serializer.read(this, input, object);
-			if (DEBUG) log("Read", object);
+			if (object != null) serializer.read(this, input, object);
+			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
 			if (--depth == 0) reset();
@@ -643,15 +648,15 @@ public class Kryo {
 				if (instanceId == this.instanceId) return (T)instanceId.object;
 			} else if (!serializer.getAcceptsNull()) {
 				if (input.readByte() == NULL) {
-					if (DEBUG) log("Read", null);
+					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
 					return null;
 				}
 			}
 
 			T object = (T)serializer.create(this, input, type);
 			if (instanceId != null) instanceIdToObject.put(instanceId, object);
-			serializer.read(this, input, object);
-			if (DEBUG) log("Read", object);
+			if (object != null) serializer.read(this, input, object);
+			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
 			if (--depth == 0) reset();
@@ -672,15 +677,15 @@ public class Kryo {
 				if (instanceId == this.instanceId) return (T)instanceId.object;
 			} else if (!serializer.getAcceptsNull()) {
 				if (input.readByte() == NULL) {
-					if (DEBUG) log("Read", null);
+					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
 					return null;
 				}
 			}
 
 			T object = (T)serializer.create(this, input, type);
 			if (instanceId != null) instanceIdToObject.put(instanceId, object);
-			serializer.read(this, input, object);
-			if (DEBUG) log("Read", object);
+			if (object != null) serializer.read(this, input, object);
+			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
 			if (--depth == 0) reset();
@@ -706,8 +711,8 @@ public class Kryo {
 			Serializer serializer = registration.getSerializer();
 			Object object = serializer.create(this, input, type);
 			if (instanceId != null) instanceIdToObject.put(instanceId, object);
-			serializer.read(this, input, object);
-			if (DEBUG) log("Read", object);
+			if (object != null) serializer.read(this, input, object);
+			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
 			if (--depth == 0) reset();
@@ -723,7 +728,7 @@ public class Kryo {
 		if (mayBeNull) {
 			id = input.readInt(true);
 			if (id == NULL) {
-				if (DEBUG) log("Read", null);
+				if (TRACE || (DEBUG && depth == 1)) log("Read", null);
 				instanceId.object = null;
 				return instanceId;
 			}
@@ -759,7 +764,96 @@ public class Kryo {
 			instanceIdToObject.clear();
 			classToNextInstanceId.clear();
 		}
+		if (originalToCopy != null) originalToCopy.clear();
 		if (TRACE) trace("kryo", "Object graph complete.");
+	}
+
+	/** Returns a deep copy of the object. Serializers for the classes involved must support
+	 * {@link Serializer#createCopy(Kryo, Object)}.
+	 * @param object May be null. */
+	public <T> T copy (T object) {
+		if (object == null) return null;
+		if (copyShallow) return object;
+		depth++;
+		try {
+			if (originalToCopy == null) originalToCopy = new IdentityMap();
+			Object existingCopy = originalToCopy.get(object);
+			if (existingCopy != null) return (T)existingCopy;
+			Serializer serializer = getRegistration(object.getClass()).getSerializer();
+			Object copy = serializer.createCopy(this, object);
+			originalToCopy.put(object, copy);
+			serializer.copy(this, object, copy);
+			if (TRACE || (DEBUG && depth == 1)) log("Copy", copy);
+			return (T)copy;
+		} finally {
+			if (--depth == 0) reset();
+		}
+	}
+
+	/** Returns a deep copy of the object using the specified serializer. Serializers for the classes involved must support
+	 * {@link Serializer#createCopy(Kryo, Object)}.
+	 * @param object May be null. */
+	public <T> T copy (T object, Serializer serializer) {
+		if (object == null) return null;
+		if (copyShallow) return object;
+		depth++;
+		try {
+			if (originalToCopy == null) originalToCopy = new IdentityMap();
+			Object existingCopy = originalToCopy.get(object);
+			if (existingCopy != null) return (T)existingCopy;
+			Object copy = serializer.createCopy(this, object);
+			originalToCopy.put(object, copy);
+			serializer.copy(this, object, copy);
+			if (TRACE || (DEBUG && depth == 1)) log("Copy", copy);
+			return (T)copy;
+		} finally {
+			if (--depth == 0) reset();
+		}
+	}
+
+	/** Returns a shallow copy of the object. Serializers for the classes involved must support
+	 * {@link Serializer#createCopy(Kryo, Object)}.
+	 * @param object May be null. */
+	public <T> T copyShallow (T object) {
+		if (object == null) return null;
+		depth++;
+		copyShallow = true;
+		try {
+			if (originalToCopy == null) originalToCopy = new IdentityMap();
+			Object existingCopy = originalToCopy.get(object);
+			if (existingCopy != null) return (T)existingCopy;
+			Serializer serializer = getRegistration(object.getClass()).getSerializer();
+			Object copy = serializer.createCopy(this, object);
+			originalToCopy.put(object, copy);
+			serializer.copy(this, object, copy);
+			if (TRACE || (DEBUG && depth == 1)) log("Shallow copy", copy);
+			return (T)copy;
+		} finally {
+			copyShallow = false;
+			if (--depth == 0) reset();
+		}
+	}
+
+	/** Returns a shallow copy of the object using the specified serializer. Serializers for the classes involved must support
+	 * {@link Serializer#createCopy(Kryo, Object)}.
+	 * @param object May be null. */
+	public <T> T copyShallow (T object, Serializer serializer) {
+		if (object == null) return null;
+		depth++;
+		copyShallow = true;
+		try {
+			if (originalToCopy == null) originalToCopy = new IdentityMap();
+			Object existingCopy = originalToCopy.get(object);
+			if (existingCopy != null) return (T)existingCopy;
+			Object copy = serializer.createCopy(this, object);
+			originalToCopy.put(object, copy);
+			serializer.copy(this, object, copy);
+			if (TRACE || (DEBUG && depth == 1)) log("Shallow copy", copy);
+			return (T)copy;
+		} finally {
+			copyShallow = false;
+			if (--depth == 0) reset();
+		}
 	}
 
 	/** Sets the classloader to resolve unregistered class names to classes. */
@@ -818,6 +912,21 @@ public class Kryo {
 	 * uses reflection if the class has a zero argument constructor, an exception is thrown. If a
 	 * {@link #setInstantiatorStrategy(InstantiatorStrategy) strategy} is set, it will be used instead of throwing an exception. */
 	protected ObjectInstantiator newInstantiator (final Class type) {
+		// ReflectASM.
+		try {
+			final ConstructorAccess access = ConstructorAccess.get(type);
+			return new ObjectInstantiator() {
+				public Object newInstance () {
+					try {
+						return access.newInstance();
+					} catch (Exception ex) {
+						throw new KryoException("Error constructing instance of class: " + className(type), ex);
+					}
+				}
+			};
+		} catch (Exception ignored) {
+		}
+		// Reflection.
 		try {
 			Constructor ctor;
 			try {
@@ -844,6 +953,7 @@ public class Kryo {
 			else
 				throw new KryoException("Class cannot be created (missing no-arg constructor): " + className(type));
 		}
+		// InstantiatorStrategy.
 		return strategy.newInstantiatorOf(type);
 	}
 

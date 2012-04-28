@@ -38,10 +38,10 @@ import static com.esotericsoftware.minlog.Log.*;
 /**
  *
  */
-public class FieldSerializer extends Serializer {
+public class FieldSerializer<T> extends Serializer<T> {
 	private final Kryo kryo;
 	private final Class type;
-	private CachedField[] fields;
+	private CachedField[] fields = new CachedField[0];
 	Object access;
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 	private boolean ignoreSyntheticFields = true;
@@ -164,7 +164,7 @@ public class FieldSerializer extends Serializer {
 		rebuildCachedFields();
 	}
 
-	public void write (Kryo kryo, Output output, Object object) {
+	public void write (Kryo kryo, Output output, T object) {
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			try {
@@ -207,7 +207,7 @@ public class FieldSerializer extends Serializer {
 		}
 	}
 
-	public void read (Kryo kryo, Input input, Object object) {
+	public void read (Kryo kryo, Input input, T object) {
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			try {
@@ -271,8 +271,31 @@ public class FieldSerializer extends Serializer {
 		return fields;
 	}
 
+	public T createCopy (Kryo kryo, T original) {
+		return (T)kryo.newInstance(original.getClass());
+	}
+
+	public void copy (Kryo kryo, T original, T copy) {
+		for (int i = 0, n = fields.length; i < n; i++) {
+			CachedField cachedField = fields[i];
+			try {
+				Object value = cachedField.get(original);
+				cachedField.set(copy, value);
+			} catch (IllegalAccessException ex) {
+				throw new KryoException("Error accessing field: " + cachedField + " (" + type.getName() + ")", ex);
+			} catch (KryoException ex) {
+				ex.addTrace(cachedField + " (" + type.getName() + ")");
+				throw ex;
+			} catch (RuntimeException runtimeEx) {
+				KryoException ex = new KryoException(runtimeEx);
+				ex.addTrace(cachedField + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+	}
+
 	/** Controls how a field will be serialized. */
-	public class CachedField {
+	public class CachedField<X> {
 		Field field;
 		Class fieldClass;
 		Serializer serializer;

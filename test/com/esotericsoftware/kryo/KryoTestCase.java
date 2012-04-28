@@ -21,6 +21,7 @@ abstract public class KryoTestCase extends TestCase {
 	protected Output output;
 	protected Input input;
 	protected Object object1, object2;
+	protected boolean supportsCopy;
 
 	protected void setUp () throws Exception {
 		Log.TRACE();
@@ -82,6 +83,14 @@ abstract public class KryoTestCase extends TestCase {
 		assertEquals("Incorrect length.", length, output.total());
 		assertEquals("Incorrect number of bytes read.", length, input.total());
 		input.rewind();
+
+		if (supportsCopy) {
+			// Test copy.
+			T copy = kryo.copy(object1);
+			assertEquals(object1, copy);
+			copy = kryo.copyShallow(object1);
+			assertEquals(object1, copy);
+		}
 
 		return (T)object2;
 	}

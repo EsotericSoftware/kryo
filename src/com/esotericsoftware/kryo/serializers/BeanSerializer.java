@@ -29,7 +29,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
  * @author Nathan Sweet <misc@n4te.com> */
-public class BeanSerializer extends Serializer {
+public class BeanSerializer<T> extends Serializer<T> {
 	static final Object[] noArgs = {};
 
 	private final Kryo kryo;
@@ -89,7 +89,7 @@ public class BeanSerializer extends Serializer {
 		}
 	}
 
-	public void write (Kryo kryo, Output output, Object object) {
+	public void write (Kryo kryo, Output output, T object) {
 		Class type = object.getClass();
 		for (int i = 0, n = properties.length; i < n; i++) {
 			CachedProperty property = properties[i];
@@ -116,7 +116,7 @@ public class BeanSerializer extends Serializer {
 		}
 	}
 
-	public void read (Kryo kryo, Input input, Object object) {
+	public void read (Kryo kryo, Input input, T object) {
 		for (int i = 0, n = properties.length; i < n; i++) {
 			CachedProperty property = properties[i];
 			try {
@@ -143,7 +143,30 @@ public class BeanSerializer extends Serializer {
 		}
 	}
 
-	class CachedProperty {
+	public T createCopy (Kryo kryo, T original) {
+		return (T)kryo.newInstance(original.getClass());
+	}
+
+	public void copy (Kryo kryo, T original, T copy) {
+		for (int i = 0, n = properties.length; i < n; i++) {
+			CachedProperty property = properties[i];
+			try {
+				Object value = property.get(original);
+				property.set(copy, value);
+			} catch (KryoException ex) {
+				ex.addTrace(property + " (" + copy.getClass().getName() + ")");
+				throw ex;
+			} catch (RuntimeException runtimeEx) {
+				KryoException ex = new KryoException(runtimeEx);
+				ex.addTrace(property + " (" + copy.getClass().getName() + ")");
+				throw ex;
+			} catch (Exception ex) {
+				throw new KryoException("Error copying bean property: " + property + " (" + copy.getClass().getName() + ")", ex);
+			}
+		}
+	}
+
+	class CachedProperty<X> {
 		String name;
 		Method getMethod, setMethod;
 		Class setMethodType;

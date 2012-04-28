@@ -13,6 +13,10 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class FieldSerializerTest extends KryoTestCase {
+	{
+		supportsCopy = true;
+	}
+
 	public void testDefaultTypes () {
 		kryo.register(DefaultTypes.class);
 		kryo.register(byte[].class);
@@ -62,6 +66,9 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.CharacterField = 'X';
 		test.child = new DefaultTypes();
 		roundTrip(72, test);
+
+		supportsCopy = false;
+
 		test.StringField = null;
 		roundTrip(67, test);
 
@@ -70,6 +77,8 @@ public class FieldSerializerTest extends KryoTestCase {
 		serializer.removeField("floatField");
 		serializer.removeField("FloatField");
 		roundTrip(55, test);
+
+		supportsCopy = true;
 	}
 
 	public void testOptionalRegistration () {
@@ -231,21 +240,28 @@ public class FieldSerializerTest extends KryoTestCase {
 			public void write (Kryo kryo, Output output, SimpleNoDefaultConstructor object) {
 				output.writeInt(object.constructorValue, true);
 			}
+
+			public SimpleNoDefaultConstructor createCopy (Kryo kryo, SimpleNoDefaultConstructor original) {
+				return new SimpleNoDefaultConstructor(original.constructorValue);
+			}
 		});
 		SimpleNoDefaultConstructor object1 = new SimpleNoDefaultConstructor(2);
 		roundTrip(2, object1);
 
-		kryo.register(ComplexNoDefaultConstructor.class, new FieldSerializer(kryo, ComplexNoDefaultConstructor.class) {
-			public void write (Kryo kryo, Output output, Object object) {
-				ComplexNoDefaultConstructor complexObject = (ComplexNoDefaultConstructor)object;
-				output.writeString(complexObject.name);
+		kryo.register(ComplexNoDefaultConstructor.class, new FieldSerializer<ComplexNoDefaultConstructor>(kryo,
+			ComplexNoDefaultConstructor.class) {
+			public void write (Kryo kryo, Output output, ComplexNoDefaultConstructor object) {
+				output.writeString(object.name);
 				super.write(kryo, output, object);
 			}
 
-			public Object create (Kryo kryo, Input input, Class type) {
+			public ComplexNoDefaultConstructor create (Kryo kryo, Input input, Class type) {
 				String name = input.readString();
-				ComplexNoDefaultConstructor object = new ComplexNoDefaultConstructor(name);
-				return object;
+				return new ComplexNoDefaultConstructor(name);
+			}
+
+			public ComplexNoDefaultConstructor createCopy (Kryo kryo, ComplexNoDefaultConstructor original) {
+				return new ComplexNoDefaultConstructor(original.name);
 			}
 		});
 		ComplexNoDefaultConstructor object2 = new ComplexNoDefaultConstructor("has no zero arg constructor!");
@@ -600,13 +616,17 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class HasDefaultSerializerAnnotationSerializer extends Serializer {
-		public void write (Kryo kryo, Output output, Object object) {
-			output.writeLong(((HasDefaultSerializerAnnotation)object).time, true);
+	static public class HasDefaultSerializerAnnotationSerializer extends Serializer<HasDefaultSerializerAnnotation> {
+		public void write (Kryo kryo, Output output, HasDefaultSerializerAnnotation object) {
+			output.writeLong(object.time, true);
 		}
 
-		public Object create (Kryo kryo, Input input, Class type) {
+		public HasDefaultSerializerAnnotation create (Kryo kryo, Input input, Class type) {
 			return new HasDefaultSerializerAnnotation(input.readLong(true));
+		}
+
+		public HasDefaultSerializerAnnotation createCopy (Kryo kryo, HasDefaultSerializerAnnotation original) {
+			return new HasDefaultSerializerAnnotation(original.time);
 		}
 	}
 

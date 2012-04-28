@@ -112,4 +112,15 @@ public class MapSerializer extends Serializer<Map> {
 			map.put(key, value);
 		}
 	}
+
+	public Map createCopy (Kryo kryo, Map original) {
+		return kryo.newInstance(original.getClass());
+	}
+
+	public void copy (Kryo kryo, Map original, Map copy) {
+		for (Iterator iter = original.entrySet().iterator(); iter.hasNext();) {
+			Entry entry = (Entry)iter.next();
+			copy.put(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));
+		}
+	}
 }

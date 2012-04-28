@@ -97,4 +97,13 @@ public class CollectionSerializer extends Serializer<Collection> {
 				collection.add(kryo.readClassAndObject(input));
 		}
 	}
+
+	public Collection createCopy (Kryo kryo, Collection original) {
+		return kryo.newInstance(original.getClass());
+	}
+
+	public void copy (Kryo kryo, Collection original, Collection copy) {
+		for (Object element : original)
+			copy.add(kryo.copy(element));
+	}
 }

@@ -11,6 +11,10 @@ import com.esotericsoftware.kryo.serializers.AsciiSerializer;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest extends KryoTestCase {
+	{
+		supportsCopy = true;
+	}
+	
 	public void testBoolean () {
 		roundTrip(2, true);
 		roundTrip(2, false);

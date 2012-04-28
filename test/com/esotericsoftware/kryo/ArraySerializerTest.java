@@ -5,6 +5,10 @@ import com.esotericsoftware.kryo.serializers.ArraySerializer;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class ArraySerializerTest extends KryoTestCase {
+	{
+		supportsCopy = true;
+	}
+
 	public void testArrays () {
 		kryo.register(int[].class);
 		kryo.register(int[][].class);

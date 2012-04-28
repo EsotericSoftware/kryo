@@ -7,6 +7,10 @@ import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class CompatibleFieldSerializerTest extends KryoTestCase {
+	{
+		supportsCopy = true;
+	}
+
 	public void testCompatibleFieldSerializer () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();

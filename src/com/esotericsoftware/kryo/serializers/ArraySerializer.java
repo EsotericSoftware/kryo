@@ -157,6 +157,21 @@ public class ArraySerializer extends Serializer {
 		}
 	}
 
+	public Object createCopy (Kryo kryo, Object original) {
+		return Array.newInstance(original.getClass().getComponentType(), Array.getLength(original));
+	}
+
+	public void copy (Kryo kryo, Object original, Object copy) {
+		int length = Array.getLength(original);
+		if (original.getClass().getComponentType().getComponentType() == null) { // single dimension
+			for (int i = 0; i < length; i++)
+				Array.set(copy, i, kryo.copy(Array.get(original, i)));
+		} else {
+			for (int i = 0; i < length; i++)
+				Array.set(copy, i, kryo.copy(Array.get(original, i), this));
+		}
+	}
+
 	static public int getDimensionCount (Class arrayClass) {
 		int depth = 0;
 		Class nextClass = arrayClass.getComponentType();

@@ -19,6 +19,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.reflectasm.FieldAccess;
@@ -33,7 +34,7 @@ import static com.esotericsoftware.minlog.Log.*;
  * skipping the bytes for a field that no longer exists, for each field value an int is written that is the length of the value in
  * bytes.
  * @author Nathan Sweet <misc@n4te.com> */
-public class CompatibleFieldSerializer extends Serializer {
+public class CompatibleFieldSerializer<T> extends Serializer<T> {
 	private final Kryo kryo;
 	private final Class type;
 	private CachedField[] fields;
@@ -159,7 +160,7 @@ public class CompatibleFieldSerializer extends Serializer {
 		rebuildCachedFields();
 	}
 
-	public void write (Kryo kryo, Output output, Object object) {
+	public void write (Kryo kryo, Output output, T object) {
 		ObjectMap context = kryo.getGraphContext();
 		if (!context.containsKey(this)) {
 			context.put(this, null);
@@ -210,7 +211,7 @@ public class CompatibleFieldSerializer extends Serializer {
 		}
 	}
 
-	public void read (Kryo kryo, Input input, Object object) {
+	public void read (Kryo kryo, Input input, T object) {
 		ObjectMap context = kryo.getGraphContext();
 		CachedField[] fields = (CachedField[])context.get(this);
 		if (fields == null) {
@@ -311,8 +312,31 @@ public class CompatibleFieldSerializer extends Serializer {
 		return fields;
 	}
 
+	public T createCopy (Kryo kryo, T original) {
+		return (T)kryo.newInstance(original.getClass());
+	}
+
+	public void copy (Kryo kryo, T original, T copy) {
+		for (int i = 0, n = fields.length; i < n; i++) {
+			CachedField cachedField = fields[i];
+			try {
+				Object value = cachedField.get(original);
+				cachedField.set(copy, value);
+			} catch (IllegalAccessException ex) {
+				throw new KryoException("Error accessing field: " + cachedField + " (" + type.getName() + ")", ex);
+			} catch (KryoException ex) {
+				ex.addTrace(cachedField + " (" + type.getName() + ")");
+				throw ex;
+			} catch (RuntimeException runtimeEx) {
+				KryoException ex = new KryoException(runtimeEx);
+				ex.addTrace(cachedField + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+	}
+
 	/** Controls how a field will be serialized. */
-	public class CachedField {
+	public class CachedField<X> {
 		Field field;
 		Class fieldClass;
 		Serializer serializer;

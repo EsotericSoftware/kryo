@@ -50,4 +50,12 @@ public class DeflateSerializer extends Serializer {
 	public void setCompressionLevel (int compressionLevel) {
 		this.compressionLevel = compressionLevel;
 	}
+
+	public Object createCopy (Kryo kryo, Object original) {
+		return serializer.createCopy(kryo, original);
+	}
+
+	public void copy (Kryo kryo, Object original, Object copy) {
+		serializer.copy(kryo, original, copy);
+	}
 }

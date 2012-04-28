@@ -10,6 +10,10 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class CollectionSerializerTest extends KryoTestCase {
+	{
+		supportsCopy = true;
+	}
+
 	public void testCollections () {
 		kryo.register(ArrayList.class);
 		kryo.register(LinkedList.class);
