@@ -358,10 +358,6 @@ public class DefaultSerializers {
 			if (original instanceof KryoCopyable) return kryo.newInstance(original.getClass());
 			return super.createCopy(kryo, original);
 		}
-
-		public void copy (Kryo kryo, KryoSerializable original, KryoSerializable copy) {
-			((KryoCopyable)copy).copy(kryo, copy);
-		}
 	}
 
 	/** Serializer for lists created via {@link Collections#emptyList()} or that were just assigned the

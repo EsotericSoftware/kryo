@@ -779,10 +779,19 @@ public class Kryo {
 			if (originalToCopy == null) originalToCopy = new IdentityMap();
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
-			Serializer serializer = getRegistration(object.getClass()).getSerializer();
-			Object copy = serializer.createCopy(this, object);
-			originalToCopy.put(object, copy);
-			serializer.copy(this, object, copy);
+
+			Object copy;
+			if (object instanceof KryoCopyable) {
+				KryoCopyable copyable = (KryoCopyable)object;
+				copy = copyable.createCopy(this);
+				originalToCopy.put(object, copy);
+				copyable.copy(this, copy);
+			} else {
+				Serializer serializer = getRegistration(object.getClass()).getSerializer();
+				copy = serializer.createCopy(this, object);
+				originalToCopy.put(object, copy);
+				serializer.copy(this, object, copy);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Copy", copy);
 			return (T)copy;
 		} finally {
@@ -801,9 +810,18 @@ public class Kryo {
 			if (originalToCopy == null) originalToCopy = new IdentityMap();
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
-			Object copy = serializer.createCopy(this, object);
-			originalToCopy.put(object, copy);
-			serializer.copy(this, object, copy);
+
+			Object copy;
+			if (object instanceof KryoCopyable) {
+				KryoCopyable copyable = (KryoCopyable)object;
+				copy = copyable.createCopy(this);
+				originalToCopy.put(object, copy);
+				copyable.copy(this, copy);
+			} else {
+				copy = serializer.createCopy(this, object);
+				originalToCopy.put(object, copy);
+				serializer.copy(this, object, copy);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Copy", copy);
 			return (T)copy;
 		} finally {
@@ -822,10 +840,19 @@ public class Kryo {
 			if (originalToCopy == null) originalToCopy = new IdentityMap();
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
-			Serializer serializer = getRegistration(object.getClass()).getSerializer();
-			Object copy = serializer.createCopy(this, object);
-			originalToCopy.put(object, copy);
-			serializer.copy(this, object, copy);
+
+			Object copy;
+			if (object instanceof KryoCopyable) {
+				KryoCopyable copyable = (KryoCopyable)object;
+				copy = copyable.createCopy(this);
+				originalToCopy.put(object, copy);
+				copyable.copy(this, copy);
+			} else {
+				Serializer serializer = getRegistration(object.getClass()).getSerializer();
+				copy = serializer.createCopy(this, object);
+				originalToCopy.put(object, copy);
+				serializer.copy(this, object, copy);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Shallow copy", copy);
 			return (T)copy;
 		} finally {
@@ -845,9 +872,18 @@ public class Kryo {
 			if (originalToCopy == null) originalToCopy = new IdentityMap();
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
-			Object copy = serializer.createCopy(this, object);
-			originalToCopy.put(object, copy);
-			serializer.copy(this, object, copy);
+
+			Object copy;
+			if (object instanceof KryoCopyable) {
+				KryoCopyable copyable = (KryoCopyable)object;
+				copy = copyable.createCopy(this);
+				originalToCopy.put(object, copy);
+				copyable.copy(this, copy);
+			} else {
+				copy = serializer.createCopy(this, object);
+				originalToCopy.put(object, copy);
+				serializer.copy(this, object, copy);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Shallow copy", copy);
 			return (T)copy;
 		} finally {

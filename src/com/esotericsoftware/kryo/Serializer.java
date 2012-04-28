@@ -68,8 +68,8 @@ public abstract class Serializer<T> {
 		throw new KryoException("Serializer does not support copy: " + getClass().getName());
 	}
 
-	/** Populates the copy with the original. This method may call {@link Kryo} methods to copy nested objects, unlike
-	 * {@link #createCopy(Kryo, Object)}. The default implementation is empty.
+	/** Configures the copy to have the same values as the original. This method may call {@link Kryo} methods to copy nested
+	 * objects, unlike {@link #createCopy(Kryo, Object)}. The default implementation is empty.
 	 * <p>
 	 * Any serializer that uses {@link Kryo} to copy a nested object may need to be reentrant. *
 	 * <p>
