@@ -289,50 +289,60 @@ public class Input extends InputStream {
 	/** Reads a 1-5 byte int. */
 	public int readInt (boolean optimizePositive) throws KryoException {
 		if (require(1) < 5) return readInt_slow(optimizePositive);
+		byte[] buffer = this.buffer;
+		int position = this.position;
 		int b = buffer[position++];
-		int result = b & 0x7F;
-		if ((b & 0x80) != 0) {
-			b = buffer[position++];
-			result |= (b & 0x7F) << 7;
-			if ((b & 0x80) != 0) {
-				b = buffer[position++];
-				result |= (b & 0x7F) << 14;
-				if ((b & 0x80) != 0) {
-					b = buffer[position++];
-					result |= (b & 0x7F) << 21;
-					if ((b & 0x80) != 0) {
-						b = buffer[position++];
-						result |= (b & 0x7F) << 28;
-					}
-				}
+		int result;
+		if ((b & 0x80) == 0)
+			result = b & 0x7F;
+		else {
+			result = b & 0x1F | (buffer[position++] & 0xFF) << 5; // mask 1st 5 bits, combine with 2nd byte
+			switch (b >>> 5 & 3) { // shift to bits 6,7, mask 1st 2 bits
+			case 1:
+				result |= (buffer[position++] & 0xFF) << 13;
+				break;
+			case 2:
+				result |= (buffer[position++] & 0xFF) << 13;
+				result |= (buffer[position++] & 0xFF) << 21;
+				break;
+			case 3:
+				result |= (buffer[position++] & 0xFF) << 13;
+				result |= (buffer[position++] & 0xFF) << 21;
+				result |= (buffer[position++] & 0xFF) << 29;
+				break;
 			}
 		}
+		this.position = position;
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
 	private int readInt_slow (boolean optimizePositive) {
 		// The buffer is guaranteed to have at least 1 byte.
 		int b = buffer[position++];
-		int result = b & 0x7F;
-		if ((b & 0x80) != 0) {
-			require(1);
-			b = buffer[position++];
-			result |= (b & 0x7F) << 7;
-			if ((b & 0x80) != 0) {
-				require(1);
-				b = buffer[position++];
-				result |= (b & 0x7F) << 14;
-				if ((b & 0x80) != 0) {
-					require(1);
-					b = buffer[position++];
-					result |= (b & 0x7F) << 21;
-					if ((b & 0x80) != 0) {
-						require(1);
-						b = buffer[position++];
-						result |= (b & 0x7F) << 28;
-					}
-				}
+		int result;
+		if ((b & 0x80) == 0)
+			result = b & 0x7F;
+		else {
+			int additional = b >>> 5 & 3; // shift to bits 6,7, mask 1st 2 bits
+			require(additional + 1);
+			byte[] buffer = this.buffer;
+			int position = this.position;
+			result = b & 0x1F | (buffer[position++] & 0xFF) << 5; // mask 1st 5 bits, combine with 2nd byte
+			switch (additional) {
+			case 1:
+				result |= (buffer[position++] & 0xFF) << 13;
+				break;
+			case 2:
+				result |= (buffer[position++] & 0xFF) << 13;
+				result |= (buffer[position++] & 0xFF) << 21;
+				break;
+			case 3:
+				result |= (buffer[position++] & 0xFF) << 13;
+				result |= (buffer[position++] & 0xFF) << 21;
+				result |= (buffer[position++] & 0xFF) << 29;
+				break;
 			}
+			this.position = position;
 		}
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}

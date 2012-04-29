@@ -232,36 +232,45 @@ public class Output extends OutputStream {
 	 *           inefficient (5 bytes). */
 	public int writeInt (int value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
-		int length;
-		if ((value & ~0x7F) == 0)
-			length = 1;
-		else if ((value >>> 7 & ~0x7F) == 0)
-			length = 2;
-		else if ((value >>> 14 & ~0x7F) == 0)
-			length = 3;
-		else if ((value >>> 21 & ~0x7F) == 0)
-			length = 4;
-		else
-			length = 5;
-		require(length);
-		byte[] buffer = this.buffer;
-		switch (length) {
-		case 5:
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 4:
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 3:
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 2:
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 1:
+		if ((value & ~0x7F) == 0) {
+			require(1);
 			buffer[position++] = (byte)value;
+			return 1;
+		} else if ((value >>> 5 & ~0xFF) == 0) {
+			require(2);
+			buffer[position++] = (byte)(value & 0x1F | 0x80); // take 1st 5 bits, set bit 8
+			buffer[position++] = (byte)(value >>> 5);
+			return 2;
+		} else if ((value >>> 13 & ~0xFF) == 0) {
+			require(3);
+			byte[] buffer = this.buffer;
+			int position = this.position;
+			buffer[position++] = (byte)(value & 0x1F | (1 << 5) | 0x80); // 1st 5 bits, set bits 6,7 to adtl bytes - 1, set bit 8
+			buffer[position++] = (byte)(value >>> 5);
+			buffer[position++] = (byte)(value >>> 13);
+			this.position = position;
+			return 3;
+		} else if ((value >>> 21 & ~0xFF) == 0) {
+			require(4);
+			byte[] buffer = this.buffer;
+			int position = this.position;
+			buffer[position++] = (byte)(value & 0x1F | (2 << 5) | 0x80);
+			buffer[position++] = (byte)(value >>> 5);
+			buffer[position++] = (byte)(value >>> 13);
+			buffer[position++] = (byte)(value >>> 21);
+			this.position = position;
+			return 4;
 		}
-		return length;
+		require(5);
+		byte[] buffer = this.buffer;
+		int position = this.position;
+		buffer[position++] = (byte)(value & 0x1F | (3 << 5) | 0x80);
+		buffer[position++] = (byte)(value >>> 5);
+		buffer[position++] = (byte)(value >>> 13);
+		buffer[position++] = (byte)(value >>> 21);
+		buffer[position++] = (byte)(value >>> 29);
+		this.position = position;
+		return 5;
 	}
 
 	// string
@@ -278,7 +287,7 @@ public class Output extends OutputStream {
 		}
 		// Detect ASCII.
 		boolean ascii = true;
-		if (charCount > 1 && charCount < 64) {
+		if (charCount > 1 && charCount < 32) {
 			ascii = true;
 			for (int i = 0; i < charCount; i++) {
 				int c = value.charAt(i);
@@ -340,45 +349,6 @@ public class Output extends OutputStream {
 			buffer[position++] = (byte)((value >>> 13) | 1 << 7); // set bit 8
 			buffer[position++] = (byte)((value >>> 20) | 1 << 7); // set bit 8
 			buffer[position++] = (byte)(value >>> 27);
-		}
-	}
-
-	public static void main (String[] args) throws Exception {
-		 String str = "asdjdknfasjkdfnsjkanfkajsnfkjasnfkjasn";
-		//String str = "a\u00E1\u00E9\u00ED\u00F3\u00FAb";
-
-		System.out.println("write: " + str);
-
-		int count = 5000000;
-		Object[] results = new Object[count];
-
-		Output output = new Output(4096);
-		Input input = new Input();
-
-		while (true) {
-			output.writeString_new(str);
-			input.setBuffer(output.getBuffer(), 0, output.position());
-			long s = System.nanoTime();
-			for (int i = 0; i < count; i++) {
-				output.clear();
-				output.writeString_new(str);
-				input.rewind();
-				input.readString_new();
-			}
-			long e = System.nanoTime();
-			System.out.println("new: " + (e - s) / 1e6f);
-
-			output.writeString(str);
-			input.setBuffer(output.getBuffer(), 0, output.position());
-			s = System.nanoTime();
-			for (int i = 0; i < count; i++) {
-				output.clear();
-				output.writeString(str);
-				input.rewind();
-				input.readString();
-			}
-			e = System.nanoTime();
-			System.out.println("old: " + (e - s) / 1e6f);
 		}
 	}
 
