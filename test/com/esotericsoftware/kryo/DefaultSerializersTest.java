@@ -73,20 +73,20 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(3, 64l);
 		roundTrip(3, 127l);
 		roundTrip(3, 128l);
-		roundTrip(3, 8191l);
+		roundTrip(4, 8191l);
 		roundTrip(4, 8192l);
 		roundTrip(4, 16383l);
 		roundTrip(4, 16384l);
 		roundTrip(5, 2097151l);
-		roundTrip(4, 1048575l);
+		roundTrip(5, 1048575l);
 		roundTrip(5, 134217727l);
 		roundTrip(6, 268435455l);
 		roundTrip(6, 134217728l);
 		roundTrip(6, 268435456l);
 		roundTrip(2, -64l);
 		roundTrip(3, -65l);
-		roundTrip(3, -8192l);
-		roundTrip(4, -1048576l);
+		roundTrip(4, -8192l);
+		roundTrip(5, -1048576l);
 		roundTrip(5, -134217728l);
 		roundTrip(6, -134217729l);
 	}
@@ -149,7 +149,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	public void testDateSerializer () {
 		kryo.register(Date.class);
 		roundTrip(2, new Date(0));
-		roundTrip(4, new Date(1234567));
+		roundTrip(5, new Date(1234567));
 		roundTrip(10, new Date(-1234567));
 	}
 

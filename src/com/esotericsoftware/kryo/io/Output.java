@@ -510,56 +510,99 @@ public class Output extends OutputStream {
 	 *           inefficient (9 bytes). */
 	public int writeLong (long value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
-		int length;
-		if ((value & ~0x7Fl) == 0)
-			length = 1;
-		else if ((value >>> 7 & ~0x7Fl) == 0)
-			length = 2;
-		else if ((value >>> 14 & ~0x7Fl) == 0)
-			length = 3;
-		else if ((value >>> 21 & ~0x7Fl) == 0)
-			length = 4;
-		else if ((value >>> 28 & ~0x7Fl) == 0)
-			length = 5;
-		else if ((value >>> 35 & ~0x7Fl) == 0)
-			length = 6;
-		else if ((value >>> 42 & ~0x7Fl) == 0)
-			length = 7;
-		else if ((value >>> 49 & ~0x7Fl) == 0)
-			length = 8;
-		else
-			length = 9;
-		require(length);
-		byte[] buffer = this.buffer;
-		switch (length) {
-		case 9:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 8:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 7:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 6:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 5:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 4:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 3:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 2:
-			buffer[position++] = (byte)(((int)value & 0x7F) | 0x80);
-			value >>>= 7;
-		case 1:
+		if ((value & ~0x7F) == 0) {
+			require(1);
 			buffer[position++] = (byte)value;
+			return 1;
+		} else if ((value >>> 4 & ~0xFF) == 0) {
+			require(2);
+			buffer[position++] = (byte)(value & 0xF | 0x80); // take 1st 4 bits, set bit 8
+			buffer[position++] = (byte)(value >>> 4);
+			return 2;
+		} else if ((value >>> 12 & ~0xFF) == 0) {
+			require(3);
+			byte[] buffer = this.buffer;
+			int position = this.position;
+			buffer[position++] = (byte)(value & 0xF | (1 << 4) | 0x80); // 1st 4 bits, set bits 5,6,7 to adtl bytes - 1, set bit 8
+			buffer[position++] = (byte)(value >>> 4);
+			buffer[position++] = (byte)(value >>> 12);
+			this.position = position;
+			return 3;
+		} else if ((value >>> 20 & ~0xFF) == 0) {
+			require(4);
+			byte[] buffer = this.buffer;
+			int position = this.position;
+			buffer[position++] = (byte)(value & 0xF | (2 << 4) | 0x80);
+			buffer[position++] = (byte)(value >>> 4);
+			buffer[position++] = (byte)(value >>> 12);
+			buffer[position++] = (byte)(value >>> 20);
+			this.position = position;
+			return 4;
+		} else if ((value >>> 28 & ~0xFF) == 0) {
+			require(5);
+			byte[] buffer = this.buffer;
+			int position = this.position;
+			buffer[position++] = (byte)(value & 0xF | (3 << 4) | 0x80);
+			buffer[position++] = (byte)(value >>> 4);
+			buffer[position++] = (byte)(value >>> 12);
+			buffer[position++] = (byte)(value >>> 20);
+			buffer[position++] = (byte)(value >>> 28);
+			this.position = position;
+			return 5;
+		} else if ((value >>> 36 & ~0xFF) == 0) {
+			require(6);
+			byte[] buffer = this.buffer;
+			int position = this.position;
+			buffer[position++] = (byte)(value & 0xF | (4 << 4) | 0x80);
+			buffer[position++] = (byte)(value >>> 4);
+			buffer[position++] = (byte)(value >>> 12);
+			buffer[position++] = (byte)(value >>> 20);
+			buffer[position++] = (byte)(value >>> 28);
+			buffer[position++] = (byte)(value >>> 36);
+			this.position = position;
+			return 6;
+		} else if ((value >>> 44 & ~0xFF) == 0) {
+			require(7);
+			byte[] buffer = this.buffer;
+			int position = this.position;
+			buffer[position++] = (byte)(value & 0xF | (5 << 4) | 0x80);
+			buffer[position++] = (byte)(value >>> 4);
+			buffer[position++] = (byte)(value >>> 12);
+			buffer[position++] = (byte)(value >>> 20);
+			buffer[position++] = (byte)(value >>> 28);
+			buffer[position++] = (byte)(value >>> 36);
+			buffer[position++] = (byte)(value >>> 44);
+			this.position = position;
+			return 7;
+		} else if ((value >>> 52 & ~0xFF) == 0) {
+			require(8);
+			byte[] buffer = this.buffer;
+			int position = this.position;
+			buffer[position++] = (byte)(value & 0xF | (6 << 4) | 0x80);
+			buffer[position++] = (byte)(value >>> 4);
+			buffer[position++] = (byte)(value >>> 12);
+			buffer[position++] = (byte)(value >>> 20);
+			buffer[position++] = (byte)(value >>> 28);
+			buffer[position++] = (byte)(value >>> 36);
+			buffer[position++] = (byte)(value >>> 44);
+			buffer[position++] = (byte)(value >>> 52);
+			this.position = position;
+			return 8;
 		}
-		return length;
+		require(9);
+		byte[] buffer = this.buffer;
+		int position = this.position;
+		buffer[position++] = (byte)(value & 0xF | (7 << 4) | 0x80);
+		buffer[position++] = (byte)(value >>> 4);
+		buffer[position++] = (byte)(value >>> 12);
+		buffer[position++] = (byte)(value >>> 20);
+		buffer[position++] = (byte)(value >>> 28);
+		buffer[position++] = (byte)(value >>> 36);
+		buffer[position++] = (byte)(value >>> 44);
+		buffer[position++] = (byte)(value >>> 52);
+		buffer[position++] = (byte)(value >>> 60);
+		this.position = position;
+		return 9;
 	}
 
 	// boolean
