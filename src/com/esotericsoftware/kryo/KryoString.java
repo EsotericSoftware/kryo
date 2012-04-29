@@ -7,8 +7,13 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 /** Holds bytes for a string, only deserializing to a string as needed. This can be useful for high performance processing to avoid
- * deserializing strings, eg when data will just be written to another source. */
-public class KryoString implements KryoSerializable {
+ * deserializing strings unless they are actually needed.
+ * <p>
+ * Serialized bytes for !KryoString and String are identical and interchangeable. Eg, the serialized bytes for a class with a
+ * String field will be deserialized correctly if the field's type is changed to !KryoString, and vice versa. However, if a string
+ * is written as null and read as a KryoString, the KryoString will not be null but will contain a null string. If a KryoString
+ * containing a null string is written and read back as a string, the string will be null. */
+public final class KryoString {
 	public byte[] bytes;
 
 	private transient String value;
@@ -16,15 +21,18 @@ public class KryoString implements KryoSerializable {
 	public KryoString () {
 	}
 
+	/** @param value May be null. */
 	public KryoString (String value) {
 		setValue(value);
 	}
 
 	public KryoString (KryoString value) {
+		if (value == null) throw new IllegalArgumentException("value cannot be null.");
 		this.bytes = value.bytes;
 		this.value = value.value;
 	}
 
+	/** @param value May be null. */
 	public void setValue (String value) {
 		this.value = value;
 		Output output = new Output(value.length() * 2, -1);
@@ -40,26 +48,6 @@ public class KryoString implements KryoSerializable {
 
 	public String toString () {
 		return getValue();
-	}
-
-	public void write (Kryo kryo, Output output) {
-		if (bytes == null)
-			output.writeByte(0);
-		else
-			output.writeBytes(bytes);
-	}
-
-	public void read (Kryo kryo, Input input) {
-		int length = input.readInt(true);
-		if (length == 0)
-			bytes = null;
-		else {
-			int lengthLength = Output.intLength(length, true);
-			bytes = new byte[lengthLength + length - 1];
-			Output output = new Output(bytes);
-			output.write(length);
-			input.read(bytes, lengthLength, length - 1);
-		}
 	}
 
 	public int hashCode () {

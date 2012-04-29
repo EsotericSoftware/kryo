@@ -43,6 +43,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.FloatSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.IntSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoStringSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
@@ -113,6 +114,7 @@ public class Kryo {
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
 		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
+		addDefaultSerializer(KryoString.class, KryoStringSerializer.class);
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
@@ -200,6 +202,9 @@ public class Kryo {
 	 * <td>Collections.singletonList</td>
 	 * <td>Collections.singletonMap</td>
 	 * <td>Currency</td>
+	 * </tr>
+	 * <tr>
+	 * <td>KryoStringSerializer</td>
 	 * </tr>
 	 * </table>
 	 * <p>
