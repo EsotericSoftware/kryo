@@ -277,7 +277,7 @@ public class Output extends OutputStream {
 			return;
 		}
 		// Detect ASCII.
-		boolean ascii = false;
+		boolean ascii = true;
 		if (charCount > 1 && charCount < 64) {
 			ascii = true;
 			for (int i = 0; i < charCount; i++) {
@@ -344,20 +344,42 @@ public class Output extends OutputStream {
 	}
 
 	public static void main (String[] args) throws Exception {
-		// String s = "asd";
-		String s = "a\u00E1\u00E9\u00ED\u00F3\u00FAb";
+		 String str = "asdjdknfasjkdfnsjkanfkajsnfkjasnfkjasn";
+		//String str = "a\u00E1\u00E9\u00ED\u00F3\u00FAb";
 
-		System.out.println("write: " + s);
+		System.out.println("write: " + str);
+
+		int count = 5000000;
+		Object[] results = new Object[count];
 
 		Output output = new Output(4096);
-		output.writeString(s);
-		System.out.println("writeString bytes: " + output.position);
-		output.clear();
-		output.writeString_new(s);
-		System.out.println("writeString_new bytes: " + output.position);
+		Input input = new Input();
 
-		Input input = new Input(output.toBytes());
-		System.out.println("read: " + input.readString_new());
+		while (true) {
+			output.writeString_new(str);
+			input.setBuffer(output.getBuffer(), 0, output.position());
+			long s = System.nanoTime();
+			for (int i = 0; i < count; i++) {
+				output.clear();
+				output.writeString_new(str);
+				input.rewind();
+				input.readString_new();
+			}
+			long e = System.nanoTime();
+			System.out.println("new: " + (e - s) / 1e6f);
+
+			output.writeString(str);
+			input.setBuffer(output.getBuffer(), 0, output.position());
+			s = System.nanoTime();
+			for (int i = 0; i < count; i++) {
+				output.clear();
+				output.writeString(str);
+				input.rewind();
+				input.readString();
+			}
+			e = System.nanoTime();
+			System.out.println("old: " + (e - s) / 1e6f);
+		}
 	}
 
 	/** Writes the length and string using UTF8, or null.

@@ -95,6 +95,16 @@ public class Input extends InputStream {
 		this.position = position;
 	}
 
+	/** Returns the limit for the buffer. */
+	public int limit () {
+		return limit;
+	}
+
+	/** Sets the limit in the buffer. */
+	public void setLimit (int limit) {
+		this.limit = limit;
+	}
+
 	/** Sets the position and total to zero. */
 	public void rewind () {
 		position = 0;
@@ -416,16 +426,16 @@ public class Input extends InputStream {
 			byte[] buffer = this.buffer;
 			int end = position;
 			int start = end - 1;
-			// int limit = this.limit;
+			int limit = this.limit;
 			do {
-				// if (end == limit) return readAscii_slow(); // BOZO
+				if (end == limit) return readAscii_slow();
 				b = buffer[end++];
 			} while ((b & 0x80) == 0);
-			buffer[start] &= 0x7F;
-			buffer[end - 1] = (byte)(b & 0x7F);
+			buffer[start] &= 0x7F; // Mask ascii/utf8 bit.
+			buffer[end - 1] &= 0x7F; // Mask end of ascii bit.
 			String value = new String(buffer, 0, start, end - start);
 			buffer[start] |= 0x80;
-			buffer[end - 1] = (byte)b;
+			buffer[end - 1] |= 0x80;
 			position = end;
 			return value;
 		}
@@ -443,8 +453,7 @@ public class Input extends InputStream {
 		byte[] buffer = this.buffer;
 		// Try to read 8 bit chars.
 		int charIndex = 0;
-		// int count = Math.min(require(1), charCount);
-		int count = charCount; // BOZO
+		int count = Math.min(require(1), charCount);
 		int position = this.position;
 		while (charIndex < count) {
 			b = buffer[position++];
@@ -456,7 +465,7 @@ public class Input extends InputStream {
 		}
 		this.position = position;
 		// If buffer couldn't hold all chars or any were not 8 bit, use slow path for remainder.
-		if (charIndex < charCount) return readString_slow(charCount, charIndex); // BOZO
+		if (charIndex < charCount) return readString_slow(charCount, charIndex);
 		return new String(chars, 0, charCount);
 	}
 
