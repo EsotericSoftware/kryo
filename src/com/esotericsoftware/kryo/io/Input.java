@@ -409,6 +409,78 @@ public class Input extends InputStream {
 		return new String(chars, 0, charCount);
 	}
 
+	public String readString_new () {
+		int b = buffer[position++];
+		if ((b & (1 << 7)) == 0) {
+			// ascii
+			byte[] buffer = this.buffer;
+			int end = position;
+			int start = end - 1;
+			// int limit = this.limit;
+			do {
+				// if (end == limit) return readAscii_slow(); // BOZO
+				b = buffer[end++];
+			} while ((b & 0x80) == 0);
+			buffer[start] &= 0x7F;
+			buffer[end - 1] = (byte)(b & 0x7F);
+			String value = new String(buffer, 0, start, end - start);
+			buffer[start] |= 0x80;
+			buffer[end - 1] = (byte)b;
+			position = end;
+			return value;
+		}
+		// utf8
+		int charCount = readStringLength(b);
+		switch (charCount) {
+		case 0:
+			return null;
+		case 1:
+			return "";
+		}
+		charCount--;
+		if (chars.length < charCount) chars = new char[charCount];
+		char[] chars = this.chars;
+		byte[] buffer = this.buffer;
+		// Try to read 8 bit chars.
+		int charIndex = 0;
+		// int count = Math.min(require(1), charCount);
+		int count = charCount; // BOZO
+		int position = this.position;
+		while (charIndex < count) {
+			b = buffer[position++];
+			if (b < 0) {
+				position--;
+				break;
+			}
+			chars[charIndex++] = (char)b;
+		}
+		this.position = position;
+		// If buffer couldn't hold all chars or any were not 8 bit, use slow path for remainder.
+		if (charIndex < charCount) return readString_slow(charCount, charIndex); // BOZO
+		return new String(chars, 0, charCount);
+	}
+
+	private int readStringLength (int b) {
+		int result = b & 0x3F; // only take first 6 bits
+		if ((b & 0x40) != 0) { // if 6th bit
+			b = buffer[position++];
+			result |= (b & 0x7F) << 6;
+			if ((b & 0x80) != 0) {
+				b = buffer[position++];
+				result |= (b & 0x7F) << 13;
+				if ((b & 0x80) != 0) {
+					b = buffer[position++];
+					result |= (b & 0x7F) << 20;
+					if ((b & 0x80) != 0) {
+						b = buffer[position++];
+						result |= (b & 0x7F) << 27;
+					}
+				}
+			}
+		}
+		return result;
+	}
+
 	/** Reads a string of ASCII characters.
 	 * @return May be null.
 	 * @see Output#writeAscii(String) */

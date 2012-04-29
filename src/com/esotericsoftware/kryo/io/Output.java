@@ -266,6 +266,100 @@ public class Output extends OutputStream {
 
 	// string
 
+	public void writeString_new (String value) throws KryoException {
+		if (value == null) {
+			writeByte(1 << 7);
+			return;
+		}
+		int charCount = value.length();
+		if (charCount == 0) {
+			writeByte(1 | 1 << 7);
+			return;
+		}
+		// Detect ASCII.
+		boolean ascii = false;
+		if (charCount > 1 && charCount < 64) {
+			ascii = true;
+			for (int i = 0; i < charCount; i++) {
+				int c = value.charAt(i);
+				if (c > 127) {
+					ascii = false;
+					break;
+				}
+			}
+		}
+		if (ascii) {
+			if (capacity - position < charCount)
+				writeAscii_slow(value, charCount);
+			else {
+				value.getBytes(0, charCount, buffer, position);
+				position += charCount;
+				buffer[position - 1] |= 0x80;
+			}
+		} else {
+			writeStringLength(charCount + 1);
+			int charIndex = 0;
+			if (capacity - position >= charCount) {
+				// Try to write 8 bit chars.
+				byte[] buffer = this.buffer;
+				int position = this.position;
+				for (; charIndex < charCount; charIndex++) {
+					int c = value.charAt(charIndex);
+					if (c > 127) break;
+					buffer[position++] = (byte)c;
+				}
+				this.position = position;
+			}
+			if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
+		}
+	}
+
+	private void writeStringLength (int value) {
+		if ((value & ~0x3F) == 0) {
+			require(1);
+			buffer[position++] = (byte)(value | 1 << 7); // set bit 8
+		} else if ((value >>> 6 & ~0x3F) == 0) {
+			require(2);
+			buffer[position++] = (byte)(value | 1 << 6 | 1 << 7); // set bit 7 and 8
+			buffer[position++] = (byte)(value >>> 6);
+		} else if ((value >>> 13 & ~0x3F) == 0) {
+			require(3);
+			buffer[position++] = (byte)(value | 1 << 6 | 1 << 7); // set bit 7 and 8
+			buffer[position++] = (byte)((value >>> 6) | 1 << 7); // set bit 8
+			buffer[position++] = (byte)(value >>> 13);
+		} else if ((value >>> 20 & ~0x3F) == 0) {
+			require(4);
+			buffer[position++] = (byte)(value | 1 << 6 | 1 << 7); // set bit 7 and 8
+			buffer[position++] = (byte)((value >>> 6) | 1 << 7); // set bit 8
+			buffer[position++] = (byte)((value >>> 13) | 1 << 7); // set bit 8
+			buffer[position++] = (byte)(value >>> 20);
+		} else {
+			require(5);
+			buffer[position++] = (byte)(value | 1 << 6 | 1 << 7); // set bit 7 and 8
+			buffer[position++] = (byte)((value >>> 6) | 1 << 7); // set bit 8
+			buffer[position++] = (byte)((value >>> 13) | 1 << 7); // set bit 8
+			buffer[position++] = (byte)((value >>> 20) | 1 << 7); // set bit 8
+			buffer[position++] = (byte)(value >>> 27);
+		}
+	}
+
+	public static void main (String[] args) throws Exception {
+		// String s = "asd";
+		String s = "a\u00E1\u00E9\u00ED\u00F3\u00FAb";
+
+		System.out.println("write: " + s);
+
+		Output output = new Output(4096);
+		output.writeString(s);
+		System.out.println("writeString bytes: " + output.position);
+		output.clear();
+		output.writeString_new(s);
+		System.out.println("writeString_new bytes: " + output.position);
+
+		Input input = new Input(output.toBytes());
+		System.out.println("read: " + input.readString_new());
+	}
+
 	/** Writes the length and string using UTF8, or null.
 	 * @param value May be null. */
 	public void writeString (String value) throws KryoException {
@@ -342,8 +436,8 @@ public class Output extends OutputStream {
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
 		byte[] buffer = this.buffer;
 		int charIndex = 0;
-		int charsToWrite = Math.min(charCount - charIndex, capacity - position);
 		charCount--;
+		int charsToWrite = Math.min(charCount, capacity - position);
 		while (charIndex < charCount) {
 			value.getBytes(charIndex, charIndex + charsToWrite, buffer, position);
 			charIndex += charsToWrite;
@@ -352,10 +446,6 @@ public class Output extends OutputStream {
 			if (require(charsToWrite)) buffer = this.buffer;
 		}
 		writeByte(value.charAt(charCount) | 0x80);
-	}
-
-	public static void main (String[] args) throws Exception {
-		System.out.println(Integer.toBinaryString(1 << 6));
 	}
 
 	// float

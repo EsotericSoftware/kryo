@@ -56,6 +56,12 @@ public class KryoStringTest extends KryoTestCase {
 		assertEquals(test.string.toString(), test.string);
 	}
 
+	public void testUnicode () {
+		kryo.register(KryoString.class);
+		// FIXME - Unicode is currently FUBAR!
+		roundTrip(12, new KryoString("abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234"));
+	}
+	
 	static public class Test {
 		KryoString string;
 
