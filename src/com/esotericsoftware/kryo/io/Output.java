@@ -171,10 +171,13 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
+	/** Writes the bytes. Note the byte[] length is not written. */
 	public void write (byte[] bytes) throws KryoException {
+		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		writeBytes(bytes, 0, bytes.length);
 	}
 
+	/** Writes the bytes. Note the byte[] length is not written. */
 	public void write (byte[] bytes, int offset, int length) throws KryoException {
 		writeBytes(bytes, offset, length);
 	}
@@ -191,10 +194,13 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
+	/** Writes the bytes. Note the byte[] length is not written. */
 	public void writeBytes (byte[] bytes) throws KryoException {
+		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		writeBytes(bytes, 0, bytes.length);
 	}
 
+	/** Writes the bytes. Note the byte[] length is not written. */
 	public void writeBytes (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int copyCount = Math.min(capacity - position, count);
@@ -348,6 +354,10 @@ public class Output extends OutputStream {
 		writeByte(value.charAt(charCount) | 0x80);
 	}
 
+	public static void main (String[] args) throws Exception {
+		System.out.println(Integer.toBinaryString(1 << 6));
+	}
+
 	// float
 
 	/** Writes a 4 byte float. */
@@ -499,5 +509,46 @@ public class Output extends OutputStream {
 	 *           inefficient (9 bytes). */
 	public int writeDouble (double value, double precision, boolean optimizePositive) throws KryoException {
 		return writeLong((long)(value * precision), optimizePositive);
+	}
+
+	static public int shortLength (int value, boolean optimizePositive) {
+		if (optimizePositive) {
+			if (value >= 0 && value <= 254) return 1;
+		} else {
+			if (value >= -127 && value <= 127) return 1;
+		}
+		return 3;
+	}
+
+	static public int intLength (int value, boolean optimizePositive) {
+		if ((value & ~0x7F) == 0)
+			return 1;
+		else if ((value >>> 7 & ~0x7F) == 0)
+			return 2;
+		else if ((value >>> 14 & ~0x7F) == 0)
+			return 3;
+		else if ((value >>> 21 & ~0x7F) == 0) //
+			return 4;
+		return 5;
+	}
+
+	static public int longLength (long value, boolean optimizePositive) {
+		if ((value & ~0x7Fl) == 0)
+			return 1;
+		else if ((value >>> 7 & ~0x7Fl) == 0)
+			return 2;
+		else if ((value >>> 14 & ~0x7Fl) == 0)
+			return 3;
+		else if ((value >>> 21 & ~0x7Fl) == 0)
+			return 4;
+		else if ((value >>> 28 & ~0x7Fl) == 0)
+			return 5;
+		else if ((value >>> 35 & ~0x7Fl) == 0)
+			return 6;
+		else if ((value >>> 42 & ~0x7Fl) == 0)
+			return 7;
+		else if ((value >>> 49 & ~0x7Fl) == 0) //
+			return 8;
+		return 9;
 	}
 }
