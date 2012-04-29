@@ -407,10 +407,11 @@ public class Input extends InputStream {
 	}
 
 	public String readString_new () {
+		require(1);
+		byte[] buffer = this.buffer;
 		int b = buffer[position++];
-		if ((b & (1 << 7)) == 0) {
+		if ((b & 0x80) == 0) {
 			// ascii
-			byte[] buffer = this.buffer;
 			int end = position;
 			int start = end - 1;
 			int limit = this.limit;
@@ -418,10 +419,8 @@ public class Input extends InputStream {
 				if (end == limit) return readAscii_slow();
 				b = buffer[end++];
 			} while ((b & 0x80) == 0);
-			buffer[start] &= 0x7F; // Mask ascii/utf8 bit.
 			buffer[end - 1] &= 0x7F; // Mask end of ascii bit.
 			String value = new String(buffer, 0, start, end - start);
-			buffer[start] |= 0x80;
 			buffer[end - 1] |= 0x80;
 			position = end;
 			return value;
@@ -437,7 +436,6 @@ public class Input extends InputStream {
 		charCount--;
 		if (chars.length < charCount) chars = new char[charCount];
 		char[] chars = this.chars;
-		byte[] buffer = this.buffer;
 		// Try to read 8 bit chars.
 		int charIndex = 0;
 		int count = Math.min(require(1), charCount);
@@ -451,12 +449,13 @@ public class Input extends InputStream {
 			chars[charIndex++] = (char)b;
 		}
 		this.position = position;
-		// If buffer couldn't hold all chars or any were not 8 bit, use slow path for remainder.
+		// If buffer couldn't hold all chars or any were not ASCII, use slow path for remainder.
 		if (charIndex < charCount) return readString_slow(charCount, charIndex);
 		return new String(chars, 0, charCount);
 	}
 
 	private int readStringLength (int b) {
+		// BOZO - Missing require!
 		int result = b & 0x3F; // only take first 6 bits
 		if ((b & 0x40) != 0) { // if 6th bit
 			b = buffer[position++];

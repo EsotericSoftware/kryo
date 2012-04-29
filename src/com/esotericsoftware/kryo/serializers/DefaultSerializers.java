@@ -179,6 +179,8 @@ public class DefaultSerializers {
 		}
 	}
 
+	// BOZO - Add string/int/float/double/boolean/char[] serializers.
+
 	static public class ByteArraySerializer extends Serializer<byte[]> {
 		{
 			setAcceptsNull(true);

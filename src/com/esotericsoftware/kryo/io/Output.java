@@ -286,7 +286,7 @@ public class Output extends OutputStream {
 			return;
 		}
 		// Detect ASCII.
-		boolean ascii = true;
+		boolean ascii = false;
 		if (charCount > 1 && charCount < 32) {
 			ascii = true;
 			for (int i = 0; i < charCount; i++) {
