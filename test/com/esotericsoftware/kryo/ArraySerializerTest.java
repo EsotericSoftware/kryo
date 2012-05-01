@@ -21,9 +21,9 @@ public class ArraySerializerTest extends KryoTestCase {
 		roundTrip(11, new int[][] { {1, 2}, {100, 4}});
 		roundTrip(13, new int[][] { {1}, {2}, {100}, {4}});
 		roundTrip(16, new int[][][] { { {1}, {2}}, { {100}, {4}}});
-		roundTrip(15, new String[] {"11", "2222", "3", "4"});
-		roundTrip(14, new String[] {"11", "2222", null, "4"});
-		roundTrip(35,
+		roundTrip(13, new String[] {"11", "2222", "3", "4"});
+		roundTrip(12, new String[] {"11", "2222", null, "4"});
+		roundTrip(33,
 			new Object[] {new String[] {"11", "2222", null, "4"}, new int[] {1, 2, 3, 4}, new int[][] { {1, 2}, {100, 4}}});
 
 		ArraySerializer serializer = new ArraySerializer();
@@ -34,17 +34,17 @@ public class ArraySerializerTest extends KryoTestCase {
 		kryo.register(Object[].class, serializer);
 		serializer.setDimensionCount(1);
 		serializer.setElementsAreSameType(true);
-		roundTrip(13, new String[] {"11", "2222", null, "4"});
+		roundTrip(11, new String[] {"11", "2222", null, "4"});
 		serializer.setElementsAreSameType(false);
-		roundTrip(13, new String[] {"11", "2222", null, "4"});
+		roundTrip(11, new String[] {"11", "2222", null, "4"});
 		roundTrip(5, new String[] {null, null, null});
 		roundTrip(2, new String[] {});
 		serializer.setElementsAreSameType(true);
-		roundTrip(14, new String[] {"11", "2222", "3", "4"});
+		roundTrip(12, new String[] {"11", "2222", "3", "4"});
 		serializer.setElementsCanBeNull(false);
-		roundTrip(14, new String[] {"11", "2222", "3", "4"});
+		roundTrip(12, new String[] {"11", "2222", "3", "4"});
 		serializer.setLength(4);
-		roundTrip(13, new String[] {"11", "2222", "3", "4"});
+		roundTrip(11, new String[] {"11", "2222", "3", "4"});
 
 		serializer = new ArraySerializer();
 		kryo.register(float[][].class, serializer);

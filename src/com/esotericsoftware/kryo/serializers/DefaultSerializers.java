@@ -15,7 +15,6 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoCopyable;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoSerializable;
-import com.esotericsoftware.kryo.KryoString;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -150,32 +149,6 @@ public class DefaultSerializers {
 
 		public String create (Kryo kryo, Input input, Class<String> type) {
 			return input.readString();
-		}
-	}
-
-	static public class KryoStringSerializer extends Serializer<KryoString> {
-		{
-			setImmutable(true);
-			setAcceptsNull(true);
-		}
-
-		public void write (Kryo kryo, Output output, KryoString object) {
-			if (object == null || object.bytes == null)
-				output.writeByte(0);
-			else
-				output.writeBytes(object.bytes);
-		}
-
-		public KryoString create (Kryo kryo, Input input, Class<KryoString> type) {
-			KryoString string = new KryoString();
-			int length = input.readInt(true);
-			if (length == 0) return string;
-			int lengthLength = Output.intLength(length, true);
-			string.bytes = new byte[lengthLength + length - 1];
-			Output output = new Output(string.bytes);
-			output.write(length);
-			input.read(string.bytes, lengthLength, length - 1);
-			return string;
 		}
 	}
 

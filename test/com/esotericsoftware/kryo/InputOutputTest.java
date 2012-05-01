@@ -71,7 +71,7 @@ public class InputOutputTest extends KryoTestCase {
 
 	public void testStrings () throws IOException {
 		runStringTest(new Output(4096));
-		runStringTest(new Output(892));
+		runStringTest(new Output(897));
 		runStringTest(new Output(new ByteArrayOutputStream()));
 
 		Output write = new Output(21);
@@ -95,17 +95,9 @@ public class InputOutputTest extends KryoTestCase {
 		write.writeString(value1);
 		write.writeString(value2);
 		for (int i = 0; i < 127; i++)
-			write.writeAscii(String.valueOf((char)i));
+			write.writeString(String.valueOf((char)i));
 		for (int i = 0; i < 127; i++)
-			write.writeAscii(String.valueOf((char)i) + "abc");
-		write.writeAscii("");
-		write.writeAscii("1");
-		write.writeAscii("22");
-		write.writeAscii("uno");
-		write.writeAscii("dos");
-		write.writeAscii("tres");
-		write.writeAscii(null);
-		write.writeAscii(value1);
+			write.writeString(String.valueOf((char)i) + "abc");
 
 		Input read = new Input(write.toBytes());
 		assertEquals("", read.readString());
@@ -118,87 +110,23 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(value1, read.readString());
 		assertEquals(value2, read.readString());
 		for (int i = 0; i < 127; i++)
-			assertEquals(String.valueOf((char)i), read.readAscii());
+			assertEquals(String.valueOf((char)i), read.readString());
 		for (int i = 0; i < 127; i++)
-			assertEquals(String.valueOf((char)i) + "abc", read.readAscii());
-		assertEquals("", read.readAscii());
-		assertEquals("1", read.readAscii());
-		assertEquals("22", read.readAscii());
-		assertEquals("uno", read.readAscii());
-		assertEquals("dos", read.readAscii());
-		assertEquals("tres", read.readAscii());
-		assertEquals(null, read.readAscii());
-		assertEquals(value1, read.readAscii());
+			assertEquals(String.valueOf((char)i) + "abc", read.readString());
 	}
 
 	public void testCanReadInt () throws IOException {
 		Output write = new Output(new ByteArrayOutputStream());
-		write.writeByte(255);
 
 		Input read = new Input(write.toBytes());
 		assertEquals(false, read.canReadInt());
 
-		write.writeByte(255);
+		write.writeInt(400, true);
 
 		read = new Input(write.toBytes());
+		assertEquals(true, read.canReadInt());
+		read.setLimit(read.limit() - 1);
 		assertEquals(false, read.canReadInt());
-
-		write.writeByte(255);
-
-		read = new Input(write.toBytes());
-		assertEquals(false, read.canReadInt());
-
-		write.writeByte(255);
-
-		read = new Input(write.toBytes());
-		assertEquals(false, read.canReadInt());
-
-		write.writeByte(255);
-
-		read = new Input(write.toBytes());
-		assertEquals(true, read.canReadInt());
-
-		//
-
-		write.clear();
-		write.writeByte(0);
-
-		read = new Input(write.toBytes());
-		assertEquals(true, read.canReadInt());
-
-		write.clear();
-		write.writeByte(255);
-		write.writeByte(0);
-
-		read = new Input(write.toBytes());
-		assertEquals(true, read.canReadInt());
-
-		write.clear();
-		write.writeByte(255);
-		write.writeByte(255);
-		write.writeByte(0);
-
-		read = new Input(write.toBytes());
-		assertEquals(true, read.canReadInt());
-
-		write.clear();
-		write.writeByte(255);
-		write.writeByte(255);
-		write.writeByte(255);
-		write.writeByte(0);
-
-		read = new Input(write.toBytes());
-		assertEquals(true, read.canReadInt());
-
-		write.clear();
-		write.writeByte(255);
-		write.writeByte(255);
-		write.writeByte(255);
-		write.writeByte(255);
-		write.writeByte(0);
-
-		read = new Input(write.toBytes());
-		assertEquals(true, read.canReadInt());
 	}
 
 	public void testInts () throws IOException {

@@ -8,6 +8,6 @@ import com.esotericsoftware.kryo.serializers.DeflateSerializer;
 public class DeflateSerializerTest extends KryoTestCase {
 	public void testZip () {
 		kryo.register(String.class, new DeflateSerializer(new StringSerializer()));
-		roundTrip(12, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+		roundTrip(13, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 	}
 }

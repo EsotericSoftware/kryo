@@ -7,14 +7,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 
-import com.esotericsoftware.kryo.serializers.AsciiSerializer;
-
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
-	
+
 	public void testBoolean () {
 		roundTrip(2, true);
 		roundTrip(2, false);
@@ -103,39 +101,18 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 	public void testString () {
 		kryo.setReferences(true);
-		roundTrip(7, "meow");
-		roundTrip(69, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
-
-		kryo.setReferences(false);
 		roundTrip(6, "meow");
-
-		roundTrip(3, "a");
-		roundTrip(3, "\n");
-		roundTrip(2, "");
-		roundTrip(99, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
-
-		roundTrip(21, "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u7C9F");
-	}
-
-	public void testAscii () {
-		kryo.register(String.class, new AsciiSerializer());
-
-		kryo.setReferences(true);
-		roundTrip(6, "meow");
-		roundTrip(68, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+		roundTrip(70, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 
 		kryo.setReferences(false);
 		roundTrip(5, "meow");
 
-		roundTrip(2, "a");
-		roundTrip(2, "\n");
+		roundTrip(3, "a");
+		roundTrip(3, "\n");
 		roundTrip(2, "");
-		roundTrip(3, String.valueOf((char)0));
-		roundTrip(3, String.valueOf((char)1));
-		roundTrip(3, String.valueOf((char)2));
-		roundTrip(2, String.valueOf((char)3));
-		roundTrip(2, String.valueOf((char)127));
-		roundTrip(98, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
+		roundTrip(100, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
+
+		roundTrip(21, "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u7C9F");
 	}
 
 	public void testNull () {
@@ -173,11 +150,10 @@ public class DefaultSerializersTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		// 1 byte identifying it's a class name
 		// 1 byte for the class name id
-		// 1 byte for the class name string length
 		// 57 bytes for the class name characters
 		// 1 byte for the reference id
 		// 1 byte for the enum value
-		roundTrip(62, TestEnum.c);
+		roundTrip(61, TestEnum.c);
 	}
 
 	public void testEnumSerializerWithMethods () {
@@ -188,7 +164,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		roundTrip(75, TestEnumWithMethods.c);
+		roundTrip(76, TestEnumWithMethods.c);
 	}
 
 	public void testCollectionsMethods () {
@@ -200,7 +176,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		test.add(Collections.singletonList("meow"));
 		test.add(Collections.singletonMap("moo", 1234));
 		test.add(Collections.singleton(12.34));
-		roundTrip(258, test);
+		roundTrip(249, test);
 	}
 
 	public enum TestEnum {

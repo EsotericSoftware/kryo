@@ -86,7 +86,7 @@ public class Output extends OutputStream {
 		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.buffer = buffer;
-		this.maxCapacity = maxBufferSize;
+		this.maxCapacity = maxBufferSize == -1 ? Integer.MAX_VALUE : maxBufferSize;
 		capacity = buffer.length;
 		position = 0;
 		total = 0;
@@ -275,7 +275,9 @@ public class Output extends OutputStream {
 
 	// string
 
-	public void writeString_new (String value) throws KryoException {
+	/** Writes the length and string using UTF8, or null.
+	 * @param value May be null. */
+	public void writeString (String value) throws KryoException {
 		if (value == null) {
 			writeByte(1 << 7);
 			return;
@@ -287,7 +289,7 @@ public class Output extends OutputStream {
 		}
 		// Detect ASCII.
 		boolean ascii = false;
-		if (charCount > 1 && charCount < 32) {
+		if (charCount > 1 && charCount < 64) {
 			ascii = true;
 			for (int i = 0; i < charCount; i++) {
 				int c = value.charAt(i);
@@ -303,8 +305,8 @@ public class Output extends OutputStream {
 			else {
 				value.getBytes(0, charCount, buffer, position);
 				position += charCount;
-				buffer[position - 1] |= 0x80;
 			}
+			buffer[position - 1] |= 0x80;
 		} else {
 			writeStringLength(charCount + 1);
 			int charIndex = 0;
@@ -324,56 +326,20 @@ public class Output extends OutputStream {
 	}
 
 	private void writeStringLength (int value) {
-		if ((value & ~0x3F) == 0) {
+		if (value < 1 << 6) {
 			require(1);
 			buffer[position++] = (byte)(value | 1 << 7); // set bit 8
-		} else if ((value >>> 6 & ~0x3F) == 0) {
+		} else if (value < 1 << 13) {
 			require(2);
 			buffer[position++] = (byte)(value | 1 << 6 | 1 << 7); // set bit 7 and 8
 			buffer[position++] = (byte)(value >>> 6);
-		} else if ((value >>> 13 & ~0x3F) == 0) {
+		} else if (value < 1 << 21) {
 			require(3);
 			buffer[position++] = (byte)(value | 1 << 6 | 1 << 7); // set bit 7 and 8
 			buffer[position++] = (byte)((value >>> 6) | 1 << 7); // set bit 8
 			buffer[position++] = (byte)(value >>> 13);
-		} else if ((value >>> 20 & ~0x3F) == 0) {
-			require(4);
-			buffer[position++] = (byte)(value | 1 << 6 | 1 << 7); // set bit 7 and 8
-			buffer[position++] = (byte)((value >>> 6) | 1 << 7); // set bit 8
-			buffer[position++] = (byte)((value >>> 13) | 1 << 7); // set bit 8
-			buffer[position++] = (byte)(value >>> 20);
-		} else {
-			require(5);
-			buffer[position++] = (byte)(value | 1 << 6 | 1 << 7); // set bit 7 and 8
-			buffer[position++] = (byte)((value >>> 6) | 1 << 7); // set bit 8
-			buffer[position++] = (byte)((value >>> 13) | 1 << 7); // set bit 8
-			buffer[position++] = (byte)((value >>> 20) | 1 << 7); // set bit 8
-			buffer[position++] = (byte)(value >>> 27);
-		}
-	}
-
-	/** Writes the length and string using UTF8, or null.
-	 * @param value May be null. */
-	public void writeString (String value) throws KryoException {
-		if (value == null) {
-			writeByte(0);
-			return;
-		}
-		int charCount = value.length();
-		writeInt(charCount + 1, true);
-		int charIndex = 0;
-		if (capacity - position >= charCount) {
-			// Try to write 8 bit chars.
-			byte[] buffer = this.buffer;
-			int position = this.position;
-			for (; charIndex < charCount; charIndex++) {
-				int c = value.charAt(charIndex);
-				if (c > 127) break;
-				buffer[position++] = (byte)c;
-			}
-			this.position = position;
-		}
-		if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
+		} else
+			throw new KryoException("String too long, must be less than " + (1 << 21) + " code points: " + value);
 	}
 
 	private void writeString_slow (String value, int charCount, int charIndex) {
@@ -395,40 +361,9 @@ public class Output extends OutputStream {
 		}
 	}
 
-	/** Writes a string of ASCII characters. 7 bits are used per character and the remaining bit denotes if another character is
-	 * available. The string should only contain characters from 0 to 127. No error is thrown for characters outside this range,
-	 * but they will not be deserialized as the same character.
-	 * @param value May be null. */
-	public void writeAscii (String value) throws KryoException {
-		if (value == null) {
-			writeByte(0);
-			return;
-		}
-		int charCount = value.length();
-		if (charCount == 0) {
-			writeByte(1);
-			return;
-		}
-		switch (value.charAt(0)) {
-		case 0:
-		case 1:
-		case 2:
-			writeByte(2);
-			break;
-		}
-		if (capacity - position < charCount)
-			writeAscii_slow(value, charCount);
-		else {
-			value.getBytes(0, charCount, buffer, position);
-			position += charCount;
-			buffer[position - 1] |= 0x80;
-		}
-	}
-
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
 		byte[] buffer = this.buffer;
 		int charIndex = 0;
-		charCount--;
 		int charsToWrite = Math.min(charCount, capacity - position);
 		while (charIndex < charCount) {
 			value.getBytes(charIndex, charIndex + charsToWrite, buffer, position);
@@ -437,7 +372,6 @@ public class Output extends OutputStream {
 			charsToWrite = Math.min(charCount - charIndex, capacity);
 			if (require(charsToWrite)) buffer = this.buffer;
 		}
-		writeByte(value.charAt(charCount) | 0x80);
 	}
 
 	// float
@@ -636,6 +570,7 @@ public class Output extends OutputStream {
 		return writeLong((long)(value * precision), optimizePositive);
 	}
 
+	/** Returns the number of bytes that would be written with {@link #writeShort(int)}. */
 	static public int shortLength (int value, boolean optimizePositive) {
 		if (optimizePositive) {
 			if (value >= 0 && value <= 254) return 1;
@@ -645,35 +580,27 @@ public class Output extends OutputStream {
 		return 3;
 	}
 
+	/** Returns the number of bytes that would be written with {@link #writeInt(int, boolean)}. */
 	static public int intLength (int value, boolean optimizePositive) {
-		if ((value & ~0x7F) == 0)
-			return 1;
-		else if ((value >>> 7 & ~0x7F) == 0)
-			return 2;
-		else if ((value >>> 14 & ~0x7F) == 0)
-			return 3;
-		else if ((value >>> 21 & ~0x7F) == 0) //
-			return 4;
+		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
+		if ((value & ~0x7F) == 0) return 1;
+		if ((value >>> 5 & ~0xFF) == 0) return 2;
+		if ((value >>> 13 & ~0xFF) == 0) return 3;
+		if ((value >>> 21 & ~0xFF) == 0) return 4;
 		return 5;
 	}
 
+	/** Returns the number of bytes that would be written with {@link #writeLong(long, boolean)}. */
 	static public int longLength (long value, boolean optimizePositive) {
-		if ((value & ~0x7Fl) == 0)
-			return 1;
-		else if ((value >>> 7 & ~0x7Fl) == 0)
-			return 2;
-		else if ((value >>> 14 & ~0x7Fl) == 0)
-			return 3;
-		else if ((value >>> 21 & ~0x7Fl) == 0)
-			return 4;
-		else if ((value >>> 28 & ~0x7Fl) == 0)
-			return 5;
-		else if ((value >>> 35 & ~0x7Fl) == 0)
-			return 6;
-		else if ((value >>> 42 & ~0x7Fl) == 0)
-			return 7;
-		else if ((value >>> 49 & ~0x7Fl) == 0) //
-			return 8;
+		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
+		if ((value & ~0x7F) == 0) return 1;
+		if ((value >>> 4 & ~0xFF) == 0) return 2;
+		if ((value >>> 12 & ~0xFF) == 0) return 3;
+		if ((value >>> 20 & ~0xFF) == 0) return 4;
+		if ((value >>> 28 & ~0xFF) == 0) return 5;
+		if ((value >>> 36 & ~0xFF) == 0) return 6;
+		if ((value >>> 44 & ~0xFF) == 0) return 7;
+		if ((value >>> 52 & ~0xFF) == 0) return 8;
 		return 9;
 	}
 }
