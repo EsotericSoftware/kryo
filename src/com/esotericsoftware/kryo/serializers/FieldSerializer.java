@@ -11,7 +11,6 @@ import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.PriorityQueue;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -26,19 +25,13 @@ import com.esotericsoftware.reflectasm.FieldAccess;
 
 import static com.esotericsoftware.minlog.Log.*;
 
-/** Serializes objects using direct field assignment. This is a very fast mechanism for serializing objects, often as good as
- * {@link KryoSerializable}. FieldSerializer is many times smaller and faster than Java serialization. The fields should be public
- * for optimal performance, which allows bytecode generation to be used instead of reflection.
- * <p>
- * FieldSerializer does not write header data, only the object data is stored. If the type of a field is not final (note
- * primitives are final) then an extra byte is written for that field.
+/** Serializes objects using direct field assignment. No header or schema data is stored, only the data for each field. This
+ * reduces output size but means if any field is added or removed, previously serialized bytes are invalidated. If fields are
+ * public, bytecode generation will be used instead of reflection.
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
  * @author Nathan Sweet <misc@n4te.com> */
-/**
- *
- */
-public class FieldSerializer<T> extends Serializer<T> {
+public class FieldSerializer<T> extends Serializer<T> implements Comparator<FieldSerializer.CachedField> {
 	private final Kryo kryo;
 	private final Class type;
 	private CachedField[] fields = new CachedField[0];
@@ -50,10 +43,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public FieldSerializer (Kryo kryo, Class type) {
 		this.kryo = kryo;
 		this.type = type;
-		rebuildCachedFields();
+		if (getClass() == FieldSerializer.class) rebuildCachedFields();
 	}
 
-	private void rebuildCachedFields () {
+	/** Called when the list of cached fields must be rebuilt. This is done any time settings are changed that affect which fields
+	 * will be used. It is called from the constructor for FieldSerializer, but not for subclasses. Subclasses must call this from
+	 * their constructor. */
+	protected void rebuildCachedFields () {
 		if (type.isInterface()) {
 			fields = new CachedField[0]; // No fields to serialize.
 			return;
@@ -70,12 +66,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		ObjectMap context = kryo.getContext();
 
 		ArrayList<CachedField> asmFields = new ArrayList();
-		PriorityQueue<CachedField> cachedFields = new PriorityQueue(Math.max(1, allFields.size()), new Comparator<CachedField>() {
-			public int compare (CachedField o1, CachedField o2) {
-				// Fields are sorted by alpha so the order of the data is known.
-				return o1.field.getName().compareTo(o2.field.getName());
-			}
-		});
+		ArrayList<CachedField> cachedFields = new ArrayList(allFields.size());
 		for (int i = 0, n = allFields.size(); i < n; i++) {
 			Field field = allFields.get(i);
 
@@ -98,8 +89,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 			Class fieldClass = field.getType();
 
-			CachedField cachedField = new CachedField();
-			cachedField.field = field;
+			CachedField cachedField = newCachedField(field);
+			if (cachedField == null) continue;
 			if (fieldsCanBeNull)
 				cachedField.canBeNull = !fieldClass.isPrimitive() && !field.isAnnotationPresent(NotNull.class);
 			else
@@ -125,10 +116,20 @@ public class FieldSerializer<T> extends Serializer<T> {
 			}
 		}
 
-		int fieldCount = cachedFields.size();
-		fields = new CachedField[fieldCount];
-		for (int i = 0; i < fieldCount; i++)
-			fields[i] = cachedFields.poll();
+		Collections.sort(cachedFields, this);
+		fields = cachedFields.toArray(new CachedField[cachedFields.size()]);
+	}
+
+	/** Returns a new cached field for the specified field, or null if the field should not be used.
+	 * @return May be null. */
+	protected CachedField newCachedField (Field field) {
+		CachedField cachedField = new CachedField(field);
+		return cachedField;
+	}
+
+	public int compare (CachedField o1, CachedField o2) {
+		// Fields are sorted by alpha so the order of the data is known.
+		return o1.field.getName().compareTo(o2.field.getName());
 	}
 
 	/** Sets the default value for {@link CachedField#setCanBeNull(boolean)}. Calling this method resets the {@link #getFields()
@@ -173,7 +174,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 				Object value = cachedField.get(object);
 
 				Serializer serializer = cachedField.serializer;
-
 				if (cachedField.fieldClass == null) {
 					if (value == null) {
 						kryo.writeClass(output, null);
@@ -271,6 +271,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return fields;
 	}
 
+	public Class getType () {
+		return type;
+	}
+
 	public T createCopy (Kryo kryo, T original) {
 		return (T)kryo.newInstance(original.getClass());
 	}
@@ -296,11 +300,15 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Controls how a field will be serialized. */
 	public class CachedField<X> {
-		Field field;
+		final Field field;
 		Class fieldClass;
 		Serializer serializer;
 		boolean canBeNull;
 		int accessIndex = -1;
+
+		public CachedField (Field field) {
+			this.field = field;
+		}
 
 		/** @param fieldClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for the
 		 *           specified class will be used. Only set to a non-null value if the field type in the class definition is final

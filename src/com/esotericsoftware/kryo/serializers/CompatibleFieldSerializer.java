@@ -34,133 +34,14 @@ import static com.esotericsoftware.minlog.Log.*;
  * skipping the bytes for a field that no longer exists, for each field value an int is written that is the length of the value in
  * bytes.
  * @author Nathan Sweet <misc@n4te.com> */
-public class CompatibleFieldSerializer<T> extends Serializer<T> {
-	private final Kryo kryo;
-	private final Class type;
-	private CachedField[] fields;
-	Object access;
-	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
-	private boolean ignoreSyntheticFields = true;
-	private boolean finalFieldTypes;
-
+public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
-		this.kryo = kryo;
-		this.type = type;
-		rebuildCachedFields();
-	}
-
-	private void rebuildCachedFields () {
-		if (type.isInterface()) {
-			fields = new CachedField[0]; // No fields to serialize.
-			return;
-		}
-
-		// Collect all fields.
-		ArrayList<Field> allFields = new ArrayList();
-		Class nextClass = type;
-		while (nextClass != Object.class) {
-			Collections.addAll(allFields, nextClass.getDeclaredFields());
-			nextClass = nextClass.getSuperclass();
-		}
-
-		ObjectMap context = kryo.getContext();
-
-		ArrayList<CachedField> asmFields = new ArrayList();
-		PriorityQueue<CachedField> cachedFields = new PriorityQueue(Math.max(1, allFields.size()), new Comparator<CachedField>() {
-			public int compare (CachedField o1, CachedField o2) {
-				// Fields are sorted by alpha so the order of the data is known.
-				return o1.field.getName().compareTo(o2.field.getName());
-			}
-		});
-		for (int i = 0, n = allFields.size(); i < n; i++) {
-			Field field = allFields.get(i);
-
-			int modifiers = field.getModifiers();
-			if (Modifier.isTransient(modifiers)) continue;
-			if (Modifier.isStatic(modifiers)) continue;
-			if (field.isSynthetic() && ignoreSyntheticFields) continue;
-
-			if (!field.isAccessible()) {
-				if (!setFieldsAsAccessible) continue;
-				try {
-					field.setAccessible(true);
-				} catch (AccessControlException ex) {
-					continue;
-				}
-			}
-
-			Optional optional = field.getAnnotation(Optional.class);
-			if (optional != null && !context.containsKey(optional.value())) continue;
-
-			Class fieldClass = field.getType();
-
-			CachedField cachedField = new CachedField();
-			cachedField.field = field;
-			if (fieldsCanBeNull)
-				cachedField.canBeNull = !fieldClass.isPrimitive() && !field.isAnnotationPresent(NotNull.class);
-			else
-				cachedField.canBeNull = false;
-
-			// Always use the same serializer for this field if the field's class is final.
-			if (kryo.isFinal(fieldClass) || finalFieldTypes) cachedField.fieldClass = fieldClass;
-
-			cachedFields.add(cachedField);
-			if (!Modifier.isFinal(modifiers) && Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers()))
-				asmFields.add(cachedField);
-		}
-
-		if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && !asmFields.isEmpty()) {
-			// Use ReflectASM for any public fields.
-			try {
-				access = FieldAccess.get(type);
-				for (int i = 0, n = asmFields.size(); i < n; i++) {
-					CachedField cachedField = asmFields.get(i);
-					cachedField.accessIndex = ((FieldAccess)access).getIndex(cachedField.field.getName());
-				}
-			} catch (RuntimeException ignored) {
-			}
-		}
-
-		int fieldCount = cachedFields.size();
-		fields = new CachedField[fieldCount];
-		for (int i = 0; i < fieldCount; i++)
-			fields[i] = cachedFields.poll();
-	}
-
-	/** Sets the default value for {@link CachedField#setCanBeNull(boolean)}. Calling this method resets the {@link #getFields()
-	 * cached fields}.
-	 * @param fieldsCanBeNull False if none of the fields are null. Saves 0-1 byte per field. True if it is not known (default). */
-	public void setFieldsCanBeNull (boolean fieldsCanBeNull) {
-		this.fieldsCanBeNull = fieldsCanBeNull;
-		rebuildCachedFields();
-	}
-
-	/** Controls which fields are serialized. Calling this method resets the {@link #getFields() cached fields}.
-	 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
-	 *           {@link Field#setAccessible(boolean) set as accessible} if necessary (default). If false, only fields in the public
-	 *           API will be serialized. */
-	public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
-		this.setFieldsAsAccessible = setFieldsAsAccessible;
-		rebuildCachedFields();
-	}
-
-	/** Controls if synthetic fields are serialized. Default is true. Calling this method resets the {@link #getFields() cached
-	 * fields}.
-	 * @param ignoreSyntheticFields If true, only non-synthetic fields will be serialized. */
-	public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
-		this.ignoreSyntheticFields = ignoreSyntheticFields;
-		rebuildCachedFields();
-	}
-
-	/** Sets the default value for {@link CachedField#setClass(Class)} to the field's declared type. This allows FieldSerializer to
-	 * be more efficient, since it knows field values will not be a subclass of their declared type. Default is false. Calling this
-	 * method resets the {@link #getFields() cached fields}. */
-	public void setFixedFieldTypes (boolean finalFieldTypes) {
-		this.finalFieldTypes = finalFieldTypes;
+		super(kryo, type);
 		rebuildCachedFields();
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
+		CachedField[] fields = getFields();
 		ObjectMap context = kryo.getGraphContext();
 		if (!context.containsKey(this)) {
 			context.put(this, null);
@@ -222,7 +103,7 @@ public class CompatibleFieldSerializer<T> extends Serializer<T> {
 				names[i] = input.readString();
 
 			fields = new CachedField[length];
-			CachedField[] allFields = this.fields;
+			CachedField[] allFields = getFields();
 			outer:
 			for (int i = 0, n = names.length; i < n; i++) {
 				String schemaName = names[i];
@@ -247,7 +128,7 @@ public class CompatibleFieldSerializer<T> extends Serializer<T> {
 					continue;
 				}
 
-				if (TRACE) trace("kryo", "Read field: " + cachedField + " (" + type.getName() + ")");
+				if (TRACE) trace("kryo", "Read field: " + cachedField + " (" + getType().getName() + ")");
 
 				Object value;
 
@@ -274,116 +155,15 @@ public class CompatibleFieldSerializer<T> extends Serializer<T> {
 
 				inputChunked.nextChunks();
 			} catch (IllegalAccessException ex) {
-				throw new KryoException("Error accessing field in class: " + type.getName(), ex);
+				throw new KryoException("Error accessing field in class: " + getType().getName(), ex);
 			} catch (KryoException ex) {
-				ex.addTrace(cachedField + " (" + type.getName() + ")");
+				ex.addTrace(cachedField + " (" + getType().getName() + ")");
 				throw ex;
 			} catch (RuntimeException runtimeEx) {
 				KryoException ex = new KryoException(runtimeEx);
-				ex.addTrace(cachedField + " (" + type.getName() + ")");
+				ex.addTrace(cachedField + " (" + getType().getName() + ")");
 				throw ex;
 			}
-		}
-	}
-
-	/** Allows specific fields to be optimized. */
-	public CachedField getField (String fieldName) {
-		for (CachedField cachedField : fields)
-			if (cachedField.field.getName().equals(fieldName)) return cachedField;
-		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
-	}
-
-	/** Removes a field so that it won't be serialized. */
-	public void removeField (String fieldName) {
-		for (int i = 0; i < fields.length; i++) {
-			CachedField cachedField = fields[i];
-			if (cachedField.field.getName().equals(fieldName)) {
-				CachedField[] newFields = new CachedField[fields.length - 1];
-				System.arraycopy(fields, 0, newFields, 0, i);
-				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
-				fields = newFields;
-				return;
-			}
-		}
-		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
-	}
-
-	public CachedField[] getFields () {
-		return fields;
-	}
-
-	public T createCopy (Kryo kryo, T original) {
-		return (T)kryo.newInstance(original.getClass());
-	}
-
-	public void copy (Kryo kryo, T original, T copy) {
-		for (int i = 0, n = fields.length; i < n; i++) {
-			CachedField cachedField = fields[i];
-			try {
-				Object value = cachedField.get(original);
-				cachedField.set(copy, value);
-			} catch (IllegalAccessException ex) {
-				throw new KryoException("Error accessing field: " + cachedField + " (" + type.getName() + ")", ex);
-			} catch (KryoException ex) {
-				ex.addTrace(cachedField + " (" + type.getName() + ")");
-				throw ex;
-			} catch (RuntimeException runtimeEx) {
-				KryoException ex = new KryoException(runtimeEx);
-				ex.addTrace(cachedField + " (" + type.getName() + ")");
-				throw ex;
-			}
-		}
-	}
-
-	/** Controls how a field will be serialized. */
-	public class CachedField<X> {
-		Field field;
-		Class fieldClass;
-		Serializer serializer;
-		boolean canBeNull;
-		int accessIndex = -1;
-
-		/** @param fieldClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for the
-		 *           specified class will be used. Only set to a non-null value if the field type in the class definition is final
-		 *           or the values for this field will not vary. */
-		public void setClass (Class fieldClass) {
-			this.fieldClass = fieldClass;
-			this.serializer = null;
-		}
-
-		/** @param fieldClass The concrete class of the values for this field. This saves 1-2 bytes. Only set to a non-null value if
-		 *           the field type in the class definition is final or the values for this field will not vary. */
-		public void setClass (Class fieldClass, Serializer serializer) {
-			this.fieldClass = fieldClass;
-			this.serializer = serializer;
-		}
-
-		public void setSerializer (Serializer serializer) {
-			this.serializer = serializer;
-		}
-
-		public void setCanBeNull (boolean canBeNull) {
-			this.canBeNull = canBeNull;
-		}
-
-		public Field getField () {
-			return field;
-		}
-
-		public String toString () {
-			return field.getName();
-		}
-
-		Object get (Object object) throws IllegalAccessException {
-			if (accessIndex != -1) return ((FieldAccess)access).get(object, accessIndex);
-			return field.get(object);
-		}
-
-		void set (Object object, Object value) throws IllegalAccessException {
-			if (accessIndex != -1)
-				((FieldAccess)access).set(object, accessIndex, value);
-			else
-				field.set(object, value);
 		}
 	}
 }
