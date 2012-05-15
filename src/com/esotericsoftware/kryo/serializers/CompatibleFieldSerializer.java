@@ -37,7 +37,6 @@ import static com.esotericsoftware.minlog.Log.*;
 public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
 		super(kryo, type);
-		rebuildCachedFields();
 	}
 
 	public void write (Kryo kryo, Output output, T object) {

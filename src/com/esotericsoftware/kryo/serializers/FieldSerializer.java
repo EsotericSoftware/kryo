@@ -43,13 +43,13 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	public FieldSerializer (Kryo kryo, Class type) {
 		this.kryo = kryo;
 		this.type = type;
-		if (getClass() == FieldSerializer.class) rebuildCachedFields();
+		rebuildCachedFields();
 	}
 
 	/** Called when the list of cached fields must be rebuilt. This is done any time settings are changed that affect which fields
 	 * will be used. It is called from the constructor for FieldSerializer, but not for subclasses. Subclasses must call this from
 	 * their constructor. */
-	protected void rebuildCachedFields () {
+	private void rebuildCachedFields () {
 		if (type.isInterface()) {
 			fields = new CachedField[0]; // No fields to serialize.
 			return;

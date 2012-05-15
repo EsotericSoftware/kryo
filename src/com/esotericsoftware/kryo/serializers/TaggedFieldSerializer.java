@@ -24,7 +24,6 @@ import static com.esotericsoftware.minlog.Log.*;
 public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	public TaggedFieldSerializer (Kryo kryo, Class type) {
 		super(kryo, type);
-		rebuildCachedFields();
 	}
 
 	protected CachedField newCachedField (Field field) {
