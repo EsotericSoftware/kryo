@@ -110,6 +110,11 @@ public class Output extends OutputStream {
 		return position;
 	}
 
+	/** Sets the current position in the buffer. */
+	public void setPosition (int position) {
+		this.position = position;
+	}
+
 	/** Returns the total number of bytes written. This may include bytes that have not been flushed. */
 	public int total () {
 		return total + position;

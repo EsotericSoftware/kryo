@@ -948,19 +948,21 @@ public class Kryo {
 	 * uses reflection if the class has a zero argument constructor, an exception is thrown. If a
 	 * {@link #setInstantiatorStrategy(InstantiatorStrategy) strategy} is set, it will be used instead of throwing an exception. */
 	protected ObjectInstantiator newInstantiator (final Class type) {
-		// ReflectASM.
-		try {
-			final ConstructorAccess access = ConstructorAccess.get(type);
-			return new ObjectInstantiator() {
-				public Object newInstance () {
-					try {
-						return access.newInstance();
-					} catch (Exception ex) {
-						throw new KryoException("Error constructing instance of class: " + className(type), ex);
+		if (!Util.isAndroid) {
+			// ReflectASM.
+			try {
+				final ConstructorAccess access = ConstructorAccess.get(type);
+				return new ObjectInstantiator() {
+					public Object newInstance () {
+						try {
+							return access.newInstance();
+						} catch (Exception ex) {
+							throw new KryoException("Error constructing instance of class: " + className(type), ex);
+						}
 					}
-				}
-			};
-		} catch (Exception ignored) {
+				};
+			} catch (Exception ignored) {
+			}
 		}
 		// Reflection.
 		try {

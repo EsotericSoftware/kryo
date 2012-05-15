@@ -68,6 +68,10 @@ public class Input extends InputStream {
 		inputStream = null;
 	}
 
+	public byte[] getBuffer () {
+		return buffer;
+	}
+
 	public InputStream getInputStream () {
 		return inputStream;
 	}
