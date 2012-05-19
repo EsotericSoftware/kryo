@@ -540,7 +540,7 @@ public class Input extends InputStream {
 			result = b & 0x7F;
 		else {
 			int count = b >>> 4 & 7; // shift to bits 5,6,7, mask 1st 3 bits
-			require(count);
+			require(count + 1);
 			byte[] buffer = this.buffer;
 			int position = this.position;
 			result = b & 0xF | (buffer[position++] & 0xFF) << 4; // mask 1st 4 bits, combine with 2nd byte

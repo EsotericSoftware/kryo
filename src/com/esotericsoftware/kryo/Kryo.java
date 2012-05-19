@@ -54,6 +54,7 @@ import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IdentityObjectIntMap;
 import com.esotericsoftware.kryo.util.IntMap;
 import com.esotericsoftware.kryo.util.ObjectMap;
+import com.esotericsoftware.kryo.util.ObjectMap.Values;
 import com.esotericsoftware.reflectasm.ConstructorAccess;
 
 import static com.esotericsoftware.kryo.Util.*;
@@ -388,6 +389,14 @@ public class Kryo {
 	 * @see Registration#getSerializer() */
 	public Serializer getSerializer (Class type) {
 		return getRegistration(type).getSerializer();
+	}
+
+	/** Iterates all registered class IDs and returns the highest. */
+	public int getMaxClassID () {
+		int max = 0;
+		for (Registration registration : new Values<Registration>(classToRegistration))
+			max = Math.max(max, registration.getId());
+		return max;
 	}
 
 	// --- Serialization ---
