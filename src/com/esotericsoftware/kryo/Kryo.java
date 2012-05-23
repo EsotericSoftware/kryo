@@ -23,10 +23,18 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ArraySerializer;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ByteArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.CharArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.DoubleArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.FloatArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.IntArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.LongArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ShortArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.StringArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigIntegerSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BooleanSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.ByteArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ByteSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CharSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ClassSerializer;
@@ -98,6 +106,14 @@ public class Kryo {
 
 	public Kryo () {
 		addDefaultSerializer(byte[].class, ByteArraySerializer.class);
+		addDefaultSerializer(char[].class, CharArraySerializer.class);
+		addDefaultSerializer(short[].class, ShortArraySerializer.class);
+		addDefaultSerializer(int[].class, IntArraySerializer.class);
+		addDefaultSerializer(long[].class, LongArraySerializer.class);
+		addDefaultSerializer(float[].class, FloatArraySerializer.class);
+		addDefaultSerializer(double[].class, DoubleArraySerializer.class);
+		addDefaultSerializer(String[].class, StringArraySerializer.class);
+		addDefaultSerializer(Object[].class, ObjectArraySerializer.class);
 		addDefaultSerializer(BigInteger.class, BigIntegerSerializer.class);
 		addDefaultSerializer(BigDecimal.class, BigDecimalSerializer.class);
 		addDefaultSerializer(Class.class, ClassSerializer.class);
@@ -177,8 +193,20 @@ public class Kryo {
 	 * <tr>
 	 * </tr>
 	 * <td>Double</td>
-	 * <td>byte[]</td>
 	 * <td>String</td>
+	 * <td>byte[]</td>
+	 * <td>char[]</td>
+	 * <td>short[]</td>
+	 * <tr>
+	 * </tr>
+	 * <td>int[]</td>
+	 * <td>long[]</td>
+	 * <td>float[]</td>
+	 * <td>double[]</td>
+	 * <td>String[]</td>
+	 * <tr>
+	 * </tr>
+	 * <td>Map</td>
 	 * <td>BigInteger</td>
 	 * <td>BigDecimal</td>
 	 * </tr>
@@ -187,7 +215,7 @@ public class Kryo {
 	 * <td>Date</td>
 	 * <td>Collections.emptyList</td>
 	 * <td>Collections.singleton</td>
-	 * <td>Map</td>
+	 * <td>Currency</td>
 	 * </tr>
 	 * <tr>
 	 * <td>StringBuilder</td>
@@ -201,7 +229,6 @@ public class Kryo {
 	 * <td>Class</td>
 	 * <td>Collections.singletonList</td>
 	 * <td>Collections.singletonMap</td>
-	 * <td>Currency</td>
 	 * </tr>
 	 * </table>
 	 * <p>

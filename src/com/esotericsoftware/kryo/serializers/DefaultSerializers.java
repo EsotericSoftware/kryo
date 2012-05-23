@@ -152,35 +152,6 @@ public class DefaultSerializers {
 		}
 	}
 
-	// BOZO - Add string/int/float/double/boolean/char[] serializers.
-
-	static public class ByteArraySerializer extends Serializer<byte[]> {
-		{
-			setAcceptsNull(true);
-		}
-
-		public void write (Kryo kryo, Output output, byte[] object) {
-			if (object == null) {
-				output.writeByte(NULL);
-				return;
-			}
-			output.writeInt(object.length + 1, true);
-			output.writeBytes(object);
-		}
-
-		public byte[] create (Kryo kryo, Input input, Class<byte[]> type) {
-			int length = input.readInt(true);
-			if (length == NULL) return null;
-			return input.readBytes(length - 1);
-		}
-
-		public byte[] createCopy (Kryo kryo, byte[] original) {
-			byte[] copy = new byte[original.length];
-			System.arraycopy(original, 0, copy, 0, copy.length);
-			return copy;
-		}
-	}
-
 	static public class BigIntegerSerializer extends Serializer<BigInteger> {
 		{
 			setImmutable(true);
