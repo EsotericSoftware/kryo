@@ -16,32 +16,29 @@ import com.esotericsoftware.kryo.io.Output;
  * collection.
  * @author Nathan Sweet <misc@n4te.com> */
 public class CollectionSerializer extends Serializer<Collection> {
-	private final Kryo kryo;
 	private boolean elementsCanBeNull = true;
 	private Serializer serializer;
 	private Class elementClass;
-	private Integer length;
 
-	public CollectionSerializer (Kryo kryo) {
-		this.kryo = kryo;
+	public CollectionSerializer () {
+	}
+
+	/** @see #setElementClass(Class, Serializer) */
+	public CollectionSerializer (Class elementClass, Serializer serializer) {
+		setElementClass(elementClass, serializer);
+	}
+
+	/** @see #setElementClass(Class, Serializer)
+	 * @see #setElementsCanBeNull(boolean) */
+	public CollectionSerializer (Class elementClass, Serializer serializer, boolean elementsCanBeNull) {
+		setElementClass(elementClass, serializer);
+		this.elementsCanBeNull = elementsCanBeNull;
 	}
 
 	/** @param elementsCanBeNull False if all elements are not null. This saves 1 byte per element if elementClass is set. True if it
 	 *           is not known (default). */
 	public void setElementsCanBeNull (boolean elementsCanBeNull) {
 		this.elementsCanBeNull = elementsCanBeNull;
-	}
-
-	/** @param elementClass The concrete class of each element. This saves 1-2 bytes per element. The serializer registered for the
-	 *           specified class will be used. Set to null if the class is not known or varies per element (default). */
-	public void setElementClass (Class elementClass) {
-		this.elementClass = elementClass;
-		this.serializer = elementClass == null ? null : kryo.getRegistration(elementClass).getSerializer();
-	}
-
-	/** Sets the number of objects in the collection. Saves 1-2 bytes. */
-	public void setLength (int length) {
-		this.length = length;
 	}
 
 	/** @param elementClass The concrete class of each element. This saves 1-2 bytes per element. Set to null if the class is not
@@ -54,13 +51,8 @@ public class CollectionSerializer extends Serializer<Collection> {
 
 	public void write (Kryo kryo, Output output, Collection object) {
 		Collection collection = (Collection)object;
-		int length;
-		if (this.length != null)
-			length = this.length;
-		else {
-			length = collection.size();
-			output.writeInt(length, true);
-		}
+		int length = collection.size();
+		output.writeInt(length, true);
 		if (length == 0) return;
 		if (serializer != null) {
 			if (elementsCanBeNull) {
@@ -77,12 +69,7 @@ public class CollectionSerializer extends Serializer<Collection> {
 	}
 
 	public void read (Kryo kryo, Input input, Collection collection) {
-		int length;
-		if (this.length != null)
-			length = this.length;
-		else
-			length = input.readInt(true);
-		if (length == 0) return;
+		int length = input.readInt(true);
 		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
 		if (serializer != null) {
 			if (elementsCanBeNull) {

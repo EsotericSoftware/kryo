@@ -15,26 +15,14 @@ import com.esotericsoftware.kryo.io.Output;
  * With the default constructor, a map requires a 1-3 byte header and an extra 4 bytes is written for each key/value pair.
  * @author Nathan Sweet <misc@n4te.com> */
 public class MapSerializer extends Serializer<Map> {
-	private final Kryo kryo;
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
 	private boolean keysCanBeNull = true, valuesCanBeNull = true;
-
-	public MapSerializer (Kryo kryo) {
-		this.kryo = kryo;
-	}
 
 	/** @param keysCanBeNull False if all keys are not null. This saves 1 byte per key if keyClass is set. True if it is not known
 	 *           (default). */
 	public void setKeysCanBeNull (boolean keysCanBeNull) {
 		this.keysCanBeNull = keysCanBeNull;
-	}
-
-	/** @param keyClass The concrete class of each key. This saves 1 byte per key. The serializer registered for the specified class
-	 *           will be used. Set to null if the class is not known or varies per key (default). */
-	public void setKeyClass (Class keyClass) {
-		this.keyClass = keyClass;
-		keySerializer = keyClass == null ? null : kryo.getRegistration(keyClass).getSerializer();
 	}
 
 	/** @param keyClass The concrete class of each key. This saves 1 byte per key. Set to null if the class is not known or varies
@@ -43,13 +31,6 @@ public class MapSerializer extends Serializer<Map> {
 	public void setKeyClass (Class keyClass, Serializer keySerializer) {
 		this.keyClass = keyClass;
 		this.keySerializer = keySerializer;
-	}
-
-	/** @param valueClass The concrete class of each value. This saves 1 byte per value. The serializer registered for the specified
-	 *           class will be used. Set to null if the class is not known or varies per value (default). */
-	public void setValueClass (Class valueClass) {
-		this.valueClass = valueClass;
-		valueSerializer = valueClass == null ? null : kryo.getRegistration(valueClass).getSerializer();
 	}
 
 	/** @param valueClass The concrete class of each value. This saves 1 byte per value. Set to null if the class is not known or

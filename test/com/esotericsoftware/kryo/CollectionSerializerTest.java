@@ -27,17 +27,15 @@ public class CollectionSerializerTest extends KryoTestCase {
 		roundTrip(13, new LinkedList(list("1", "2", list("3"))));
 		roundTrip(13, new CopyOnWriteArrayList(list("1", "2", list("3"))));
 
-		CollectionSerializer serializer = new CollectionSerializer(kryo);
+		CollectionSerializer serializer = new CollectionSerializer();
 		kryo.register(ArrayList.class, serializer);
 		kryo.register(LinkedList.class, serializer);
 		kryo.register(CopyOnWriteArrayList.class, serializer);
-		serializer.setElementClass(String.class);
+		serializer.setElementClass(String.class, kryo.getSerializer(String.class));
 		roundTrip(8, list("1", "2", "3"));
 		serializer.setElementClass(String.class, new StringSerializer());
 		roundTrip(8, list("1", "2", "3"));
 		serializer.setElementsCanBeNull(false);
 		roundTrip(8, list("1", "2", "3"));
-		serializer.setLength(3);
-		roundTrip(7, list("1", "2", "3"));
 	}
 }

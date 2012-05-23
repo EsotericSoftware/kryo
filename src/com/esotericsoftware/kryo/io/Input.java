@@ -76,9 +76,9 @@ public class Input extends InputStream {
 		return inputStream;
 	}
 
-	/** Sets a new InputStream. The position and total are reset, discarding any buffered bytes. */
+	/** Sets a new InputStream. The position and total are reset, discarding any buffered bytes.
+	 * @param inputStream May be null. */
 	public void setInputStream (InputStream inputStream) {
-		if (inputStream == null) throw new IllegalArgumentException("inputStream cannot be null.");
 		this.inputStream = inputStream;
 		limit = 0;
 		rewind();
@@ -187,16 +187,19 @@ public class Input extends InputStream {
 
 	// InputStream
 
-	/** Reads a byte. */
+	/** Reads a single byte. */
 	public int read () throws KryoException {
 		require(1);
 		return buffer[position++];
 	}
 
+	/** Reads bytes.length bytes or less and writes them to the specified byte[], starting at 0, and returns the number of bytes
+	 * read. */
 	public int read (byte[] bytes) throws KryoException {
 		return read(bytes, 0, bytes.length);
 	}
 
+	/** Reads count bytes or less and writes them to the specified byte[], starting at offset, and returns the number of bytes read. */
 	public int read (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int startingCount = count;
@@ -241,6 +244,7 @@ public class Input extends InputStream {
 
 	// byte
 
+	/** Reads a single byte. */
 	public byte readByte () throws KryoException {
 		require(1);
 		return buffer[position++];
@@ -252,16 +256,19 @@ public class Input extends InputStream {
 		return buffer[position++] & 0xFF;
 	}
 
+	/** Reads the specified number of bytes into a new byte[]. */
 	public byte[] readBytes (int length) throws KryoException {
 		byte[] bytes = new byte[length];
 		readBytes(bytes, 0, length);
 		return bytes;
 	}
 
+	/** Reads bytes.length bytes and writes them to the specified byte[], starting at index 0. */
 	public void readBytes (byte[] bytes) throws KryoException {
 		readBytes(bytes, 0, bytes.length);
 	}
 
+	/** Reads count bytes and writes them to the specified byte[], starting at offset. */
 	public void readBytes (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int copyCount = Math.min(limit - position, count);
@@ -438,10 +445,16 @@ public class Input extends InputStream {
 	}
 
 	private String readAscii_slow () {
-		position--; // Re-read the first char.
-		int charCount = 0;
+		position--; // Reread the first byte.
+		// Copy chars currently in buffer.
+		int charCount = limit - position;
+		if (charCount > chars.length) chars = new char[charCount * 2];
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
+		for (int i = position, ii = 0, n = limit; i < n; i++, ii++)
+			chars[ii] = (char)buffer[i];
+		position = limit;
+		// Copy additional chars one by one.
 		while (true) {
 			require(1);
 			int b = buffer[position++];
@@ -451,8 +464,11 @@ public class Input extends InputStream {
 				chars = newChars;
 				this.chars = newChars;
 			}
-			chars[charCount++] = (char)(b & 0x7F);
-			if ((b & 0x80) == 0x80) break;
+			if ((b & 0x80) == 0x80) {
+				chars[charCount++] = (char)(b & 0x7F);
+				break;
+			}
+			chars[charCount++] = (char)b;
 		}
 		return new String(chars, 0, charCount);
 	}

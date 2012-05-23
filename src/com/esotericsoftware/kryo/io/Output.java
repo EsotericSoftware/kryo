@@ -65,9 +65,9 @@ public class Output extends OutputStream {
 		return outputStream;
 	}
 
-	/** Sets a new OutputStream. The position and total are reset, discarding any buffered bytes. */
+	/** Sets a new OutputStream. The position and total are reset, discarding any buffered bytes.
+	 * @param outputStream May be null. */
 	public void setOutputStream (OutputStream outputStream) {
-		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
 		this.outputStream = outputStream;
 		position = 0;
 		total = 0;
@@ -280,7 +280,8 @@ public class Output extends OutputStream {
 
 	// string
 
-	/** Writes the length and string using UTF8, or null.
+	/** Writes the length and string, or null. Short strings are checked and if ASCII are written more efficiently, else they are
+	 * written as UTF8. If a string is known to be ASCII, use {@link #writeAscii(String)}.
 	 * @param value May be null. */
 	public void writeString (String value) throws KryoException {
 		if (value == null) {
@@ -328,6 +329,27 @@ public class Output extends OutputStream {
 			}
 			if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
 		}
+	}
+
+	/** Writes a string that is known to contain only ASCII characters. This is slightly more efficient than
+	 * {@link #writeString(String)}. The string is read using {@link Input#readString()}. */
+	public void writeAscii (String value) throws KryoException {
+		if (value == null) {
+			writeByte(1 << 7);
+			return;
+		}
+		int charCount = value.length();
+		if (charCount == 0) {
+			writeByte(1 | 1 << 7);
+			return;
+		}
+		if (capacity - position < charCount)
+			writeAscii_slow(value, charCount);
+		else {
+			value.getBytes(0, charCount, buffer, position);
+			position += charCount;
+		}
+		buffer[position - 1] |= 0x80;
 	}
 
 	private void writeStringLength (int value) {

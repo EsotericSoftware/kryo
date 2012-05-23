@@ -9,6 +9,21 @@ import com.esotericsoftware.kryo.io.Output;
 public abstract class Serializer<T> {
 	private boolean acceptsNull, immutable;
 
+	public Serializer () {
+	}
+
+	/** @see #setAcceptsNull(boolean) */
+	public Serializer (boolean acceptsNull) {
+		this.acceptsNull = acceptsNull;
+	}
+
+	/** @see #setAcceptsNull(boolean)
+	 * @see #setImmutable(boolean) */
+	public Serializer (boolean acceptsNull, boolean immutable) {
+		this.acceptsNull = acceptsNull;
+		this.immutable = immutable;
+	}
+
 	/** Writes the bytes for the object to the output.
 	 * <p>
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} write methods that accept a

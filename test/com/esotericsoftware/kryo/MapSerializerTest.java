@@ -22,12 +22,12 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(2, new LinkedHashMap());
 		roundTrip(18, new LinkedHashMap(map));
 
-		MapSerializer serializer = new MapSerializer(kryo);
+		MapSerializer serializer = new MapSerializer();
 		kryo.register(HashMap.class, serializer);
 		kryo.register(LinkedHashMap.class, serializer);
-		serializer.setKeyClass(String.class);
+		serializer.setKeyClass(String.class, kryo.getSerializer(String.class));
 		serializer.setKeysCanBeNull(false);
-		serializer.setValueClass(String.class);
+		serializer.setValueClass(String.class, kryo.getSerializer(String.class));
 		roundTrip(14, map);
 		serializer.setValuesCanBeNull(false);
 		roundTrip(14, map);
