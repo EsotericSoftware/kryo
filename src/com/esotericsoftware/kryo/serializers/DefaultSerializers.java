@@ -210,10 +210,15 @@ public class DefaultSerializers {
 		private BigIntegerSerializer bigIntegerSerializer = new BigIntegerSerializer();
 
 		{
+			setAcceptsNull(true);
 			setImmutable(true);
 		}
 
 		public void write (Kryo kryo, Output output, BigDecimal object) {
+			if (object == null) {
+				output.writeByte(NULL);
+				return;
+			}
 			BigDecimal value = (BigDecimal)object;
 			bigIntegerSerializer.write(kryo, output, value.unscaledValue());
 			output.writeInt(value.scale(), false);
@@ -221,6 +226,7 @@ public class DefaultSerializers {
 
 		public BigDecimal create (Kryo kryo, Input input, Class<BigDecimal> type) {
 			BigInteger unscaledValue = bigIntegerSerializer.create(kryo, input, null);
+			if (unscaledValue == null) return null;
 			int scale = input.readInt(false);
 			return new BigDecimal(unscaledValue, scale);
 		}
