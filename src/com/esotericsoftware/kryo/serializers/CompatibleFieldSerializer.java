@@ -1,28 +1,15 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.security.AccessControlException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.PriorityQueue;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.Util;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.util.ObjectMap;
-import com.esotericsoftware.reflectasm.FieldAccess;
 
 import static com.esotericsoftware.minlog.Log.*;
 
@@ -33,6 +20,9 @@ import static com.esotericsoftware.minlog.Log.*;
  * is serialized. The header consists of an int for the number of fields, then a String for each field name. Also, to support
  * skipping the bytes for a field that no longer exists, for each field value an int is written that is the length of the value in
  * bytes.
+ * <p>
+ * Note that the field data is identified by name. The situation where a super class has a field with the same name as a subclass
+ * must be avoided.
  * @author Nathan Sweet <misc@n4te.com> */
 public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
