@@ -21,7 +21,6 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.ArraySerializer;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ByteArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.CharArraySerializer;
@@ -81,7 +80,6 @@ public class Kryo {
 	private Class<? extends Serializer> defaultSerializer = FieldSerializer.class;
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
 	private int lowPriorityDefaultSerializerCount;
-	private ArraySerializer arraySerializer = new ArraySerializer();
 	private InstantiatorStrategy strategy;
 
 	private int depth, nextRegisterID;
@@ -206,6 +204,7 @@ public class Kryo {
 	 * <td>String[]</td>
 	 * <tr>
 	 * </tr>
+	 * <td>Object[]</td>
 	 * <td>Map</td>
 	 * <td>BigInteger</td>
 	 * <td>BigDecimal</td>
@@ -258,8 +257,6 @@ public class Kryo {
 				return newSerializer(entry.serializerClass, type);
 			}
 		}
-
-		if (type.isArray()) return arraySerializer;
 
 		return newDefaultSerializer(type);
 	}
@@ -957,17 +954,6 @@ public class Kryo {
 		return type != Boolean.class && type != Byte.class && type != Character.class && type != Short.class;
 	}
 
-	/** Sets the serializer to use for arrays. */
-	public void setArraySerializer (ArraySerializer arraySerializer) {
-		if (arraySerializer == null) throw new IllegalArgumentException("arraySerializer cannot be null.");
-		this.arraySerializer = arraySerializer;
-		if (TRACE) trace("kryo", "Array serializer set: " + arraySerializer.getClass().getName());
-	}
-
-	public ArraySerializer getArraySerializer () {
-		return arraySerializer;
-	}
-
 	/** Sets the strategy used by {@link #newInstantiator(Class)} for creating objects. See {@link StdInstantiatorStrategy} to
 	 * create objects via without calling any constructor. See {@link SerializingInstantiatorStrategy} to mimic Java's built-in
 	 * serialization.
@@ -1054,15 +1040,14 @@ public class Kryo {
 
 	// --- Utility ---
 
-	/** Returns true if the specified type is final, or if it is an array of a final type. Final types can be serialized more
-	 * efficiently because they are non-polymorphic.
+	/** Returns true if the specified type is final. Final types can be serialized more efficiently because they are
+	 * non-polymorphic.
 	 * <p>
 	 * This can be overridden to force non-final classes to be treated as final. Eg, if an application uses ArrayList extensively
-	 * but never uses an ArrayList subclass, treating ArrayList as final would allow FieldSerializer to save 1-2 bytes per
+	 * but never uses an ArrayList subclass, treating ArrayList as final could allow FieldSerializer to save 1-2 bytes per
 	 * ArrayList field. */
 	public boolean isFinal (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		if (type.isArray()) return Modifier.isFinal(ArraySerializer.getElementClass(type).getModifiers());
 		return Modifier.isFinal(type.getModifiers());
 	}
 

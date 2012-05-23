@@ -1,8 +1,6 @@
 
 package com.esotericsoftware.kryo;
 
-import com.esotericsoftware.kryo.serializers.ArraySerializer;
-
 import static com.esotericsoftware.minlog.Log.*;
 
 /** A few utility methods, mostly private.
@@ -63,9 +61,9 @@ public class Util {
 
 	static String className (Class type) {
 		if (type.isArray()) {
-			Class elementClass = ArraySerializer.getElementClass(type);
+			Class elementClass = getElementClass(type);
 			StringBuilder buffer = new StringBuilder(16);
-			for (int i = 0, n = ArraySerializer.getDimensionCount(type); i < n; i++)
+			for (int i = 0, n = getDimensionCount(type); i < n; i++)
 				buffer.append("[]");
 			return className(elementClass) + buffer;
 		}
@@ -75,5 +73,22 @@ public class Util {
 			return type.getSimpleName();
 		}
 		return type.getName();
+	}
+
+	static public int getDimensionCount (Class arrayClass) {
+		int depth = 0;
+		Class nextClass = arrayClass.getComponentType();
+		while (nextClass != null) {
+			depth++;
+			nextClass = nextClass.getComponentType();
+		}
+		return depth;
+	}
+
+	static public Class getElementClass (Class arrayClass) {
+		Class elementClass = arrayClass;
+		while (elementClass.getComponentType() != null)
+			elementClass = elementClass.getComponentType();
+		return elementClass;
 	}
 }

@@ -54,7 +54,7 @@ public class DefaultArraySerializers {
 			}
 			output.writeInt(object.length + 1, true);
 			for (int i = 0, n = object.length; i < n; i++)
-				output.writeInt(object[i], true);
+				output.writeInt(object[i], false);
 		}
 
 		public int[] create (Kryo kryo, Input input, Class<int[]> type) {
@@ -62,7 +62,7 @@ public class DefaultArraySerializers {
 			if (length == NULL) return null;
 			int[] array = new int[--length];
 			for (int i = 0; i < length; i++)
-				array[i] = input.readInt(true);
+				array[i] = input.readInt(false);
 			return array;
 		}
 
@@ -116,7 +116,7 @@ public class DefaultArraySerializers {
 			}
 			output.writeInt(object.length + 1, true);
 			for (int i = 0, n = object.length; i < n; i++)
-				output.writeLong(object[i], true);
+				output.writeLong(object[i], false);
 		}
 
 		public long[] create (Kryo kryo, Input input, Class<long[]> type) {
@@ -124,7 +124,7 @@ public class DefaultArraySerializers {
 			if (length == NULL) return null;
 			long[] array = new long[--length];
 			for (int i = 0; i < length; i++)
-				array[i] = input.readLong(true);
+				array[i] = input.readLong(false);
 			return array;
 		}
 
@@ -273,7 +273,7 @@ public class DefaultArraySerializers {
 				return;
 			}
 			output.writeInt(object.length + 1, true);
-			Class elementClass = ArraySerializer.getElementClass(object.getClass());
+			Class elementClass = object.getClass().getComponentType();
 			if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers())) {
 				Serializer elementSerializer = kryo.getSerializer(elementClass);
 				for (int i = 0, n = object.length; i < n; i++) {
@@ -291,11 +291,11 @@ public class DefaultArraySerializers {
 		public Object[] create (Kryo kryo, Input input, Class<Object[]> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
-			return (Object[])Array.newInstance(ArraySerializer.getElementClass(type), length - 1);
+			return (Object[])Array.newInstance(type.getComponentType(), length - 1);
 		}
 
 		public void read (Kryo kryo, Input input, Object[] object) {
-			Class elementClass = ArraySerializer.getElementClass(object.getClass());
+			Class elementClass = object.getClass().getComponentType();
 			if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers())) {
 				Serializer elementSerializer = kryo.getSerializer(elementClass);
 				for (int i = 0, n = object.length; i < n; i++) {
