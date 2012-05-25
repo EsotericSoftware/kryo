@@ -228,6 +228,37 @@ public class DefaultArraySerializers {
 		}
 	}
 
+	static public class BooleanArraySerializer extends Serializer<boolean[]> {
+		{
+			setAcceptsNull(true);
+		}
+
+		public void write (Kryo kryo, Output output, boolean[] object) {
+			if (object == null) {
+				output.writeByte(NULL);
+				return;
+			}
+			output.writeInt(object.length + 1, true);
+			for (int i = 0, n = object.length; i < n; i++)
+				output.writeBoolean(object[i]);
+		}
+
+		public boolean[] create (Kryo kryo, Input input, Class<boolean[]> type) {
+			int length = input.readInt(true);
+			if (length == NULL) return null;
+			boolean[] array = new boolean[--length];
+			for (int i = 0; i < length; i++)
+				array[i] = input.readBoolean();
+			return array;
+		}
+
+		public boolean[] createCopy (Kryo kryo, boolean[] original) {
+			boolean[] copy = new boolean[original.length];
+			System.arraycopy(original, 0, copy, 0, copy.length);
+			return copy;
+		}
+	}
+
 	static public class StringArraySerializer extends Serializer<String[]> {
 		{
 			setAcceptsNull(true);
