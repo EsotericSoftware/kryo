@@ -22,6 +22,7 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.BooleanArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ByteArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.CharArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.DoubleArraySerializer;
@@ -110,6 +111,7 @@ public class Kryo {
 		addDefaultSerializer(long[].class, LongArraySerializer.class);
 		addDefaultSerializer(float[].class, FloatArraySerializer.class);
 		addDefaultSerializer(double[].class, DoubleArraySerializer.class);
+		addDefaultSerializer(boolean[].class, BooleanArraySerializer.class);
 		addDefaultSerializer(String[].class, StringArraySerializer.class);
 		addDefaultSerializer(Object[].class, ObjectArraySerializer.class);
 		addDefaultSerializer(BigInteger.class, BigIntegerSerializer.class);
