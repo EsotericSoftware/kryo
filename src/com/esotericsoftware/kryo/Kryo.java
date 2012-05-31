@@ -493,13 +493,13 @@ public class Kryo {
 		}
 	}
 
-	/** Writes an object or null using the registered serializer.
+	/** Writes an object or null using the registered serializer for the specified type.
 	 * @param object May be null. */
-	public void writeObjectOrNull (Output output, Object object) {
+	public void writeObjectOrNull (Output output, Object object, Class type) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		depth++;
 		try {
-			Serializer serializer = getRegistration(object.getClass()).getSerializer();
+			Serializer serializer = getRegistration(type).getSerializer();
 			if (references) {
 				if (writeReferenceOrNull(output, object, true)) return;
 			} else if (!serializer.getAcceptsNull()) {

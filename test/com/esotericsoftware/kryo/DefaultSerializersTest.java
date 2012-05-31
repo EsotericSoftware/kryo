@@ -116,11 +116,24 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	public void testNull () {
+		kryo.register(ArrayList.class);
+
 		kryo.setReferences(true);
 		roundTrip(1, null);
+		testNull(Long.class);
+		testNull(ArrayList.class);
 
 		kryo.setReferences(false);
 		roundTrip(1, null);
+		testNull(Long.class);
+		testNull(ArrayList.class);
+	}
+
+	private void testNull (Class type) {
+		kryo.writeObjectOrNull(output, null, type);
+		input.setBuffer(output.toBytes());
+		Object object = kryo.readObjectOrNull(input, type);
+		assertNull(object);
 	}
 
 	public void testDateSerializer () {
