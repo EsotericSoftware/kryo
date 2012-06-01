@@ -187,10 +187,10 @@ public class Input extends InputStream {
 
 	// InputStream
 
-	/** Reads a single byte. */
+	/** Reads a single byte as an int from 0 to 255, or -1 if there are no more bytes are available. */
 	public int read () throws KryoException {
-		require(1);
-		return buffer[position++];
+		if (optional(1) == 0) return -1;
+		return buffer[position++] & 0xFF;
 	}
 
 	/** Reads bytes.length bytes or less and writes them to the specified byte[], starting at 0, and returns the number of bytes
@@ -199,7 +199,8 @@ public class Input extends InputStream {
 		return read(bytes, 0, bytes.length);
 	}
 
-	/** Reads count bytes or less and writes them to the specified byte[], starting at offset, and returns the number of bytes read. */
+	/** Reads count bytes or less and writes them to the specified byte[], starting at offset, and returns the number of bytes read
+	 * or -1 if no more bytes are available. */
 	public int read (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int startingCount = count;
