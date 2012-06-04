@@ -83,7 +83,7 @@ public class Kryo {
 	private int lowPriorityDefaultSerializerCount;
 	private InstantiatorStrategy strategy;
 
-	private int depth, nextRegisterID;
+	private int depth, maxDepth = Integer.MAX_VALUE, nextRegisterID;
 	private final IntMap<Registration> idToRegistration = new IntMap();
 	private final ObjectMap<Class, Registration> classToRegistration = new ObjectMap();
 	private Class memoizedType;
@@ -468,6 +468,7 @@ public class Kryo {
 	public void writeObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
+		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		depth++;
 		try {
 			if (references && writeReferenceOrNull(output, object, false)) return;
@@ -484,6 +485,7 @@ public class Kryo {
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		depth++;
+		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			if (references && writeReferenceOrNull(output, object, false)) return;
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
@@ -498,6 +500,7 @@ public class Kryo {
 	public void writeObjectOrNull (Output output, Object object, Class type) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		depth++;
+		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Serializer serializer = getRegistration(type).getSerializer();
 			if (references) {
@@ -523,6 +526,7 @@ public class Kryo {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		depth++;
+		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			if (references) {
 				if (writeReferenceOrNull(output, object, true)) return;
@@ -546,6 +550,7 @@ public class Kryo {
 	public void writeClassAndObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		depth++;
+		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			if (object == null) {
 				writeClass(output, null);
@@ -628,6 +633,7 @@ public class Kryo {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		depth++;
+		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Object refObject = null;
 			if (references) {
@@ -652,6 +658,7 @@ public class Kryo {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		depth++;
+		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Object refObject = null;
 			if (references) {
@@ -675,6 +682,7 @@ public class Kryo {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		depth++;
+		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Serializer serializer = getRegistration(type).getSerializer();
 
@@ -706,6 +714,7 @@ public class Kryo {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		depth++;
+		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Object refObject = null;
 			if (references) {
@@ -733,6 +742,7 @@ public class Kryo {
 	public Object readClassAndObject (Input input) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		depth++;
+		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Registration registration = readClass(input);
 			if (registration == null) return null;
@@ -1038,6 +1048,12 @@ public class Kryo {
 	public ObjectMap getGraphContext () {
 		if (graphContext == null) graphContext = new ObjectMap();
 		return graphContext;
+	}
+
+	/** Sets the maxiumum depth of an object graph. This can be used to prevent malicious data from causing a stack overflow.
+	 * Default is {@link Integer#MAX_VALUE}. */
+	public void setMaxDepth (int maxDepth) {
+		this.maxDepth = maxDepth;
 	}
 
 	// --- Utility ---

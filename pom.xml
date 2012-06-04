@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.esotericsoftware.kryo</groupId>
 	<artifactId>kryo</artifactId>
-	<version>2.11</version>
+	<version>2.12</version>
 	<packaging>jar</packaging>
 	<name>Kryo</name>
 	<description>Fast, efficient Java serialization</description>
