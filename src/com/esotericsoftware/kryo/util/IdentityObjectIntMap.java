@@ -1,6 +1,8 @@
 
 package com.esotericsoftware.kryo.util;
 
+import java.util.ArrayList;
+
 /** An unordered map where the values are ints. This implementation is a cuckoo hash map using 3 hashes, random walking, and a
  * small stash for problematic keys. Null keys are not allowed. No allocation is done except when growing the table size. <br>
  * <br>
@@ -49,8 +51,8 @@ public class IdentityObjectIntMap<K> {
 		threshold = (int)(capacity * loadFactor);
 		mask = capacity - 1;
 		hashShift = 31 - Integer.numberOfTrailingZeros(capacity);
-		stashCapacity = Math.max(3, (int)Math.ceil(Math.log(capacity)) + 1);
-		pushIterations = Math.max(Math.min(capacity, 32), (int)Math.sqrt(capacity) / 4);
+		stashCapacity = Math.max(3, (int)Math.ceil(Math.log(capacity)) * 2);
+		pushIterations = Math.max(Math.min(capacity, 8), (int)Math.sqrt(capacity) / 8);
 
 		keyTable = (K[])new Object[capacity + stashCapacity];
 		valueTable = new int[keyTable.length];
@@ -401,8 +403,8 @@ public class IdentityObjectIntMap<K> {
 		threshold = (int)(newSize * loadFactor);
 		mask = newSize - 1;
 		hashShift = 31 - Integer.numberOfTrailingZeros(newSize);
-		stashCapacity = Math.max(3, (int)Math.ceil(Math.log(newSize)));
-		pushIterations = Math.max(Math.min(capacity, 32), (int)Math.sqrt(capacity) / 4);
+		stashCapacity = Math.max(3, (int)Math.ceil(Math.log(newSize)) * 2);
+		pushIterations = Math.max(Math.min(newSize, 8), (int)Math.sqrt(newSize) / 8);
 
 		K[] oldKeyTable = keyTable;
 		int[] oldValueTable = valueTable;
@@ -418,14 +420,14 @@ public class IdentityObjectIntMap<K> {
 		}
 	}
 
-	private int hash2 (long h) {
+	private int hash2 (int h) {
 		h *= PRIME2;
-		return (int)((h ^ h >>> hashShift) & mask);
+		return (h ^ h >>> hashShift) & mask;
 	}
 
-	private int hash3 (long h) {
+	private int hash3 (int h) {
 		h *= PRIME3;
-		return (int)((h ^ h >>> hashShift) & mask);
+		return (h ^ h >>> hashShift) & mask;
 	}
 
 	public String toString () {
@@ -453,5 +455,14 @@ public class IdentityObjectIntMap<K> {
 		}
 		buffer.append('}');
 		return buffer.toString();
+	}
+
+	public static void main (String[] args) throws Exception {
+		IdentityObjectIntMap map = new IdentityObjectIntMap();
+		int i = 0;
+		while (true) {
+			map.put(new Object(), 0);
+			// if (i++ == 1024) break;
+		}
 	}
 }

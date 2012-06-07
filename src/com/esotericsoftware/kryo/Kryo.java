@@ -97,7 +97,7 @@ public class Kryo {
 	private ClassLoader classLoader = getClass().getClassLoader();
 
 	private boolean references = true;
-	private final ArrayList writtenObjects = new ArrayList();
+	private final IdentityObjectIntMap writtenObjects = new IdentityObjectIntMap();
 	private final ArrayList readObjects = new ArrayList();
 
 	private boolean copyShallow;
@@ -577,17 +577,17 @@ public class Kryo {
 			if (mayBeNull) output.writeByte(NOT_NULL);
 			return false;
 		}
-		for (int i = 0, n = writtenObjects.size(); i < n; i++) {
-			if (writtenObjects.get(i) == object) {
-				if (DEBUG) debug("kryo", "Write object reference " + i + ": " + string(object));
-				output.writeInt(i + 1, true); // + 1 because 0 means null.
-				return true;
-			}
+		int id = writtenObjects.get(object, -1);
+		if (id > -1) {
+			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object));
+			output.writeInt(id, true);
+			return true;
 		}
 		// Only write the object the first time encountered in object graph.
-		output.writeInt(writtenObjects.size() + 1, true);
-		writtenObjects.add(object);
-		if (TRACE) trace("kryo", "Write initial object reference " + (writtenObjects.size() - 1) + ": " + string(object));
+		id = writtenObjects.size + 1; // + 1 because 0 is used for null.
+		output.writeInt(id, true);
+		writtenObjects.put(object, id);
+		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object));
 		return false;
 	}
 
