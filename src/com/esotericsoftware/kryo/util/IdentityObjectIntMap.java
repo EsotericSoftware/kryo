@@ -456,13 +456,4 @@ public class IdentityObjectIntMap<K> {
 		buffer.append('}');
 		return buffer.toString();
 	}
-
-	public static void main (String[] args) throws Exception {
-		IdentityObjectIntMap map = new IdentityObjectIntMap();
-		int i = 0;
-		while (true) {
-			map.put(new Object(), 0);
-			// if (i++ == 1024) break;
-		}
-	}
 }
