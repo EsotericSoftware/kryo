@@ -1,10 +1,9 @@
 
 package com.esotericsoftware.kryo.util;
 
-import java.util.ArrayList;
-
-/** An unordered map where the values are ints. This implementation is a cuckoo hash map using 3 hashes, random walking, and a
- * small stash for problematic keys. Null keys are not allowed. No allocation is done except when growing the table size. <br>
+/** An unordered map where identity comparison is used for keys and the values are ints. This implementation is a cuckoo hash map
+ * using 3 hashes, random walking, and a small stash for problematic keys. Null keys are not allowed. No allocation is done except
+ * when growing the table size. <br>
  * <br>
  * This map performs very fast get, containsKey, and remove (typically O(1), worst case O(log(n))). Put may be a bit slower,
  * depending on hash collisions. Load factors greater than 0.91 greatly increase the chances the map will have to rehash to the
@@ -65,7 +64,7 @@ public class IdentityObjectIntMap<K> {
 		int hashCode = System.identityHashCode(key);
 		int index1 = hashCode & mask;
 		K key1 = keyTable[index1];
-		if (key.equals(key1)) {
+		if (key == key1) {
 			int oldValue = valueTable[index1];
 			valueTable[index1] = value;
 			return;
@@ -73,7 +72,7 @@ public class IdentityObjectIntMap<K> {
 
 		int index2 = hash2(hashCode);
 		K key2 = keyTable[index2];
-		if (key.equals(key2)) {
+		if (key == key2) {
 			int oldValue = valueTable[index2];
 			valueTable[index2] = value;
 			return;
@@ -81,7 +80,7 @@ public class IdentityObjectIntMap<K> {
 
 		int index3 = hash3(hashCode);
 		K key3 = keyTable[index3];
-		if (key.equals(key3)) {
+		if (key == key3) {
 			int oldValue = valueTable[index3];
 			valueTable[index3] = value;
 			return;
@@ -227,7 +226,7 @@ public class IdentityObjectIntMap<K> {
 		// Update key in the stash.
 		K[] keyTable = this.keyTable;
 		for (int i = capacity, n = i + stashSize; i < n; i++) {
-			if (key.equals(keyTable[i])) {
+			if (key == keyTable[i]) {
 				valueTable[i] = value;
 				return;
 			}
@@ -243,11 +242,11 @@ public class IdentityObjectIntMap<K> {
 	public int get (K key, int defaultValue) {
 		int hashCode = System.identityHashCode(key);
 		int index = hashCode & mask;
-		if (!key.equals(keyTable[index])) {
+		if (key != keyTable[index]) {
 			index = hash2(hashCode);
-			if (!key.equals(keyTable[index])) {
+			if (key != keyTable[index]) {
 				index = hash3(hashCode);
-				if (!key.equals(keyTable[index])) return getStash(key, defaultValue);
+				if (key != keyTable[index]) return getStash(key, defaultValue);
 			}
 		}
 		return valueTable[index];
@@ -256,7 +255,7 @@ public class IdentityObjectIntMap<K> {
 	private int getStash (K key, int defaultValue) {
 		K[] keyTable = this.keyTable;
 		for (int i = capacity, n = i + stashSize; i < n; i++)
-			if (key.equals(keyTable[i])) return valueTable[i];
+			if (key == keyTable[i]) return valueTable[i];
 		return defaultValue;
 	}
 
@@ -265,11 +264,11 @@ public class IdentityObjectIntMap<K> {
 	public int getAndIncrement (K key, int defaultValue, int increment) {
 		int hashCode = System.identityHashCode(key);
 		int index = hashCode & mask;
-		if (!key.equals(keyTable[index])) {
+		if (key != keyTable[index]) {
 			index = hash2(hashCode);
-			if (!key.equals(keyTable[index])) {
+			if (key != keyTable[index]) {
 				index = hash3(hashCode);
-				if (!key.equals(keyTable[index])) return getAndIncrementStash(key, defaultValue, increment);
+				if (key != keyTable[index]) return getAndIncrementStash(key, defaultValue, increment);
 			}
 		}
 		int value = valueTable[index];
@@ -280,7 +279,7 @@ public class IdentityObjectIntMap<K> {
 	private int getAndIncrementStash (K key, int defaultValue, int increment) {
 		K[] keyTable = this.keyTable;
 		for (int i = capacity, n = i + stashSize; i < n; i++)
-			if (key.equals(keyTable[i])) {
+			if (key == keyTable[i]) {
 				int value = valueTable[i];
 				valueTable[i] = value + increment;
 				return value;
@@ -292,7 +291,7 @@ public class IdentityObjectIntMap<K> {
 	public int remove (K key, int defaultValue) {
 		int hashCode = System.identityHashCode(key);
 		int index = hashCode & mask;
-		if (key.equals(keyTable[index])) {
+		if (key == keyTable[index]) {
 			keyTable[index] = null;
 			int oldValue = valueTable[index];
 			size--;
@@ -300,7 +299,7 @@ public class IdentityObjectIntMap<K> {
 		}
 
 		index = hash2(hashCode);
-		if (key.equals(keyTable[index])) {
+		if (key == keyTable[index]) {
 			keyTable[index] = null;
 			int oldValue = valueTable[index];
 			size--;
@@ -308,7 +307,7 @@ public class IdentityObjectIntMap<K> {
 		}
 
 		index = hash3(hashCode);
-		if (key.equals(keyTable[index])) {
+		if (key == keyTable[index]) {
 			keyTable[index] = null;
 			int oldValue = valueTable[index];
 			size--;
@@ -321,7 +320,7 @@ public class IdentityObjectIntMap<K> {
 	int removeStash (K key, int defaultValue) {
 		K[] keyTable = this.keyTable;
 		for (int i = capacity, n = i + stashSize; i < n; i++) {
-			if (key.equals(keyTable[i])) {
+			if (key == keyTable[i]) {
 				int oldValue = valueTable[i];
 				removeStashIndex(i);
 				size--;
@@ -363,11 +362,11 @@ public class IdentityObjectIntMap<K> {
 	public boolean containsKey (K key) {
 		int hashCode = System.identityHashCode(key);
 		int index = hashCode & mask;
-		if (!key.equals(keyTable[index])) {
+		if (key != keyTable[index]) {
 			index = hash2(hashCode);
-			if (!key.equals(keyTable[index])) {
+			if (key != keyTable[index]) {
 				index = hash3(hashCode);
-				if (!key.equals(keyTable[index])) return containsKeyStash(key);
+				if (key != keyTable[index]) return containsKeyStash(key);
 			}
 		}
 		return true;
@@ -376,7 +375,7 @@ public class IdentityObjectIntMap<K> {
 	private boolean containsKeyStash (K key) {
 		K[] keyTable = this.keyTable;
 		for (int i = capacity, n = i + stashSize; i < n; i++)
-			if (key.equals(keyTable[i])) return true;
+			if (key == keyTable[i]) return true;
 		return false;
 	}
 
