@@ -54,22 +54,28 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				}
 
 				Serializer serializer = cachedField.serializer;
-				if (cachedField.fieldClass == null) {
+				if (cachedField.valueClass == null) {
 					Registration registration = kryo.writeClass(outputChunked, value.getClass());
 					if (serializer == null) serializer = registration.getSerializer();
+					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
 					kryo.writeObject(outputChunked, value, serializer);
 				} else {
-					if (serializer == null)
-						cachedField.serializer = serializer = kryo.getRegistration(cachedField.fieldClass).getSerializer();
-					if (!cachedField.canBeNull)
-						kryo.writeObject(outputChunked, value, serializer);
-					else
+					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(cachedField.valueClass);
+					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
+					if (cachedField.canBeNull)
 						kryo.writeObjectOrNull(outputChunked, value, serializer);
+					else {
+						if (value == null) {
+							throw new KryoException("Field value is null but canBeNull is false: " + cachedField + " ("
+								+ object.getClass().getName() + ")");
+						}
+						kryo.writeObject(outputChunked, value, serializer);
+					}
 				}
 
 				outputChunked.endChunks();
 			} catch (IllegalAccessException ex) {
-				throw new KryoException("Error accessing field in class: " + object.getClass().getName(), ex);
+				throw new KryoException("Error accessing field: " + cachedField + " (" + object.getClass().getName() + ")", ex);
 			} catch (KryoException ex) {
 				ex.addTrace(cachedField + " (" + object.getClass().getName() + ")");
 				throw ex;
@@ -121,30 +127,31 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 				Object value;
 
-				Class concreteType = cachedField.fieldClass;
+				Class concreteType = cachedField.valueClass;
 				Serializer serializer = cachedField.serializer;
 				if (concreteType == null) {
 					Registration registration = kryo.readClass(inputChunked);
 					if (registration == null)
 						value = null;
 					else {
-						concreteType = registration.getType();
 						if (serializer == null) serializer = registration.getSerializer();
-						value = kryo.readObject(inputChunked, concreteType, serializer);
+						if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
+						value = kryo.readObject(inputChunked, registration.getType(), serializer);
 					}
 				} else {
-					if (serializer == null) cachedField.serializer = serializer = kryo.getRegistration(concreteType).getSerializer();
-					if (!cachedField.canBeNull)
-						value = kryo.readObject(inputChunked, concreteType, serializer);
-					else
+					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(concreteType);
+					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
+					if (cachedField.canBeNull)
 						value = kryo.readObjectOrNull(inputChunked, concreteType, serializer);
+					else
+						value = kryo.readObject(inputChunked, concreteType, serializer);
 				}
 
 				cachedField.set(object, value);
 
 				inputChunked.nextChunks();
 			} catch (IllegalAccessException ex) {
-				throw new KryoException("Error accessing field in class: " + getType().getName(), ex);
+				throw new KryoException("Error accessing field: " + cachedField + " (" + getType().getName() + ")", ex);
 			} catch (KryoException ex) {
 				ex.addTrace(cachedField + " (" + getType().getName() + ")");
 				throw ex;

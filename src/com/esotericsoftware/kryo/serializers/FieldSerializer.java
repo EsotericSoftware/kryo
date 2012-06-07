@@ -7,6 +7,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -97,7 +99,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				cachedField.canBeNull = false;
 
 			// Always use the same serializer for this field if the field's class is final.
-			if (kryo.isFinal(fieldClass) || finalFieldTypes) cachedField.fieldClass = fieldClass;
+			if (kryo.isFinal(fieldClass) || finalFieldTypes) cachedField.valueClass = fieldClass;
 
 			cachedFields.add(cachedField);
 			if (!Modifier.isFinal(modifiers) && Modifier.isPublic(modifiers) && Modifier.isPublic(fieldClass.getModifiers()))
@@ -123,8 +125,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	/** Returns a new cached field for the specified field, or null if the field should not be used.
 	 * @return May be null. */
 	protected CachedField newCachedField (Field field) {
-		CachedField cachedField = new CachedField(field);
-		return cachedField;
+		return new CachedField(field);
 	}
 
 	public int compare (CachedField o1, CachedField o2) {
@@ -174,16 +175,20 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				Object value = cachedField.get(object);
 
 				Serializer serializer = cachedField.serializer;
-				if (cachedField.fieldClass == null) {
+				if (cachedField.valueClass == null) {
+					// The concrete type of the field is unknown, write the class first.
 					if (value == null) {
 						kryo.writeClass(output, null);
 						continue;
 					}
 					Registration registration = kryo.writeClass(output, value.getClass());
 					if (serializer == null) serializer = registration.getSerializer();
+					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
 					kryo.writeObject(output, value, serializer);
 				} else {
-					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(cachedField.fieldClass);
+					// The concrete type of the field is known, always use the same serializer.
+					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(cachedField.valueClass);
+					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
 					if (cachedField.canBeNull) {
 						kryo.writeObjectOrNull(output, value, serializer);
 					} else {
@@ -213,18 +218,22 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			try {
 				if (TRACE) trace("kryo", "Read field: " + cachedField + " (" + type.getName() + ")");
 
-				Object value = null;
+				Object value;
 
-				Class concreteType = cachedField.fieldClass;
+				Class concreteType = cachedField.valueClass;
 				Serializer serializer = cachedField.serializer;
 				if (concreteType == null) {
 					Registration registration = kryo.readClass(input);
-					if (registration != null) { // Else value is null.
+					if (registration == null)
+						value = null;
+					else {
 						if (serializer == null) serializer = registration.getSerializer();
+						if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
 						value = kryo.readObject(input, registration.getType(), serializer);
 					}
 				} else {
-					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(concreteType);
+					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(cachedField.valueClass);
+					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
 					if (cachedField.canBeNull)
 						value = kryo.readObjectOrNull(input, concreteType, serializer);
 					else
@@ -301,27 +310,31 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	/** Controls how a field will be serialized. */
 	public class CachedField<X> {
 		final Field field;
-		Class fieldClass;
+		Class valueClass;
 		Serializer serializer;
 		boolean canBeNull;
 		int accessIndex = -1;
+		Type[] generics;
 
 		public CachedField (Field field) {
 			this.field = field;
+
+			Type genericType = field.getGenericType();
+			if (genericType instanceof ParameterizedType) generics = ((ParameterizedType)genericType).getActualTypeArguments();
 		}
 
-		/** @param fieldClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for the
+		/** @param valueClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for the
 		 *           specified class will be used. Only set to a non-null value if the field type in the class definition is final
 		 *           or the values for this field will not vary. */
-		public void setClass (Class fieldClass) {
-			this.fieldClass = fieldClass;
+		public void setClass (Class valueClass) {
+			this.valueClass = valueClass;
 			this.serializer = null;
 		}
 
-		/** @param fieldClass The concrete class of the values for this field. This saves 1-2 bytes. Only set to a non-null value if
+		/** @param valueClass The concrete class of the values for this field. This saves 1-2 bytes. Only set to a non-null value if
 		 *           the field type in the class definition is final or the values for this field will not vary. */
-		public void setClass (Class fieldClass, Serializer serializer) {
-			this.fieldClass = fieldClass;
+		public void setClass (Class valueClass, Serializer serializer) {
+			this.valueClass = valueClass;
 			this.serializer = serializer;
 		}
 

@@ -1,6 +1,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -19,6 +20,7 @@ public class CollectionSerializer extends Serializer<Collection> {
 	private boolean elementsCanBeNull = true;
 	private Serializer serializer;
 	private Class elementClass;
+	private Class genericType;
 
 	public CollectionSerializer () {
 	}
@@ -49,11 +51,25 @@ public class CollectionSerializer extends Serializer<Collection> {
 		this.serializer = serializer;
 	}
 
+	public void setGenerics (Kryo kryo, Type[] generics) {
+		if (generics == null)
+			genericType = null;
+		else {
+			Class type = (Class)generics[0];
+			if (kryo.isFinal(type)) genericType = type;
+		}
+	}
+
 	public void write (Kryo kryo, Output output, Collection object) {
 		Collection collection = (Collection)object;
 		int length = collection.size();
 		output.writeInt(length, true);
 		if (length == 0) return;
+		Serializer serializer = this.serializer;
+		if (genericType != null) {
+			if (serializer == null) serializer = kryo.getSerializer(genericType);
+			genericType = null;
+		}
 		if (serializer != null) {
 			if (elementsCanBeNull) {
 				for (Object element : collection)
@@ -71,6 +87,15 @@ public class CollectionSerializer extends Serializer<Collection> {
 	public void read (Kryo kryo, Input input, Collection collection) {
 		int length = input.readInt(true);
 		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
+		Class elementClass = this.elementClass;
+		Serializer serializer = this.serializer;
+		if (genericType != null) {
+			if (serializer == null) {
+				elementClass = genericType;
+				serializer = kryo.getSerializer(genericType);
+			}
+			genericType = null;
+		}
 		if (serializer != null) {
 			if (elementsCanBeNull) {
 				for (int i = 0; i < length; i++)

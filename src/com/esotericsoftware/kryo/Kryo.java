@@ -698,7 +698,7 @@ public class Kryo {
 			}
 
 			T object = (T)serializer.create(this, input, type);
-			if (refObject == NEW_OBJECT) readObjects.add(object);
+			if (refObject == NEW_OBJECT && object != null) readObjects.add(object);
 			if (object != null) serializer.read(this, input, object);
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -727,8 +727,9 @@ public class Kryo {
 				}
 			}
 
+			// BOZO - Use reference() method instead of create/read.
 			T object = (T)serializer.create(this, input, type);
-			if (refObject == NEW_OBJECT) readObjects.add(object);
+			if (refObject == NEW_OBJECT && object != null) readObjects.add(object);
 			if (object != null) serializer.read(this, input, object);
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -765,8 +766,8 @@ public class Kryo {
 		}
 	}
 
-	/** @return Null if references for the type is not supported. this.instanceId if the object field should be used. A new
-	 *         InstanceId if this is the first time the object appears in the graph. */
+	/** @return NO_REFS if references for the type is not supported, NEW_OBJECT if this is the first time the object appears in the
+	 *         graph, or the object if it was a reference. */
 	private Object readReferenceOrNull (Input input, Class type, boolean mayBeNull) {
 		if (type.isPrimitive()) type = getWrapperClass(type);
 		boolean referencesSupported = useReferences(type);

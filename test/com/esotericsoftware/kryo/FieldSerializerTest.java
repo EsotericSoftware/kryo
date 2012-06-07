@@ -1,8 +1,7 @@
 
 package com.esotericsoftware.kryo;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.ArrayList;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
@@ -309,6 +308,23 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(HasPrivateConstructor.class);
 		test = new HasPrivateConstructor();
 		roundTrip(4, test);
+	}
+
+	public void testGenericTypes () {
+		kryo.register(HasIntList.class);
+		kryo.register(ArrayList.class);
+		kryo.setReferences(true);
+		HasIntList test = new HasIntList();
+		test.list = new ArrayList();
+		test.list.add(1);
+		test.list.add(2);
+		test.list.add(3);
+		test.list.add(4);
+		test.list.add(5);
+		test.list.add(6);
+		test.list.add(7);
+		test.list.add(8);
+		roundTrip(21, test);
 	}
 
 	static public class DefaultTypes {
@@ -652,6 +668,21 @@ public class FieldSerializerTest extends KryoTestCase {
 	static public class HasPrivateConstructor extends HasArgumentConstructor {
 		private HasPrivateConstructor () {
 			super("cow");
+		}
+	}
+
+	static public class HasIntList {
+		ArrayList<Integer> list;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			HasIntList other = (HasIntList)obj;
+			if (list == null) {
+				if (other.list != null) return false;
+			} else if (!list.equals(other.list)) return false;
+			return true;
 		}
 	}
 }

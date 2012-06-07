@@ -1,6 +1,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -18,6 +19,7 @@ public class MapSerializer extends Serializer<Map> {
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
 	private boolean keysCanBeNull = true, valuesCanBeNull = true;
+	private Class keyGenericType, valueGenericType;
 
 	/** @param keysCanBeNull False if all keys are not null. This saves 1 byte per key if keyClass is set. True if it is not known
 	 *           (default). */
@@ -47,10 +49,34 @@ public class MapSerializer extends Serializer<Map> {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
 
+	public void setGenerics (Kryo kryo, Type[] generics) {
+		if (generics == null) {
+			keyGenericType = null;
+			valueGenericType = null;
+		} else {
+			Class type = (Class)generics[0];
+			if (kryo.isFinal(type)) keyGenericType = type;
+			type = (Class)generics[1];
+			if (kryo.isFinal(type)) valueGenericType = type;
+		}
+	}
+
 	public void write (Kryo kryo, Output output, Map map) {
 		int length = map.size();
 		output.writeInt(length, true);
 		if (length == 0) return;
+
+		Serializer keySerializer = this.keySerializer;
+		if (keyGenericType != null) {
+			if (keySerializer == null) keySerializer = kryo.getSerializer(keyGenericType);
+			keyGenericType = null;
+		}
+		Serializer valueSerializer = this.valueSerializer;
+		if (valueGenericType != null) {
+			if (valueSerializer == null) valueSerializer = kryo.getSerializer(valueGenericType);
+			valueGenericType = null;
+		}
+
 		for (Iterator iter = map.entrySet().iterator(); iter.hasNext();) {
 			Entry entry = (Entry)iter.next();
 			if (keySerializer != null) {
@@ -73,6 +99,18 @@ public class MapSerializer extends Serializer<Map> {
 	public void read (Kryo kryo, Input input, Map map) {
 		int length = input.readInt(true);
 		if (length == 0) return;
+
+		Serializer keySerializer = this.keySerializer;
+		if (keyGenericType != null) {
+			if (keySerializer == null) keySerializer = kryo.getSerializer(keyGenericType);
+			keyGenericType = null;
+		}
+		Serializer valueSerializer = this.valueSerializer;
+		if (valueGenericType != null) {
+			if (valueSerializer == null) valueSerializer = kryo.getSerializer(valueGenericType);
+			valueGenericType = null;
+		}
+
 		for (int i = 0; i < length; i++) {
 			Object key;
 			if (keySerializer != null) {

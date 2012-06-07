@@ -46,19 +46,21 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				Object value = cachedField.get(object);
 
 				Serializer serializer = cachedField.serializer;
-				if (cachedField.fieldClass == null) {
+				if (cachedField.valueClass == null) {
 					if (value == null) {
 						kryo.writeClass(output, null);
 						continue;
 					}
 					Registration registration = kryo.writeClass(output, value.getClass());
 					if (serializer == null) serializer = registration.getSerializer();
+					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
 					kryo.writeObject(output, value, serializer);
 				} else {
-					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(cachedField.fieldClass);
-					if (cachedField.canBeNull) {
+					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(cachedField.valueClass);
+					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
+					if (cachedField.canBeNull)
 						kryo.writeObjectOrNull(output, value, serializer);
-					} else {
+					else {
 						if (value == null) {
 							throw new KryoException("Field value is null but canBeNull is false: " + cachedField + " ("
 								+ object.getClass().getName() + ")");
@@ -98,18 +100,22 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			try {
 				if (TRACE) trace("kryo", "Read field: " + cachedField + " (" + getType().getName() + ")");
 
-				Object value = null;
+				Object value;
 
-				Class concreteType = cachedField.fieldClass;
+				Class concreteType = cachedField.valueClass;
 				Serializer serializer = cachedField.serializer;
 				if (concreteType == null) {
 					Registration registration = kryo.readClass(input);
-					if (registration != null) { // Else value is null.
+					if (registration == null)
+						value = null;
+					else {
 						if (serializer == null) serializer = registration.getSerializer();
+						if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
 						value = kryo.readObject(input, registration.getType(), serializer);
 					}
 				} else {
 					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(concreteType);
+					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
 					if (cachedField.canBeNull)
 						value = kryo.readObjectOrNull(input, concreteType, serializer);
 					else

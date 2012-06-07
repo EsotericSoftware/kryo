@@ -1,6 +1,8 @@
 
 package com.esotericsoftware.kryo;
 
+import java.lang.reflect.Type;
+
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -70,6 +72,12 @@ public abstract class Serializer<T> {
 		this.immutable = immutable;
 	}
 
+	/** Sets the generic types of the field this serializer will be used for. This only applies to the next call to read or write.
+	 * The default implementation does nothing. Subclasses may use this method for more efficient serialization, eg to use the same
+	 * type for all items in a list. */
+	public void setGenerics (Kryo kryo, Type[] generics) {
+	}
+
 	/** Creates a copy of the specified object. The object may be uninitialized or this method may populate the copy, but it must
 	 * not call {@link Kryo} methods to copy nested objects. That must be done in {@link #copy(Kryo, Object, Object)}. The default
 	 * implementation returns the original if {@link #isImmutable()} is true, else throws {@link KryoException}. Subclasses should
@@ -86,7 +94,7 @@ public abstract class Serializer<T> {
 	/** Configures the copy to have the same values as the original. This method may call {@link Kryo} methods to copy nested
 	 * objects, unlike {@link #createCopy(Kryo, Object)}. The default implementation is empty.
 	 * <p>
-	 * Any serializer that uses {@link Kryo} to copy a nested object may need to be reentrant. *
+	 * Any serializer that uses {@link Kryo} to copy a nested object may need to be reentrant.
 	 * <p>
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} copy methods that accept a
 	 * serialier. */
