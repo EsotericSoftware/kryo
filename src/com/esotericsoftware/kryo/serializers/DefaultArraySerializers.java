@@ -29,13 +29,13 @@ public class DefaultArraySerializers {
 			output.writeBytes(object);
 		}
 
-		public byte[] create (Kryo kryo, Input input, Class<byte[]> type) {
+		public byte[] read (Kryo kryo, Input input, Class<byte[]> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readBytes(length - 1);
 		}
 
-		public byte[] createCopy (Kryo kryo, byte[] original) {
+		public byte[] copy (Kryo kryo, byte[] original) {
 			byte[] copy = new byte[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
 			return copy;
@@ -57,7 +57,7 @@ public class DefaultArraySerializers {
 				output.writeInt(object[i], false);
 		}
 
-		public int[] create (Kryo kryo, Input input, Class<int[]> type) {
+		public int[] read (Kryo kryo, Input input, Class<int[]> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			int[] array = new int[--length];
@@ -66,7 +66,7 @@ public class DefaultArraySerializers {
 			return array;
 		}
 
-		public int[] createCopy (Kryo kryo, int[] original) {
+		public int[] copy (Kryo kryo, int[] original) {
 			int[] copy = new int[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
 			return copy;
@@ -88,7 +88,7 @@ public class DefaultArraySerializers {
 				output.writeFloat(object[i]);
 		}
 
-		public float[] create (Kryo kryo, Input input, Class<float[]> type) {
+		public float[] read (Kryo kryo, Input input, Class<float[]> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			float[] array = new float[--length];
@@ -97,7 +97,7 @@ public class DefaultArraySerializers {
 			return array;
 		}
 
-		public float[] createCopy (Kryo kryo, float[] original) {
+		public float[] copy (Kryo kryo, float[] original) {
 			float[] copy = new float[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
 			return copy;
@@ -119,7 +119,7 @@ public class DefaultArraySerializers {
 				output.writeLong(object[i], false);
 		}
 
-		public long[] create (Kryo kryo, Input input, Class<long[]> type) {
+		public long[] read (Kryo kryo, Input input, Class<long[]> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			long[] array = new long[--length];
@@ -128,7 +128,7 @@ public class DefaultArraySerializers {
 			return array;
 		}
 
-		public long[] createCopy (Kryo kryo, long[] original) {
+		public long[] copy (Kryo kryo, long[] original) {
 			long[] copy = new long[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
 			return copy;
@@ -150,7 +150,7 @@ public class DefaultArraySerializers {
 				output.writeShort(object[i]);
 		}
 
-		public short[] create (Kryo kryo, Input input, Class<short[]> type) {
+		public short[] read (Kryo kryo, Input input, Class<short[]> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			short[] array = new short[--length];
@@ -159,7 +159,7 @@ public class DefaultArraySerializers {
 			return array;
 		}
 
-		public short[] createCopy (Kryo kryo, short[] original) {
+		public short[] copy (Kryo kryo, short[] original) {
 			short[] copy = new short[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
 			return copy;
@@ -181,7 +181,7 @@ public class DefaultArraySerializers {
 				output.writeChar(object[i]);
 		}
 
-		public char[] create (Kryo kryo, Input input, Class<char[]> type) {
+		public char[] read (Kryo kryo, Input input, Class<char[]> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			char[] array = new char[--length];
@@ -190,7 +190,7 @@ public class DefaultArraySerializers {
 			return array;
 		}
 
-		public char[] createCopy (Kryo kryo, char[] original) {
+		public char[] copy (Kryo kryo, char[] original) {
 			char[] copy = new char[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
 			return copy;
@@ -212,7 +212,7 @@ public class DefaultArraySerializers {
 				output.writeDouble(object[i]);
 		}
 
-		public double[] create (Kryo kryo, Input input, Class<double[]> type) {
+		public double[] read (Kryo kryo, Input input, Class<double[]> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			double[] array = new double[--length];
@@ -221,7 +221,7 @@ public class DefaultArraySerializers {
 			return array;
 		}
 
-		public double[] createCopy (Kryo kryo, double[] original) {
+		public double[] copy (Kryo kryo, double[] original) {
 			double[] copy = new double[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
 			return copy;
@@ -243,7 +243,7 @@ public class DefaultArraySerializers {
 				output.writeBoolean(object[i]);
 		}
 
-		public boolean[] create (Kryo kryo, Input input, Class<boolean[]> type) {
+		public boolean[] read (Kryo kryo, Input input, Class<boolean[]> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			boolean[] array = new boolean[--length];
@@ -252,7 +252,7 @@ public class DefaultArraySerializers {
 			return array;
 		}
 
-		public boolean[] createCopy (Kryo kryo, boolean[] original) {
+		public boolean[] copy (Kryo kryo, boolean[] original) {
 			boolean[] copy = new boolean[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
 			return copy;
@@ -274,7 +274,7 @@ public class DefaultArraySerializers {
 				output.writeString(object[i]);
 		}
 
-		public String[] create (Kryo kryo, Input input, Class<String[]> type) {
+		public String[] read (Kryo kryo, Input input, Class<String[]> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			String[] array = new String[--length];
@@ -283,7 +283,7 @@ public class DefaultArraySerializers {
 			return array;
 		}
 
-		public String[] createCopy (Kryo kryo, String[] original) {
+		public String[] copy (Kryo kryo, String[] original) {
 			String[] copy = new String[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
 			return copy;
@@ -319,13 +319,10 @@ public class DefaultArraySerializers {
 			}
 		}
 
-		public Object[] create (Kryo kryo, Input input, Class<Object[]> type) {
+		public Object[] read (Kryo kryo, Input input, Class<Object[]> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
-			return (Object[])Array.newInstance(type.getComponentType(), length - 1);
-		}
-
-		public void read (Kryo kryo, Input input, Object[] object) {
+			Object[] object = (Object[])Array.newInstance(type.getComponentType(), length - 1);
 			Class elementClass = object.getClass().getComponentType();
 			if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers())) {
 				Serializer elementSerializer = kryo.getSerializer(elementClass);
@@ -339,9 +336,10 @@ public class DefaultArraySerializers {
 				for (int i = 0, n = object.length; i < n; i++)
 					object[i] = kryo.readClassAndObject(input);
 			}
+			return object;
 		}
 
-		public Object[] createCopy (Kryo kryo, Object[] original) {
+		public Object[] copy (Kryo kryo, Object[] original) {
 			Object[] copy = new Object[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
 			return copy;

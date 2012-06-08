@@ -89,10 +89,12 @@ public class Kryo {
 	private Class memoizedType;
 	private Registration memoizedRegistration;
 	private ObjectMap context, graphContext;
+	private boolean needsReference;
 
 	private boolean registrationRequired;
 	private final IdentityObjectIntMap<Class> classToNameId = new IdentityObjectIntMap();
 	private final IntMap<Class> nameIdToClass = new IntMap();
+	private final ObjectMap<String, Class> nameToClass = new ObjectMap();
 	private int nextNameId;
 	private ClassLoader classLoader = getClass().getClassLoader();
 
@@ -102,6 +104,7 @@ public class Kryo {
 
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
+	private Object needsCopyReference;
 
 	public Kryo () {
 		addDefaultSerializer(byte[].class, ByteArraySerializer.class);
@@ -468,7 +471,7 @@ public class Kryo {
 	public void writeObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
-		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
+		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
 		try {
 			if (references && writeReferenceOrNull(output, object, false)) return;
@@ -484,8 +487,8 @@ public class Kryo {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
+		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
-		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			if (references && writeReferenceOrNull(output, object, false)) return;
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
@@ -499,8 +502,8 @@ public class Kryo {
 	 * @param object May be null. */
 	public void writeObjectOrNull (Output output, Object object, Class type) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
+		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
-		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Serializer serializer = getRegistration(type).getSerializer();
 			if (references) {
@@ -525,8 +528,8 @@ public class Kryo {
 	public void writeObjectOrNull (Output output, Object object, Serializer serializer) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
+		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
-		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			if (references) {
 				if (writeReferenceOrNull(output, object, true)) return;
@@ -549,8 +552,8 @@ public class Kryo {
 	 * @param object May be null. */
 	public void writeClassAndObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
+		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
-		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			if (object == null) {
 				writeClass(output, null);
@@ -577,8 +580,8 @@ public class Kryo {
 			if (mayBeNull) output.writeByte(NOT_NULL);
 			return false;
 		}
-		int id = writtenObjects.get(object, -1);
-		if (id > -1) {
+		int id = writtenObjects.get(object, 0);
+		if (id > 0) {
 			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object));
 			output.writeInt(id, true);
 			return true;
@@ -607,10 +610,14 @@ public class Kryo {
 				if (type == null) {
 					// Only read the class name the first time encountered in object graph.
 					String className = input.readString();
-					try {
-						type = Class.forName(className, false, classLoader);
-					} catch (ClassNotFoundException ex) {
-						throw new KryoException("Unable to find class: " + className, ex);
+					type = nameToClass.get(className);
+					if (type == null) {
+						try {
+							type = Class.forName(className, false, classLoader);
+						} catch (ClassNotFoundException ex) {
+							throw new KryoException("Unable to find class: " + className, ex);
+						}
+						nameToClass.put(className, type);
 					}
 					nameIdToClass.put(nameId, type);
 					if (TRACE) trace("kryo", "Read class name: " + className);
@@ -632,8 +639,8 @@ public class Kryo {
 	public <T> T readObject (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
-		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Object refObject = null;
 			if (references) {
@@ -642,9 +649,12 @@ public class Kryo {
 			}
 
 			Serializer serializer = getRegistration(type).getSerializer();
-			T object = (T)serializer.create(this, input, type);
-			if (refObject == NEW_OBJECT) readObjects.add(object);
-			if (object != null) serializer.read(this, input, object);
+			needsReference = true;
+			T object = (T)serializer.read(this, input, type);
+			if (needsReference) {
+				needsReference = false;
+				if (refObject == NEW_OBJECT) readObjects.add(object);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
@@ -657,8 +667,8 @@ public class Kryo {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
+		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
-		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Object refObject = null;
 			if (references) {
@@ -666,9 +676,12 @@ public class Kryo {
 				if (refObject != NEW_OBJECT && refObject != NO_REFS) return (T)refObject;
 			}
 
-			T object = (T)serializer.create(this, input, type);
-			if (refObject == NEW_OBJECT) readObjects.add(object);
-			if (object != null) serializer.read(this, input, object);
+			needsReference = true;
+			T object = (T)serializer.read(this, input, type);
+			if (needsReference) {
+				needsReference = false;
+				if (refObject == NEW_OBJECT) readObjects.add(object);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
@@ -681,8 +694,8 @@ public class Kryo {
 	public <T> T readObjectOrNull (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
-		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Serializer serializer = getRegistration(type).getSerializer();
 
@@ -697,9 +710,12 @@ public class Kryo {
 				}
 			}
 
-			T object = (T)serializer.create(this, input, type);
-			if (refObject == NEW_OBJECT && object != null) readObjects.add(object);
-			if (object != null) serializer.read(this, input, object);
+			needsReference = true;
+			T object = (T)serializer.read(this, input, type);
+			if (needsReference) {
+				needsReference = false;
+				if (refObject == NEW_OBJECT && object != null) readObjects.add(object);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
@@ -713,8 +729,8 @@ public class Kryo {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
+		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
-		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Object refObject = null;
 			if (references) {
@@ -727,10 +743,12 @@ public class Kryo {
 				}
 			}
 
-			// BOZO - Use reference() method instead of create/read.
-			T object = (T)serializer.create(this, input, type);
-			if (refObject == NEW_OBJECT && object != null) readObjects.add(object);
-			if (object != null) serializer.read(this, input, object);
+			needsReference = true;
+			T object = (T)serializer.read(this, input, type);
+			if (needsReference) {
+				needsReference = false;
+				if (refObject == NEW_OBJECT && object != null) readObjects.add(object);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
@@ -742,8 +760,8 @@ public class Kryo {
 	 * @return May be null. */
 	public Object readClassAndObject (Input input) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
+		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
-		if (depth == maxDepth) throw new KryoException("Max depth reached: " + depth);
 		try {
 			Registration registration = readClass(input);
 			if (registration == null) return null;
@@ -756,9 +774,12 @@ public class Kryo {
 			}
 
 			Serializer serializer = registration.getSerializer();
-			Object object = serializer.create(this, input, type);
-			if (refObject == NEW_OBJECT) readObjects.add(object);
-			if (object != null) serializer.read(this, input, object);
+			needsReference = true;
+			Object object = serializer.read(this, input, type);
+			if (needsReference) {
+				needsReference = false;
+				if (refObject == NEW_OBJECT) readObjects.add(object);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
@@ -792,6 +813,19 @@ public class Kryo {
 		return NEW_OBJECT;
 	}
 
+	/** Called by {@link Serializer#read(Kryo, Input, Class)} and {@link Serializer#copy(Kryo, Object)} before Kryo can be used to
+	 * deserialize or copy child objects. Calling this method is unnecessary if Kryo is not used to deserialize or copy child
+	 * objects. */
+	public void reference (Object object) {
+		if (needsReference) {
+			if (object != null) readObjects.add(object);
+			needsReference = false;
+		} else if (needsCopyReference != null) {
+			originalToCopy.put(needsCopyReference, object);
+			needsCopyReference = null;
+		}
+	}
+
 	/** Called when an object graph has been completely serialized or deserialized, allowing any state only needed per object graph
 	 * to be reset. If overridden, the super method must be called. */
 	protected void reset () {
@@ -810,8 +844,7 @@ public class Kryo {
 		if (TRACE) trace("kryo", "Object graph complete.");
 	}
 
-	/** Returns a deep copy of the object. Serializers for the classes involved must support
-	 * {@link Serializer#createCopy(Kryo, Object)}.
+	/** Returns a deep copy of the object. Serializers for the classes involved must support {@link Serializer#copy(Kryo, Object)}.
 	 * @param object May be null. */
 	public <T> T copy (T object) {
 		if (object == null) return null;
@@ -822,18 +855,13 @@ public class Kryo {
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
+			needsCopyReference = object;
 			Object copy;
-			if (object instanceof KryoCopyable) {
-				KryoCopyable copyable = (KryoCopyable)object;
-				copy = copyable.createCopy(this);
-				originalToCopy.put(object, copy);
-				copyable.copy(this, copy);
-			} else {
-				Serializer serializer = getRegistration(object.getClass()).getSerializer();
-				copy = serializer.createCopy(this, object);
-				originalToCopy.put(object, copy);
-				serializer.copy(this, object, copy);
-			}
+			if (object instanceof KryoCopyable)
+				copy = ((KryoCopyable)object).copy(this);
+			else
+				copy = getSerializer(object.getClass()).copy(this, object);
+			if (needsCopyReference != null) reference(copy);
 			if (TRACE || (DEBUG && depth == 1)) log("Copy", copy);
 			return (T)copy;
 		} finally {
@@ -842,7 +870,7 @@ public class Kryo {
 	}
 
 	/** Returns a deep copy of the object using the specified serializer. Serializers for the classes involved must support
-	 * {@link Serializer#createCopy(Kryo, Object)}.
+	 * {@link Serializer#copy(Kryo, Object)}.
 	 * @param object May be null. */
 	public <T> T copy (T object, Serializer serializer) {
 		if (object == null) return null;
@@ -853,17 +881,13 @@ public class Kryo {
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
+			needsCopyReference = object;
 			Object copy;
-			if (object instanceof KryoCopyable) {
-				KryoCopyable copyable = (KryoCopyable)object;
-				copy = copyable.createCopy(this);
-				originalToCopy.put(object, copy);
-				copyable.copy(this, copy);
-			} else {
-				copy = serializer.createCopy(this, object);
-				originalToCopy.put(object, copy);
-				serializer.copy(this, object, copy);
-			}
+			if (object instanceof KryoCopyable)
+				copy = ((KryoCopyable)object).copy(this);
+			else
+				copy = serializer.copy(this, object);
+			if (needsCopyReference != null) reference(copy);
 			if (TRACE || (DEBUG && depth == 1)) log("Copy", copy);
 			return (T)copy;
 		} finally {
@@ -872,7 +896,7 @@ public class Kryo {
 	}
 
 	/** Returns a shallow copy of the object. Serializers for the classes involved must support
-	 * {@link Serializer#createCopy(Kryo, Object)}.
+	 * {@link Serializer#copy(Kryo, Object)}.
 	 * @param object May be null. */
 	public <T> T copyShallow (T object) {
 		if (object == null) return null;
@@ -883,18 +907,13 @@ public class Kryo {
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
+			needsCopyReference = object;
 			Object copy;
-			if (object instanceof KryoCopyable) {
-				KryoCopyable copyable = (KryoCopyable)object;
-				copy = copyable.createCopy(this);
-				originalToCopy.put(object, copy);
-				copyable.copy(this, copy);
-			} else {
-				Serializer serializer = getRegistration(object.getClass()).getSerializer();
-				copy = serializer.createCopy(this, object);
-				originalToCopy.put(object, copy);
-				serializer.copy(this, object, copy);
-			}
+			if (object instanceof KryoCopyable)
+				copy = ((KryoCopyable)object).copy(this);
+			else
+				copy = getSerializer(object.getClass()).copy(this, object);
+			if (needsCopyReference != null) reference(copy);
 			if (TRACE || (DEBUG && depth == 1)) log("Shallow copy", copy);
 			return (T)copy;
 		} finally {
@@ -904,7 +923,7 @@ public class Kryo {
 	}
 
 	/** Returns a shallow copy of the object using the specified serializer. Serializers for the classes involved must support
-	 * {@link Serializer#createCopy(Kryo, Object)}.
+	 * {@link Serializer#copy(Kryo, Object)}.
 	 * @param object May be null. */
 	public <T> T copyShallow (T object, Serializer serializer) {
 		if (object == null) return null;
@@ -915,17 +934,13 @@ public class Kryo {
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
+			needsCopyReference = object;
 			Object copy;
-			if (object instanceof KryoCopyable) {
-				KryoCopyable copyable = (KryoCopyable)object;
-				copy = copyable.createCopy(this);
-				originalToCopy.put(object, copy);
-				copyable.copy(this, copy);
-			} else {
-				copy = serializer.createCopy(this, object);
-				originalToCopy.put(object, copy);
-				serializer.copy(this, object, copy);
-			}
+			if (object instanceof KryoCopyable)
+				copy = ((KryoCopyable)object).copy(this);
+			else
+				copy = serializer.copy(this, object);
+			if (needsCopyReference != null) reference(copy);
 			if (TRACE || (DEBUG && depth == 1)) log("Shallow copy", copy);
 			return (T)copy;
 		} finally {

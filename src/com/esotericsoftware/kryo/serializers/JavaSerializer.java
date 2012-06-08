@@ -35,7 +35,7 @@ public class JavaSerializer extends Serializer {
 		}
 	}
 
-	public Object create (Kryo kryo, Input input, Class type) {
+	public Object read (Kryo kryo, Input input, Class type) {
 		try {
 			return new ObjectInputStream(input).readObject();
 		} catch (Exception ex) {

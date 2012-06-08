@@ -116,7 +116,9 @@ public class BeanSerializer<T> extends Serializer<T> {
 		}
 	}
 
-	public void read (Kryo kryo, Input input, T object) {
+	public T read (Kryo kryo, Input input, Class<T> type) {
+		T object = kryo.newInstance(type);
+		kryo.reference(object);
 		for (int i = 0, n = properties.length; i < n; i++) {
 			CachedProperty property = properties[i];
 			try {
@@ -141,13 +143,11 @@ public class BeanSerializer<T> extends Serializer<T> {
 				throw ex;
 			}
 		}
+		return object;
 	}
 
-	public T createCopy (Kryo kryo, T original) {
-		return (T)kryo.newInstance(original.getClass());
-	}
-
-	public void copy (Kryo kryo, T original, T copy) {
+	public T copy (Kryo kryo, T original) {
+		T copy = (T)kryo.newInstance(original.getClass());
 		for (int i = 0, n = properties.length; i < n; i++) {
 			CachedProperty property = properties[i];
 			try {
@@ -164,6 +164,7 @@ public class BeanSerializer<T> extends Serializer<T> {
 				throw new KryoException("Error copying bean property: " + property + " (" + copy.getClass().getName() + ")", ex);
 			}
 		}
+		return copy;
 	}
 
 	class CachedProperty<X> {

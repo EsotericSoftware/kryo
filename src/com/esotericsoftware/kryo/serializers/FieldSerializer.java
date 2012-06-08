@@ -212,7 +212,15 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		}
 	}
 
-	public void read (Kryo kryo, Input input, T object) {
+	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
+	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
+	protected T create (Kryo kryo, Input input, Class<T> type) {
+		return kryo.newInstance(type);
+	}
+
+	public T read (Kryo kryo, Input input, Class<T> type) {
+		T object = create(kryo, input, type);
+		kryo.reference(object);
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			try {
@@ -252,6 +260,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				throw ex;
 			}
 		}
+		return object;
 	}
 
 	/** Allows specific fields to be optimized. */
@@ -284,11 +293,15 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		return type;
 	}
 
-	public T createCopy (Kryo kryo, T original) {
+	/** Used by {@link #copy(Kryo, Object)} to create the new object. This can be overridden to customize object creation, eg to
+	 * call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
+	protected T createCopy (Kryo kryo, T original) {
 		return (T)kryo.newInstance(original.getClass());
 	}
 
-	public void copy (Kryo kryo, T original, T copy) {
+	public T copy (Kryo kryo, T original) {
+		T copy = createCopy(kryo, original);
+		kryo.reference(copy);
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			try {
@@ -305,6 +318,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				throw ex;
 			}
 		}
+		return copy;
 	}
 
 	/** Controls how a field will be serialized. */

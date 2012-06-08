@@ -84,7 +84,9 @@ public class CollectionSerializer extends Serializer<Collection> {
 		}
 	}
 
-	public void read (Kryo kryo, Input input, Collection collection) {
+	public Collection read (Kryo kryo, Input input, Class<Collection> type) {
+		Collection collection = kryo.newInstance(type);
+		kryo.reference(collection);
 		int length = input.readInt(true);
 		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
 		Class elementClass = this.elementClass;
@@ -108,14 +110,14 @@ public class CollectionSerializer extends Serializer<Collection> {
 			for (int i = 0; i < length; i++)
 				collection.add(kryo.readClassAndObject(input));
 		}
+		return collection;
 	}
 
-	public Collection createCopy (Kryo kryo, Collection original) {
-		return kryo.newInstance(original.getClass());
-	}
-
-	public void copy (Kryo kryo, Collection original, Collection copy) {
+	public Collection copy (Kryo kryo, Collection original) {
+		Collection copy = kryo.newInstance(original.getClass());
+		kryo.reference(copy);
 		for (Object element : original)
 			copy.add(kryo.copy(element));
+		return copy;
 	}
 }

@@ -35,7 +35,7 @@ public class DeflateSerializer extends Serializer {
 		}
 	}
 
-	public Object create (Kryo kryo, Input input, Class type) {
+	public Object read (Kryo kryo, Input input, Class type) {
 		Inflater inflater = new Inflater(noHeaders);
 		InflaterInputStream inflaterInput = new InflaterInputStream(input, inflater);
 		return kryo.readObject(new Input(inflaterInput, 256), type, serializer);
@@ -51,11 +51,7 @@ public class DeflateSerializer extends Serializer {
 		this.compressionLevel = compressionLevel;
 	}
 
-	public Object createCopy (Kryo kryo, Object original) {
-		return serializer.createCopy(kryo, original);
-	}
-
-	public void copy (Kryo kryo, Object original, Object copy) {
-		serializer.copy(kryo, original, copy);
+	public Object copy (Kryo kryo, Object original) {
+		return serializer.copy(kryo, original);
 	}
 }

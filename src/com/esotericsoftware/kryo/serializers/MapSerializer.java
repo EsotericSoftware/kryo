@@ -96,9 +96,10 @@ public class MapSerializer extends Serializer<Map> {
 		}
 	}
 
-	public void read (Kryo kryo, Input input, Map map) {
+	public Map read (Kryo kryo, Input input, Class<Map> type) {
+		Map map = kryo.newInstance(type);
 		int length = input.readInt(true);
-		if (length == 0) return;
+		if (length == 0) return map;
 
 		Serializer keySerializer = this.keySerializer;
 		if (keyGenericType != null) {
@@ -110,6 +111,7 @@ public class MapSerializer extends Serializer<Map> {
 			if (valueSerializer == null) valueSerializer = kryo.getSerializer(valueGenericType);
 			valueGenericType = null;
 		}
+		kryo.reference(map);
 
 		for (int i = 0; i < length; i++) {
 			Object key;
@@ -130,16 +132,15 @@ public class MapSerializer extends Serializer<Map> {
 				value = kryo.readClassAndObject(input);
 			map.put(key, value);
 		}
+		return map;
 	}
 
-	public Map createCopy (Kryo kryo, Map original) {
-		return kryo.newInstance(original.getClass());
-	}
-
-	public void copy (Kryo kryo, Map original, Map copy) {
+	public Map copy (Kryo kryo, Map original) {
+		Map copy = kryo.newInstance(original.getClass());
 		for (Iterator iter = original.entrySet().iterator(); iter.hasNext();) {
 			Entry entry = (Entry)iter.next();
 			copy.put(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));
 		}
+		return copy;
 	}
 }

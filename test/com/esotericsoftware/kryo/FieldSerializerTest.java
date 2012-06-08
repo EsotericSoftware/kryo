@@ -232,7 +232,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	public void testNoDefaultConstructor () {
 		kryo.register(SimpleNoDefaultConstructor.class, new Serializer<SimpleNoDefaultConstructor>() {
-			public SimpleNoDefaultConstructor create (Kryo kryo, Input input, Class<SimpleNoDefaultConstructor> type) {
+			public SimpleNoDefaultConstructor read (Kryo kryo, Input input, Class<SimpleNoDefaultConstructor> type) {
 				return new SimpleNoDefaultConstructor(input.readInt(true));
 			}
 
@@ -240,7 +240,7 @@ public class FieldSerializerTest extends KryoTestCase {
 				output.writeInt(object.constructorValue, true);
 			}
 
-			public SimpleNoDefaultConstructor createCopy (Kryo kryo, SimpleNoDefaultConstructor original) {
+			public SimpleNoDefaultConstructor copy (Kryo kryo, SimpleNoDefaultConstructor original) {
 				return new SimpleNoDefaultConstructor(original.constructorValue);
 			}
 		});
@@ -254,12 +254,12 @@ public class FieldSerializerTest extends KryoTestCase {
 				super.write(kryo, output, object);
 			}
 
-			public ComplexNoDefaultConstructor create (Kryo kryo, Input input, Class type) {
+			protected ComplexNoDefaultConstructor create (Kryo kryo, Input input, Class type) {
 				String name = input.readString();
 				return new ComplexNoDefaultConstructor(name);
 			}
 
-			public ComplexNoDefaultConstructor createCopy (Kryo kryo, ComplexNoDefaultConstructor original) {
+			protected ComplexNoDefaultConstructor createCopy (Kryo kryo, ComplexNoDefaultConstructor original) {
 				return new ComplexNoDefaultConstructor(original.name);
 			}
 		});
@@ -637,11 +637,11 @@ public class FieldSerializerTest extends KryoTestCase {
 			output.writeLong(object.time, true);
 		}
 
-		public HasDefaultSerializerAnnotation create (Kryo kryo, Input input, Class type) {
+		public HasDefaultSerializerAnnotation read (Kryo kryo, Input input, Class type) {
 			return new HasDefaultSerializerAnnotation(input.readLong(true));
 		}
 
-		public HasDefaultSerializerAnnotation createCopy (Kryo kryo, HasDefaultSerializerAnnotation original) {
+		public HasDefaultSerializerAnnotation copy (Kryo kryo, HasDefaultSerializerAnnotation original) {
 			return new HasDefaultSerializerAnnotation(original.time);
 		}
 	}

@@ -33,7 +33,7 @@ public class DefaultSerializers {
 			output.writeBoolean(object);
 		}
 
-		public Boolean create (Kryo kryo, Input input, Class<Boolean> type) {
+		public Boolean read (Kryo kryo, Input input, Class<Boolean> type) {
 			return input.readBoolean();
 		}
 	}
@@ -47,7 +47,7 @@ public class DefaultSerializers {
 			output.writeByte(object);
 		}
 
-		public Byte create (Kryo kryo, Input input, Class<Byte> type) {
+		public Byte read (Kryo kryo, Input input, Class<Byte> type) {
 			return input.readByte();
 		}
 	}
@@ -61,7 +61,7 @@ public class DefaultSerializers {
 			output.writeChar(object);
 		}
 
-		public Character create (Kryo kryo, Input input, Class<Character> type) {
+		public Character read (Kryo kryo, Input input, Class<Character> type) {
 			return input.readChar();
 		}
 	}
@@ -75,7 +75,7 @@ public class DefaultSerializers {
 			output.writeShort(object);
 		}
 
-		public Short create (Kryo kryo, Input input, Class<Short> type) {
+		public Short read (Kryo kryo, Input input, Class<Short> type) {
 			return input.readShort();
 		}
 	}
@@ -89,7 +89,7 @@ public class DefaultSerializers {
 			output.writeInt(object, false);
 		}
 
-		public Integer create (Kryo kryo, Input input, Class<Integer> type) {
+		public Integer read (Kryo kryo, Input input, Class<Integer> type) {
 			return input.readInt(false);
 		}
 	}
@@ -103,7 +103,7 @@ public class DefaultSerializers {
 			output.writeLong(object, false);
 		}
 
-		public Long create (Kryo kryo, Input input, Class<Long> type) {
+		public Long read (Kryo kryo, Input input, Class<Long> type) {
 			return input.readLong(false);
 		}
 	}
@@ -117,7 +117,7 @@ public class DefaultSerializers {
 			output.writeFloat(object);
 		}
 
-		public Float create (Kryo kryo, Input input, Class<Float> type) {
+		public Float read (Kryo kryo, Input input, Class<Float> type) {
 			return input.readFloat();
 		}
 	}
@@ -131,7 +131,7 @@ public class DefaultSerializers {
 			output.writeDouble(object);
 		}
 
-		public Double create (Kryo kryo, Input input, Class<Double> type) {
+		public Double read (Kryo kryo, Input input, Class<Double> type) {
 			return input.readDouble();
 		}
 	}
@@ -147,7 +147,7 @@ public class DefaultSerializers {
 			output.writeString(object);
 		}
 
-		public String create (Kryo kryo, Input input, Class<String> type) {
+		public String read (Kryo kryo, Input input, Class<String> type) {
 			return input.readString();
 		}
 	}
@@ -169,7 +169,7 @@ public class DefaultSerializers {
 			output.writeBytes(bytes);
 		}
 
-		public BigInteger create (Kryo kryo, Input input, Class<BigInteger> type) {
+		public BigInteger read (Kryo kryo, Input input, Class<BigInteger> type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			byte[] bytes = input.readBytes(length - 1);
@@ -195,8 +195,8 @@ public class DefaultSerializers {
 			output.writeInt(value.scale(), false);
 		}
 
-		public BigDecimal create (Kryo kryo, Input input, Class<BigDecimal> type) {
-			BigInteger unscaledValue = bigIntegerSerializer.create(kryo, input, null);
+		public BigDecimal read (Kryo kryo, Input input, Class<BigDecimal> type) {
+			BigInteger unscaledValue = bigIntegerSerializer.read(kryo, input, null);
 			if (unscaledValue == null) return null;
 			int scale = input.readInt(false);
 			return new BigDecimal(unscaledValue, scale);
@@ -213,7 +213,7 @@ public class DefaultSerializers {
 			kryo.writeClass(output, object);
 		}
 
-		public Class create (Kryo kryo, Input input, Class<Class> type) {
+		public Class read (Kryo kryo, Input input, Class<Class> type) {
 			return kryo.readClass(input).getType();
 		}
 	}
@@ -223,11 +223,11 @@ public class DefaultSerializers {
 			output.writeLong(object.getTime(), true);
 		}
 
-		public Date create (Kryo kryo, Input input, Class<Date> type) {
+		public Date read (Kryo kryo, Input input, Class<Date> type) {
 			return new Date(input.readLong(true));
 		}
 
-		public Date createCopy (Kryo kryo, Date original) {
+		public Date copy (Kryo kryo, Date original) {
 			return new Date(original.getTime());
 		}
 	}
@@ -253,7 +253,7 @@ public class DefaultSerializers {
 			output.writeInt(object.ordinal() + 1, true);
 		}
 
-		public Enum create (Kryo kryo, Input input, Class<Enum> type) {
+		public Enum read (Kryo kryo, Input input, Class<Enum> type) {
 			int ordinal = input.readInt(true);
 			if (ordinal == NULL) return null;
 			ordinal--;
@@ -275,7 +275,7 @@ public class DefaultSerializers {
 			output.writeString(object == null ? null : object.getCurrencyCode());
 		}
 
-		public Currency create (Kryo kryo, Input input, Class<Currency> type) {
+		public Currency read (Kryo kryo, Input input, Class<Currency> type) {
 			String currencyCode = input.readString();
 			if (currencyCode == null) return null;
 			return Currency.getInstance(currencyCode);
@@ -292,13 +292,13 @@ public class DefaultSerializers {
 			output.writeString(object == null ? null : object.toString());
 		}
 
-		public StringBuffer create (Kryo kryo, Input input, Class<StringBuffer> type) {
+		public StringBuffer read (Kryo kryo, Input input, Class<StringBuffer> type) {
 			String value = input.readString();
 			if (value == null) return null;
 			return new StringBuffer(value);
 		}
 
-		public StringBuffer createCopy (Kryo kryo, StringBuffer original) {
+		public StringBuffer copy (Kryo kryo, StringBuffer original) {
 			return new StringBuffer(original);
 		}
 	}
@@ -313,13 +313,13 @@ public class DefaultSerializers {
 			output.writeString(object == null ? null : object.toString());
 		}
 
-		public StringBuilder create (Kryo kryo, Input input, Class<StringBuilder> type) {
+		public StringBuilder read (Kryo kryo, Input input, Class<StringBuilder> type) {
 			String value = input.readString();
 			if (value == null) return null;
 			return new StringBuilder(value);
 		}
 
-		public StringBuilder createCopy (Kryo kryo, StringBuilder original) {
+		public StringBuilder copy (Kryo kryo, StringBuilder original) {
 			return new StringBuilder(original);
 		}
 	}
@@ -329,13 +329,10 @@ public class DefaultSerializers {
 			object.write(kryo, output);
 		}
 
-		public void read (Kryo kryo, Input input, KryoSerializable object) {
+		public KryoSerializable read (Kryo kryo, Input input, Class<KryoSerializable> type) {
+			KryoSerializable object = kryo.newInstance(type);
 			object.read(kryo, input);
-		}
-
-		public KryoSerializable createCopy (Kryo kryo, KryoSerializable original) {
-			if (original instanceof KryoCopyable) return kryo.newInstance(original.getClass());
-			return super.createCopy(kryo, original);
+			return object;
 		}
 	}
 
@@ -350,7 +347,7 @@ public class DefaultSerializers {
 		public void write (Kryo kryo, Output output, Object object) {
 		}
 
-		public Object create (Kryo kryo, Input input, Class type) {
+		public Object read (Kryo kryo, Input input, Class type) {
 			return Collections.EMPTY_LIST;
 		}
 	}
@@ -365,7 +362,7 @@ public class DefaultSerializers {
 		public void write (Kryo kryo, Output output, Object object) {
 		}
 
-		public Object create (Kryo kryo, Input input, Class type) {
+		public Object read (Kryo kryo, Input input, Class type) {
 			return Collections.EMPTY_MAP;
 		}
 	}
@@ -380,7 +377,7 @@ public class DefaultSerializers {
 		public void write (Kryo kryo, Output output, Object object) {
 		}
 
-		public Object create (Kryo kryo, Input input, Class type) {
+		public Object read (Kryo kryo, Input input, Class type) {
 			return Collections.EMPTY_SET;
 		}
 	}
@@ -396,7 +393,7 @@ public class DefaultSerializers {
 			kryo.writeClassAndObject(output, object.get(0));
 		}
 
-		public List create (Kryo kryo, Input input, Class type) {
+		public List read (Kryo kryo, Input input, Class type) {
 			return Collections.singletonList(kryo.readClassAndObject(input));
 		}
 	}
@@ -414,7 +411,7 @@ public class DefaultSerializers {
 			kryo.writeClassAndObject(output, entry.getValue());
 		}
 
-		public Map create (Kryo kryo, Input input, Class type) {
+		public Map read (Kryo kryo, Input input, Class type) {
 			Object key = kryo.readClassAndObject(input);
 			Object value = kryo.readClassAndObject(input);
 			return Collections.singletonMap(key, value);
@@ -432,7 +429,7 @@ public class DefaultSerializers {
 			kryo.writeClassAndObject(output, object.iterator().next());
 		}
 
-		public Set create (Kryo kryo, Input input, Class type) {
+		public Set read (Kryo kryo, Input input, Class type) {
 			return Collections.singleton(kryo.readClassAndObject(input));
 		}
 	}

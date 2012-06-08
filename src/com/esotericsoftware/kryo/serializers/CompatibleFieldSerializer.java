@@ -87,7 +87,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		}
 	}
 
-	public void read (Kryo kryo, Input input, T object) {
+	public T read (Kryo kryo, Input input, Class<T> type) {
+		T object = kryo.newInstance(type);
+		kryo.reference(object);
 		ObjectMap context = kryo.getGraphContext();
 		CachedField[] fields = (CachedField[])context.get(this);
 		if (fields == null) {
@@ -161,5 +163,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				throw ex;
 			}
 		}
+		return object;
 	}
 }

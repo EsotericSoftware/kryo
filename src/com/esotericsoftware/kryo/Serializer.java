@@ -33,32 +33,24 @@ public abstract class Serializer<T> {
 	 * @param object May be null if {@link #getAcceptsNull()} is true. */
 	abstract public void write (Kryo kryo, Output output, T object);
 
-	/** Creates a new object of the specified type. The object may be uninitialized. This method may read from input to populate the
-	 * object, but it must not call {@link Kryo} methods to deserialize nested objects. That must be done in
-	 * {@link #read(Kryo, Input, Object)}. The default implementation uses {@link Kryo#newInstance(Class)} to create a new object.
+	/** Reads bytes and returns a new object of the specified concrete type.
+	 * <p>
+	 * Before Kryo can be used to read child objects, {@link Kryo#reference(Object)} must be called with the parent object to
+	 * ensure it can be referenced by the child objects. Any serializer that uses {@link Kryo} to read a child object may need to
+	 * be reentrant.
 	 * <p>
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} read methods that accept a
 	 * serialier.
 	 * @return May be null if {@link #getAcceptsNull()} is true. */
-	public T create (Kryo kryo, Input input, Class<T> type) {
-		return kryo.newInstance(type);
-	}
-
-	/** Populates the object. This method may call {@link Kryo} methods to deserialize nested objects, unlike
-	 * {@link #create(Kryo, Input, Class)}. The default implementation is empty.
-	 * <p>
-	 * Any serializer that uses {@link Kryo} to serialize a nested object may need to be reentrant.
-	 * <p>
-	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} read methods that accept a
-	 * serialier. */
-	public void read (Kryo kryo, Input input, T object) {
-	}
+	abstract public T read (Kryo kryo, Input input, Class<T> type);
 
 	public boolean getAcceptsNull () {
 		return acceptsNull;
 	}
 
-	/** If true, this serializer will handle writing and reading null values. If false, the Kryo framework handles null values. */
+	/** If true, this serializer will handle writing and reading null values. If false, the Kryo framework handles null values and
+	 * the serializer will never receive null. This can be set to true on a serializer that does not accept nulls if it is known
+	 * that the serializer will never encounter null. This will prevent the framework from writing a byte to denote null. */
 	public void setAcceptsNull (boolean acceptsNull) {
 		this.acceptsNull = acceptsNull;
 	}
@@ -67,7 +59,7 @@ public abstract class Serializer<T> {
 		return immutable;
 	}
 
-	/** If true, {@link #createCopy(Kryo, Object)} will return the original object. */
+	/** If true, {@link #copy(Kryo, Object)} will return the original object. */
 	public void setImmutable (boolean immutable) {
 		this.immutable = immutable;
 	}
@@ -78,26 +70,16 @@ public abstract class Serializer<T> {
 	public void setGenerics (Kryo kryo, Type[] generics) {
 	}
 
-	/** Creates a copy of the specified object. The object may be uninitialized or this method may populate the copy, but it must
-	 * not call {@link Kryo} methods to copy nested objects. That must be done in {@link #copy(Kryo, Object, Object)}. The default
-	 * implementation returns the original if {@link #isImmutable()} is true, else throws {@link KryoException}. Subclasses should
-	 * override this method if needed to support {@link Kryo#copy(Object)}.
+	/** Returns a copy of the specified object. The default implementation returns the original if {@link #isImmutable()} is true,
+	 * else throws {@link KryoException}. Subclasses should override this method if needed to support {@link Kryo#copy(Object)}.
 	 * <p>
-	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} copy methods that accept a
-	 * serialier.
-	 * @return May be null if {@link #getAcceptsNull()} is true. */
-	public T createCopy (Kryo kryo, T original) {
-		if (immutable) return original;
-		throw new KryoException("Serializer does not support copy: " + getClass().getName());
-	}
-
-	/** Configures the copy to have the same values as the original. This method may call {@link Kryo} methods to copy nested
-	 * objects, unlike {@link #createCopy(Kryo, Object)}. The default implementation is empty.
-	 * <p>
-	 * Any serializer that uses {@link Kryo} to copy a nested object may need to be reentrant.
+	 * Before Kryo can be used to copy child objects, {@link Kryo#reference(Object)} must be called with the copy to ensure it can
+	 * be referenced by the child objects. Any serializer that uses {@link Kryo} to copy a child object may need to be reentrant.
 	 * <p>
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} copy methods that accept a
 	 * serialier. */
-	public void copy (Kryo kryo, T original, T copy) {
+	public T copy (Kryo kryo, T original) {
+		if (immutable) return original;
+		throw new KryoException("Serializer does not support copy: " + getClass().getName());
 	}
 }

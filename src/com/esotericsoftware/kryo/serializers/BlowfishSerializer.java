@@ -42,18 +42,14 @@ public class BlowfishSerializer extends Serializer {
 		}
 	}
 
-	public Object create (Kryo kryo, Input input, Class type) {
+	public Object read (Kryo kryo, Input input, Class type) {
 		Cipher cipher = getCipher(Cipher.DECRYPT_MODE);
 		CipherInputStream cipherInput = new CipherInputStream(input, cipher);
 		return kryo.readObject(new Input(cipherInput, 256), type, serializer);
 	}
 
-	public Object createCopy (Kryo kryo, Object original) {
-		return serializer.createCopy(kryo, original);
-	}
-
-	public void copy (Kryo kryo, Object original, Object copy) {
-		serializer.copy(kryo, original, copy);
+	public Object copy (Kryo kryo, Object original) {
+		return serializer.copy(kryo, original);
 	}
 
 	static private Cipher getCipher (int mode) {
