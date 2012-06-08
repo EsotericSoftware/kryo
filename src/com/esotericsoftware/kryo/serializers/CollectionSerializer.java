@@ -84,8 +84,14 @@ public class CollectionSerializer extends Serializer<Collection> {
 		}
 	}
 
+	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
+	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
+	protected Collection create (Kryo kryo, Input input, Class<Collection> type) {
+		return kryo.newInstance(type);
+	}
+
 	public Collection read (Kryo kryo, Input input, Class<Collection> type) {
-		Collection collection = kryo.newInstance(type);
+		Collection collection = create(kryo, input, type);
 		kryo.reference(collection);
 		int length = input.readInt(true);
 		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);

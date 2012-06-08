@@ -96,8 +96,14 @@ public class MapSerializer extends Serializer<Map> {
 		}
 	}
 
+	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
+	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
+	protected Map create (Kryo kryo, Input input, Class<Map> type) {
+		return kryo.newInstance(type);
+	}
+
 	public Map read (Kryo kryo, Input input, Class<Map> type) {
-		Map map = kryo.newInstance(type);
+		Map map = create(kryo, input, type);
 		int length = input.readInt(true);
 		if (length == 0) return map;
 
