@@ -26,7 +26,7 @@ public class Registration {
 		return type;
 	}
 
-	/** Returns the registered class ID. Will be {@link Kryo#NAME} if the class was registered automatically.
+	/** Returns the registered class ID.
 	 * @see Kryo#register(Class) */
 	public int getId () {
 		return id;
@@ -54,6 +54,6 @@ public class Registration {
 	}
 
 	public String toString () {
-		return "[" + (id == Kryo.NAME ? "name" : id) + ", " + className(type) + "]";
+		return "[" + id + ", " + className(type) + "]";
 	}
 }
