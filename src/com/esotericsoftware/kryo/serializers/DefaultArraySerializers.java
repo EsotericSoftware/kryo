@@ -323,6 +323,7 @@ public class DefaultArraySerializers {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			Object[] object = (Object[])Array.newInstance(type.getComponentType(), length - 1);
+			kryo.reference(object);
 			Class elementClass = object.getClass().getComponentType();
 			if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers())) {
 				Serializer elementSerializer = kryo.getSerializer(elementClass);

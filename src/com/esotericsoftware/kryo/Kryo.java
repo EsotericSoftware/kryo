@@ -815,12 +815,14 @@ public class Kryo {
 
 	/** Called by {@link Serializer#read(Kryo, Input, Class)} and {@link Serializer#copy(Kryo, Object)} before Kryo can be used to
 	 * deserialize or copy child objects. Calling this method is unnecessary if Kryo is not used to deserialize or copy child
-	 * objects. */
+	 * objects.
+	 * @param object May be null, unless calling this method from {@link Serializer#copy(Kryo, Object)}. */
 	public void reference (Object object) {
 		if (needsReference) {
 			if (object != null) readObjects.add(object);
 			needsReference = false;
 		} else if (needsCopyReference != null) {
+			if (object == null) throw new IllegalArgumentException("object cannot be null.");
 			originalToCopy.put(needsCopyReference, object);
 			needsCopyReference = null;
 		}
