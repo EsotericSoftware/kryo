@@ -16,18 +16,19 @@ import static com.esotericsoftware.minlog.Log.*;
 public class DefaultClassResolver implements ClassResolver {
 	static public final byte NAME = -1;
 
-	private Kryo kryo;
+	protected Kryo kryo;
 
-	private final IntMap<Registration> idToRegistration = new IntMap();
-	private final ObjectMap<Class, Registration> classToRegistration = new ObjectMap();
-	private int nextRegisterID;
+	protected final IntMap<Registration> idToRegistration = new IntMap();
+	protected final ObjectMap<Class, Registration> classToRegistration = new ObjectMap();
+	protected int nextRegisterID;
+
+	protected final IdentityObjectIntMap<Class> classToNameId = new IdentityObjectIntMap();
+	protected final IntMap<Class> nameIdToClass = new IntMap();
+	protected final ObjectMap<String, Class> nameToClass = new ObjectMap();
+	protected int nextNameId;
+
 	private Class memoizedType;
 	private Registration memoizedRegistration;
-
-	private final IdentityObjectIntMap<Class> classToNameId = new IdentityObjectIntMap();
-	private final IntMap<Class> nameIdToClass = new IntMap();
-	private final ObjectMap<String, Class> nameToClass = new ObjectMap();
-	private int nextNameId;
 
 	public void setKryo (Kryo kryo) {
 		this.kryo = kryo;
@@ -93,7 +94,7 @@ public class DefaultClassResolver implements ClassResolver {
 		return registration;
 	}
 
-	private Registration registerInternal (Registration registration) {
+	protected Registration registerInternal (Registration registration) {
 		if (TRACE) {
 			if (registration.getId() == NAME) {
 				trace("kryo", "Register class name: " + className(registration.getType()) + " ("
@@ -131,7 +132,7 @@ public class DefaultClassResolver implements ClassResolver {
 		return registration;
 	}
 
-	private Registration registerImplicit (Class type) {
+	protected Registration registerImplicit (Class type) {
 		if (kryo.isRegistrationRequired()) {
 			throw new IllegalArgumentException("Class is not registered: " + className(type)
 				+ "\nNote: To register this class use: kryo.register(" + className(type) + ".class);");
