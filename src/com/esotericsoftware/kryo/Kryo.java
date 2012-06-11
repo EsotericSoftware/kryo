@@ -465,7 +465,7 @@ public class Kryo {
 		}
 		int id = writtenObjects.get(object, 0);
 		if (id > 0) {
-			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object));
+			if (DEBUG) debug("kryo", "Write object reference " + (id - 1) + ": " + string(object));
 			output.writeInt(id, true);
 			return true;
 		}
@@ -473,7 +473,7 @@ public class Kryo {
 		id = writtenObjects.size + 1; // + 1 because 0 is used for null.
 		output.writeInt(id, true);
 		writtenObjects.put(object, id);
-		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object));
+		if (TRACE) trace("kryo", "Write initial object reference " + (id - 1) + ": " + string(object));
 		return false;
 	}
 
@@ -624,7 +624,7 @@ public class Kryo {
 			Object refObject = null;
 			if (references) {
 				refObject = readReferenceOrNull(input, type, false);
-				if (refObject != NEW_OBJECT) return refObject;
+				if (refObject != NEW_OBJECT && refObject != NO_REFS) return refObject;
 				needsReference = true;
 			}
 

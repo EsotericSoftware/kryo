@@ -3,7 +3,14 @@ package com.esotericsoftware.kryo;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
+import junit.framework.Assert;
+
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 
 /** @author Nathan Sweet <misc@n4te.com> */
@@ -31,5 +38,42 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(14, map);
 		serializer.setValuesCanBeNull(false);
 		roundTrip(14, map);
+	}
+
+	public void testEmptyHashMap () {
+		execute(new HashMap<Object, Object>(), 0);
+	}
+
+	public void testNotEmptyHashMap () {
+		execute(new HashMap<Object, Object>(), 1000);
+	}
+
+	public void testEmptyConcurrentHashMap () {
+		execute(new ConcurrentHashMap<Object, Object>(), 0);
+	}
+
+	public void testNotEmptyConcurrentHashMap () {
+		execute(new ConcurrentHashMap<Object, Object>(), 1000);
+	}
+
+	private void execute (Map<Object, Object> map, int inserts) {
+		Random random = new Random();
+		for (int i = 0; i < inserts; i++) {
+			map.put(random.nextLong(), random.nextBoolean());
+		}
+
+		Kryo kryo = new Kryo();
+		kryo.register(HashMap.class, new MapSerializer());
+		kryo.register(ConcurrentHashMap.class, new MapSerializer());
+
+		Output output = new Output(2048, -1);
+		kryo.writeClassAndObject(output, map);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		Object deserialized = kryo.readClassAndObject(input);
+		input.close();
+
+		Assert.assertEquals(map, deserialized);
 	}
 }

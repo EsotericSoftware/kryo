@@ -236,6 +236,7 @@ public class IdentityObjectIntMap<K> {
 		keyTable[index] = key;
 		valueTable[index] = value;
 		stashSize++;
+		size++;
 	}
 
 	/** @param defaultValue Returned if the key was not associated with a value. */

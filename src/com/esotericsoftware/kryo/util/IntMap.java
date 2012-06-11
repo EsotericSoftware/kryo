@@ -262,6 +262,7 @@ public class IntMap<V> {
 		keyTable[index] = key;
 		valueTable[index] = value;
 		stashSize++;
+		size++;
 	}
 
 	public V get (int key) {
