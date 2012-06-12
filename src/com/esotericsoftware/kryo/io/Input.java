@@ -301,37 +301,52 @@ public class Input extends InputStream {
 	/** Reads a 1-5 byte int. */
 	public int readInt (boolean optimizePositive) throws KryoException {
 		if (require(1) < 5) return readInt_slow(optimizePositive);
-		byte[] buffer = this.buffer;
-		int position = this.position;
 		int b = buffer[position++];
-		int result;
-		if ((b & 0x80) == 0)
-			result = b & 0x7F;
-		else {
-			int count = b >>> 5 & 3; // shift to bits 5,6,7, mask 1st 3 bits
-			result = b & 0x1F | (buffer[position++] & 0xFF) << 5; // mask 1st 5 bits, combine with 2nd byte
-			for (int i = 0, shift = 13; i < count; i++, shift += 8)
-				result |= (buffer[position++] & 0xFF) << shift;
+		int result = b & 0x7F;
+		if ((b & 0x80) != 0) {
+			byte[] buffer = this.buffer;
+			b = buffer[position++];
+			result |= (b & 0x7F) << 7;
+			if ((b & 0x80) != 0) {
+				b = buffer[position++];
+				result |= (b & 0x7F) << 14;
+				if ((b & 0x80) != 0) {
+					b = buffer[position++];
+					result |= (b & 0x7F) << 21;
+					if ((b & 0x80) != 0) {
+						b = buffer[position++];
+						result |= (b & 0x7F) << 28;
+					}
+				}
+			}
 		}
-		this.position = position;
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
 	private int readInt_slow (boolean optimizePositive) {
 		// The buffer is guaranteed to have at least 1 byte.
 		int b = buffer[position++];
-		int result;
-		if ((b & 0x80) == 0)
-			result = b & 0x7F;
-		else {
-			int count = b >>> 5 & 3; // shift to bits 6,7, mask 1st 2 bits
-			require(count + 1);
+		int result = b & 0x7F;
+		if ((b & 0x80) != 0) {
+			require(1);
 			byte[] buffer = this.buffer;
-			int position = this.position;
-			result = b & 0x1F | (buffer[position++] & 0xFF) << 5; // mask 1st 5 bits, combine with 2nd byte
-			for (int i = 0, shift = 13; i < count; i++, shift += 8)
-				result |= (buffer[position++] & 0xFF) << shift;
-			this.position = position;
+			b = buffer[position++];
+			result |= (b & 0x7F) << 7;
+			if ((b & 0x80) != 0) {
+				require(1);
+				b = buffer[position++];
+				result |= (b & 0x7F) << 14;
+				if ((b & 0x80) != 0) {
+					require(1);
+					b = buffer[position++];
+					result |= (b & 0x7F) << 21;
+					if ((b & 0x80) != 0) {
+						require(1);
+						b = buffer[position++];
+						result |= (b & 0x7F) << 28;
+					}
+				}
+			}
 		}
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
@@ -340,10 +355,40 @@ public class Input extends InputStream {
 	public boolean canReadInt () throws KryoException {
 		if (limit - position >= 5) return true;
 		if (optional(5) <= 0) return false;
-		int b = buffer[position];
-		if ((b & 0x80) == 0) return true;
-		int count = b >>> 5 & 3; // shift to bits 5,6,7, mask 1st 3 bits
-		return limit - position > count + 1;
+		int p = position;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		return true;
+	}
+
+	/** Returns true if enough bytes are available to read a long with {@link #readLong(boolean)}. */
+	public boolean canReadLong () throws KryoException {
+		if (limit - position >= 9) return true;
+		if (optional(5) <= 0) return false;
+		int p = position;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		if ((buffer[p++] & 0x80) == 0) return true;
+		if (p == limit) return false;
+		return true;
 	}
 
 	// string
@@ -351,26 +396,11 @@ public class Input extends InputStream {
 	/** Reads the length and string of UTF8 characters, or null.
 	 * @return May be null. */
 	public String readString () {
-		require(1);
-		byte[] buffer = this.buffer;
+		int available = require(1);
 		int b = buffer[position++];
-		if ((b & 0x80) == 0) {
-			// ascii
-			int end = position;
-			int start = end - 1;
-			int limit = this.limit;
-			do {
-				if (end == limit) return readAscii_slow();
-				b = buffer[end++];
-			} while ((b & 0x80) == 0);
-			buffer[end - 1] &= 0x7F; // Mask end of ascii bit.
-			String value = new String(buffer, 0, start, end - start);
-			buffer[end - 1] |= 0x80;
-			position = end;
-			return value;
-		}
-		// utf8
-		int charCount = readStringLength(b);
+		if ((b & 0x80) == 0) return readAscii(); // ASCII.
+		// Null, empty, or UTF8.
+		int charCount = available >= 5 ? readUtf8Length(b) : readUtf8Length_slow(b);
 		switch (charCount) {
 		case 0:
 			return null;
@@ -379,11 +409,65 @@ public class Input extends InputStream {
 		}
 		charCount--;
 		if (chars.length < charCount) chars = new char[charCount];
+		return readUtf8(charCount);
+	}
+
+	private int readUtf8Length (int b) {
+		int result = b & 0x3F; // Mask all but first 6 bits.
+		if ((b & 0x40) != 0) { // Bit 7 means another byte, bit 8 means UTF8.
+			byte[] buffer = this.buffer;
+			b = buffer[position++];
+			result |= (b & 0x7F) << 6;
+			if ((b & 0x80) != 0) {
+				b = buffer[position++];
+				result |= (b & 0x7F) << 13;
+				if ((b & 0x80) != 0) {
+					b = buffer[position++];
+					result |= (b & 0x7F) << 20;
+					if ((b & 0x80) != 0) {
+						b = buffer[position++];
+						result |= (b & 0x7F) << 27;
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	private int readUtf8Length_slow (int b) {
+		int result = b & 0x3F; // Mask all but first 6 bits.
+		if ((b & 0x40) != 0) { // Bit 7 means another byte, bit 8 means UTF8.
+			require(1);
+			byte[] buffer = this.buffer;
+			b = buffer[position++];
+			result |= (b & 0x7F) << 6;
+			if ((b & 0x80) != 0) {
+				require(1);
+				b = buffer[position++];
+				result |= (b & 0x7F) << 13;
+				if ((b & 0x80) != 0) {
+					require(1);
+					b = buffer[position++];
+					result |= (b & 0x7F) << 20;
+					if ((b & 0x80) != 0) {
+						require(1);
+						b = buffer[position++];
+						result |= (b & 0x7F) << 27;
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	private String readUtf8 (int charCount) {
+		byte[] buffer = this.buffer;
 		char[] chars = this.chars;
 		// Try to read 8 bit chars.
 		int charIndex = 0;
 		int count = Math.min(require(1), charCount);
 		int position = this.position;
+		int b;
 		while (charIndex < count) {
 			b = buffer[position++];
 			if (b < 0) {
@@ -393,27 +477,12 @@ public class Input extends InputStream {
 			chars[charIndex++] = (char)b;
 		}
 		this.position = position;
-		// If buffer couldn't hold all chars or any were not ASCII, use slow path for remainder.
-		if (charIndex < charCount) return readString_slow(charCount, charIndex);
+		// If buffer didn't hold all chars or any were not ASCII, use slow path for remainder.
+		if (charIndex < charCount) return readUtf8_slow(charCount, charIndex);
 		return new String(chars, 0, charCount);
 	}
 
-	private int readStringLength (int b) {
-		int result = b & 0x3F; // only take first 6 bits
-		if ((b & 0x40) != 0) { // if 7th bit
-			if (limit == position) require(1);
-			b = buffer[position++];
-			result |= (b & 0x7F) << 6;
-			if ((b & 0x80) != 0) {
-				if (limit == position) require(1);
-				b = buffer[position++];
-				result |= (b & 0x7F) << 13;
-			}
-		}
-		return result;
-	}
-
-	private String readString_slow (int charCount, int charIndex) {
+	private String readUtf8_slow (int charCount, int charIndex) {
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		while (charIndex < charCount) {
@@ -445,8 +514,25 @@ public class Input extends InputStream {
 		return new String(chars, 0, charCount);
 	}
 
+	private String readAscii () {
+		byte[] buffer = this.buffer;
+		int end = position;
+		int start = end - 1;
+		int limit = this.limit;
+		int b;
+		do {
+			if (end == limit) return readAscii_slow();
+			b = buffer[end++];
+		} while ((b & 0x80) == 0);
+		buffer[end - 1] &= 0x7F; // Mask end of ascii bit.
+		String value = new String(buffer, 0, start, end - start);
+		buffer[end - 1] |= 0x80;
+		position = end;
+		return value;
+	}
+
 	private String readAscii_slow () {
-		position--; // Reread the first byte.
+		position--; // Re-read the first byte.
 		// Copy chars currently in buffer.
 		int charCount = limit - position;
 		if (charCount > chars.length) chars = new char[charCount * 2];
@@ -500,19 +586,6 @@ public class Input extends InputStream {
 		return ((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF);
 	}
 
-	/** Reads a 1-3 byte short. */
-	public short readShort (boolean optimizePositive) throws KryoException {
-		int available = require(1);
-		byte value = buffer[position++];
-		if (optimizePositive) {
-			if (value != -1) return (short)(value & 0xFF);
-		} else {
-			if (value != -128) return value;
-		}
-		if (available < 3) require(2);
-		return (short)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF));
-	}
-
 	// long
 
 	/** Reads an 8 byte long. */
@@ -533,39 +606,92 @@ public class Input extends InputStream {
 	/** Reads a 1-9 byte long. */
 	public long readLong (boolean optimizePositive) throws KryoException {
 		if (require(1) < 9) return readLong_slow(optimizePositive);
-		byte[] buffer = this.buffer;
-		int position = this.position;
 		int b = buffer[position++];
-		long result;
-		if ((b & 0x80) == 0)
-			result = b & 0x7F;
-		else {
-			int count = b >>> 4 & 7; // shift to bits 5,6,7, mask 1st 3 bits
-			result = b & 0xF | (buffer[position++] & 0xFF) << 4; // mask 1st 4 bits, combine with 2nd byte
-			for (int i = 0, shift = 12; i < count; i++, shift += 8)
-				result |= (long)(buffer[position++] & 0xFF) << shift;
+		long result = b & 0x7F;
+		if ((b & 0x80) != 0) {
+			byte[] buffer = this.buffer;
+			b = buffer[position++];
+			result |= (b & 0x7F) << 7;
+			if ((b & 0x80) != 0) {
+				b = buffer[position++];
+				result |= (b & 0x7F) << 14;
+				if ((b & 0x80) != 0) {
+					b = buffer[position++];
+					result |= (b & 0x7F) << 21;
+					if ((b & 0x80) != 0) {
+						b = buffer[position++];
+						result |= (long)(b & 0x7F) << 28;
+						if ((b & 0x80) != 0) {
+							b = buffer[position++];
+							result |= (long)(b & 0x7F) << 35;
+							if ((b & 0x80) != 0) {
+								b = buffer[position++];
+								result |= (long)(b & 0x7F) << 42;
+								if ((b & 0x80) != 0) {
+									b = buffer[position++];
+									result |= (long)(b & 0x7F) << 49;
+									if ((b & 0x80) != 0) {
+										b = buffer[position++];
+										result |= (long)b << 56;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
-		this.position = position;
-		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
+		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
+		return result;
 	}
 
 	private long readLong_slow (boolean optimizePositive) {
 		// The buffer is guaranteed to have at least 1 byte.
 		int b = buffer[position++];
-		long result;
-		if ((b & 0x80) == 0)
-			result = b & 0x7F;
-		else {
-			int count = b >>> 4 & 7; // shift to bits 5,6,7, mask 1st 3 bits
-			require(count + 1);
+		long result = b & 0x7F;
+		if ((b & 0x80) != 0) {
+			require(1);
 			byte[] buffer = this.buffer;
-			int position = this.position;
-			result = b & 0xF | (buffer[position++] & 0xFF) << 4; // mask 1st 4 bits, combine with 2nd byte
-			for (int i = 0, shift = 12; i < count; i++, shift += 8)
-				result |= (long)(buffer[position++] & 0xFF) << shift;
-			this.position = position;
+			b = buffer[position++];
+			result |= (b & 0x7F) << 7;
+			if ((b & 0x80) != 0) {
+				require(1);
+				b = buffer[position++];
+				result |= (b & 0x7F) << 14;
+				if ((b & 0x80) != 0) {
+					require(1);
+					b = buffer[position++];
+					result |= (b & 0x7F) << 21;
+					if ((b & 0x80) != 0) {
+						require(1);
+						b = buffer[position++];
+						result |= (long)(b & 0x7F) << 28;
+						if ((b & 0x80) != 0) {
+							require(1);
+							b = buffer[position++];
+							result |= (long)(b & 0x7F) << 35;
+							if ((b & 0x80) != 0) {
+								require(1);
+								b = buffer[position++];
+								result |= (long)(b & 0x7F) << 42;
+								if ((b & 0x80) != 0) {
+									require(1);
+									b = buffer[position++];
+									result |= (long)(b & 0x7F) << 49;
+									if ((b & 0x80) != 0) {
+										require(1);
+										b = buffer[position++];
+										result |= (long)b << 56;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
-		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
+		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
+		return result;
 	}
 
 	// boolean

@@ -4,6 +4,7 @@ package com.esotericsoftware.kryo;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Random;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -75,10 +76,19 @@ public class InputOutputTest extends KryoTestCase {
 		runStringTest(new Output(new ByteArrayOutputStream()));
 
 		Output write = new Output(21);
-		String value2 = "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234";
-		write.writeString(value2);
+		String value = "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234";
+		write.writeString(value);
 		Input read = new Input(write.toBytes());
-		assertEquals(value2, read.readString());
+		assertEquals(value, read.readString());
+
+		write = new Output(1024, -1);
+		StringBuilder buffer = new StringBuilder();
+		for (int i = 0; i < 1024 * 1024 * 2; i++)
+			buffer.append((char)i);
+		value = buffer.toString();
+		write.writeString(value);
+		read = new Input(write.toBytes());
+		assertEquals(value, read.readString());
 	}
 
 	public void runStringTest (Output write) throws IOException {
@@ -165,10 +175,10 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(2, write.writeInt(128, true));
 		assertEquals(2, write.writeInt(128, false));
 		assertEquals(2, write.writeInt(8191, true));
-		assertEquals(3, write.writeInt(8191, false));
-		assertEquals(3, write.writeInt(8192, true));
+		assertEquals(2, write.writeInt(8191, false));
+		assertEquals(2, write.writeInt(8192, true));
 		assertEquals(3, write.writeInt(8192, false));
-		assertEquals(3, write.writeInt(16383, true));
+		assertEquals(2, write.writeInt(16383, true));
 		assertEquals(3, write.writeInt(16383, false));
 		assertEquals(3, write.writeInt(16384, true));
 		assertEquals(3, write.writeInt(16384, false));
@@ -179,22 +189,22 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(4, write.writeInt(134217727, true));
 		assertEquals(4, write.writeInt(134217727, false));
 		assertEquals(4, write.writeInt(268435455, true));
-		assertEquals(4, write.writeInt(268435455, false));
+		assertEquals(5, write.writeInt(268435455, false));
 		assertEquals(4, write.writeInt(134217728, true));
-		assertEquals(4, write.writeInt(134217728, false));
-		assertEquals(4, write.writeInt(268435456, true));
+		assertEquals(5, write.writeInt(134217728, false));
+		assertEquals(5, write.writeInt(268435456, true));
 		assertEquals(5, write.writeInt(268435456, false));
 		assertEquals(1, write.writeInt(-64, false));
 		assertEquals(5, write.writeInt(-64, true));
 		assertEquals(2, write.writeInt(-65, false));
 		assertEquals(5, write.writeInt(-65, true));
-		assertEquals(3, write.writeInt(-8192, false));
+		assertEquals(2, write.writeInt(-8192, false));
 		assertEquals(5, write.writeInt(-8192, true));
 		assertEquals(3, write.writeInt(-1048576, false));
 		assertEquals(5, write.writeInt(-1048576, true));
 		assertEquals(4, write.writeInt(-134217728, false));
 		assertEquals(5, write.writeInt(-134217728, true));
-		assertEquals(4, write.writeInt(-134217729, false));
+		assertEquals(5, write.writeInt(-134217729, false));
 		assertEquals(5, write.writeInt(-134217729, true));
 
 		Input read = new Input(write.toBytes());
@@ -263,6 +273,19 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(-134217729, read.readInt(false));
 		assertEquals(-134217729, read.readInt(true));
 		assertEquals(false, read.canReadInt());
+
+		Random random = new Random();
+		for (int i = 0; i < 10000; i++) {
+			int value = random.nextInt();
+			write.clear();
+			write.writeInt(value);
+			write.writeInt(value, true);
+			write.writeInt(value, false);
+			read.setBuffer(write.toBytes());
+			assertEquals(value, read.readInt());
+			assertEquals(value, read.readInt(true));
+			assertEquals(value, read.readInt(false));
+		}
 	}
 
 	public void testLongs () throws IOException {
@@ -300,18 +323,18 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(2, write.writeLong(127, false));
 		assertEquals(2, write.writeLong(128, true));
 		assertEquals(2, write.writeLong(128, false));
-		assertEquals(3, write.writeLong(8191, true));
-		assertEquals(3, write.writeLong(8191, false));
-		assertEquals(3, write.writeLong(8192, true));
+		assertEquals(2, write.writeLong(8191, true));
+		assertEquals(2, write.writeLong(8191, false));
+		assertEquals(2, write.writeLong(8192, true));
 		assertEquals(3, write.writeLong(8192, false));
-		assertEquals(3, write.writeLong(16383, true));
+		assertEquals(2, write.writeLong(16383, true));
 		assertEquals(3, write.writeLong(16383, false));
 		assertEquals(3, write.writeLong(16384, true));
 		assertEquals(3, write.writeLong(16384, false));
-		assertEquals(4, write.writeLong(2097151, true));
+		assertEquals(3, write.writeLong(2097151, true));
 		assertEquals(4, write.writeLong(2097151, false));
 		assertEquals(3, write.writeLong(1048575, true));
-		assertEquals(4, write.writeLong(1048575, false));
+		assertEquals(3, write.writeLong(1048575, false));
 		assertEquals(4, write.writeLong(134217727, true));
 		assertEquals(4, write.writeLong(134217727, false));
 		assertEquals(4, write.writeLong(268435455l, true));
@@ -324,9 +347,9 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(9, write.writeLong(-64, true));
 		assertEquals(2, write.writeLong(-65, false));
 		assertEquals(9, write.writeLong(-65, true));
-		assertEquals(3, write.writeLong(-8192, false));
+		assertEquals(2, write.writeLong(-8192, false));
 		assertEquals(9, write.writeLong(-8192, true));
-		assertEquals(4, write.writeLong(-1048576, false));
+		assertEquals(3, write.writeLong(-1048576, false));
 		assertEquals(9, write.writeLong(-1048576, true));
 		assertEquals(4, write.writeLong(-134217728, false));
 		assertEquals(9, write.writeLong(-134217728, true));
@@ -395,6 +418,19 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(-134217728, read.readLong(true));
 		assertEquals(-134217729, read.readLong(false));
 		assertEquals(-134217729, read.readLong(true));
+
+		Random random = new Random();
+		for (int i = 0; i < 10000; i++) {
+			long value = random.nextLong();
+			write.clear();
+			write.writeLong(value);
+			write.writeLong(value, true);
+			write.writeLong(value, false);
+			read.setBuffer(write.toBytes());
+			assertEquals(value, read.readLong());
+			assertEquals(value, read.readLong(true));
+			assertEquals(value, read.readLong(false));
+		}
 	}
 
 	public void testShorts () throws IOException {
@@ -418,32 +454,6 @@ public class InputOutputTest extends KryoTestCase {
 		write.writeShort(-8192);
 		write.writeShort(-16384);
 		write.writeShort(-32768);
-		assertEquals(1, write.writeShort(0, true));
-		assertEquals(1, write.writeShort(0, false));
-		assertEquals(1, write.writeShort(63, true));
-		assertEquals(1, write.writeShort(63, false));
-		assertEquals(1, write.writeShort(64, true));
-		assertEquals(1, write.writeShort(64, false));
-		assertEquals(1, write.writeShort(127, true));
-		assertEquals(1, write.writeShort(127, false));
-		assertEquals(1, write.writeShort(128, true));
-		assertEquals(3, write.writeShort(128, false));
-		assertEquals(3, write.writeShort(8191, true));
-		assertEquals(3, write.writeShort(8191, false));
-		assertEquals(3, write.writeShort(8192, true));
-		assertEquals(3, write.writeShort(8192, false));
-		assertEquals(3, write.writeShort(16383, true));
-		assertEquals(3, write.writeShort(16383, false));
-		assertEquals(3, write.writeShort(16384, true));
-		assertEquals(3, write.writeShort(16384, false));
-		assertEquals(3, write.writeShort(32767, true));
-		assertEquals(3, write.writeShort(32767, false));
-		assertEquals(1, write.writeShort(-64, false));
-		assertEquals(3, write.writeShort(-64, true));
-		assertEquals(1, write.writeShort(-65, false));
-		assertEquals(3, write.writeShort(-65, true));
-		assertEquals(3, write.writeShort(-8192, false));
-		assertEquals(3, write.writeShort(-8192, true));
 
 		Input read = new Input(write.toBytes());
 		assertEquals(0, read.readShort());
@@ -461,32 +471,6 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(-8192, read.readShort());
 		assertEquals(-16384, read.readShort());
 		assertEquals(-32768, read.readShort());
-		assertEquals(0, read.readShort(true));
-		assertEquals(0, read.readShort(false));
-		assertEquals(63, read.readShort(true));
-		assertEquals(63, read.readShort(false));
-		assertEquals(64, read.readShort(true));
-		assertEquals(64, read.readShort(false));
-		assertEquals(127, read.readShort(true));
-		assertEquals(127, read.readShort(false));
-		assertEquals(128, read.readShort(true));
-		assertEquals(128, read.readShort(false));
-		assertEquals(8191, read.readShort(true));
-		assertEquals(8191, read.readShort(false));
-		assertEquals(8192, read.readShort(true));
-		assertEquals(8192, read.readShort(false));
-		assertEquals(16383, read.readShort(true));
-		assertEquals(16383, read.readShort(false));
-		assertEquals(16384, read.readShort(true));
-		assertEquals(16384, read.readShort(false));
-		assertEquals(32767, read.readShort(true));
-		assertEquals(32767, read.readShort(false));
-		assertEquals(-64, read.readShort(false));
-		assertEquals(-64, read.readShort(true));
-		assertEquals(-65, read.readShort(false));
-		assertEquals(-65, read.readShort(true));
-		assertEquals(-8192, read.readShort(false));
-		assertEquals(-8192, read.readShort(true));
 	}
 
 	public void testFloats () throws IOException {

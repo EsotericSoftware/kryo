@@ -237,60 +237,54 @@ public class Output extends OutputStream {
 	 *           inefficient (5 bytes). */
 	public int writeInt (int value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
-		if ((value & ~0x7F) == 0) {
+		if (value >>> 7 == 0) {
 			require(1);
 			buffer[position++] = (byte)value;
 			return 1;
-		} else if ((value >>> 5 & ~0xFF) == 0) {
+		}
+		if (value >>> 14 == 0) {
 			require(2);
-			buffer[position++] = (byte)(value & 0x1F | 0x80); // take 1st 5 bits, set bit 8
-			buffer[position++] = (byte)(value >>> 5);
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
+			buffer[position++] = (byte)(value >>> 7);
 			return 2;
-		} else if ((value >>> 13 & ~0xFF) == 0) {
+		}
+		if (value >>> 21 == 0) {
 			require(3);
-			byte[] buffer = this.buffer;
-			int position = this.position;
-			buffer[position++] = (byte)(value & 0x1F | (1 << 5) | 0x80); // 1st 5 bits, set bits 6,7 to adtl bytes - 1, set bit 8
-			buffer[position++] = (byte)(value >>> 5);
-			buffer[position++] = (byte)(value >>> 13);
-			this.position = position;
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
+			buffer[position++] = (byte)(value >>> 7 | 0x80);
+			buffer[position++] = (byte)(value >>> 14);
 			return 3;
-		} else if ((value >>> 21 & ~0xFF) == 0) {
+		}
+		if (value >>> 28 == 0) {
 			require(4);
-			byte[] buffer = this.buffer;
-			int position = this.position;
-			buffer[position++] = (byte)(value & 0x1F | (2 << 5) | 0x80);
-			buffer[position++] = (byte)(value >>> 5);
-			buffer[position++] = (byte)(value >>> 13);
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
+			buffer[position++] = (byte)(value >>> 7 | 0x80);
+			buffer[position++] = (byte)(value >>> 14 | 0x80);
 			buffer[position++] = (byte)(value >>> 21);
-			this.position = position;
 			return 4;
 		}
 		require(5);
-		byte[] buffer = this.buffer;
-		int position = this.position;
-		buffer[position++] = (byte)(value & 0x1F | (3 << 5) | 0x80);
-		buffer[position++] = (byte)(value >>> 5);
-		buffer[position++] = (byte)(value >>> 13);
-		buffer[position++] = (byte)(value >>> 21);
-		buffer[position++] = (byte)(value >>> 29);
-		this.position = position;
+		buffer[position++] = (byte)((value & 0x7F) | 0x80);
+		buffer[position++] = (byte)(value >>> 7 | 0x80);
+		buffer[position++] = (byte)(value >>> 14 | 0x80);
+		buffer[position++] = (byte)(value >>> 21 | 0x80);
+		buffer[position++] = (byte)(value >>> 28);
 		return 5;
 	}
 
 	// string
 
 	/** Writes the length and string, or null. Short strings are checked and if ASCII are written more efficiently, else they are
-	 * written as UTF8. If a string is known to be ASCII, use {@link #writeAscii(String)}.
+	 * written as UTF8. If a string is known to be ASCII, {@link #writeAscii(String)} may be used.
 	 * @param value May be null. */
 	public void writeString (String value) throws KryoException {
 		if (value == null) {
-			writeByte(1 << 7);
+			writeByte(0x80); // 0 means null, bit 8 means UTF8.
 			return;
 		}
 		int charCount = value.length();
 		if (charCount == 0) {
-			writeByte(1 | 1 << 7);
+			writeByte(1 | 0x80); // 1 means empty string, bit 8 means UTF8.
 			return;
 		}
 		// Detect ASCII.
@@ -314,7 +308,7 @@ public class Output extends OutputStream {
 			}
 			buffer[position - 1] |= 0x80;
 		} else {
-			writeStringLength(charCount + 1);
+			writeUtf8Length(charCount + 1);
 			int charIndex = 0;
 			if (capacity - position >= charCount) {
 				// Try to write 8 bit chars.
@@ -331,16 +325,17 @@ public class Output extends OutputStream {
 		}
 	}
 
-	/** Writes a string that is known to contain only ASCII characters. This is slightly more efficient than
-	 * {@link #writeString(String)}. The string is read using {@link Input#readString()}. */
+	/** Writes a string that is known to contain only ASCII characters. Each byte is a 7 bit character with the remaining byte
+	 * denoting if another character is available. This is slightly more efficient than {@link #writeString(String)}. The string is
+	 * still read using {@link Input#readString()}. Non-ASCII strings passed to this method will be corrupted. */
 	public void writeAscii (String value) throws KryoException {
 		if (value == null) {
-			writeByte(1 << 7);
+			writeByte(0x80); // 0 means null, bit 8 means UTF8.
 			return;
 		}
 		int charCount = value.length();
 		if (charCount == 0) {
-			writeByte(1 | 1 << 7);
+			writeByte(1 | 0x80); // 1 means empty string, bit 8 means UTF8.
 			return;
 		}
 		if (capacity - position < charCount)
@@ -349,24 +344,38 @@ public class Output extends OutputStream {
 			value.getBytes(0, charCount, buffer, position);
 			position += charCount;
 		}
-		buffer[position - 1] |= 0x80;
+		buffer[position - 1] |= 0x80; // Bit 8 means end of ASCII.
 	}
 
-	private void writeStringLength (int value) {
-		if (value < 1 << 6) {
+	/** Writes the length of a string, which is a variable length encoded int except the first byte uses bit 8 to denote UTF8 and
+	 * bit 7 to denote if another byte is present. */
+	private void writeUtf8Length (int value) {
+		if (value >>> 6 == 0) {
 			require(1);
-			buffer[position++] = (byte)(value | 1 << 7); // set bit 8
-		} else if (value < 1 << 13) {
+			buffer[position++] = (byte)(value | 0x80); // Set bit 8.
+		} else if (value >>> 13 == 0) {
 			require(2);
-			buffer[position++] = (byte)(value | 1 << 6 | 1 << 7); // set bit 7 and 8
+			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
 			buffer[position++] = (byte)(value >>> 6);
-		} else if (value < 1 << 21) {
+		} else if (value >>> 20 == 0) {
 			require(3);
-			buffer[position++] = (byte)(value | 1 << 6 | 1 << 7); // set bit 7 and 8
-			buffer[position++] = (byte)((value >>> 6) | 1 << 7); // set bit 8
+			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
+			buffer[position++] = (byte)((value >>> 6) | 0x80); // Set bit 8.
 			buffer[position++] = (byte)(value >>> 13);
-		} else
-			throw new KryoException("String too long, must be less than " + (1 << 21) + " code points: " + value);
+		} else if (value >>> 27 == 0) {
+			require(4);
+			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
+			buffer[position++] = (byte)((value >>> 6) | 0x80); // Set bit 8.
+			buffer[position++] = (byte)((value >>> 13) | 0x80); // Set bit 8.
+			buffer[position++] = (byte)(value >>> 20);
+		} else {
+			require(5);
+			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
+			buffer[position++] = (byte)((value >>> 6) | 0x80); // Set bit 8.
+			buffer[position++] = (byte)((value >>> 13) | 0x80); // Set bit 8.
+			buffer[position++] = (byte)((value >>> 20) | 0x80); // Set bit 8.
+			buffer[position++] = (byte)(value >>> 27);
+		}
 	}
 
 	private void writeString_slow (String value, int charCount, int charIndex) {
@@ -424,32 +433,6 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
-	/** Writes a 1-3 byte short.
-	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (3 bytes). */
-	public int writeShort (int value, boolean optimizePositive) throws KryoException {
-		if (optimizePositive) {
-			if (value >= 0 && value <= 254) {
-				require(1);
-				buffer[position++] = (byte)value;
-				return 1;
-			}
-			require(3);
-			buffer[position++] = -1; // short positive
-		} else {
-			if (value >= -127 && value <= 127) {
-				require(1);
-				buffer[position++] = (byte)value;
-				return 1;
-			}
-			require(3);
-			buffer[position++] = -128; // short
-		}
-		buffer[position++] = (byte)(value >>> 8);
-		buffer[position++] = (byte)value;
-		return 3;
-	}
-
 	// long
 
 	/** Writes an 8 byte long. */
@@ -471,98 +454,84 @@ public class Output extends OutputStream {
 	 *           inefficient (9 bytes). */
 	public int writeLong (long value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
-		if ((value & ~0x7F) == 0) {
+		if (value >>> 7 == 0) {
 			require(1);
 			buffer[position++] = (byte)value;
 			return 1;
-		} else if ((value >>> 4 & ~0xFF) == 0) {
+		}
+		if (value >>> 14 == 0) {
 			require(2);
-			buffer[position++] = (byte)(value & 0xF | 0x80); // take 1st 4 bits, set bit 8
-			buffer[position++] = (byte)(value >>> 4);
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
+			buffer[position++] = (byte)(value >>> 7);
 			return 2;
-		} else if ((value >>> 12 & ~0xFF) == 0) {
+		}
+		if (value >>> 21 == 0) {
 			require(3);
-			byte[] buffer = this.buffer;
-			int position = this.position;
-			buffer[position++] = (byte)(value & 0xF | (1 << 4) | 0x80); // 1st 4 bits, set bits 5,6,7 to adtl bytes - 1, set bit 8
-			buffer[position++] = (byte)(value >>> 4);
-			buffer[position++] = (byte)(value >>> 12);
-			this.position = position;
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
+			buffer[position++] = (byte)(value >>> 7 | 0x80);
+			buffer[position++] = (byte)(value >>> 14);
 			return 3;
-		} else if ((value >>> 20 & ~0xFF) == 0) {
+		}
+		if (value >>> 28 == 0) {
 			require(4);
-			byte[] buffer = this.buffer;
-			int position = this.position;
-			buffer[position++] = (byte)(value & 0xF | (2 << 4) | 0x80);
-			buffer[position++] = (byte)(value >>> 4);
-			buffer[position++] = (byte)(value >>> 12);
-			buffer[position++] = (byte)(value >>> 20);
-			this.position = position;
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
+			buffer[position++] = (byte)(value >>> 7 | 0x80);
+			buffer[position++] = (byte)(value >>> 14 | 0x80);
+			buffer[position++] = (byte)(value >>> 21);
 			return 4;
-		} else if ((value >>> 28 & ~0xFF) == 0) {
+		}
+		if (value >>> 35 == 0) {
 			require(5);
-			byte[] buffer = this.buffer;
-			int position = this.position;
-			buffer[position++] = (byte)(value & 0xF | (3 << 4) | 0x80);
-			buffer[position++] = (byte)(value >>> 4);
-			buffer[position++] = (byte)(value >>> 12);
-			buffer[position++] = (byte)(value >>> 20);
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
+			buffer[position++] = (byte)(value >>> 7 | 0x80);
+			buffer[position++] = (byte)(value >>> 14 | 0x80);
+			buffer[position++] = (byte)(value >>> 21 | 0x80);
 			buffer[position++] = (byte)(value >>> 28);
-			this.position = position;
 			return 5;
-		} else if ((value >>> 36 & ~0xFF) == 0) {
+		}
+		if (value >>> 42 == 0) {
 			require(6);
-			byte[] buffer = this.buffer;
-			int position = this.position;
-			buffer[position++] = (byte)(value & 0xF | (4 << 4) | 0x80);
-			buffer[position++] = (byte)(value >>> 4);
-			buffer[position++] = (byte)(value >>> 12);
-			buffer[position++] = (byte)(value >>> 20);
-			buffer[position++] = (byte)(value >>> 28);
-			buffer[position++] = (byte)(value >>> 36);
-			this.position = position;
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
+			buffer[position++] = (byte)(value >>> 7 | 0x80);
+			buffer[position++] = (byte)(value >>> 14 | 0x80);
+			buffer[position++] = (byte)(value >>> 21 | 0x80);
+			buffer[position++] = (byte)(value >>> 28 | 0x80);
+			buffer[position++] = (byte)(value >>> 35);
 			return 6;
-		} else if ((value >>> 44 & ~0xFF) == 0) {
+		}
+		if (value >>> 49 == 0) {
 			require(7);
-			byte[] buffer = this.buffer;
-			int position = this.position;
-			buffer[position++] = (byte)(value & 0xF | (5 << 4) | 0x80);
-			buffer[position++] = (byte)(value >>> 4);
-			buffer[position++] = (byte)(value >>> 12);
-			buffer[position++] = (byte)(value >>> 20);
-			buffer[position++] = (byte)(value >>> 28);
-			buffer[position++] = (byte)(value >>> 36);
-			buffer[position++] = (byte)(value >>> 44);
-			this.position = position;
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
+			buffer[position++] = (byte)(value >>> 7 | 0x80);
+			buffer[position++] = (byte)(value >>> 14 | 0x80);
+			buffer[position++] = (byte)(value >>> 21 | 0x80);
+			buffer[position++] = (byte)(value >>> 28 | 0x80);
+			buffer[position++] = (byte)(value >>> 35 | 0x80);
+			buffer[position++] = (byte)(value >>> 42);
 			return 7;
-		} else if ((value >>> 52 & ~0xFF) == 0) {
+		}
+		if (value >>> 56 == 0) {
 			require(8);
-			byte[] buffer = this.buffer;
-			int position = this.position;
-			buffer[position++] = (byte)(value & 0xF | (6 << 4) | 0x80);
-			buffer[position++] = (byte)(value >>> 4);
-			buffer[position++] = (byte)(value >>> 12);
-			buffer[position++] = (byte)(value >>> 20);
-			buffer[position++] = (byte)(value >>> 28);
-			buffer[position++] = (byte)(value >>> 36);
-			buffer[position++] = (byte)(value >>> 44);
-			buffer[position++] = (byte)(value >>> 52);
-			this.position = position;
+			buffer[position++] = (byte)((value & 0x7F) | 0x80);
+			buffer[position++] = (byte)(value >>> 7 | 0x80);
+			buffer[position++] = (byte)(value >>> 14 | 0x80);
+			buffer[position++] = (byte)(value >>> 21 | 0x80);
+			buffer[position++] = (byte)(value >>> 28 | 0x80);
+			buffer[position++] = (byte)(value >>> 35 | 0x80);
+			buffer[position++] = (byte)(value >>> 42 | 0x80);
+			buffer[position++] = (byte)(value >>> 49);
 			return 8;
 		}
 		require(9);
-		byte[] buffer = this.buffer;
-		int position = this.position;
-		buffer[position++] = (byte)(value & 0xF | (7 << 4) | 0x80);
-		buffer[position++] = (byte)(value >>> 4);
-		buffer[position++] = (byte)(value >>> 12);
-		buffer[position++] = (byte)(value >>> 20);
-		buffer[position++] = (byte)(value >>> 28);
-		buffer[position++] = (byte)(value >>> 36);
-		buffer[position++] = (byte)(value >>> 44);
-		buffer[position++] = (byte)(value >>> 52);
-		buffer[position++] = (byte)(value >>> 60);
-		this.position = position;
+		buffer[position++] = (byte)((value & 0x7F) | 0x80);
+		buffer[position++] = (byte)(value >>> 7 | 0x80);
+		buffer[position++] = (byte)(value >>> 14 | 0x80);
+		buffer[position++] = (byte)(value >>> 21 | 0x80);
+		buffer[position++] = (byte)(value >>> 28 | 0x80);
+		buffer[position++] = (byte)(value >>> 35 | 0x80);
+		buffer[position++] = (byte)(value >>> 42 | 0x80);
+		buffer[position++] = (byte)(value >>> 49 | 0x80);
+		buffer[position++] = (byte)(value >>> 56);
 		return 9;
 	}
 
@@ -597,37 +566,27 @@ public class Output extends OutputStream {
 		return writeLong((long)(value * precision), optimizePositive);
 	}
 
-	/** Returns the number of bytes that would be written with {@link #writeShort(int)}. */
-	static public int shortLength (int value, boolean optimizePositive) {
-		if (optimizePositive) {
-			if (value >= 0 && value <= 254) return 1;
-		} else {
-			if (value >= -127 && value <= 127) return 1;
-		}
-		return 3;
-	}
-
 	/** Returns the number of bytes that would be written with {@link #writeInt(int, boolean)}. */
 	static public int intLength (int value, boolean optimizePositive) {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
-		if ((value & ~0x7F) == 0) return 1;
-		if ((value >>> 5 & ~0xFF) == 0) return 2;
-		if ((value >>> 13 & ~0xFF) == 0) return 3;
-		if ((value >>> 21 & ~0xFF) == 0) return 4;
+		if (value >>> 7 == 0) return 1;
+		if (value >>> 14 == 0) return 2;
+		if (value >>> 21 == 0) return 3;
+		if (value >>> 28 == 0) return 4;
 		return 5;
 	}
 
 	/** Returns the number of bytes that would be written with {@link #writeLong(long, boolean)}. */
 	static public int longLength (long value, boolean optimizePositive) {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
-		if ((value & ~0x7F) == 0) return 1;
-		if ((value >>> 4 & ~0xFF) == 0) return 2;
-		if ((value >>> 12 & ~0xFF) == 0) return 3;
-		if ((value >>> 20 & ~0xFF) == 0) return 4;
-		if ((value >>> 28 & ~0xFF) == 0) return 5;
-		if ((value >>> 36 & ~0xFF) == 0) return 6;
-		if ((value >>> 44 & ~0xFF) == 0) return 7;
-		if ((value >>> 52 & ~0xFF) == 0) return 8;
+		if (value >>> 7 == 0) return 1;
+		if (value >>> 14 == 0) return 2;
+		if (value >>> 21 == 0) return 3;
+		if (value >>> 28 == 0) return 4;
+		if (value >>> 35 == 0) return 5;
+		if (value >>> 42 == 0) return 6;
+		if (value >>> 49 == 0) return 7;
+		if (value >>> 56 == 0) return 8;
 		return 9;
 	}
 }

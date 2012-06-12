@@ -8,6 +8,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.Currency;
 import java.util.Date;
 import java.util.Map;
@@ -79,6 +80,7 @@ public class Kryo {
 	private InstantiatorStrategy strategy;
 
 	private int depth, maxDepth = Integer.MAX_VALUE;
+	private volatile Thread thread;
 	private ObjectMap context, graphContext;
 	private ClassResolver classResolver;
 	private ClassLoader classLoader = getClass().getClassLoader();
@@ -354,6 +356,12 @@ public class Kryo {
 	public void writeObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
+		if (DEBUG) {
+			if (depth == 0)
+				thread = Thread.currentThread();
+			else if (thread != Thread.currentThread())
+				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
+		}
 		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
 		try {
@@ -370,6 +378,12 @@ public class Kryo {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
+		if (DEBUG) {
+			if (depth == 0)
+				thread = Thread.currentThread();
+			else if (thread != Thread.currentThread())
+				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
+		}
 		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
 		try {
@@ -385,6 +399,12 @@ public class Kryo {
 	 * @param object May be null. */
 	public void writeObjectOrNull (Output output, Object object, Class type) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
+		if (DEBUG) {
+			if (depth == 0)
+				thread = Thread.currentThread();
+			else if (thread != Thread.currentThread())
+				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
+		}
 		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
 		try {
@@ -411,6 +431,12 @@ public class Kryo {
 	public void writeObjectOrNull (Output output, Object object, Serializer serializer) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
+		if (DEBUG) {
+			if (depth == 0)
+				thread = Thread.currentThread();
+			else if (thread != Thread.currentThread())
+				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
+		}
 		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
 		try {
@@ -435,6 +461,12 @@ public class Kryo {
 	 * @param object May be null. */
 	public void writeClassAndObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
+		if (DEBUG) {
+			if (depth == 0)
+				thread = Thread.currentThread();
+			else if (thread != Thread.currentThread())
+				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
+		}
 		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
 		try {
@@ -493,8 +525,15 @@ public class Kryo {
 	public <T> T readObject (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		if (DEBUG) {
+			if (depth == 0)
+				thread = Thread.currentThread();
+			else if (thread != Thread.currentThread())
+				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
+		}
 		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
+
 		try {
 			Object refObject = null;
 			if (references) {
@@ -521,6 +560,12 @@ public class Kryo {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
+		if (DEBUG) {
+			if (depth == 0)
+				thread = Thread.currentThread();
+			else if (thread != Thread.currentThread())
+				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
+		}
 		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
 		try {
@@ -548,6 +593,12 @@ public class Kryo {
 	public <T> T readObjectOrNull (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		if (DEBUG) {
+			if (depth == 0)
+				thread = Thread.currentThread();
+			else if (thread != Thread.currentThread())
+				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
+		}
 		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
 		try {
@@ -583,6 +634,12 @@ public class Kryo {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
+		if (DEBUG) {
+			if (depth == 0)
+				thread = Thread.currentThread();
+			else if (thread != Thread.currentThread())
+				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
+		}
 		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
 		try {
@@ -614,6 +671,12 @@ public class Kryo {
 	 * @return May be null. */
 	public Object readClassAndObject (Input input) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
+		if (DEBUG) {
+			if (depth == 0)
+				thread = Thread.currentThread();
+			else if (thread != Thread.currentThread())
+				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
+		}
 		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
 		depth++;
 		try {
@@ -940,6 +1003,7 @@ public class Kryo {
 	/** Sets the maxiumum depth of an object graph. This can be used to prevent malicious data from causing a stack overflow.
 	 * Default is {@link Integer#MAX_VALUE}. */
 	public void setMaxDepth (int maxDepth) {
+		if (maxDepth <= 0) throw new IllegalArgumentException("maxDepth must be > 0.");
 		this.maxDepth = maxDepth;
 	}
 

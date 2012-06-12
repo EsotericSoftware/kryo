@@ -47,22 +47,22 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(3, 64);
 		roundTrip(3, 127);
 		roundTrip(3, 128);
-		roundTrip(4, 8191);
+		roundTrip(3, 8191);
 		roundTrip(4, 8192);
 		roundTrip(4, 16383);
 		roundTrip(4, 16384);
 		roundTrip(5, 2097151);
 		roundTrip(4, 1048575);
 		roundTrip(5, 134217727);
-		roundTrip(5, 268435455);
-		roundTrip(5, 134217728);
+		roundTrip(6, 268435455);
+		roundTrip(6, 134217728);
 		roundTrip(6, 268435456);
 		roundTrip(2, -64);
 		roundTrip(3, -65);
-		roundTrip(4, -8192);
+		roundTrip(3, -8192);
 		roundTrip(4, -1048576);
 		roundTrip(5, -134217728);
-		roundTrip(5, -134217729);
+		roundTrip(6, -134217729);
 	}
 
 	public void testLong () {
@@ -71,22 +71,24 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(3, 64l);
 		roundTrip(3, 127l);
 		roundTrip(3, 128l);
-		roundTrip(4, 8191l);
+		roundTrip(3, 8191l);
 		roundTrip(4, 8192l);
 		roundTrip(4, 16383l);
 		roundTrip(4, 16384l);
 		roundTrip(5, 2097151l);
-		roundTrip(5, 1048575l);
+		roundTrip(4, 1048575l);
 		roundTrip(5, 134217727l);
 		roundTrip(6, 268435455l);
 		roundTrip(6, 134217728l);
 		roundTrip(6, 268435456l);
 		roundTrip(2, -64l);
 		roundTrip(3, -65l);
-		roundTrip(4, -8192l);
-		roundTrip(5, -1048576l);
+		roundTrip(3, -8192l);
+		roundTrip(4, -1048576l);
 		roundTrip(5, -134217728l);
 		roundTrip(6, -134217729l);
+		roundTrip(10, 2368365495612416452l);
+		roundTrip(10, -2368365495612416452l);
 	}
 
 	public void testShort () {
@@ -139,7 +141,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	public void testDateSerializer () {
 		kryo.register(Date.class);
 		roundTrip(2, new Date(0));
-		roundTrip(5, new Date(1234567));
+		roundTrip(4, new Date(1234567));
 		roundTrip(10, new Date(-1234567));
 	}
 
