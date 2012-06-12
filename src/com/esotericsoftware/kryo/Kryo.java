@@ -89,7 +89,7 @@ public class Kryo {
 	private boolean references = true, needsReference;
 	private boolean referenceMap = true;
 	private final IdentityObjectIntMap writtenObjects = new IdentityObjectIntMap();
-	private final ArrayList readObjects = new ArrayList();
+	private final ArrayList seenObjects = new ArrayList();
 
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
@@ -503,8 +503,8 @@ public class Kryo {
 			id = writtenObjects.get(object, 0);
 		else {
 			id = 0;
-			for (int i = 0, n = readObjects.size(); i < n; i++) {
-				if (readObjects.get(i) == object) {
+			for (int i = 0, n = seenObjects.size(); i < n; i++) {
+				if (seenObjects.get(i) == object) {
 					id = i + 1;
 					break;
 				}
@@ -523,8 +523,8 @@ public class Kryo {
 			id = writtenObjects.size + 1; // + 1 because 0 is used for null.
 			writtenObjects.put(object, id);
 		} else {
-			id = readObjects.size() + 1;
-			readObjects.add(object);
+			id = seenObjects.size() + 1;
+			seenObjects.add(object);
 		}
 		output.writeInt(id, true);
 		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object));
@@ -568,7 +568,7 @@ public class Kryo {
 			T object = (T)serializer.read(this, input, type);
 			if (needsReference) {
 				needsReference = false;
-				if (refObject == NEW_OBJECT) readObjects.add(object);
+				if (refObject == NEW_OBJECT) seenObjects.add(object);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -601,7 +601,7 @@ public class Kryo {
 			T object = (T)serializer.read(this, input, type);
 			if (needsReference) {
 				needsReference = false;
-				if (refObject == NEW_OBJECT) readObjects.add(object);
+				if (refObject == NEW_OBJECT) seenObjects.add(object);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -641,7 +641,7 @@ public class Kryo {
 			T object = (T)serializer.read(this, input, type);
 			if (needsReference) {
 				needsReference = false;
-				if (refObject == NEW_OBJECT && object != null) readObjects.add(object);
+				if (refObject == NEW_OBJECT && object != null) seenObjects.add(object);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -680,7 +680,7 @@ public class Kryo {
 			T object = (T)serializer.read(this, input, type);
 			if (needsReference) {
 				needsReference = false;
-				if (refObject == NEW_OBJECT && object != null) readObjects.add(object);
+				if (refObject == NEW_OBJECT && object != null) seenObjects.add(object);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -717,7 +717,7 @@ public class Kryo {
 			Object object = serializer.read(this, input, type);
 			if (needsReference) {
 				needsReference = false;
-				if (refObject == NEW_OBJECT) readObjects.add(object);
+				if (refObject == NEW_OBJECT) seenObjects.add(object);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -743,8 +743,8 @@ public class Kryo {
 			if (!referencesSupported) return NO_REFS;
 			id = input.readInt(true);
 		}
-		if (--id < readObjects.size()) {
-			Object object = readObjects.get(id);
+		if (--id < seenObjects.size()) {
+			Object object = seenObjects.get(id);
 			if (DEBUG) debug("kryo", "Read object reference " + id + ": " + string(object));
 			return object;
 		}
@@ -758,7 +758,7 @@ public class Kryo {
 	 * @param object May be null, unless calling this method from {@link Serializer#copy(Kryo, Object)}. */
 	public void reference (Object object) {
 		if (needsReference) {
-			if (object != null) readObjects.add(object);
+			if (object != null) seenObjects.add(object);
 			needsReference = false;
 		} else if (needsCopyReference != null) {
 			if (object == null) throw new IllegalArgumentException("object cannot be null.");
@@ -774,7 +774,7 @@ public class Kryo {
 		if (graphContext != null) graphContext.clear();
 		classResolver.reset();
 		if (references) {
-			readObjects.clear();
+			seenObjects.clear();
 			writtenObjects.clear();
 		}
 		if (originalToCopy != null) originalToCopy.clear();
