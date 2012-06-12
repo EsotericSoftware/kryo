@@ -77,16 +77,17 @@ public class Kryo {
 	private Class<? extends Serializer> defaultSerializer = FieldSerializer.class;
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
 	private int lowPriorityDefaultSerializerCount;
-	private InstantiatorStrategy strategy;
 
 	private int depth, maxDepth = Integer.MAX_VALUE;
 	private volatile Thread thread;
 	private ObjectMap context, graphContext;
 	private ClassResolver classResolver;
 	private ClassLoader classLoader = getClass().getClassLoader();
+	private InstantiatorStrategy strategy;
 	private boolean registrationRequired;
 
 	private boolean references = true, needsReference;
+	private boolean referenceMap = true;
 	private final IdentityObjectIntMap writtenObjects = new IdentityObjectIntMap();
 	private final ArrayList readObjects = new ArrayList();
 
@@ -483,29 +484,50 @@ public class Kryo {
 		}
 	}
 
-	/** @param object May be null if mayBeNull is true. */
+	/** @param object May be null if mayBeNull is true.
+	 * @return true if no bytes need to be written for the object. */
 	private boolean writeReferenceOrNull (Output output, Object object, boolean mayBeNull) {
 		if (object == null) {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", null);
 			output.writeByte(NULL);
 			return true;
 		}
-		Class type = object.getClass();
-		if (!useReferences(type)) {
+		if (!useReferences(object.getClass())) {
 			if (mayBeNull) output.writeByte(NOT_NULL);
 			return false;
 		}
-		int id = writtenObjects.get(object, 0);
+
+		// Determine if this object has already been seen in this object graph.
+		int id;
+		if (referenceMap)
+			id = writtenObjects.get(object, 0);
+		else {
+			id = 0;
+			for (int i = 0, n = readObjects.size(); i < n; i++) {
+				if (readObjects.get(i) == object) {
+					id = i + 1;
+					break;
+				}
+			}
+		}
+
+		// If not the first time encountered, only write reference ID.
 		if (id > 0) {
 			if (DEBUG) debug("kryo", "Write object reference " + (id - 1) + ": " + string(object));
 			output.writeInt(id, true);
 			return true;
 		}
-		// Only write the object the first time encountered in object graph.
-		id = writtenObjects.size + 1; // + 1 because 0 is used for null.
+
+		// Otherwise write a new ID and then the object bytes.
+		if (referenceMap) {
+			id = writtenObjects.size + 1; // + 1 because 0 is used for null.
+			writtenObjects.put(object, id);
+		} else {
+			id = readObjects.size() + 1;
+			readObjects.add(object);
+		}
 		output.writeInt(id, true);
-		writtenObjects.put(object, id);
-		if (TRACE) trace("kryo", "Write initial object reference " + (id - 1) + ": " + string(object));
+		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object));
 		return false;
 	}
 
@@ -909,6 +931,15 @@ public class Kryo {
 	 * @param type Will never be a primitive type, but may be a primitive type wrapper. */
 	protected boolean useReferences (Class type) {
 		return type != Boolean.class && type != Byte.class && type != Character.class && type != Short.class;
+	}
+
+	/** Determines how object references are tracked during serialization when {@link #setReferences(boolean) references} are
+	 * enabled. If true (the default), each object that is written is stored in a map, which is suitable for graphs with any number
+	 * of objects. If false, a list is used, which can improve serialization speed for objects graphs with a small number of
+	 * objects by ~15%. A list should not be used for large objects graphs, because it means an O(n) lookup for every object
+	 * written. */
+	public void setReferenceMap (boolean referenceMap) {
+		this.referenceMap = referenceMap;
 	}
 
 	/** Sets the strategy used by {@link #newInstantiator(Class)} for creating objects. See {@link StdInstantiatorStrategy} to
