@@ -81,13 +81,21 @@ public class InputOutputTest extends KryoTestCase {
 		Input read = new Input(write.toBytes());
 		assertEquals(value, read.readString());
 
-		write = new Output(1024, -1);
+		runStringTest(1024 * 1023);
+		runStringTest(1024 * 1024);
+		runStringTest(1024 * 1025);
+		runStringTest(1024 * 1026);
+		runStringTest(1024 * 1024 * 2);
+	}
+
+	public void runStringTest (int length) throws IOException {
+		Output write = new Output(1024, -1);
 		StringBuilder buffer = new StringBuilder();
-		for (int i = 0; i < 1024 * 1024 * 2; i++)
+		for (int i = 0; i < length; i++)
 			buffer.append((char)i);
-		value = buffer.toString();
+		String value = buffer.toString();
 		write.writeString(value);
-		read = new Input(write.toBytes());
+		Input read = new Input(write.toBytes());
 		assertEquals(value, read.readString());
 	}
 
