@@ -40,7 +40,7 @@
 		<dependency>
 			<groupId>com.esotericsoftware.reflectasm</groupId>
 			<artifactId>reflectasm</artifactId>
-			<version>1.03</version>
+			<version>1.04</version>
 		</dependency>
 		<dependency>
 			<groupId>com.esotericsoftware.minlog</groupId>
