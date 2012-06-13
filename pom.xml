@@ -41,6 +41,7 @@
 			<groupId>com.esotericsoftware.reflectasm</groupId>
 			<artifactId>reflectasm</artifactId>
 			<version>1.04</version>
+			<classifier>shaded</classifier>
 		</dependency>
 		<dependency>
 			<groupId>com.esotericsoftware.minlog</groupId>
@@ -78,6 +79,36 @@
 					<execution>
 						<id>default-testResources</id>
 						<phase>none</phase>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>1.7</version>
+				<configuration>
+					<shadedArtifactAttached>true</shadedArtifactAttached>
+					<shadedClassifierName>shaded</shadedClassifierName>
+					<artifactSet>
+						<includes>
+							<include>com.esotericsoftware.reflectasm:reflectasm:shaded</include>
+							<include>com.esotericsoftware.minlog:minlog</include>
+							<include>org.objenesis:objenesis</include>
+						</includes>
+					</artifactSet>
+					<relocations>
+						<relocation>
+							<pattern>org.objenesis</pattern>
+							<shadedPattern>com.esotericsoftware.shaded.org.objenesis</shadedPattern>
+						</relocation>
+					</relocations>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
 					</execution>
 				</executions>
 			</plugin>
