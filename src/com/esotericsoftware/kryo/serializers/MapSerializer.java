@@ -1,7 +1,6 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -49,16 +48,9 @@ public class MapSerializer extends Serializer<Map> {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
 
-	public void setGenerics (Kryo kryo, Type[] generics) {
-		if (generics == null) {
-			keyGenericType = null;
-			valueGenericType = null;
-		} else {
-			Class type = (Class)generics[0];
-			if (kryo.isFinal(type)) keyGenericType = type;
-			type = (Class)generics[1];
-			if (kryo.isFinal(type)) valueGenericType = type;
-		}
+	public void setGenerics (Kryo kryo, Class[] generics) {
+		if (kryo.isFinal(generics[0])) keyGenericType = generics[0];
+		if (kryo.isFinal(generics[1])) valueGenericType = generics[1];
 	}
 
 	public void write (Kryo kryo, Output output, Map map) {
@@ -107,16 +99,22 @@ public class MapSerializer extends Serializer<Map> {
 		int length = input.readInt(true);
 		if (length == 0) return map;
 
+		Class keyClass = this.keyClass;
+		Class valueClass = this.valueClass;
+
 		Serializer keySerializer = this.keySerializer;
 		if (keyGenericType != null) {
-			if (keySerializer == null) keySerializer = kryo.getSerializer(keyGenericType);
+			keyClass = keyGenericType;
+			if (keySerializer == null) keySerializer = kryo.getSerializer(keyClass);
 			keyGenericType = null;
 		}
 		Serializer valueSerializer = this.valueSerializer;
 		if (valueGenericType != null) {
-			if (valueSerializer == null) valueSerializer = kryo.getSerializer(valueGenericType);
+			valueClass = valueGenericType;
+			if (valueSerializer == null) valueSerializer = kryo.getSerializer(valueClass);
 			valueGenericType = null;
 		}
+
 		kryo.reference(map);
 
 		for (int i = 0; i < length; i++) {

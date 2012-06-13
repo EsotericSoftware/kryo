@@ -2,6 +2,8 @@
 package com.esotericsoftware.kryo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
@@ -311,20 +313,32 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	public void testGenericTypes () {
-		kryo.register(HasIntList.class);
+		kryo.register(HasGenerics.class);
 		kryo.register(ArrayList.class);
+		kryo.register(HashMap.class);
 		kryo.setReferences(true);
-		HasIntList test = new HasIntList();
-		test.list = new ArrayList();
-		test.list.add(1);
-		test.list.add(2);
-		test.list.add(3);
-		test.list.add(4);
-		test.list.add(5);
-		test.list.add(6);
-		test.list.add(7);
-		test.list.add(8);
-		roundTrip(21, test);
+		HasGenerics test = new HasGenerics();
+		test.list1 = new ArrayList();
+		test.list1.add(1);
+		test.list1.add(2);
+		test.list1.add(3);
+		test.list1.add(4);
+		test.list1.add(5);
+		test.list1.add(6);
+		test.list1.add(7);
+		test.list1.add(8);
+		test.list2 = new ArrayList();
+		test.list2.add(test.list1);
+		test.map1 = new HashMap();
+		test.map1.put("a", test.list1);
+		test.list3 = new ArrayList();
+		test.list3.add(null);
+		test.list4 = new ArrayList();
+		test.list4.add(null);
+		test.list5 = new ArrayList();
+		test.list5.add("one");
+		test.list5.add("two");
+		roundTrip(53, test);
 	}
 
 	static public class DefaultTypes {
@@ -671,17 +685,37 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class HasIntList {
-		ArrayList<Integer> list;
+	static public class HasGenerics {
+		ArrayList<Integer> list1;
+		List<List<?>> list2 = new ArrayList<List<?>>();
+		List<?> list3 = new ArrayList();
+		ArrayList<?> list4 = new ArrayList();
+		ArrayList<String> list5;
+		HashMap<String, ArrayList<Integer>> map1;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
 			if (getClass() != obj.getClass()) return false;
-			HasIntList other = (HasIntList)obj;
-			if (list == null) {
-				if (other.list != null) return false;
-			} else if (!list.equals(other.list)) return false;
+			HasGenerics other = (HasGenerics)obj;
+			if (list1 == null) {
+				if (other.list1 != null) return false;
+			} else if (!list1.equals(other.list1)) return false;
+			if (list2 == null) {
+				if (other.list2 != null) return false;
+			} else if (!list2.equals(other.list2)) return false;
+			if (list3 == null) {
+				if (other.list3 != null) return false;
+			} else if (!list3.equals(other.list3)) return false;
+			if (list4 == null) {
+				if (other.list4 != null) return false;
+			} else if (!list4.equals(other.list4)) return false;
+			if (list5 == null) {
+				if (other.list5 != null) return false;
+			} else if (!list5.equals(other.list5)) return false;
+			if (map1 == null) {
+				if (other.map1 != null) return false;
+			} else if (!map1.equals(other.map1)) return false;
 			return true;
 		}
 	}

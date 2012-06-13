@@ -1,8 +1,6 @@
 
 package com.esotericsoftware.kryo;
 
-import java.lang.reflect.Type;
-
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -64,10 +62,12 @@ public abstract class Serializer<T> {
 		this.immutable = immutable;
 	}
 
-	/** Sets the generic types of the field this serializer will be used for. This only applies to the next call to read or write.
-	 * The default implementation does nothing. Subclasses may use this method for more efficient serialization, eg to use the same
-	 * type for all items in a list. */
-	public void setGenerics (Kryo kryo, Type[] generics) {
+	/** Sets the generic types of the field or method this serializer will be used for on the next call to read or write. Subsequent
+	 * calls to read and write must not use this generic type information. The default implementation does nothing. Subclasses may
+	 * use the information provided to this method for more efficient serialization, eg to use the same type for all items in a
+	 * list.
+	 * @param generics Some (but never all) elements may be null if there is no generic type information at that index. */
+	public void setGenerics (Kryo kryo, Class[] generics) {
 	}
 
 	/** Returns a copy of the specified object. The default implementation returns the original if {@link #isImmutable()} is true,

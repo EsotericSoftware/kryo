@@ -7,8 +7,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -328,13 +326,11 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		Serializer serializer;
 		boolean canBeNull;
 		int accessIndex = -1;
-		Type[] generics;
+		Class[] generics;
 
 		public CachedField (Field field) {
 			this.field = field;
-
-			Type genericType = field.getGenericType();
-			if (genericType instanceof ParameterizedType) generics = ((ParameterizedType)genericType).getActualTypeArguments();
+			generics = Kryo.getGenerics(field.getGenericType());
 		}
 
 		/** @param valueClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for the

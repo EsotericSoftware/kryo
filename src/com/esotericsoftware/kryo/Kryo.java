@@ -3,6 +3,8 @@ package com.esotericsoftware.kryo;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -1047,6 +1049,27 @@ public class Kryo {
 	public boolean isFinal (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		return Modifier.isFinal(type.getModifiers());
+	}
+
+	/** Returns the first level of classes or interfaces for a generic type.
+	 * @return null if the specified type is not generic or its generic types are not classes. */
+	static public Class[] getGenerics (Type genericType) {
+		if (!(genericType instanceof ParameterizedType)) return null;
+		Type[] actualTypes = ((ParameterizedType)genericType).getActualTypeArguments();
+		Class[] generics = new Class[actualTypes.length];
+		int count = 0;
+		for (int i = 0, n = actualTypes.length; i < n; i++) {
+			Type actualType = actualTypes[i];
+			if (actualType instanceof Class)
+				generics[i] = (Class)actualType;
+			else if (actualType instanceof ParameterizedType)
+				generics[i] = (Class)((ParameterizedType)actualType).getRawType();
+			else
+				continue;
+			count++;
+		}
+		if (count == 0) return null;
+		return generics;
 	}
 
 	static final class DefaultSerializerEntry {

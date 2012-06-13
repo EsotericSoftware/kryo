@@ -1,7 +1,6 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -51,13 +50,8 @@ public class CollectionSerializer extends Serializer<Collection> {
 		this.serializer = serializer;
 	}
 
-	public void setGenerics (Kryo kryo, Type[] generics) {
-		if (generics == null)
-			genericType = null;
-		else {
-			Class type = (Class)generics[0];
-			if (kryo.isFinal(type)) genericType = type;
-		}
+	public void setGenerics (Kryo kryo, Class[] generics) {
+		if (kryo.isFinal(generics[0])) genericType = generics[0];
 	}
 
 	public void write (Kryo kryo, Output output, Collection object) {
