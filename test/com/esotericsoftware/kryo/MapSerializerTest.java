@@ -1,6 +1,7 @@
 
 package com.esotericsoftware.kryo;
 
+import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -56,11 +57,27 @@ public class MapSerializerTest extends KryoTestCase {
 		execute(new ConcurrentHashMap<Object, Object>(), 1000);
 	}
 
+	public void testGenerics () {
+		kryo.register(HasGenerics.class);
+		kryo.register(Integer[].class);
+		kryo.register(HashMap.class);
+
+		HasGenerics test = new HasGenerics();
+		test.map.put("moo", new Integer[] {1, 2});
+
+		output = new Output(4096);
+		kryo.writeClassAndObject(output, test);
+		output.flush();
+
+		input = new Input(output.toBytes());
+		HasGenerics test2 = (HasGenerics)kryo.readClassAndObject(input);
+		assertEquals(test.map.get("moo"), test2.map.get("moo"));
+	}
+
 	private void execute (Map<Object, Object> map, int inserts) {
 		Random random = new Random();
-		for (int i = 0; i < inserts; i++) {
+		for (int i = 0; i < inserts; i++)
 			map.put(random.nextLong(), random.nextBoolean());
-		}
 
 		Kryo kryo = new Kryo();
 		kryo.register(HashMap.class, new MapSerializer());
@@ -75,5 +92,10 @@ public class MapSerializerTest extends KryoTestCase {
 		input.close();
 
 		Assert.assertEquals(map, deserialized);
+	}
+
+	static public class HasGenerics {
+		public HashMap<String, Integer[]> map = new HashMap();
+		public HashMap<String, ?> map2 = new HashMap();
 	}
 }
