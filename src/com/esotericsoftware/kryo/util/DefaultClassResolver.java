@@ -31,8 +31,9 @@ public class DefaultClassResolver implements ClassResolver {
 	protected final ObjectMap<String, Class> nameToClass = new ObjectMap();
 	protected int nextNameId;
 
-	private Class memoizedType;
-	private Registration memoizedRegistration;
+	private Class memoizedClassKey;
+	private int memoizedClassIdKey = -1;
+	private Registration memoizedClassValue, memoizedClassIdValue;
 
 	public void setKryo (Kryo kryo) {
 		this.kryo = kryo;
@@ -119,7 +120,7 @@ public class DefaultClassResolver implements ClassResolver {
 	public Registration getRegistration (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 
-		if (type == memoizedType) return memoizedRegistration;
+		if (type == memoizedClassKey) return memoizedClassValue;
 		Registration registration = classToRegistration.get(type);
 		if (registration == null) {
 			if (Proxy.isProxyClass(type)) {
@@ -131,8 +132,8 @@ public class DefaultClassResolver implements ClassResolver {
 			} else
 				registration = registerImplicit(type);
 		}
-		memoizedType = type;
-		memoizedRegistration = registration;
+		memoizedClassKey = type;
+		memoizedClassValue = registration;
 		return registration;
 	}
 
@@ -204,10 +205,12 @@ public class DefaultClassResolver implements ClassResolver {
 			}
 			return getRegistration(type);
 		}
-		// BOZO - Memoize? Benchmark this and memoization above.
+		if (classID == memoizedClassIdKey) return memoizedClassIdValue;
 		Registration registration = idToRegistration.get(classID - 2);
 		if (registration == null) throw new KryoException("Encountered unregistered class ID: " + (classID - 2));
 		if (TRACE) trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()));
+		memoizedClassIdKey = classID;
+		memoizedClassIdValue = registration;
 		return registration;
 	}
 
