@@ -31,8 +31,8 @@ public class DefaultClassResolver implements ClassResolver {
 	protected final ObjectMap<String, Class> nameToClass = new ObjectMap();
 	protected int nextNameId;
 
-	private Class memoizedClassKey;
-	private int memoizedClassIdKey = -1;
+	private Class memoizedClass;
+	private int memoizedClassId = -1;
 	private Registration memoizedClassValue, memoizedClassIdValue;
 
 	public void setKryo (Kryo kryo) {
@@ -120,7 +120,7 @@ public class DefaultClassResolver implements ClassResolver {
 	public Registration getRegistration (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 
-		if (type == memoizedClassKey) return memoizedClassValue;
+		if (type == memoizedClass) return memoizedClassValue;
 		Registration registration = classToRegistration.get(type);
 		if (registration == null) {
 			if (Proxy.isProxyClass(type)) {
@@ -132,7 +132,7 @@ public class DefaultClassResolver implements ClassResolver {
 			} else
 				registration = registerImplicit(type);
 		}
-		memoizedClassKey = type;
+		memoizedClass = type;
 		memoizedClassValue = registration;
 		return registration;
 	}
@@ -205,11 +205,11 @@ public class DefaultClassResolver implements ClassResolver {
 			}
 			return getRegistration(type);
 		}
-		if (classID == memoizedClassIdKey) return memoizedClassIdValue;
+		if (classID == memoizedClassId) return memoizedClassIdValue;
 		Registration registration = idToRegistration.get(classID - 2);
 		if (registration == null) throw new KryoException("Encountered unregistered class ID: " + (classID - 2));
 		if (TRACE) trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()));
-		memoizedClassIdKey = classID;
+		memoizedClassId = classID;
 		memoizedClassIdValue = registration;
 		return registration;
 	}
