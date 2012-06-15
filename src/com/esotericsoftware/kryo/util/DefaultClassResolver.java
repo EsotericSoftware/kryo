@@ -1,18 +1,22 @@
 
-package com.esotericsoftware.kryo;
+package com.esotericsoftware.kryo.util;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 
+import com.esotericsoftware.kryo.ClassResolver;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.util.IdentityObjectIntMap;
-import com.esotericsoftware.kryo.util.IntMap;
-import com.esotericsoftware.kryo.util.ObjectMap;
 
-import static com.esotericsoftware.kryo.Util.*;
+import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
+/** Resolves classes by ID or by fully qualified class name.
+ * @author Nathan Sweet <misc@n4te.com> */
 public class DefaultClassResolver implements ClassResolver {
 	static public final byte NAME = -1;
 
@@ -200,6 +204,7 @@ public class DefaultClassResolver implements ClassResolver {
 			}
 			return getRegistration(type);
 		}
+		// BOZO - Memoize? Benchmark this and memoization above.
 		Registration registration = idToRegistration.get(classID - 2);
 		if (registration == null) throw new KryoException("Encountered unregistered class ID: " + (classID - 2));
 		if (TRACE) trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()));

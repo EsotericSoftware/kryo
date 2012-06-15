@@ -59,12 +59,14 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSer
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
+import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.IdentityMap;
-import com.esotericsoftware.kryo.util.IdentityObjectIntMap;
+import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.ObjectMap;
+import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.reflectasm.ConstructorAccess;
 
-import static com.esotericsoftware.kryo.Util.*;
+import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 /** Maps classes to serializers so object graphs can be serialized automatically.
@@ -73,39 +75,51 @@ public class Kryo {
 	static public final byte NULL = 0;
 	static public final byte NOT_NULL = 1;
 
-	static private final Object NEW_OBJECT = new Object();
-	static private final Object NO_REFS = new Object();
-
 	private Class<? extends Serializer> defaultSerializer = FieldSerializer.class;
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
 	private int lowPriorityDefaultSerializerCount;
 
-	private int depth, maxDepth = Integer.MAX_VALUE;
-	private volatile Thread thread;
-	private ObjectMap context, graphContext;
-	private ClassResolver classResolver;
+	private final ClassResolver classResolver;
 	private ClassLoader classLoader = getClass().getClassLoader();
 	private InstantiatorStrategy strategy;
 	private boolean registrationRequired;
 
-	private boolean references = true, needsReference;
-	private boolean referenceMap = true;
-	private final IdentityObjectIntMap writtenObjects = new IdentityObjectIntMap();
-	private final ArrayList seenObjects = new ArrayList();
+	private int depth, maxDepth = Integer.MAX_VALUE;
+	private volatile Thread thread;
+	private ObjectMap context, graphContext;
+
+	private final ReferenceResolver referenceResolver;
+	private boolean references, needsReference;
+	private Object readObject;
 
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
 
-	/** Creates a new Kryo with a {@link DefaultClassResolver}. */
+	/** Creates a new Kryo with a {@link DefaultClassResolver} and a {@link MapReferenceResolver}. */
 	public Kryo () {
-		this(new DefaultClassResolver());
+		this(new DefaultClassResolver(), new MapReferenceResolver());
 	}
 
-	public Kryo (ClassResolver classResolver) {
+	/** Creates a new Kryo with a {@link DefaultClassResolver}.
+	 * @param referenceResolver May be null to disable references. */
+	public Kryo (ReferenceResolver referenceResolver) {
+		this(new DefaultClassResolver(), referenceResolver);
+	}
+
+	/** @param referenceResolver May be null to disable references. */
+	public Kryo (ClassResolver classResolver, ReferenceResolver referenceResolver) {
 		if (classResolver == null) throw new IllegalArgumentException("classResolver cannot be null.");
+		if (referenceResolver == null) throw new IllegalArgumentException("referenceResolver cannot be null.");
+
 		this.classResolver = classResolver;
 		classResolver.setKryo(this);
+
+		this.referenceResolver = referenceResolver;
+		if (referenceResolver != null) {
+			referenceResolver.setKryo(this);
+			references = true;
+		}
 
 		addDefaultSerializer(byte[].class, ByteArraySerializer.class);
 		addDefaultSerializer(char[].class, CharArraySerializer.class);
@@ -359,14 +373,7 @@ public class Kryo {
 	public void writeObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
-		if (DEBUG) {
-			if (depth == 0)
-				thread = Thread.currentThread();
-			else if (thread != Thread.currentThread())
-				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
-		}
-		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
-		depth++;
+		beginObject();
 		try {
 			if (references && writeReferenceOrNull(output, object, false)) return;
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
@@ -381,14 +388,7 @@ public class Kryo {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		if (DEBUG) {
-			if (depth == 0)
-				thread = Thread.currentThread();
-			else if (thread != Thread.currentThread())
-				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
-		}
-		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
-		depth++;
+		beginObject();
 		try {
 			if (references && writeReferenceOrNull(output, object, false)) return;
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
@@ -402,14 +402,7 @@ public class Kryo {
 	 * @param object May be null. */
 	public void writeObjectOrNull (Output output, Object object, Class type) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
-		if (DEBUG) {
-			if (depth == 0)
-				thread = Thread.currentThread();
-			else if (thread != Thread.currentThread())
-				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
-		}
-		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
-		depth++;
+		beginObject();
 		try {
 			Serializer serializer = getRegistration(type).getSerializer();
 			if (references) {
@@ -434,14 +427,7 @@ public class Kryo {
 	public void writeObjectOrNull (Output output, Object object, Serializer serializer) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		if (DEBUG) {
-			if (depth == 0)
-				thread = Thread.currentThread();
-			else if (thread != Thread.currentThread())
-				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
-		}
-		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
-		depth++;
+		beginObject();
 		try {
 			if (references) {
 				if (writeReferenceOrNull(output, object, true)) return;
@@ -464,14 +450,7 @@ public class Kryo {
 	 * @param object May be null. */
 	public void writeClassAndObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
-		if (DEBUG) {
-			if (depth == 0)
-				thread = Thread.currentThread();
-			else if (thread != Thread.currentThread())
-				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
-		}
-		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
-		depth++;
+		beginObject();
 		try {
 			if (object == null) {
 				writeClass(output, null);
@@ -488,47 +467,30 @@ public class Kryo {
 
 	/** @param object May be null if mayBeNull is true.
 	 * @return true if no bytes need to be written for the object. */
-	private boolean writeReferenceOrNull (Output output, Object object, boolean mayBeNull) {
+	boolean writeReferenceOrNull (Output output, Object object, boolean mayBeNull) {
 		if (object == null) {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", null);
-			output.writeByte(NULL);
+			output.writeByte(Kryo.NULL);
 			return true;
 		}
-		if (!useReferences(object.getClass())) {
-			if (mayBeNull) output.writeByte(NOT_NULL);
+		if (!referenceResolver.useReferences(object.getClass())) {
+			if (mayBeNull) output.writeByte(Kryo.NOT_NULL);
 			return false;
 		}
 
 		// Determine if this object has already been seen in this object graph.
-		int id;
-		if (referenceMap)
-			id = writtenObjects.get(object, 0);
-		else {
-			id = 0;
-			for (int i = 0, n = seenObjects.size(); i < n; i++) {
-				if (seenObjects.get(i) == object) {
-					id = i + 1;
-					break;
-				}
-			}
-		}
+		int id = referenceResolver.getWrittenId(object);
 
 		// If not the first time encountered, only write reference ID.
-		if (id > 0) {
-			if (DEBUG) debug("kryo", "Write object reference " + (id - 1) + ": " + string(object));
-			output.writeInt(id, true);
+		if (id > -1) {
+			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object));
+			output.writeInt(id + 1, true); // + 1 because 0 is used for null.
 			return true;
 		}
 
 		// Otherwise write a new ID and then the object bytes.
-		if (referenceMap) {
-			id = writtenObjects.size + 1; // + 1 because 0 is used for null.
-			writtenObjects.put(object, id);
-		} else {
-			id = seenObjects.size() + 1;
-			seenObjects.add(object);
-		}
-		output.writeInt(id, true);
+		id = referenceResolver.addWrittenObject(object);
+		output.writeInt(id + 1, true); // + 1 because 0 is used for null.
 		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object));
 		return false;
 	}
@@ -549,28 +511,15 @@ public class Kryo {
 	public <T> T readObject (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		if (DEBUG) {
-			if (depth == 0)
-				thread = Thread.currentThread();
-			else if (thread != Thread.currentThread())
-				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
-		}
-		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
-		depth++;
-
+		beginObject();
 		try {
-			Object refObject = null;
-			if (references) {
-				refObject = readReferenceOrNull(input, type, false);
-				if (refObject != NEW_OBJECT && refObject != NO_REFS) return (T)refObject;
-				needsReference = true;
-			}
+			if (references && readReferenceOrNull(input, type, false)) return (T)readObject;
 
 			Serializer serializer = getRegistration(type).getSerializer();
 			T object = (T)serializer.read(this, input, type);
 			if (needsReference) {
 				needsReference = false;
-				if (refObject == NEW_OBJECT) seenObjects.add(object);
+				referenceResolver.addReadObject(object);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -584,26 +533,14 @@ public class Kryo {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		if (DEBUG) {
-			if (depth == 0)
-				thread = Thread.currentThread();
-			else if (thread != Thread.currentThread())
-				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
-		}
-		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
-		depth++;
+		beginObject();
 		try {
-			Object refObject = null;
-			if (references) {
-				refObject = readReferenceOrNull(input, type, false);
-				if (refObject != NEW_OBJECT && refObject != NO_REFS) return (T)refObject;
-				needsReference = true;
-			}
+			if (references && readReferenceOrNull(input, type, false)) return (T)readObject;
 
 			T object = (T)serializer.read(this, input, type);
 			if (needsReference) {
 				needsReference = false;
-				if (refObject == NEW_OBJECT) seenObjects.add(object);
+				referenceResolver.addReadObject(object);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -617,22 +554,12 @@ public class Kryo {
 	public <T> T readObjectOrNull (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		if (DEBUG) {
-			if (depth == 0)
-				thread = Thread.currentThread();
-			else if (thread != Thread.currentThread())
-				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
-		}
-		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
-		depth++;
+		beginObject();
 		try {
 			Serializer serializer = getRegistration(type).getSerializer();
 
-			Object refObject = null;
 			if (references) {
-				refObject = readReferenceOrNull(input, type, true);
-				if (refObject != NEW_OBJECT && refObject != NO_REFS) return (T)refObject;
-				needsReference = true;
+				if (readReferenceOrNull(input, type, true)) return (T)readObject;
 			} else if (!serializer.getAcceptsNull()) {
 				if (input.readByte() == NULL) {
 					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
@@ -643,7 +570,7 @@ public class Kryo {
 			T object = (T)serializer.read(this, input, type);
 			if (needsReference) {
 				needsReference = false;
-				if (refObject == NEW_OBJECT && object != null) seenObjects.add(object);
+				if (object != null) referenceResolver.addReadObject(object);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -658,20 +585,10 @@ public class Kryo {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		if (DEBUG) {
-			if (depth == 0)
-				thread = Thread.currentThread();
-			else if (thread != Thread.currentThread())
-				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
-		}
-		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
-		depth++;
+		beginObject();
 		try {
-			Object refObject = null;
 			if (references) {
-				refObject = readReferenceOrNull(input, type, true);
-				if (refObject != NEW_OBJECT && refObject != NO_REFS) return (T)refObject;
-				needsReference = true;
+				if (readReferenceOrNull(input, type, true)) return (T)readObject;
 			} else if (!serializer.getAcceptsNull()) {
 				if (input.readByte() == NULL) {
 					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
@@ -682,7 +599,7 @@ public class Kryo {
 			T object = (T)serializer.read(this, input, type);
 			if (needsReference) {
 				needsReference = false;
-				if (refObject == NEW_OBJECT && object != null) seenObjects.add(object);
+				if (object != null) referenceResolver.addReadObject(object);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -695,31 +612,19 @@ public class Kryo {
 	 * @return May be null. */
 	public Object readClassAndObject (Input input) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
-		if (DEBUG) {
-			if (depth == 0)
-				thread = Thread.currentThread();
-			else if (thread != Thread.currentThread())
-				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
-		}
-		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
-		depth++;
+		beginObject();
 		try {
 			Registration registration = readClass(input);
 			if (registration == null) return null;
 			Class type = registration.getType();
 
-			Object refObject = null;
-			if (references) {
-				refObject = readReferenceOrNull(input, type, false);
-				if (refObject != NEW_OBJECT && refObject != NO_REFS) return refObject;
-				needsReference = true;
-			}
+			if (references && readReferenceOrNull(input, type, false)) return readObject;
 
 			Serializer serializer = registration.getSerializer();
 			Object object = serializer.read(this, input, type);
 			if (needsReference) {
 				needsReference = false;
-				if (refObject == NEW_OBJECT) seenObjects.add(object);
+				referenceResolver.addReadObject(object);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -728,30 +633,37 @@ public class Kryo {
 		}
 	}
 
-	/** @return NO_REFS if references for the type is not supported, NEW_OBJECT if this is the first time the object appears in the
-	 *         graph, or the object if it was a reference. */
-	private Object readReferenceOrNull (Input input, Class type, boolean mayBeNull) {
+	/** Returns true if null or a reference to a previously read object was read. In this case, the object is stored in
+	 * {@link #readObject}. Returns false if the object was not a reference and needs to be read. */
+	boolean readReferenceOrNull (Input input, Class type, boolean mayBeNull) {
+		if (needsReference) {
+			throw new IllegalStateException(
+				"Kryo#reference(Object) must be called before Kryo can be used to deserialize child objects.");
+		}
 		if (type.isPrimitive()) type = getWrapperClass(type);
-		boolean referencesSupported = useReferences(type);
+		boolean referencesSupported = referenceResolver.useReferences(type);
 		int id;
 		if (mayBeNull) {
 			id = input.readInt(true);
-			if (id == NULL) {
+			if (id == Kryo.NULL) {
 				if (TRACE || (DEBUG && depth == 1)) log("Read", null);
-				return null;
+				readObject = null;
+				return true;
 			}
-			if (!referencesSupported) return NO_REFS;
+			if (!referencesSupported) return false;
 		} else {
-			if (!referencesSupported) return NO_REFS;
+			if (!referencesSupported) return false;
 			id = input.readInt(true);
 		}
-		if (--id < seenObjects.size()) {
-			Object object = seenObjects.get(id);
-			if (DEBUG) debug("kryo", "Read object reference " + id + ": " + string(object));
-			return object;
+		--id; // - 1 because zero is used for null.
+		readObject = referenceResolver.getReadObject(id);
+		if (readObject != null) {
+			if (DEBUG) debug("kryo", "Read object reference " + id + ": " + string(readObject));
+			return true;
 		}
 		if (TRACE) trace("kryo", "Read initial object reference " + id + ": " + className(type));
-		return NEW_OBJECT;
+		needsReference = true;
+		return false;
 	}
 
 	/** Called by {@link Serializer#read(Kryo, Input, Class)} and {@link Serializer#copy(Kryo, Object)} before Kryo can be used to
@@ -760,7 +672,7 @@ public class Kryo {
 	 * @param object May be null, unless calling this method from {@link Serializer#copy(Kryo, Object)}. */
 	public void reference (Object object) {
 		if (needsReference) {
-			if (object != null) seenObjects.add(object);
+			if (object != null) referenceResolver.addReadObject(object);
 			needsReference = false;
 		} else if (needsCopyReference != null) {
 			if (object == null) throw new IllegalArgumentException("object cannot be null.");
@@ -776,8 +688,8 @@ public class Kryo {
 		if (graphContext != null) graphContext.clear();
 		classResolver.reset();
 		if (references) {
-			seenObjects.clear();
-			writtenObjects.clear();
+			referenceResolver.reset();
+			readObject = null;
 		}
 		if (originalToCopy != null) originalToCopy.clear();
 		if (TRACE) trace("kryo", "Object graph complete.");
@@ -890,6 +802,17 @@ public class Kryo {
 
 	// --- Utility ---
 
+	private void beginObject () {
+		if (DEBUG) {
+			if (depth == 0)
+				thread = Thread.currentThread();
+			else if (thread != Thread.currentThread())
+				throw new ConcurrentModificationException("Kryo must not be accessed concurrently by multiple threads.");
+		}
+		if (depth == maxDepth) throw new KryoException("Max depth exceeded: " + depth);
+		depth++;
+	}
+
 	public ClassResolver getClassResolver () {
 		return classResolver;
 	}
@@ -922,26 +845,17 @@ public class Kryo {
 	}
 
 	/** If true, each appearance of an object in the graph after the first is stored as an integer ordinal. This enables references
-	 * to the same object and cyclic graphs to be serialized, but has the overhead of one byte per object. Default is true. */
+	 * to the same object and cyclic graphs to be serialized, but typically adds overhead of one byte per object. Default is true.
+	 * <p>
+	 * To disable references slightly more efficiently, a null {@link ReferenceResolver} can be provided to a Kryo
+	 * {@link Kryo#Kryo(ReferenceResolver) constructor}. */
 	public void setReferences (boolean references) {
+		if (references && referenceResolver == null) {
+			throw new IllegalStateException(
+				"References cannot be enabled because no ReferenceResolver was provided to the Kryo constructor.");
+		}
 		this.references = references;
 		if (TRACE) trace("kryo", "References: " + references);
-	}
-
-	/** Returns true if references will be written for the specified type when references are enabled. The default implementation
-	 * returns false for Boolean, Byte, Character, and Short.
-	 * @param type Will never be a primitive type, but may be a primitive type wrapper. */
-	protected boolean useReferences (Class type) {
-		return type != Boolean.class && type != Byte.class && type != Character.class && type != Short.class;
-	}
-
-	/** Determines how object references are tracked during serialization when {@link #setReferences(boolean) references} are
-	 * enabled. If true (the default), each object that is written is stored in a map, which is suitable for graphs with any number
-	 * of objects. If false, a list is used, which can improve serialization speed for objects graphs with a small number of
-	 * objects by ~15%. A list should not be used for large objects graphs, because it means an O(n) lookup for every object
-	 * written. */
-	public void setReferenceMap (boolean referenceMap) {
-		this.referenceMap = referenceMap;
 	}
 
 	/** Sets the strategy used by {@link #newInstantiator(Class)} for creating objects. See {@link StdInstantiatorStrategy} to

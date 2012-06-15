@@ -4,10 +4,10 @@ package com.esotericsoftware.kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-/** Handles class registration, writing class identifies to bytes, and reading class identifiers from bytes.
+/** Handles class registration, writing class identifiers to bytes, and reading class identifiers from bytes.
  * @author Nathan Sweet <misc@n4te.com> */
 public interface ClassResolver {
-	/** Sets the Kryo instance that this ClassResolver will be used for. This is called automatically by the Kryo constructor. */
+	/** Sets the Kryo instance that this ClassResolver will be used for. This is called automatically by Kryo. */
 	public void setKryo (Kryo kryo);
 
 	/** Registers the class using an automatically generated ID. The serializer is chosen automatically. If the class is already

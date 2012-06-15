@@ -47,8 +47,10 @@ public abstract class Serializer<T> {
 	}
 
 	/** If true, this serializer will handle writing and reading null values. If false, the Kryo framework handles null values and
-	 * the serializer will never receive null. This can be set to true on a serializer that does not accept nulls if it is known
-	 * that the serializer will never encounter null. This will prevent the framework from writing a byte to denote null. */
+	 * the serializer will never receive null.
+	 * <p>
+	 * This can be set to true on a serializer that does not accept nulls if it is known that the serializer will never encounter
+	 * null. Doing this will prevent the framework from writing a byte to denote null. */
 	public void setAcceptsNull (boolean acceptsNull) {
 		this.acceptsNull = acceptsNull;
 	}
@@ -57,7 +59,8 @@ public abstract class Serializer<T> {
 		return immutable;
 	}
 
-	/** If true, {@link #copy(Kryo, Object)} will return the original object. */
+	/** If true, the type this serializer will be used for is considered immutable. This causes {@link #copy(Kryo, Object)} to
+	 * return the original object. */
 	public void setImmutable (boolean immutable) {
 		this.immutable = immutable;
 	}

@@ -1,9 +1,9 @@
 
-package com.esotericsoftware.kryo;
+package com.esotericsoftware.kryo.util;
 
 import static com.esotericsoftware.minlog.Log.*;
 
-/** A few utility methods, mostly private.
+/** A few utility methods, mostly for private use.
  * @author Nathan Sweet <misc@n4te.com> */
 public class Util {
 	static public boolean isAndroid;
@@ -15,7 +15,9 @@ public class Util {
 		}
 	}
 
-	static Class getWrapperClass (Class type) {
+	/** Returns the primitive wrapper class for a primitive class.
+	 * @param type Must be a primitive class. */
+	static public Class getWrapperClass (Class type) {
 		if (type == boolean.class)
 			return Boolean.class;
 		else if (type == byte.class)
@@ -33,7 +35,8 @@ public class Util {
 		return Double.class;
 	}
 
-	static void log (String message, Object object) {
+	/** Logs a message about an object. The log level and the string format of the object depend on the object type. */
+	static public void log (String message, Object object) {
 		if (object == null) {
 			if (TRACE) trace("kryo", message + ": null");
 			return;
@@ -47,7 +50,9 @@ public class Util {
 		}
 	}
 
-	static String string (Object object) {
+	/** Returns the object formatted as a string. The format depends on the object's type and whether {@link Object#toString()} has
+	 * been overridden. */
+	static public String string (Object object) {
 		if (object == null) return "null";
 		Class type = object.getClass();
 		if (type.isArray()) return className(type);
@@ -59,7 +64,8 @@ public class Util {
 		return String.valueOf(object);
 	}
 
-	static String className (Class type) {
+	/** Returns the class formatted as a string. The format varies depending on the type. */
+	static public String className (Class type) {
 		if (type.isArray()) {
 			Class elementClass = getElementClass(type);
 			StringBuilder buffer = new StringBuilder(16);
@@ -75,6 +81,7 @@ public class Util {
 		return type.getName();
 	}
 
+	/** Returns the number of dimensions of an array. */
 	static public int getDimensionCount (Class arrayClass) {
 		int depth = 0;
 		Class nextClass = arrayClass.getComponentType();
@@ -85,6 +92,7 @@ public class Util {
 		return depth;
 	}
 
+	/** Returns the base element type of an n-dimensional array class. */
 	static public Class getElementClass (Class arrayClass) {
 		Class elementClass = arrayClass;
 		while (elementClass.getComponentType() != null)
