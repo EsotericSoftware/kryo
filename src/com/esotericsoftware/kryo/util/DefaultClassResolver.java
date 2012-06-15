@@ -1,14 +1,10 @@
 
 package com.esotericsoftware.kryo.util;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
-
 import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
-import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -24,82 +20,21 @@ public class DefaultClassResolver implements ClassResolver {
 
 	protected final IntMap<Registration> idToRegistration = new IntMap();
 	protected final ObjectMap<Class, Registration> classToRegistration = new ObjectMap();
-	protected int nextRegisterID;
 
-	protected final IdentityObjectIntMap<Class> classToNameId = new IdentityObjectIntMap();
-	protected final IntMap<Class> nameIdToClass = new IntMap();
-	protected final ObjectMap<String, Class> nameToClass = new ObjectMap();
+	protected IdentityObjectIntMap<Class> classToNameId;
+	protected IntMap<Class> nameIdToClass;
+	protected ObjectMap<String, Class> nameToClass;
 	protected int nextNameId;
 
-	private Class memoizedClass;
 	private int memoizedClassId = -1;
-	private Registration memoizedClassValue, memoizedClassIdValue;
+	private Registration memoizedClassIdValue;
 
 	public void setKryo (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
-	/** Registers the class using the next available, lowest integer ID and the {@link Kryo#getDefaultSerializer(Class) default
-	 * serializer}. Because the ID assigned is affected by the IDs registered before it, the order classes are registered is
-	 * important when using this method. The order must be the same at deserialization as it was for serialization. */
-	public Registration register (Class type) {
-		return register(type, kryo.getDefaultSerializer(type));
-	}
-
-	/** Registers the class using the specified ID and the {@link Kryo#getDefaultSerializer(Class) default serializer}. IDs are
-	 * written with {@link Output#writeInt(int, boolean)} called with true, so smaller positive integers use fewer bytes.
-	 * @param id Must not be -1 or -2. */
-	public Registration register (Class type, int id) {
-		return register(type, kryo.getDefaultSerializer(type), id);
-	}
-
-	/** Registers the class using the next available, lowest integer ID. Because the ID assigned is affected by the IDs registered
-	 * before it, the order classes are registered is important when using this method. The order must be the same at
-	 * deserialization as it was for serialization. */
-	public Registration register (Class type, Serializer serializer) {
-		Registration registration = classToRegistration.get(type);
-		if (registration != null) {
-			registration.setSerializer(serializer);
-			return registration;
-		}
-		int id;
-		while (true) {
-			id = nextRegisterID++;
-			// Disallow -1 and -2, which are used for NAME and NULL (stored as id + 2 == 1 and 0).
-			if (nextRegisterID == -2) nextRegisterID = 0;
-			if (!idToRegistration.containsKey(id)) break;
-		}
-		return registerInternal(new Registration(type, serializer, id));
-	}
-
-	/** IDs are written with {@link Output#writeInt(int, boolean)} called with true, so smaller positive integers use fewer bytes.
-	 * @param id Must not be -1 or -2. */
-	public Registration register (Class type, Serializer serializer, int id) {
-		if (id == -1 || id == -2) throw new IllegalArgumentException("id cannot be -1 or -2");
-		return register(new Registration(type, serializer, id));
-	}
-
-	/** IDs are written with {@link Output#writeInt(int, boolean)} called with true, so smaller positive integers use fewer bytes.
-	 * @param registration The id must not be -1 or -2. */
 	public Registration register (Registration registration) {
 		if (registration == null) throw new IllegalArgumentException("registration cannot be null.");
-		int id = registration.getId();
-		if (id == -1 || id == -2) throw new IllegalArgumentException("id cannot be -1 or -2");
-
-		try {
-			Registration existing = getRegistration(registration.getType());
-			if (existing != null && existing.getType() != registration.getType()) {
-				throw new KryoException("An existing registration with a different type already uses ID: " + registration.getId()
-					+ "\nExisting registration: " + existing + "\nUnable to set registration: " + registration);
-			}
-		} catch (Exception ignored) {
-		}
-
-		registerInternal(registration);
-		return registration;
-	}
-
-	protected Registration registerInternal (Registration registration) {
 		if (TRACE) {
 			if (registration.getId() == NAME) {
 				trace("kryo", "Register class name: " + className(registration.getType()) + " ("
@@ -115,34 +50,14 @@ public class DefaultClassResolver implements ClassResolver {
 		return registration;
 	}
 
+	public Registration registerImplicit (Class type) {
+		return register(new Registration(type, kryo.getDefaultSerializer(type), NAME));
+	}
+
 	/** If the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is false, it is automatically registered
 	 * using the {@link Kryo#addDefaultSerializer(Class, Class) default serializer}. */
 	public Registration getRegistration (Class type) {
-		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-
-		if (type == memoizedClass) return memoizedClassValue;
-		Registration registration = classToRegistration.get(type);
-		if (registration == null) {
-			if (Proxy.isProxyClass(type)) {
-				// If a Proxy class, treat it like an InvocationHandler because the concrete class for a proxy is generated.
-				registration = getRegistration(InvocationHandler.class);
-			} else if (!type.isEnum() && Enum.class.isAssignableFrom(type)) {
-				// This handles an enum value that is an inner class. Eg: enum A {b{}};
-				registration = getRegistration(type.getEnclosingClass());
-			} else
-				registration = registerImplicit(type);
-		}
-		memoizedClass = type;
-		memoizedClassValue = registration;
-		return registration;
-	}
-
-	protected Registration registerImplicit (Class type) {
-		if (kryo.isRegistrationRequired()) {
-			throw new IllegalArgumentException("Class is not registered: " + className(type)
-				+ "\nNote: To register this class use: kryo.register(" + className(type) + ".class);");
-		}
-		return registerInternal(new Registration(type, kryo.getDefaultSerializer(type), NAME));
+		return classToRegistration.get(type);
 	}
 
 	public Registration getRegistration (int classID) {
@@ -155,26 +70,33 @@ public class DefaultClassResolver implements ClassResolver {
 			output.writeByte(Kryo.NULL);
 			return null;
 		}
-		Registration registration = getRegistration(type);
-		if (registration.getId() == NAME) {
-			output.writeByte(NAME + 2);
-			int nameId = classToNameId.get(type, -1);
-			if (nameId != -1) {
-				if (TRACE) trace("kryo", "Write class name reference " + nameId + ": " + className(type));
-				output.writeInt(nameId, true);
-				return registration;
-			}
-			// Only write the class name the first time encountered in object graph.
-			if (TRACE) trace("kryo", "Write class name: " + className(type));
-			nameId = nextNameId++;
-			classToNameId.put(type, nameId);
-			output.write(nameId);
-			output.writeString(type.getName());
-		} else {
+		Registration registration = kryo.getRegistration(type);
+		if (registration.getId() == NAME)
+			writeName(output, type, registration);
+		else {
 			if (TRACE) trace("kryo", "Write class " + registration.getId() + ": " + className(type));
 			output.writeInt(registration.getId() + 2, true);
 		}
 		return registration;
+	}
+
+	protected void writeName (Output output, Class type, Registration registration) {
+		output.writeByte(NAME + 2);
+		if (classToNameId != null) {
+			int nameId = classToNameId.get(type, -1);
+			if (nameId != -1) {
+				if (TRACE) trace("kryo", "Write class name reference " + nameId + ": " + className(type));
+				output.writeInt(nameId, true);
+				return;
+			}
+		}
+		// Only write the class name the first time encountered in object graph.
+		if (TRACE) trace("kryo", "Write class name: " + className(type));
+		int nameId = nextNameId++;
+		if (classToNameId == null) classToNameId = new IdentityObjectIntMap();
+		classToNameId.put(type, nameId);
+		output.write(nameId);
+		output.writeString(type.getName());
 	}
 
 	public Registration readClass (Input input) {
@@ -184,26 +106,7 @@ public class DefaultClassResolver implements ClassResolver {
 			if (TRACE || (DEBUG && kryo.getDepth() == 1)) log("Read", null);
 			return null;
 		case NAME + 2: // Offset for NAME and NULL.
-			int nameId = input.readInt(true);
-			Class type = nameIdToClass.get(nameId);
-			if (type == null) {
-				// Only read the class name the first time encountered in object graph.
-				String className = input.readString();
-				type = nameToClass.get(className);
-				if (type == null) {
-					try {
-						type = Class.forName(className, false, kryo.getClassLoader());
-					} catch (ClassNotFoundException ex) {
-						throw new KryoException("Unable to find class: " + className, ex);
-					}
-					nameToClass.put(className, type);
-				}
-				nameIdToClass.put(nameId, type);
-				if (TRACE) trace("kryo", "Read class name: " + className);
-			} else {
-				if (TRACE) trace("kryo", "Read class name reference " + nameId + ": " + className(type));
-			}
-			return getRegistration(type);
+			return readName(input);
 		}
 		if (classID == memoizedClassId) return memoizedClassIdValue;
 		Registration registration = idToRegistration.get(classID - 2);
@@ -214,10 +117,35 @@ public class DefaultClassResolver implements ClassResolver {
 		return registration;
 	}
 
+	protected Registration readName (Input input) {
+		int nameId = input.readInt(true);
+		if (nameIdToClass == null) nameIdToClass = new IntMap();
+		Class type = nameIdToClass.get(nameId);
+		if (type == null) {
+			// Only read the class name the first time encountered in object graph.
+			String className = input.readString();
+			if (nameToClass != null) type = nameToClass.get(className);
+			if (type == null) {
+				try {
+					type = Class.forName(className, false, kryo.getClassLoader());
+				} catch (ClassNotFoundException ex) {
+					throw new KryoException("Unable to find class: " + className, ex);
+				}
+				if (nameToClass == null) nameToClass = new ObjectMap();
+				nameToClass.put(className, type);
+			}
+			nameIdToClass.put(nameId, type);
+			if (TRACE) trace("kryo", "Read class name: " + className);
+		} else {
+			if (TRACE) trace("kryo", "Read class name reference " + nameId + ": " + className(type));
+		}
+		return kryo.getRegistration(type);
+	}
+
 	public void reset () {
 		if (!kryo.isRegistrationRequired()) {
-			classToNameId.clear();
-			nameIdToClass.clear();
+			if (classToNameId != null) classToNameId.clear();
+			if (nameIdToClass != null) nameIdToClass.clear();
 			nextNameId = 0;
 		}
 	}

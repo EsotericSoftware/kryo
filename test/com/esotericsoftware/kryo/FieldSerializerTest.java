@@ -341,6 +341,23 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(53, test);
 	}
 
+	public void testRegistration () {
+		int id = kryo.getNextRegistrationId();
+		kryo.register(DefaultTypes.class, id);
+		kryo.register(DefaultTypes.class, id);
+		kryo.register(new Registration(byte[].class, kryo.getDefaultSerializer(byte[].class), id + 1));
+		kryo.register(byte[].class, kryo.getDefaultSerializer(byte[].class), id + 1);
+		kryo.register(HasStringField.class, kryo.getDefaultSerializer(HasStringField.class));
+
+		DefaultTypes test = new DefaultTypes();
+		test.intField = 12;
+		test.StringField = "meow";
+		test.CharacterField = 'z';
+		test.byteArrayField = new byte[] {0, 1, 2, 3, 4};
+		test.child = new DefaultTypes();
+		roundTrip(75, test);
+	}
+
 	static public class DefaultTypes {
 		// Primitives.
 		public boolean booleanField;

@@ -10,35 +10,14 @@ public interface ClassResolver {
 	/** Sets the Kryo instance that this ClassResolver will be used for. This is called automatically by Kryo. */
 	public void setKryo (Kryo kryo);
 
-	/** Registers the class using an automatically generated ID. The serializer is chosen automatically. If the class is already
-	 * registered, the existing entry is updated with the new serializer. Registering a primitive also affects the corresponding
-	 * primitive wrapper. */
-	public Registration register (Class type);
-
-	/** Registers the class using the specified ID. The serializer is chosen automatically. If the ID is already in use by the same
-	 * type, the old entry is overwritten. If the ID is already in use by a different type, a {@link KryoException} is thrown. IDs
-	 * must be the same at deserialization as they were for serialization. Registering a primitive also affects the corresponding
-	 * primitive wrapper. */
-	public Registration register (Class type, int id);
-
-	/** Registers the class using an automatically generated ID. If the class is already registered, the existing entry is updated
-	 * with the new serializer. Registering a primitive also affects the corresponding primitive wrapper. */
-	public Registration register (Class type, Serializer serializer);
-
-	/** Registers the class using the specified ID. If the ID is already in use by the same type, the old entry is overwritten. If
-	 * the ID is already in use by a different type, a {@link KryoException} is thrown. IDs must be the same at deserialization as
-	 * they were for serialization. Registering a primitive also affects the corresponding primitive wrapper. */
-	public Registration register (Class type, Serializer serializer, int id);
-
-	/** Stores the specified registration. This can be used to efficiently store per type information needed for serialization,
-	 * accessible in serializers via {@link Kryo#getRegistration(Class)}. If the ID is already in use by the same type, the old
-	 * entry is overwritten. If the ID is already in use by a different type, a {@link KryoException} is thrown. IDs must be the
-	 * same at deserialization as they were for serialization. Registering a primitive also affects the corresponding primitive
-	 * wrapper. */
+	/** Stores the specified registration.
+	 * @see Kryo#register(Registration) */
 	public Registration register (Registration registration);
 
-	/** Returns the registration for the specified class.
-	 * @throws IllegalArgumentException if the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is true. */
+	/** Called when an unregistered type is encountered and {@link Kryo#setRegistrationRequired(boolean)} is false. */
+	public Registration registerImplicit (Class type);
+
+	/** Returns the registration for the specified class, or null if the class is not registered. */
 	public Registration getRegistration (Class type);
 
 	/** Returns the registration for the specified ID, or null if no class is registered with that ID. */

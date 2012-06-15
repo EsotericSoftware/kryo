@@ -2,8 +2,10 @@
 package com.esotericsoftware.kryo;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -77,9 +79,12 @@ public class Kryo {
 
 	private Class<? extends Serializer> defaultSerializer = FieldSerializer.class;
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
-	private int lowPriorityDefaultSerializerCount;
+	private final int lowPriorityDefaultSerializerCount;
 
 	private final ClassResolver classResolver;
+	private int nextRegisterID;
+	private Class memoizedClass;
+	private Registration memoizedClassValue;
 	private ClassLoader classLoader = getClass().getClassLoader();
 	private InstantiatorStrategy strategy;
 	private boolean registrationRequired;
@@ -151,15 +156,15 @@ public class Kryo {
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
+		register(int.class, new IntSerializer());
+		register(String.class, new StringSerializer());
+		register(float.class, new FloatSerializer());
 		register(boolean.class, new BooleanSerializer());
 		register(byte.class, new ByteSerializer());
 		register(char.class, new CharSerializer());
 		register(short.class, new ShortSerializer());
-		register(int.class, new IntSerializer());
 		register(long.class, new LongSerializer());
-		register(float.class, new FloatSerializer());
 		register(double.class, new DoubleSerializer());
-		register(String.class, new StringSerializer());
 	}
 
 	// --- Default serializers ---
@@ -312,34 +317,107 @@ public class Kryo {
 
 	// --- Registration ---
 
-	/** @see ClassResolver#register(Class) */
+	/** Registers the class using the lowest, next available integer ID and the {@link Kryo#getDefaultSerializer(Class) default
+	 * serializer}. If the class is already registered, the existing entry is updated with the new serializer. Registering a
+	 * primitive also affects the corresponding primitive wrapper.
+	 * <p>
+	 * Because the ID assigned is affected by the IDs registered before it, the order classes are registered is important when
+	 * using this method. The order must be the same at deserialization as it was for serialization. */
 	public Registration register (Class type) {
-		return classResolver.register(type);
+		return register(type, getDefaultSerializer(type));
 	}
 
-	/** @see ClassResolver#register(Class, int) */
+	/** Registers the class using the specified ID and the {@link Kryo#getDefaultSerializer(Class) default serializer}. If the ID is
+	 * already in use by the same type, the old entry is overwritten. If the ID is already in use by a different type, a
+	 * {@link KryoException} is thrown. Registering a primitive also affects the corresponding primitive wrapper.
+	 * <p>
+	 * IDs must be the same at deserialization as they were for serialization.
+	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. */
 	public Registration register (Class type, int id) {
-		return classResolver.register(type, id);
+		return register(type, getDefaultSerializer(type), id);
 	}
 
-	/** @see ClassResolver#register(Class, Serializer) */
+	/** Registers the class using the lowest, next available integer ID and the specified serializer. If the class is already
+	 * registered, the existing entry is updated with the new serializer. Registering a primitive also affects the corresponding
+	 * primitive wrapper.
+	 * <p>
+	 * Because the ID assigned is affected by the IDs registered before it, the order classes are registered is important when
+	 * using this method. The order must be the same at deserialization as it was for serialization. */
 	public Registration register (Class type, Serializer serializer) {
-		return classResolver.register(type, serializer);
+		Registration registration = classResolver.getRegistration(type);
+		if (registration != null) {
+			registration.setSerializer(serializer);
+			return registration;
+		}
+		return classResolver.register(new Registration(type, serializer, getNextRegistrationId()));
 	}
 
-	/** @see ClassResolver#register(Class, Serializer, int) */
+	/** Registers the class using the specified ID and serializer. If the ID is already in use by the same type, the old entry is
+	 * overwritten. If the ID is already in use by a different type, a {@link KryoException} is thrown. Registering a primitive
+	 * also affects the corresponding primitive wrapper.
+	 * <p>
+	 * IDs must be the same at deserialization as they were for serialization.
+	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. */
 	public Registration register (Class type, Serializer serializer, int id) {
-		return classResolver.register(type, serializer, id);
+		if (id < 0) throw new IllegalArgumentException("id must be >= 0: " + id);
+		return register(new Registration(type, serializer, id));
 	}
 
-	/** @see ClassResolver#register(Registration) */
+	/** Stores the specified registration. If the ID is already in use by the same type, the old entry is overwritten. If the ID is
+	 * already in use by a different type, a {@link KryoException} is thrown. Registering a primitive also affects the
+	 * corresponding primitive wrapper.
+	 * <p>
+	 * IDs must be the same at deserialization as they were for serialization.
+	 * <p>
+	 * Registration can be suclassed to efficiently store per type information, accessible in serializers via
+	 * {@link Kryo#getRegistration(Class)}. */
 	public Registration register (Registration registration) {
+		int id = registration.getId();
+		if (id < 0) throw new IllegalArgumentException("id must be > 0: " + id);
+
+		Registration existing = getRegistration(registration.getId());
+		if (existing != null && existing.getType() != registration.getType()) {
+			throw new KryoException("An existing registration with a different type already uses ID: " + registration.getId()
+				+ "\nExisting registration: " + existing + "\nUnable to set registration: " + registration);
+		}
+
 		return classResolver.register(registration);
 	}
 
-	/** @see ClassResolver#getRegistration(Class) */
+	/** Returns the lowest, next available integer ID. */
+	public int getNextRegistrationId () {
+		int id = nextRegisterID;
+		while (true) {
+			if (classResolver.getRegistration(id) == null) return id;
+			id++;
+		}
+	}
+
+	/** @throws IllegalArgumentException if the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is true.
+	 * @see ClassResolver#getRegistration(Class) */
 	public Registration getRegistration (Class type) {
-		return classResolver.getRegistration(type);
+		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+
+		if (type == memoizedClass) return memoizedClassValue;
+		Registration registration = classResolver.getRegistration(type);
+		if (registration == null) {
+			if (Proxy.isProxyClass(type)) {
+				// If a Proxy class, treat it like an InvocationHandler because the concrete class for a proxy is generated.
+				registration = getRegistration(InvocationHandler.class);
+			} else if (!type.isEnum() && Enum.class.isAssignableFrom(type)) {
+				// This handles an enum value that is an inner class. Eg: enum A {b{}};
+				registration = getRegistration(type.getEnclosingClass());
+			} else {
+				if (registrationRequired) {
+					throw new IllegalArgumentException("Class is not registered: " + className(type)
+						+ "\nNote: To register this class use: kryo.register(" + className(type) + ".class);");
+				}
+				registration = classResolver.registerImplicit(type);
+			}
+		}
+		memoizedClass = type;
+		memoizedClassValue = registration;
+		return registration;
 	}
 
 	/** @see ClassResolver#getRegistration(int) */
@@ -351,7 +429,7 @@ public class Kryo {
 	 * @see #getRegistration(Class)
 	 * @see Registration#getSerializer() */
 	public Serializer getSerializer (Class type) {
-		return classResolver.getRegistration(type).getSerializer();
+		return getRegistration(type).getSerializer();
 	}
 
 	// --- Serialization ---
