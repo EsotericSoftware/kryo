@@ -330,6 +330,7 @@ public class DefaultSerializers {
 
 		public KryoSerializable read (Kryo kryo, Input input, Class<KryoSerializable> type) {
 			KryoSerializable object = kryo.newInstance(type);
+			kryo.reference(object);
 			object.read(kryo, input);
 			return object;
 		}
