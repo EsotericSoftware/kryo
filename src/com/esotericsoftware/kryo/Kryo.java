@@ -90,11 +90,12 @@ public class Kryo {
 	private boolean registrationRequired;
 
 	private int depth, maxDepth = Integer.MAX_VALUE;
+	private boolean autoReset = true;
 	private volatile Thread thread;
 	private ObjectMap context, graphContext;
 
 	private final ReferenceResolver referenceResolver;
-	private boolean references, needsReference;
+	private boolean references, needsReference, strictReferences = true;
 	private Object readObject;
 
 	private boolean copyShallow;
@@ -443,7 +444,7 @@ public class Kryo {
 		try {
 			return classResolver.writeClass(output, type);
 		} finally {
-			if (depth == 0) reset();
+			if (depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -457,7 +458,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			getRegistration(object.getClass()).getSerializer().write(this, output, object);
 		} finally {
-			if (--depth == 0) reset();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -472,7 +473,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			serializer.write(this, output, object);
 		} finally {
-			if (--depth == 0) reset();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -496,7 +497,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			serializer.write(this, output, object);
 		} finally {
-			if (--depth == 0) reset();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -520,7 +521,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			serializer.write(this, output, object);
 		} finally {
-			if (--depth == 0) reset();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -539,7 +540,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			registration.getSerializer().write(this, output, object);
 		} finally {
-			if (--depth == 0) reset();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -581,7 +582,7 @@ public class Kryo {
 		try {
 			return classResolver.readClass(input);
 		} finally {
-			if (depth == 0) reset();
+			if (depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -602,7 +603,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
-			if (--depth == 0) reset();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -623,7 +624,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
-			if (--depth == 0) reset();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -653,7 +654,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
-			if (--depth == 0) reset();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -682,7 +683,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
-			if (--depth == 0) reset();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -707,14 +708,14 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
-			if (--depth == 0) reset();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
 	/** Returns true if null or a reference to a previously read object was read. In this case, the object is stored in
 	 * {@link #readObject}. Returns false if the object was not a reference and needs to be read. */
 	boolean readReferenceOrNull (Input input, Class type, boolean mayBeNull) {
-		if (needsReference) {
+		if (needsReference && strictReferences) {
 			throw new IllegalStateException(
 				"Kryo#reference(Object) must be called before Kryo can be used to deserialize child objects.");
 		}
@@ -1023,6 +1024,21 @@ public class Kryo {
 	/** Returns the number of child objects away from the object graph root. */
 	public int getDepth () {
 		return depth;
+	}
+
+	/** If true (the default), {@link #reset()} is called automatically after an entire object graph has been read or written. If
+	 * false, {@link #reset()} must be called manually. This is an advanced feature that allows unregistered class names,
+	 * references, and other information to span multiple object graphs. */
+	public void setAutoReset (boolean autoReset) {
+		this.autoReset = autoReset;
+	}
+
+	/** When true (the default), if {@link #setReferences(boolean) references} are enabled and a serializer does not call
+	 * {@link #reference(Object)} before attempting to use Kryo to deserialize a child object, an exception is thrown. When false,
+	 * no exception is thrown. This can be convenient when it is known that child objects can never reference the parent object,
+	 * but can be difficult to debug if the call to {@link #reference(Object)} is omitted unintentionally. */
+	public void setStrictReferences (boolean strictReferences) {
+		this.strictReferences = strictReferences;
 	}
 
 	/** Sets the maxiumum depth of an object graph. This can be used to prevent malicious data from causing a stack overflow.
