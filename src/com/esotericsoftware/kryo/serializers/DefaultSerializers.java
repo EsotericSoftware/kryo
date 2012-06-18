@@ -291,7 +291,7 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, StringBuffer object) {
-			output.writeString(object == null ? null : object.toString());
+			output.writeString(object);
 		}
 
 		public StringBuffer read (Kryo kryo, Input input, Class<StringBuffer> type) {
@@ -312,13 +312,11 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, StringBuilder object) {
-			output.writeString(object == null ? null : object.toString());
+			output.writeString(object);
 		}
 
 		public StringBuilder read (Kryo kryo, Input input, Class<StringBuilder> type) {
-			String value = input.readString();
-			if (value == null) return null;
-			return new StringBuilder(value);
+			return input.readStringBuilder();
 		}
 
 		public StringBuilder copy (Kryo kryo, StringBuilder original) {
