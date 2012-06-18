@@ -81,6 +81,8 @@ public class InputOutputTest extends KryoTestCase {
 		Input read = new Input(write.toBytes());
 		assertEquals(value, read.readString());
 
+		runStringTest(127);
+		runStringTest(256);
 		runStringTest(1024 * 1023);
 		runStringTest(1024 * 1024);
 		runStringTest(1024 * 1025);
@@ -93,10 +95,29 @@ public class InputOutputTest extends KryoTestCase {
 		StringBuilder buffer = new StringBuilder();
 		for (int i = 0; i < length; i++)
 			buffer.append((char)i);
+
 		String value = buffer.toString();
+		write.writeString(value);
 		write.writeString(value);
 		Input read = new Input(write.toBytes());
 		assertEquals(value, read.readString());
+		assertEquals(value, read.readStringBuilder().toString());
+
+		write.clear();
+		write.writeString(buffer);
+		write.writeString(buffer);
+		read = new Input(write.toBytes());
+		assertEquals(value, read.readStringBuilder().toString());
+		assertEquals(value, read.readString());
+
+		if (length <= 127) {
+			write.clear();
+			write.writeAscii(value);
+			write.writeAscii(value);
+			read = new Input(write.toBytes());
+			assertEquals(value, read.readStringBuilder().toString());
+			assertEquals(value, read.readString());
+		}
 	}
 
 	public void runStringTest (Output write) throws IOException {
@@ -131,6 +152,21 @@ public class InputOutputTest extends KryoTestCase {
 			assertEquals(String.valueOf((char)i), read.readString());
 		for (int i = 0; i < 127; i++)
 			assertEquals(String.valueOf((char)i) + "abc", read.readString());
+
+		read.rewind();
+		assertEquals("", read.readStringBuilder().toString());
+		assertEquals("1", read.readStringBuilder().toString());
+		assertEquals("22", read.readStringBuilder().toString());
+		assertEquals("uno", read.readStringBuilder().toString());
+		assertEquals("dos", read.readStringBuilder().toString());
+		assertEquals("tres", read.readStringBuilder().toString());
+		assertEquals(null, read.readStringBuilder());
+		assertEquals(value1, read.readStringBuilder().toString());
+		assertEquals(value2, read.readStringBuilder().toString());
+		for (int i = 0; i < 127; i++)
+			assertEquals(String.valueOf((char)i), read.readStringBuilder().toString());
+		for (int i = 0; i < 127; i++)
+			assertEquals(String.valueOf((char)i) + "abc", read.readStringBuilder().toString());
 	}
 
 	public void testCanReadInt () throws IOException {

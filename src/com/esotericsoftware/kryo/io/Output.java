@@ -274,8 +274,9 @@ public class Output extends OutputStream {
 
 	// string
 
-	/** Writes the length and string, or null. Short strings are checked and if ASCII are written more efficiently, else they are
-	 * written as UTF8. If a string is known to be ASCII, {@link #writeAscii(String)} may be used.
+	/** Writes the length and string, or null. Short strings are checked and if ASCII they are written more efficiently, else they
+	 * are written as UTF8. If a string is known to be ASCII, {@link #writeAscii(String)} may be used. The string can be read using
+	 * {@link Input#readString()} or {@link Input#readStringBuilder()}.
 	 * @param value May be null. */
 	public void writeString (String value) throws KryoException {
 		if (value == null) {
@@ -325,9 +326,40 @@ public class Output extends OutputStream {
 		}
 	}
 
-	/** Writes a string that is known to contain only ASCII characters. Each byte is a 7 bit character with the remaining byte
-	 * denoting if another character is available. This is slightly more efficient than {@link #writeString(String)}. The string is
-	 * still read using {@link Input#readString()}. Non-ASCII strings passed to this method will be corrupted. */
+	/** Writes the length and CharSequence as UTF8, or null. The string can be read using {@link Input#readString()} or
+	 * {@link Input#readStringBuilder()}.
+	 * @param value May be null. */
+	public void writeString (CharSequence value) throws KryoException {
+		if (value == null) {
+			writeByte(0x80); // 0 means null, bit 8 means UTF8.
+			return;
+		}
+		int charCount = value.length();
+		if (charCount == 0) {
+			writeByte(1 | 0x80); // 1 means empty string, bit 8 means UTF8.
+			return;
+		}
+		writeUtf8Length(charCount + 1);
+		int charIndex = 0;
+		if (capacity - position >= charCount) {
+			// Try to write 8 bit chars.
+			byte[] buffer = this.buffer;
+			int position = this.position;
+			for (; charIndex < charCount; charIndex++) {
+				int c = value.charAt(charIndex);
+				if (c > 127) break;
+				buffer[position++] = (byte)c;
+			}
+			this.position = position;
+		}
+		if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
+	}
+
+	/** Writes a string that is known to contain only ASCII characters. Non-ASCII strings passed to this method will be corrupted.
+	 * Each byte is a 7 bit character with the remaining byte denoting if another character is available. This is slightly more
+	 * efficient than {@link #writeString(String)}. The string can be read using {@link Input#readString()} or
+	 * {@link Input#readStringBuilder()}.
+	 * @param value May be null. */
 	public void writeAscii (String value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
@@ -355,21 +387,25 @@ public class Output extends OutputStream {
 			buffer[position++] = (byte)(value | 0x80); // Set bit 8.
 		} else if (value >>> 13 == 0) {
 			require(2);
+			byte[] buffer = this.buffer;
 			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
 			buffer[position++] = (byte)(value >>> 6);
 		} else if (value >>> 20 == 0) {
 			require(3);
+			byte[] buffer = this.buffer;
 			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
 			buffer[position++] = (byte)((value >>> 6) | 0x80); // Set bit 8.
 			buffer[position++] = (byte)(value >>> 13);
 		} else if (value >>> 27 == 0) {
 			require(4);
+			byte[] buffer = this.buffer;
 			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
 			buffer[position++] = (byte)((value >>> 6) | 0x80); // Set bit 8.
 			buffer[position++] = (byte)((value >>> 13) | 0x80); // Set bit 8.
 			buffer[position++] = (byte)(value >>> 20);
 		} else {
 			require(5);
+			byte[] buffer = this.buffer;
 			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
 			buffer[position++] = (byte)((value >>> 6) | 0x80); // Set bit 8.
 			buffer[position++] = (byte)((value >>> 13) | 0x80); // Set bit 8.
@@ -378,7 +414,7 @@ public class Output extends OutputStream {
 		}
 	}
 
-	private void writeString_slow (String value, int charCount, int charIndex) {
+	private void writeString_slow (CharSequence value, int charCount, int charIndex) {
 		for (; charIndex < charCount; charIndex++) {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
 			int c = value.charAt(charIndex);

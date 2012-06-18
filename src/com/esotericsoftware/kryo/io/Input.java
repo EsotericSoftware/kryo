@@ -393,7 +393,8 @@ public class Input extends InputStream {
 
 	// string
 
-	/** Reads the length and string of UTF8 characters, or null.
+	/** Reads the length and string of UTF8 characters, or null. This can read strings written by {@link Output#writeString(String)}
+	 * , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
 	 * @return May be null. */
 	public String readString () {
 		int available = require(1);
@@ -409,7 +410,8 @@ public class Input extends InputStream {
 		}
 		charCount--;
 		if (chars.length < charCount) chars = new char[charCount];
-		return readUtf8(charCount);
+		readUtf8(charCount);
+		return new String(chars, 0, charCount);
 	}
 
 	private int readUtf8Length (int b) {
@@ -460,10 +462,10 @@ public class Input extends InputStream {
 		return result;
 	}
 
-	private String readUtf8 (int charCount) {
+	private void readUtf8 (int charCount) {
 		byte[] buffer = this.buffer;
 		char[] chars = this.chars;
-		// Try to read 8 bit chars.
+		// Try to read 7 bit ASCII chars.
 		int charIndex = 0;
 		int count = Math.min(require(1), charCount);
 		int position = this.position;
@@ -478,11 +480,10 @@ public class Input extends InputStream {
 		}
 		this.position = position;
 		// If buffer didn't hold all chars or any were not ASCII, use slow path for remainder.
-		if (charIndex < charCount) return readUtf8_slow(charCount, charIndex);
-		return new String(chars, 0, charCount);
+		if (charIndex < charCount) readUtf8_slow(charCount, charIndex);
 	}
 
-	private String readUtf8_slow (int charCount, int charIndex) {
+	private void readUtf8_slow (int charCount, int charIndex) {
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		while (charIndex < charCount) {
@@ -511,7 +512,6 @@ public class Input extends InputStream {
 			}
 			charIndex++;
 		}
-		return new String(chars, 0, charCount);
 	}
 
 	private String readAscii () {
@@ -558,6 +558,29 @@ public class Input extends InputStream {
 			chars[charCount++] = (char)b;
 		}
 		return new String(chars, 0, charCount);
+	}
+
+	/** Reads the length and string of UTF8 characters, or null. This can read strings written by {@link Output#writeString(String)}
+	 * , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
+	 * @return May be null. */
+	public StringBuilder readStringBuilder () {
+		int available = require(1);
+		int b = buffer[position++];
+		if ((b & 0x80) == 0) return new StringBuilder(readAscii()); // ASCII.
+		// Null, empty, or UTF8.
+		int charCount = available >= 5 ? readUtf8Length(b) : readUtf8Length_slow(b);
+		switch (charCount) {
+		case 0:
+			return null;
+		case 1:
+			return new StringBuilder("");
+		}
+		charCount--;
+		if (chars.length < charCount) chars = new char[charCount];
+		readUtf8(charCount);
+		StringBuilder builder = new StringBuilder(charCount);
+		builder.append(chars, 0, charCount);
+		return builder;
 	}
 
 	// float
