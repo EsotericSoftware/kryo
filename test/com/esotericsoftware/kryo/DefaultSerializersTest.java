@@ -104,7 +104,8 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	public void testString () {
-		kryo.setReferences(true);
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(true);
 		roundTrip(6, "meow");
 		roundTrip(70, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 
@@ -120,9 +121,9 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	public void testNull () {
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(true);
 		kryo.register(ArrayList.class);
-
-		kryo.setReferences(true);
 		roundTrip(1, null);
 		testNull(Long.class);
 		testNull(ArrayList.class);
