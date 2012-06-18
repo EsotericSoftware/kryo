@@ -3,13 +3,16 @@ package com.esotericsoftware.kryo.serializers;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Currency;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TimeZone;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -431,6 +434,59 @@ public class DefaultSerializers {
 
 		public Set read (Kryo kryo, Input input, Class type) {
 			return Collections.singleton(kryo.readClassAndObject(input));
+		}
+	}
+
+	/** Serializer for {@link TimeZone}. Assumes the timezones are immutable.
+	 * @author serverperformance */
+	static public class TimeZoneSerializer extends Serializer<TimeZone> {
+		{
+			setImmutable(true);
+		}
+
+		public void write (Kryo kryo, Output output, TimeZone object) {
+			output.writeString(object.getID());
+		}
+
+		public TimeZone read (Kryo kryo, Input input, Class<TimeZone> type) {
+			return TimeZone.getTimeZone(input.readString());
+		}
+	}
+
+	/** Serializer for {@link GregorianCalendar}, java.util.JapaneseImperialCalendar, and sun.util.BuddhistCalendar.
+	 * @author serverperformance */
+	static public class CalendarSerializer extends Serializer<Calendar> {
+		// The default value of gregorianCutover.
+		static private final long DEFAULT_GREGORIAN_CUTOVER = -12219292800000L;
+
+		TimeZoneSerializer timeZoneSerializer = new TimeZoneSerializer();
+
+		public void write (Kryo kryo, Output output, Calendar object) {
+			timeZoneSerializer.write(kryo, output, object.getTimeZone()); // can't be null
+			output.writeLong(object.getTimeInMillis(), true);
+			output.writeBoolean(object.isLenient());
+			output.writeInt(object.getFirstDayOfWeek(), true);
+			output.writeInt(object.getMinimalDaysInFirstWeek(), true);
+			if (object instanceof GregorianCalendar)
+				output.writeLong(((GregorianCalendar)object).getGregorianChange().getTime(), false);
+			else
+				output.writeLong(DEFAULT_GREGORIAN_CUTOVER, false);
+		}
+
+		public Calendar read (Kryo kryo, Input input, Class<Calendar> type) {
+			Calendar result = Calendar.getInstance(timeZoneSerializer.read(kryo, input, TimeZone.class));
+			result.setTimeInMillis(input.readLong(true));
+			result.setLenient(input.readBoolean());
+			result.setFirstDayOfWeek(input.readInt(true));
+			result.setMinimalDaysInFirstWeek(input.readInt(true));
+			long gregorianChange = input.readLong(false);
+			if (gregorianChange != DEFAULT_GREGORIAN_CUTOVER)
+				if (result instanceof GregorianCalendar) ((GregorianCalendar)result).setGregorianChange(new Date(gregorianChange));
+			return result;
+		}
+
+		public Calendar copy (Kryo kryo, Calendar original) {
+			return (Calendar)original.clone();
 		}
 	}
 }

@@ -10,12 +10,14 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Currency;
 import java.util.Date;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
@@ -39,6 +41,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerial
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigIntegerSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BooleanSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ByteSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.CalendarSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CharSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ClassSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsEmptyListSerializer;
@@ -59,6 +62,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimeZoneSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
@@ -154,6 +158,8 @@ public class Kryo {
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
 		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
+		addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
+		addDefaultSerializer(Calendar.class, CalendarSerializer.class);
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
@@ -233,6 +239,7 @@ public class Kryo {
 	 * <td>Map</td>
 	 * <td>BigInteger</td>
 	 * <td>BigDecimal</td>
+	 * <td>KryoSerializable</td>
 	 * </tr>
 	 * <tr>
 	 * <td>Collection</td>
@@ -246,13 +253,14 @@ public class Kryo {
 	 * <td>Enum</td>
 	 * <td>Collections.emptyMap</td>
 	 * <td>Collections.emptySet</td>
-	 * <td>KryoSerializable</td>
+	 * <td>Calendar</td>
 	 * </tr>
 	 * <tr>
 	 * <td>StringBuffer</td>
 	 * <td>Class</td>
 	 * <td>Collections.singletonList</td>
 	 * <td>Collections.singletonMap</td>
+	 * <td>TimeZone</td>
 	 * </tr>
 	 * </table>
 	 * <p>

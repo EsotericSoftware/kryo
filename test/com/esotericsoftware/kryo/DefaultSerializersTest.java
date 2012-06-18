@@ -4,6 +4,7 @@ package com.esotericsoftware.kryo;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 
@@ -192,6 +193,13 @@ public class DefaultSerializersTest extends KryoTestCase {
 		test.add(Collections.singletonMap("moo", 1234));
 		test.add(Collections.singleton(12.34));
 		roundTrip(249, test);
+	}
+
+	public void testCalendar () {
+		kryo.setRegistrationRequired(false);
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(1980, 7, 26, 12, 22, 46);
+		roundTrip(64, calendar);
 	}
 
 	public enum TestEnum {
