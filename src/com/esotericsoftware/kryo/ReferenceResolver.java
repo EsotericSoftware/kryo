@@ -16,7 +16,7 @@ public interface ReferenceResolver {
 	public int addWrittenObject (Object object);
 
 	/** Adds an object that has been read for the first time. */
-	public void addReadObject (Object object);
+	public void addReadObject (int id, Object object);
 
 	/** Returns the object for the specified ID, or null no object with that ID has been read previously. */
 	public Object getReadObject (int id);

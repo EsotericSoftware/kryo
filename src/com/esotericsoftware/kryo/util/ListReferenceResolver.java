@@ -31,8 +31,14 @@ public class ListReferenceResolver implements ReferenceResolver {
 		return -1;
 	}
 
-	public void addReadObject (Object object) {
-		seenObjects.add(object);
+	public void addReadObject (int id, Object object) {
+		if (id == seenObjects.size())
+			seenObjects.add(object);
+		else {
+			while (id >= seenObjects.size())
+				seenObjects.add(null);
+			seenObjects.set(id, object);
+		}
 	}
 
 	public Object getReadObject (int id) {

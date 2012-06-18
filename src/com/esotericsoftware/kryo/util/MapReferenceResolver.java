@@ -28,8 +28,14 @@ public class MapReferenceResolver implements ReferenceResolver {
 		return writtenObjects.get(object, -1);
 	}
 
-	public void addReadObject (Object object) {
-		readObjects.add(object);
+	public void addReadObject (int id, Object object) {
+		if (id == readObjects.size())
+			readObjects.add(object);
+		else {
+			while (id >= readObjects.size())
+				readObjects.add(null);
+			readObjects.set(id, object);
+		}
 	}
 
 	public Object getReadObject (int id) {

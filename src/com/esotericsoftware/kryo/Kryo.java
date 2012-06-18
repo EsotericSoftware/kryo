@@ -67,6 +67,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.IdentityMap;
+import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
@@ -99,7 +100,8 @@ public class Kryo {
 	private ObjectMap context, graphContext;
 
 	private final ReferenceResolver referenceResolver;
-	private boolean references, needsReference, strictReferences = true;
+	private final IntArray readReferenceIds = new IntArray(0);
+	private boolean references;
 	private Object readObject;
 
 	private boolean copyShallow;
@@ -543,7 +545,7 @@ public class Kryo {
 				writeClass(output, null);
 				return;
 			}
-			Registration registration = writeClass(output, object.getClass());
+			Registration registration = writeClass(output, object.getClass()); // BOZO - Why not write reference first???
 			if (references && writeReferenceOrNull(output, object, false)) return;
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			registration.getSerializer().write(this, output, object);
@@ -600,14 +602,14 @@ public class Kryo {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		beginObject();
 		try {
-			if (references && readReferenceOrNull(input, type, false)) return (T)readObject;
-
-			Serializer serializer = getRegistration(type).getSerializer();
-			T object = (T)serializer.read(this, input, type);
-			if (needsReference) {
-				needsReference = false;
-				referenceResolver.addReadObject(object);
-			}
+			T object;
+			if (references) {
+				if (readReferenceOrNull(input, type, false)) return (T)readObject;
+				int referenceStackSize = readReferenceIds.size;
+				object = (T)getRegistration(type).getSerializer().read(this, input, type);
+				if (referenceStackSize == readReferenceIds.size) referenceResolver.addReadObject(readReferenceIds.pop(), object);
+			} else
+				object = (T)getRegistration(type).getSerializer().read(this, input, type);
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
@@ -622,13 +624,14 @@ public class Kryo {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		beginObject();
 		try {
-			if (references && readReferenceOrNull(input, type, false)) return (T)readObject;
-
-			T object = (T)serializer.read(this, input, type);
-			if (needsReference) {
-				needsReference = false;
-				referenceResolver.addReadObject(object);
-			}
+			T object;
+			if (references) {
+				if (readReferenceOrNull(input, type, false)) return (T)readObject;
+				int stackSize = readReferenceIds.size;
+				object = (T)serializer.read(this, input, type);
+				if (stackSize == readReferenceIds.size) referenceResolver.addReadObject(readReferenceIds.pop(), object);
+			} else
+				object = (T)serializer.read(this, input, type);
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
@@ -643,21 +646,21 @@ public class Kryo {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		beginObject();
 		try {
-			Serializer serializer = getRegistration(type).getSerializer();
-
+			T object;
 			if (references) {
 				if (readReferenceOrNull(input, type, true)) return (T)readObject;
-			} else if (!serializer.getAcceptsNull()) {
-				if (input.readByte() == NULL) {
+				Serializer serializer = getRegistration(type).getSerializer();
+				int stackSize = readReferenceIds.size;
+				object = (T)serializer.read(this, input, type);
+				if (object != null && stackSize == readReferenceIds.size)
+					referenceResolver.addReadObject(readReferenceIds.pop(), object);
+			} else {
+				Serializer serializer = getRegistration(type).getSerializer();
+				if (!serializer.getAcceptsNull() && input.readByte() == NULL) {
 					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
 					return null;
 				}
-			}
-
-			T object = (T)serializer.read(this, input, type);
-			if (needsReference) {
-				needsReference = false;
-				if (object != null) referenceResolver.addReadObject(object);
+				object = (T)serializer.read(this, input, type);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -674,19 +677,19 @@ public class Kryo {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		beginObject();
 		try {
+			T object;
 			if (references) {
 				if (readReferenceOrNull(input, type, true)) return (T)readObject;
-			} else if (!serializer.getAcceptsNull()) {
-				if (input.readByte() == NULL) {
+				int stackSize = readReferenceIds.size;
+				object = (T)serializer.read(this, input, type);
+				if (object != null && stackSize == readReferenceIds.size)
+					referenceResolver.addReadObject(readReferenceIds.pop(), object);
+			} else {
+				if (!serializer.getAcceptsNull() && input.readByte() == NULL) {
 					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
 					return null;
 				}
-			}
-
-			T object = (T)serializer.read(this, input, type);
-			if (needsReference) {
-				needsReference = false;
-				if (object != null) referenceResolver.addReadObject(object);
+				object = (T)serializer.read(this, input, type);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -705,14 +708,14 @@ public class Kryo {
 			if (registration == null) return null;
 			Class type = registration.getType();
 
-			if (references && readReferenceOrNull(input, type, false)) return readObject;
-
-			Serializer serializer = registration.getSerializer();
-			Object object = serializer.read(this, input, type);
-			if (needsReference) {
-				needsReference = false;
-				referenceResolver.addReadObject(object);
-			}
+			Object object;
+			if (references) {
+				if (readReferenceOrNull(input, type, false)) return readObject;
+				int stackSize = readReferenceIds.size;
+				object = registration.getSerializer().read(this, input, type);
+				if (stackSize == readReferenceIds.size) referenceResolver.addReadObject(readReferenceIds.pop(), object);
+			} else
+				object = registration.getSerializer().read(this, input, type);
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
@@ -723,10 +726,6 @@ public class Kryo {
 	/** Returns true if null or a reference to a previously read object was read. In this case, the object is stored in
 	 * {@link #readObject}. Returns false if the object was not a reference and needs to be read. */
 	boolean readReferenceOrNull (Input input, Class type, boolean mayBeNull) {
-		if (needsReference && strictReferences) {
-			throw new IllegalStateException(
-				"Kryo#reference(Object) must be called before Kryo can be used to deserialize child objects.");
-		}
 		if (type.isPrimitive()) type = getWrapperClass(type);
 		boolean referencesSupported = referenceResolver.useReferences(type);
 		int id;
@@ -749,7 +748,7 @@ public class Kryo {
 			return true;
 		}
 		if (TRACE) trace("kryo", "Read initial object reference " + id + ": " + className(type));
-		needsReference = true;
+		readReferenceIds.add(id);
 		return false;
 	}
 
@@ -758,14 +757,12 @@ public class Kryo {
 	 * objects.
 	 * @param object May be null, unless calling this method from {@link Serializer#copy(Kryo, Object)}. */
 	public void reference (Object object) {
-		if (needsReference) {
-			if (object != null) referenceResolver.addReadObject(object);
-			needsReference = false;
-		} else if (needsCopyReference != null) {
+		if (needsCopyReference != null) {
 			if (object == null) throw new IllegalArgumentException("object cannot be null.");
 			originalToCopy.put(needsCopyReference, object);
 			needsCopyReference = null;
-		}
+		} else if (references && object != null) //
+			referenceResolver.addReadObject(readReferenceIds.pop(), object);
 	}
 
 	/** Called when an object graph has been completely serialized or deserialized, allowing any state only needed per object graph
@@ -1039,14 +1036,6 @@ public class Kryo {
 	 * references, and other information to span multiple object graphs. */
 	public void setAutoReset (boolean autoReset) {
 		this.autoReset = autoReset;
-	}
-
-	/** When true (the default), if {@link #setReferences(boolean) references} are enabled and a serializer does not call
-	 * {@link #reference(Object)} before attempting to use Kryo to deserialize a child object, an exception is thrown. When false,
-	 * no exception is thrown. This can be convenient when it is known that child objects can never reference the parent object,
-	 * but can be difficult to debug if the call to {@link #reference(Object)} is omitted unintentionally. */
-	public void setStrictReferences (boolean strictReferences) {
-		this.strictReferences = strictReferences;
 	}
 
 	/** Sets the maxiumum depth of an object graph. This can be used to prevent malicious data from causing a stack overflow.
