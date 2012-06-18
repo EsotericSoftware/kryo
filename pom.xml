@@ -45,7 +45,7 @@
 		<dependency>
 			<groupId>com.esotericsoftware.reflectasm</groupId>
 			<artifactId>reflectasm</artifactId>
-			<version>1.05</version>
+			<version>1.06</version>
 			<classifier>shaded</classifier>
 		</dependency>
 		<dependency>
@@ -175,4 +175,12 @@
 			</build>
 		</profile>
 	</profiles>
+
+	<repositories>
+		<repository>
+			<id>sonatype-releases</id>
+			<name>sonatype releases repo</name>
+			<url>https://oss.sonatype.org/content/repositories/releases</url>
+		</repository>
+	</repositories>
 </project>
