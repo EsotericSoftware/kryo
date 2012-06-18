@@ -18,21 +18,26 @@ public class Util {
 	/** Returns the primitive wrapper class for a primitive class.
 	 * @param type Must be a primitive class. */
 	static public Class getWrapperClass (Class type) {
-		if (type == boolean.class)
+		if (type == int.class)
+			return Integer.class;
+		else if (type == float.class)
+			return Float.class;
+		else if (type == boolean.class)
 			return Boolean.class;
+		else if (type == long.class)
+			return Long.class;
 		else if (type == byte.class)
 			return Byte.class;
 		else if (type == char.class)
 			return Character.class;
-		else if (type == short.class)
+		else if (type == short.class) //
 			return Short.class;
-		else if (type == int.class)
-			return Integer.class;
-		else if (type == long.class)
-			return Long.class;
-		else if (type == float.class) //
-			return Float.class;
 		return Double.class;
+	}
+
+	static public boolean isWrapperClass (Class type) {
+		return type == Integer.class || type == Float.class || type == Boolean.class || type == Long.class || type == Byte.class
+			|| type == Character.class || type == Short.class || type == Double.class;
 	}
 
 	/** Logs a message about an object. The log level and the string format of the object depend on the object type. */

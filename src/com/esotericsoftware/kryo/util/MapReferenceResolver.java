@@ -48,8 +48,8 @@ public class MapReferenceResolver implements ReferenceResolver {
 		writtenObjects.clear();
 	}
 
-	/** Returns false for Boolean, Byte, Character, and Short. */
+	/** Returns false for all primitive wrappers. */
 	public boolean useReferences (Class type) {
-		return type != Boolean.class && type != Byte.class && type != Character.class && type != Short.class;
+		return !Util.isWrapperClass(type);
 	}
 }

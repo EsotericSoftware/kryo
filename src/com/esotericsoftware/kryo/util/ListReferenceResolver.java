@@ -52,6 +52,6 @@ public class ListReferenceResolver implements ReferenceResolver {
 
 	/** Returns false for Boolean, Byte, Character, and Short. */
 	public boolean useReferences (Class type) {
-		return type != Boolean.class && type != Byte.class && type != Character.class && type != Short.class;
+		return !Util.isWrapperClass(type);
 	}
 }

@@ -116,7 +116,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
 
 		kryo = new Kryo();
-		roundTrip(144, test);
+		roundTrip(140, test);
 
 		C c = new C();
 		c.a = new A();
@@ -126,7 +126,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d = new D();
 		c.d.e = new E();
 		c.d.e.f = new F();
-		roundTrip(67, c);
+		roundTrip(63, c);
 	}
 
 	public void testReferences () {
@@ -141,12 +141,12 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d.e.f.a = c.a;
 
 		kryo = new Kryo();
-		roundTrip(67, c);
+		roundTrip(63, c);
 		C c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
 
 		// Test reset clears unregistered class names.
-		roundTrip(67, c);
+		roundTrip(63, c);
 		c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
 
@@ -158,7 +158,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(D.class);
 		kryo.register(E.class);
 		kryo.register(F.class);
-		roundTrip(19, c);
+		roundTrip(15, c);
 		c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
 	}
@@ -288,16 +288,17 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(72, new HasOptionalAnnotation());
 		kryo = new Kryo();
 		kryo.getContext().put("smurf", null);
-		roundTrip(74, new HasOptionalAnnotation());
+		roundTrip(73, new HasOptionalAnnotation());
 	}
 
 	public void testCyclicGrgaph () throws Exception {
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(true);
 		kryo.register(DefaultTypes.class);
 		kryo.register(byte[].class);
-		kryo.setReferences(true);
 		DefaultTypes test = new DefaultTypes();
 		test.child = test;
-		roundTrip(39, test);
+		roundTrip(35, test);
 	}
 
 	@SuppressWarnings("synthetic-access")
@@ -313,10 +314,11 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	public void testGenericTypes () {
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(true);
 		kryo.register(HasGenerics.class);
 		kryo.register(ArrayList.class);
 		kryo.register(HashMap.class);
-		kryo.setReferences(true);
 		HasGenerics test = new HasGenerics();
 		test.list1 = new ArrayList();
 		test.list1.add(1);
@@ -338,7 +340,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.list5 = new ArrayList();
 		test.list5.add("one");
 		test.list5.add("two");
-		roundTrip(53, test);
+		roundTrip(56, test);
 	}
 
 	public void testRegistration () {

@@ -6,15 +6,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.Registration;
-import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-
-import static com.esotericsoftware.minlog.Log.*;
 
 /** Serializes objects using direct field assignment for fields that have been {@link Tag tagged}. Fields without the {@link Tag}
  * annotation are not serialized. New tagged fields can be added without invalidating previously serialized bytes. If any tagged
@@ -22,130 +19,62 @@ import static com.esotericsoftware.minlog.Log.*;
  * annotation and they will not be serialized. If fields are public, bytecode generation will be used instead of reflection.
  * @author Nathan Sweet <misc@n4te.com> */
 public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
+	private int[] tags;
+
 	public TaggedFieldSerializer (Kryo kryo, Class type) {
 		super(kryo, type);
 	}
 
-	protected CachedField newCachedField (Field field) {
-		if (field.getAnnotation(Deprecated.class) != null) return null;
-		Tag tag = field.getAnnotation(Tag.class);
-		if (tag == null) return null;
-		return new TaggedCachedField(field, tag.value());
+	protected void initializeCachedFields () {
+		CachedField[] fields = getFields();
+		// Remove unwanted fields.
+		for (int i = 0, n = fields.length; i < n; i++) {
+			Field field = fields[i].getField();
+			Tag tag = field.getAnnotation(Tag.class);
+			Deprecated deprecated = field.getAnnotation(Deprecated.class);
+			if (tag == null || deprecated != null) super.removeField(field.getName());
+		}
+		// Cache tags.
+		fields = getFields();
+		tags = new int[fields.length];
+		for (int i = 0, n = fields.length; i < n; i++)
+			tags[i] = fields[i].getField().getAnnotation(Tag.class).value();
+	}
+
+	public void removeField (String fieldName) {
+		super.removeField(fieldName);
+		initializeCachedFields();
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
 		CachedField[] fields = getFields();
 		output.writeInt(fields.length, true);
 		for (int i = 0, n = fields.length; i < n; i++) {
-			CachedField cachedField = fields[i];
-			try {
-				if (TRACE) trace("kryo", "Write field: " + cachedField + " (" + object.getClass().getName() + ")");
-
-				output.writeInt(((TaggedCachedField)fields[i]).tag, true);
-
-				Object value = cachedField.get(object);
-
-				Serializer serializer = cachedField.serializer;
-				if (cachedField.valueClass == null) {
-					if (value == null) {
-						kryo.writeClass(output, null);
-						continue;
-					}
-					Registration registration = kryo.writeClass(output, value.getClass());
-					if (serializer == null) serializer = registration.getSerializer();
-					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
-					kryo.writeObject(output, value, serializer);
-				} else {
-					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(cachedField.valueClass);
-					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
-					if (cachedField.canBeNull)
-						kryo.writeObjectOrNull(output, value, serializer);
-					else {
-						if (value == null) {
-							throw new KryoException("Field value is null but canBeNull is false: " + cachedField + " ("
-								+ object.getClass().getName() + ")");
-						}
-						kryo.writeObject(output, value, serializer);
-					}
-				}
-			} catch (IllegalAccessException ex) {
-				throw new KryoException("Error accessing field: " + cachedField + " (" + object.getClass().getName() + ")", ex);
-			} catch (KryoException ex) {
-				ex.addTrace(cachedField + " (" + object.getClass().getName() + ")");
-				throw ex;
-			} catch (RuntimeException runtimeEx) {
-				KryoException ex = new KryoException(runtimeEx);
-				ex.addTrace(cachedField + " (" + object.getClass().getName() + ")");
-				throw ex;
-			}
+			output.writeInt(tags[i], true);
+			fields[i].write(output, object);
 		}
 	}
 
 	public T read (Kryo kryo, Input input, Class<T> type) {
 		T object = kryo.newInstance(type);
 		kryo.reference(object);
-		CachedField[] fields = getFields();
 		int fieldCount = input.readInt(true);
+		int[] tags = this.tags;
+		CachedField[] fields = getFields();
 		for (int i = 0, n = fieldCount; i < n; i++) {
 			int tag = input.readInt(true);
 
 			CachedField cachedField = null;
-			for (int ii = 0, nn = fields.length; ii < nn; ii++) {
-				TaggedCachedField f = (TaggedCachedField)fields[ii];
-				if (f.tag == tag) {
-					cachedField = f;
+			for (int ii = 0, nn = tags.length; ii < nn; ii++) {
+				if (tags[ii] == tag) {
+					cachedField = fields[ii];
 					break;
 				}
 			}
 			if (cachedField == null) throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
-
-			try {
-				if (TRACE) trace("kryo", "Read field: " + cachedField + " (" + getType().getName() + ")");
-
-				Object value;
-
-				Class concreteType = cachedField.valueClass;
-				Serializer serializer = cachedField.serializer;
-				if (concreteType == null) {
-					Registration registration = kryo.readClass(input);
-					if (registration == null)
-						value = null;
-					else {
-						if (serializer == null) serializer = registration.getSerializer();
-						if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
-						value = kryo.readObject(input, registration.getType(), serializer);
-					}
-				} else {
-					if (serializer == null) cachedField.serializer = serializer = kryo.getSerializer(concreteType);
-					if (cachedField.generics != null) serializer.setGenerics(kryo, cachedField.generics);
-					if (cachedField.canBeNull)
-						value = kryo.readObjectOrNull(input, concreteType, serializer);
-					else
-						value = kryo.readObject(input, concreteType, serializer);
-				}
-
-				cachedField.set(object, value);
-			} catch (IllegalAccessException ex) {
-				throw new KryoException("Error accessing field: " + cachedField + " (" + getType().getName() + ")", ex);
-			} catch (KryoException ex) {
-				ex.addTrace(cachedField + " (" + getType().getName() + ")");
-				throw ex;
-			} catch (RuntimeException runtimeEx) {
-				KryoException ex = new KryoException(runtimeEx);
-				ex.addTrace(cachedField + " (" + getType().getName() + ")");
-				throw ex;
-			}
+			cachedField.read(input, object);
 		}
 		return object;
-	}
-
-	private class TaggedCachedField extends CachedField {
-		final int tag;
-
-		TaggedCachedField (Field field, int tag) {
-			super(field);
-			this.tag = tag;
-		}
 	}
 
 	/** If true, this field will not be serialized. */

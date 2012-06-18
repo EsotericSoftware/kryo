@@ -82,6 +82,9 @@ public class Kryo {
 	static public final byte NULL = 0;
 	static public final byte NOT_NULL = 1;
 
+	static private final int REF = -1;
+	static private final int NO_REF = -2;
+
 	private Class<? extends Serializer> defaultSerializer = FieldSerializer.class;
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
 	private final int lowPriorityDefaultSerializerCount;
@@ -99,7 +102,7 @@ public class Kryo {
 	private volatile Thread thread;
 	private ObjectMap context, graphContext;
 
-	private final ReferenceResolver referenceResolver;
+	private ReferenceResolver referenceResolver;
 	private final IntArray readReferenceIds = new IntArray(0);
 	private boolean references;
 	private Object readObject;
@@ -604,10 +607,10 @@ public class Kryo {
 		try {
 			T object;
 			if (references) {
-				if (readReferenceOrNull(input, type, false)) return (T)readObject;
-				int referenceStackSize = readReferenceIds.size;
+				int stackSize = readReferenceOrNull(input, type, false);
+				if (stackSize == REF) return (T)readObject;
 				object = (T)getRegistration(type).getSerializer().read(this, input, type);
-				if (referenceStackSize == readReferenceIds.size) referenceResolver.addReadObject(readReferenceIds.pop(), object);
+				if (stackSize == readReferenceIds.size) reference(object);
 			} else
 				object = (T)getRegistration(type).getSerializer().read(this, input, type);
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
@@ -626,10 +629,10 @@ public class Kryo {
 		try {
 			T object;
 			if (references) {
-				if (readReferenceOrNull(input, type, false)) return (T)readObject;
-				int stackSize = readReferenceIds.size;
+				int stackSize = readReferenceOrNull(input, type, false);
+				if (stackSize == REF) return (T)readObject;
 				object = (T)serializer.read(this, input, type);
-				if (stackSize == readReferenceIds.size) referenceResolver.addReadObject(readReferenceIds.pop(), object);
+				if (stackSize == readReferenceIds.size) reference(object);
 			} else
 				object = (T)serializer.read(this, input, type);
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
@@ -648,12 +651,10 @@ public class Kryo {
 		try {
 			T object;
 			if (references) {
-				if (readReferenceOrNull(input, type, true)) return (T)readObject;
-				Serializer serializer = getRegistration(type).getSerializer();
-				int stackSize = readReferenceIds.size;
-				object = (T)serializer.read(this, input, type);
-				if (object != null && stackSize == readReferenceIds.size)
-					referenceResolver.addReadObject(readReferenceIds.pop(), object);
+				int stackSize = readReferenceOrNull(input, type, true);
+				if (stackSize == REF) return (T)readObject;
+				object = (T)getRegistration(type).getSerializer().read(this, input, type);
+				if (stackSize == readReferenceIds.size) reference(object);
 			} else {
 				Serializer serializer = getRegistration(type).getSerializer();
 				if (!serializer.getAcceptsNull() && input.readByte() == NULL) {
@@ -679,11 +680,10 @@ public class Kryo {
 		try {
 			T object;
 			if (references) {
-				if (readReferenceOrNull(input, type, true)) return (T)readObject;
-				int stackSize = readReferenceIds.size;
+				int stackSize = readReferenceOrNull(input, type, true);
+				if (stackSize == REF) return (T)readObject;
 				object = (T)serializer.read(this, input, type);
-				if (object != null && stackSize == readReferenceIds.size)
-					referenceResolver.addReadObject(readReferenceIds.pop(), object);
+				if (stackSize == readReferenceIds.size) reference(object);
 			} else {
 				if (!serializer.getAcceptsNull() && input.readByte() == NULL) {
 					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
@@ -710,10 +710,10 @@ public class Kryo {
 
 			Object object;
 			if (references) {
-				if (readReferenceOrNull(input, type, false)) return readObject;
-				int stackSize = readReferenceIds.size;
+				int stackSize = readReferenceOrNull(input, type, false);
+				if (stackSize == REF) return readObject;
 				object = registration.getSerializer().read(this, input, type);
-				if (stackSize == readReferenceIds.size) referenceResolver.addReadObject(readReferenceIds.pop(), object);
+				if (stackSize == readReferenceIds.size) reference(object);
 			} else
 				object = registration.getSerializer().read(this, input, type);
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
@@ -725,7 +725,7 @@ public class Kryo {
 
 	/** Returns true if null or a reference to a previously read object was read. In this case, the object is stored in
 	 * {@link #readObject}. Returns false if the object was not a reference and needs to be read. */
-	boolean readReferenceOrNull (Input input, Class type, boolean mayBeNull) {
+	int readReferenceOrNull (Input input, Class type, boolean mayBeNull) {
 		if (type.isPrimitive()) type = getWrapperClass(type);
 		boolean referencesSupported = referenceResolver.useReferences(type);
 		int id;
@@ -734,22 +734,28 @@ public class Kryo {
 			if (id == Kryo.NULL) {
 				if (TRACE || (DEBUG && depth == 1)) log("Read", null);
 				readObject = null;
-				return true;
+				return REF;
 			}
-			if (!referencesSupported) return false;
+			if (!referencesSupported) {
+				readReferenceIds.add(NO_REF);
+				return NO_REF;
+			}
 		} else {
-			if (!referencesSupported) return false;
+			if (!referencesSupported) {
+				readReferenceIds.add(NO_REF);
+				return NO_REF;
+			}
 			id = input.readInt(true);
 		}
 		--id; // - 1 because zero is used for null.
 		readObject = referenceResolver.getReadObject(id);
 		if (readObject != null) {
 			if (DEBUG) debug("kryo", "Read object reference " + id + ": " + string(readObject));
-			return true;
+			return REF;
 		}
 		if (TRACE) trace("kryo", "Read initial object reference " + id + ": " + className(type));
 		readReferenceIds.add(id);
-		return false;
+		return readReferenceIds.size;
 	}
 
 	/** Called by {@link Serializer#read(Kryo, Input, Class)} and {@link Serializer#copy(Kryo, Object)} before Kryo can be used to
@@ -761,8 +767,10 @@ public class Kryo {
 			if (object == null) throw new IllegalArgumentException("object cannot be null.");
 			originalToCopy.put(needsCopyReference, object);
 			needsCopyReference = null;
-		} else if (references && object != null) //
-			referenceResolver.addReadObject(readReferenceIds.pop(), object);
+		} else if (references && object != null) {
+			int id = readReferenceIds.pop();
+			if (id != NO_REF) referenceResolver.addReadObject(id, object);
+		}
 	}
 
 	/** Called when an object graph has been completely serialized or deserialized, allowing any state only needed per object graph
@@ -901,6 +909,10 @@ public class Kryo {
 		return classResolver;
 	}
 
+	public ReferenceResolver getReferenceResolver () {
+		return referenceResolver;
+	}
+
 	/** Sets the classloader to resolve unregistered class names to classes. */
 	public void setClassLoader (ClassLoader classLoader) {
 		if (classLoader == null) throw new IllegalArgumentException("classLoader cannot be null.");
@@ -931,15 +943,17 @@ public class Kryo {
 	/** If true, each appearance of an object in the graph after the first is stored as an integer ordinal. This enables references
 	 * to the same object and cyclic graphs to be serialized, but typically adds overhead of one byte per object. Default is true.
 	 * <p>
-	 * To disable references slightly more efficiently, a null {@link ReferenceResolver} can be provided to a Kryo
-	 * {@link Kryo#Kryo(ReferenceResolver) constructor}. */
+	 * Once disabled, references cannot be enabled again. */
 	public void setReferences (boolean references) {
-		if (references && referenceResolver == null) {
-			throw new IllegalStateException(
-				"References cannot be enabled because no ReferenceResolver was provided to the Kryo constructor.");
-		}
+		if (references && referenceResolver == null)
+			throw new IllegalStateException("Once disabled, references cannot be enabled.");
 		this.references = references;
+		if (!references) referenceResolver = null;
 		if (TRACE) trace("kryo", "References: " + references);
+	}
+
+	public boolean getReferences () {
+		return references;
 	}
 
 	/** Sets the strategy used by {@link #newInstantiator(Class)} for creating objects. See {@link StdInstantiatorStrategy} to
