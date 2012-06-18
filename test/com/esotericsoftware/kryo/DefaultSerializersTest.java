@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.TimeZone;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest extends KryoTestCase {
@@ -198,6 +199,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	public void testCalendar () {
 		kryo.setRegistrationRequired(false);
 		Calendar calendar = Calendar.getInstance();
+		calendar.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
 		calendar.set(1980, 7, 26, 12, 22, 46);
 		roundTrip(64, calendar);
 	}
