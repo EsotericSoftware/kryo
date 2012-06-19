@@ -723,8 +723,8 @@ public class Kryo {
 		}
 	}
 
-	/** Returns true if null or a reference to a previously read object was read. In this case, the object is stored in
-	 * {@link #readObject}. Returns false if the object was not a reference and needs to be read. */
+	/** Returns {@link #REF} if a reference to a previously read object was read, which is stored in {@link #readObject}. Returns a
+	 * stack size > 0 if a reference ID has been put on the stack. */
 	int readReferenceOrNull (Input input, Class type, boolean mayBeNull) {
 		if (type.isPrimitive()) type = getWrapperClass(type);
 		boolean referencesSupported = referenceResolver.useReferences(type);
@@ -738,12 +738,12 @@ public class Kryo {
 			}
 			if (!referencesSupported) {
 				readReferenceIds.add(NO_REF);
-				return NO_REF;
+				return readReferenceIds.size;
 			}
 		} else {
 			if (!referencesSupported) {
 				readReferenceIds.add(NO_REF);
-				return NO_REF;
+				return readReferenceIds.size;
 			}
 			id = input.readInt(true);
 		}
