@@ -1,11 +1,12 @@
 
 package com.esotericsoftware.kryo;
 
-import java.io.ByteArrayInputStream;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import junit.framework.Assert;
@@ -94,8 +95,34 @@ public class MapSerializerTest extends KryoTestCase {
 		Assert.assertEquals(map, deserialized);
 	}
 
+	public void testTreeMap () {
+		kryo.register(TreeMap.class);
+		TreeMap map = new TreeMap();
+		map.put("123", "456");
+		map.put("789", "abc");
+		roundTrip(19, map);
+
+		kryo.register(KeyThatIsntComparable.class);
+		kryo.register(KeyComparator.class);
+		map = new TreeMap(new KeyComparator());
+		KeyThatIsntComparable key = new KeyThatIsntComparable();
+		key.value = "123";
+		map.put(key, "456");
+		roundTrip(11, map);
+	}
+
 	static public class HasGenerics {
 		public HashMap<String, Integer[]> map = new HashMap();
 		public HashMap<String, ?> map2 = new HashMap();
+	}
+
+	static public class KeyComparator implements Comparator<KeyThatIsntComparable> {
+		public int compare (KeyThatIsntComparable o1, KeyThatIsntComparable o2) {
+			return o1.value.compareTo(o2.value);
+		}
+	}
+
+	static public class KeyThatIsntComparable {
+		public String value;
 	}
 }

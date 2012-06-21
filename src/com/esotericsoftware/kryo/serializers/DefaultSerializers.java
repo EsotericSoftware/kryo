@@ -5,11 +5,13 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Currency;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
@@ -485,6 +487,22 @@ public class DefaultSerializers {
 
 		public Calendar copy (Kryo kryo, Calendar original) {
 			return (Calendar)original.clone();
+		}
+	}
+
+	static public class TreeMapSerializer extends MapSerializer {
+		public void write (Kryo kryo, Output output, Map map) {
+			TreeMap treeMap = (TreeMap)map;
+			kryo.writeClassAndObject(output, treeMap.comparator());
+			super.write(kryo, output, map);
+		}
+
+		protected Map create (Kryo kryo, Input input, Class<Map> type) {
+			return new TreeMap((Comparator)kryo.readClassAndObject(input));
+		}
+
+		protected Map createCopy (Kryo kryo, Map original) {
+			return new TreeMap(((TreeMap)original).comparator());
 		}
 	}
 }

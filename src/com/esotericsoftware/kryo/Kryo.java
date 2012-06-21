@@ -18,6 +18,7 @@ import java.util.Currency;
 import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.TreeMap;
 
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
@@ -63,6 +64,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSeri
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimeZoneSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeMapSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
@@ -161,6 +163,7 @@ public class Kryo {
 		addDefaultSerializer(Collections.singletonMap(null, null).getClass(), CollectionsSingletonMapSerializer.class);
 		addDefaultSerializer(Collections.singleton(null).getClass(), CollectionsSingletonSetSerializer.class);
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
+		addDefaultSerializer(TreeMap.class, TreeMapSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
 		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
 		addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
@@ -266,6 +269,9 @@ public class Kryo {
 	 * <td>Collections.singletonList</td>
 	 * <td>Collections.singletonMap</td>
 	 * <td>TimeZone</td>
+	 * </tr>
+	 * <tr>
+	 * <td>TreeMap</td>
 	 * </tr>
 	 * </table>
 	 * <p>
