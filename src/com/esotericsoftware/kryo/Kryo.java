@@ -105,7 +105,6 @@ public class Kryo {
 	private ObjectMap context, graphContext;
 
 	private ReferenceResolver referenceResolver;
-	private int referenceCount = 2; // 2 because 0 and 1 are used for NULL and NOT_NULL.
 	private final IntArray readReferenceIds = new IntArray(0);
 	private boolean references;
 	private Object readObject;
@@ -587,10 +586,10 @@ public class Kryo {
 			return true;
 		}
 
-		// Otherwise write a new ID and then the object bytes.
-		referenceResolver.addWrittenObject(referenceCount++, object);
+		// Otherwise write NOT_NULL and then the object bytes.
+		id = referenceResolver.addWrittenObject(object);
 		output.writeByte(NOT_NULL);
-		if (TRACE) trace("kryo", "Write initial object reference " + (referenceCount - 3) + ": " + string(object));
+		if (TRACE) trace("kryo", "Write initial object reference " + (id - 2) + ": " + string(object));
 		return false;
 	}
 
@@ -756,8 +755,9 @@ public class Kryo {
 		}
 		if (id == NOT_NULL) {
 			// First time object has been encountered.
-			if (TRACE) trace("kryo", "Read initial object reference " + (referenceCount - 2) + ": " + className(type));
-			readReferenceIds.add(referenceCount++);
+			id = referenceResolver.getReadId(type);
+			if (TRACE) trace("kryo", "Read initial object reference " + (id - 2) + ": " + className(type));
+			readReferenceIds.add(id);
 			return readReferenceIds.size;
 		}
 		// The id is an object reference.
@@ -786,7 +786,6 @@ public class Kryo {
 	 * to be reset. If overridden, the super method must be called. */
 	protected void reset () {
 		depth = 0;
-		referenceCount = 2; // 2 because 0 and 1 are used for NULL and NOT_NULL.
 		if (graphContext != null) graphContext.clear();
 		classResolver.reset();
 		if (references) {

@@ -14,12 +14,18 @@ public interface ReferenceResolver {
 
 	/** Returns a new ID for an object that is being written for the first time. IDs must be sequential, the ID returned will be the
 	 * number of times this method has been called since {@link #reset()}. */
-	public void addWrittenObject (int id, Object object);
+	public int addWrittenObject (Object object);
 
-	/** Adds an object that has been read for the first time. */
+	/** Returns the next ID for the next object that will be read. Called the first time an object is encountered.
+	 * @param type The type of object that will be read.
+	 * @return The ID, which should be position and must not be 0 or 1. */
+	public int getReadId (Class type);
+
+	/** Adds an object that has been read for the first time.
+	 * @param id The ID from {@link #getReadId(Class)}. */
 	public void addReadObject (int id, Object object);
 
-	/** Returns the object for the specified ID. The object is guaranteed to have been previously passed in a call to
+	/** Returns the object for the specified ID. The ID and object are guaranteed to have been previously passed in a call to
 	 * {@link #addReadObject(int, Object)}. */
 	public Object getReadObject (int id);
 
