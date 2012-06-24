@@ -8,17 +8,16 @@ public interface ReferenceResolver {
 	/** Sets the Kryo instance that this ClassResolver will be used for. This is called automatically by Kryo. */
 	public void setKryo (Kryo kryo);
 
-	/** Returns an ID for the object if it has been written previously, otherwise returns -1 if the object has not been encountered
-	 * before. */
+	/** Returns an ID for the object if it has been written previously, otherwise returns -1. */
 	public int getWrittenId (Object object);
 
-	/** Returns a new ID for an object that is being written for the first time. IDs must be sequential, the ID returned will be the
-	 * number of times this method has been called since {@link #reset()}. */
+	/** Returns a new ID for an object that is being written for the first time.
+	 * @return The ID, which is stored more efficiently if it is positive and must not be -1 or -2. */
 	public int addWrittenObject (Object object);
 
-	/** Returns the next ID for the next object that will be read. Called the first time an object is encountered.
+	/** Returns the ID for the next object that will be read. This is called only the first time an object is encountered.
 	 * @param type The type of object that will be read.
-	 * @return The ID, which should be position and must not be 0 or 1. */
+	 * @return The ID, which is stored more efficiently if it is positive and must not be -1 or -2. */
 	public int getReadId (Class type);
 
 	/** Adds an object that has been read for the first time.
