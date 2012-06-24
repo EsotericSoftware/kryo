@@ -27,7 +27,7 @@ public interface ReferenceResolver {
 
 	/** Returns the object for the specified ID. The ID and object are guaranteed to have been previously passed in a call to
 	 * {@link #addReadObject(int, Object)}. */
-	public Object getReadObject (int id);
+	public Object getReadObject (Class type, int id);
 
 	/** Called by {@link Kryo#reset()}. */
 	public void reset ();

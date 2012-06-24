@@ -762,7 +762,7 @@ public class Kryo {
 		}
 		// The id is an object reference.
 		id -= 2; // - 2 because 0 and 1 are used for NULL and NOT_NULL.
-		readObject = referenceResolver.getReadObject(id);
+		readObject = referenceResolver.getReadObject(type, id);
 		if (DEBUG) debug("kryo", "Read object reference " + id + ": " + string(readObject));
 		return REF;
 	}

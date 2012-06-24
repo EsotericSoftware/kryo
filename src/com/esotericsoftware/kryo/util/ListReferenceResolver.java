@@ -45,7 +45,7 @@ public class ListReferenceResolver implements ReferenceResolver {
 		}
 	}
 
-	public Object getReadObject (int id) {
+	public Object getReadObject (Class type, int id) {
 		if (id < seenObjects.size()) return seenObjects.get(id);
 		return null;
 	}
