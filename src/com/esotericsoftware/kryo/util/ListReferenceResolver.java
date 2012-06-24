@@ -19,10 +19,8 @@ public class ListReferenceResolver implements ReferenceResolver {
 		this.kryo = kryo;
 	}
 
-	public int addWrittenObject (Object object) {
-		int id = seenObjects.size();
+	public void addWrittenObject (int id, Object object) {
 		seenObjects.add(object);
-		return id;
 	}
 
 	public int getWrittenId (Object object) {

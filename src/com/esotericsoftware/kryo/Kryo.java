@@ -105,6 +105,7 @@ public class Kryo {
 	private ObjectMap context, graphContext;
 
 	private ReferenceResolver referenceResolver;
+	private int referenceCount = 2; // 2 because 0 and 1 are used for NULL and NOT_NULL.
 	private final IntArray readReferenceIds = new IntArray(0);
 	private boolean references;
 	private Object readObject;
@@ -582,14 +583,14 @@ public class Kryo {
 		// If not the first time encountered, only write reference ID.
 		if (id > -1) {
 			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object));
-			output.writeInt(id + 1, true); // + 1 because 0 is used for null.
+			output.writeInt(id + 2, true); // + 2 because 0 and 1 are used for NULL and NOT_NULL.
 			return true;
 		}
 
 		// Otherwise write a new ID and then the object bytes.
-		id = referenceResolver.addWrittenObject(object);
-		output.writeInt(id + 1, true); // + 1 because 0 is used for null.
-		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object));
+		referenceResolver.addWrittenObject(referenceCount++, object);
+		output.writeByte(NOT_NULL);
+		if (TRACE) trace("kryo", "Write initial object reference " + (referenceCount - 3) + ": " + string(object));
 		return false;
 	}
 
@@ -730,7 +731,7 @@ public class Kryo {
 	}
 
 	/** Returns {@link #REF} if a reference to a previously read object was read, which is stored in {@link #readObject}. Returns a
-	 * stack size > 0 if a reference ID has been put on the stack. */
+	 * stack size (> 0) if a reference ID has been put on the stack. */
 	int readReferenceOrNull (Input input, Class type, boolean mayBeNull) {
 		if (type.isPrimitive()) type = getWrapperClass(type);
 		boolean referencesSupported = referenceResolver.useReferences(type);
@@ -753,15 +754,17 @@ public class Kryo {
 			}
 			id = input.readInt(true);
 		}
-		--id; // - 1 because zero is used for null.
-		readObject = referenceResolver.getReadObject(id);
-		if (readObject != null) {
-			if (DEBUG) debug("kryo", "Read object reference " + id + ": " + string(readObject));
-			return REF;
+		if (id == NOT_NULL) {
+			// First time object has been encountered.
+			if (TRACE) trace("kryo", "Read initial object reference " + (referenceCount - 2) + ": " + className(type));
+			readReferenceIds.add(referenceCount++);
+			return readReferenceIds.size;
 		}
-		if (TRACE) trace("kryo", "Read initial object reference " + id + ": " + className(type));
-		readReferenceIds.add(id);
-		return readReferenceIds.size;
+		// The id is an object reference.
+		id -= 2; // - 2 because 0 and 1 are used for NULL and NOT_NULL.
+		readObject = referenceResolver.getReadObject(id);
+		if (DEBUG) debug("kryo", "Read object reference " + id + ": " + string(readObject));
+		return REF;
 	}
 
 	/** Called by {@link Serializer#read(Kryo, Input, Class)} and {@link Serializer#copy(Kryo, Object)} before Kryo can be used to
@@ -783,6 +786,7 @@ public class Kryo {
 	 * to be reset. If overridden, the super method must be called. */
 	protected void reset () {
 		depth = 0;
+		referenceCount = 2; // 2 because 0 and 1 are used for NULL and NOT_NULL.
 		if (graphContext != null) graphContext.clear();
 		classResolver.reset();
 		if (references) {

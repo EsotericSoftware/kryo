@@ -12,13 +12,15 @@ public interface ReferenceResolver {
 	 * before. */
 	public int getWrittenId (Object object);
 
-	/** Returns a new ID for an object that is being written for the first time. */
-	public int addWrittenObject (Object object);
+	/** Returns a new ID for an object that is being written for the first time. IDs must be sequential, the ID returned will be the
+	 * number of times this method has been called since {@link #reset()}. */
+	public void addWrittenObject (int id, Object object);
 
 	/** Adds an object that has been read for the first time. */
 	public void addReadObject (int id, Object object);
 
-	/** Returns the object for the specified ID, or null no object with that ID has been read previously. */
+	/** Returns the object for the specified ID. The object is guaranteed to have been previously passed in a call to
+	 * {@link #addReadObject(int, Object)}. */
 	public Object getReadObject (int id);
 
 	/** Called by {@link Kryo#reset()}. */

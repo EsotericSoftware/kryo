@@ -18,10 +18,8 @@ public class MapReferenceResolver implements ReferenceResolver {
 		this.kryo = kryo;
 	}
 
-	public int addWrittenObject (Object object) {
-		int id = writtenObjects.size;
+	public void addWrittenObject (int id, Object object) {
 		writtenObjects.put(object, id);
-		return id;
 	}
 
 	public int getWrittenId (Object object) {
