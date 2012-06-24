@@ -555,7 +555,7 @@ public class Kryo {
 				writeClass(output, null);
 				return;
 			}
-			Registration registration = writeClass(output, object.getClass()); // BOZO - Why not write reference first???
+			Registration registration = writeClass(output, object.getClass());
 			if (references && writeReferenceOrNull(output, object, false)) return;
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			registration.getSerializer().write(this, output, object);
