@@ -31,7 +31,7 @@ public class ListReferenceResolver implements ReferenceResolver {
 		return -1;
 	}
 
-	public int getReadId (Class type) {
+	public int nextReadId (Class type) {
 		return seenObjects.size();
 	}
 

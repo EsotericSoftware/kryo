@@ -28,7 +28,7 @@ public class MapReferenceResolver implements ReferenceResolver {
 		return writtenObjects.get(object, -1);
 	}
 
-	public int getReadId (Class type) {
+	public int nextReadId (Class type) {
 		return readObjects.size();
 	}
 

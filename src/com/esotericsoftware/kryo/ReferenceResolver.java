@@ -18,10 +18,10 @@ public interface ReferenceResolver {
 	/** Returns the ID for the next object that will be read. This is called only the first time an object is encountered.
 	 * @param type The type of object that will be read.
 	 * @return The ID, which is stored more efficiently if it is positive and must not be -1 or -2. */
-	public int getReadId (Class type);
+	public int nextReadId (Class type);
 
 	/** Adds an object that has been read for the first time.
-	 * @param id The ID from {@link #getReadId(Class)}. */
+	 * @param id The ID from {@link #nextReadId(Class)}. */
 	public void addReadObject (int id, Object object);
 
 	/** Returns the object for the specified ID. The ID and object are guaranteed to have been previously passed in a call to

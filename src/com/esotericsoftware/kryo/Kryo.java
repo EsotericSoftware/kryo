@@ -755,7 +755,7 @@ public class Kryo {
 		}
 		if (id == NOT_NULL) {
 			// First time object has been encountered.
-			id = referenceResolver.getReadId(type);
+			id = referenceResolver.nextReadId(type);
 			if (TRACE) trace("kryo", "Read initial object reference " + id + ": " + className(type));
 			readReferenceIds.add(id);
 			return readReferenceIds.size;
