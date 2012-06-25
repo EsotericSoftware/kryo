@@ -340,7 +340,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.list5 = new ArrayList();
 		test.list5.add("one");
 		test.list5.add("two");
-		roundTrip(56, test);
+		roundTrip(53, test);
 	}
 
 	public void testRegistration () {

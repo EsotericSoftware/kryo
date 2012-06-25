@@ -156,8 +156,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				cachedField = new StringField();
 			} else
 				cachedField = new ObjectField();
-		} else
+		} else {
 			cachedField = new ObjectField();
+			((ObjectField)cachedField).generics = Kryo.getGenerics(field.getGenericType());
+		}
 
 		cachedField.field = field;
 		cachedField.accessIndex = accessIndex;
