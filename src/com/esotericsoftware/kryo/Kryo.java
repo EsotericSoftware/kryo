@@ -344,6 +344,8 @@ public class Kryo {
 	 * Because the ID assigned is affected by the IDs registered before it, the order classes are registered is important when
 	 * using this method. The order must be the same at deserialization as it was for serialization. */
 	public Registration register (Class type) {
+		Registration registration = classResolver.getRegistration(type);
+		if (registration != null) return registration;
 		return register(type, getDefaultSerializer(type));
 	}
 
@@ -354,6 +356,8 @@ public class Kryo {
 	 * IDs must be the same at deserialization as they were for serialization.
 	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. */
 	public Registration register (Class type, int id) {
+		Registration registration = classResolver.getRegistration(type);
+		if (registration != null) return registration;
 		return register(type, getDefaultSerializer(type), id);
 	}
 
