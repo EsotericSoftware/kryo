@@ -109,6 +109,7 @@ public class Kryo {
 	private boolean references;
 	private Object readObject;
 
+	private int copyDepth;
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
@@ -776,10 +777,12 @@ public class Kryo {
 	 * objects.
 	 * @param object May be null, unless calling this method from {@link Serializer#copy(Kryo, Object)}. */
 	public void reference (Object object) {
-		if (needsCopyReference != null) {
-			if (object == null) throw new IllegalArgumentException("object cannot be null.");
-			originalToCopy.put(needsCopyReference, object);
-			needsCopyReference = null;
+		if (copyDepth > 0) {
+			if (needsCopyReference != null) {
+				if (object == null) throw new IllegalArgumentException("object cannot be null.");
+				originalToCopy.put(needsCopyReference, object);
+				needsCopyReference = null;
+			}
 		} else if (references && object != null) {
 			int id = readReferenceIds.pop();
 			if (id != NO_REF) referenceResolver.addReadObject(id, object);
@@ -796,7 +799,10 @@ public class Kryo {
 			referenceResolver.reset();
 			readObject = null;
 		}
+
+		copyDepth = 0;
 		if (originalToCopy != null) originalToCopy.clear();
+
 		if (TRACE) trace("kryo", "Object graph complete.");
 	}
 
@@ -805,7 +811,7 @@ public class Kryo {
 	public <T> T copy (T object) {
 		if (object == null) return null;
 		if (copyShallow) return object;
-		depth++;
+		copyDepth++;
 		try {
 			if (originalToCopy == null) originalToCopy = new IdentityMap();
 			Object existingCopy = originalToCopy.get(object);
@@ -818,10 +824,10 @@ public class Kryo {
 			else
 				copy = getSerializer(object.getClass()).copy(this, object);
 			if (needsCopyReference != null) reference(copy);
-			if (TRACE || (DEBUG && depth == 1)) log("Copy", copy);
+			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy);
 			return (T)copy;
 		} finally {
-			if (--depth == 0) reset();
+			if (--copyDepth == 0) reset();
 		}
 	}
 
@@ -831,7 +837,7 @@ public class Kryo {
 	public <T> T copy (T object, Serializer serializer) {
 		if (object == null) return null;
 		if (copyShallow) return object;
-		depth++;
+		copyDepth++;
 		try {
 			if (originalToCopy == null) originalToCopy = new IdentityMap();
 			Object existingCopy = originalToCopy.get(object);
@@ -844,10 +850,10 @@ public class Kryo {
 			else
 				copy = serializer.copy(this, object);
 			if (needsCopyReference != null) reference(copy);
-			if (TRACE || (DEBUG && depth == 1)) log("Copy", copy);
+			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy);
 			return (T)copy;
 		} finally {
-			if (--depth == 0) reset();
+			if (--copyDepth == 0) reset();
 		}
 	}
 
@@ -856,7 +862,7 @@ public class Kryo {
 	 * @param object May be null. */
 	public <T> T copyShallow (T object) {
 		if (object == null) return null;
-		depth++;
+		copyDepth++;
 		copyShallow = true;
 		try {
 			if (originalToCopy == null) originalToCopy = new IdentityMap();
@@ -870,11 +876,11 @@ public class Kryo {
 			else
 				copy = getSerializer(object.getClass()).copy(this, object);
 			if (needsCopyReference != null) reference(copy);
-			if (TRACE || (DEBUG && depth == 1)) log("Shallow copy", copy);
+			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy);
 			return (T)copy;
 		} finally {
 			copyShallow = false;
-			if (--depth == 0) reset();
+			if (--copyDepth == 0) reset();
 		}
 	}
 
@@ -883,7 +889,7 @@ public class Kryo {
 	 * @param object May be null. */
 	public <T> T copyShallow (T object, Serializer serializer) {
 		if (object == null) return null;
-		depth++;
+		copyDepth++;
 		copyShallow = true;
 		try {
 			if (originalToCopy == null) originalToCopy = new IdentityMap();
@@ -897,11 +903,11 @@ public class Kryo {
 			else
 				copy = serializer.copy(this, object);
 			if (needsCopyReference != null) reference(copy);
-			if (TRACE || (DEBUG && depth == 1)) log("Shallow copy", copy);
+			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy);
 			return (T)copy;
 		} finally {
 			copyShallow = false;
-			if (--depth == 0) reset();
+			if (--copyDepth == 0) reset();
 		}
 	}
 

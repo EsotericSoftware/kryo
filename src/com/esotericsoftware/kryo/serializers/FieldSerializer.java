@@ -545,9 +545,9 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			try {
 				if (accessIndex != -1) {
 					FieldAccess access = (FieldAccess)FieldSerializer.this.access;
-					access.set(copy, accessIndex, access.get(original, accessIndex));
+					access.set(copy, accessIndex, kryo.copy(access.get(original, accessIndex)));
 				} else
-					field.set(copy, field.get(original));
+					field.set(copy, kryo.copy(field.get(original)));
 			} catch (IllegalAccessException ex) {
 				throw new KryoException("Error accessing field: " + this + " (" + type.getName() + ")", ex);
 			} catch (KryoException ex) {
