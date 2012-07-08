@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Currency;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.TreeMap;
@@ -55,6 +56,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.CurrencySerializ
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DateSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DoubleSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSetSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.FloatSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.IntSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
@@ -154,6 +156,7 @@ public class Kryo {
 		addDefaultSerializer(Class.class, ClassSerializer.class);
 		addDefaultSerializer(Date.class, DateSerializer.class);
 		addDefaultSerializer(Enum.class, EnumSerializer.class);
+		addDefaultSerializer(EnumSet.class, EnumSetSerializer.class);
 		addDefaultSerializer(Currency.class, CurrencySerializer.class);
 		addDefaultSerializer(StringBuffer.class, StringBufferSerializer.class);
 		addDefaultSerializer(StringBuilder.class, StringBuilderSerializer.class);
@@ -273,6 +276,7 @@ public class Kryo {
 	 * </tr>
 	 * <tr>
 	 * <td>TreeMap</td>
+	 * <td>EnumSet</td>
 	 * </tr>
 	 * </table>
 	 * <p>
@@ -432,7 +436,10 @@ public class Kryo {
 			} else if (!type.isEnum() && Enum.class.isAssignableFrom(type)) {
 				// This handles an enum value that is an inner class. Eg: enum A {b{}};
 				registration = getRegistration(type.getEnclosingClass());
-			} else {
+			} else if (EnumSet.class.isAssignableFrom(type)) {
+				registration = classResolver.getRegistration(EnumSet.class);
+			}
+			if (registration == null) {
 				if (registrationRequired) {
 					throw new IllegalArgumentException("Class is not registered: " + className(type)
 						+ "\nNote: To register this class use: kryo.register(" + className(type) + ".class);");

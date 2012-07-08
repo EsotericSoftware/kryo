@@ -8,17 +8,19 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Currency;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.TreeMap;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoSerializable;
+import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -265,6 +267,30 @@ public class DefaultSerializers {
 				throw new KryoException("Invalid ordinal for enum \"" + type.getName() + "\": " + ordinal);
 			Object constant = enumConstants[ordinal];
 			return (Enum)constant;
+		}
+	}
+
+	static public class EnumSetSerializer extends Serializer<EnumSet> {
+		public void write (Kryo kryo, Output output, EnumSet object) {
+			if (object.isEmpty()) throw new KryoException("An empty EnumSet cannot be serialized.");
+			Serializer serializer = kryo.writeClass(output, object.iterator().next().getClass()).getSerializer();
+			output.writeInt(object.size(), true);
+			for (Object element : object)
+				serializer.write(kryo, output, element);
+		}
+
+		public EnumSet read (Kryo kryo, Input input, Class<EnumSet> type) {
+			Registration registration = kryo.readClass(input);
+			EnumSet object = EnumSet.noneOf(registration.getType());
+			Serializer serializer = registration.getSerializer();
+			int length = input.readInt(true);
+			for (int i = 0; i < length; i++)
+				object.add(serializer.read(kryo, input, null));
+			return object;
+		}
+
+		public EnumSet copy (Kryo kryo, EnumSet original) {
+			return EnumSet.copyOf(original);
 		}
 	}
 

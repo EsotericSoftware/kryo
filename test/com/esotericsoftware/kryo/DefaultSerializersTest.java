@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.TimeZone;
 
 /** @author Nathan Sweet <misc@n4te.com> */
@@ -172,6 +173,18 @@ public class DefaultSerializersTest extends KryoTestCase {
 		// 1 byte for the reference id
 		// 1 byte for the enum value
 		roundTrip(61, TestEnum.c);
+	}
+
+	public void testEnumSetSerializer () {
+		kryo.register(EnumSet.class);
+		kryo.register(TestEnum.class);
+		roundTrip(5, EnumSet.of(TestEnum.a, TestEnum.c));
+		roundTrip(4, EnumSet.of(TestEnum.a));
+		roundTrip(6, EnumSet.allOf(TestEnum.class));
+
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		roundTrip(89, EnumSet.of(TestEnum.a, TestEnum.c));
 	}
 
 	public void testEnumSerializerWithMethods () {
