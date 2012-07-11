@@ -796,9 +796,11 @@ public class Kryo {
 		}
 	}
 
-	/** Called when an object graph has been completely serialized or deserialized, allowing any state only needed per object graph
-	 * to be reset. If overridden, the super method must be called. */
-	protected void reset () {
+	/** Resets unregistered class names. references to previously serialized or deserialized objects. and the
+	 * {@link #getGraphContext() graph context}. If {@link #setAutoReset(boolean) auto reset} is true, this method is called
+	 * automatically when an object graph has been completely serialized or deserialized. If overridden, the super method must be
+	 * called. */
+	public void reset () {
 		depth = 0;
 		if (graphContext != null) graphContext.clear();
 		classResolver.reset();
@@ -1072,8 +1074,8 @@ public class Kryo {
 	}
 
 	/** If true (the default), {@link #reset()} is called automatically after an entire object graph has been read or written. If
-	 * false, {@link #reset()} must be called manually. This is an advanced feature that allows unregistered class names,
-	 * references, and other information to span multiple object graphs. */
+	 * false, {@link #reset()} must be called manually, which allows unregistered class names, references, and other information to
+	 * span multiple object graphs. */
 	public void setAutoReset (boolean autoReset) {
 		this.autoReset = autoReset;
 	}
