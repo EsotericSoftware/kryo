@@ -125,8 +125,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	protected void initializeCachedFields () {
 	}
 
-	/** Returns a new cached field for the specified field, or null if the field should not be used.
-	 * @return May be null. */
 	private CachedField newCachedField (Field field, int fieldIndex, int accessIndex) {
 		Class fieldClass = field.getType();
 

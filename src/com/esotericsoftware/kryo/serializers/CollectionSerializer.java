@@ -113,8 +113,14 @@ public class CollectionSerializer extends Serializer<Collection> {
 		return collection;
 	}
 
+	/** Used by {@link #copy(Kryo, Collection)} to create the new object. This can be overridden to customize object creation, eg to
+	 * call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
+	protected Collection createCopy (Kryo kryo, Collection original) {
+		return kryo.newInstance(original.getClass());
+	}
+
 	public Collection copy (Kryo kryo, Collection original) {
-		Collection copy = kryo.newInstance(original.getClass());
+		Collection copy = createCopy(kryo, original);
 		kryo.reference(copy);
 		for (Object element : original)
 			copy.add(kryo.copy(element));
