@@ -130,7 +130,6 @@ public class Kryo {
 	/** @param referenceResolver May be null to disable references. */
 	public Kryo (ClassResolver classResolver, ReferenceResolver referenceResolver) {
 		if (classResolver == null) throw new IllegalArgumentException("classResolver cannot be null.");
-		if (referenceResolver == null) throw new IllegalArgumentException("referenceResolver cannot be null.");
 
 		this.classResolver = classResolver;
 		classResolver.setKryo(this);

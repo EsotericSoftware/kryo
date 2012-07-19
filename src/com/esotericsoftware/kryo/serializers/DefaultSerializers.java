@@ -246,7 +246,7 @@ public class DefaultSerializers {
 
 		private Object[] enumConstants;
 
-		public EnumSerializer (Kryo kryo, Class<? extends Enum> type) {
+		public EnumSerializer (Class<? extends Enum> type) {
 			enumConstants = type.getEnumConstants();
 			if (enumConstants == null) throw new IllegalArgumentException("The type must be an enum: " + type);
 		}
