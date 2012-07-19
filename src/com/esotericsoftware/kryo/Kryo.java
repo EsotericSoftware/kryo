@@ -968,16 +968,24 @@ public class Kryo {
 		return registrationRequired;
 	}
 
-	/** If true, each appearance of an object in the graph after the first is stored as an integer ordinal. This enables references
-	 * to the same object and cyclic graphs to be serialized, but typically adds overhead of one byte per object. Default is true.
-	 * <p>
-	 * Once disabled, references cannot be enabled again. */
+	/** If true, each appearance of an object in the graph after the first is stored as an integer ordinal. When set to true,
+	 * {@link MapReferenceResolver} is used. This enables references to the same object and cyclic graphs to be serialized, but
+	 * typically adds overhead of one byte per object. Default is true. */
 	public void setReferences (boolean references) {
-		if (references && referenceResolver == null)
-			throw new IllegalStateException("Once disabled, references cannot be enabled.");
 		this.references = references;
-		if (!references) referenceResolver = null;
+		if (!references)
+			referenceResolver = null;
+		else
+			referenceResolver = new MapReferenceResolver();
 		if (TRACE) trace("kryo", "References: " + references);
+	}
+
+	/** Sets the reference resolver and enables references. */
+	public void setReferenceResolver (ReferenceResolver referenceResolver) {
+		if (referenceResolver == null) throw new IllegalArgumentException("referenceResolver cannot be null.");
+		this.references = true;
+		this.referenceResolver = referenceResolver;
+		if (TRACE) trace("kryo", "Reference resolver: " + referenceResolver.getClass().getName());
 	}
 
 	public boolean getReferences () {
