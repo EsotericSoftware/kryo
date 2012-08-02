@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.esotericsoftware.kryo</groupId>
 	<artifactId>kryo</artifactId>
-	<version>2.19-SNAPSHOT</version>
+	<version>2.19</version>
 	<packaging>jar</packaging>
 	<name>Kryo</name>
 	<description>Fast, efficient Java serialization</description>
