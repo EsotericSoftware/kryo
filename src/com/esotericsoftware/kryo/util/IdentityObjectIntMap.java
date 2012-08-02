@@ -59,13 +59,13 @@ public class IdentityObjectIntMap<K> {
 
 	public void put (K key, int value) {
 		if (key == null) throw new IllegalArgumentException("key cannot be null.");
+		K[] keyTable = this.keyTable;
 
 		// Check for existing keys.
 		int hashCode = System.identityHashCode(key);
 		int index1 = hashCode & mask;
 		K key1 = keyTable[index1];
 		if (key == key1) {
-			int oldValue = valueTable[index1];
 			valueTable[index1] = value;
 			return;
 		}
@@ -73,7 +73,6 @@ public class IdentityObjectIntMap<K> {
 		int index2 = hash2(hashCode);
 		K key2 = keyTable[index2];
 		if (key == key2) {
-			int oldValue = valueTable[index2];
 			valueTable[index2] = value;
 			return;
 		}
@@ -81,9 +80,16 @@ public class IdentityObjectIntMap<K> {
 		int index3 = hash3(hashCode);
 		K key3 = keyTable[index3];
 		if (key == key3) {
-			int oldValue = valueTable[index3];
 			valueTable[index3] = value;
 			return;
+		}
+
+		// Update key in the stash.
+		for (int i = capacity, n = i + stashSize; i < n; i++) {
+			if (keyTable[i] == key) {
+				valueTable[i] = value;
+				return;
+			}
 		}
 
 		// Check for empty buckets.
@@ -109,7 +115,6 @@ public class IdentityObjectIntMap<K> {
 		}
 
 		push(key, value, index1, key1, index2, key2, index3, key3);
-		return;
 	}
 
 	/** Skips checks for existing keys. */
@@ -222,14 +227,6 @@ public class IdentityObjectIntMap<K> {
 			resize(capacity << 1);
 			put(key, value);
 			return;
-		}
-		// Update key in the stash.
-		K[] keyTable = this.keyTable;
-		for (int i = capacity, n = i + stashSize; i < n; i++) {
-			if (key == keyTable[i]) {
-				valueTable[i] = value;
-				return;
-			}
 		}
 		// Store key in the stash.
 		int index = capacity + stashSize;
