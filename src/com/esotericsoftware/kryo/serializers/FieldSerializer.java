@@ -324,11 +324,21 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	class IntField extends AsmCachedField {
 		public void write (Output output, Object object) {
+			if (TRACE) {
+				trace("kryo", "Write field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Write int: " + access.getInt(object, accessIndex));
+			}
 			output.writeInt(access.getInt(object, accessIndex), false);
 		}
 
 		public void read (Input input, Object object) {
-			access.setInt(object, accessIndex, input.readInt(false));
+			if (TRACE) {
+				int value = input.readInt(false);
+				access.setInt(object, accessIndex, value);
+				trace("kryo", "Read field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Read int: " + value);
+			} else
+				access.setInt(object, accessIndex, input.readInt(false));
 		}
 
 		public void copy (Object original, Object copy) {
@@ -338,11 +348,21 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	class FloatField extends AsmCachedField {
 		public void write (Output output, Object object) {
+			if (TRACE) {
+				trace("kryo", "Write field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Write float: " + access.getFloat(object, accessIndex));
+			}
 			output.writeFloat(access.getFloat(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			access.setFloat(object, accessIndex, input.readFloat());
+			if (TRACE) {
+				float value = input.readFloat();
+				access.setFloat(object, accessIndex, value);
+				trace("kryo", "Read field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Read float: " + value);
+			} else
+				access.setFloat(object, accessIndex, input.readFloat());
 		}
 
 		public void copy (Object original, Object copy) {
@@ -352,11 +372,21 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	class ShortField extends AsmCachedField {
 		public void write (Output output, Object object) {
+			if (TRACE) {
+				trace("kryo", "Write field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Write short: " + access.getShort(object, accessIndex));
+			}
 			output.writeShort(access.getShort(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			access.setShort(object, accessIndex, input.readShort());
+			if (TRACE) {
+				short value = input.readShort();
+				access.setShort(object, accessIndex, value);
+				trace("kryo", "Read field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Read short: " + value);
+			} else
+				access.setShort(object, accessIndex, input.readShort());
 		}
 
 		public void copy (Object original, Object copy) {
@@ -366,11 +396,21 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	class ByteField extends AsmCachedField {
 		public void write (Output output, Object object) {
+			if (TRACE) {
+				trace("kryo", "Write field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Write byte: " + access.getByte(object, accessIndex));
+			}
 			output.writeByte(access.getByte(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			access.setByte(object, accessIndex, input.readByte());
+			if (TRACE) {
+				byte value = input.readByte();
+				access.setByte(object, accessIndex, value);
+				trace("kryo", "Read field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Read byte: " + value);
+			} else
+				access.setByte(object, accessIndex, input.readByte());
 		}
 
 		public void copy (Object original, Object copy) {
@@ -380,11 +420,21 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	class BooleanField extends AsmCachedField {
 		public void write (Output output, Object object) {
+			if (TRACE) {
+				trace("kryo", "Write field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Write boolean: " + access.getBoolean(object, accessIndex));
+			}
 			output.writeBoolean(access.getBoolean(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			access.setBoolean(object, accessIndex, input.readBoolean());
+			if (TRACE) {
+				boolean value = input.readBoolean();
+				access.setBoolean(object, accessIndex, value);
+				trace("kryo", "Read field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Read boolean: " + value);
+			} else
+				access.setBoolean(object, accessIndex, input.readBoolean());
 		}
 
 		public void copy (Object original, Object copy) {
@@ -394,11 +444,21 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	class CharField extends AsmCachedField {
 		public void write (Output output, Object object) {
+			if (TRACE) {
+				trace("kryo", "Write field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Write char: " + access.getChar(object, accessIndex));
+			}
 			output.writeChar(access.getChar(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			access.setChar(object, accessIndex, input.readChar());
+			if (TRACE) {
+				char value = input.readChar();
+				access.setChar(object, accessIndex, value);
+				trace("kryo", "Read field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Read char: " + value);
+			} else
+				access.setChar(object, accessIndex, input.readChar());
 		}
 
 		public void copy (Object original, Object copy) {
@@ -408,11 +468,21 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	class LongField extends AsmCachedField {
 		public void write (Output output, Object object) {
+			if (TRACE) {
+				trace("kryo", "Write field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Write long: " + access.getLong(object, accessIndex));
+			}
 			output.writeLong(access.getLong(object, accessIndex), false);
 		}
 
 		public void read (Input input, Object object) {
-			access.setLong(object, accessIndex, input.readLong(false));
+			if (TRACE) {
+				long value = input.readLong(false);
+				access.setLong(object, accessIndex, value);
+				trace("kryo", "Read field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Read long: " + value);
+			} else
+				access.setLong(object, accessIndex, input.readLong(false));
 		}
 
 		public void copy (Object original, Object copy) {
@@ -422,11 +492,21 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	class DoubleField extends AsmCachedField {
 		public void write (Output output, Object object) {
+			if (TRACE) {
+				trace("kryo", "Write field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Write double: " + access.getDouble(object, accessIndex));
+			}
 			output.writeDouble(access.getDouble(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			access.setDouble(object, accessIndex, input.readDouble());
+			if (TRACE) {
+				double value = input.readDouble();
+				access.setDouble(object, accessIndex, value);
+				trace("kryo", "Read field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Read double: " + value);
+			} else
+				access.setDouble(object, accessIndex, input.readDouble());
 		}
 
 		public void copy (Object original, Object copy) {
@@ -436,11 +516,21 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	class StringField extends AsmCachedField {
 		public void write (Output output, Object object) {
+			if (TRACE) {
+				trace("kryo", "Write field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Write string: " + access.getString(object, accessIndex));
+			}
 			output.writeString(access.getString(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			access.set(object, accessIndex, input.readString());
+			if (TRACE) {
+				String value = input.readString();
+				access.set(object, accessIndex, value);
+				trace("kryo", "Read field: " + this + " (" + object.getClass().getName() + ")");
+				trace("kryo", "Read string: " + value);
+			} else
+				access.set(object, accessIndex, input.readString());
 		}
 
 		public void copy (Object original, Object copy) {

@@ -6,12 +6,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
-import java.util.Arrays;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+
+import static com.esotericsoftware.minlog.Log.*;
 
 /** Serializes objects using direct field assignment for fields that have been {@link Tag tagged}. Fields without the {@link Tag}
  * annotation are not serialized. New tagged fields can be added without invalidating previously serialized bytes. If any tagged
@@ -32,7 +33,15 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			Field field = fields[i].getField();
 			Tag tag = field.getAnnotation(Tag.class);
 			Deprecated deprecated = field.getAnnotation(Deprecated.class);
-			if (tag == null || deprecated != null) super.removeField(field.getName());
+			if (tag == null || deprecated != null) {
+				if (TRACE) {
+					if (tag == null)
+						trace("kryo", "Ignoring field without tag: " + fields[i]);
+					else
+						trace("kryo", "Ignoring deprecated field: " + fields[i]);
+				}
+				super.removeField(field.getName());
+			}
 		}
 		// Cache tags.
 		fields = getFields();
