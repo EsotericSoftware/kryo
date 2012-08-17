@@ -56,7 +56,6 @@ public class MapSerializer extends Serializer<Map> {
 	public void write (Kryo kryo, Output output, Map map) {
 		int length = map.size();
 		output.writeInt(length, true);
-		if (length == 0) return;
 
 		Serializer keySerializer = this.keySerializer;
 		if (keyGenericType != null) {
@@ -97,7 +96,6 @@ public class MapSerializer extends Serializer<Map> {
 	public Map read (Kryo kryo, Input input, Class<Map> type) {
 		Map map = create(kryo, input, type);
 		int length = input.readInt(true);
-		if (length == 0) return map;
 
 		Class keyClass = this.keyClass;
 		Class valueClass = this.valueClass;
