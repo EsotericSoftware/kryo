@@ -1102,6 +1102,7 @@ public class Kryo {
 	 * ArrayList field. */
 	public boolean isFinal (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		if (type.isArray()) return Modifier.isFinal(Util.getElementClass(type).getModifiers());
 		return Modifier.isFinal(type.getModifiers());
 	}
 
