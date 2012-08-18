@@ -519,12 +519,19 @@ public class DefaultSerializers {
 	static public class TreeMapSerializer extends MapSerializer {
 		public void write (Kryo kryo, Output output, Map map) {
 			TreeMap treeMap = (TreeMap)map;
+			boolean references = kryo.setReferences(false);
 			kryo.writeClassAndObject(output, treeMap.comparator());
+			kryo.setReferences(references);
 			super.write(kryo, output, map);
 		}
 
 		protected Map create (Kryo kryo, Input input, Class<Map> type) {
-			return new TreeMap((Comparator)kryo.readClassAndObject(input));
+			// Child objects can't be deserialized before {@link Kryo#reference(Object)} is called, but in this case it is required
+			// to create the object, so references must be temporarily disabled.
+			boolean references = kryo.setReferences(false);
+			Comparator comparator = (Comparator)kryo.readClassAndObject(input);
+			kryo.setReferences(references);
+			return new TreeMap(comparator);
 		}
 
 		protected Map createCopy (Kryo kryo, Map original) {

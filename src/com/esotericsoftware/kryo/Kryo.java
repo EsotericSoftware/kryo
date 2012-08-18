@@ -936,11 +936,12 @@ public class Kryo {
 		return classResolver;
 	}
 
+	/** @return May be null. */
 	public ReferenceResolver getReferenceResolver () {
 		return referenceResolver;
 	}
 
-	/** Sets the classloader to resolve unregistered class names to classes. */
+	/** Sets the classloader to resolve unregistered class names to classes. The default is the loader that loaded the Kryo class. */
 	public void setClassLoader (ClassLoader classLoader) {
 		if (classLoader == null) throw new IllegalArgumentException("classLoader cannot be null.");
 		this.classLoader = classLoader;
@@ -969,14 +970,14 @@ public class Kryo {
 
 	/** If true, each appearance of an object in the graph after the first is stored as an integer ordinal. When set to true,
 	 * {@link MapReferenceResolver} is used. This enables references to the same object and cyclic graphs to be serialized, but
-	 * typically adds overhead of one byte per object. Default is true. */
-	public void setReferences (boolean references) {
+	 * typically adds overhead of one byte per object. Default is true.
+	 * @return The previous value. */
+	public boolean setReferences (boolean references) {
+		if (references == this.references) return references;
 		this.references = references;
-		if (!references)
-			referenceResolver = null;
-		else
-			referenceResolver = new MapReferenceResolver();
+		if (references && referenceResolver == null) referenceResolver = new MapReferenceResolver();
 		if (TRACE) trace("kryo", "References: " + references);
+		return !references;
 	}
 
 	/** Sets the reference resolver and enables references. */
