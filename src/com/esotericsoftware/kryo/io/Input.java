@@ -89,6 +89,11 @@ public class Input extends InputStream {
 		return total + position;
 	}
 
+	/** Sets the number of bytes read. */
+	public void setTotal (int total) {
+		this.total = total;
+	}
+
 	/** Returns the current position in the buffer. */
 	public int position () {
 		return position;
