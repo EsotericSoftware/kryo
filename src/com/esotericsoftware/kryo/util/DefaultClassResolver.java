@@ -95,7 +95,7 @@ public class DefaultClassResolver implements ClassResolver {
 		int nameId = nextNameId++;
 		if (classToNameId == null) classToNameId = new IdentityObjectIntMap();
 		classToNameId.put(type, nameId);
-		output.write(nameId);
+		output.writeInt(nameId, true);
 		output.writeString(type.getName());
 	}
 
