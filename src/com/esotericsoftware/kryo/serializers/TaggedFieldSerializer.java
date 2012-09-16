@@ -1,26 +1,29 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.reflect.Field;
+import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import static com.esotericsoftware.minlog.Log.*;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Field;
 
 /** Serializes objects using direct field assignment for fields that have been {@link Tag tagged}. Fields without the {@link Tag}
  * annotation are not serialized. New tagged fields can be added without invalidating previously serialized bytes. If any tagged
  * field is removed, previously serialized bytes are invalidated. Instead of removing fields, apply the {@link Deprecated}
- * annotation and they will not be serialized. If fields are public, bytecode generation will be used instead of reflection.
+ * annotation and they will still be deserialized but won't be serialized. If fields are public, bytecode generation will be used
+ * instead of reflection.
  * @author Nathan Sweet <misc@n4te.com> */
 public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	private int[] tags;
+	private int writeFieldCount;
+	private boolean[] deprecated;
 
 	public TaggedFieldSerializer (Kryo kryo, Class type) {
 		super(kryo, type);
@@ -28,26 +31,27 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	protected void initializeCachedFields () {
 		CachedField[] fields = getFields();
-		// Remove unwanted fields.
+		// Remove untagged fields.
 		for (int i = 0, n = fields.length; i < n; i++) {
 			Field field = fields[i].getField();
-			Tag tag = field.getAnnotation(Tag.class);
-			Deprecated deprecated = field.getAnnotation(Deprecated.class);
-			if (tag == null || deprecated != null) {
-				if (TRACE) {
-					if (tag == null)
-						trace("kryo", "Ignoring field without tag: " + fields[i]);
-					else
-						trace("kryo", "Ignoring deprecated field: " + fields[i]);
-				}
+			if (field.getAnnotation(Tag.class) == null) {
+				if (TRACE) trace("kryo", "Ignoring field without tag: " + fields[i]);
 				super.removeField(field.getName());
 			}
 		}
-		// Cache tags.
+		// Cache tag values.
 		fields = getFields();
 		tags = new int[fields.length];
-		for (int i = 0, n = fields.length; i < n; i++)
-			tags[i] = fields[i].getField().getAnnotation(Tag.class).value();
+		deprecated = new boolean[fields.length];
+		writeFieldCount = fields.length;
+		for (int i = 0, n = fields.length; i < n; i++) {
+			Field field = fields[i].getField();
+			tags[i] = field.getAnnotation(Tag.class).value();
+			if (field.getAnnotation(Deprecated.class) != null) {
+				deprecated[i] = true;
+				writeFieldCount--;
+			}
+		}
 	}
 
 	public void removeField (String fieldName) {
@@ -57,8 +61,9 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	public void write (Kryo kryo, Output output, T object) {
 		CachedField[] fields = getFields();
-		output.writeInt(fields.length, true);
+		output.writeInt(writeFieldCount, true);
 		for (int i = 0, n = fields.length; i < n; i++) {
+			if (deprecated[i]) continue;
 			output.writeInt(tags[i], true);
 			fields[i].write(output, object);
 		}
