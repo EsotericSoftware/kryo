@@ -190,7 +190,15 @@ public class Input extends InputStream {
 		return remaining == 0 ? -1 : Math.min(remaining, optional);
 	}
 
+	public boolean eof () {
+		return optional(1) == 0;
+	}
+
 	// InputStream
+
+	public int available () throws IOException {
+		return limit - position + ((null != inputStream) ? inputStream.available() : 0);
+	}
 
 	/** Reads a single byte as an int from 0 to 255, or -1 if there are no more bytes are available. */
 	public int read () throws KryoException {
