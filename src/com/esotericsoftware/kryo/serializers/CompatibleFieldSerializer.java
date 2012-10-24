@@ -45,7 +45,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public T read (Kryo kryo, Input input, Class<T> type) {
-		T object = kryo.newInstance(type);
+		T object = create(kryo, input, type);
 		kryo.reference(object);
 		ObjectMap context = kryo.getGraphContext();
 		CachedField[] fields = (CachedField[])context.get(this);
