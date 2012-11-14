@@ -414,10 +414,8 @@ public class Kryo {
 
 	/** Returns the lowest, next available integer ID. */
 	public int getNextRegistrationId () {
-		int id = nextRegisterID;
 		while (true) {
-			if (classResolver.getRegistration(id) == null) return id;
-			id++;
+			if (classResolver.getRegistration(nextRegisterID++) == null) return nextRegisterID - 1;
 		}
 	}
 
