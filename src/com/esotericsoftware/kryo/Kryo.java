@@ -95,8 +95,6 @@ public class Kryo {
 
 	private final ClassResolver classResolver;
 	private int nextRegisterID;
-	private Class memoizedClass;
-	private Registration memoizedClassValue;
 	private ClassLoader classLoader = getClass().getClassLoader();
 	private InstantiatorStrategy strategy;
 	private boolean registrationRequired;
@@ -421,12 +419,13 @@ public class Kryo {
 		throw new KryoException("No registration IDs are available.");
 	}
 
-	/** @throws IllegalArgumentException if the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is true.
+	/** If the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is false, it is automatically registered
+	 * using the {@link Kryo#addDefaultSerializer(Class, Class) default serializer}.
+	 * @throws IllegalArgumentException if the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is true.
 	 * @see ClassResolver#getRegistration(Class) */
 	public Registration getRegistration (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 
-		if (type == memoizedClass) return memoizedClassValue;
 		Registration registration = classResolver.getRegistration(type);
 		if (registration == null) {
 			if (Proxy.isProxyClass(type)) {
@@ -446,8 +445,6 @@ public class Kryo {
 				registration = classResolver.registerImplicit(type);
 			}
 		}
-		memoizedClass = type;
-		memoizedClassValue = registration;
 		return registration;
 	}
 

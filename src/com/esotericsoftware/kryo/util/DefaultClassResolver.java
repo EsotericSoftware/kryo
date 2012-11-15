@@ -28,6 +28,8 @@ public class DefaultClassResolver implements ClassResolver {
 
 	private int memoizedClassId = -1;
 	private Registration memoizedClassIdValue;
+	private Class memoizedClass;
+	private Registration memoizedClassValue;
 
 	public void setKryo (Kryo kryo) {
 		this.kryo = kryo;
@@ -54,10 +56,14 @@ public class DefaultClassResolver implements ClassResolver {
 		return register(new Registration(type, kryo.getDefaultSerializer(type), NAME));
 	}
 
-	/** If the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is false, it is automatically registered
-	 * using the {@link Kryo#addDefaultSerializer(Class, Class) default serializer}. */
 	public Registration getRegistration (Class type) {
-		return classToRegistration.get(type);
+		if (type == memoizedClass) return memoizedClassValue;
+		Registration registration = classToRegistration.get(type);
+		if (registration != null) {
+			memoizedClass = type;
+			memoizedClassValue = registration;
+		}
+		return registration;
 	}
 
 	public Registration getRegistration (int classID) {
