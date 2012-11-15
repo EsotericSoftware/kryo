@@ -418,7 +418,7 @@ public class Kryo {
 			if (classResolver.getRegistration(nextRegisterID) == null) return nextRegisterID;
 			nextRegisterID++;
 		}
-		throw new KryoException("No registeration IDs are available.");
+		throw new KryoException("No registration IDs are available.");
 	}
 
 	/** @throws IllegalArgumentException if the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is true.
