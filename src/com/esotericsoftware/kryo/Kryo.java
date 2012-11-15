@@ -414,9 +414,11 @@ public class Kryo {
 
 	/** Returns the lowest, next available integer ID. */
 	public int getNextRegistrationId () {
-		while (true) {
-			if (classResolver.getRegistration(nextRegisterID++) == null) return nextRegisterID - 1;
+		while (nextRegisterID != -2) {
+			if (classResolver.getRegistration(nextRegisterID) == null) return nextRegisterID;
+			nextRegisterID++;
 		}
+		throw new KryoException("No registeration IDs are available.");
 	}
 
 	/** @throws IllegalArgumentException if the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is true.
