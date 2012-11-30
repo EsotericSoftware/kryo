@@ -526,12 +526,7 @@ public class DefaultSerializers {
 		}
 
 		protected Map create (Kryo kryo, Input input, Class<Map> type) {
-			// Child objects can't be deserialized before {@link Kryo#reference(Object)} is called, but in this case it is required
-			// to create the object, so references must be temporarily disabled.
-			boolean references = kryo.setReferences(false);
-			Comparator comparator = (Comparator)kryo.readClassAndObject(input);
-			kryo.setReferences(references);
-			return new TreeMap(comparator);
+			return new TreeMap((Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected Map createCopy (Kryo kryo, Map original) {
