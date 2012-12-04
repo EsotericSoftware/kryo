@@ -788,7 +788,7 @@ public class Kryo {
 			}
 		} else if (references && object != null) {
 			int id = readReferenceIds.pop();
-			if (id != NO_REF) referenceResolver.addReadObject(id, object);
+			if (id != NO_REF) referenceResolver.setReadObject(id, object);
 		}
 	}
 

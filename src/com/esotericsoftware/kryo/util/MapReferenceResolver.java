@@ -29,10 +29,12 @@ public class MapReferenceResolver implements ReferenceResolver {
 	}
 
 	public int nextReadId (Class type) {
-		return readObjects.size();
+		int id = readObjects.size();
+		setReadObject(id, null);
+		return id;
 	}
 
-	public void addReadObject (int id, Object object) {
+	public void setReadObject (int id, Object object) {
 		if (id == readObjects.size())
 			readObjects.add(object);
 		else {

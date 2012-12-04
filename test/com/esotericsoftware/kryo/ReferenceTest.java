@@ -1,12 +1,15 @@
 
 package com.esotericsoftware.kryo;
 
-import java.util.Map;
-import java.util.TreeMap;
-
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class ReferenceTest extends KryoTestCase {
 	static public class Ordering {
@@ -53,5 +56,57 @@ public class ReferenceTest extends KryoTestCase {
 		assertEquals(stuff.get("something"), stuff2.get("something"));
 		assertTrue(stuff.get("self") == stuff);
 		assertTrue(stuff2.get("self") == stuff2);
+	}
+
+	public void testReadingNestedObjectsFirst () {
+		ArrayList list = new ArrayList();
+		list.add("1");
+		list.add("1");
+		list.add("2");
+		list.add("1");
+		list.add("1");
+		List subList = list.subList(0, 5);
+
+		kryo.setRegistrationRequired(false);
+		kryo.register(ArrayList.class);
+		kryo.register(subList.getClass(), new SubListSerializer());
+		roundTrip(26, subList);
+	}
+
+	static public class SubListSerializer extends Serializer<List> {
+		private Field listField, offsetField, sizeField;
+
+		public SubListSerializer () {
+			try {
+				Class sublistClass = Class.forName("java.util.SubList");
+				listField = sublistClass.getDeclaredField("l");
+				offsetField = sublistClass.getDeclaredField("offset");
+				sizeField = sublistClass.getDeclaredField("size");
+				listField.setAccessible(true);
+				offsetField.setAccessible(true);
+				sizeField.setAccessible(true);
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+
+		public void write (Kryo kryo, Output output, List list) {
+			try {
+				kryo.writeClassAndObject(output, listField.get(list));
+				int fromIndex = offsetField.getInt(list);
+				int count = sizeField.getInt(list);
+				output.writeInt(fromIndex);
+				output.writeInt(count);
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+
+		public List read (Kryo kryo, Input input, Class<List> type) {
+			List list = (List)kryo.readClassAndObject(input);
+			int fromIndex = input.readInt();
+			int count = input.readInt();
+			return list.subList(fromIndex, fromIndex + count);
+		}
 	}
 }

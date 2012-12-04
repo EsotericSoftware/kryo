@@ -15,17 +15,17 @@ public interface ReferenceResolver {
 	 * @return The ID, which is stored more efficiently if it is positive and must not be -1 or -2. */
 	public int addWrittenObject (Object object);
 
-	/** Returns the ID for the next object that will be read. This is called only the first time an object is encountered.
+	/** Reserves the ID for the next object that will be read. This is called only the first time an object is encountered.
 	 * @param type The type of object that will be read.
 	 * @return The ID, which is stored more efficiently if it is positive and must not be -1 or -2. */
 	public int nextReadId (Class type);
 
-	/** Adds an object that has been read for the first time.
+	/** Sets the ID for an object that has been read.
 	 * @param id The ID from {@link #nextReadId(Class)}. */
-	public void addReadObject (int id, Object object);
+	public void setReadObject (int id, Object object);
 
 	/** Returns the object for the specified ID. The ID and object are guaranteed to have been previously passed in a call to
-	 * {@link #addReadObject(int, Object)}. */
+	 * {@link #setReadObject(int, Object)}. */
 	public Object getReadObject (Class type, int id);
 
 	/** Called by {@link Kryo#reset()}. */
