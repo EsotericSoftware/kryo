@@ -11,7 +11,7 @@
 	<groupId>com.esotericsoftware.kryo</groupId>
 	<artifactId>kryo</artifactId>
 	<version>2.21-SNAPSHOT</version>
-	<packaging>jar</packaging>
+	<packaging>bundle</packaging>
 	<name>Kryo</name>
 	<description>Fast, efficient Java serialization</description>
 	<url>http://code.google.com/p/kryo/</url>
@@ -141,6 +141,25 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions>
+						<Import-Package><![CDATA[
+						COM.jrockit*;resolution:=optional,
+						COM.newmonics*;resolution:=optional,
+						jrockit*;resolution:=optional,
+						sun.reflect;resolution:=optional,
+						*
+						]]>
+						</Import-Package>
+						<Export-Package>com.esotericsoftware*, org.objenesis*</Export-Package>
+						<Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
+					</instructions>
+				</configuration>
+                       </plugin>
 		</plugins>
 	</build>
 
