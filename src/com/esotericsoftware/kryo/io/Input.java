@@ -1,10 +1,10 @@
 
 package com.esotericsoftware.kryo.io;
 
+import com.esotericsoftware.kryo.KryoException;
+
 import java.io.IOException;
 import java.io.InputStream;
-
-import com.esotericsoftware.kryo.KryoException;
 
 /** An InputStream that reads data from a byte array and optionally fills the byte array from another OutputStream as needed.
  * Utility methods are provided for efficiently reading primitive types and strings.
@@ -132,7 +132,8 @@ public class Input extends InputStream {
 		}
 	}
 
-	/** Fills the buffer with more bytes. Can be overridden to fill the bytes from a source other than the InputStream. */
+	/** Fills the buffer with more bytes. Can be overridden to fill the bytes from a source other than the InputStream.
+	 * @return -1 if there are no more bytes. */
 	protected int fill (byte[] buffer, int offset, int count) throws KryoException {
 		if (inputStream == null) return -1;
 		try {
@@ -150,13 +151,22 @@ public class Input extends InputStream {
 		if (remaining >= required) return remaining;
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
 
-		// Compact.
+		// Try to fill the buffer.
+		int count = fill(buffer, limit, capacity - limit);
+		if (count == -1) throw new KryoException("Buffer underflow.");
+		remaining += count;
+		if (remaining >= required) {
+			limit += count;
+			return remaining;
+		}
+
+		// Was not enough, compact and try again.
 		System.arraycopy(buffer, position, buffer, 0, remaining);
 		total += position;
 		position = 0;
 
 		while (true) {
-			int count = fill(buffer, remaining, capacity - remaining);
+			count = fill(buffer, remaining, capacity - remaining);
 			if (count == -1) {
 				if (remaining >= required) break;
 				throw new KryoException("Buffer underflow.");
@@ -164,6 +174,7 @@ public class Input extends InputStream {
 			remaining += count;
 			if (remaining >= required) break; // Enough has been read.
 		}
+
 		limit = remaining;
 		return remaining;
 	}
@@ -175,17 +186,27 @@ public class Input extends InputStream {
 		if (remaining >= optional) return optional;
 		optional = Math.min(optional, capacity);
 
-		// Compact.
+		// Try to fill the buffer.
+		int count = fill(buffer, limit, capacity - limit);
+		if (count == -1) return remaining == 0 ? -1 : Math.min(remaining, optional);
+		remaining += count;
+		if (remaining >= optional) {
+			limit += count;
+			return optional;
+		}
+
+		// Was not enough, compact and try again.
 		System.arraycopy(buffer, position, buffer, 0, remaining);
 		total += position;
 		position = 0;
 
 		while (true) {
-			int count = fill(buffer, remaining, capacity - remaining);
+			count = fill(buffer, remaining, capacity - remaining);
 			if (count == -1) break;
 			remaining += count;
 			if (remaining >= optional) break; // Enough has been read.
 		}
+
 		limit = remaining;
 		return remaining == 0 ? -1 : Math.min(remaining, optional);
 	}
