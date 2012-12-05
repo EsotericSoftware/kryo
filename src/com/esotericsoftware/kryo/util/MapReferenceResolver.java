@@ -30,18 +30,12 @@ public class MapReferenceResolver implements ReferenceResolver {
 
 	public int nextReadId (Class type) {
 		int id = readObjects.size();
-		setReadObject(id, null);
+		readObjects.add(null);
 		return id;
 	}
 
 	public void setReadObject (int id, Object object) {
-		if (id == readObjects.size())
-			readObjects.add(object);
-		else {
-			while (id >= readObjects.size())
-				readObjects.add(null);
-			readObjects.set(id, object);
-		}
+		readObjects.set(id, object);
 	}
 
 	public Object getReadObject (Class type, int id) {

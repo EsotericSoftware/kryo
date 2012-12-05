@@ -33,18 +33,12 @@ public class ListReferenceResolver implements ReferenceResolver {
 
 	public int nextReadId (Class type) {
 		int id = seenObjects.size();
-		setReadObject(id, null);
+		seenObjects.add(null);
 		return id;
 	}
 
 	public void setReadObject (int id, Object object) {
-		if (id == seenObjects.size())
-			seenObjects.add(object);
-		else {
-			while (id >= seenObjects.size())
-				seenObjects.add(null);
-			seenObjects.set(id, object);
-		}
+		seenObjects.set(id, object);
 	}
 
 	public Object getReadObject (Class type, int id) {
