@@ -39,8 +39,7 @@ public class MapReferenceResolver implements ReferenceResolver {
 	}
 
 	public Object getReadObject (Class type, int id) {
-		if (id < readObjects.size()) return readObjects.get(id);
-		return null;
+		return readObjects.get(id);
 	}
 
 	public void reset () {
