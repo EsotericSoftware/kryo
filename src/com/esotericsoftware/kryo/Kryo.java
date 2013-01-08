@@ -1002,19 +1002,24 @@ public class Kryo {
 	 * {@link #setInstantiatorStrategy(InstantiatorStrategy) strategy} is set, it will be used instead of throwing an exception. */
 	protected ObjectInstantiator newInstantiator (final Class type) {
 		if (!Util.isAndroid) {
-			// ReflectASM.
-			try {
-				final ConstructorAccess access = ConstructorAccess.get(type);
-				return new ObjectInstantiator() {
-					public Object newInstance () {
-						try {
-							return access.newInstance();
-						} catch (Exception ex) {
-							throw new KryoException("Error constructing instance of class: " + className(type), ex);
+			// Use ReflectASM if the class is not a non-static member class.
+			Class enclosingType = type.getEnclosingClass();
+			boolean isNonStaticMemberClass = enclosingType != null && type.isMemberClass()
+				&& !Modifier.isStatic(type.getModifiers());
+			if (!isNonStaticMemberClass) {
+				try {
+					final ConstructorAccess access = ConstructorAccess.get(type);
+					return new ObjectInstantiator() {
+						public Object newInstance () {
+							try {
+								return access.newInstance();
+							} catch (Exception ex) {
+								throw new KryoException("Error constructing instance of class: " + className(type), ex);
+							}
 						}
-					}
-				};
-			} catch (Exception ignored) {
+					};
+				} catch (Exception ignored) {
+				}
 			}
 		}
 		// Reflection.

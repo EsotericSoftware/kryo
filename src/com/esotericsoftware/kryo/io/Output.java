@@ -26,7 +26,8 @@ public class Output extends OutputStream {
 
 	/** Creates a new Output for writing to a byte array.
 	 * @param bufferSize The initial size of the buffer.
-	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. */
+	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. Can be -1
+	 *           for no maximum. */
 	public Output (int bufferSize, int maxBufferSize) {
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.capacity = bufferSize;
