@@ -70,11 +70,11 @@ public class ReferenceTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		kryo.register(ArrayList.class);
 		Class<List> subListClass = (Class<List>)subList.getClass();
-		if(subListClass.getName().equals("java.util.SubList"))
-			kryo.register(subList.getClass(), new SubListSerializer());
-		else if(subListClass.getName().equals("java.util.ArrayList$SubList")) {
+		if(subListClass.getName().equals("java.util.ArrayList$SubList")) {
 			// This is JDK > = 1.7
 			kryo.register(subList.getClass(), new ArraySubListSerializer());			
+		} else {
+			kryo.register(subList.getClass(), new SubListSerializer());		    
 		}
 		roundTrip(26, subList);
 	}
