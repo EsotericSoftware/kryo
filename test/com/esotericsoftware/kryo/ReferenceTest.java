@@ -69,7 +69,13 @@ public class ReferenceTest extends KryoTestCase {
 
 		kryo.setRegistrationRequired(false);
 		kryo.register(ArrayList.class);
-		kryo.register(subList.getClass(), new SubListSerializer());
+		Class<List> subListClass = (Class<List>)subList.getClass();
+		if(subListClass.getName().equals("java.util.SubList"))
+			kryo.register(subList.getClass(), new SubListSerializer());
+		else if(subListClass.getName().equals("java.util.ArrayList$SubList")) {
+			// This is JDK > = 1.7
+			kryo.register(subList.getClass(), new ArraySubListSerializer());			
+		}
 		roundTrip(26, subList);
 	}
 
@@ -107,6 +113,43 @@ public class ReferenceTest extends KryoTestCase {
 			int fromIndex = input.readInt();
 			int count = input.readInt();
 			return list.subList(fromIndex, fromIndex + count);
+		}
+	}
+
+	static public class ArraySubListSerializer extends Serializer<List> {
+		private Field parentField, offsetField, sizeField;
+
+		public ArraySubListSerializer () {
+			try {
+				Class sublistClass = Class.forName("java.util.ArrayList$SubList");
+				parentField = sublistClass.getDeclaredField("parent");
+				offsetField = sublistClass.getDeclaredField("offset");
+				sizeField = sublistClass.getDeclaredField("size");
+				parentField.setAccessible(true);
+				offsetField.setAccessible(true);
+				sizeField.setAccessible(true);
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+
+		public void write (Kryo kryo, Output output, List list) {
+			try {
+				kryo.writeClassAndObject(output, parentField.get(list));
+				int offset = offsetField.getInt(list);
+				int size = sizeField.getInt(list);
+				output.writeInt(offset);
+				output.writeInt(size);
+			} catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+
+		public List read (Kryo kryo, Input input, Class<List> type) {
+			List list = (List)kryo.readClassAndObject(input);
+			int offset = input.readInt();
+			int size = input.readInt();
+			return list.subList(offset, offset + size);
 		}
 	}
 }
