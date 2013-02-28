@@ -27,9 +27,9 @@ public class MapSerializerTest extends KryoTestCase {
 		HashMap map = new HashMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(18, map);
-		roundTrip(2, new LinkedHashMap());
-		roundTrip(18, new LinkedHashMap(map));
+		roundTrip(18, 21, map);
+		roundTrip(2, 5, new LinkedHashMap());
+		roundTrip(18, 21, new LinkedHashMap(map));
 
 		MapSerializer serializer = new MapSerializer();
 		kryo.register(HashMap.class, serializer);
@@ -37,9 +37,9 @@ public class MapSerializerTest extends KryoTestCase {
 		serializer.setKeyClass(String.class, kryo.getSerializer(String.class));
 		serializer.setKeysCanBeNull(false);
 		serializer.setValueClass(String.class, kryo.getSerializer(String.class));
-		roundTrip(14, map);
+		roundTrip(14, 17, map);
 		serializer.setValuesCanBeNull(false);
-		roundTrip(14, map);
+		roundTrip(14, 17, map);
 	}
 
 	public void testEmptyHashMap () {
@@ -100,7 +100,7 @@ public class MapSerializerTest extends KryoTestCase {
 		TreeMap map = new TreeMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(19, map);
+		roundTrip(19, 22, map);
 
 		kryo.register(KeyThatIsntComparable.class);
 		kryo.register(KeyComparator.class);
@@ -108,7 +108,7 @@ public class MapSerializerTest extends KryoTestCase {
 		KeyThatIsntComparable key = new KeyThatIsntComparable();
 		key.value = "123";
 		map.put(key, "456");
-		roundTrip(11, map);
+		roundTrip(11, 14, map);
 	}
 
 	static public class HasGenerics {

@@ -61,10 +61,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	public void write (Kryo kryo, Output output, T object) {
 		CachedField[] fields = getFields();
-		output.writeInt(writeFieldCount, true);
+		output.writeVarInt(writeFieldCount, true);
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (deprecated[i]) continue;
-			output.writeInt(tags[i], true);
+			output.writeVarInt(tags[i], true);
 			fields[i].write(output, object);
 		}
 	}
@@ -72,11 +72,11 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	public T read (Kryo kryo, Input input, Class<T> type) {
 		T object = create(kryo, input, type);
 		kryo.reference(object);
-		int fieldCount = input.readInt(true);
+		int fieldCount = input.readVarInt(true);
 		int[] tags = this.tags;
 		CachedField[] fields = getFields();
 		for (int i = 0, n = fieldCount; i < n; i++) {
-			int tag = input.readInt(true);
+			int tag = input.readVarInt(true);
 
 			CachedField cachedField = null;
 			for (int ii = 0, nn = tags.length; ii < nn; ii++) {

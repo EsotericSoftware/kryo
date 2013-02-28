@@ -2,11 +2,13 @@
 package com.esotericsoftware.kryo;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -70,6 +72,8 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeMapSerialize
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
+import com.esotericsoftware.kryo.util.DefaultStreamFactory;
+import com.esotericsoftware.kryo.util.FastestStreamFactory;
 import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
@@ -113,24 +117,32 @@ public class Kryo {
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
+	private Generics genericsScope;
+	/** Tells if ASM-based backend should be used by new serializer instances created using this Kryo instance. */
+	private boolean useAsmBackend = false;
+	
+	private StreamFactory streamFactory;
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and a {@link MapReferenceResolver}. */
 	public Kryo () {
-		this(new DefaultClassResolver(), new MapReferenceResolver());
+		this(new DefaultClassResolver(), new MapReferenceResolver(), new DefaultStreamFactory());
 	}
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver}.
 	 * @param referenceResolver May be null to disable references. */
 	public Kryo (ReferenceResolver referenceResolver) {
-		this(new DefaultClassResolver(), referenceResolver);
+		this(new DefaultClassResolver(), referenceResolver, new DefaultStreamFactory());
 	}
 
 	/** @param referenceResolver May be null to disable references. */
-	public Kryo (ClassResolver classResolver, ReferenceResolver referenceResolver) {
+	public Kryo (ClassResolver classResolver, ReferenceResolver referenceResolver, StreamFactory streamFactory) {
 		if (classResolver == null) throw new IllegalArgumentException("classResolver cannot be null.");
 
 		this.classResolver = classResolver;
 		classResolver.setKryo(this);
+		
+		this.streamFactory = streamFactory;
+		streamFactory.setKryo(this);
 
 		this.referenceResolver = referenceResolver;
 		if (referenceResolver != null) {
@@ -576,11 +588,11 @@ public class Kryo {
 	boolean writeReferenceOrNull (Output output, Object object, boolean mayBeNull) {
 		if (object == null) {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", null);
-			output.writeByte(Kryo.NULL);
+			output.writeVarInt(Kryo.NULL, true);
 			return true;
 		}
 		if (!referenceResolver.useReferences(object.getClass())) {
-			if (mayBeNull) output.writeByte(Kryo.NOT_NULL);
+			if (mayBeNull) output.writeVarInt(Kryo.NOT_NULL, true);
 			return false;
 		}
 
@@ -590,13 +602,13 @@ public class Kryo {
 		// If not the first time encountered, only write reference ID.
 		if (id != -1) {
 			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object));
-			output.writeInt(id + 2, true); // + 2 because 0 and 1 are used for NULL and NOT_NULL.
+			output.writeVarInt(id + 2, true); // + 2 because 0 and 1 are used for NULL and NOT_NULL.
 			return true;
 		}
 
 		// Otherwise write NOT_NULL and then the object bytes.
 		id = referenceResolver.addWrittenObject(object);
-		output.writeByte(NOT_NULL);
+		output.writeVarInt(NOT_NULL, true);
 		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object));
 		return false;
 	}
@@ -744,7 +756,7 @@ public class Kryo {
 		boolean referencesSupported = referenceResolver.useReferences(type);
 		int id;
 		if (mayBeNull) {
-			id = input.readInt(true);
+			id = input.readVarInt(true);
 			if (id == Kryo.NULL) {
 				if (TRACE || (DEBUG && depth == 1)) log("Read", null);
 				readObject = null;
@@ -759,7 +771,7 @@ public class Kryo {
 				readReferenceIds.add(NO_REF);
 				return readReferenceIds.size;
 			}
-			id = input.readInt(true);
+			id = input.readVarInt(true);
 		}
 		if (id == NOT_NULL) {
 			// First time object has been encountered.
@@ -1111,17 +1123,33 @@ public class Kryo {
 
 	/** Returns the first level of classes or interfaces for a generic type.
 	 * @return null if the specified type is not generic or its generic types are not classes. */
-	static public Class[] getGenerics (Type genericType) {
+	public Class[] getGenerics (Type genericType) {
+		if(genericType instanceof GenericArrayType)
+			return getGenerics(((GenericArrayType) genericType).getGenericComponentType());
 		if (!(genericType instanceof ParameterizedType)) return null;
+		if(TRACE) trace("kryo", "Processing generic type " + genericType);
 		Type[] actualTypes = ((ParameterizedType)genericType).getActualTypeArguments();
 		Class[] generics = new Class[actualTypes.length];
 		int count = 0;
 		for (int i = 0, n = actualTypes.length; i < n; i++) {
 			Type actualType = actualTypes[i];
+			if(TRACE) trace("kryo", "Processing actual type " + actualType + " (" + actualType.getClass().getName()+ ")");
+			generics[i] = Object.class;
 			if (actualType instanceof Class)
 				generics[i] = (Class)actualType;
 			else if (actualType instanceof ParameterizedType)
 				generics[i] = (Class)((ParameterizedType)actualType).getRawType();
+			else if (actualType instanceof TypeVariable) {
+				Generics scope = getGenericsScope();
+				if(scope != null) {
+					Class clazz = scope.getConcreteClass(((TypeVariable)actualType).getName());
+					if(clazz != null) {
+						generics[i] = clazz;
+					} else 
+						continue;
+				} else 
+					continue;
+			}
 			else
 				continue;
 			count++;
@@ -1134,5 +1162,50 @@ public class Kryo {
 		Class type;
 		Serializer serializer;
 		Class<? extends Serializer> serializerClass;
+	}
+
+	public void pushGenericsScope(Class type, Generics generics) {
+		if(TRACE) trace("kryo", "Settting a new generics scope for class " + type.getName() + ": " + generics);
+		Generics currentScope = genericsScope;
+		genericsScope = generics;
+		genericsScope.setParentScope(currentScope);
+	}
+
+	public void popGenericsScope() {
+		Generics oldScope = genericsScope;
+		if(genericsScope != null)
+			genericsScope = genericsScope.getParentScope();
+		if(oldScope != null)
+			oldScope.resetParentScope();
+	}
+
+	public Generics getGenericsScope() {
+		return genericsScope;
+	}
+	
+	public StreamFactory getStreamFactory() {
+		return streamFactory;
+	}
+
+	public void setStreamFactory(FastestStreamFactory streamFactory) {
+		this.streamFactory = streamFactory;		
+	}
+	
+	/**
+	 * Tells Kryo, if ASM-based backend should be used by new serializer instances created using
+	 * this Kryo instance. Already existing serializer instances are not affected by this
+	 * setting.
+	 * 
+	 * <p>By default, Kryo uses ASM-based backend.</p>
+	 * 
+	 * @param flag if true, ASM-based backend will be used. Otherwise Unsafe-based backend could 
+	 * be used by some serializers, e.g. FieldSerializer
+	 */
+	public void useAsmBackend(boolean flag) {
+		this.useAsmBackend = flag;
+	}
+
+	public boolean useAsmBackend() {
+		return useAsmBackend;
 	}
 }

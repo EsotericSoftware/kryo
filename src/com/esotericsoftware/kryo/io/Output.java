@@ -8,11 +8,18 @@ import com.esotericsoftware.kryo.KryoException;
 
 /** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
  * for efficiently writing primitive types and strings.
+ * 
+ * Encoding of integers: 
+ * BIG_ENDIAN is used for storing fixed native size integer values
+ * LITTLE_ENDIAN is used for a variable length encoding of integer values  
+ * 
  * @author Nathan Sweet <misc@n4te.com> */
 public class Output extends OutputStream {
-	private int maxCapacity, capacity, position, total;
-	private byte[] buffer;
-	private OutputStream outputStream;
+	int maxCapacity, total;
+	int position;
+	int capacity;
+	byte[] buffer;
+	OutputStream outputStream;
 
 	/** Creates an uninitialized Output. {@link #setBuffer(byte[], int)} must be called before the Output is used. */
 	public Output () {
@@ -107,7 +114,7 @@ public class Output extends OutputStream {
 	}
 
 	/** Returns the current position in the buffer. This is the number of bytes that have not been flushed. */
-	public int position () {
+	final public int position () {
 		return position;
 	}
 
@@ -117,7 +124,7 @@ public class Output extends OutputStream {
 	}
 
 	/** Returns the total number of bytes written. This may include bytes that have not been flushed. */
-	public int total () {
+	final public int total () {
 		return total + position;
 	}
 
@@ -128,7 +135,7 @@ public class Output extends OutputStream {
 	}
 
 	/** @return true if the buffer has been resized. */
-	private boolean require (int required) throws KryoException {
+	boolean require (int required) throws KryoException {
 		if (capacity - position >= required) return false;
 		if (required > maxCapacity)
 			throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
@@ -223,7 +230,7 @@ public class Output extends OutputStream {
 
 	// int
 
-	/** Writes a 4 byte int. */
+	/** Writes a 4 byte int. Uses BIG_ENDIAN byte order. */
 	public void writeInt (int value) throws KryoException {
 		require(4);
 		byte[] buffer = this.buffer;
@@ -233,10 +240,21 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
-	/** Writes a 1-5 byte int.
+	/** Writes a 1-5 byte int. This stream may consider such a variable length encoding request as a hint.
+	 *  It is not guaranteed that a variable length encoding will be really used. The stream may decide
+	 *  to use native-sized integer representation for efficiency reasons.   
+	 *  
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
 	 *           inefficient (5 bytes). */
 	public int writeInt (int value, boolean optimizePositive) throws KryoException {
+		return writeVarInt(value, optimizePositive);
+	}
+
+	/** Writes a 1-5 byte int. It is guaranteed that a varible length encoding will be used.
+	 * 
+	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
+	 *           inefficient (5 bytes). */
+	public int writeVarInt (int value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
 		if (value >>> 7 == 0) {
 			require(1);
@@ -270,9 +288,9 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)(value >>> 14 | 0x80);
 		buffer[position++] = (byte)(value >>> 21 | 0x80);
 		buffer[position++] = (byte)(value >>> 28);
-		return 5;
+		return 5;		
 	}
-
+	
 	// string
 
 	/** Writes the length and string, or null. Short strings are checked and if ASCII they are written more efficiently, else they
@@ -463,7 +481,7 @@ public class Output extends OutputStream {
 
 	// short
 
-	/** Writes a 2 byte short. */
+	/** Writes a 2 byte short. Uses BIG_ENDIAN byte order. */
 	public void writeShort (int value) throws KryoException {
 		require(2);
 		buffer[position++] = (byte)(value >>> 8);
@@ -472,7 +490,7 @@ public class Output extends OutputStream {
 
 	// long
 
-	/** Writes an 8 byte long. */
+	/** Writes an 8 byte long. Uses BIG_ENDIAN byte order. */
 	public void writeLong (long value) throws KryoException {
 		require(8);
 		byte[] buffer = this.buffer;
@@ -486,10 +504,20 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
-	/** Writes a 1-9 byte long.
+	/** Writes a 1-9 byte long. This stream may consider such a variable length encoding request as a hint.
+	 *  It is not guaranteed that a variable length encoding will be really used. The stream may decide
+	 *  to use native-sized integer representation for efficiency reasons.   
+	 *  
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
 	 *           inefficient (9 bytes). */
 	public int writeLong (long value, boolean optimizePositive) throws KryoException {
+		return writeVarLong(value, optimizePositive);
+	}
+
+	/** Writes a 1-9 byte long. It is guaranteed that a varible length encoding will be used.
+	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
+	 *           inefficient (9 bytes). */
+	public int writeVarLong (long value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		if (value >>> 7 == 0) {
 			require(1);
@@ -569,20 +597,20 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)(value >>> 42 | 0x80);
 		buffer[position++] = (byte)(value >>> 49 | 0x80);
 		buffer[position++] = (byte)(value >>> 56);
-		return 9;
+		return 9;		
 	}
 
 	// boolean
 
 	/** Writes a 1 byte boolean. */
 	public void writeBoolean (boolean value) throws KryoException {
-		require(1);
+		if (position == capacity) require(1);
 		buffer[position++] = (byte)(value ? 1 : 0);
 	}
 
 	// char
 
-	/** Writes a 2 byte char. */
+	/** Writes a 2 byte char. Uses BIG_ENDIAN byte order. */
 	public void writeChar (char value) throws KryoException {
 		require(2);
 		buffer[position++] = (byte)(value >>> 8);
@@ -625,5 +653,55 @@ public class Output extends OutputStream {
 		if (value >>> 49 == 0) return 7;
 		if (value >>> 56 == 0) return 8;
 		return 9;
+	}
+
+	// Methods implementing bulk operations on arrays of primitive types 
+	
+	/** Bulk output of an int array. */
+	public void writeInts(int[] object, boolean optimizePositive) throws KryoException {
+		for (int i = 0, n = object.length; i < n; i++)
+			writeInt(object[i], optimizePositive);		
+	}
+	
+	/** Bulk output of an long array. */
+	public void writeLongs(long[] object, boolean optimizePositive) throws KryoException {
+		for (int i = 0, n = object.length; i < n; i++)
+			writeLong(object[i], optimizePositive);		
+	}
+
+	/** Bulk output of an int array. */
+	public void writeInts(int[] object) throws KryoException {
+		for (int i = 0, n = object.length; i < n; i++)
+			writeInt(object[i]);		
+	}
+	
+	/** Bulk output of an long array. */
+	public void writeLongs(long[] object) throws KryoException {
+		for (int i = 0, n = object.length; i < n; i++)
+			writeLong(object[i]);		
+	}
+	
+	/** Bulk output of a float array. */
+	public void writeFloats(float[] object) throws KryoException {
+		for (int i = 0, n = object.length; i < n; i++)
+			writeFloat(object[i]);		
+	}
+
+	/** Bulk output of a short array. */
+	public void writeShorts(short[] object) throws KryoException {
+		for (int i = 0, n = object.length; i < n; i++)
+			writeShort(object[i]);		
+	}
+
+	/** Bulk output of a char array. */
+	public void writeChars(char[] object) throws KryoException {
+		for (int i = 0, n = object.length; i < n; i++)
+			writeChar(object[i]);		
+	}
+
+	/** Bulk output of a double array. */
+	public void writeDoubles(double[] object) throws KryoException {
+		for (int i = 0, n = object.length; i < n; i++)
+			writeDouble(object[i]);		
 	}
 }

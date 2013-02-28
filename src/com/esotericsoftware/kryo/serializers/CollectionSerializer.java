@@ -56,7 +56,7 @@ public class CollectionSerializer extends Serializer<Collection> {
 
 	public void write (Kryo kryo, Output output, Collection collection) {
 		int length = collection.size();
-		output.writeInt(length, true);
+		output.writeVarInt(length, true);
 		Serializer serializer = this.serializer;
 		if (genericType != null) {
 			if (serializer == null) serializer = kryo.getSerializer(genericType);
@@ -85,7 +85,7 @@ public class CollectionSerializer extends Serializer<Collection> {
 	public Collection read (Kryo kryo, Input input, Class<Collection> type) {
 		Collection collection = create(kryo, input, type);
 		kryo.reference(collection);
-		int length = input.readInt(true);
+		int length = input.readVarInt(true);
 		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
 		Class elementClass = this.elementClass;
 		Serializer serializer = this.serializer;

@@ -104,4 +104,25 @@ public class Util {
 			elementClass = elementClass.getComponentType();
 		return elementClass;
 	}
+	
+	/** Converts an "int" value between endian systems. */
+	static public int swapInt(int i) {
+		return   ((i & 0xFF) << 24) | 
+			    ((i & 0xFF00) << 8) | 
+			   ((i & 0xFF0000) >> 8)| 
+			   ((i >> 24) & 0xFF);
+	}
+
+	/** Converts a "long" value between endian systems. */
+	static public long swapLong(long value) {
+        return
+            ( ( ( value >> 0 ) & 0xff ) << 56 )|
+            ( ( ( value >> 8 ) & 0xff ) << 48 )|
+            ( ( ( value >> 16 ) & 0xff ) << 40 )|
+            ( ( ( value >> 24 ) & 0xff ) << 32 )|
+            ( ( ( value >> 32 ) & 0xff ) << 24 )|
+            ( ( ( value >> 40 ) & 0xff ) << 16 )|
+            ( ( ( value >> 48 ) & 0xff ) << 8 )|
+            ( ( ( value >> 56 ) & 0xff ) << 0 );
+    }
 }

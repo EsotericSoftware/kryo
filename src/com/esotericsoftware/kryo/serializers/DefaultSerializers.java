@@ -166,17 +166,17 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, BigInteger object) {
 			if (object == null) {
-				output.writeByte(NULL);
+				output.writeVarInt(NULL, true);
 				return;
 			}
 			BigInteger value = (BigInteger)object;
 			byte[] bytes = value.toByteArray();
-			output.writeInt(bytes.length + 1, true);
+			output.writeVarInt(bytes.length + 1, true);
 			output.writeBytes(bytes);
 		}
 
 		public BigInteger read (Kryo kryo, Input input, Class<BigInteger> type) {
-			int length = input.readInt(true);
+			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			byte[] bytes = input.readBytes(length - 1);
 			return new BigInteger(bytes);
@@ -193,7 +193,7 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, BigDecimal object) {
 			if (object == null) {
-				output.writeByte(NULL);
+				output.writeVarInt(NULL, true);
 				return;
 			}
 			BigDecimal value = (BigDecimal)object;
@@ -253,14 +253,14 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, Enum object) {
 			if (object == null) {
-				output.writeByte(NULL);
+				output.writeVarInt(NULL, true);
 				return;
 			}
-			output.writeInt(object.ordinal() + 1, true);
+			output.writeVarInt(object.ordinal() + 1, true);
 		}
 
 		public Enum read (Kryo kryo, Input input, Class<Enum> type) {
-			int ordinal = input.readInt(true);
+			int ordinal = input.readVarInt(true);
 			if (ordinal == NULL) return null;
 			ordinal--;
 			if (ordinal < 0 || ordinal > enumConstants.length - 1)

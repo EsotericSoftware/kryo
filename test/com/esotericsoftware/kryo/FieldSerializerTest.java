@@ -40,16 +40,16 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.DoubleField = -0.121231d;
 		test.StringField = "stringvalue";
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
-		roundTrip(78, test);
+		roundTrip(78, 88, test);
 
 		kryo.register(HasStringField.class);
 		test.hasStringField = new HasStringField();
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(DefaultTypes.class);
 		serializer.getField("hasStringField").setCanBeNull(false);
-		roundTrip(79, test);
+		roundTrip(79, 89, test);
 		serializer.setFixedFieldTypes(true);
 		serializer.getField("hasStringField").setCanBeNull(false);
-		roundTrip(78, test);
+		roundTrip(78, 88, test);
 	}
 
 	public void testFieldRemoval () {
@@ -59,25 +59,25 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		HasStringField hasStringField = new HasStringField();
 		hasStringField.text = "moo";
-		roundTrip(4, hasStringField);
+		roundTrip(4, 4, hasStringField);
 
 		DefaultTypes test = new DefaultTypes();
 		test.intField = 12;
 		test.StringField = "value";
 		test.CharacterField = 'X';
 		test.child = new DefaultTypes();
-		roundTrip(71, test);
+		roundTrip(71, 91, test);
 
 		supportsCopy = false;
 
 		test.StringField = null;
-		roundTrip(67, test);
+		roundTrip(67, 87, test);
 
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(DefaultTypes.class);
 		serializer.removeField("LongField");
 		serializer.removeField("floatField");
 		serializer.removeField("FloatField");
-		roundTrip(55, test);
+		roundTrip(55, 75, test);
 
 		supportsCopy = true;
 	}
@@ -91,9 +91,9 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.hasStringField = new HasStringField();
 		test.child = new DefaultTypes();
 		test.child.hasStringField = new HasStringField();
-		roundTrip(195, test);
+		roundTrip(195, 215, test);
 		test.hasStringField = null;
-		roundTrip(193, test);
+		roundTrip(193, 213, test);
 
 		test = new DefaultTypes();
 		test.booleanField = true;
@@ -116,7 +116,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
 
 		kryo = new Kryo();
-		roundTrip(140, test);
+		roundTrip(140, 150, test);
 
 		C c = new C();
 		c.a = new A();
@@ -126,7 +126,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d = new D();
 		c.d.e = new E();
 		c.d.e.f = new F();
-		roundTrip(63, c);
+		roundTrip(63, 73, c);
 	}
 
 	public void testReferences () {
@@ -141,12 +141,12 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d.e.f.a = c.a;
 
 		kryo = new Kryo();
-		roundTrip(63, c);
+		roundTrip(63, 73, c);
 		C c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
 
 		// Test reset clears unregistered class names.
-		roundTrip(63, c);
+		roundTrip(63, 73, c);
 		c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
 
@@ -158,7 +158,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(D.class);
 		kryo.register(E.class);
 		kryo.register(F.class);
-		roundTrip(15, c);
+		roundTrip(15, 25, c);
 		c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
 	}
@@ -173,13 +173,13 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		kryo.register(A.class);
 		kryo.register(B.class);
-		roundTrip(10, a);
+		roundTrip(10, 16, a);
 
 		kryo = new Kryo();
 		kryo.setReferences(false);
 		kryo.register(B.class);
 		kryo.register(A.class);
-		roundTrip(10, a);
+		roundTrip(10, 16, a);
 	}
 
 	public void testExceptionTrace () {
@@ -247,7 +247,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			}
 		});
 		SimpleNoDefaultConstructor object1 = new SimpleNoDefaultConstructor(2);
-		roundTrip(2, object1);
+		roundTrip(2, 5, object1);
 
 		kryo.register(ComplexNoDefaultConstructor.class, new FieldSerializer<ComplexNoDefaultConstructor>(kryo,
 			ComplexNoDefaultConstructor.class) {
@@ -268,27 +268,27 @@ public class FieldSerializerTest extends KryoTestCase {
 		ComplexNoDefaultConstructor object2 = new ComplexNoDefaultConstructor("has no zero arg constructor!");
 		object2.anotherField1 = 1234;
 		object2.anotherField2 = "abcd";
-		roundTrip(35, object2);
+		roundTrip(35, 37, object2);
 	}
 
 	public void testNonNull () {
 		kryo.register(HasNonNull.class);
 		HasNonNull nonNullValue = new HasNonNull();
 		nonNullValue.nonNullText = "moo";
-		roundTrip(4, nonNullValue);
+		roundTrip(4, 4, nonNullValue);
 	}
 
 	public void testDefaultSerializerAnnotation () {
 		kryo = new Kryo();
-		roundTrip(82, new HasDefaultSerializerAnnotation(123));
+		roundTrip(82, 89, new HasDefaultSerializerAnnotation(123));
 	}
 
 	public void testOptionalAnnotation () {
 		kryo = new Kryo();
-		roundTrip(72, new HasOptionalAnnotation());
+		roundTrip(72, 72, new HasOptionalAnnotation());
 		kryo = new Kryo();
 		kryo.getContext().put("smurf", null);
-		roundTrip(73, new HasOptionalAnnotation());
+		roundTrip(73, 76, new HasOptionalAnnotation());
 	}
 
 	public void testCyclicGrgaph () throws Exception {
@@ -298,7 +298,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(byte[].class);
 		DefaultTypes test = new DefaultTypes();
 		test.child = test;
-		roundTrip(35, test);
+		roundTrip(35, 45, test);
 	}
 
 	@SuppressWarnings("synthetic-access")
@@ -306,11 +306,11 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(HasArgumentConstructor.class);
 		kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
 		HasArgumentConstructor test = new HasArgumentConstructor("cow");
-		roundTrip(4, test);
+		roundTrip(4, 4, test);
 
 		kryo.register(HasPrivateConstructor.class);
 		test = new HasPrivateConstructor();
-		roundTrip(4, test);
+		roundTrip(4, 4, test);
 	}
 
 	public void testGenericTypes () {
@@ -340,7 +340,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.list5 = new ArrayList();
 		test.list5.add("one");
 		test.list5.add("two");
-		roundTrip(53, test);
+		roundTrip(53, 80, test);
 	}
 
 	public void testRegistration () {
@@ -357,7 +357,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.CharacterField = 'z';
 		test.byteArrayField = new byte[] {0, 1, 2, 3, 4};
 		test.child = new DefaultTypes();
-		roundTrip(75, test);
+		roundTrip(75, 95, test);
 	}
 
 	static public class DefaultTypes {

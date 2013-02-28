@@ -32,7 +32,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		if (!context.containsKey(this)) {
 			context.put(this, null);
 			if (TRACE) trace("kryo", "Write " + fields.length + " field names.");
-			output.writeInt(fields.length, true);
+			output.writeVarInt(fields.length, true);
 			for (int i = 0, n = fields.length; i < n; i++)
 				output.writeString(fields[i].field.getName());
 		}
@@ -50,7 +50,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		ObjectMap context = kryo.getGraphContext();
 		CachedField[] fields = (CachedField[])context.get(this);
 		if (fields == null) {
-			int length = input.readInt(true);
+			int length = input.readVarInt(true);
 			if (TRACE) trace("kryo", "Read " + length + " field names.");
 			String[] names = new String[length];
 			for (int i = 0; i < length; i++)
