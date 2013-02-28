@@ -35,6 +35,9 @@ public class UnsafeMemoryInputOutputTest extends KryoTestCase {
 			inputBuffer.readInt();
 			inputBuffer.release();
 			outputBuffer.release();
+		} catch (Throwable t) {
+			System.err.println("Streams with preallocated direct memory are not supported on this JVM");
+			t.printStackTrace();
 		} finally {
 			UnsafeUtil.unsafe().freeMemory(bufAddress);
 		}

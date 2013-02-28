@@ -86,6 +86,8 @@ public class UnsafeUtil {
 	 * @return a new ByteBuffer that uses a provided memory region instead of allocating a new one 
 	 */
 	final static public ByteBuffer getDirectBufferAt(long address, int maxBufferSize) {
+		if(directByteBufferConstr == null)
+			return null;
 		try {
 			return directByteBufferConstr.newInstance(address, maxBufferSize, null);
 		} catch (Exception e) {
