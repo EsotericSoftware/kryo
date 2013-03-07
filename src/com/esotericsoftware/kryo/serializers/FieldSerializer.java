@@ -517,7 +517,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			Generics scope = buildGenericsScope(fieldClass, cachedFieldGenerics);
 			
 			// Is it a field of a generic parameter type, i.e. "T field"? 
-			if (fieldClass == Object.class && fieldGenericType instanceof TypeVariable) {
+			if (fieldClass == Object.class && fieldGenericType instanceof TypeVariable && genericsScope != null) {
 				TypeVariable typeVar = (TypeVariable) fieldGenericType;
 				// Obtain information about a concrete type of a given variable from the environment  
 				Class concreteClass = genericsScope.getConcreteClass(typeVar.getName());
@@ -531,7 +531,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		}
 		
 		if(fieldGenericType != null) {
-			if (fieldGenericType instanceof TypeVariable) {
+			if (fieldGenericType instanceof TypeVariable && genericsScope != null) {
 				TypeVariable typeVar = (TypeVariable) fieldGenericType;
 				// Obtain information about a concrete type of a given variable from the environment  
 				Class concreteClass = genericsScope.getConcreteClass(typeVar.getName());
@@ -553,7 +553,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 							fieldGenerics[i] = (Class)t;
 						else if (t instanceof ParameterizedType)
 							fieldGenerics[i] = (Class)((ParameterizedType)t).getRawType();
-						else if (t instanceof TypeVariable)
+						else if (t instanceof TypeVariable && genericsScope != null)
 							fieldGenerics[i] = genericsScope.getConcreteClass(((TypeVariable) t).getName());
 						else if (t instanceof WildcardType)
 							fieldGenerics[i] = Object.class;
