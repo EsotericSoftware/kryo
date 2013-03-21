@@ -369,7 +369,8 @@ public class DefaultArraySerializers{
 
 		public Object[] copy (Kryo kryo, Object[] original) {
 			Object[] copy = (Object[]) Array.newInstance(original.getClass().getComponentType(), original.length);
-			System.arraycopy(original, 0, copy, 0, copy.length);
+			for (int i = 0, n = original.length; i < n; i++)
+				copy[i] = kryo.copy(original[i]);
 			return copy;
 		}
 
