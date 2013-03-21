@@ -50,8 +50,8 @@ import static com.esotericsoftware.minlog.Log.*;
  * @author Nathan Sweet <misc@n4te.com> 
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class FieldSerializer<T> extends Serializer<T> implements Comparator<FieldSerializer.CachedField> {
-	final private Kryo kryo;
-	final private Class type;
+	final Kryo kryo;
+	final Class type;
 	// type variables declared for this type
 	final private TypeVariable[] typeParameters;
 	private CachedField[] fields = new CachedField[0];

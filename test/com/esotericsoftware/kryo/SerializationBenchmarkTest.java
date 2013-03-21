@@ -681,7 +681,6 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 
 		/** {@inheritDoc} */
-		@SuppressWarnings("FloatingPointEquality")
 		@Override
 		public boolean equals(Object other) {
 			if (this == other)

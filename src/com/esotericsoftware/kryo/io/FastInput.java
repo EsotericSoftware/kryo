@@ -16,7 +16,7 @@ import com.esotericsoftware.kryo.KryoException;
  */
 public final class FastInput extends Input {
 	
-	/** Creates an uninitialized Output. {@link #setBuffer(byte[], int)} must be called before the Output is used. */
+	/** Creates an uninitialized Output. {@link #setBuffer(byte[], int, int)} must be called before the Output is used. */
 	public FastInput () {
 	}
 
@@ -34,7 +34,7 @@ public final class FastInput extends Input {
 	}
 
 	/** Creates a new Output for writing to a byte array.
-	 * @see #setBuffer(byte[], int) */
+	 * @see #setBuffer(byte[], int, int) */
 	public FastInput (byte[] buffer, int offset, int count) {
 		super(buffer, offset, count);
 	}

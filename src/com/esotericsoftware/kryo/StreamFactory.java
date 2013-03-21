@@ -31,8 +31,7 @@ public interface StreamFactory {
 	/** Creates a new Input for reading from an InputStream. */
 	public Input getInput(InputStream inputStream, int bufferSize);
 	
-	
-	/** Creates an uninitialized Output. {@link #setBuffer(byte[], int)} must be called before the Output is used. */
+	/** Creates an uninitialized Output. {@link Output#setBuffer(byte[], int)} must be called before the Output is used. */
 	public Output getOutput();
 
 	/** Creates a new Output for writing to a byte array.
@@ -46,11 +45,11 @@ public interface StreamFactory {
 	public Output getOutput(int bufferSize, int maxBufferSize);
 	
 	/** Creates a new Output for writing to a byte array.
-	 * @see #setBuffer(byte[]) */
+	 * @see Output#setBuffer(byte[]) */
 	public Output getOutput(byte[] buffer);
 
 	/** Creates a new Output for writing to a byte array.
-	 * @see #setBuffer(byte[], int) */
+	 * @see Output#setBuffer(byte[], int) */
 	public Output getOutput(byte[] buffer, int maxBufferSize);
 
 	/** Creates a new Output for writing to an OutputStream. A buffer size of 4096 is used. */

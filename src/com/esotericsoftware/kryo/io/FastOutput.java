@@ -77,8 +77,6 @@ public final class FastOutput extends Output {
 		super(outputStream, bufferSize);
 	}
 
-	// int
-
 	public int writeInt(int value, boolean optimizePositive)
 			throws KryoException {
 		writeInt(value);
