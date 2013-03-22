@@ -66,7 +66,7 @@ public class DefaultArraySerializers{
 		public int[] read (Kryo kryo, Input input, Class<int[]> type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			return input.readInts(--length, false);
+			return input.readInts(length - 1, false);
 		}
 
 		public int[] copy (Kryo kryo, int[] original) {
@@ -93,7 +93,7 @@ public class DefaultArraySerializers{
 		public float[] read (Kryo kryo, Input input, Class<float[]> type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			return input.readFloats(--length);
+			return input.readFloats(length-1);
 		}
 
 		public float[] copy (Kryo kryo, float[] original) {
@@ -120,7 +120,7 @@ public class DefaultArraySerializers{
 		public long[] read (Kryo kryo, Input input, Class<long[]> type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			return input.readLongs(--length, false);
+			return input.readLongs(length-1, false);
 		}
 
 		public long[] copy (Kryo kryo, long[] original) {
@@ -147,7 +147,7 @@ public class DefaultArraySerializers{
 		public short[] read (Kryo kryo, Input input, Class<short[]> type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			return input.readShorts(--length);
+			return input.readShorts(length-1);
 		}
 
 		public short[] copy (Kryo kryo, short[] original) {
@@ -174,7 +174,7 @@ public class DefaultArraySerializers{
 		public char[] read (Kryo kryo, Input input, Class<char[]> type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			return input.readChars(--length);
+			return input.readChars(length-1);
 		}
 
 		public char[] copy (Kryo kryo, char[] original) {
@@ -201,7 +201,7 @@ public class DefaultArraySerializers{
 		public double[] read (Kryo kryo, Input input, Class<double[]> type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			return input.readDoubles(--length);
+			return input.readDoubles(length-1);
 		}
 
 		public double[] copy (Kryo kryo, double[] original) {
