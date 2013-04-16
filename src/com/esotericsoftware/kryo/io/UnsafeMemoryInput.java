@@ -25,13 +25,14 @@ import static com.esotericsoftware.kryo.util.UnsafeUtil.*;
  * @author Roman Levenstein <romixlev@gmail.com>
  */
 public final class UnsafeMemoryInput extends ByteBufferInput {	
-	// Start address of the memory buffer
-	// The memory buffer should be non-movable, 
-	// which normally means that is is allocated off-heap 
+	/** Start address of the memory buffer
+	* The memory buffer should be non-movable, 
+	* which normally means that is is allocated off-heap 
+	*/
 	private long bufaddress;
 	
 	{
-		supportVarInts = false;
+		varIntsEnabled = false;
 
 	}
 	
@@ -87,8 +88,6 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 	}
 
 	
-	// int
-
 	/** Reads a 4 byte int. */
 	public int readInt () throws KryoException {
 		require(4);
@@ -96,10 +95,6 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 		position+=4;
 		return result;
 	}
-
-
-
-	// float
 
 	/** Reads a 4 byte float. */
 	public float readFloat () throws KryoException {
@@ -109,8 +104,6 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 		return result;
 	}
 
-	// short
-
 	/** Reads a 2 byte short. */
 	public short readShort () throws KryoException {
 		require(2);
@@ -118,8 +111,6 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 		position+=2;
 		return result;
 	}
-
-	// long
 
 	/** Reads an 8 byte long. */
 	public long readLong () throws KryoException {
@@ -140,18 +131,12 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 		super.niobuffer.position(position);
 		return super.readByte();
 	}
-	
-	// char
 
 	/** Reads a 2 byte char. */
 	public char readChar () throws KryoException {
 		super.niobuffer.position(position);
 		return super.readChar();
 	}
-
-
-
-	// double
 
 	/** Reads an 8 byte double. */
 	public double readDouble () throws KryoException {
@@ -163,14 +148,14 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 	
 
 	public int readInt (boolean optimizePositive) throws KryoException {
-		if(!supportVarInts)
+		if(!varIntsEnabled)
 			return readInt();
 		else
 			return super.readInt(optimizePositive);
 	}
 	
 	public long readLong (boolean optimizePositive) throws KryoException {
-		if(!supportVarInts)
+		if(!varIntsEnabled)
 			return readLong();
 		else
 			return super.readLong(optimizePositive);
@@ -183,7 +168,7 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 	 * {@inheritDoc}
 	 */
 	final public int[] readInts(int length, boolean optimizePositive) throws KryoException {
-		if (!supportVarInts) {
+		if (!varIntsEnabled) {
 			int bytesToCopy = length << 2;
 			int[] array = new int[length];
 			readBytes(array, intArrayBaseOffset, 0, bytesToCopy);
@@ -197,7 +182,7 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 	 */
 	final public long[] readLongs(int length, boolean optimizePositive)
 			throws KryoException {
-		if (!supportVarInts) {
+		if (!varIntsEnabled) {
 			int bytesToCopy = length << 3;
 			long[] array = new long[length];
 			readBytes(array, longArrayBaseOffset, 0, bytesToCopy);
@@ -250,8 +235,7 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 	
 	final public void readBytes (Object dstObj, 
 			long offset, long count) throws KryoException {
-		// Unsafe supports efficient bulk reading into arrays of primitives only because
-		// of JVM limitations due to GC
+		/* Unsafe supports efficient bulk reading into arrays of primitives only because of JVM limitations due to GC */
 		if(dstObj.getClass().isArray())
 			readBytes(dstObj, 0, offset, (int)count);
 		else {

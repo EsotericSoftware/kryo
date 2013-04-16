@@ -13,8 +13,6 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
 
-import sun.misc.Cleaner;
-import sun.nio.ch.DirectBuffer;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.util.UnsafeUtil;
@@ -26,7 +24,7 @@ import com.esotericsoftware.kryo.util.UnsafeUtil;
 public class ByteBufferOutput extends Output {
 	protected ByteBuffer niobuffer;
 	
-	protected boolean supportVarInts = true;
+	protected boolean varIntsEnabled = true;
 	
 	// Default byte order is BIG_ENDIAN to be compatible to the base class
 	ByteOrder byteOrder = ByteOrder.BIG_ENDIAN;
@@ -103,14 +101,9 @@ public class ByteBufferOutput extends Output {
 	 * to obtain the "clean" method and then invoke it.
 	 */
 	public void release() {
-		// Deallocate the direct buffer if possible
-		if(niobuffer != null && niobuffer.isDirect()) {
-			clear();
-			Object cleaner = ((DirectBuffer) niobuffer).cleaner();
-			if(cleaner != null)
-				((Cleaner)cleaner).clean();
-			niobuffer = null;
-		}
+		clear();
+		UnsafeUtil.releaseBuffer(niobuffer);
+		niobuffer = null;
 	}
 		
 	/***
@@ -200,7 +193,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	/** @return true if the buffer has been resized. */
-	boolean require (int required) throws KryoException {
+	protected boolean require (int required) throws KryoException {
 		if (capacity - position >= required) return false;
 		if (required > maxCapacity)
 			throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
@@ -314,56 +307,11 @@ public class ByteBufferOutput extends Output {
 
 	public int writeInt(int value, boolean optimizePositive)
 			throws KryoException {
-		if (!supportVarInts) {
+		if (!varIntsEnabled) {
 			writeInt(value);
 			return 4;
 		} else
 			return writeVarInt(value, optimizePositive);
-	}
-
-	/** Writes a 1-5 byte int.
-	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (5 bytes). */
-	public int writeIntS (int value, boolean optimizePositive) throws KryoException {
-		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
-		if (value >>> 7 == 0) {
-			require(1);
-			niobuffer.put((byte)value);
-			position++;
-			return 1;
-		}
-		if (value >>> 14 == 0) {
-			require(2);
-			niobuffer.put((byte)((value & 0x7F) | 0x80));
-			niobuffer.put((byte)(value >>> 7));
-			position+=2;
-			return 2;
-		}
-		if (value >>> 21 == 0) {
-			require(3);
-			niobuffer.put((byte)((value & 0x7F) | 0x80));
-			niobuffer.put((byte)(value >>> 7 | 0x80));
-			niobuffer.put((byte)(value >>> 14));
-			position+=3;
-			return 3;
-		}
-		if (value >>> 28 == 0) {
-			require(4);
-			niobuffer.put((byte)((value & 0x7F) | 0x80));
-			niobuffer.put((byte)(value >>> 7 | 0x80));
-			niobuffer.put((byte)(value >>> 14 | 0x80));
-			niobuffer.put((byte)(value >>> 21));
-			position+=4;
-			return 4;
-		}
-		require(5);
-		niobuffer.put((byte)((value & 0x7F) | 0x80));
-		niobuffer.put((byte)(value >>> 7 | 0x80));
-		niobuffer.put((byte)(value >>> 14 | 0x80));
-		niobuffer.put((byte)(value >>> 21 | 0x80));
-		niobuffer.put((byte)(value >>> 28));
-		position+=5;
-		return 5;
 	}
 	
 	public int writeVarInt (int val, boolean optimizePositive) throws KryoException {
@@ -654,7 +602,7 @@ public class ByteBufferOutput extends Output {
 
 	public int writeLong(long value, boolean optimizePositive)
 			throws KryoException {
-		if (!supportVarInts) {
+		if (!varIntsEnabled) {
 			writeLong(value);
 			return 8;
 		} else
@@ -977,16 +925,16 @@ public class ByteBufferOutput extends Output {
 	 * Return current setting for variable length encoding of integers
 	 * @return current setting for variable length encoding of integers
 	 */
-	public boolean supportVarInts() {
-		return supportVarInts;
+	public boolean getVarIntsEnabled() {
+		return varIntsEnabled;
 	}
 
 	/***
 	 * 	Controls if a variable length encoding for integer types should be used when serializers suggest it. 
      *
-	 * @param supportVarInts
+	 * @param varIntsEnabled
 	 */
-	public void supportVarInts(boolean supportVarInts) {
-		this.supportVarInts = supportVarInts;
+	public void setVarIntsEnabled(boolean varIntsEnabled) {
+		this.varIntsEnabled = varIntsEnabled;
 	}
 }

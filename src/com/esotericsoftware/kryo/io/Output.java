@@ -15,11 +15,11 @@ import com.esotericsoftware.kryo.KryoException;
  * 
  * @author Nathan Sweet <misc@n4te.com> */
 public class Output extends OutputStream {
-	int maxCapacity, total;
-	int position;
-	int capacity;
-	byte[] buffer;
-	OutputStream outputStream;
+	protected int maxCapacity, total;
+	protected int position;
+	protected int capacity;
+	protected byte[] buffer;
+	protected OutputStream outputStream;
 
 	/** Creates an uninitialized Output. {@link #setBuffer(byte[], int)} must be called before the Output is used. */
 	public Output () {
@@ -135,7 +135,7 @@ public class Output extends OutputStream {
 	}
 
 	/** @return true if the buffer has been resized. */
-	boolean require (int required) throws KryoException {
+	protected boolean require (int required) throws KryoException {
 		if (capacity - position >= required) return false;
 		if (required > maxCapacity)
 			throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);

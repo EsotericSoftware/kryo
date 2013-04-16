@@ -30,15 +30,16 @@ import com.esotericsoftware.kryo.util.Util;
  */
 public final class UnsafeMemoryOutput extends ByteBufferOutput {
 
-	// Start address of the memory buffer
-	// The memory buffer should be non-movable, 
-	// which normally means that is is allocated off-heap 
+	/** Start address of the memory buffer
+	* The memory buffer should be non-movable, 
+	* which normally means that is is allocated off-heap 
+	*/
 	private long bufaddress;
 
 	private final static boolean isLittleEndian = ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);
 	
 	{
-		supportVarInts = false;
+		varIntsEnabled = false;
 
 	}
 	
@@ -165,7 +166,7 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 
 	final public int writeInt(int value, boolean optimizePositive)
 			throws KryoException {
-		if(!supportVarInts) {
+		if(!varIntsEnabled) {
 			writeInt(value);
 			return 4;
 		} else 
@@ -174,7 +175,7 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 
 	final public int writeLong(long value, boolean optimizePositive)
 			throws KryoException {
-		if(!supportVarInts) {
+		if(!varIntsEnabled) {
 			writeLong(value);
 			return 8;
 		} else
@@ -347,71 +348,47 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 	
 	// Methods implementing bulk operations on arrays of primitive types 
 	
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeInts(int[] object, boolean optimizePositive) throws KryoException {
-		if(!supportVarInts) {
+		if(!varIntsEnabled) {
 			int bytesToCopy = object.length << 2;
 			writeBytes(object, intArrayBaseOffset, 0, bytesToCopy);
 		} else
 			super.writeInts(object, optimizePositive);
 	}
 	
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeLongs(long[] object, boolean optimizePositive) throws KryoException {
-		if(!supportVarInts) {
+		if(!varIntsEnabled) {
 			int bytesToCopy = object.length << 3;
 			writeBytes(object, longArrayBaseOffset, 0, bytesToCopy);
 		} else
 			super.writeLongs(object, optimizePositive);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeInts(int[] object) throws KryoException {
 		int bytesToCopy = object.length << 2;
 		writeBytes(object, intArrayBaseOffset, 0, bytesToCopy);
 	}
 	
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeLongs(long[] object) throws KryoException {
 		int bytesToCopy = object.length << 3;
 		writeBytes(object, longArrayBaseOffset, 0, bytesToCopy);
 	}
 	
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeFloats(float[] object) throws KryoException {
 		int bytesToCopy = object.length << 2;
 		writeBytes(object, floatArrayBaseOffset, 0, bytesToCopy);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeShorts(short[] object) throws KryoException {
 		int bytesToCopy = object.length << 1;
 		writeBytes(object, shortArrayBaseOffset, 0, bytesToCopy);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeChars(char[] object) throws KryoException {
 		int bytesToCopy = object.length << 1;
 		writeBytes(object, charArrayBaseOffset, 0, bytesToCopy);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeDoubles(double[] object) throws KryoException {
 		int bytesToCopy = object.length << 3;
 		writeBytes(object, doubleArrayBaseOffset, 0, bytesToCopy);

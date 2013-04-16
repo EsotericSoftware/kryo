@@ -3,7 +3,6 @@ package com.esotericsoftware.kryo.io;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
@@ -12,9 +11,6 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
-
-import sun.misc.Cleaner;
-import sun.nio.ch.DirectBuffer;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.util.UnsafeUtil;
@@ -26,9 +22,9 @@ import com.esotericsoftware.kryo.util.UnsafeUtil;
 public class ByteBufferInput extends Input {
 	protected ByteBuffer niobuffer;
 
-	protected boolean supportVarInts = true;
+	protected boolean varIntsEnabled = true;
 	
-	// Default byte order is BIG_ENDIAN to be compatible to the base class
+	/* Default byte order is BIG_ENDIAN to be compatible to the base class */
 	ByteOrder byteOrder = ByteOrder.BIG_ENDIAN;
 	
 	protected final static ByteOrder nativeOrder = ByteOrder.nativeOrder();
@@ -112,18 +108,11 @@ public class ByteBufferInput extends Input {
 	 * Release a direct buffer.  {@link #setBuffer(ByteBuffer, int, int)} should be called before next write operations can 
 	 * be called.
 	 * 
-	 * NOTE: If Cleaner is not accessible due to SecurityManager restrictions, reflection could be used
-	 * to obtain the "clean" method and then invoke it.
 	 */
 	public void release() {
-		// Deallocate the direct buffer if possible
-		if(niobuffer != null && niobuffer.isDirect()) {
-			close();
-			Object cleaner = ((DirectBuffer) niobuffer).cleaner();
-			if(cleaner != null)
-				((Cleaner)cleaner).clean();
-			niobuffer = null;
-		}
+		close();
+		UnsafeUtil.releaseBuffer(niobuffer);
+		niobuffer = null;
 	}
 		
 	/***
@@ -199,7 +188,7 @@ public class ByteBufferInput extends Input {
 	/** @param required Must be > 0. The buffer is filled until it has at least this many bytes.
 	 * @return the number of bytes remaining.
 	 * @throws KryoException if EOS is reached before required bytes are read (buffer underflow). */
-	final int require (int required) throws KryoException {
+	final protected int require (int required) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= required) return remaining;
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
@@ -354,26 +343,19 @@ public class ByteBufferInput extends Input {
 		}
 	}
 
-	// int
-
-	/** {@inheritDoc}*/
 	public int readInt () throws KryoException {
 		require(4);
 		position += 4;
 		return niobuffer.getInt();
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	public int readInt (boolean optimizePositive) throws KryoException {
-		if(supportVarInts)
+		if(varIntsEnabled)
 			return readVarInt(optimizePositive);
 		else
 			return readInt();
 	}
 	
-	/** {@inheritDoc}*/
 	public int readVarInt (boolean optimizePositive) throws KryoException {
 		niobuffer.position(position);
 		if (require(1) < 5) return readInt_slow(optimizePositive);
@@ -474,8 +456,6 @@ public class ByteBufferInput extends Input {
 		if (p == limit) return false;
 		return true;
 	}
-
-	// string
 
 	/** Reads the length and string of UTF8 characters, or null. This can read strings written by {@link Output#writeString(String)}
 	 * , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
@@ -688,8 +668,6 @@ public class ByteBufferInput extends Input {
 		return builder;
 	}
 
-	// float
-
 	/** Reads a 4 byte float. */
 	public float readFloat () throws KryoException {
 		require(4);
@@ -701,8 +679,6 @@ public class ByteBufferInput extends Input {
 	public float readFloat (float precision, boolean optimizePositive) throws KryoException {
 		return readInt(optimizePositive) / (float)precision;
 	}
-
-	// short
 
 	/** Reads a 2 byte short. */
 	public short readShort () throws KryoException {
@@ -718,8 +694,6 @@ public class ByteBufferInput extends Input {
 		return niobuffer.getShort();
 	}
 
-	// long
-
 	/** Reads an 8 byte long. */
 	public long readLong () throws KryoException {
 		require(8);
@@ -729,7 +703,7 @@ public class ByteBufferInput extends Input {
 	
 	/** {@inheritDoc} */
 	public long readLong (boolean optimizePositive) throws KryoException {
-		if(supportVarInts)
+		if(varIntsEnabled)
 			return readVarLong(optimizePositive);
 		else
 			return readLong();
@@ -843,8 +817,6 @@ public class ByteBufferInput extends Input {
 		return result;
 	}
 
-	// boolean
-
 	/** Reads a 1 byte boolean. */
 	public boolean readBoolean () throws KryoException {
 		require(1);
@@ -852,16 +824,12 @@ public class ByteBufferInput extends Input {
 		return niobuffer.get() == 1? true: false;
 	}
 
-	// char
-
 	/** Reads a 2 byte char. */
 	public char readChar () throws KryoException {
 		require(2);
 		position += 2;
 		return niobuffer.getChar();
 	}
-
-	// double
 
 	/** Reads an 8 bytes double. */
 	public double readDouble () throws KryoException {
@@ -963,16 +931,16 @@ public class ByteBufferInput extends Input {
 	 * Return current setting for variable length encoding of integers
 	 * @return current setting for variable length encoding of integers
 	 */
-	public boolean supportVarInts() {
-		return supportVarInts;
+	public boolean getVarIntsEnabled() {
+		return varIntsEnabled;
 	}
 
 	/***
 	 * 	Controls if a variable length encoding for integer types should be used when serializers suggest it. 
      *
-	 * @param supportVarInts
+	 * @param varIntsEnabled
 	 */
-	public void supportVarInts(boolean supportVarInts) {
-		this.supportVarInts = supportVarInts;
+	public void setVarIntsEnabled(boolean varIntsEnabled) {
+		this.varIntsEnabled = varIntsEnabled;
 	}
 }

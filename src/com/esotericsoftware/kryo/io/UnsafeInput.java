@@ -24,7 +24,7 @@ import static com.esotericsoftware.kryo.util.UnsafeUtil.*;
  */
 public final class UnsafeInput extends Input {	
 
-	boolean supportVarInts = false;
+	private boolean varIntsEnabled = false;
 	
 	/** Creates an uninitialized Input. {@link #setBuffer(byte[], int, int)} must be called before the Input is used. */
 	public UnsafeInput () {
@@ -114,14 +114,14 @@ public final class UnsafeInput extends Input {
 	
 
 	public int readInt (boolean optimizePositive) throws KryoException {
-		if(!supportVarInts)
+		if(!varIntsEnabled)
 			return readInt();
 		else
 			return super.readInt(optimizePositive);
 	}
 	
 	public long readLong (boolean optimizePositive) throws KryoException {
-		if(!supportVarInts)
+		if(!varIntsEnabled)
 			return readLong();
 		else
 			return super.readLong(optimizePositive);
@@ -134,7 +134,7 @@ public final class UnsafeInput extends Input {
 	 * {@inheritDoc}
 	 */
 	final public int[] readInts(int length, boolean optimizePositive) throws KryoException {
-		if (!supportVarInts) {
+		if (!varIntsEnabled) {
 			int bytesToCopy = length << 2;
 			int[] array = new int[length];
 			readBytes(array, intArrayBaseOffset, 0, bytesToCopy);
@@ -148,7 +148,7 @@ public final class UnsafeInput extends Input {
 	 */
 	final public long[] readLongs(int length, boolean optimizePositive)
 			throws KryoException {
-		if (!supportVarInts) {
+		if (!varIntsEnabled) {
 			int bytesToCopy = length << 3;
 			long[] array = new long[length];
 			readBytes(array, longArrayBaseOffset, 0, bytesToCopy);
@@ -247,16 +247,16 @@ public final class UnsafeInput extends Input {
 	 * Return current setting for variable length encoding of integers
 	 * @return current setting for variable length encoding of integers
 	 */
-	public boolean supportVarInts() {
-		return supportVarInts;
+	public boolean getVarIntsEnabled() {
+		return varIntsEnabled;
 	}
 
 	/***
 	 * 	Controls if a variable length encoding for integer types should be used when serializers suggest it. 
      *
-	 * @param supportVarInts
+	 * @param varIntsEnabled
 	 */
-	public void supportVarInts(boolean supportVarInts) {
-		this.supportVarInts = supportVarInts;
+	public void setVarIntsEnabled(boolean varIntsEnabled) {
+		this.varIntsEnabled = varIntsEnabled;
 	}
 }

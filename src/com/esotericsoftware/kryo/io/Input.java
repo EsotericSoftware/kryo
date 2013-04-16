@@ -10,13 +10,13 @@ import java.io.InputStream;
  * Utility methods are provided for efficiently reading primitive types and strings.
  * @author Nathan Sweet <misc@n4te.com> */
 public class Input extends InputStream {
-	byte[] buffer;
-	int position;
-	int capacity;
-	int limit;
-	int total;
-	char[] chars = new char[32];
-	InputStream inputStream;
+	protected byte[] buffer;
+	protected int position;
+	protected int capacity;
+	protected int limit;
+	protected int total;
+	protected char[] chars = new char[32];
+	protected InputStream inputStream;
 
 	/** Creates an uninitialized Input. {@link #setBuffer(byte[])} must be called before the Input is used. */
 	public Input () {
@@ -149,7 +149,7 @@ public class Input extends InputStream {
 	/** @param required Must be > 0. The buffer is filled until it has at least this many bytes.
 	 * @return the number of bytes remaining.
 	 * @throws KryoException if EOS is reached before required bytes are read (buffer underflow). */
-	int require (int required) throws KryoException {
+	protected int require (int required) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= required) return remaining;
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);

@@ -119,7 +119,7 @@ public class Kryo {
 	private Object needsCopyReference;
 	private Generics genericsScope;
 	/** Tells if ASM-based backend should be used by new serializer instances created using this Kryo instance. */
-	private boolean useAsmBackend = false;
+	private boolean asmEnabled = false;
 	
 	private StreamFactory streamFactory;
 
@@ -1201,11 +1201,11 @@ public class Kryo {
 	 * @param flag if true, ASM-based backend will be used. Otherwise Unsafe-based backend could 
 	 * be used by some serializers, e.g. FieldSerializer
 	 */
-	public void useAsmBackend(boolean flag) {
-		this.useAsmBackend = flag;
+	public void setAsmEnabled(boolean flag) {
+		this.asmEnabled = flag;
 	}
 
-	public boolean useAsmBackend() {
-		return useAsmBackend;
+	public boolean getAsmBackend() {
+		return asmEnabled;
 	}
 }

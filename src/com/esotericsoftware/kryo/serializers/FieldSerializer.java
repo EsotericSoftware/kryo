@@ -21,8 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import sun.misc.Unsafe;
-
 import com.esotericsoftware.kryo.Generics;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -52,7 +50,7 @@ import static com.esotericsoftware.minlog.Log.*;
 public class FieldSerializer<T> extends Serializer<T> implements Comparator<FieldSerializer.CachedField> {
 	final Kryo kryo;
 	final Class type;
-	// type variables declared for this type
+	/** type variables declared for this type */
 	final private TypeVariable[] typeParameters;
 	private CachedField[] fields = new CachedField[0];
 	private CachedField[] transientFields = new CachedField[0];
@@ -60,33 +58,39 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 	private boolean ignoreSyntheticFields = true;
 	private boolean fixedFieldTypes;
-	// If set, ASM-backend is used. Otherwise Unsafe-based backend or reflection is used
+	/** If set, ASM-backend is used. Otherwise Unsafe-based backend or reflection is used */
 	private boolean useAsmBackend;
 	
-	// Concrete classes passed as values for type variables
+	/** Concrete classes passed as values for type variables */
 	private Class[] generics;
 	
 	
 	private Generics genericsScope;
 	
-	// If set, this serializer tries to use a variable length encoding
-	// for int and long fields 
+	/** If set, this serializer tries to use a variable length encoding
+	* for int and long fields
+	*/ 
 	private boolean optimizeInts;
 	
-	// If set, adjacent primitive fields are written in bulk
-	// This flag may only work with Oracle JVMs, because they 
-	// layout primitive fields in memory in such a way that 
-	// primitive fields are grouped together.
-	// This option has effect only when used with Unsafe-based FieldSerializer.
-	// FIXME: Not all versions of Sun/Oracle JDK properly work with this option. Disable it for now. Later add dynamic checks
-	// to see if this feature is supported by a current JDK version.
+	/** If set, adjacent primitive fields are written in bulk
+	* This flag may only work with Oracle JVMs, because they 
+	* layout primitive fields in memory in such a way that 
+	* primitive fields are grouped together.
+	* This option has effect only when used with Unsafe-based FieldSerializer.
+	* <p>
+	* FIXME: Not all versions of Sun/Oracle JDK properly work with this option. Disable it for now. Later add dynamic checks
+	* to see if this feature is supported by a current JDK version.
+	* </p>
+	*/
 	private boolean useMemRegions = false;
 	
-	// If set, transient fields will be copied
+	/** If set, transient fields will be copied */
 	private final boolean copyTransient = true;
 	
-	// If set, transient fields will be serialized
+	/** If set, transient fields will be serialized */
 	private final boolean serializeTransient = false;
+	
+	private boolean hasObjectFields = false;
 	
 	{
 		useAsmBackend = unsafe() != null;
@@ -99,7 +103,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.kryo = kryo;
 		this.type = type;
 		this.typeParameters = type.getTypeParameters();
-		this.useAsmBackend = kryo.useAsmBackend();
+		this.useAsmBackend = kryo.getAsmBackend();
 		if(TRACE) trace("kryo", "FieldSerializer(Kryo, Class)");
 		rebuildCachedFields();
 	}
@@ -109,7 +113,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.type = type;
 		this.generics = generics;
 		this.typeParameters = type.getTypeParameters();
-		this.useAsmBackend = kryo.useAsmBackend();
+		this.useAsmBackend = kryo.getAsmBackend();
 		if(TRACE) trace("kryo", "FieldSerializer(Kryo, Class, Generics)");
 		rebuildCachedFields();
 	}
@@ -142,8 +146,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				typeVar2concreteClass = new HashMap<String, Class>();
 				for(TypeVariable typeVar: typeParams) {
 					String typeVarName = typeVar.getName();
-					if(TRACE) trace("kryo", "Type parameter variable: name=" + typeVarName + " type bounds=" + Arrays.toString(typeVar.getBounds()));
-					
+					if(TRACE) { 
+						trace("kryo", "Type parameter variable: name=" + typeVarName + 
+							" type bounds=" + Arrays.toString(typeVar.getBounds()));
+					}
 					if(generics != null && generics.length>typeVarNum) {
 						// If passed concrete classes are known explicitly, use this information
 						typeVar2concreteClass.put(typeVarName, generics[typeVarNum]);
@@ -156,7 +162,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 							Class concreteClass = scope.getConcreteClass(typeVarName);
 							if(concreteClass != null) {
 								typeVar2concreteClass.put(typeVarName, concreteClass);
-								if(TRACE) trace("kryo", "Concrete type used for " +typeVarName + " is: " + concreteClass.getName());							
+								if(TRACE) {
+									trace("kryo", "Concrete type used for " +typeVarName + " is: " + 
+										concreteClass.getName());							
+								}
 							}
 						}
 					}
@@ -182,6 +191,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			fields = new CachedField[0]; // No fields to serialize.
 			return;
 		}
+		
+		hasObjectFields = false;
 
 		// For generic classes, generate a mapping from type variable names to the concrete types
 		// This mapping is the same for the whole class.
@@ -197,11 +208,11 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		Class nextClass = type;
 		while (nextClass != Object.class) {
 			Field[] declaredFields = nextClass.getDeclaredFields();
-			if(declaredFields != null)
-			for(Field f: declaredFields) {
-				if(Modifier.isStatic(f.getModifiers()))
-					continue;
-				allFields.add(f);
+			if (declaredFields != null) {
+				for (Field f : declaredFields) {
+					if (Modifier.isStatic(f.getModifiers())) continue;
+					allFields.add(f);
+				}
 			}
 			nextClass = nextClass.getSuperclass();
 		}
@@ -338,7 +349,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			Field field = validFields.get(i);
 
 			int accessIndex = -1;
-			if (access != null && useAsm.get(baseIndex + i) == 1) accessIndex = ((FieldAccess)access).getIndex(field.getName());
+			if (access != null && useAsm.get(baseIndex + i) == 1) 
+				accessIndex = ((FieldAccess)access).getIndex(field.getName());
 
 			if(useAsmBackend || !useMemRegions)
 				cachedFields.add(newCachedField(field, cachedFields.size(), accessIndex));
@@ -393,7 +405,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		if(!useAsmBackend && useMemRegions && lastWasPrimitive) {
 			endPrimitives = lastFieldEndOffset; 
 			if (primitiveLength > 1) {
-				if(TRACE)
+				if(TRACE) {
 						trace("kryo", "Class "
 								+ type.getName()
 								+ ". Found a set of consecutive primitive fields. Number of fields = "
@@ -403,6 +415,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 								+ " Start offset = "
 								+ startPrimitives + " endOffset="
 								+ endPrimitives);
+				}
 				// register a region instead of a field
 				CachedField cf = new UnsafeRegionField(startPrimitives, (endPrimitives - startPrimitives));
 				cf.field = lastField;
@@ -431,9 +444,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		return unsafe().addressSize();
 	}
 
-	/***
-	 * {@inheritDoc}
-	 */
 	public void setGenerics (Kryo kryo, Class[] generics) {
 		this.generics = generics;
 		if(TRACE) trace("kryo", "setGenerics");
@@ -477,7 +487,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 						else
 							fieldGenerics[i] = null;
 					}
-					if(TRACE && fieldGenerics != null) trace("kryo", "Determined concrete class of  " + field.getName() + " to be " + fieldGenericType + " where type parameters are " + Arrays.toString(fieldGenerics));
+					if(TRACE && fieldGenerics != null) {
+						trace("kryo", "Determined concrete class of  " + field.getName() + " to be " + 
+							fieldGenericType + " where type parameters are " + Arrays.toString(fieldGenerics)); 
+					}
 				}
 			} else if(fieldGenericType instanceof GenericArrayType) {
 				// TODO: store generics for arrays as well?
@@ -485,8 +498,12 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				Type genericComponentType = arrayType.getGenericComponentType();
 				fieldGenerics = computeFieldGenerics(genericComponentType, field);
 //				Kryo.getGenerics(fieldGenericType);
-				if(TRACE && fieldGenerics != null) trace("kryo", "Determined concrete class of  " + field.getName() + " to be " + fieldGenericType + " where type parameters are " + Arrays.toString(fieldGenerics));				
-				if(TRACE) trace("kryo", "Determined concrete class of  " + field.getName() + " to be " + fieldGenericType);		
+				if(TRACE && fieldGenerics != null) {
+					trace("kryo", "Determined concrete class of  " + field.getName() + " to be " + fieldGenericType + 
+						" where type parameters are " + Arrays.toString(fieldGenerics));				
+				}
+				if(TRACE) 
+					trace("kryo", "Determined concrete class of  " + field.getName() + " to be " + fieldGenericType);		
 			}
 		}
 		
@@ -505,7 +522,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				trace("kryo", "Field " + field.getName() + " of type " + fieldClass);
 		}
 		
-		if(TRACE && fieldGenericType != null) trace("kryo", "Field generic type is of class " + fieldGenericType.getClass().getName());
+		if(TRACE && fieldGenericType != null) 
+			trace("kryo", "Field generic type is of class " + fieldGenericType.getClass().getName());
 		
 		if(fieldClass != fieldGenericType) {
 			// Get set of provided type parameters
@@ -527,7 +545,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				}
 			}
 			
-			if(TRACE) trace("kryo", "Generics scope of field " + field.getName() + " of class " + fieldGenericType + " is " + scope);			
+			if(TRACE) {
+				trace("kryo", "Generics scope of field " + field.getName() + " of class " + 
+					fieldGenericType + " is " + scope);			
+			}
 		}
 		
 		if(fieldGenericType != null) {
@@ -560,7 +581,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 						else
 							fieldGenerics[i] = null;
 					}
-					if(TRACE && fieldGenerics != null) trace("kryo", "Determined concrete class of  " + field.getName() + " to be " + fieldGenericType + " where type parameters are " + Arrays.toString(fieldGenerics));
+					if(TRACE && fieldGenerics != null) {
+						trace("kryo", "Determined concrete class of  " + field.getName() + " to be " + fieldGenericType + 
+							" where type parameters are " + Arrays.toString(fieldGenerics));
+					}
 				}
 			} else if(fieldGenericType instanceof GenericArrayType) {
 				// TODO: store generics for arrays as well?
@@ -569,7 +593,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				fieldGenerics = computeFieldGenerics(genericComponentType, field);
 //				Type componentType = arrayType.getGenericComponentType();
 //				Kryo.getGenerics(fieldGenericType);
-				if(TRACE && fieldGenerics != null) trace("kryo", "Determined concrete class of  " + field.getName() + " to be " + fieldGenericType + " where type parameters are " + Arrays.toString(fieldGenerics));				
+				if(TRACE && fieldGenerics != null) {
+					trace("kryo", "Determined concrete class of  " + field.getName() + " to be " + fieldGenericType + 
+						" where type parameters are " + Arrays.toString(fieldGenerics));				
+				}
 				if(TRACE) trace("kryo", "Determined concrete class of  " + field.getName() + " to be " + fieldGenericType);		
 			}
 		}
@@ -657,6 +684,9 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 							"Field generics: " + Arrays.toString(fieldGenerics));
 			}
 		}
+		if(cachedField instanceof FieldSerializer.ObjectField) {
+			hasObjectFields = true;
+		}
 		
 		cachedField.field = field;
 		cachedField.optimizeInts = optimizeInts;
@@ -695,7 +725,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 *           API will be serialized. */
 	public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
 		this.setFieldsAsAccessible = setFieldsAsAccessible;
-		if(TRACE) trace("kryo", "setFieldsAsAccessible");
+		if(TRACE) trace("kryo", "setFieldsAsAccessible: " + setFieldsAsAccessible);
 		rebuildCachedFields();
 	}
 
@@ -704,7 +734,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 * @param ignoreSyntheticFields If true, only non-synthetic fields will be serialized. */
 	public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
 		this.ignoreSyntheticFields = ignoreSyntheticFields;
-		if(TRACE) trace("kryo", "setIgnoreSyntheticFields");
+		if(TRACE) trace("kryo", "setIgnoreSyntheticFields:" + ignoreSyntheticFields);
 		rebuildCachedFields();
 	}
 
@@ -713,7 +743,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 * method resets the {@link #getFields() cached fields}. */
 	public void setFixedFieldTypes (boolean fixedFieldTypes) {
 		this.fixedFieldTypes = fixedFieldTypes;
-		if(TRACE) trace("kryo", "setFixedFieldTypes");
+		if(TRACE) trace("kryo", "setFixedFieldTypes: " + fixedFieldTypes);
 		rebuildCachedFields();
 	}
 
@@ -723,7 +753,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	public void setUseAsm (boolean setUseAsm) {
 		useAsmBackend = setUseAsm;
 //		optimizeInts = useAsmBackend;
-		if(TRACE) trace("kryo", "setUseAsm");
+		if(TRACE) trace("kryo", "setUseAsm: " + setUseAsm);
 		rebuildCachedFields();
 	}
 
@@ -757,7 +787,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			// Push proper scopes at serializer usage time
 			kryo.pushGenericsScope(type, genericsScope);
 		}
-		
+
+
 		CachedField[] fields = this.fields;
 		for (int i = 0, n = fields.length; i < n; i++)
 			fields[i].write(output, object);
@@ -776,38 +807,36 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	public T read (Kryo kryo, Input input, Class<T> type) {
 		try {
-			
 
-		if (typeParameters != null && generics != null) {
-			// Rebuild fields info. It may result in rebuilding the
-			// genericScope
-			rebuildCachedFields();
-		}
+			if (typeParameters != null && generics != null) {
+				// Rebuild fields info. It may result in rebuilding the
+				// genericScope
+				rebuildCachedFields();
+			}
 
-		if(genericsScope != null) {
-			// Push a new scope for generics
-			kryo.pushGenericsScope(type, genericsScope);
-		}
-		
-		T object = create(kryo, input, type);
-		kryo.reference(object);
-		
-		CachedField[] fields = this.fields;
-		for (int i = 0, n = fields.length; i < n; i++)
-			fields[i].read(input, object);
-		
-		// De-serialize transient fields
-		if (serializeTransient) {
-			for (int i = 0, n = transientFields.length; i < n; i++)
-				transientFields[i].read(input, object);
-		}
-		
-		return object;
+			if (genericsScope != null) {
+				// Push a new scope for generics
+				kryo.pushGenericsScope(type, genericsScope);
+			}
+
+			T object = create(kryo, input, type);
+			kryo.reference(object);
+
+			CachedField[] fields = this.fields;
+			for (int i = 0, n = fields.length; i < n; i++)
+				fields[i].read(input, object);
+
+			// De-serialize transient fields
+			if (serializeTransient) {
+				for (int i = 0, n = transientFields.length; i < n; i++)
+					transientFields[i].read(input, object);
+			}
+			return object;
 		} finally {
-			if(genericsScope != null && kryo.getGenericsScope() != null) {
+			if (genericsScope != null && kryo.getGenericsScope() != null) {
 				// Pop the scope for generics
 				kryo.popGenericsScope();
-			}			
+			}
 		}
 	}
 
@@ -869,6 +898,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		return copy;
 	}
 
+	public final Generics getGenericsScope() {
+		return  genericsScope;
+	}
+	
 	/** Controls how a field will be serialized. */
 	public static abstract class CachedField<X> {
 		Field field;
@@ -910,7 +943,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		public String toString () {
 			return field.getName();
 		}
-
+		
 		abstract public void write (Output output, Object object);
 
 		abstract public void read (Input input, Object object);
@@ -924,7 +957,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 *
 	 */
 	public static class ObjectField extends CachedField {
-		Class[] generics;
+		public Class[] generics;
 		final FieldSerializer fieldSerializer;
 		final Class type;
 		final Kryo kryo;

@@ -28,7 +28,7 @@ import com.esotericsoftware.kryo.util.Util;
  */
 public final class UnsafeOutput extends Output {
 
-	// If set, variable length encoding will be set for integer types if it is required
+	/** If set, variable length encoding will be set for integer types if it is required */
 	private boolean supportVarInts = false;
 	
 	private static final boolean isLittleEndian = ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);
@@ -315,59 +315,8 @@ public final class UnsafeOutput extends Output {
 		return 9;
 	}
 	
-	//// TODO: Optimize writing varInt32 by producing a representation into one int and 
-//// then writing it using only one memory write operation.
-//	public int writeInt(int value, boolean optimizePositive)
-//			throws KryoException {
-//		if (!optimizePositive)
-//			value = (value << 1) ^ (value >> 31);
-//		int len = 1;
-//
-//		while ((value & ~0x7F) != 0) {
-//			write(((value & 0x7F) | 0x80));
-//			value >>>= 7;
-//			len++;
-//		}
-//
-//		write((byte) value);
-//		return len;
-//	}
-//
-//	public int writeLong(long value, boolean optimizePositive)
-//			throws KryoException {
-//		if (!optimizePositive)
-//			value = (value << 1) ^ (value >> 63);
-//		int len = 1;
-//
-//		while ((value & ~0x7F) != 0) {
-//			write((byte) ((value & 0x7F) | 0x80));
-//			value >>>= 7;
-//			len++;
-//		}
-//
-//		write((byte) value);
-//		return len;
-//	}
-
-	// public void writeString(String value) throws KryoException {
-	// int charCount = 0;
-	// if (value != null) {
-	// byte[] bytes = value.getBytes();
-	// charCount = bytes.length + 1;
-	// writeInt(charCount);
-	// if (charCount > 0) {
-	// write(bytes);
-	// }
-	// } else {
-	// super.writeInt(0);
-	// }
-	// }
-
 	// Methods implementing bulk operations on arrays of primitive types 
 	
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeInts(int[] object, boolean optimizePositive) throws KryoException {
 		if(!supportVarInts) {
 			int bytesToCopy = object.length << 2;
@@ -376,9 +325,6 @@ public final class UnsafeOutput extends Output {
 			super.writeInts(object, optimizePositive);
 	}
 	
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeLongs(long[] object, boolean optimizePositive) throws KryoException {
 		if(!supportVarInts) {
 			int bytesToCopy = object.length << 3;
@@ -387,49 +333,31 @@ public final class UnsafeOutput extends Output {
 			super.writeLongs(object, optimizePositive);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeInts(int[] object) throws KryoException {
 		int bytesToCopy = object.length << 2;
 		writeBytes(object, intArrayBaseOffset, 0, bytesToCopy);
 	}
 	
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeLongs(long[] object) throws KryoException {
 		int bytesToCopy = object.length << 3;
 		writeBytes(object, longArrayBaseOffset, 0, bytesToCopy);
 	}
 	
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeFloats(float[] object) throws KryoException {
 		int bytesToCopy = object.length << 2;
 		writeBytes(object, floatArrayBaseOffset, 0, bytesToCopy);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeShorts(short[] object) throws KryoException {
 		int bytesToCopy = object.length << 1;
 		writeBytes(object, shortArrayBaseOffset, 0, bytesToCopy);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeChars(char[] object) throws KryoException {
 		int bytesToCopy = object.length << 1;
 		writeBytes(object, charArrayBaseOffset, 0, bytesToCopy);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	final public void writeDoubles(double[] object) throws KryoException {
 		int bytesToCopy = object.length << 3;
 		writeBytes(object, doubleArrayBaseOffset, 0, bytesToCopy);
@@ -470,8 +398,8 @@ public final class UnsafeOutput extends Output {
 	}
 
 	/***
-	 * 	Controls if a variable length encoding for integer types should be used when serializers suggest it. 
-     *
+	 * Controls if a variable length encoding for integer types should be used when serializers suggest it. 
+    *
 	 * @param supportVarInts
 	 */
 	public void supportVarInts(boolean supportVarInts) {

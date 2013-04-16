@@ -5,7 +5,9 @@ import static com.esotericsoftware.minlog.Log.*;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 
+import sun.misc.Cleaner;
 import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * A few utility methods for using @link{java.misc.Unsafe}, mostly for private
@@ -92,6 +94,21 @@ public class UnsafeUtil {
 			return directByteBufferConstr.newInstance(address, maxBufferSize, null);
 		} catch (Exception e) {
 			throw new RuntimeException("Cannot allocate ByteBuffer at a given address: " + address, e);
+		}		
+	}
+
+	/***
+	 * Release a direct buffer.  
+	 * 
+	 * NOTE: If Cleaner is not accessible due to SecurityManager restrictions, reflection could be used
+	 * to obtain the "clean" method and then invoke it.
+	 */
+	static public void releaseBuffer(ByteBuffer niobuffer) {
+		if(niobuffer != null && niobuffer.isDirect()) {
+			Object cleaner = ((DirectBuffer) niobuffer).cleaner();
+			if(cleaner != null)
+				((Cleaner)cleaner).clean();
+			niobuffer = null;
 		}		
 	}
 }
