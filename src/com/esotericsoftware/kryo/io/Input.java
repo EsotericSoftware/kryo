@@ -135,6 +135,7 @@ public class Input extends InputStream {
 		}
 	}
 
+
 	/** Fills the buffer with more bytes. Can be overridden to fill the bytes from a source other than the InputStream.
 	 * @return -1 if there are no more bytes. */
 	protected int fill (byte[] buffer, int offset, int count) throws KryoException {
@@ -226,7 +227,7 @@ public class Input extends InputStream {
 
 	/** Reads a single byte as an int from 0 to 255, or -1 if there are no more bytes are available. */
 	public int read () throws KryoException {
-		if (optional(1) == 0) return -1;
+		if (optional(1) <= 0) return -1;
 		return buffer[position++] & 0xFF;
 	}
 
@@ -368,7 +369,7 @@ public class Input extends InputStream {
 		}
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
-	
+
 	private int readInt_slow (boolean optimizePositive) {
 		// The buffer is guaranteed to have at least 1 byte.
 		int b = buffer[position++];
@@ -721,7 +722,7 @@ public class Input extends InputStream {
 		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
 		return result;
 	}
-	
+
 	private long readLong_slow (boolean optimizePositive) {
 		// The buffer is guaranteed to have at least 1 byte.
 		int b = buffer[position++];
@@ -799,10 +800,10 @@ public class Input extends InputStream {
 		return readLong(optimizePositive) / (double)precision;
 	}
 
-	// Methods implementing bulk operations on arrays of primitive types 
-	
+	// Methods implementing bulk operations on arrays of primitive types
+
 	/** Bulk input of an int array. */
-	public int[] readInts(int length, boolean optimizePositive) throws KryoException {
+	public int[] readInts (int length, boolean optimizePositive) throws KryoException {
 		int[] array = new int[length];
 		for (int i = 0; i < length; i++)
 			array[i] = readInt(optimizePositive);
@@ -810,15 +811,15 @@ public class Input extends InputStream {
 	}
 
 	/** Bulk input of a long array. */
-	public long[] readLongs(int length, boolean optimizePositive) throws KryoException {
+	public long[] readLongs (int length, boolean optimizePositive) throws KryoException {
 		long[] array = new long[length];
 		for (int i = 0; i < length; i++)
 			array[i] = readLong(optimizePositive);
 		return array;
 	}
-	
+
 	/** Bulk input of an int array. */
-	public int[] readInts(int length) throws KryoException {
+	public int[] readInts (int length) throws KryoException {
 		int[] array = new int[length];
 		for (int i = 0; i < length; i++)
 			array[i] = readInt();
@@ -826,24 +827,23 @@ public class Input extends InputStream {
 	}
 
 	/** Bulk input of a long array. */
-	public long[] readLongs(int length) throws KryoException {
+	public long[] readLongs (int length) throws KryoException {
 		long[] array = new long[length];
 		for (int i = 0; i < length; i++)
 			array[i] = readLong();
 		return array;
 	}
-	
+
 	/** Bulk input of a float array. */
-	public float[] readFloats(int length) throws KryoException {
+	public float[] readFloats (int length) throws KryoException {
 		float[] array = new float[length];
 		for (int i = 0; i < length; i++)
 			array[i] = readFloat();
 		return array;
 	}
 
-
 	/** Bulk input of a short array. */
-	public short[] readShorts(int length) throws KryoException {
+	public short[] readShorts (int length) throws KryoException {
 		short[] array = new short[length];
 		for (int i = 0; i < length; i++)
 			array[i] = readShort();
@@ -851,7 +851,7 @@ public class Input extends InputStream {
 	}
 
 	/** Bulk input of a char array. */
-	public char[] readChars(int length) throws KryoException {
+	public char[] readChars (int length) throws KryoException {
 		char[] array = new char[length];
 		for (int i = 0; i < length; i++)
 			array[i] = readChar();
@@ -859,7 +859,7 @@ public class Input extends InputStream {
 	}
 
 	/** Bulk input of a double array. */
-	public double[] readDoubles(int length) throws KryoException {
+	public double[] readDoubles (int length) throws KryoException {
 		double[] array = new double[length];
 		for (int i = 0; i < length; i++)
 			array[i] = readDouble();
