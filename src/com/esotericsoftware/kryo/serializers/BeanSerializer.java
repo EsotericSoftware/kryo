@@ -81,8 +81,10 @@ public class BeanSerializer<T> extends Serializer<T> {
 			access = MethodAccess.get(type);
 			for (int i = 0, n = properties.length; i < n; i++) {
 				CachedProperty property = properties[i];
-				property.getterAccessIndex = ((MethodAccess)access).getIndex(property.getMethod.getName());
-				property.setterAccessIndex = ((MethodAccess)access).getIndex(property.setMethod.getName());
+				property.getterAccessIndex = ((MethodAccess)access).getIndex(property.getMethod.getName(),
+					property.getMethod.getParameterTypes());
+				property.setterAccessIndex = ((MethodAccess)access).getIndex(property.setMethod.getName(),
+					property.setMethod.getParameterTypes());
 			}
 		} catch (Throwable ignored) {
 			// ReflectASM is not available on Android.
