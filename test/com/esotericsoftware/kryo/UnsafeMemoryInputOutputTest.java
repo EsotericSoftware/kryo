@@ -16,8 +16,8 @@ import com.esotericsoftware.kryo.util.UnsafeUtil;
 
 /** @author Roman Levenstein <romixlev@gmail.com> */
 public class UnsafeMemoryInputOutputTest extends KryoTestCase {
-	
-	public void testByteBufferOutputWithPreallocatedMemory() {
+
+	public void testByteBufferOutputWithPreallocatedMemory () {
 		long bufAddress = UnsafeUtil.unsafe().allocateMemory(4096);
 		try {
 			ByteBufferOutput outputBuffer = new ByteBufferOutput(bufAddress, 4096);
@@ -26,11 +26,11 @@ public class UnsafeMemoryInputOutputTest extends KryoTestCase {
 			ByteBufferInput inputBuffer = new ByteBufferInput(outputBuffer.getByteBuffer());
 			inputBuffer.readInt();
 			inputBuffer.release();
-		
+
 			outputBuffer.release();
 			outputBuffer = new UnsafeMemoryOutput(bufAddress, 4096);
 			outputBuffer.writeInt(10);
-		
+
 			inputBuffer = new UnsafeMemoryInput(outputBuffer.getByteBuffer());
 			inputBuffer.readInt();
 			inputBuffer.release();

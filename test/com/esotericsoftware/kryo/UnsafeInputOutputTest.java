@@ -751,7 +751,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(32767, read.readChar());
 		assertEquals(65535, read.readChar());
 	}
-	
+
 	// Check if writing varInts may produce more bytes than expected
 	public void testWriteTooManyBytes () throws IOException {
 		ByteArrayOutputStream os = new ByteArrayOutputStream(1);

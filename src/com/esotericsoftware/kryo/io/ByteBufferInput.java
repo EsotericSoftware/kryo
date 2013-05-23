@@ -23,12 +23,12 @@ public class ByteBufferInput extends Input {
 	protected ByteBuffer niobuffer;
 
 	protected boolean varIntsEnabled = true;
-	
+
 	/* Default byte order is BIG_ENDIAN to be compatible to the base class */
 	ByteOrder byteOrder = ByteOrder.BIG_ENDIAN;
-	
+
 	protected final static ByteOrder nativeOrder = ByteOrder.nativeOrder();
-	
+
 	/** Creates an uninitialized Input. {@link #setBuffer(byte[])} must be called before the Input is used. */
 	public ByteBufferInput () {
 	}
@@ -50,7 +50,7 @@ public class ByteBufferInput extends Input {
 	public ByteBufferInput (byte[] buffer) {
 		setBuffer(buffer);
 	}
-	
+
 	/** Creates a new Input for reading from a byte array.
 	 * @param buffer An exception is thrown if more bytes than this are read. */
 	public ByteBufferInput (ByteBuffer buffer, int offset, int count) {
@@ -75,12 +75,12 @@ public class ByteBufferInput extends Input {
 		this.inputStream = inputStream;
 	}
 
-	public ByteOrder order() {
+	public ByteOrder order () {
 		return byteOrder;
 	}
-	
-	public void order(ByteOrder byteOrder) {
-		this.byteOrder = byteOrder; 
+
+	public void order (ByteOrder byteOrder) {
+		this.byteOrder = byteOrder;
 	}
 
 	/** Sets a new buffer. The position and total are reset, discarding any buffered bytes. */
@@ -104,49 +104,40 @@ public class ByteBufferInput extends Input {
 		niobuffer.position(position);
 	}
 
-	/***
-	 * Release a direct buffer.  {@link #setBuffer(ByteBuffer, int, int)} should be called before next write operations can 
-	 * be called.
-	 * 
-	 */
-	public void release() {
+	/*** Release a direct buffer. {@link #setBuffer(ByteBuffer, int, int)} should be called before next write operations can be
+	 * called. */
+	public void release () {
 		close();
 		UnsafeUtil.releaseBuffer(niobuffer);
 		niobuffer = null;
 	}
-		
-	/***
-	 * 
-	 * This constructor allows for creation of a direct ByteBuffer of a given
-	 * size at a given address.
+
+	/*** This constructor allows for creation of a direct ByteBuffer of a given size at a given address.
 	 * 
 	 * <p>
 	 * Typical usage could look like this snippet:
 	 * 
 	 * <pre>
-	 * 	// Explicitly allocate memory
-	 *  long bufAddress = UnsafeUtil.unsafe().allocateMemory(4096);
-	 *  // Create a ByteBufferInput using the allocated memory region 
-	 * 	ByteBufferInput buffer = new ByteBufferInput(bufAddress, 4096);
-	 * 	
-	 *  // Do some operations on this buffer here
-	 *  
-	 *  // Say that ByteBuffer won't be used anymore 
-	 * 	buffer.release();
-	 *  // Release the allocated region
-	 * 	UnsafeUtil.unsafe().freeMemory(bufAddress);
+	 * // Explicitly allocate memory
+	 * long bufAddress = UnsafeUtil.unsafe().allocateMemory(4096);
+	 * // Create a ByteBufferInput using the allocated memory region
+	 * ByteBufferInput buffer = new ByteBufferInput(bufAddress, 4096);
+	 * 
+	 * // Do some operations on this buffer here
+	 * 
+	 * // Say that ByteBuffer won't be used anymore
+	 * buffer.release();
+	 * // Release the allocated region
+	 * UnsafeUtil.unsafe().freeMemory(bufAddress);
 	 * </pre>
 	 * 
-	 * @param address
-	 *            starting address of a memory region pre-allocated using
-	 *            Unsafe.allocateMemory()
-	 * @param maxBufferSize
-	 */
+	 * @param address starting address of a memory region pre-allocated using Unsafe.allocateMemory()
+	 * @param maxBufferSize */
 	public ByteBufferInput (long address, int maxBufferSize) {
 		niobuffer = UnsafeUtil.getDirectBufferAt(address, maxBufferSize);
 		setBuffer(niobuffer, 0, maxBufferSize);
 	}
-	
+
 	public ByteBuffer getByteBuffer () {
 		return niobuffer;
 	}
@@ -175,7 +166,7 @@ public class ByteBufferInput extends Input {
 			byte[] tmp = new byte[count];
 			int result = inputStream.read(tmp, 0, count);
 			buffer.position(offset);
-			if(result >= 0) {
+			if (result >= 0) {
 				buffer.put(tmp, 0, result);
 				buffer.position(offset);
 			}
@@ -193,6 +184,15 @@ public class ByteBufferInput extends Input {
 		if (remaining >= required) return remaining;
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
 
+		// Try to fill the buffer.
+		int count = fill(niobuffer, limit, capacity - limit);
+		if (count == -1) throw new KryoException("Buffer underflow.");
+		remaining += count;
+		if (remaining >= required) {
+			limit += count;
+			return remaining;
+		}
+
 		// Compact. Position after compaction can be non-zero
 		niobuffer.position(position);
 		niobuffer.compact();
@@ -200,7 +200,7 @@ public class ByteBufferInput extends Input {
 		position = 0;
 
 		while (true) {
-			int count = fill(niobuffer, remaining, capacity - remaining);
+			count = fill(niobuffer, remaining, capacity - remaining);
 			if (count == -1) {
 				if (remaining >= required) break;
 				throw new KryoException("Buffer underflow.");
@@ -220,13 +220,22 @@ public class ByteBufferInput extends Input {
 		if (remaining >= optional) return optional;
 		optional = Math.min(optional, capacity);
 
+		// Try to fill the buffer.
+		int count = fill(niobuffer, limit, capacity - limit);
+		if (count == -1) return remaining == 0 ? -1 : Math.min(remaining, optional);
+		remaining += count;
+		if (remaining >= optional) {
+			limit += count;
+			return optional;
+		}
+
 		// Compact.
 		niobuffer.compact();
 		total += position;
 		position = 0;
 
 		while (true) {
-			int count = fill(niobuffer, remaining, capacity - remaining);
+			count = fill(niobuffer, remaining, capacity - remaining);
 			if (count == -1) break;
 			remaining += count;
 			if (remaining >= optional) break; // Enough has been read.
@@ -240,7 +249,7 @@ public class ByteBufferInput extends Input {
 
 	/** Reads a single byte as an int from 0 to 255, or -1 if there are no more bytes are available. */
 	public int read () throws KryoException {
-		if (optional(1) == 0) return -1;
+		if (optional(1) <= 0) return -1;
 		niobuffer.position(position);
 		position++;
 		return niobuffer.get() & 0xFF;
@@ -310,7 +319,7 @@ public class ByteBufferInput extends Input {
 
 	/** Reads a byte as an int from 0 to 255. */
 	public int readByteUnsigned () throws KryoException {
-		//buffer.position(position);
+		// buffer.position(position);
 		require(1);
 		position++;
 		return niobuffer.get() & 0xFF;
@@ -350,12 +359,12 @@ public class ByteBufferInput extends Input {
 	}
 
 	public int readInt (boolean optimizePositive) throws KryoException {
-		if(varIntsEnabled)
+		if (varIntsEnabled)
 			return readVarInt(optimizePositive);
 		else
 			return readInt();
 	}
-	
+
 	public int readVarInt (boolean optimizePositive) throws KryoException {
 		niobuffer.position(position);
 		if (require(1) < 5) return readInt_slow(optimizePositive);
@@ -583,7 +592,7 @@ public class ByteBufferInput extends Input {
 				break;
 			case 14:
 				require(2);
-				position+=2;
+				position += 2;
 				int b2 = niobuffer.get();
 				int b3 = niobuffer.get();
 				chars[charIndex] = (char)((b & 0x0F) << 12 | (b2 & 0x3F) << 6 | b3 & 0x3F);
@@ -603,12 +612,12 @@ public class ByteBufferInput extends Input {
 			end++;
 			b = niobuffer.get();
 		} while ((b & 0x80) == 0);
-		niobuffer.put(end - 1, (byte)(niobuffer.get(end-1)&0x7F)); // Mask end of ascii bit.
-		byte[] tmp = new byte[end-start];
+		niobuffer.put(end - 1, (byte)(niobuffer.get(end - 1) & 0x7F)); // Mask end of ascii bit.
+		byte[] tmp = new byte[end - start];
 		niobuffer.position(start);
 		niobuffer.get(tmp);
 		String value = new String(tmp, 0, 0, end - start);
-		niobuffer.put(end - 1, (byte)(niobuffer.get(end-1)|0x80));
+		niobuffer.put(end - 1, (byte)(niobuffer.get(end - 1) | 0x80));
 		position = end;
 		niobuffer.position(position);
 		return value;
@@ -649,7 +658,7 @@ public class ByteBufferInput extends Input {
 	public StringBuilder readStringBuilder () {
 		niobuffer.position(position);
 		int available = require(1);
-		position ++;
+		position++;
 		int b = niobuffer.get();
 		if ((b & 0x80) == 0) return new StringBuilder(readAscii()); // ASCII.
 		// Null, empty, or UTF8.
@@ -700,10 +709,10 @@ public class ByteBufferInput extends Input {
 		position += 8;
 		return niobuffer.getLong();
 	}
-	
+
 	/** {@inheritDoc} */
 	public long readLong (boolean optimizePositive) throws KryoException {
-		if(varIntsEnabled)
+		if (varIntsEnabled)
 			return readVarLong(optimizePositive);
 		else
 			return readLong();
@@ -821,7 +830,7 @@ public class ByteBufferInput extends Input {
 	public boolean readBoolean () throws KryoException {
 		require(1);
 		position++;
-		return niobuffer.get() == 1? true: false;
+		return niobuffer.get() == 1 ? true : false;
 	}
 
 	/** Reads a 2 byte char. */
@@ -843,10 +852,10 @@ public class ByteBufferInput extends Input {
 		return readLong(optimizePositive) / (double)precision;
 	}
 
-	// Methods implementing bulk operations on arrays of primitive types 
-	
+	// Methods implementing bulk operations on arrays of primitive types
+
 	/** Bulk input of an int array. */
-	public int[] readInts(int length) throws KryoException {
+	public int[] readInts (int length) throws KryoException {
 		if (capacity - position >= length * 4 && isNativeOrder()) {
 			int[] array = new int[length];
 			IntBuffer buf = niobuffer.asIntBuffer();
@@ -854,12 +863,12 @@ public class ByteBufferInput extends Input {
 			position += length * 4;
 			niobuffer.position(position);
 			return array;
-		} else 
+		} else
 			return super.readInts(length);
 	}
 
 	/** Bulk input of a long array. */
-	public long[] readLongs(int length) throws KryoException {
+	public long[] readLongs (int length) throws KryoException {
 		if (capacity - position >= length * 8 && isNativeOrder()) {
 			long[] array = new long[length];
 			LongBuffer buf = niobuffer.asLongBuffer();
@@ -867,12 +876,12 @@ public class ByteBufferInput extends Input {
 			position += length * 8;
 			niobuffer.position(position);
 			return array;
-		} else 
+		} else
 			return super.readLongs(length);
 	}
 
 	/** Bulk input of a float array. */
-	public float[] readFloats(int length) throws KryoException {
+	public float[] readFloats (int length) throws KryoException {
 		if (capacity - position >= length * 4 && isNativeOrder()) {
 			float[] array = new float[length];
 			FloatBuffer buf = niobuffer.asFloatBuffer();
@@ -880,12 +889,12 @@ public class ByteBufferInput extends Input {
 			position += length * 4;
 			niobuffer.position(position);
 			return array;
-		} else 
+		} else
 			return super.readFloats(length);
 	}
 
 	/** Bulk input of a short array. */
-	public short[] readShorts(int length) throws KryoException {
+	public short[] readShorts (int length) throws KryoException {
 		if (capacity - position >= length * 2 && isNativeOrder()) {
 			short[] array = new short[length];
 			ShortBuffer buf = niobuffer.asShortBuffer();
@@ -893,12 +902,12 @@ public class ByteBufferInput extends Input {
 			position += length * 2;
 			niobuffer.position(position);
 			return array;
-		} else 
+		} else
 			return super.readShorts(length);
 	}
 
 	/** Bulk input of a char array. */
-	public char[] readChars(int length) throws KryoException {
+	public char[] readChars (int length) throws KryoException {
 		if (capacity - position >= length * 2 && isNativeOrder()) {
 			char[] array = new char[length];
 			CharBuffer buf = niobuffer.asCharBuffer();
@@ -906,12 +915,12 @@ public class ByteBufferInput extends Input {
 			position += length * 2;
 			niobuffer.position(position);
 			return array;
-		} else 
+		} else
 			return super.readChars(length);
 	}
 
 	/** Bulk input of a double array. */
-	public double[] readDoubles(int length) throws KryoException {
+	public double[] readDoubles (int length) throws KryoException {
 		if (capacity - position >= length * 8 && isNativeOrder()) {
 			double[] array = new double[length];
 			DoubleBuffer buf = niobuffer.asDoubleBuffer();
@@ -919,28 +928,24 @@ public class ByteBufferInput extends Input {
 			position += length * 8;
 			niobuffer.position(position);
 			return array;
-		} else 
+		} else
 			return super.readDoubles(length);
 	}
 
-	private boolean isNativeOrder() {
+	private boolean isNativeOrder () {
 		return byteOrder == nativeOrder;
 	}
 
-	/***
-	 * Return current setting for variable length encoding of integers
-	 * @return current setting for variable length encoding of integers
-	 */
-	public boolean getVarIntsEnabled() {
+	/*** Return current setting for variable length encoding of integers
+	 * @return current setting for variable length encoding of integers */
+	public boolean getVarIntsEnabled () {
 		return varIntsEnabled;
 	}
 
-	/***
-	 * 	Controls if a variable length encoding for integer types should be used when serializers suggest it. 
-     *
-	 * @param varIntsEnabled
-	 */
-	public void setVarIntsEnabled(boolean varIntsEnabled) {
+	/*** Controls if a variable length encoding for integer types should be used when serializers suggest it.
+	 * 
+	 * @param varIntsEnabled */
+	public void setVarIntsEnabled (boolean varIntsEnabled) {
 		this.varIntsEnabled = varIntsEnabled;
 	}
 }

@@ -9,13 +9,10 @@ import sun.misc.Unsafe;
 
 import com.esotericsoftware.kryo.KryoException;
 
-/**
- * Same as Input, but does not use variable length encoding for integer types.
- * @author Roman Levenstein <romxilev@gmail.com>
- *
- */
+/** Same as Input, but does not use variable length encoding for integer types.
+ * @author Roman Levenstein <romxilev@gmail.com> */
 public final class FastInput extends Input {
-	
+
 	/** Creates an uninitialized Output. {@link #setBuffer(byte[], int, int)} must be called before the Output is used. */
 	public FastInput () {
 	}
@@ -25,7 +22,6 @@ public final class FastInput extends Input {
 	public FastInput (int bufferSize) {
 		super(bufferSize);
 	}
-
 
 	/** Creates a new Output for writing to a byte array.
 	 * @see #setBuffer(byte[]) */
@@ -49,12 +45,10 @@ public final class FastInput extends Input {
 		super(outputStream, bufferSize);
 	}
 
-
-
 	public int readInt (boolean optimizePositive) throws KryoException {
 		return readInt();
 	}
-	
+
 	public long readLong (boolean optimizePositive) throws KryoException {
 		return readLong();
 	}

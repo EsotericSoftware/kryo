@@ -9,9 +9,8 @@ import com.esotericsoftware.kryo.KryoException;
 /** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
  * for efficiently writing primitive types and strings.
  * 
- * Encoding of integers: 
- * BIG_ENDIAN is used for storing fixed native size integer values
- * LITTLE_ENDIAN is used for a variable length encoding of integer values  
+ * Encoding of integers: BIG_ENDIAN is used for storing fixed native size integer values LITTLE_ENDIAN is used for a variable
+ * length encoding of integer values
  * 
  * @author Nathan Sweet <misc@n4te.com> */
 public class Output extends OutputStream {
@@ -240,10 +239,10 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
-	/** Writes a 1-5 byte int. This stream may consider such a variable length encoding request as a hint.
-	 *  It is not guaranteed that a variable length encoding will be really used. The stream may decide
-	 *  to use native-sized integer representation for efficiency reasons.   
-	 *  
+	/** Writes a 1-5 byte int. This stream may consider such a variable length encoding request as a hint. It is not guaranteed that
+	 * a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
+	 * efficiency reasons.
+	 * 
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
 	 *           inefficient (5 bytes). */
 	public int writeInt (int value, boolean optimizePositive) throws KryoException {
@@ -288,9 +287,9 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)(value >>> 14 | 0x80);
 		buffer[position++] = (byte)(value >>> 21 | 0x80);
 		buffer[position++] = (byte)(value >>> 28);
-		return 5;		
+		return 5;
 	}
-	
+
 	// string
 
 	/** Writes the length and string, or null. Short strings are checked and if ASCII they are written more efficiently, else they
@@ -504,10 +503,10 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
-	/** Writes a 1-9 byte long. This stream may consider such a variable length encoding request as a hint.
-	 *  It is not guaranteed that a variable length encoding will be really used. The stream may decide
-	 *  to use native-sized integer representation for efficiency reasons.   
-	 *  
+	/** Writes a 1-9 byte long. This stream may consider such a variable length encoding request as a hint. It is not guaranteed
+	 * that a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
+	 * efficiency reasons.
+	 * 
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
 	 *           inefficient (9 bytes). */
 	public int writeLong (long value, boolean optimizePositive) throws KryoException {
@@ -597,7 +596,7 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)(value >>> 42 | 0x80);
 		buffer[position++] = (byte)(value >>> 49 | 0x80);
 		buffer[position++] = (byte)(value >>> 56);
-		return 9;		
+		return 9;
 	}
 
 	// boolean
@@ -655,53 +654,53 @@ public class Output extends OutputStream {
 		return 9;
 	}
 
-	// Methods implementing bulk operations on arrays of primitive types 
-	
+	// Methods implementing bulk operations on arrays of primitive types
+
 	/** Bulk output of an int array. */
-	public void writeInts(int[] object, boolean optimizePositive) throws KryoException {
+	public void writeInts (int[] object, boolean optimizePositive) throws KryoException {
 		for (int i = 0, n = object.length; i < n; i++)
-			writeInt(object[i], optimizePositive);		
+			writeInt(object[i], optimizePositive);
 	}
-	
+
 	/** Bulk output of an long array. */
-	public void writeLongs(long[] object, boolean optimizePositive) throws KryoException {
+	public void writeLongs (long[] object, boolean optimizePositive) throws KryoException {
 		for (int i = 0, n = object.length; i < n; i++)
-			writeLong(object[i], optimizePositive);		
+			writeLong(object[i], optimizePositive);
 	}
 
 	/** Bulk output of an int array. */
-	public void writeInts(int[] object) throws KryoException {
+	public void writeInts (int[] object) throws KryoException {
 		for (int i = 0, n = object.length; i < n; i++)
-			writeInt(object[i]);		
+			writeInt(object[i]);
 	}
-	
+
 	/** Bulk output of an long array. */
-	public void writeLongs(long[] object) throws KryoException {
+	public void writeLongs (long[] object) throws KryoException {
 		for (int i = 0, n = object.length; i < n; i++)
-			writeLong(object[i]);		
+			writeLong(object[i]);
 	}
-	
+
 	/** Bulk output of a float array. */
-	public void writeFloats(float[] object) throws KryoException {
+	public void writeFloats (float[] object) throws KryoException {
 		for (int i = 0, n = object.length; i < n; i++)
-			writeFloat(object[i]);		
+			writeFloat(object[i]);
 	}
 
 	/** Bulk output of a short array. */
-	public void writeShorts(short[] object) throws KryoException {
+	public void writeShorts (short[] object) throws KryoException {
 		for (int i = 0, n = object.length; i < n; i++)
-			writeShort(object[i]);		
+			writeShort(object[i]);
 	}
 
 	/** Bulk output of a char array. */
-	public void writeChars(char[] object) throws KryoException {
+	public void writeChars (char[] object) throws KryoException {
 		for (int i = 0, n = object.length; i < n; i++)
-			writeChar(object[i]);		
+			writeChar(object[i]);
 	}
 
 	/** Bulk output of a double array. */
-	public void writeDoubles(double[] object) throws KryoException {
+	public void writeDoubles (double[] object) throws KryoException {
 		for (int i = 0, n = object.length; i < n; i++)
-			writeDouble(object[i]);		
+			writeDouble(object[i]);
 	}
 }

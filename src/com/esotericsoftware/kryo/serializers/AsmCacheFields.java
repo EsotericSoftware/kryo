@@ -1,3 +1,4 @@
+
 package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.util.UnsafeUtil.unsafe;
@@ -10,12 +11,9 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.ObjectField;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
-/***
- * Implementations of ASM-based serializers for fields.
+/*** Implementations of ASM-based serializers for fields.
  * 
- * @author Nathan Sweet <misc@n4te.com>
- *
- */
+ * @author Nathan Sweet <misc@n4te.com> */
 public class AsmCacheFields {
 
 	abstract static class AsmCachedField extends CachedField {
@@ -23,14 +21,14 @@ public class AsmCacheFields {
 
 	final static class IntField extends AsmCachedField {
 		public void write (Output output, Object object) {
-			if(optimizeInts)
+			if (varIntsEnabled)
 				output.writeInt(access.getInt(object, accessIndex), false);
 			else
 				output.writeInt(access.getInt(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			if(optimizeInts)
+			if (varIntsEnabled)
 				access.setInt(object, accessIndex, input.readInt(false));
 			else
 				access.setInt(object, accessIndex, input.readInt());
@@ -113,17 +111,17 @@ public class AsmCacheFields {
 
 	final static class LongField extends AsmCachedField {
 		public void write (Output output, Object object) {
-			if(optimizeInts)
+			if (varIntsEnabled)
 				output.writeLong(access.getLong(object, accessIndex), false);
 			else
 				output.writeLong(access.getLong(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			if(optimizeInts)
+			if (varIntsEnabled)
 				access.setLong(object, accessIndex, input.readLong(false));
 			else
-				access.setLong(object, accessIndex, input.readLong());				
+				access.setLong(object, accessIndex, input.readLong());
 		}
 
 		public void copy (Object original, Object copy) {
@@ -160,18 +158,17 @@ public class AsmCacheFields {
 	}
 
 	final static class AsmObjectField extends ObjectField {
-		
-		public AsmObjectField(FieldSerializer fieldSerializer){
+
+		public AsmObjectField (FieldSerializer fieldSerializer) {
 			super(fieldSerializer);
 		}
 
-		public Object getField(Object object) throws IllegalArgumentException, IllegalAccessException {
-			if (accessIndex != -1)
-				return ((FieldAccess)access).get(object, accessIndex);
+		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+			if (accessIndex != -1) return ((FieldAccess)access).get(object, accessIndex);
 			throw new KryoException("Unknown acess index");
 		}
 
-		public void setField(Object object, Object value) throws IllegalArgumentException, IllegalAccessException {
+		public void setField (Object object, Object value) throws IllegalArgumentException, IllegalAccessException {
 			if (accessIndex != -1)
 				((FieldAccess)access).set(object, accessIndex, value);
 			else
@@ -182,8 +179,7 @@ public class AsmCacheFields {
 			try {
 				if (accessIndex != -1) {
 					access.set(copy, accessIndex, kryo.copy(access.get(original, accessIndex)));
-				} 
-				else
+				} else
 					throw new KryoException("Unknown acess index");
 			} catch (KryoException ex) {
 				ex.addTrace(this + " (" + type.getName() + ")");

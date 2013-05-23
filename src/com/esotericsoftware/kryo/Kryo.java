@@ -1205,7 +1205,7 @@ public class Kryo {
 		this.asmEnabled = flag;
 	}
 
-	public boolean getAsmBackend() {
+	public boolean getAsmEnabled() {
 		return asmEnabled;
 	}
 }

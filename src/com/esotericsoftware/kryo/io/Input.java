@@ -135,7 +135,6 @@ public class Input extends InputStream {
 		}
 	}
 
-
 	/** Fills the buffer with more bytes. Can be overridden to fill the bytes from a source other than the InputStream.
 	 * @return -1 if there are no more bytes. */
 	protected int fill (byte[] buffer, int offset, int count) throws KryoException {
@@ -336,11 +335,9 @@ public class Input extends InputStream {
 			| buffer[position + 3] & 0xFF;
 	}
 
-	/** Reads a 1-5 byte int. This stream may consider such a variable length encoding request as a hint.
-	 *  It is not guaranteed that a variable length encoding will be really used. The stream may decide
-	 *  to use native-sized integer representation for efficiency reasons. 
-	 *
-	 **/
+	/** Reads a 1-5 byte int. This stream may consider such a variable length encoding request as a hint. It is not guaranteed that
+	 * a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
+	 * efficiency reasons. **/
 	public int readInt (boolean optimizePositive) throws KryoException {
 		return readVarInt(optimizePositive);
 	}
@@ -673,10 +670,9 @@ public class Input extends InputStream {
 
 	}
 
-	/** Reads a 1-9 byte long. This stream may consider such a variable length encoding request as a hint.
-	 *  It is not guaranteed that a variable length encoding will be really used. The stream may decide
-	 *  to use native-sized integer representation for efficiency reasons. 
-	 * */
+	/** Reads a 1-9 byte long. This stream may consider such a variable length encoding request as a hint. It is not guaranteed that
+	 * a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
+	 * efficiency reasons. */
 	public long readLong (boolean optimizePositive) throws KryoException {
 		return readVarLong(optimizePositive);
 	}
