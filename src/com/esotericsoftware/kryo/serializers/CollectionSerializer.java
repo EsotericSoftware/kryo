@@ -51,7 +51,9 @@ public class CollectionSerializer extends Serializer<Collection> {
 	}
 
 	public void setGenerics (Kryo kryo, Class[] generics) {
-		if (kryo.isFinal(generics[0])) genericType = generics[0];
+		if (generics != null && generics.length > 0) {
+			if (kryo.isFinal(generics[0])) genericType = generics[0];
+		}
 	}
 
 	public void write (Kryo kryo, Output output, Collection collection) {

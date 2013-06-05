@@ -2,6 +2,7 @@
 package com.esotericsoftware.kryo;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -318,6 +319,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.setRegistrationRequired(true);
 		kryo.register(HasGenerics.class);
 		kryo.register(ArrayList.class);
+		kryo.register(ArrayList[].class);
 		kryo.register(HashMap.class);
 		HasGenerics test = new HasGenerics();
 		test.list1 = new ArrayList();
@@ -341,6 +343,9 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.list5.add("one");
 		test.list5.add("two");
 		roundTrip(53, 80, test);
+		ArrayList[] al = new ArrayList[1]; 
+		al[0] = new ArrayList<>(Arrays.asList(new String[] { "A", "B", "S" }));
+		roundTrip(18, 18, al);
 	}
 
 	public void testRegistration () {
