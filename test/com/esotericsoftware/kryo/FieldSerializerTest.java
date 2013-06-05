@@ -344,7 +344,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.list5.add("two");
 		roundTrip(53, 80, test);
 		ArrayList[] al = new ArrayList[1]; 
-		al[0] = new ArrayList<>(Arrays.asList(new String[] { "A", "B", "S" }));
+		al[0] = new ArrayList(Arrays.asList(new String[] { "A", "B", "S" }));
 		roundTrip(18, 18, al);
 	}
 
