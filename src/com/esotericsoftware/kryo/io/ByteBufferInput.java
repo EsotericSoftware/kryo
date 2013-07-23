@@ -290,7 +290,7 @@ public class ByteBufferInput extends Input {
 	public long skip (long count) throws KryoException {
 		long remaining = count;
 		while (remaining > 0) {
-			int skip = Math.max(Integer.MAX_VALUE, (int)remaining);
+			int skip = Math.min(Integer.MAX_VALUE, (int)remaining);
 			skip(skip);
 			remaining -= skip;
 		}
