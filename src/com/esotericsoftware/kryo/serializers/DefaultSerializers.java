@@ -519,9 +519,7 @@ public class DefaultSerializers {
 	static public class TreeMapSerializer extends MapSerializer {
 		public void write (Kryo kryo, Output output, Map map) {
 			TreeMap treeMap = (TreeMap)map;
-			boolean references = kryo.setReferences(false);
 			kryo.writeClassAndObject(output, treeMap.comparator());
-			kryo.setReferences(references);
 			super.write(kryo, output, map);
 		}
 

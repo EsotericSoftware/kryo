@@ -105,12 +105,35 @@ public class MapSerializerTest extends KryoTestCase {
 		kryo.register(KeyThatIsntComparable.class);
 		kryo.register(KeyComparator.class);
 		map = new TreeMap(new KeyComparator());
-		KeyThatIsntComparable key = new KeyThatIsntComparable();
-		key.value = "123";
-		map.put(key, "456");
-		roundTrip(11, 14, map);
+		KeyThatIsntComparable key1 = new KeyThatIsntComparable();
+		KeyThatIsntComparable key2 = new KeyThatIsntComparable();
+		key1.value = "123";
+		map.put(key1, "456");
+		key2.value = "1234";
+		map.put(key2, "4567");
+		roundTrip(21, 24, map);
 	}
 
+	public void testTreeMapWithReferences () {
+		kryo.setReferences(true);
+		kryo.register(TreeMap.class);
+		TreeMap map = new TreeMap();
+		map.put("123", "456");
+		map.put("789", "abc");
+		roundTrip(24, 27, map);
+
+		kryo.register(KeyThatIsntComparable.class);
+		kryo.register(KeyComparator.class);
+		map = new TreeMap(new KeyComparator());
+		KeyThatIsntComparable key1 = new KeyThatIsntComparable();
+		KeyThatIsntComparable key2 = new KeyThatIsntComparable();
+		key1.value = "123";
+		map.put(key1, "456");
+		key2.value = "1234";
+		map.put(key2, "4567");
+		roundTrip(29, 32, map);
+	}
+	
 	static public class HasGenerics {
 		public HashMap<String, Integer[]> map = new HashMap();
 		public HashMap<String, ?> map2 = new HashMap();
