@@ -65,7 +65,7 @@ public class Input extends InputStream {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		buffer = bytes;
 		position = offset;
-		limit = count;
+		limit = offset + count;
 		capacity = bytes.length;
 		total = 0;
 		inputStream = null;
