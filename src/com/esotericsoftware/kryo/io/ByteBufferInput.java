@@ -97,7 +97,7 @@ public class ByteBufferInput extends Input {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		niobuffer = bytes;
 		position = offset;
-		limit = count;
+		limit = offset + count;
 		capacity = bytes.capacity();
 		total = 0;
 		inputStream = null;
