@@ -774,4 +774,14 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(65535, read.readVarInt(true));
 		assertEquals(true, read.eof());
 	}
+
+	public void testSimpleVarInt() {
+      final int value = 39117;
+      final Output out = new UnsafeOutput(1024);
+      out.writeVarInt(value, true);
+      out.flush();
+      final Input in = new UnsafeInput(out.toBytes());
+      final int actualValue = in.readVarInt(true);
+      assertEquals(value, actualValue);
+  }
 }
