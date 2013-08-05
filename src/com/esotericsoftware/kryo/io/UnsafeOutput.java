@@ -155,7 +155,7 @@ public final class UnsafeOutput extends Output {
 		}
 
 		varInt |= 0x80;
-		varInt |= (value << 8);
+		varInt |= ((value & 0x7F) << 8);
 
 		value >>>= 7;
 
@@ -166,7 +166,7 @@ public final class UnsafeOutput extends Output {
 		}
 
 		varInt |= 0x80 << 8;
-		varInt |= (value << 16);
+		varInt |= ((value & 0x7F) << 16);
 
 		value >>>= 7;
 
@@ -177,7 +177,7 @@ public final class UnsafeOutput extends Output {
 		}
 
 		varInt |= 0x80 << 16;
-		varInt |= (value << 24);
+		varInt |= ((value & 0x7F) << 24);
 
 		value >>>= 7;
 
@@ -188,7 +188,8 @@ public final class UnsafeOutput extends Output {
 		}
 
 		varInt |= 0x80 << 24;
-		long varLong = varInt | (((long)value) << 32);
+		long varLong = varInt | (((long)(value & 0x7F)) << 32);
+		varInt &= 0xFFFFFFFFL;
 		writeLittleEndianLong(varLong);
 		position -= 3;
 		return 5;

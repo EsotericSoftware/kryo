@@ -748,4 +748,10 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(32767, read.readChar());
 		assertEquals(65535, read.readChar());
 	}
+
+	public void testInputWithOffset () throws Exception {
+		final byte[] buf = new byte[30];
+		final Input in = new Input(buf, 10, 10);
+		assertEquals(10, in.available());
+	}
 }
