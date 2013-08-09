@@ -4,8 +4,11 @@ package com.esotericsoftware.kryo;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
+import com.esotericsoftware.kryo.io.ByteBufferInputStream;
+import com.esotericsoftware.kryo.io.ByteBufferOutputStream;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -753,5 +756,23 @@ public class InputOutputTest extends KryoTestCase {
 		final byte[] buf = new byte[30];
 		final Input in = new Input(buf, 10, 10);
 		assertEquals(10, in.available());
+	}
+	
+	public void testSmallBuffers() throws Exception {
+		ByteBuffer buf = ByteBuffer.allocate(1024);
+		ByteBufferOutputStream byteBufferOutputStream = new ByteBufferOutputStream(buf);
+		Output testOutput = new Output(byteBufferOutputStream);
+		testOutput.writeBytes(new byte[512]);
+		testOutput.writeBytes(new byte[512]);
+		testOutput.flush();
+
+		ByteBufferInputStream testInputs = new ByteBufferInputStream();
+		buf.flip();
+		testInputs.setByteBuffer(buf);
+		Input input = new Input(testInputs, 512);
+		byte[] toRead = new byte[512];
+		input.readBytes(toRead);
+
+		input.readBytes(toRead);		
 	}
 }

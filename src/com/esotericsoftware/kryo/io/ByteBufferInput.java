@@ -184,13 +184,16 @@ public class ByteBufferInput extends Input {
 		if (remaining >= required) return remaining;
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
 
+		int count;
 		// Try to fill the buffer.
-		int count = fill(niobuffer, limit, capacity - limit);
-		if (count == -1) throw new KryoException("Buffer underflow.");
-		remaining += count;
-		if (remaining >= required) {
-			limit += count;
-			return remaining;
+		if (remaining > 0) {
+			count = fill(niobuffer, limit, capacity - limit);
+			if (count == -1) throw new KryoException("Buffer underflow.");
+			remaining += count;
+			if (remaining >= required) {
+				limit += count;
+				return remaining;
+			}
 		}
 
 		// Compact. Position after compaction can be non-zero

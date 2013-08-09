@@ -154,13 +154,16 @@ public class Input extends InputStream {
 		if (remaining >= required) return remaining;
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
 
+		int count;		
 		// Try to fill the buffer.
-		int count = fill(buffer, limit, capacity - limit);
-		if (count == -1) throw new KryoException("Buffer underflow.");
-		remaining += count;
-		if (remaining >= required) {
-			limit += count;
-			return remaining;
+		if (remaining > 0) {
+			count = fill(buffer, limit, capacity - limit);
+			if (count == -1) throw new KryoException("Buffer underflow.");
+			remaining += count;
+			if (remaining >= required) {
+				limit += count;
+				return remaining;
+			}
 		}
 
 		// Was not enough, compact and try again.
@@ -189,8 +192,10 @@ public class Input extends InputStream {
 		if (remaining >= optional) return optional;
 		optional = Math.min(optional, capacity);
 
+		int count;
+		
 		// Try to fill the buffer.
-		int count = fill(buffer, limit, capacity - limit);
+		count = fill(buffer, limit, capacity - limit);
 		if (count == -1) return remaining == 0 ? -1 : Math.min(remaining, optional);
 		remaining += count;
 		if (remaining >= optional) {
