@@ -1,10 +1,6 @@
 
 package com.esotericsoftware.kryo.util;
 
-import com.esotericsoftware.kryo.Kryo;
-
-import java.util.ArrayList;
-
 /** An unordered map where identity comparison is used for keys and the values are ints. This implementation is a cuckoo hash map
  * using 3 hashes, random walking, and a small stash for problematic keys. Null keys are not allowed. No allocation is done except
  * when growing the table size. <br>
@@ -344,9 +340,7 @@ public class IdentityObjectIntMap<K> {
 
 	public void clear () {
 		K[] keyTable = this.keyTable;
-		for (int i = size; i-- > 0;)
-			keyTable[i] = null;
-		for (int n = capacity, i = n + stashSize; i-- > n;)
+		for (int i = capacity + stashSize; i-- > 0;)
 			keyTable[i] = null;
 		size = 0;
 		stashSize = 0;

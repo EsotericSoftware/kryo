@@ -369,7 +369,11 @@ public class IntMap<V> {
 	public void clear () {
 		int[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
-		for (int i = capacity + stashSize; i-- > 0;) {
+		for (int i = size - 1; i >= 0; i--) {
+			keyTable[i] = EMPTY;
+			valueTable[i] = null;
+		}
+		for (int i = capacity, n = i + stashSize - 1; i < n; i++) {
 			keyTable[i] = EMPTY;
 			valueTable[i] = null;
 		}

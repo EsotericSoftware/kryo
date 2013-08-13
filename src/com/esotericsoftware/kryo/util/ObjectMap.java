@@ -341,11 +341,7 @@ public class ObjectMap<K, V> {
 	public void clear () {
 		K[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
-		for (int i = size; i-- > 0;) {
-			keyTable[i] = null;
-			valueTable[i] = null;
-		}
-		for (int n = capacity, i = n + stashSize; i-- > n;) {
+		for (int i = capacity + stashSize; i-- > 0;) {
 			keyTable[i] = null;
 			valueTable[i] = null;
 		}
