@@ -341,7 +341,11 @@ public class ObjectMap<K, V> {
 	public void clear () {
 		K[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
-		for (int i = capacity + stashSize; i-- > 0;) {
+		for (int i = size; i-- > 0;) {
+			keyTable[i] = null;
+			valueTable[i] = null;
+		}
+		for (int n = capacity, i = n + stashSize; i-- > n;) {
 			keyTable[i] = null;
 			valueTable[i] = null;
 		}
@@ -440,14 +444,14 @@ public class ObjectMap<K, V> {
 		}
 	}
 
-	private int hash2 (long h) {
+	private int hash2 (int h) {
 		h *= PRIME2;
-		return (int)((h ^ h >>> hashShift) & mask);
+		return (h ^ h >>> hashShift) & mask;
 	}
 
-	private int hash3 (long h) {
+	private int hash3 (int h) {
 		h *= PRIME3;
-		return (int)((h ^ h >>> hashShift) & mask);
+		return (h ^ h >>> hashShift) & mask;
 	}
 
 	public String toString () {
