@@ -29,15 +29,17 @@ import com.esotericsoftware.minlog.Log;
  * 
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class SerializationBenchmarkTest extends KryoTestCase {
-	private static final int WARMUP_ITERATIONS = 100000;
+	private static final int WARMUP_ITERATIONS = 1000;
 
 	/** Number of runs. */
-	private static final int RUN_CNT = 4;
+	private static final int RUN_CNT = 1;
 
 	/** Number of iterations. Set it to something rather big for obtaining meaningful results */
 // private static final int ITER_CNT = 200000;
-	private static final int ITER_CNT = 10000;
+	private static final int ITER_CNT = 100;
 
+	private static final int SLEEP_BETWEEN_RUNS = 100;
+	
 	private static final int OUTPUT_BUFFER_SIZE = 4096 * 10 * 4;
 
 	SampleObject obj = createObject();
@@ -188,7 +190,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 
 	private void systemCleanupAfterRun () throws InterruptedException {
 		System.gc();
-		Thread.sleep(1000);
+		Thread.sleep(SLEEP_BETWEEN_RUNS);
 		System.gc();
 	}
 
