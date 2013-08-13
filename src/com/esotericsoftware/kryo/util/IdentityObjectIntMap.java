@@ -338,6 +338,16 @@ public class IdentityObjectIntMap<K> {
 		}
 	}
 
+	/** Reduces the size of the backing arrays to be the specified capacity or less. If the capacity is already less, nothing is
+	 * done. If the map contains more items than the specified capacity, nothing is done. */
+	public void shrink (int maximumCapacity) {
+		if (maximumCapacity < 0) throw new IllegalArgumentException("maximumCapacity must be >= 0: " + maximumCapacity);
+		if (size > maximumCapacity) maximumCapacity = size;
+		if (capacity <= maximumCapacity) return;
+		maximumCapacity = ObjectMap.nextPowerOfTwo(maximumCapacity);
+		resize(maximumCapacity);
+	}
+
 	public void clear () {
 		K[] keyTable = this.keyTable;
 		for (int i = capacity + stashSize; i-- > 0;)

@@ -120,7 +120,7 @@ public class Kryo {
 	private Generics genericsScope;
 	/** Tells if ASM-based backend should be used by new serializer instances created using this Kryo instance. */
 	private boolean asmEnabled = false;
-	
+
 	private StreamFactory streamFactory;
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and a {@link MapReferenceResolver}. */
@@ -140,7 +140,7 @@ public class Kryo {
 
 		this.classResolver = classResolver;
 		classResolver.setKryo(this);
-		
+
 		this.streamFactory = streamFactory;
 		streamFactory.setKryo(this);
 
@@ -804,7 +804,7 @@ public class Kryo {
 		}
 	}
 
-	/** Resets unregistered class names. references to previously serialized or deserialized objects. and the
+	/** Resets unregistered class names, references to previously serialized or deserialized objects, and the
 	 * {@link #getGraphContext() graph context}. If {@link #setAutoReset(boolean) auto reset} is true, this method is called
 	 * automatically when an object graph has been completely serialized or deserialized. If overridden, the super method must be
 	 * called. */
@@ -818,7 +818,10 @@ public class Kryo {
 		}
 
 		copyDepth = 0;
-		if (originalToCopy != null) originalToCopy.clear();
+		if (originalToCopy != null) {
+			originalToCopy.clear();
+			originalToCopy.shrink(2048);
+		}
 
 		if (TRACE) trace("kryo", "Object graph complete.");
 	}
@@ -1124,16 +1127,15 @@ public class Kryo {
 	/** Returns the first level of classes or interfaces for a generic type.
 	 * @return null if the specified type is not generic or its generic types are not classes. */
 	public Class[] getGenerics (Type genericType) {
-		if(genericType instanceof GenericArrayType)
-			return getGenerics(((GenericArrayType) genericType).getGenericComponentType());
+		if (genericType instanceof GenericArrayType) return getGenerics(((GenericArrayType)genericType).getGenericComponentType());
 		if (!(genericType instanceof ParameterizedType)) return null;
-		if(TRACE) trace("kryo", "Processing generic type " + genericType);
+		if (TRACE) trace("kryo", "Processing generic type " + genericType);
 		Type[] actualTypes = ((ParameterizedType)genericType).getActualTypeArguments();
 		Class[] generics = new Class[actualTypes.length];
 		int count = 0;
 		for (int i = 0, n = actualTypes.length; i < n; i++) {
 			Type actualType = actualTypes[i];
-			if(TRACE) trace("kryo", "Processing actual type " + actualType + " (" + actualType.getClass().getName()+ ")");
+			if (TRACE) trace("kryo", "Processing actual type " + actualType + " (" + actualType.getClass().getName() + ")");
 			generics[i] = Object.class;
 			if (actualType instanceof Class)
 				generics[i] = (Class)actualType;
@@ -1141,16 +1143,15 @@ public class Kryo {
 				generics[i] = (Class)((ParameterizedType)actualType).getRawType();
 			else if (actualType instanceof TypeVariable) {
 				Generics scope = getGenericsScope();
-				if(scope != null) {
+				if (scope != null) {
 					Class clazz = scope.getConcreteClass(((TypeVariable)actualType).getName());
-					if(clazz != null) {
+					if (clazz != null) {
 						generics[i] = clazz;
-					} else 
+					} else
 						continue;
-				} else 
+				} else
 					continue;
-			}
-			else
+			} else
 				continue;
 			count++;
 		}
@@ -1164,48 +1165,45 @@ public class Kryo {
 		Class<? extends Serializer> serializerClass;
 	}
 
-	public void pushGenericsScope(Class type, Generics generics) {
-		if(TRACE) trace("kryo", "Settting a new generics scope for class " + type.getName() + ": " + generics);
+	public void pushGenericsScope (Class type, Generics generics) {
+		if (TRACE) trace("kryo", "Settting a new generics scope for class " + type.getName() + ": " + generics);
 		Generics currentScope = genericsScope;
 		genericsScope = generics;
 		genericsScope.setParentScope(currentScope);
 	}
 
-	public void popGenericsScope() {
+	public void popGenericsScope () {
 		Generics oldScope = genericsScope;
-		if(genericsScope != null)
-			genericsScope = genericsScope.getParentScope();
-		if(oldScope != null)
-			oldScope.resetParentScope();
+		if (genericsScope != null) genericsScope = genericsScope.getParentScope();
+		if (oldScope != null) oldScope.resetParentScope();
 	}
 
-	public Generics getGenericsScope() {
+	public Generics getGenericsScope () {
 		return genericsScope;
 	}
-	
-	public StreamFactory getStreamFactory() {
+
+	public StreamFactory getStreamFactory () {
 		return streamFactory;
 	}
 
-	public void setStreamFactory(FastestStreamFactory streamFactory) {
-		this.streamFactory = streamFactory;		
+	public void setStreamFactory (FastestStreamFactory streamFactory) {
+		this.streamFactory = streamFactory;
 	}
-	
-	/**
-	 * Tells Kryo, if ASM-based backend should be used by new serializer instances created using
-	 * this Kryo instance. Already existing serializer instances are not affected by this
-	 * setting.
+
+	/** Tells Kryo, if ASM-based backend should be used by new serializer instances created using this Kryo instance. Already
+	 * existing serializer instances are not affected by this setting.
 	 * 
-	 * <p>By default, Kryo uses ASM-based backend.</p>
+	 * <p>
+	 * By default, Kryo uses ASM-based backend.
+	 * </p>
 	 * 
-	 * @param flag if true, ASM-based backend will be used. Otherwise Unsafe-based backend could 
-	 * be used by some serializers, e.g. FieldSerializer
-	 */
-	public void setAsmEnabled(boolean flag) {
+	 * @param flag if true, ASM-based backend will be used. Otherwise Unsafe-based backend could be used by some serializers, e.g.
+	 *           FieldSerializer */
+	public void setAsmEnabled (boolean flag) {
 		this.asmEnabled = flag;
 	}
 
-	public boolean getAsmEnabled() {
+	public boolean getAsmEnabled () {
 		return asmEnabled;
 	}
 }
