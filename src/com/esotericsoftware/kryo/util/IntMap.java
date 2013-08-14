@@ -376,6 +376,18 @@ public class IntMap<V> {
 		resize(maximumCapacity);
 	}
 
+	/** Clears the map and reduces the size of the backing arrays to be the specified capacity if they are larger. */
+	public void clear (int maximumCapacity) {
+		if (capacity <= maximumCapacity) {
+			clear();
+			return;
+		}
+		zeroValue = null;
+		hasZeroValue = false;
+		size = 0;
+		resize(maximumCapacity);
+	}
+
 	public void clear () {
 		int[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
@@ -482,11 +494,14 @@ public class IntMap<V> {
 		keyTable = new int[newSize + stashCapacity];
 		valueTable = (V[])new Object[newSize + stashCapacity];
 
+		int oldSize = size;
 		size = hasZeroValue ? 1 : 0;
 		stashSize = 0;
-		for (int i = 0; i < oldEndIndex; i++) {
-			int key = oldKeyTable[i];
-			if (key != EMPTY) putResize(key, oldValueTable[i]);
+		if (oldSize > 0) {
+			for (int i = 0; i < oldEndIndex; i++) {
+				int key = oldKeyTable[i];
+				if (key != EMPTY) putResize(key, oldValueTable[i]);
+			}
 		}
 	}
 

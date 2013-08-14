@@ -818,10 +818,7 @@ public class Kryo {
 		}
 
 		copyDepth = 0;
-		if (originalToCopy != null) {
-			originalToCopy.clear();
-			originalToCopy.shrink(2048);
-		}
+		if (originalToCopy != null) originalToCopy.clear(2048);
 
 		if (TRACE) trace("kryo", "Object graph complete.");
 	}
