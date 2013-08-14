@@ -330,8 +330,10 @@ public class DefaultArraySerializers{
 //				
 				for (int i = 0, n = object.length; i < n; i++) {
 					// TODO: Propagate generics?
-					Serializer serializer = kryo.getSerializer(object[i].getClass());
-					serializer.setGenerics(kryo, generics);
+					if(object[i] != null) {
+						Serializer serializer = kryo.getSerializer(object[i].getClass());
+						serializer.setGenerics(kryo, generics);
+					}
 					kryo.writeClassAndObject(output, object[i]);
 				}
 				
