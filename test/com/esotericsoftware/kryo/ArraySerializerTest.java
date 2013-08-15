@@ -15,6 +15,8 @@ public class ArraySerializerTest extends KryoTestCase {
 		kryo.register(int[][][].class);
 		kryo.register(String[].class);
 		kryo.register(Object[].class);
+		roundTrip(4, 4, new Object[] {null, null});
+		roundTrip(6, 6, new Object[] {null, "2"});
 		roundTrip(6, 18, new int[] {1, 2, 3, 4});
 		roundTrip(7, 18, new int[] {1, 2, -100, 4});
 		roundTrip(9, 18, new int[] {1, 2, -100, 40000});

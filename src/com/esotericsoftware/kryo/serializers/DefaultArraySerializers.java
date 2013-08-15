@@ -329,8 +329,8 @@ public class DefaultArraySerializers{
 //				}
 //				
 				for (int i = 0, n = object.length; i < n; i++) {
-					// TODO: Propagate generics?
-					if(object[i] != null) {
+					// Propagate generics?
+					if (object[i] != null) {
 						Serializer serializer = kryo.getSerializer(object[i].getClass());
 						serializer.setGenerics(kryo, generics);
 					}
@@ -360,10 +360,14 @@ public class DefaultArraySerializers{
 				}
 			} else {
 				for (int i = 0, n = object.length; i < n; i++) {
-					// TODO: Propagate generics
+					// Propagate generics
 					Registration registration = kryo.readClass(input);
-					registration.getSerializer().setGenerics(kryo, generics);
-					object[i] = kryo.readObject(input, registration.getType(), registration.getSerializer());
+					if (registration != null) {
+						registration.getSerializer().setGenerics(kryo, generics);
+						object[i] = kryo.readObject(input, registration.getType(), registration.getSerializer());
+					} else {
+						object[i] = null;
+					}
 				}
 			}
 			return object;
