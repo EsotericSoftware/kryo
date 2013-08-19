@@ -1124,7 +1124,13 @@ public class Kryo {
 	/** Returns the first level of classes or interfaces for a generic type.
 	 * @return null if the specified type is not generic or its generic types are not classes. */
 	public Class[] getGenerics (Type genericType) {
-		if (genericType instanceof GenericArrayType) return getGenerics(((GenericArrayType)genericType).getGenericComponentType());
+		if (genericType instanceof GenericArrayType) {
+			Type componentType = ((GenericArrayType)genericType).getGenericComponentType();
+			if(componentType instanceof Class)
+				return new Class[] {(Class)componentType};
+			else
+				return getGenerics(componentType);
+		}
 		if (!(genericType instanceof ParameterizedType)) return null;
 		if (TRACE) trace("kryo", "Processing generic type " + genericType);
 		Type[] actualTypes = ((ParameterizedType)genericType).getActualTypeArguments();
