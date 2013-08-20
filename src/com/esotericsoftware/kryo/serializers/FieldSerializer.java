@@ -5,6 +5,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Modifier;
@@ -436,13 +437,13 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 						else if (t instanceof GenericArrayType) {
 							Type componentType = ((GenericArrayType)t).getGenericComponentType();
 							if (componentType instanceof Class)
-								fieldGenerics[i] = (Class)componentType;
+								fieldGenerics[i] = Array.newInstance((Class)componentType, 0).getClass();
 							else if (componentType instanceof TypeVariable) {
 								Generics scope = getGenericsScope();
 								if (scope != null) {
 									Class clazz = scope.getConcreteClass(((TypeVariable)componentType).getName());
 									if (clazz != null) {
-										fieldGenerics[i] = clazz;
+										fieldGenerics[i] = Array.newInstance(clazz, 0).getClass();
 									}
 								}
 							}

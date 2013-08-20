@@ -3,6 +3,7 @@ package com.esotericsoftware.kryo;
 import static com.esotericsoftware.minlog.Log.TRACE;
 import static com.esotericsoftware.minlog.Log.trace;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -70,7 +71,7 @@ public class Generics {
 	public static Class[] getGenerics (Type genericType, Kryo kryo) {
 		if (genericType instanceof GenericArrayType) {
 			Type componentType = ((GenericArrayType)genericType).getGenericComponentType();
-			if(componentType instanceof Class)
+			if (componentType instanceof Class)
 				return new Class[] {(Class)componentType};
 			else
 				return getGenerics(componentType, kryo);
@@ -100,21 +101,19 @@ public class Generics {
 					continue;
 			} else if (actualType instanceof GenericArrayType) {
 				Type componentType = ((GenericArrayType)actualType).getGenericComponentType();
-				if(componentType instanceof Class)
-					generics[i] = (Class)componentType;
-				else if(componentType  instanceof TypeVariable) {
+				if (componentType instanceof Class)
+					generics[i] = Array.newInstance((Class)componentType, 0).getClass();
+				else if (componentType instanceof TypeVariable) {
 					Generics scope = kryo.getGenericsScope();
 					if (scope != null) {
 						Class clazz = scope.getConcreteClass(((TypeVariable)componentType).getName());
 						if (clazz != null) {
-							generics[i] = clazz;
-						} 					
-					}					
-				}
-				else {
+							generics[i] = Array.newInstance(clazz, 0).getClass();
+						}
+					}
+				} else {
 					Class[] componentGenerics = getGenerics(componentType, kryo);
-					if(componentGenerics != null)
-						generics[i] = componentGenerics[0];
+					if (componentGenerics != null) generics[i] = componentGenerics[0];
 				}
 			} else
 				continue;
