@@ -2,13 +2,9 @@
 package com.esotericsoftware.kryo;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -1119,47 +1115,6 @@ public class Kryo {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (type.isArray()) return Modifier.isFinal(Util.getElementClass(type).getModifiers());
 		return Modifier.isFinal(type.getModifiers());
-	}
-
-	/** Returns the first level of classes or interfaces for a generic type.
-	 * @return null if the specified type is not generic or its generic types are not classes. */
-	public Class[] getGenerics (Type genericType) {
-		if (genericType instanceof GenericArrayType) {
-			Type componentType = ((GenericArrayType)genericType).getGenericComponentType();
-			if(componentType instanceof Class)
-				return new Class[] {(Class)componentType};
-			else
-				return getGenerics(componentType);
-		}
-		if (!(genericType instanceof ParameterizedType)) return null;
-		if (TRACE) trace("kryo", "Processing generic type " + genericType);
-		Type[] actualTypes = ((ParameterizedType)genericType).getActualTypeArguments();
-		Class[] generics = new Class[actualTypes.length];
-		int count = 0;
-		for (int i = 0, n = actualTypes.length; i < n; i++) {
-			Type actualType = actualTypes[i];
-			if (TRACE) trace("kryo", "Processing actual type " + actualType + " (" + actualType.getClass().getName() + ")");
-			generics[i] = Object.class;
-			if (actualType instanceof Class)
-				generics[i] = (Class)actualType;
-			else if (actualType instanceof ParameterizedType)
-				generics[i] = (Class)((ParameterizedType)actualType).getRawType();
-			else if (actualType instanceof TypeVariable) {
-				Generics scope = getGenericsScope();
-				if (scope != null) {
-					Class clazz = scope.getConcreteClass(((TypeVariable)actualType).getName());
-					if (clazz != null) {
-						generics[i] = clazz;
-					} else
-						continue;
-				} else
-					continue;
-			} else
-				continue;
-			count++;
-		}
-		if (count == 0) return null;
-		return generics;
 	}
 
 	static final class DefaultSerializerEntry {
