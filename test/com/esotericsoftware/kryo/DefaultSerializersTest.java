@@ -225,6 +225,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	public void testClassSerializer() {
 		kryo.register(Class.class);
 		kryo.register(ArrayList.class);
+		kryo.setRegistrationRequired(false);
 		final Output out = new Output(1024);
 
 		kryo.writeObject(out, String.class);
@@ -244,6 +245,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		kryo.writeObject(out, boolean.class);
 		kryo.writeObject(out, char.class);
 		kryo.writeObject(out, ArrayList.class);
+		kryo.writeObject(out, TestEnum.class);
 
 		final Input in = new Input(out.getBuffer());
 
@@ -263,6 +265,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(boolean.class, kryo.readObject(in, Class.class));
 		assertEquals(char.class, kryo.readObject(in, Class.class));
 		assertEquals(ArrayList.class, kryo.readObject(in, Class.class));
+		assertEquals(TestEnum.class, kryo.readObject(in, Class.class));
 	}
 
 	public enum TestEnum {
