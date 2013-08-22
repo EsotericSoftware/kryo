@@ -1,9 +1,14 @@
 package com.esotericsoftware.kryo.util;
 
+import static com.esotericsoftware.kryo.util.UnsafeUtil.unsafe;
 import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 import sun.misc.Cleaner;
 import sun.misc.Unsafe;
@@ -78,6 +83,29 @@ public class UnsafeUtil {
 	 */
 	final static public Unsafe unsafe() {
 		return _unsafe;
+	}
+	
+	public static Field[] sortFieldsByOffset (List<Field> allFields) {
+		Field[] allFieldsArray = allFields.toArray(new Field[] {});
+
+		Comparator<Field> fieldOffsetComparator = new Comparator<Field>() {
+			@Override
+			public int compare (Field f1, Field f2) {
+				long offset1 = unsafe().objectFieldOffset(f1);
+				long offset2 = unsafe().objectFieldOffset(f2);
+				if (offset1 < offset2) return -1;
+				if (offset1 == offset2) return 0;
+				return 1;
+			}
+		};
+
+		Arrays.sort(allFieldsArray, fieldOffsetComparator);
+
+		for (Field f : allFields) {
+			if (TRACE) trace("kryo", "Field '" + f.getName() + "' at offset " + unsafe().objectFieldOffset(f));
+		}
+		
+		return allFieldsArray;
 	}
 	
 	/***

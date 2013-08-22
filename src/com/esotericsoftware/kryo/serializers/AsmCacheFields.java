@@ -8,7 +8,6 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.ObjectField;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 /*** Implementations of ASM-based serializers for fields.

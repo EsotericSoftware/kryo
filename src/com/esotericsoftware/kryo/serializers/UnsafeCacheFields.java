@@ -16,7 +16,6 @@ import com.esotericsoftware.kryo.io.UnsafeMemoryInput;
 import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
 import com.esotericsoftware.kryo.io.UnsafeOutput;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.ObjectField;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 /*** Implementations of java.misc.Unsafe-based serializers for fields.
