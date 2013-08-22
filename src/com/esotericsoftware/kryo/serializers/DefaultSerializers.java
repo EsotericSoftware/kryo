@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import static com.esotericsoftware.kryo.Kryo.*;
+import static com.esotericsoftware.kryo.util.Util.*;
 
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
  * @author Nathan Sweet <misc@n4te.com> */
@@ -217,10 +218,15 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, Class object) {
 			kryo.writeClass(output, object);
+			output.writeByte(object.isPrimitive()?1:0);
 		}
 
 		public Class read (Kryo kryo, Input input, Class<Class> type) {
-			return kryo.readClass(input).getType();
+			Registration registration = kryo.readClass(input);
+			int isPrimitive = input.read();
+			Class typ = registration.getType();
+			if (!typ.isPrimitive()) return typ;
+			return (isPrimitive == 1) ? typ : getWrapperClass(typ);
 		}
 	}
 

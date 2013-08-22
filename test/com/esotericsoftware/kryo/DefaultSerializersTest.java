@@ -10,6 +10,9 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.TimeZone;
 
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest extends KryoTestCase {
 	{
@@ -217,6 +220,49 @@ public class DefaultSerializersTest extends KryoTestCase {
 		calendar.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
 		calendar.set(1980, 7, 26, 12, 22, 46);
 		roundTrip(64, 73, calendar);
+	}
+	
+	public void testClassSerializer() {
+		kryo.register(Class.class);
+		kryo.register(ArrayList.class);
+		final Output out = new Output(1024);
+
+		kryo.writeObject(out, String.class);
+		kryo.writeObject(out, Integer.class);
+		kryo.writeObject(out, Short.class);
+		kryo.writeObject(out, Long.class);
+		kryo.writeObject(out, Double.class);
+		kryo.writeObject(out, Float.class);
+		kryo.writeObject(out, Boolean.class);
+		kryo.writeObject(out, Character.class);
+
+		kryo.writeObject(out, int.class);
+		kryo.writeObject(out, short.class);
+		kryo.writeObject(out, long.class);
+		kryo.writeObject(out, double.class);
+		kryo.writeObject(out, float.class);
+		kryo.writeObject(out, boolean.class);
+		kryo.writeObject(out, char.class);
+		kryo.writeObject(out, ArrayList.class);
+
+		final Input in = new Input(out.getBuffer());
+
+		assertEquals(String.class, kryo.readObject(in, Class.class));
+		assertEquals(Integer.class, kryo.readObject(in, Class.class));
+		assertEquals(Short.class, kryo.readObject(in, Class.class));
+		assertEquals(Long.class, kryo.readObject(in, Class.class));
+		assertEquals(Double.class, kryo.readObject(in, Class.class));
+		assertEquals(Float.class, kryo.readObject(in, Class.class));
+		assertEquals(Boolean.class, kryo.readObject(in, Class.class));
+		assertEquals(Character.class, kryo.readObject(in, Class.class));
+		assertEquals(int.class, kryo.readObject(in, Class.class));
+		assertEquals(short.class, kryo.readObject(in, Class.class));
+		assertEquals(long.class, kryo.readObject(in, Class.class));
+		assertEquals(double.class, kryo.readObject(in, Class.class));
+		assertEquals(float.class, kryo.readObject(in, Class.class));
+		assertEquals(boolean.class, kryo.readObject(in, Class.class));
+		assertEquals(char.class, kryo.readObject(in, Class.class));
+		assertEquals(ArrayList.class, kryo.readObject(in, Class.class));
 	}
 
 	public enum TestEnum {
