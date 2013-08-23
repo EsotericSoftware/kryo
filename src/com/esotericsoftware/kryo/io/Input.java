@@ -8,6 +8,9 @@ import java.io.InputStream;
 
 /** An InputStream that reads data from a byte array and optionally fills the byte array from another InputStream as needed.
  * Utility methods are provided for efficiently reading primitive types and strings.
+ * <p>
+ * The byte[] buffer may be modified and then returned to its original state during some read operations, so the same byte[]
+ * should not be used concurrently in separate threads.
  * @author Nathan Sweet <misc@n4te.com> */
 public class Input extends InputStream {
 	protected byte[] buffer;

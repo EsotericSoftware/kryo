@@ -364,7 +364,8 @@ public class Kryo {
 	 * {@link KryoException} is thrown. Registering a primitive also affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
-	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. */
+	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for primitive types and
+	 *           String, but these IDs can be repurposed. */
 	public Registration register (Class type, int id) {
 		Registration registration = classResolver.getRegistration(type);
 		if (registration != null) return registration;
@@ -391,7 +392,8 @@ public class Kryo {
 	 * also affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
-	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. */
+	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for primitive types and
+	 *           String, but these IDs can be repurposed. */
 	public Registration register (Class type, Serializer serializer, int id) {
 		if (id < 0) throw new IllegalArgumentException("id must be >= 0: " + id);
 		return register(new Registration(type, serializer, id));

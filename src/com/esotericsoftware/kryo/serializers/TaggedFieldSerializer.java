@@ -61,7 +61,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	public void write (Kryo kryo, Output output, T object) {
 		CachedField[] fields = getFields();
-		output.writeVarInt(writeFieldCount, true);
+		output.writeVarInt(writeFieldCount, true); // Can be used for null.
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (deprecated[i]) continue;
 			output.writeVarInt(tags[i], true);
