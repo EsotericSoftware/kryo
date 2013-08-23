@@ -24,6 +24,9 @@ import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.strategy.SerializingInstantiatorStrategy;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
+import com.esotericsoftware.kryo.factories.PseudoSerializerFactory;
+import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
+import com.esotericsoftware.kryo.factories.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
@@ -89,7 +92,7 @@ public class Kryo {
 	static private final int REF = -1;
 	static private final int NO_REF = -2;
 
-	private Class<? extends Serializer> defaultSerializer = FieldSerializer.class;
+	private SerializerFactory defaultSerializer = new ReflectionSerializerFactory(FieldSerializer.class);
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
 	private final int lowPriorityDefaultSerializerCount;
 
@@ -192,13 +195,20 @@ public class Kryo {
 	}
 
 	// --- Default serializers ---
-
+	/** Sets the serailzer to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's type.
+	 * Default is {@link FieldSerializer}.
+	 * @see #newDefaultSerializer(Class) */
+	public void setDefaultSerializer (SerializerFactory serializer) {
+		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
+		defaultSerializer = serializer;
+	}
+	
 	/** Sets the serailzer to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's type.
 	 * Default is {@link FieldSerializer}.
 	 * @see #newDefaultSerializer(Class) */
 	public void setDefaultSerializer (Class<? extends Serializer> serializer) {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		defaultSerializer = serializer;
+		defaultSerializer = new ReflectionSerializerFactory(serializer);
 	}
 
 	/** Instances of the specified class will use the specified serializer.
@@ -206,9 +216,14 @@ public class Kryo {
 	public void addDefaultSerializer (Class type, Serializer serializer) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		DefaultSerializerEntry entry = new DefaultSerializerEntry();
-		entry.type = type;
-		entry.serializer = serializer;
+		DefaultSerializerEntry entry = new DefaultSerializerEntry(type, new PseudoSerializerFactory(serializer));
+		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
+	}
+	
+	public void addDefaultSerializer (Class type, SerializerFactory serializerFactory) {
+		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		if (serializerFactory == null) throw new IllegalArgumentException("serializerFactory cannot be null.");
+		DefaultSerializerEntry entry = new DefaultSerializerEntry(type, serializerFactory);
 		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
 	}
 
@@ -290,9 +305,7 @@ public class Kryo {
 	public void addDefaultSerializer (Class type, Class<? extends Serializer> serializerClass) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerClass == null) throw new IllegalArgumentException("serializerClass cannot be null.");
-		DefaultSerializerEntry entry = new DefaultSerializerEntry();
-		entry.type = type;
-		entry.serializerClass = serializerClass;
+		DefaultSerializerEntry entry = new DefaultSerializerEntry(type, new ReflectionSerializerFactory(serializerClass));
 		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
 	}
 
@@ -301,14 +314,15 @@ public class Kryo {
 	public Serializer getDefaultSerializer (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 
-		if (type.isAnnotationPresent(DefaultSerializer.class))
-			return newSerializer(((DefaultSerializer)type.getAnnotation(DefaultSerializer.class)).value(), type);
+		if (type.isAnnotationPresent(DefaultSerializer.class)) {
+			DefaultSerializer defaultSerializerAnnotation = (DefaultSerializer)type.getAnnotation(DefaultSerializer.class);
+			return ReflectionSerializerFactory.makeSerializer(this, defaultSerializerAnnotation.value(), type);
+		}
 
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
 			if (entry.type.isAssignableFrom(type)) {
-				if (entry.serializer != null) return entry.serializer;
-				return newSerializer(entry.serializerClass, type);
+				return entry.serializerFactory.makeSerializer(this, type);
 			}
 		}
 
@@ -319,7 +333,7 @@ public class Kryo {
 	 * method to customize behavior. The default implementation calls {@link #newSerializer(Class, Class)} using the
 	 * {@link #setDefaultSerializer(Class) default serializer}. */
 	protected Serializer newDefaultSerializer (Class type) {
-		return newSerializer(defaultSerializer, type);
+		return defaultSerializer.makeSerializer(this, type);
 	}
 
 	/** Creates a new instance of the specified serializer for serializing the specified class. Serializers must have a zero
@@ -1120,9 +1134,13 @@ public class Kryo {
 	}
 
 	static final class DefaultSerializerEntry {
-		Class type;
-		Serializer serializer;
-		Class<? extends Serializer> serializerClass;
+		final Class type;
+		final SerializerFactory serializerFactory;
+
+		DefaultSerializerEntry (Class type, SerializerFactory serializerFactory) {
+			this.type = type;
+			this.serializerFactory = serializerFactory;
+		}
 	}
 
 	public void pushGenericsScope (Class type, Generics generics) {
