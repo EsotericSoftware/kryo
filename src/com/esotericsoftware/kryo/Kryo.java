@@ -134,6 +134,11 @@ public class Kryo {
 	}
 
 	/** @param referenceResolver May be null to disable references. */
+	public Kryo (ClassResolver classResolver, ReferenceResolver referenceResolver) {
+		this(classResolver, referenceResolver, new DefaultStreamFactory());
+	}
+
+	/** @param referenceResolver May be null to disable references. */
 	public Kryo (ClassResolver classResolver, ReferenceResolver referenceResolver, StreamFactory streamFactory) {
 		if (classResolver == null) throw new IllegalArgumentException("classResolver cannot be null.");
 
