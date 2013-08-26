@@ -124,6 +124,10 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(21, 21, "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u7C9F");
 	}
 
+	public void testVoid () throws InstantiationException, IllegalAccessException {
+		roundTrip(1, 1, (Void)null);
+	}
+	
 	public void testNull () {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(true);
@@ -236,6 +240,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		kryo.writeObject(out, Float.class);
 		kryo.writeObject(out, Boolean.class);
 		kryo.writeObject(out, Character.class);
+		kryo.writeObject(out, Void.class);
 
 		kryo.writeObject(out, int.class);
 		kryo.writeObject(out, short.class);
@@ -244,6 +249,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		kryo.writeObject(out, float.class);
 		kryo.writeObject(out, boolean.class);
 		kryo.writeObject(out, char.class);
+		kryo.writeObject(out, void.class);
 		kryo.writeObject(out, ArrayList.class);
 		kryo.writeObject(out, TestEnum.class);
 
@@ -257,6 +263,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(Float.class, kryo.readObject(in, Class.class));
 		assertEquals(Boolean.class, kryo.readObject(in, Class.class));
 		assertEquals(Character.class, kryo.readObject(in, Class.class));
+		assertEquals(Void.class, kryo.readObject(in, Class.class));
 		assertEquals(int.class, kryo.readObject(in, Class.class));
 		assertEquals(short.class, kryo.readObject(in, Class.class));
 		assertEquals(long.class, kryo.readObject(in, Class.class));
@@ -264,6 +271,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(float.class, kryo.readObject(in, Class.class));
 		assertEquals(boolean.class, kryo.readObject(in, Class.class));
 		assertEquals(char.class, kryo.readObject(in, Class.class));
+		assertEquals(void.class, kryo.readObject(in, Class.class));
 		assertEquals(ArrayList.class, kryo.readObject(in, Class.class));
 		assertEquals(TestEnum.class, kryo.readObject(in, Class.class));
 	}

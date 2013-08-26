@@ -31,6 +31,19 @@ import static com.esotericsoftware.kryo.util.Util.*;
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
  * @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializers {
+	static public class VoidSerializer extends Serializer {
+		{
+			setImmutable(true);
+		}
+
+		public void write (Kryo kryo, Output output, Object object) {
+			
+		}
+
+		public Object read (Kryo kryo, Input input, Class type) {
+			return null;
+		}
+	}
 	static public class BooleanSerializer extends Serializer<Boolean> {
 		{
 			setImmutable(true);
