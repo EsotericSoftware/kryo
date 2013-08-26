@@ -5,6 +5,14 @@ import com.esotericsoftware.kryo.Serializer;
 
 import static com.esotericsoftware.kryo.util.Util.className;
 
+/**
+ * This factory instantiates new serializers of a given class via reflection. The constructors of the given {@code serializerClass}
+ * must either take an instance of {@link Kryo} and an instance of {@link Class} as its parameter, take only a {@link Kryo} or {@link Class}
+ * as its only argument or take no arguments. If several of the described constructors are found, the first found constructor is used,
+ * in the order as they were just described.
+ *
+ * @author Rafael Winterhalter <rafael.wth@web.de>
+ */
 public class ReflectionSerializerFactory implements SerializerFactory {
 
 	private final Class<? extends Serializer> serializerClass;
