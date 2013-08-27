@@ -250,7 +250,13 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	public void setGenerics (Kryo kryo, Class[] generics) {
 		this.generics = generics;
 		if (TRACE) trace("kryo", "setGenerics");
-		if (typeParameters != null && typeParameters.length > 0) rebuildCachedFields();
+		if (typeParameters != null && typeParameters.length > 0) {
+			// TODO: There is probably no need to rebuild all cached fields from scratch.
+			// Generic parameter types do not affect the set of fields, offsets of fields,
+			// transient and non-transient properties. They only affect the type of 
+			// fields and serializers selected for each field.
+			rebuildCachedFields();
+		}
 	}
 
 	protected void initializeCachedFields () {
@@ -265,7 +271,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		if (fieldGenericType == fieldClass[0]) {
 			// This is a field without generic type parameters
 			if (TRACE) {
-					trace("kryo", "Field '" + field.getName() + "' of type " + fieldClass);
+					trace("kryo", "Field '" + field.getName() + "' of type " + fieldClass[0]);
 			}
 			cachedField = newMatchingCachedField(field, accessIndex, fieldClass[0], fieldGenericType, null);
 		} else {
