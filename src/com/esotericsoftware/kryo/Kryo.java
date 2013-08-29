@@ -512,7 +512,10 @@ public class Kryo {
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
 		beginObject();
 		try {
-			if (references && writeReferenceOrNull(output, object, false)) return;
+			if (references && writeReferenceOrNull(output, object, false)) {
+				getRegistration(object.getClass()).getSerializer().setGenerics(this, null);
+				return;
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			getRegistration(object.getClass()).getSerializer().write(this, output, object);
 		} finally {
@@ -527,7 +530,10 @@ public class Kryo {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		beginObject();
 		try {
-			if (references && writeReferenceOrNull(output, object, false)) return;
+			if (references && writeReferenceOrNull(output, object, false)) {
+				serializer.setGenerics(this, null);
+				return;
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			serializer.write(this, output, object);
 		} finally {
@@ -543,7 +549,10 @@ public class Kryo {
 		try {
 			Serializer serializer = getRegistration(type).getSerializer();
 			if (references) {
-				if (writeReferenceOrNull(output, object, true)) return;
+				if (writeReferenceOrNull(output, object, true)) {
+					serializer.setGenerics(this, null);
+					return;
+				}
 			} else if (!serializer.getAcceptsNull()) {
 				if (object == null) {
 					if (TRACE || (DEBUG && depth == 1)) log("Write", object);
@@ -567,7 +576,10 @@ public class Kryo {
 		beginObject();
 		try {
 			if (references) {
-				if (writeReferenceOrNull(output, object, true)) return;
+				if (writeReferenceOrNull(output, object, true)) {
+					serializer.setGenerics(this, null);
+					return;
+				}
 			} else if (!serializer.getAcceptsNull()) {
 				if (object == null) {
 					if (TRACE || (DEBUG && depth == 1)) log("Write", null);
@@ -594,7 +606,10 @@ public class Kryo {
 				return;
 			}
 			Registration registration = writeClass(output, object.getClass());
-			if (references && writeReferenceOrNull(output, object, false)) return;
+			if (references && writeReferenceOrNull(output, object, false)) {
+				registration.getSerializer().setGenerics(this, null);
+				return;
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			registration.getSerializer().write(this, output, object);
 		} finally {
@@ -755,6 +770,7 @@ public class Kryo {
 
 			Object object;
 			if (references) {
+				registration.getSerializer().setGenerics(this, null);
 				int stackSize = readReferenceOrNull(input, type, false);
 				if (stackSize == REF) return readObject;
 				object = registration.getSerializer().read(this, input, type);
