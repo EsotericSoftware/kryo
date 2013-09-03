@@ -36,6 +36,7 @@ import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.reflectasm.FieldAccess;
 import com.esotericsoftware.kryo.serializers.AsmCacheFields.*;
 import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.*;
+import com.esotericsoftware.kryo.serializers.ObjectField.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 // BOZO - Make primitive serialization with ReflectASM configurable?
@@ -359,7 +360,28 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				cachedField = new UnsafeObjectField(this);
 			}
 		} else {
-			cachedField = new ObjectField(this);
+			if (fieldClass.isPrimitive()) {
+				if (fieldClass == boolean.class)
+					cachedField = new ObjectBooleanField(this);
+				else if (fieldClass == byte.class)
+					cachedField = new ObjectByteField(this);
+				else if (fieldClass == char.class)
+					cachedField = new ObjectCharField(this);
+				else if (fieldClass == short.class)
+					cachedField = new ObjectShortField(this);
+				else if (fieldClass == int.class)
+					cachedField = new ObjectIntField(this);
+				else if (fieldClass == long.class)
+					cachedField = new ObjectLongField(this);
+				else if (fieldClass == float.class)
+					cachedField = new ObjectFloatField(this);
+				else if (fieldClass == double.class)
+					cachedField = new ObjectDoubleField(this);
+				else {
+					cachedField = new ObjectField(this);
+				}
+			}	else		
+				cachedField = new ObjectField(this);
 			if (fieldGenerics != null)
 				((ObjectField)cachedField).generics = fieldGenerics;
 			else {

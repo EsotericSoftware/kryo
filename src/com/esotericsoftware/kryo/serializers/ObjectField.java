@@ -137,7 +137,7 @@ class ObjectField extends CachedField {
 				FieldAccess access = (FieldAccess)fieldSerializer.access;
 				access.set(copy, accessIndex, kryo.copy(access.get(original, accessIndex)));
 			} else
-				field.set(copy, kryo.copy(field.get(original)));
+				setField(copy, kryo.copy(getField(original)));
 		} catch (IllegalAccessException ex) {
 			throw new KryoException("Error accessing field: " + this + " (" + type.getName() + ")", ex);
 		} catch (KryoException ex) {
@@ -147,6 +147,78 @@ class ObjectField extends CachedField {
 			KryoException ex = new KryoException(runtimeEx);
 			ex.addTrace(this + " (" + type.getName() + ")");
 			throw ex;
+		}
+	}
+
+	final static class ObjectIntField extends ObjectField {
+		public ObjectIntField (FieldSerializer fieldSerializer) {
+			super(fieldSerializer);
+		}
+		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+			return field.getInt(object);
+		}
+	}
+
+	final static class ObjectFloatField extends ObjectField {
+		public ObjectFloatField (FieldSerializer fieldSerializer) {
+			super(fieldSerializer);
+		}
+		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+			return field.getFloat(object);
+		}
+	}
+
+	final static class ObjectShortField extends ObjectField {
+		public ObjectShortField (FieldSerializer fieldSerializer) {
+			super(fieldSerializer);
+		}
+		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+			return field.getShort(object);
+		}
+	}
+	
+	final static class ObjectByteField extends ObjectField {
+		public ObjectByteField (FieldSerializer fieldSerializer) {
+			super(fieldSerializer);
+		}
+		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+			return field.getByte(object);
+		}
+	}
+
+	final static class ObjectBooleanField extends ObjectField {
+		public ObjectBooleanField (FieldSerializer fieldSerializer) {
+			super(fieldSerializer);
+		}
+		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+			return field.getBoolean(object);
+		}
+	}
+
+	final static class ObjectCharField extends ObjectField {
+		public ObjectCharField (FieldSerializer fieldSerializer) {
+			super(fieldSerializer);
+		}
+		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+			return field.getChar(object);
+		}
+	}
+
+	final static class ObjectLongField extends ObjectField {
+		public ObjectLongField (FieldSerializer fieldSerializer) {
+			super(fieldSerializer);
+		}
+		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+			return field.getLong(object);
+		}
+	}
+
+	final static class ObjectDoubleField extends ObjectField {
+		public ObjectDoubleField (FieldSerializer fieldSerializer) {
+			super(fieldSerializer);
+		}
+		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+			return field.getDouble(object);
 		}
 	}
 }
