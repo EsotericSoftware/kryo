@@ -291,8 +291,14 @@ public class DefaultSerializers {
 
 	static public class EnumSetSerializer extends Serializer<EnumSet> {
 		public void write (Kryo kryo, Output output, EnumSet object) {
-			if (object.isEmpty()) throw new KryoException("An empty EnumSet cannot be serialized.");
-			Serializer serializer = kryo.writeClass(output, object.iterator().next().getClass()).getSerializer();
+			Serializer serializer;
+			if (object.isEmpty()) {
+				EnumSet tmp = EnumSet.complementOf(object);
+				if (tmp.isEmpty()) throw new KryoException("An EnumSet must have a defined Enum to be serialized.");
+				serializer = kryo.writeClass(output, tmp.iterator().next().getClass()).getSerializer();
+			} else {
+				serializer = kryo.writeClass(output, object.iterator().next().getClass()).getSerializer();
+			}
 			output.writeInt(object.size(), true);
 			for (Object element : object)
 				serializer.write(kryo, output, element);

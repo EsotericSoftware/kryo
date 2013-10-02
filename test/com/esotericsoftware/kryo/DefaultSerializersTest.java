@@ -190,6 +190,9 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(4, 7, EnumSet.of(TestEnum.a));
 		roundTrip(6, 9, EnumSet.allOf(TestEnum.class));
 
+		// Test empty EnumSet
+		roundTrip(3, 6, EnumSet.noneOf(TestEnum.class));
+
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		roundTrip(89, 92, EnumSet.of(TestEnum.a, TestEnum.c));
