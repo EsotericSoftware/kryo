@@ -26,6 +26,9 @@ public class ReflectionSerializerFactory implements SerializerFactory {
 		return makeSerializer(kryo, serializerClass, type);
 	}
 
+	/** Creates a new instance of the specified serializer for serializing the specified class. Serializers must have a zero
+	 * argument constructor or one that takes (Kryo), (Class), or (Kryo, Class).
+	*/
 	public static Serializer makeSerializer (Kryo kryo, Class<? extends Serializer> serializerClass, Class<?> type) {
 		try {
 			try {

@@ -202,15 +202,15 @@ public class Kryo {
 	}
 
 	// --- Default serializers ---
-	/** Sets the serailzer to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's type.
-	 * Default is {@link FieldSerializer}.
+	/** Sets the serializer factory to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's type.
+	 * Default is {@link ReflectionSerializerFactory} with {@link FieldSerializer}.
 	 * @see #newDefaultSerializer(Class) */
 	public void setDefaultSerializer (SerializerFactory serializer) {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		defaultSerializer = serializer;
 	}
 	
-	/** Sets the serailzer to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's type.
+	/** Sets the serializer to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's type.
 	 * Default is {@link FieldSerializer}.
 	 * @see #newDefaultSerializer(Class) */
 	public void setDefaultSerializer (Class<? extends Serializer> serializer) {
@@ -235,7 +235,8 @@ public class Kryo {
 	}
 
 	/** Instances of the specified class will use the specified serializer. Serializer instances are created as needed via
-	 * {@link #newSerializer(Class, Class)}. By default, the following classes have a default serializer set:
+	 * {@link ReflectionSerializerFactory#makeSerializer(Kryo, Class, Class)}.
+	 * By default, the following classes have a default serializer set:
 	 * <p>
 	 * <table>
 	 * <tr>
@@ -337,33 +338,10 @@ public class Kryo {
 	}
 
 	/** Called by {@link #getDefaultSerializer(Class)} when no default serializers matched the type. Subclasses can override this
-	 * method to customize behavior. The default implementation calls {@link #newSerializer(Class, Class)} using the
-	 * {@link #setDefaultSerializer(Class) default serializer}. */
+	 * method to customize behavior. The default implementation calls {@link SerializerFactory#makeSerializer(Kryo, Class)}
+	 * using the {@link #setDefaultSerializer(Class) default serializer}. */
 	protected Serializer newDefaultSerializer (Class type) {
 		return defaultSerializer.makeSerializer(this, type);
-	}
-
-	/** Creates a new instance of the specified serializer for serializing the specified class. Serializers must have a zero
-	 * argument constructor or one that takes (Kryo), (Class), or (Kryo, Class). */
-	public Serializer newSerializer (Class<? extends Serializer> serializerClass, Class type) {
-		try {
-			try {
-				return serializerClass.getConstructor(Kryo.class, Class.class).newInstance(this, type);
-			} catch (NoSuchMethodException ex1) {
-				try {
-					return serializerClass.getConstructor(Kryo.class).newInstance(this);
-				} catch (NoSuchMethodException ex2) {
-					try {
-						return serializerClass.getConstructor(Class.class).newInstance(type);
-					} catch (NoSuchMethodException ex3) {
-						return serializerClass.newInstance();
-					}
-				}
-			}
-		} catch (Exception ex) {
-			throw new IllegalArgumentException("Unable to create serializer \"" + serializerClass.getName() + "\" for class: "
-				+ className(type), ex);
-		}
 	}
 
 	// --- Registration ---
