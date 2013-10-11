@@ -4,6 +4,7 @@ package com.esotericsoftware.kryo.serializers;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Currency;
@@ -16,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -554,6 +556,22 @@ public class DefaultSerializers {
 
 		protected Map createCopy (Kryo kryo, Map original) {
 			return new TreeMap(((TreeMap)original).comparator());
+		}
+	}
+
+	static public class TreeSetSerializer extends CollectionSerializer {
+		public void write (Kryo kryo, Output output, Collection collection) {
+			TreeSet treeSet = (TreeSet)collection;
+			kryo.writeClassAndObject(output, treeSet.comparator());
+			super.write(kryo, output, collection);
+		}
+
+		protected TreeSet create (Kryo kryo, Input input, Class<Collection> type) {
+			return new TreeSet((Comparator)kryo.readClassAndObject(input));
+		}
+
+		protected TreeSet createCopy (Kryo kryo, Collection original) {
+			return new TreeSet(((TreeSet)original).comparator());
 		}
 	}
 }

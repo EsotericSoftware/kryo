@@ -147,5 +147,10 @@ public class MapSerializerTest extends KryoTestCase {
 
 	static public class KeyThatIsntComparable {
 		public String value;
+		public KeyThatIsntComparable () {
+		}
+		public KeyThatIsntComparable (String value) {
+			this.value = value;
+		}
 	}
 }
