@@ -1,6 +1,9 @@
 
 package com.esotericsoftware.kryo;
 
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.trace;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
@@ -11,6 +14,8 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -29,9 +34,9 @@ import com.esotericsoftware.kryo.serialize.LongSerializer;
 import com.esotericsoftware.kryo.serialize.MapSerializer;
 import com.esotericsoftware.kryo.serialize.ShortSerializer;
 import com.esotericsoftware.kryo.serialize.StringSerializer;
+import com.esotericsoftware.kryo.serialize.TreeMapSerializer;
+import com.esotericsoftware.kryo.serialize.TreeSetSerializer;
 import com.esotericsoftware.kryo.util.IntHashMap;
-
-import static com.esotericsoftware.minlog.Log.*;
 
 /**
  * Maps classes to serializers so object graphs can be serialized automatically.
@@ -60,7 +65,9 @@ public class Kryo {
 	private final CustomSerializer customSerializer = new CustomSerializer(this);
 	private final ArraySerializer arraySerializer = new ArraySerializer(this);
 	private final CollectionSerializer collectionSerializer = new CollectionSerializer(this);
+	private final TreeSetSerializer treeSetSerializer = new TreeSetSerializer(this);
 	private final MapSerializer mapSerializer = new MapSerializer(this);
+	private final TreeMapSerializer treeMapSerializer = new TreeMapSerializer(this);
 
 	public Kryo () {
 		Serializer serializer;
@@ -246,7 +253,9 @@ public class Kryo {
 		Serializer serializer;
 		if (type.isArray()) return arraySerializer;
 		if (CustomSerialization.class.isAssignableFrom(type)) return customSerializer;
+		if (TreeSet.class.isAssignableFrom(type)) return treeSetSerializer;
 		if (Collection.class.isAssignableFrom(type)) return collectionSerializer;
+		if (TreeMap.class.isAssignableFrom(type)) return treeMapSerializer;
 		if (Map.class.isAssignableFrom(type)) return mapSerializer;
 		if (Enum.class.isAssignableFrom(type)) return new EnumSerializer(type);
 		if (type.isAnnotationPresent(DefaultSerializer.class)) {

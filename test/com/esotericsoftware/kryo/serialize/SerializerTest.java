@@ -4,10 +4,13 @@ package com.esotericsoftware.kryo.serialize;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -46,6 +49,19 @@ public class SerializerTest extends KryoTestCase {
 		roundTrip(kryo, 8, toList("1", "2", "3"));
 		serializer.setLength(3);
 		roundTrip(kryo, 7, toList("1", "2", "3"));
+
+		kryo.register(TreeSet.class);
+		TreeSet set = new TreeSet();
+		set.add("1");
+		set.add("2");
+		roundTrip(kryo, 9, set);
+
+		kryo.register(KeyThatIsntComparable.class);
+		kryo.register(KeyComparator.class);
+		set = new TreeSet(new KeyComparator());
+		set.add(new KeyThatIsntComparable("1"));
+		set.add(new KeyThatIsntComparable("2"));
+		roundTrip(kryo, 11, set);
 	}
 
 	public void testArraySerializer () {
@@ -107,6 +123,43 @@ public class SerializerTest extends KryoTestCase {
 		roundTrip(kryo, 20, map);
 		serializer.setValuesCanBeNull(false);
 		roundTrip(kryo, 18, map);
+	}
+
+	public void testTreeMap () {
+		Kryo kryo = new Kryo();
+		kryo.register(TreeMap.class);
+
+		TreeMap map = new TreeMap();
+		map.put("123", "456");
+		map.put("789", "abc");
+		roundTrip(kryo, 23, map);
+
+		kryo.register(KeyThatIsntComparable.class);
+		kryo.register(KeyComparator.class);
+
+		map = new TreeMap(new KeyComparator());
+		KeyThatIsntComparable key1 = new KeyThatIsntComparable();
+		KeyThatIsntComparable key2 = new KeyThatIsntComparable();
+		key1.value = "123";
+		map.put(key1, "456");
+		key2.value = "1234";
+		map.put(key2, "4567");
+		roundTrip(kryo, 27, map);
+	}
+
+	static public class KeyComparator implements Comparator<KeyThatIsntComparable> {
+		public int compare (KeyThatIsntComparable o1, KeyThatIsntComparable o2) {
+			return o1.value.compareTo(o2.value);
+		}
+	}
+
+	static public class KeyThatIsntComparable {
+		public String value;
+		public KeyThatIsntComparable () {
+		}
+		public KeyThatIsntComparable (String value) {
+			this.value = value;
+		}
 	}
 
 	public void testDateSerializer () {

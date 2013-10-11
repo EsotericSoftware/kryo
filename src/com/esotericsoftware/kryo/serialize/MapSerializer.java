@@ -107,7 +107,7 @@ public class MapSerializer extends Serializer {
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
-		Map map = (Map)newInstance(kryo, type);
+		Map map = (Map)newInstance(buffer, type);
 		int length = IntSerializer.get(buffer, true);
 		if (length == 0) return (T)map;
 		for (int i = 0; i < length; i++) {
@@ -131,5 +131,13 @@ public class MapSerializer extends Serializer {
 		}
 		if (TRACE) trace("kryo", "Read map: " + map);
 		return (T)map;
+	}
+
+	/**
+	 * Use this to override collection creation for {@link #readObject(ByteBuffer, Class)}.
+	 * Is invoked before any other data is read from the buffer.
+	 */
+	protected <T> T newInstance(ByteBuffer buffer, Class<T> type) {
+		return newInstance(kryo, type);
 	}
 }

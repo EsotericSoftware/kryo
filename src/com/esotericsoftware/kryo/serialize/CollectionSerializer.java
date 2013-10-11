@@ -89,16 +89,22 @@ public class CollectionSerializer extends Serializer {
 	}
 
 	public <T> T readObjectData (ByteBuffer buffer, Class<T> type) {
+		// Allow subclasses to instantiate the collection before invoking super
+		// to make it easier to extend this class
+		boolean isArrayList = type == ArrayList.class;
+		Collection collection = null;
+		if (!isArrayList)
+			collection = (Collection) newInstance(buffer, type);
+
 		int length;
 		if (this.length != null)
 			length = this.length;
 		else
 			length = IntSerializer.get(buffer, true);
-		Collection collection;
-		if (type == ArrayList.class)
+
+		if (isArrayList)
 			collection = new ArrayList(length);
-		else
-			collection = (Collection)newInstance(kryo, type);
+
 		if (length == 0) return (T)collection;
 		if (serializer != null) {
 			if (elementsCanBeNull) {
@@ -114,5 +120,13 @@ public class CollectionSerializer extends Serializer {
 		}
 		if (TRACE) trace("kryo", "Read collection: " + collection);
 		return (T)collection;
+	}
+
+	/**
+	 * Use this to override collection creation for {@link #readObject(ByteBuffer, Class)}.
+	 * Is invoked before any other data is read from the buffer.
+	 */
+	protected <T> T newInstance(ByteBuffer buffer, Class<T> type) {
+		return newInstance(kryo, type);
 	}
 }
