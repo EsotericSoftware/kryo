@@ -246,23 +246,36 @@ public class DefaultArraySerializers{
 		{
 			setAcceptsNull(true);
 		}
-
+		
 		public void write (Kryo kryo, Output output, String[] object) {
 			if (object == null) {
 				output.writeVarInt(NULL, true);
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
-			for (int i = 0, n = object.length; i < n; i++)
-				output.writeString(object[i]);
+			if (kryo.getReferences() && kryo.getReferenceResolver().useReferences(String.class)) {
+				Serializer serializer = kryo.getSerializer(String.class);
+				for (int i = 0, n = object.length; i < n; i++)
+					kryo.writeObjectOrNull(output, object[i], serializer);
+			} else {
+				for (int i = 0, n = object.length; i < n; i++)
+					output.writeString(object[i]);
+			}
 		}
 
 		public String[] read (Kryo kryo, Input input, Class<String[]> type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			String[] array = new String[--length];
-			for (int i = 0; i < length; i++)
-				array[i] = input.readString();
+			if (kryo.getReferences() && kryo.getReferenceResolver().useReferences(String.class)) {
+				Serializer serializer = kryo.getSerializer(String.class);
+				for (int i = 0; i < length; i++) {
+					array[i] = kryo.readObjectOrNull(input, String.class, serializer);
+				}
+			} else {
+				for (int i = 0; i < length; i++)
+					array[i] = input.readString();
+			}
 			return array;
 		}
 
