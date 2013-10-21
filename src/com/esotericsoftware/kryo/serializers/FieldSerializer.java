@@ -7,6 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -29,14 +30,9 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.ObjectMap;
-import com.esotericsoftware.kryo.util.UnsafeUtil;
 
-import static com.esotericsoftware.kryo.util.UnsafeUtil.unsafe;
 import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.reflectasm.FieldAccess;
-import com.esotericsoftware.kryo.serializers.AsmCacheFields.*;
-import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.*;
-import com.esotericsoftware.kryo.serializers.ObjectField.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 // BOZO - Make primitive serialization with ReflectASM configurable?
@@ -89,9 +85,31 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	private final boolean serializeTransient = false;
 
 	private boolean hasObjectFields = false;
+	
+	
+	static CachedFieldFactory asmFieldFactory;
+	static CachedFieldFactory objectFieldFactory;
+	static CachedFieldFactory unsafeFieldFactory;
+	
+	static boolean unsafeAvailable;
+	static Class<?> unsafeUtilClass;
+	static Method sortFieldsByOffsetMethod;
 
+	static {
+		try {
+			unsafeUtilClass = FieldSerializer.class.getClassLoader().loadClass("com.esotericsoftware.kryo.util.UnsafeUtil");
+			Method unsafeMethod = unsafeUtilClass.getMethod("unsafe");
+			sortFieldsByOffsetMethod = unsafeUtilClass.getMethod("sortFieldsByOffset", List.class);
+			Object unsafe = unsafeMethod.invoke(null);
+			if(unsafe != null)
+				unsafeAvailable = true;
+		} catch (Throwable e) {
+			
+		}
+	}
+	
 	{
-		useAsmEnabled = unsafe() != null;
+		useAsmEnabled = !unsafeAvailable;
 		varIntsEnabled = true;
 		if (TRACE) trace("kryo", "optimize ints is " + varIntsEnabled);
 	}
@@ -162,9 +180,13 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		IntArray useAsm = new IntArray();
 
 		// Sort fields by their offsets
-		if (useMemRegions && !useAsmEnabled && unsafe() != null) {
-			Field[] allFieldsArray = UnsafeUtil.sortFieldsByOffset(allFields);
-			allFields = Arrays.asList(allFieldsArray);
+		if (useMemRegions && !useAsmEnabled && unsafeAvailable) {
+			try {
+				Field[] allFieldsArray = (Field[])sortFieldsByOffsetMethod.invoke(null, allFields);
+				allFields = Arrays.asList(allFieldsArray);
+			} catch (Exception e) {
+				throw new RuntimeException("Cannot invoke UnsafeUtil.sortFieldsByOffset()", e);
+			}
 		}
 
 		// TODO: useAsm is modified as a side effect, this should be pulled out of buildValidFields
@@ -304,84 +326,11 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		Class[] fieldGenerics) {
 		CachedField cachedField;
 		if (accessIndex != -1) {
-			// Use ASM-based serializers
-			if (fieldClass.isPrimitive()) {
-				if (fieldClass == boolean.class)
-					cachedField = new BooleanField();
-				else if (fieldClass == byte.class)
-					cachedField = new ByteField();
-				else if (fieldClass == char.class)
-					cachedField = new CharField();
-				else if (fieldClass == short.class)
-					cachedField = new ShortField();
-				else if (fieldClass == int.class)
-					cachedField = new IntField();
-				else if (fieldClass == long.class)
-					cachedField = new LongField();
-				else if (fieldClass == float.class)
-					cachedField = new FloatField();
-				else if (fieldClass == double.class)
-					cachedField = new DoubleField();
-				else {
-					cachedField = new AsmObjectField(this);
-				}
-			} else if (fieldClass == String.class
-				&& (!kryo.getReferences() || !kryo.getReferenceResolver().useReferences(String.class))) {
-				cachedField = new StringField();
-			} else {
-				cachedField = new AsmObjectField(this);
-			}
+			cachedField = getAsmFieldFactory().createCachedField(fieldClass, field, this);
 		} else if (!useAsmEnabled) {
-			// Use Unsafe-based serializers
-			if (fieldClass.isPrimitive()) {
-				if (fieldClass == boolean.class)
-					cachedField = new UnsafeBooleanField(field);
-				else if (fieldClass == byte.class)
-					cachedField = new UnsafeByteField(field);
-				else if (fieldClass == char.class)
-					cachedField = new UnsafeCharField(field);
-				else if (fieldClass == short.class)
-					cachedField = new UnsafeShortField(field);
-				else if (fieldClass == int.class)
-					cachedField = new UnsafeIntField(field);
-				else if (fieldClass == long.class)
-					cachedField = new UnsafeLongField(field);
-				else if (fieldClass == float.class)
-					cachedField = new UnsafeFloatField(field);
-				else if (fieldClass == double.class)
-					cachedField = new UnsafeDoubleField(field);
-				else {
-					cachedField = new UnsafeObjectField(this);
-				}
-			} else if (fieldClass == String.class
-				&& (!kryo.getReferences() || !kryo.getReferenceResolver().useReferences(String.class))) {
-				cachedField = new UnsafeStringField(field);
-			} else {
-				cachedField = new UnsafeObjectField(this);
-			}
+			cachedField = getUnsafeFieldFactory().createCachedField(fieldClass, field, this);
 		} else {
-			if (fieldClass.isPrimitive()) {
-				if (fieldClass == boolean.class)
-					cachedField = new ObjectBooleanField(this);
-				else if (fieldClass == byte.class)
-					cachedField = new ObjectByteField(this);
-				else if (fieldClass == char.class)
-					cachedField = new ObjectCharField(this);
-				else if (fieldClass == short.class)
-					cachedField = new ObjectShortField(this);
-				else if (fieldClass == int.class)
-					cachedField = new ObjectIntField(this);
-				else if (fieldClass == long.class)
-					cachedField = new ObjectLongField(this);
-				else if (fieldClass == float.class)
-					cachedField = new ObjectFloatField(this);
-				else if (fieldClass == double.class)
-					cachedField = new ObjectDoubleField(this);
-				else {
-					cachedField = new ObjectField(this);
-				}
-			}	else		
-				cachedField = new ObjectField(this);
+			cachedField = getObjectFieldFactory().createCachedField(fieldClass, field, this);
 			if (fieldGenerics != null)
 				((ObjectField)cachedField).generics = fieldGenerics;
 			else {
@@ -393,6 +342,32 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		return cachedField;
 	}
 
+	private CachedFieldFactory getAsmFieldFactory() {
+		if(asmFieldFactory == null)
+			asmFieldFactory = new AsmCachedFieldFactory();
+		return asmFieldFactory;
+	}
+	
+	private CachedFieldFactory getObjectFieldFactory() {
+		if(objectFieldFactory == null)
+			objectFieldFactory = new ObjectCachedFieldFactory();
+		return objectFieldFactory;
+	}
+	
+	private CachedFieldFactory getUnsafeFieldFactory() {
+		// Use reflection to load UnsafeFieldFactory, so that there is no explicit dependency
+		// on anything using Unsafe. This is required to make FieldSerializer work on those
+		// platforms that do not support sun.misc.Unsafe properly.
+		if(unsafeFieldFactory == null) {
+			try {
+				unsafeFieldFactory = (CachedFieldFactory)this.getClass().getClassLoader().loadClass("com.esotericsoftware.kryo.serializers.UnsafeCachedFieldFactory").newInstance();
+			} catch (Exception e) {
+				throw new RuntimeException("Cannot create UnsafeFieldFactory", e);
+			}
+		}
+		return unsafeFieldFactory;
+	}
+	
 	public int compare (CachedField o1, CachedField o2) {
 		// Fields are sorted by alpha so the order of the data is known.
 		return o1.field.getName().compareTo(o2.field.getName());
@@ -641,6 +616,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		abstract public void read (Input input, Object object);
 
 		abstract public void copy (Object original, Object copy);
+	}
+	
+	public static interface CachedFieldFactory {
+		public CachedField createCachedField(Class fieldClass, Field field, FieldSerializer ser);
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has

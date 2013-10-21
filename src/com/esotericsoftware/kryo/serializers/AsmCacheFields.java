@@ -1,7 +1,4 @@
-
 package com.esotericsoftware.kryo.serializers;
-
-import static com.esotericsoftware.kryo.util.UnsafeUtil.unsafe;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -18,7 +15,7 @@ public class AsmCacheFields {
 	abstract static class AsmCachedField extends CachedField {
 	}
 
-	final static class IntField extends AsmCachedField {
+	final static class AsmIntField extends AsmCachedField {
 		public void write (Output output, Object object) {
 			if (varIntsEnabled)
 				output.writeInt(access.getInt(object, accessIndex), false);
@@ -38,7 +35,7 @@ public class AsmCacheFields {
 		}
 	}
 
-	final static class FloatField extends AsmCachedField {
+	final static class AsmFloatField extends AsmCachedField {
 		public void write (Output output, Object object) {
 			output.writeFloat(access.getFloat(object, accessIndex));
 		}
@@ -52,7 +49,7 @@ public class AsmCacheFields {
 		}
 	}
 
-	final static class ShortField extends AsmCachedField {
+	final static class AsmShortField extends AsmCachedField {
 		public void write (Output output, Object object) {
 			output.writeShort(access.getShort(object, accessIndex));
 		}
@@ -66,7 +63,7 @@ public class AsmCacheFields {
 		}
 	}
 
-	final static class ByteField extends AsmCachedField {
+	final static class AsmByteField extends AsmCachedField {
 		public void write (Output output, Object object) {
 			output.writeByte(access.getByte(object, accessIndex));
 		}
@@ -80,7 +77,7 @@ public class AsmCacheFields {
 		}
 	}
 
-	final static class BooleanField extends AsmCachedField {
+	final static class AsmBooleanField extends AsmCachedField {
 		public void write (Output output, Object object) {
 			output.writeBoolean(access.getBoolean(object, accessIndex));
 		}
@@ -94,7 +91,7 @@ public class AsmCacheFields {
 		}
 	}
 
-	final static class CharField extends AsmCachedField {
+	final static class AsmCharField extends AsmCachedField {
 		public void write (Output output, Object object) {
 			output.writeChar(access.getChar(object, accessIndex));
 		}
@@ -108,7 +105,7 @@ public class AsmCacheFields {
 		}
 	}
 
-	final static class LongField extends AsmCachedField {
+	final static class AsmLongField extends AsmCachedField {
 		public void write (Output output, Object object) {
 			if (varIntsEnabled)
 				output.writeLong(access.getLong(object, accessIndex), false);
@@ -128,7 +125,7 @@ public class AsmCacheFields {
 		}
 	}
 
-	final static class DoubleField extends AsmCachedField {
+	final static class AsmDoubleField extends AsmCachedField {
 		public void write (Output output, Object object) {
 			output.writeDouble(access.getDouble(object, accessIndex));
 		}
@@ -142,7 +139,7 @@ public class AsmCacheFields {
 		}
 	}
 
-	final static class StringField extends AsmCachedField {
+	final static class AsmStringField extends AsmCachedField {
 		public void write (Output output, Object object) {
 			output.writeString(access.getString(object, accessIndex));
 		}
