@@ -14,7 +14,8 @@ import com.esotericsoftware.kryo.KryoException;
  * 
  * @author Nathan Sweet <misc@n4te.com> */
 public class Output extends OutputStream {
-	protected int maxCapacity, total;
+	protected int maxCapacity;
+	protected long total;
 	protected int position;
 	protected int capacity;
 	protected byte[] buffer;
@@ -123,7 +124,7 @@ public class Output extends OutputStream {
 	}
 
 	/** Returns the total number of bytes written. This may include bytes that have not been flushed. */
-	final public int total () {
+	final public long total () {
 		return total + position;
 	}
 
@@ -343,7 +344,7 @@ public class Output extends OutputStream {
 			if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
 		}
 	}
-
+	
 	/** Writes the length and CharSequence as UTF8, or null. The string can be read using {@link Input#readString()} or
 	 * {@link Input#readStringBuilder()}.
 	 * @param value May be null. */

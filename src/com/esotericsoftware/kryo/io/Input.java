@@ -17,7 +17,7 @@ public class Input extends InputStream {
 	protected int position;
 	protected int capacity;
 	protected int limit;
-	protected int total;
+	protected long total;
 	protected char[] chars = new char[32];
 	protected InputStream inputStream;
 
@@ -91,7 +91,7 @@ public class Input extends InputStream {
 	}
 
 	/** Returns the number of bytes read. */
-	public int total () {
+	public long total () {
 		return total + position;
 	}
 
@@ -565,7 +565,7 @@ public class Input extends InputStream {
 			charIndex++;
 		}
 	}
-
+	
 	private String readAscii () {
 		byte[] buffer = this.buffer;
 		int end = position;
