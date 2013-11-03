@@ -16,7 +16,6 @@
 
 package com.esotericsoftware.kryo.util;
 
-import com.badlogic.gdx.utils.StringBuilder;
 
 /** An unordered map that uses int keys. This implementation is a cuckoo hash map using 3 hashes, random walking, and a small stash
  * for problematic keys. Null values are allowed. No allocation is done except when growing the table size. <br>
