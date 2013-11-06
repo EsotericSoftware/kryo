@@ -46,6 +46,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](http://
 - [Objective-C](#objective-c)
 - [Benchmarks](#benchmarks)
 - [Projects using Kryo](#projects-using-kryo)
+- [Contact / Mailing list](#contact--mailing-list)
 
 ## Quickstart
 
@@ -446,7 +447,7 @@ Kryo can be compared to many other serialization libraries in the [JVM Serialize
 
 ## Projects using Kryo
 
-There are a number of projects using Kryo. A few are listed below. Please post a message to the mailing list if you'd like your project included here.
+There are a number of projects using Kryo. A few are listed below. Please post a message to the [mailing list](https://groups.google.com/forum/#!forum/kryo-users) if you'd like your project included here.
 
 - [KryoNet](http://code.google.com/p/kryonet/) (NIO networking)
 - [Twitter's Scalding](https://github.com/twitter/scalding) (Scala API for Cascading)
@@ -464,3 +465,7 @@ There are a number of projects using Kryo. A few are listed below. Please post a
 - [Jive](http://www.jivesoftware.com/jivespace/blogs/jivespace/2010/07/29/the-jive-sbs-cache-redesign-part-3)
 - [DestroyAllHumans](https://code.google.com/p/destroyallhumans/) (controls a [robot](http://www.youtube.com/watch?v=ZeZ3R38d3Cg)!)
 - [kryo-serializers](https://github.com/magro/kryo-serializers) (additional serializers)
+
+## Contact / Mailing list
+
+You can use the [kryo mailing list](https://groups.google.com/forum/#!forum/kryo-users) for questions/discussions/support.
