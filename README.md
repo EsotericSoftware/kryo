@@ -15,7 +15,7 @@ Kryo is a fast and efficient object graph serialization framework for Java. The 
 
 Kryo can also perform automatic deep and shallow copying/cloning. This is direct copying from object to object, not object->bytes->object.
 
-This documentation is for v2 of Kryo. See [V1Documentation](wiki/Documentation-for-Kryo-version-1.x) for v1.x.
+This documentation is for v2 of Kryo. See [V1Documentation](https://github.com/EsotericSoftware/kryo/wiki/Documentation-for-Kryo-version-1.x) for v1.x.
 
 If you are planning to use Kryo for network communication, the [KryoNet](http://code.google.com/p/kryonet/) project may prove useful.
 
