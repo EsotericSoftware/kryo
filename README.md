@@ -1,4 +1,3 @@
-
 Kryo JARs are in the [download section](https://code.google.com/p/kryo/downloads/list) and [Maven Central](http://search.maven.org/#browse|1975274176). Latest snapshots of Kryo including the builds of a current trunk are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/kryo).
 
 ## New!
@@ -118,19 +117,23 @@ By default, serializers do not need to handle the object being null. The Kryo fr
 
 When Kryo writes out an instance of an object, first it may need to write out something that identifies the object's class. By default, the fully qualified class name is written, then the bytes for the object. Subsequent appearances of that object type within the same object graph are written using a variable length int. Writing the class name is somewhat inefficient, so classes can be registered beforehand:
 
+```java
     Kryo kryo = new Kryo();
     kryo.register(SomeClass.class);
     // ...
     Output output = ...
     SomeClass someObject = ...
     kryo.writeObject(output, someObject);
+```
 
 Here SomeClass is registered with Kryo, which associates the class with an int ID. When Kryo writes out an instance of SomeClass, it will write out this int ID. This is more efficient than writing out the class name, but requires the classes that will be serialized to be known up front. During deserialization, the registered classes must have the exact same IDs they had during serialization. The register method shown above assigns the next available, lowest integer ID, which means the order classes are registered is important. The ID can also be specified explicitly to make order unimportant:
 
+```java
     Kryo kryo = new Kryo();
     kryo.register(SomeClass.class, 0);
     kryo.register(AnotherClass.class, 1);
     kryo.register(YetAnotherClass.class, 2);
+```
 
 The IDs are written most efficiently when they are small, positive integers. Negative IDs are not serialized efficiently. -1 and -2 are reserved.
 
@@ -144,9 +147,11 @@ If using unregistered classes, short package names could be considered.
 
 After writing the class identifier, Kryo uses a serializer to write the object's bytes. When a class is registered, a serializer instance can be specified:
 
+```java
     Kryo kryo = new Kryo();
     kryo.register(SomeClass.class, new SomeSerializer());
     kryo.register(AnotherClass.class, new AnotherSerializer());
+```
 
 If a class is not registered or no serializer is specified, a serializer is chosen automatically from a list of "default serializers" that maps a class to a serializer. The following classes have a default serializer set by default:
 
@@ -165,19 +170,23 @@ If a class is not registered or no serializer is specified, a serializer is chos
 
 Additional default serializers can be added:
 
+```java
     Kryo kryo = new Kryo();
     kryo.addDefaultSerializer(SomeClass.class, SomeSerializer.class);
     // ...
     Output output = ...
     SomeClass someObject = ...
     kryo.writeObject(output, someObject);
+```
 
 A class can also use the DefaultSerializer annotation:
 
+```java
     @DefaultSerializer(SomeClassSerializer.class)
     public class SomeClass {
        // ...
     }
+```
 
 If no default serializers match a class, then by default [FieldSerializer](#FieldSerializer) is used. This can also be changed:
 
@@ -186,6 +195,7 @@ If no default serializers match a class, then by default [FieldSerializer](#Fiel
 
 Some serializers allow extra information to be provided so that the number of bytes output can be reduced:
 
+```java
     Kryo kryo = new Kryo();
     FieldSerializer someClassSerializer = new FieldSerializer(kryo, SomeClass.class);
     CollectionSerializer listSerializer = new CollectionSerializer();
@@ -199,6 +209,7 @@ Some serializers allow extra information to be provided so that the number of by
     someObject.list.add("thishitis");
     someObject.list.add("bananas");
     kryo.writeObject(output, someObject);
+```
 
 In this example, FieldSerializer will be used for SomeClass. FieldSerializer is configured so the "list" field will always be a LinkedList and will use the specified CollectionSerializer. The CollectionSerializer is configured so each element will be a String and none of the elements will be null. This allows the serializer to be more efficient. In this case, 2 to 3 bytes are saved per element in the list.
 
@@ -212,6 +223,7 @@ Other general purpose serializes are provided, such as BeanSerializer, TaggedFie
 
 While FieldSerializer is ideal for most classes, sometimes it is convenient for a class to do its own serialization. This can be done by implementing KryoSerializable interface (similar to the java.io.Externalizable interface in the JDK).
 
+```java
     public class SomeClass implements KryoSerializable {
        // ...
     
@@ -223,6 +235,7 @@ While FieldSerializer is ideal for most classes, sometimes it is convenient for 
           // ...
        }
     }
+```
 
 ## Reading and writing
 
@@ -230,32 +243,40 @@ Kryo has three sets of methods for reading and writing objects.
 
 If the concrete class of the object is not known and the object could be null:
 
+```java
     kryo.writeClassAndObject(output, object);
     // ...
     Object object = kryo.readClassAndObject(input);
     if (object instanceof SomeClass) {
        // ...
     }
+```
 
 If the class is known and the object could be null:
 
+```java
     kryo.writeObjectOrNull(output, someObject);
     // ...
     SomeClass someObject = kryo.readObjectOrNull(input, SomeClass.class);
+```
 
 If the class is known and the object cannot be null:
 
+```java
     kryo.writeObject(output, someObject);
     // ...
     SomeClass someObject = kryo.readObject(input, SomeClass.class);
+```
 
 ## References
 
 By default, each appearance of an object in the graph after the first is stored as an integer ordinal. This allows multiple references to the same object and cyclic graphs to be serialized. This has a small amount of overhead and can be disabled to save space if it is not needed:
 
+```java
     Kryo kryo = new Kryo();
     kryo.setReferences(false);
     // ...
+```
 
 When writing serializers that use Kryo for nested objects, `kryo.reference()` must be called in `read()`. See [Serializers](#Serializers) for more information.
 
@@ -265,37 +286,47 @@ Serializers for a specific type use Java code to create a new instance of that t
 
 When ReflectASM or reflection cannot be used, Kryo can be configured to use an InstantiatorStrategy to handle creating instances of a class. [Objenesis](https://code.google.com/p/objenesis/) provides StdInstantiatorStrategy which uses JVM specific APIs to create an instance of a class without calling any constructor at all. While this works on many JVMs, a zero argument is generally more portable.
 
+```java
     kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+```
 
 Note that classes must be designed to be created in this way. If a class expects its constructor to be called, it may be in an uninitialized state when created through this mechanism.
 
 Objenesis can also create new objects using Java's built-in serialization mechanism. Using this, the class must implement java.io.Serializable and the first zero argument constructor in a super class is invoked.
 
+```java
     kryo.setInstantiatorStrategy(new SerializingInstantiatorStrategy());
+```
 
 You may also write your own InstantiatorStrategy.
 
 To customize only how a specific type is created, an ObjectInstantiator can be set. This will override ReflectASM, reflection, and the InstantiatorStrategy.
 
+```java
     Registration registration = kryo.register(SomeClass.class);
     registration.setObjectInstantiator(...);
+```
 
 Alternatively, some serializers provide methods that can be overridden to customize object creation.
 
+```java
     kryo.register(SomeClass.class, new FieldSerializer(kryo, SomeClass.class) {
        public Object create (Kryo kryo, Input input, Class type) {
           return new SomeClass("some constructor arguments", 1234);
        }
     });
+```
 
 ## Copying/cloning
 
 A serialization library needs special knowledge on how to create new instances, get and set values, navigate object graphs, etc. This is nearly everything needed to support copying objects, so it makes sense for Kryo to support automatically making deep and shallow copies of objects. Note Kryo's copying does not serialize to bytes and back, it uses direct assignment.
 
+```java
     Kryo kryo = new Kryo();
     SomeClass someObject = ...
     SomeClass copy1 = kryo.copy(someObject);
     SomeClass copy2 = kryo.copyShallow(someObject);
+```
 
 The Serializer class has a `copy` method that does the work. These methods can be ignored when implementing application specific serializers if the copying functionality will not be used. All serializers provided with Kryo support copying. Multiple references to the same object and circular references are handled by the framework automatically.
 
@@ -303,6 +334,7 @@ Similar to the `read()` Serializer method, `kryo.reference()` must be called bef
 
 Similar to KryoSerializable, classes can implement KryoCopyable to do their own copying:
 
+```java
     public class SomeClass implements KryoCopyable<SomeClass> {
        // ...
     
@@ -310,6 +342,7 @@ Similar to KryoSerializable, classes can implement KryoCopyable to do their own 
           // Create new instance and copy values from this instance.
        }
     }
+```
 
 ## Context
 
@@ -319,11 +352,13 @@ Kryo has two context methods. `getContext()` returns a map for storing user data
 
 Kryo supports streams, so it is trivial to use compression or encryption on all of the serialized bytes:
 
+```java
     OutputStream outputStream = new DeflaterOutputStream(new FileOutputStream("file.bin"));
     Output output = new Output(outputStream);
     Kryo kryo = new Kryo();
     kryo.writeObject(output, object);
     output.close();
+```
 
 If needed, a serializer can be used to compress or encrypt the bytes for only a subset of the bytes for an object graph. For example, see DeflateSerializer or BlowfishSerializer. These serializers wrap another serializer and encode and decode the bytes.
 
@@ -335,6 +370,7 @@ Chunked encoding solves this by using a small buffer. When the buffer is full, i
 
 Kryo provides classes for easy chunked encoding. OutputChunked is used to write chunked data. It extends Output, so has all the convenient methods to write data. When the OutputChunked buffer is full, it flushes the chunk to the wrapped OutputStream. The `endChunks()` method is used to mark the end of a set of chunks.
 
+```java
     OutputStream outputStream = new FileOutputStream("file.bin");
     OutputChunked output = new OutputChunked(outputStream, 1024);
     // Write data to output...
@@ -343,9 +379,11 @@ Kryo provides classes for easy chunked encoding. OutputChunked is used to write 
     output.endChunks();
     // Write even more data to output...
     output.close();
+```
 
 To read the chunked data, InputChunked is used. It extends Input, so has all the convenient methods to read data. When reading, InputChunked will appear to hit the end of the data when it reaches the end of a set of chunks. The `nextChunks()` method advances to the next set of chunks, even if not all the data has been read from the current set of chunks.
 
+```java
     InputStream outputStream = new FileInputStream("file.bin");
     InputChunked input = new InputChunked(inputStream, 1024);
     // Read data from first set of chunks...
@@ -354,12 +392,15 @@ To read the chunked data, InputChunked is used. It extends Input, so has all the
     input.nextChunks();
     // Read data from third set of chunks...
     input.close();
+```
 
 ## Compatibility
 
 For some needs, especially long term storage of serialized bytes, it can be important how serialization handles changes to classes. This is known as forward and backward compatibility. By default, most user classes will be serialized using FieldSerializer, which does not support adding, removing, or changing the type of fields without invalidating previously serialized bytes. This is acceptable in many situations, such as sending data over a network. If necessary, an alternate generic serializer can be used:
 
+```java
     kryo.setDefaultSerializer(TaggedFieldSerializer.class);
+```
 
 TaggedFieldSerializer only serializes fields that have a @Tag annotation. This is less flexible than FieldSerializer, which can handle most classes without needing annotations, but allows TaggedFieldSerializer to support adding new fields without invalidating previously serialized bytes. If a field is removed it will invalidate previously serialized bytes, so fields should be annotated with @Deprecated instead of being removed.
 
@@ -383,11 +424,13 @@ Kryo is not thread safe. Each thread should have its own Kryo, Input, and Output
 
 Kryo makes use of the low overhead, lightweight [MinLog logging library](http://code.google.com/p/minlog/). The logging level can be set by one of the following methods:
 
+```java
     Log.ERROR();
     Log.WARN();
     Log.INFO();
     Log.DEBUG();
     Log.TRACE();
+```
 
 Kryo does no logging at `INFO` (the default) and above levels. `DEBUG` is convenient to use during development. `TRACE` is good to use when debugging a specific problem, but generally outputs too much information to leave on.
 
@@ -397,6 +440,7 @@ MinLog supports a fixed logging level, which causes javac to remove logging stat
 
 To use the official release of Kryo, please use the following snippet in your pom.xml
 
+```xml
     <repository>
         <snapshots>
             <enabled>false</enabled>
@@ -411,9 +455,11 @@ To use the official release of Kryo, please use the following snippet in your po
         <artifactId>kryo</artifactId>
         <version>2.22</version>
     </dependency>
+```
 
 If you want to test the latest snapshot of Kryo, please use the following snippet in your pom.xml
 
+```xml
     <repository>
        <id>sonatype-snapshots</id>
        <name>sonatype snapshots repo</name>
@@ -425,12 +471,20 @@ If you want to test the latest snapshot of Kryo, please use the following snippe
        <artifactId>kryo</artifactId>
         <version>2.23-SNAPSHOT</version>
     </dependency>
+```
+
 ## Scala
 
 See the following projects which provide serializers for Scala classes:
+
 - [Twitter's Chill](https://github.com/twitter/chill) (Kryo serializers for Scala)
 - [akka-kryo-serialization](https://github.com/romix/akka-kryo-serialization) (Kryo serializers for Scala and Akka)
 - [Twitter's Scalding](https://github.com/twitter/scalding) (Scala API for Cascading)
+- [Kryo Serializers](https://github.com/magro/kryo-serializers) (Additional serializers for Java)
+
+## Clojure
+
+- [Carbonite](https://github.com/sritchie/carbonite) (Kryo serializers for Clojure)
 
 ## Objective-C
 
