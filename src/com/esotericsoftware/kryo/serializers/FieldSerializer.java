@@ -460,7 +460,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		}
 	}
 
-	public T read (Kryo kryo, Input input, Class<T> type) {
+	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		try {
 
 			if (typeParameters != null && generics != null) {
@@ -497,7 +497,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
-	protected T create (Kryo kryo, Input input, Class<T> type) {
+	protected T create (Kryo kryo, Input input, Class<? extends T> type) {
 		return kryo.newInstance(type);
 	}
 

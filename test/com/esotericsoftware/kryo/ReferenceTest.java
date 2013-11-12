@@ -39,7 +39,7 @@ public class ReferenceTest extends KryoTestCase {
 				super.write(kryo, output, object);
 			}
 
-			protected Map create (Kryo kryo, Input input, Class<Map> type) {
+			protected Map create (Kryo kryo, Input input, Class<? extends Map> type) {
 				Ordering ordering = kryo.readObjectOrNull(input, Ordering.class);
 				return new Stuff(ordering);
 			}
@@ -108,7 +108,7 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
-		public List read (Kryo kryo, Input input, Class<List> type) {
+		public List read (Kryo kryo, Input input, Class<? extends List> type) {
 			List list = (List)kryo.readClassAndObject(input);
 			int fromIndex = input.readInt();
 			int count = input.readInt();
@@ -145,7 +145,7 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
-		public List read (Kryo kryo, Input input, Class<List> type) {
+		public List read (Kryo kryo, Input input, Class<? extends List> type) {
 			List list = (List)kryo.readClassAndObject(input);
 			int offset = input.readInt();
 			int size = input.readInt();

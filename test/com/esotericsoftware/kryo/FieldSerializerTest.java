@@ -235,7 +235,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	public void testNoDefaultConstructor () {
 		kryo.register(SimpleNoDefaultConstructor.class, new Serializer<SimpleNoDefaultConstructor>() {
-			public SimpleNoDefaultConstructor read (Kryo kryo, Input input, Class<SimpleNoDefaultConstructor> type) {
+			public SimpleNoDefaultConstructor read (Kryo kryo, Input input, Class<? extends SimpleNoDefaultConstructor> type) {
 				return new SimpleNoDefaultConstructor(input.readInt(true));
 			}
 
