@@ -2,13 +2,13 @@
 
 Please use the [Kryo discussion group](http://groups.google.com/group/kryo-users) for support.
 
-Kryo JARs are in the [download section](https://code.google.com/p/kryo/downloads/list) and [Maven Central](http://search.maven.org/#browse|1975274176). Latest snapshots of Kryo including the builds of a current trunk are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/kryo).
+Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](http://search.maven.org/#browse|1975274176). Latest snapshots of Kryo including snapshot builds of master are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/kryo).
 
-## New!
+## New in 2.22
 
-Kryo 2.22 was just released. This release fixes a lot of reported issues and aims for improved stability and performance. It also introduces many new features, most notably that it can use Unsafe to read and write object memory directly, which is the absolute fastest way to do serialization, especially for large primitive arrays. 
+The 2.22 release fixes many reported issues and improves stability and performance. It also introduces a number of new features, most notably that it can use Unsafe to read and write object memory directly. This is the absolute fastest way to do serialization, especially for large primitive arrays. 
 
-For those using the maven repo: the main jar now contains the required dependencies (like e.g. asm, with "relocated" class names) to avoid conflicts with a different version used by your application. There's no longer a separate shaded jar.
+The Maven JARs now contain a "shaded" version of ObjectWeb's ASM library to avoid conflicts with a different ASM version in your application. There's no longer a separate shaded jar.
 
 ## Overview
 
