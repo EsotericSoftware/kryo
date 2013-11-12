@@ -1,6 +1,4 @@
 
-Kryo is in transition to github. Please see the [source](https://github.com/EsotericSoftware/kryo) there.
-
 Kryo JARs are in the [download section](https://code.google.com/p/kryo/downloads/list) and [Maven Central](http://search.maven.org/#browse|1975274176). Latest snapshots of Kryo including the builds of a current trunk are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/kryo).
 
 ## New!
