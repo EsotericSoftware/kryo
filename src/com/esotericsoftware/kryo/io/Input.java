@@ -157,7 +157,7 @@ public class Input extends InputStream {
 		if (remaining >= required) return remaining;
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
 
-		int count;		
+		int count;
 		// Try to fill the buffer.
 		if (remaining > 0) {
 			count = fill(buffer, limit, capacity - limit);
@@ -196,7 +196,7 @@ public class Input extends InputStream {
 		optional = Math.min(optional, capacity);
 
 		int count;
-		
+
 		// Try to fill the buffer.
 		count = fill(buffer, limit, capacity - limit);
 		if (count == -1) return remaining == 0 ? -1 : Math.min(remaining, optional);
@@ -565,7 +565,7 @@ public class Input extends InputStream {
 			charIndex++;
 		}
 	}
-	
+
 	private String readAscii () {
 		byte[] buffer = this.buffer;
 		int end = position;

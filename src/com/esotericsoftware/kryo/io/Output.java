@@ -344,7 +344,7 @@ public class Output extends OutputStream {
 			if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
 		}
 	}
-	
+
 	/** Writes the length and CharSequence as UTF8, or null. The string can be read using {@link Input#readString()} or
 	 * {@link Input#readStringBuilder()}.
 	 * @param value May be null. */
@@ -385,8 +385,13 @@ public class Output extends OutputStream {
 			return;
 		}
 		int charCount = value.length();
-		if (charCount == 0) {
-			writeByte(1 | 0x80); // 1 means empty string, bit 8 means UTF8.
+		switch (charCount) {
+		case 0:
+			writeByte(1 | 0x80); // 1 is string length + 1, bit 8 means UTF8.
+			return;
+		case 1:
+			writeByte(2 | 0x80); // 2 is string length + 1, bit 8 means UTF8.
+			writeByte(value.charAt(0));
 			return;
 		}
 		if (capacity - position < charCount)

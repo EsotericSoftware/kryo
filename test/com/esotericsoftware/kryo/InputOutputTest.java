@@ -84,6 +84,15 @@ public class InputOutputTest extends KryoTestCase {
 		Input read = new Input(write.toBytes());
 		assertEquals(value, read.readString());
 
+		write.clear();
+		write.writeString(null);
+		read = new Input(write.toBytes());
+		assertEquals(null, read.readString());
+
+		for (int i = 0; i <= 258; i++)
+			runStringTest(i);
+		runStringTest(1);
+		runStringTest(2);
 		runStringTest(127);
 		runStringTest(256);
 		runStringTest(1024 * 1023);
@@ -757,8 +766,8 @@ public class InputOutputTest extends KryoTestCase {
 		final Input in = new Input(buf, 10, 10);
 		assertEquals(10, in.available());
 	}
-	
-	public void testSmallBuffers() throws Exception {
+
+	public void testSmallBuffers () throws Exception {
 		ByteBuffer buf = ByteBuffer.allocate(1024);
 		ByteBufferOutputStream byteBufferOutputStream = new ByteBufferOutputStream(buf);
 		Output testOutput = new Output(byteBufferOutputStream);
@@ -773,6 +782,6 @@ public class InputOutputTest extends KryoTestCase {
 		byte[] toRead = new byte[512];
 		input.readBytes(toRead);
 
-		input.readBytes(toRead);		
+		input.readBytes(toRead);
 	}
 }
