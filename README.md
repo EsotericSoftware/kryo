@@ -97,6 +97,7 @@ It should be safe to use Unsafe IO streams as long as both serialization and des
 
 Kryo is a serialization framework. It doesn't enforce a schema or care what data is written or read. This is left to the serializers themselves. Serializers are provided by default to read and write data in various ways. If these don't meet particular needs, they can be replaced in part or in whole. The provided serializers can read and write most objects but, if necessary, writing a new serializer is easy. The Serializer abstract class defines methods to go from objects to bytes and bytes to objects.
 
+```java
     public class ColorSerializer extends Serializer<Color> {
     	public void write (Kryo kryo, Output output, Color object) {
     		output.writeInt(object.getRGB());
@@ -106,6 +107,7 @@ Kryo is a serialization framework. It doesn't enforce a schema or care what data
     		return new Color(input.readInt(), true);
     	}
     }
+```
 
 Serializer has two methods that can be implemented. `write()` writes the object as bytes. `read()` creates a new instance of the object and reads from the input to populate it.
 
