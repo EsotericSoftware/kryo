@@ -49,6 +49,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](http://
 
 Jumping ahead to show how the library is used:
 
+```java
     Kryo kryo = new Kryo();
     // ...
     Output output = new Output(new FileOutputStream("file.bin"));
@@ -59,6 +60,7 @@ Jumping ahead to show how the library is used:
     Input input = new Input(new FileInputStream("file.bin"));
     SomeClass someObject = kryo.readObject(input, SomeClass.class);
     input.close();
+```
 
 The Kryo class orchestrates serialization. The Output and Input classes handle buffering bytes and optionally flushing to a stream.
 
@@ -100,7 +102,7 @@ Kryo is a serialization framework. It doesn't enforce a schema or care what data
     		output.writeInt(object.getRGB());
     	}
     
-    	public Ciolor read (Kryo kryo, Input input, Class<T> type) {
+    	public Color read (Kryo kryo, Input input, Class<T> type) {
     		return new Color(input.readInt(), true);
     	}
     }
