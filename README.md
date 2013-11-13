@@ -1,5 +1,7 @@
 ![KryoNet](https://raw.github.com/wiki/EsotericSoftware/kryo/images/logo.jpg)
 
+[![Build Status](http://jenkins.inoio.de/buildStatus/icon?job=kryo (all))](http://jenkins.inoio.de/job/kryo%20(all)/)
+
 Please use the [Kryo discussion group](http://groups.google.com/group/kryo-users) for support.
 
 Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](http://search.maven.org/#browse|1975274176). Latest snapshots of Kryo including snapshot builds of master are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/kryo).
