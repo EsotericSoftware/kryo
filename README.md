@@ -1,6 +1,6 @@
 ![KryoNet](https://raw.github.com/wiki/EsotericSoftware/kryo/images/logo.jpg)
 
-[![Build Status](http://jenkins.inoio.de/buildStatus/icon?job=kryo (all))](http://jenkins.inoio.de/job/kryo%20(all)/)
+[![Build Status](http://jenkins.inoio.de/buildStatus/icon?job=kryo%20(all))](http://jenkins.inoio.de/job/kryo%20(all)/)
 
 Please use the [Kryo discussion group](http://groups.google.com/group/kryo-users) for support.
 
