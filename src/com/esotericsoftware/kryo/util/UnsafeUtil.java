@@ -61,6 +61,8 @@ public class UnsafeUtil {
 				longArrayBaseOffset = 0;
 				doubleArrayBaseOffset = 0;
 				_unsafe = null;
+				if (TRACE) 
+					trace("kryo", "Running on Android platform. Use of java.misc.Unsafe should be disabled");
 			}
 		} catch (java.lang.Exception e) {
 			throw new RuntimeException(e);

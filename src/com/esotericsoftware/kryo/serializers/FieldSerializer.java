@@ -101,10 +101,9 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			Method unsafeMethod = unsafeUtilClass.getMethod("unsafe");
 			sortFieldsByOffsetMethod = unsafeUtilClass.getMethod("sortFieldsByOffset", List.class);
 			Object unsafe = unsafeMethod.invoke(null);
-			if(unsafe != null)
-				unsafeAvailable = true;
+			if (unsafe != null) unsafeAvailable = true;
 		} catch (Throwable e) {
-			
+			if (TRACE) trace("kryo", "java.misc.Unsafe is not available");
 		}
 	}
 	
@@ -121,6 +120,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.type = type;
 		this.typeParameters = type.getTypeParameters();
 		this.useAsmEnabled = kryo.getAsmEnabled();
+		if (!this.useAsmEnabled && !unsafeAvailable) {
+			this.useAsmEnabled = true;
+			if (TRACE) trace("kryo", "java.misc.Unsafe is unavailable. Using ASM instead.");
+		}
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
 		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
 		if (TRACE) trace("kryo", "FieldSerializer(Kryo, Class)");
@@ -133,6 +136,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.generics = generics;
 		this.typeParameters = type.getTypeParameters();
 		this.useAsmEnabled = kryo.getAsmEnabled();
+		if (!this.useAsmEnabled && !unsafeAvailable) {
+			this.useAsmEnabled = true;
+			if (TRACE) trace("kryo", "java.misc.Unsafe is unavailable. Using ASM instead.");
+		}
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
 		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
 		if (TRACE) trace("kryo", "FieldSerializer(Kryo, Class, Generics)");
@@ -414,6 +421,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 * @param setUseAsm If true, ASM will be used for fast serialization. If false, Unsafe will be used (default) */
 	public void setUseAsm (boolean setUseAsm) {
 		useAsmEnabled = setUseAsm;
+		if (!useAsmEnabled && !unsafeAvailable) {
+			useAsmEnabled = true;
+			if (TRACE) trace("kryo", "setUseAsm: java.misc.Unsafe is unavailable. Using ASM instead.");
+		}
 		// optimizeInts = useAsmBackend;
 		if (TRACE) trace("kryo", "setUseAsm: " + setUseAsm);
 		rebuildCachedFields();
