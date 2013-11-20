@@ -122,7 +122,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.typeParameters = type.getTypeParameters();
 		this.useAsmEnabled = kryo.getAsmEnabled();
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
-		this.unsafeUtil = new FieldSerializerUnsafeUtil(this);
+		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
 		if (TRACE) trace("kryo", "FieldSerializer(Kryo, Class)");
 		rebuildCachedFields();
 	}
@@ -134,7 +134,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.typeParameters = type.getTypeParameters();
 		this.useAsmEnabled = kryo.getAsmEnabled();
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
-		this.unsafeUtil = new FieldSerializerUnsafeUtil(this);
+		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
 		if (TRACE) trace("kryo", "FieldSerializer(Kryo, Class, Generics)");
 		rebuildCachedFields();
 	}
