@@ -206,7 +206,7 @@ abstract public class KryoTestCase extends TestCase {
 		object2 = kryo.readClassAndObject(input);
 		assertEquals("Incorrect number of bytes read.", length, input.total());
 		assertEquals("Incorrect number of bytes written.", length, output.total());
-		assertEquals(object1, object2);
+		doAssertEquals(object1, object2);
 
 		// Test output to stream, small buffer.
 		outStream = new ByteArrayOutputStream();
@@ -219,7 +219,7 @@ abstract public class KryoTestCase extends TestCase {
 				new ByteArrayInputStream(outStream.toByteArray()), 10);
 		object2 = kryo.readClassAndObject(input);
 		assertEquals("Incorrect number of bytes read.", length, input.total());
-		assertEquals(object1, object2);
+		doAssertEquals(object1, object2);
 
 		if (object1 != null) {
 			// Test null with serializer.
@@ -249,7 +249,7 @@ abstract public class KryoTestCase extends TestCase {
 		// Test input from byte array.
 		input = sf.createInput(output.toBytes());
 		object2 = kryo.readClassAndObject(input);
-		assertEquals(object1, object2);
+		doAssertEquals(object1, object2);
 		assertEquals("Incorrect length.", length, output.total());
 		assertEquals("Incorrect number of bytes read.", length, input.total());
 		input.rewind();
@@ -257,12 +257,16 @@ abstract public class KryoTestCase extends TestCase {
 		if (supportsCopy) {
 			// Test copy.
 			T copy = kryo.copy(object1);
-			assertEquals(object1, copy);
+			doAssertEquals(object1, copy);
 			copy = kryo.copyShallow(object1);
-			assertEquals(object1, copy);
+			doAssertEquals(object1, copy);
 		}
 
 		return (T) object2;
+	}
+
+	protected void doAssertEquals(Object object1, Object object2) {
+		Assert.assertEquals(arrayToList(object1), arrayToList(object2));
 	}
 
 	static public void assertEquals(Object object1, Object object2) {
