@@ -79,7 +79,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	private boolean useMemRegions = false;
 
 	/** If set, transient fields will be copied */
-	private final boolean copyTransient = true;
+	private boolean copyTransient = true;
 
 	/** If set, transient fields will be serialized */
 	private final boolean serializeTransient = false;
@@ -101,10 +101,9 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			Method unsafeMethod = unsafeUtilClass.getMethod("unsafe");
 			sortFieldsByOffsetMethod = unsafeUtilClass.getMethod("sortFieldsByOffset", List.class);
 			Object unsafe = unsafeMethod.invoke(null);
-			if(unsafe != null)
-				unsafeAvailable = true;
+			if (unsafe != null) unsafeAvailable = true;
 		} catch (Throwable e) {
-			
+			if (TRACE) trace("kryo", "java.misc.Unsafe is not available");
 		}
 	}
 	
@@ -121,8 +120,12 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.type = type;
 		this.typeParameters = type.getTypeParameters();
 		this.useAsmEnabled = kryo.getAsmEnabled();
+		if (!this.useAsmEnabled && !unsafeAvailable) {
+			this.useAsmEnabled = true;
+			if (TRACE) trace("kryo", "java.misc.Unsafe is unavailable. Using ASM instead.");
+		}
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
-		this.unsafeUtil = new FieldSerializerUnsafeUtil(this);
+		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
 		if (TRACE) trace("kryo", "FieldSerializer(Kryo, Class)");
 		rebuildCachedFields();
 	}
@@ -133,8 +136,12 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.generics = generics;
 		this.typeParameters = type.getTypeParameters();
 		this.useAsmEnabled = kryo.getAsmEnabled();
+		if (!this.useAsmEnabled && !unsafeAvailable) {
+			this.useAsmEnabled = true;
+			if (TRACE) trace("kryo", "java.misc.Unsafe is unavailable. Using ASM instead.");
+		}
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
-		this.unsafeUtil = new FieldSerializerUnsafeUtil(this);
+		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
 		if (TRACE) trace("kryo", "FieldSerializer(Kryo, Class, Generics)");
 		rebuildCachedFields();
 	}
@@ -414,16 +421,19 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 * @param setUseAsm If true, ASM will be used for fast serialization. If false, Unsafe will be used (default) */
 	public void setUseAsm (boolean setUseAsm) {
 		useAsmEnabled = setUseAsm;
+		if (!useAsmEnabled && !unsafeAvailable) {
+			useAsmEnabled = true;
+			if (TRACE) trace("kryo", "setUseAsm: java.misc.Unsafe is unavailable. Using ASM instead.");
+		}
 		// optimizeInts = useAsmBackend;
 		if (TRACE) trace("kryo", "setUseAsm: " + setUseAsm);
 		rebuildCachedFields();
 	}
 
-// Uncomment this method, if we want to allow explicit control over copying of transient fields
-// public void setCopyTransient (boolean setCopyTransient) {
-// copyTransient = setCopyTransient;
-// if(TRACE) trace("kryo", "setCopyTransient");
-// }
+	// Enable/disable copying of transient fields
+	public void setCopyTransient (boolean setCopyTransient) {
+		copyTransient = setCopyTransient;
+	}
 
 	/** This method can be called for different fields having the same type. Even though the raw type is the same, if the type is
 	 * generic, it could happen that different concrete classes are used to instantiate it. Therefore, in case of different
@@ -541,6 +551,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	public boolean getUseMemRegions() {
 		return useMemRegions;
+	}
+
+	public boolean getCopyTransient() {
+		return copyTransient;
 	}
 	
 	/** Used by {@link #copy(Kryo, Object)} to create the new object. This can be overridden to customize object creation, eg to

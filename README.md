@@ -1,12 +1,16 @@
 ![KryoNet](https://raw.github.com/wiki/EsotericSoftware/kryo/images/logo.jpg)
 
-Kryo JARs are in the [download section](https://code.google.com/p/kryo/downloads/list) and [Maven Central](http://search.maven.org/#browse|1975274176). Latest snapshots of Kryo including the builds of a current trunk are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/kryo).
+[![Build Status](https://jenkins.inoio.de/buildStatus/icon?job=kryo)](https://jenkins.inoio.de/job/kryo/)
 
-## New!
+Please use the [Kryo discussion group](http://groups.google.com/group/kryo-users) for support.
 
-Kryo 2.22 was just released. This release fixes a lot of reported issues and aims for improved stability and performance. It also introduces many new features, most notably that it can use Unsafe to read and write object memory directly, which is the absolute fastest way to do serialization, especially for large primitive arrays. 
+Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](http://search.maven.org/#browse|1975274176). Latest snapshots of Kryo including snapshot builds of master are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/kryo).
 
-For those using the maven repo: the main jar now contains the required dependencies (like e.g. asm, with "relocated" class names) to avoid conflicts with a different version used by your application. There's no longer a separate shaded jar.
+## New in 2.22
+
+The 2.22 release fixes many reported issues and improves stability and performance. It also introduces a number of new features, most notably that it can use Unsafe to read and write object memory directly. This is the absolute fastest way to do serialization, especially for large primitive arrays. 
+
+The Maven JARs now contain a "shaded" version of ObjectWeb's ASM library to avoid conflicts with a different ASM version in your application. There's no longer a separate shaded jar.
 
 ## Overview
 
@@ -527,3 +531,4 @@ There are a number of projects using Kryo. A few are listed below. Please post a
 ## Contact / Mailing list
 
 You can use the [kryo mailing list](https://groups.google.com/forum/#!forum/kryo-users) for questions/discussions/support.
+

@@ -364,6 +364,26 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.child = new DefaultTypes();
 		roundTrip(75, 95, test);
 	}
+	
+	public void testTransients () {
+		kryo.register(HasTransients.class);
+		HasTransients objectWithTransients1 = new HasTransients();
+		objectWithTransients1.transientField1 = "Test";
+		objectWithTransients1.anotherField2 = 5;
+		objectWithTransients1.anotherField3 = "Field2";
+
+		FieldSerializer<HasTransients> ser = (FieldSerializer<HasTransients>)kryo.getSerializer(HasTransients.class);
+		ser.setCopyTransient(false);
+
+		HasTransients objectWithTransients3 = kryo.copy(objectWithTransients1);
+		assertTrue("Objects should be different if copy does not include transient fields",
+			!objectWithTransients3.equals(objectWithTransients1));
+		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
+
+		ser.setCopyTransient(true);
+		HasTransients objectWithTransients2 = kryo.copy(objectWithTransients1);
+		assertEquals("Objects should be equal if copy includes transient fields", objectWithTransients2, objectWithTransients1);
+	}
 
 	static public class DefaultTypes {
 		// Primitives.
@@ -546,7 +566,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			return true;
 		}
 	}
-
+	
 	static public class SimpleNoDefaultConstructor {
 		int constructorValue;
 
@@ -575,6 +595,39 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
+	static public class HasTransients {
+		public transient String transientField1;
+		public int anotherField2;
+		public String anotherField3;
+
+		public HasTransients () {
+		}
+
+		public int hashCode () {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + anotherField2;
+			result = prime * result + ((anotherField3 == null) ? 0 : anotherField3.hashCode());
+			result = prime * result + ((transientField1 == null) ? 0 : transientField1.hashCode());
+			return result;
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			HasTransients other = (HasTransients)obj;
+			if (anotherField2 != other.anotherField2) return false;
+			if (anotherField3 == null) {
+				if (other.anotherField3 != null) return false;
+			} else if (!anotherField3.equals(other.anotherField3)) return false;
+			if (transientField1 == null) {
+				if (other.transientField1 != null) return false;
+			} else if (!transientField1.equals(other.transientField1)) return false;
+			return true;
+		}
+	}
+	
 	static public class ComplexNoDefaultConstructor {
 		public transient String name;
 		public int anotherField1;
