@@ -38,6 +38,12 @@ public class CopyTest extends KryoTestCase {
 		assertTrue(test != copy);
 		assertTrue(test.get(3) != copy.get(3));
 		assertEquals(test, copy);
+
+		kryo.setCopyReferences(false);
+		copy = kryo.copy(test);
+		assertTrue(test != copy);
+		assertTrue(test.get(3) != copy.get(3));
+		assertEquals(test, copy);
 	}
 
 	public void testReferences () {
@@ -62,6 +68,14 @@ public class CopyTest extends KryoTestCase {
 		assertTrue(test.get(3) != copy.get(4));
 		assertTrue(copy.get(3) == copy.get(4));
 		assertTrue(copy.get(3) == copy.get(5));
+
+		kryo.setCopyReferences(false);
+		copy = kryo.copy(test);
+		assertTrue(test != copy);
+		assertEquals(test, copy);
+		assertTrue(test.get(3) != copy.get(4));
+		assertTrue(copy.get(3) != copy.get(4));
+		assertTrue(copy.get(3) != copy.get(5));
 	}
 
 	public void testCircularReferences () {
