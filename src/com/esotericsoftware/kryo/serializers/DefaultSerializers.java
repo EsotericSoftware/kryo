@@ -550,7 +550,7 @@ public class DefaultSerializers {
 			super.write(kryo, output, map);
 		}
 
-		protected Map create (Kryo kryo, Input input, Class<Map> type) {
+		public Map create (Kryo kryo, Input input, Class<Map> type) {
 			return new TreeMap((Comparator)kryo.readClassAndObject(input));
 		}
 
@@ -566,7 +566,7 @@ public class DefaultSerializers {
 			super.write(kryo, output, collection);
 		}
 
-		protected TreeSet create (Kryo kryo, Input input, Class<Collection> type) {
+		public TreeSet create (Kryo kryo, Input input, Class<Collection> type) {
 			return new TreeSet((Comparator)kryo.readClassAndObject(input));
 		}
 

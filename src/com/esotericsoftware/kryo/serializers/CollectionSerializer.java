@@ -6,6 +6,7 @@ import java.util.Collection;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.continuations.write.CollectionSerializationContinuation;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -22,6 +23,7 @@ public class CollectionSerializer extends Serializer<Collection> {
 	private Class genericType;
 
 	public CollectionSerializer () {
+		setSupportsContinuations(true);
 	}
 
 	/** @see #setElementClass(Class, Serializer) */
@@ -67,21 +69,33 @@ public class CollectionSerializer extends Serializer<Collection> {
 		}
 		if (serializer != null) {
 			if (elementsCanBeNull) {
-				for (Object element : collection)
-					kryo.writeObjectOrNull(output, element, serializer);
+				if (getSupportsContinuations())
+					kryo.pushContinuation(new CollectionSerializationContinuation(output, collection.iterator(), this, serializer, elementsCanBeNull));
+				else {
+					for (Object element : collection)
+						kryo.writeObjectOrNull(output, element, serializer);
+				}
 			} else {
-				for (Object element : collection)
-					kryo.writeObject(output, element, serializer);
+				if (getSupportsContinuations())
+					kryo.pushContinuation(new CollectionSerializationContinuation(output, collection.iterator(), this, serializer, elementsCanBeNull));
+				else {
+					for (Object element : collection)
+						kryo.writeObject(output, element, serializer);
+				}
 			}
 		} else {
-			for (Object element : collection)
-				kryo.writeClassAndObject(output, element);
+			if (getSupportsContinuations())
+				kryo.pushContinuation(new CollectionSerializationContinuation(output, collection.iterator(), this, serializer, elementsCanBeNull));
+			else {
+				for (Object element : collection)
+					kryo.writeClassAndObject(output, element);
+			}
 		}
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
-	protected Collection create (Kryo kryo, Input input, Class<Collection> type) {
+	public Collection create (Kryo kryo, Input input, Class<Collection> type) {
 		return kryo.newInstance(type);
 	}
 
@@ -99,17 +113,22 @@ public class CollectionSerializer extends Serializer<Collection> {
 			}
 			genericType = null;
 		}
-		if (serializer != null) {
-			if (elementsCanBeNull) {
-				for (int i = 0; i < length; i++)
-					collection.add(kryo.readObjectOrNull(input, elementClass, serializer));
+
+		if (getSupportsContinuations())
+			kryo.pushContinuation(new com.esotericsoftware.kryo.continuations.read.CollectionSerializationContinuation(kryo, input, type, collection, length, this, elementClass, serializer, elementsCanBeNull));
+		else {
+			if (serializer != null) {
+				if (elementsCanBeNull) {
+					for (int i = 0; i < length; i++)
+						collection.add(kryo.readObjectOrNull(input, elementClass, serializer));
+				} else {
+					for (int i = 0; i < length; i++)
+						collection.add(kryo.readObject(input, elementClass, serializer));
+				}
 			} else {
 				for (int i = 0; i < length; i++)
-					collection.add(kryo.readObject(input, elementClass, serializer));
+					collection.add(kryo.readClassAndObject(input));
 			}
-		} else {
-			for (int i = 0; i < length; i++)
-				collection.add(kryo.readClassAndObject(input));
 		}
 		return collection;
 	}

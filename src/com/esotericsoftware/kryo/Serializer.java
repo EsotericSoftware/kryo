@@ -7,7 +7,7 @@ import com.esotericsoftware.kryo.io.Output;
 /** Reads and writes objects to and from bytes.
  * @author Nathan Sweet <misc@n4te.com> */
 public abstract class Serializer<T> {
-	private boolean acceptsNull, immutable;
+	private boolean acceptsNull, immutable, supportsContinuations;
 
 	public Serializer () {
 	}
@@ -63,6 +63,14 @@ public abstract class Serializer<T> {
 	 * return the original object. */
 	public void setImmutable (boolean immutable) {
 		this.immutable = immutable;
+	}
+	
+	public boolean getSupportsContinuations() {
+		return supportsContinuations;
+	}
+
+	public void setSupportsContinuations (boolean supportsContinuations) {
+		this.supportsContinuations = supportsContinuations;
 	}
 
 	/** Sets the generic types of the field or method this serializer will be used for on the next call to read or write. Subsequent

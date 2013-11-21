@@ -32,15 +32,23 @@ public class ReferenceTest extends KryoTestCase {
 		stuff.put("something", 456);
 		stuff.put("self", stuff);
 
-		Kryo kryo = new Kryo();
+		//Kryo kryo = new Kryo();
+		kryo.setReferences(true);
+		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Stuff.class, new MapSerializer() {
 			public void write (Kryo kryo, Output output, Map object) {
+				// SerializationContinuation marker = kryo.peekContinuation();
+				setSupportsContinuations(false);
 				kryo.writeObjectOrNull(output, ((Stuff)object).ordering, Ordering.class);
+				setSupportsContinuations(true);
+				//kryo.processWriteContinuations(output, marker);
 				super.write(kryo, output, object);
 			}
 
-			protected Map create (Kryo kryo, Input input, Class<Map> type) {
+			public Map create (Kryo kryo, Input input, Class<Map> type) {
+				setSupportsContinuations(false);
 				Ordering ordering = kryo.readObjectOrNull(input, Ordering.class);
+				setSupportsContinuations(true);
 				return new Stuff(ordering);
 			}
 		});

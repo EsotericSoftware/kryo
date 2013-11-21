@@ -15,7 +15,7 @@ import com.esotericsoftware.reflectasm.FieldAccess;
 /*** Defer generation of serializers until it is really required at run-time. By default, use reflection-based approach. 
  * @author Nathan Sweet <misc@n4te.com>
  * @author Roman Levenstein <romixlev@gmail.com> */
-class ObjectField extends CachedField {
+public class ObjectField extends CachedField {
 	public Class[] generics;
 	final FieldSerializer fieldSerializer;
 	final Class type;

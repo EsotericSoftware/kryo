@@ -117,6 +117,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
 
 		kryo = new Kryo();
+		kryo.setSupportsContinuations(true);
 		roundTrip(140, 150, test);
 
 		C c = new C();
@@ -142,6 +143,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d.e.f.a = c.a;
 
 		kryo = new Kryo();
+		kryo.setSupportsContinuations(true);
 		roundTrip(63, 73, c);
 		C c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
@@ -152,6 +154,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		assertTrue(c2.a == c2.d.e.f.a);
 
 		kryo = new Kryo();
+		kryo.setSupportsContinuations(true);
 		kryo.setRegistrationRequired(true);
 		kryo.register(A.class);
 		kryo.register(B.class);
@@ -177,6 +180,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(10, 16, a);
 
 		kryo = new Kryo();
+		kryo.setSupportsContinuations(true);
 		kryo.setReferences(false);
 		kryo.register(B.class);
 		kryo.register(A.class);
@@ -194,6 +198,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d.e.f = new F();
 
 		Kryo kryoWithoutF = new Kryo();
+		kryoWithoutF.setSupportsContinuations(true);
 		kryoWithoutF.setReferences(false);
 		kryoWithoutF.setRegistrationRequired(true);
 		kryoWithoutF.register(A.class);
@@ -294,6 +299,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	public void testCyclicGrgaph () throws Exception {
 		kryo = new Kryo();
+		kryo.setSupportsContinuations(true);
 		kryo.setRegistrationRequired(true);
 		kryo.register(DefaultTypes.class);
 		kryo.register(byte[].class);
@@ -316,6 +322,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	public void testGenericTypes () {
 		kryo = new Kryo();
+		kryo.setSupportsContinuations(true);
 		kryo.setRegistrationRequired(true);
 		kryo.register(HasGenerics.class);
 		kryo.register(ArrayList.class);

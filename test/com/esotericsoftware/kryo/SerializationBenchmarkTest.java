@@ -246,6 +246,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 
 	private void runKryoSerialization (final int RUN_CNT, final int ITER_CNT, boolean outputResults) throws Exception {
 		Kryo marsh = new Kryo();
+		marsh.setSupportsContinuations(true);
 		marsh.register(SampleObject.class, 40);
 
 		long avgDur = 0;
@@ -303,6 +304,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 
 	private void runKryoSerializationUmodified (final int RUN_CNT, final int ITER_CNT, boolean outputResults) throws Exception {
 		Kryo marsh = new Kryo();
+		marsh.setSupportsContinuations(true);
 
 		long avgDur = 0;
 		long bestTime = Long.MAX_VALUE;
@@ -361,6 +363,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	private void runKryoSerializationWithoutTryCatch (final int RUN_CNT, final int ITER_CNT, boolean outputResults)
 		throws Exception {
 		Kryo marsh = new Kryo();
+		marsh.setSupportsContinuations(true);
 		marsh.register(SampleObject.class, 40);
 
 		long avgDur = 0;
@@ -415,6 +418,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	private void runKryoSerializationWithoutTryCatchWithFastStreams (final int RUN_CNT, final int ITER_CNT, boolean outputResults)
 		throws Exception {
 		Kryo marsh = new Kryo();
+		marsh.setSupportsContinuations(true);
 		marsh.register(SampleObject.class, 40);
 
 		long avgDur = 0;
@@ -470,6 +474,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	private void runKryoUnsafeSerializationWithoutTryCatch (final int RUN_CNT, final int ITER_CNT, boolean outputResults)
 		throws Exception {
 		Kryo marsh = new Kryo();
+		marsh.setSupportsContinuations(true);
 		marsh.setRegistrationRequired(true);
 		marsh.register(double[].class, 30);
 		marsh.register(long[].class, 31);
@@ -533,6 +538,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	private void runKryoUnsafeSerializationWithoutTryCatchWithoutAsm (final int RUN_CNT, final int ITER_CNT, boolean outputResults)
 		throws Exception {
 		Kryo marsh = new Kryo();
+		marsh.setSupportsContinuations(true);
 		marsh.setRegistrationRequired(true);
 		marsh.register(double[].class, 30);
 		marsh.register(long[].class, 31);
@@ -597,12 +603,15 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	private void runKryoUnsafeSerializationWithoutTryCatchWithoutReferences (final int RUN_CNT, final int ITER_CNT,
 		boolean outputResults) throws Exception {
 		Kryo marsh = new Kryo();
-		kryo.setReferences(false);
+		marsh.setSupportsContinuations(true);
+		marsh.setReferences(false);
 		marsh.setRegistrationRequired(true);
 		marsh.register(double[].class, 30);
 		marsh.register(long[].class, 31);
 		// Explicitly tell to use Unsafe-based serializer
 		marsh.register(SampleObject.class, new FieldSerializer<SampleObject>(marsh, SampleObject.class), 40);
+		
+		obj.setSelf(null);
 
 		// Use fastest possible serialization of object fields
 		FieldSerializer<SampleObject> ser = (FieldSerializer<SampleObject>)marsh.getRegistration(SampleObject.class)
@@ -726,6 +735,10 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 
 			selfRef = this;
 		}
+		
+		public void setSelf(SampleObject ref) {
+			selfRef = ref;
+		}
 
 		/** {@inheritDoc} */
 		@Override
@@ -736,8 +749,8 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 
 			SampleObject obj = (SampleObject)other;
 
-			assert this == selfRef;
-			assert obj == obj.selfRef;
+			assert selfRef == null || this == selfRef;
+			assert obj.selfRef == null || obj == obj.selfRef;
 
 			return intVal == obj.intVal && floatVal == obj.floatVal && shortVal.equals(obj.shortVal)
 				&& Arrays.equals(dblArr, obj.dblArr) && Arrays.equals(longArr, obj.longArr);

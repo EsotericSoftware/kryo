@@ -272,7 +272,7 @@ public class UnsafeCacheFields {
 		}
 	}
 
-	final static class UnsafeObjectField extends ObjectField {
+	final public static class UnsafeObjectField extends ObjectField {
 		public UnsafeObjectField (FieldSerializer fieldSerializer) {
 			super(fieldSerializer);
 		}

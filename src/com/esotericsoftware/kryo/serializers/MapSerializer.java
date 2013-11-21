@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.continuations.write.MapSerializationContinuation;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -20,6 +21,10 @@ public class MapSerializer extends Serializer<Map> {
 	private boolean keysCanBeNull = true, valuesCanBeNull = true;
 	private Class keyGenericType, valueGenericType;
 
+	public MapSerializer() {
+		setSupportsContinuations(true);
+	}
+	
 	/** @param keysCanBeNull False if all keys are not null. This saves 1 byte per key if keyClass is set. True if it is not known
 	 *           (default). */
 	public void setKeysCanBeNull (boolean keysCanBeNull) {
@@ -73,28 +78,32 @@ public class MapSerializer extends Serializer<Map> {
 			valueGenericType = null;
 		}
 
-		for (Iterator iter = map.entrySet().iterator(); iter.hasNext();) {
-			Entry entry = (Entry)iter.next();
-			if (keySerializer != null) {
-				if (keysCanBeNull)
-					kryo.writeObjectOrNull(output, entry.getKey(), keySerializer);
-				else
-					kryo.writeObject(output, entry.getKey(), keySerializer);
-			} else
-				kryo.writeClassAndObject(output, entry.getKey());
-			if (valueSerializer != null) {
-				if (valuesCanBeNull)
-					kryo.writeObjectOrNull(output, entry.getValue(), valueSerializer);
-				else
-					kryo.writeObject(output, entry.getValue(), valueSerializer);
-			} else
-				kryo.writeClassAndObject(output, entry.getValue());
+		if(getSupportsContinuations())
+			kryo.pushContinuation(new MapSerializationContinuation(output, map.entrySet().iterator(), this, keySerializer, valueSerializer, keysCanBeNull, valuesCanBeNull));
+		else {
+			for (Iterator iter = map.entrySet().iterator(); iter.hasNext();) {
+				Entry entry = (Entry)iter.next();
+				if (keySerializer != null) {
+					if (keysCanBeNull)
+						kryo.writeObjectOrNull(output, entry.getKey(), keySerializer);
+					else
+						kryo.writeObject(output, entry.getKey(), keySerializer);
+				} else
+					kryo.writeClassAndObject(output, entry.getKey());
+				if (valueSerializer != null) {
+					if (valuesCanBeNull)
+						kryo.writeObjectOrNull(output, entry.getValue(), valueSerializer);
+					else
+						kryo.writeObject(output, entry.getValue(), valueSerializer);
+				} else
+					kryo.writeClassAndObject(output, entry.getValue());
+			}
 		}
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
-	protected Map create (Kryo kryo, Input input, Class<Map> type) {
+	public Map create (Kryo kryo, Input input, Class<Map> type) {
 		return kryo.newInstance(type);
 	}
 
@@ -119,25 +128,28 @@ public class MapSerializer extends Serializer<Map> {
 		}
 
 		kryo.reference(map);
-
-		for (int i = 0; i < length; i++) {
-			Object key;
-			if (keySerializer != null) {
-				if (keysCanBeNull)
-					key = kryo.readObjectOrNull(input, keyClass, keySerializer);
-				else
-					key = kryo.readObject(input, keyClass, keySerializer);
-			} else
-				key = kryo.readClassAndObject(input);
-			Object value;
-			if (valueSerializer != null) {
-				if (valuesCanBeNull)
-					value = kryo.readObjectOrNull(input, valueClass, valueSerializer);
-				else
-					value = kryo.readObject(input, valueClass, valueSerializer);
-			} else
-				value = kryo.readClassAndObject(input);
-			map.put(key, value);
+		if(getSupportsContinuations())
+			kryo.pushContinuation(new com.esotericsoftware.kryo.continuations.read.MapSerializationContinuation(kryo, input, type, map, length , this, keyClass, keySerializer, valueClass, valueSerializer, keysCanBeNull, valuesCanBeNull));
+		else {
+			for (int i = 0; i < length; i++) {
+				Object key;
+				if (keySerializer != null) {
+					if (keysCanBeNull)
+						key = kryo.readObjectOrNull(input, keyClass, keySerializer);
+					else
+						key = kryo.readObject(input, keyClass, keySerializer);
+				} else
+					key = kryo.readClassAndObject(input);
+				Object value;
+				if (valueSerializer != null) {
+					if (valuesCanBeNull)
+						value = kryo.readObjectOrNull(input, valueClass, valueSerializer);
+					else
+						value = kryo.readObject(input, valueClass, valueSerializer);
+				} else
+					value = kryo.readClassAndObject(input);
+				map.put(key, value);
+			}
 		}
 		return map;
 	}

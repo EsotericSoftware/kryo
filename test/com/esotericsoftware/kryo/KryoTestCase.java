@@ -54,6 +54,7 @@ abstract public class KryoTestCase extends TestCase {
 		kryo = new Kryo();
 		kryo.setReferences(false);
 		kryo.setRegistrationRequired(true);
+		kryo.setSupportsContinuations(true);
 		// kryo.useAsmBackend(false);
 	}
 

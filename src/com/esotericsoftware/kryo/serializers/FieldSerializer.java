@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.continuations.write.FieldSerializationContinuation;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.IntArray;
@@ -111,6 +112,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		useAsmEnabled = !unsafeAvailable;
 		varIntsEnabled = true;
 		if (TRACE) trace("kryo", "optimize ints is " + varIntsEnabled);
+		setSupportsContinuations(true);
 	}
 	
 
@@ -453,20 +455,24 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			// Push proper scopes at serializer usage time
 			kryo.pushGenericsScope(type, genericsScope);
 		}
+		
+		if(hasObjectFields && getSupportsContinuations())
+			kryo.pushContinuation(new FieldSerializationContinuation(output, object, generics, 0, this, null, true));
+		else {
+			CachedField[] fields = this.fields;
+			for (int i = 0, n = fields.length; i < n; i++)
+				fields[i].write(output, object);
 
-		CachedField[] fields = this.fields;
-		for (int i = 0, n = fields.length; i < n; i++)
-			fields[i].write(output, object);
+			// Serialize transient fields
+			if (serializeTransient) {
+				for (int i = 0, n = transientFields.length; i < n; i++)
+					transientFields[i].write(output, object);
+			}
 
-		// Serialize transient fields
-		if (serializeTransient) {
-			for (int i = 0, n = transientFields.length; i < n; i++)
-				transientFields[i].write(output, object);
-		}
-
-		if (genericsScope != null) {
-			// Pop the scope for generics
-			kryo.popGenericsScope();
+			if (genericsScope != null) {
+				// Pop the scope for generics
+				kryo.popGenericsScope();
+			}
 		}
 	}
 
@@ -486,15 +492,19 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 			T object = create(kryo, input, type);
 			kryo.reference(object);
+			
+			if(hasObjectFields && getSupportsContinuations())
+				kryo.pushContinuation(new com.esotericsoftware.kryo.continuations.read.FieldSerializationContinuation(input, object, generics, 0, this, null, true));
+			else {
+				CachedField[] fields = this.fields;
+				for (int i = 0, n = fields.length; i < n; i++)
+					fields[i].read(input, object);
 
-			CachedField[] fields = this.fields;
-			for (int i = 0, n = fields.length; i < n; i++)
-				fields[i].read(input, object);
-
-			// De-serialize transient fields
-			if (serializeTransient) {
-				for (int i = 0, n = transientFields.length; i < n; i++)
-					transientFields[i].read(input, object);
+				// De-serialize transient fields
+				if (serializeTransient) {
+					for (int i = 0, n = transientFields.length; i < n; i++)
+						transientFields[i].read(input, object);
+				}
 			}
 			return object;
 		} finally {
@@ -625,6 +635,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			return field.getName();
 		}
 
+		public boolean supportsContinuations() {
+			return serializer != null && serializer.getSupportsContinuations();
+		}
+		
 		abstract public void write (Output output, Object object);
 
 		abstract public void read (Input input, Object object);

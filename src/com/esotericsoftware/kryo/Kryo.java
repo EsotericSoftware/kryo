@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -122,6 +123,20 @@ public class Kryo {
 	private Generics genericsScope;
 	/** Tells if ASM-based backend should be used by new serializer instances created using this Kryo instance. */
 	private boolean asmEnabled = false;
+	
+	/** Tells if continuation-based approach should be used by Kryo */
+	private boolean supportsContinuations = true;
+	
+	/** This is just a marker for the bottom of the serializer stack */
+	static final private Serializer DUMMY_SERIALIZER = new CollectionSerializer();
+	/** Stack of currently active serializers **/
+	private Stack<Serializer> serializers = new Stack<Serializer>() {
+		{ push(DUMMY_SERIALIZER); }
+	};
+	/** This is worklist of continuations to be executed. It uses LIFO starategy. Last added continuation
+	 * will be executed first */
+//	private Stack<SerializationContinuation> continuations = new Stack<SerializationContinuation>();
+	private SerializationContinuation currentContinuation;
 
 	private StreamFactory streamFactory;
 
@@ -167,7 +182,6 @@ public class Kryo {
 		addDefaultSerializer(boolean[].class, BooleanArraySerializer.class);
 		addDefaultSerializer(String[].class, StringArraySerializer.class);
 		addDefaultSerializer(Object[].class, ObjectArraySerializer.class);
-		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
 		addDefaultSerializer(BigInteger.class, BigIntegerSerializer.class);
 		addDefaultSerializer(BigDecimal.class, BigDecimalSerializer.class);
 		addDefaultSerializer(Class.class, ClassSerializer.class);
@@ -187,6 +201,7 @@ public class Kryo {
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
 		addDefaultSerializer(TreeMap.class, TreeMapSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
+		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
 		addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
 		addDefaultSerializer(Calendar.class, CalendarSerializer.class);
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
@@ -347,6 +362,29 @@ public class Kryo {
 		return defaultSerializer.makeSerializer(this, type);
 	}
 
+	/** Creates a new instance of the specified serializer for serializing the specified class. Serializers must have a zero
+	 * argument constructor or one that takes (Kryo), (Class), or (Kryo, Class). */
+	public Serializer newSerializer (Class<? extends Serializer> serializerClass, Class type) {
+		try {
+			try {
+				return serializerClass.getConstructor(Kryo.class, Class.class).newInstance(this, type);
+			} catch (NoSuchMethodException ex1) {
+				try {
+					return serializerClass.getConstructor(Kryo.class).newInstance(this);
+				} catch (NoSuchMethodException ex2) {
+					try {
+						return serializerClass.getConstructor(Class.class).newInstance(type);
+					} catch (NoSuchMethodException ex3) {
+						return serializerClass.newInstance();
+					}
+				}
+			}
+		} catch (Exception ex) {
+			throw new IllegalArgumentException("Unable to create serializer \"" + serializerClass.getName() + "\" for class: "
+				+ className(type), ex);
+		}
+	}
+
 	// --- Registration ---
 
 	/** Registers the class using the lowest, next available integer ID and the {@link Kryo#getDefaultSerializer(Class) default
@@ -498,7 +536,10 @@ public class Kryo {
 				return;
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
-			getRegistration(object.getClass()).getSerializer().write(this, output, object);
+			if (!getSupportsContinuations())
+				getRegistration(object.getClass()).getSerializer().write(this, output, object);
+			else
+				writeUsingSerializer(getRegistration(object.getClass()).getSerializer(),this, output, object);
 		} finally {
 			if (--depth == 0 && autoReset) reset();
 		}
@@ -516,7 +557,11 @@ public class Kryo {
 				return;
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
-			serializer.write(this, output, object);
+			
+			if (!getSupportsContinuations())
+				serializer.write(this, output, object);
+			else
+				writeUsingSerializer(serializer,this, output, object);
 		} finally {
 			if (--depth == 0 && autoReset) reset();
 		}
@@ -543,7 +588,10 @@ public class Kryo {
 				output.writeByte(NOT_NULL);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
-			serializer.write(this, output, object);
+			if (!getSupportsContinuations())
+				serializer.write(this, output, object);
+			else
+				writeUsingSerializer(serializer,this, output, object);
 		} finally {
 			if (--depth == 0 && autoReset) reset();
 		}
@@ -570,7 +618,10 @@ public class Kryo {
 				output.writeByte(NOT_NULL);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
-			serializer.write(this, output, object);
+			if (!getSupportsContinuations())
+				serializer.write(this, output, object);
+			else
+				writeUsingSerializer(serializer,this, output, object);
 		} finally {
 			if (--depth == 0 && autoReset) reset();
 		}
@@ -592,12 +643,149 @@ public class Kryo {
 				return;
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
-			registration.getSerializer().write(this, output, object);
+			if (!getSupportsContinuations())
+				registration.getSerializer().write(this, output, object);
+			else
+				writeUsingSerializer(registration.getSerializer(),this, output, object);
 		} finally {
 			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
+	/***
+	 * Write an object using a provided serializer.
+	 * @param serializer serializer to be used
+	 * @param kryo kryo insstance to be used
+	 * @param output output stream
+	 * @param object object to be serialized
+	 */
+	final private void writeUsingSerializer(Serializer serializer, Kryo kryo,
+            Output output, Object object) {
+		// Get last seen serializer and use it as a marker
+		SerializationContinuation marker = null;
+		Serializer lastSerializer = serializers.peek();
+		// Set this serializer as a current one 
+		serializers.push(serializer);
+		// Current one and previous serializer are both supporting continuations?
+		boolean supportsContinuations = serializer.getSupportsContinuations() && lastSerializer.getSupportsContinuations();
+
+		// Remember the state of continuations stack.
+		// Use current continuation later as a marker on continuation stack.
+		// It indicates where we should stop unwinding.
+		if(!supportsContinuations)
+			marker = peekContinuation();
+		
+		serializer.write(kryo, output, object);
+
+		// Check if there are some continuations to be executed
+		if(supportsContinuations)
+			processWriteContinuations(output);
+		else
+			processWriteContinuations(output, marker);
+		
+		// Current serializer is finished. Remove it from stack.
+		serializers.pop();
+    }
+
+	/***
+	 * Read an object using a provided serializer.
+	 * @param serializer serializer to be used
+	 * @param kryo kryo insstance to be used
+	 * @param input input stream
+	 * @param type type of object to be read
+	 * @return Object read from the input stream
+	 */
+	final private Object readUsingSerializer(Serializer serializer, Kryo kryo,
+            Input input, Class type) {
+		// Get last seen serializer and use it as a marker
+		SerializationContinuation marker = null;
+		Serializer lastSerializer = serializers.peek();
+//		Serializer lastSerializer = (serializers.isEmpty())? DUMMY_SERIALIZER : serializers.peek();
+		// Set this serializer as a current one 
+		serializers.push(serializer);
+		// Current one and previous serializers are both supporting continuations?
+		boolean supportsContinuations = serializer.getSupportsContinuations() && lastSerializer.getSupportsContinuations();
+
+		// Remember the state of continuations stack.
+		// Use current continuation later as a marker on continuation stack.
+		// It indicates where we should stop unwinding.
+		if(!supportsContinuations)
+			marker = peekContinuation();
+		
+		Object o = serializer.read(kryo, input, type);
+		// Check if there are some continuations to be executed
+		if(supportsContinuations)
+			o = processReadContinuations(input, o);
+		else
+			o = processReadContinuations(input, marker, o);
+		// Current serializer is finished. Remove it from stack.
+		serializers.pop();
+		return o;
+    }
+	
+	/***
+	 * Process all remaining continuations until the worklist gets is empty.
+	 * This method will perform any actions only when it is invoked from the 
+	 * top most Kryo#writeXXX method
+	 */
+	final private void processWriteContinuations(Output output) {
+		if(depth > 1)
+			return;
+	    SerializationContinuation cont;
+	    while(hasContinuations()) {
+	    	cont = peekContinuation();
+	    	cont.processWrite(this, output, true);
+	    }
+    }
+
+	/***
+	 * Process all remaining continuations until the worklist gets empty or stop marker is 
+	 * reached. The idea is to process all continuations that were added after current 
+	 * serializer has started.
+	 * 
+	 * @param marker an object used as a stop marker
+	 */
+	final public void processWriteContinuations(Output output, SerializationContinuation marker) {
+	    SerializationContinuation cont;
+	    while(hasContinuations() && (cont = peekContinuation()) != marker) {
+	    	cont.processWrite(this, output, true);
+	    }
+    }
+	
+	/***
+	 * Process all remaining continuations until the worklist gets is empty.
+	 * This method will perform any actions only when it is invoked from the 
+	 * top most Kryo#readXXX method
+	 */
+	final private Object processReadContinuations(Input input, Object o) {
+		if(depth > 1)
+			return o;
+		 Object obj = o;
+	    SerializationContinuation cont;
+	    while(hasContinuations()) {
+	    	cont = peekContinuation();
+	    	obj = cont.processRead(this, input, true);
+	    }
+	    return obj;
+    }
+
+	/***
+	 * Process all remaining continuations until the worklist gets empty or stop marker is 
+	 * reached. The idea is to process all continuations that were added after current 
+	 * serializer has started.
+	 * 
+	 * @param marker an object used as a stop marker
+	 * @param o current object read so far
+	 */
+	final public Object processReadContinuations(Input input, SerializationContinuation marker, Object o) {
+	    SerializationContinuation cont;
+	    Object obj = o;
+	    while(hasContinuations() && (cont = peekContinuation()) != marker) {
+	    	obj = cont.processRead(this, input, true);
+	    }
+	    return obj;
+    }
+	
 	/** @param object May be null if mayBeNull is true.
 	 * @return true if no bytes need to be written for the object. */
 	boolean writeReferenceOrNull (Output output, Object object, boolean mayBeNull) {
@@ -650,10 +838,17 @@ public class Kryo {
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, false);
 				if (stackSize == REF) return (T)readObject;
-				object = (T)getRegistration(type).getSerializer().read(this, input, type);
+				if (!getSupportsContinuations())
+					object = (T)getRegistration(type).getSerializer().read(this, input, type);
+				else
+					object = (T)readUsingSerializer(getRegistration(type).getSerializer(), this, input, type);
 				if (stackSize == readReferenceIds.size) reference(object);
-			} else
-				object = (T)getRegistration(type).getSerializer().read(this, input, type);
+			} else {
+				if (!getSupportsContinuations())
+					object = (T)getRegistration(type).getSerializer().read(this, input, type);
+				else
+					object = (T)readUsingSerializer(getRegistration(type).getSerializer(), this, input, type);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
@@ -672,10 +867,17 @@ public class Kryo {
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, false);
 				if (stackSize == REF) return (T)readObject;
-				object = (T)serializer.read(this, input, type);
+				if (!getSupportsContinuations())
+					object = (T)serializer.read(this, input, type);
+				else
+					object = (T)readUsingSerializer(serializer, this, input, type);
 				if (stackSize == readReferenceIds.size) reference(object);
-			} else
-				object = (T)serializer.read(this, input, type);
+			} else {
+				if (!getSupportsContinuations())
+					object = (T)serializer.read(this, input, type);
+				else
+					object = (T)readUsingSerializer(serializer, this, input, type);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
@@ -694,7 +896,10 @@ public class Kryo {
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, true);
 				if (stackSize == REF) return (T)readObject;
-				object = (T)getRegistration(type).getSerializer().read(this, input, type);
+				if (!getSupportsContinuations())
+					object = (T)getRegistration(type).getSerializer().read(this, input, type);
+				else
+					object = (T)readUsingSerializer(getRegistration(type).getSerializer(), this, input, type);
 				if (stackSize == readReferenceIds.size) reference(object);
 			} else {
 				Serializer serializer = getRegistration(type).getSerializer();
@@ -702,7 +907,10 @@ public class Kryo {
 					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
 					return null;
 				}
-				object = (T)serializer.read(this, input, type);
+				if (!getSupportsContinuations())
+					object = (T)serializer.read(this, input, type);
+				else
+					object = (T)readUsingSerializer(serializer, this, input, type);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -723,14 +931,20 @@ public class Kryo {
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, true);
 				if (stackSize == REF) return (T)readObject;
-				object = (T)serializer.read(this, input, type);
+				if (!getSupportsContinuations())
+					object = (T)serializer.read(this, input, type);
+				else
+					object = (T)readUsingSerializer(serializer, this, input, type);
 				if (stackSize == readReferenceIds.size) reference(object);
 			} else {
 				if (!serializer.getAcceptsNull() && input.readByte() == NULL) {
 					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
 					return null;
 				}
-				object = (T)serializer.read(this, input, type);
+				if (!getSupportsContinuations())
+					object = (T)serializer.read(this, input, type);
+				else
+					object = (T)readUsingSerializer(serializer, this, input, type);
 			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
@@ -754,10 +968,17 @@ public class Kryo {
 				registration.getSerializer().setGenerics(this, null);
 				int stackSize = readReferenceOrNull(input, type, false);
 				if (stackSize == REF) return readObject;
-				object = registration.getSerializer().read(this, input, type);
+				if (!getSupportsContinuations())
+					object = registration.getSerializer().read(this, input, type);
+				else
+					object = readUsingSerializer(registration.getSerializer(), this, input, type);
 				if (stackSize == readReferenceIds.size) reference(object);
-			} else
-				object = registration.getSerializer().read(this, input, type);
+			} else {
+				if (!getSupportsContinuations())
+					object = registration.getSerializer().read(this, input, type);
+				else
+					object = readUsingSerializer(registration.getSerializer(), this, input, type);
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
 			return object;
 		} finally {
@@ -1187,5 +1408,105 @@ public class Kryo {
 
 	public boolean getAsmEnabled () {
 		return asmEnabled;
+	}
+	
+	public boolean getSupportsContinuations() {
+		return supportsContinuations;
+	}
+
+	public void setSupportsContinuations (boolean supportsContinuations) {
+		this.supportsContinuations = supportsContinuations;
+	}
+	
+	/***
+	 * Add this continuation to the working queue. The queue is a LIFO stack.
+	 * The most recently added continuation will be executed first.
+	 * @param cont
+	 */
+	final public void pushContinuation(SerializationContinuation cont) {
+//		continuations.push(cont);
+		cont.setPrevious(currentContinuation);
+		currentContinuation = cont;
+    }
+	
+	/***
+	 * Check if there are any pending  continuations, i.e. if there is
+	 * still some work to do.
+	 * @return true, if there some continuations available
+	 */
+	final public boolean hasContinuations() {
+//		return !continuations.isEmpty();
+		return currentContinuation != null;
+	}
+	
+	/***
+	 * Remove the top most continuation from the working queue,
+	 * so that it won't be processed again.
+	 * @return former top-most continuation
+	 */
+	final public SerializationContinuation popContinuation() {
+//		return continuations.pop();
+		if (currentContinuation != null) {
+			SerializationContinuation cont = currentContinuation;
+			currentContinuation = currentContinuation.getPrevious();
+			cont.setPrevious(null);
+			return cont;
+		} else 
+			return null;
+	}
+
+	/**
+	 * Return the continuation that is the next one to be processed
+	 * @return current top-most continuation
+	 */
+	final public SerializationContinuation peekContinuation() {
+//		return (continuations.isEmpty())? null : continuations.peek();
+		return currentContinuation;
+	}
+	
+	/***
+	 * Simple Stack based on non-synchronized ArrayList.
+	 * It is much faster than java.util.Stack based on Vector.
+	 * @param <E>
+	 */
+	static public class Stack1<E> extends ArrayDeque<E> {
+
+		public Stack1() {
+			super(32);
+		}
+		
+		public void push(E e) {
+			addLast(e);
+      }
+
+		public E pop() {
+	        return removeLast();
+        }
+
+		public E peek() {
+	        return getLast();
+        }
+		
+	}
+	static public class Stack<E> extends ArrayList<E> {
+
+		public Stack() {
+			super(32);
+		}
+		
+		public void push(E e) {
+			add(e);
+        }
+
+		public E pop() {
+	        int last = size()-1;
+	        E e = get(last);
+	        remove(last);
+	        return e;
+        }
+
+		public E peek() {
+	        return get(size()-1);
+		}
 	}
 }

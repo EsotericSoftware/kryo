@@ -81,6 +81,7 @@ public class MapSerializerTest extends KryoTestCase {
 			map.put(random.nextLong(), random.nextBoolean());
 
 		Kryo kryo = new Kryo();
+		kryo.setSupportsContinuations(true);
 		kryo.register(HashMap.class, new MapSerializer());
 		kryo.register(ConcurrentHashMap.class, new MapSerializer());
 
