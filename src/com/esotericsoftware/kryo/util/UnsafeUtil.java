@@ -15,7 +15,7 @@ import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
 /**
- * A few utility methods for using @link{java.misc.Unsafe}, mostly for private
+ * A few utility methods for using @link{sun.misc.Unsafe}, mostly for private
  * use.
  * 
  * Use of Unsafe on Android is forbidden, as Android provides only a very limited
@@ -61,11 +61,11 @@ public class UnsafeUtil {
 				tmpLongArrayBaseOffset = tmpUnsafe.arrayBaseOffset(long[].class);
 				tmpDoubleArrayBaseOffset = tmpUnsafe.arrayBaseOffset(double[].class);
 			} else {
-				if (TRACE) trace("kryo", "Running on Android platform. Use of java.misc.Unsafe should be disabled");
+				if (TRACE) trace("kryo", "Running on Android platform. Use of sun.misc.Unsafe should be disabled");
 			}
 		} catch (java.lang.Exception e) {
 			if (TRACE)
-				trace("kryo", "java.misc.Unsafe is not accessible or not available. Use of java.misc.Unsafe should be disabled");
+				trace("kryo", "sun.misc.Unsafe is not accessible or not available. Use of sun.misc.Unsafe should be disabled");
 		}
 
 		byteArrayBaseOffset = tmpByteArrayBaseOffset;
@@ -89,13 +89,21 @@ public class UnsafeUtil {
 	}
 	
 	/***
-	 * 
-	 * @return instance of java.misc.Unsafe
+	 * Return the sun.misc.Unsafe object. If null is returned,
+	 * no further Unsafe-related methods are allowed to be invoked from UnsafeUtil.
+	 *  
+	 * @return instance of sun.misc.Unsafe or null, if this class is not available or not accessible
 	 */
 	final static public Unsafe unsafe() {
 		return _unsafe;
 	}
 	
+	/***
+	 * Sort the set of lists by their offsets from the object start address.
+	 * 
+	 * @param allFields set of fields to be sorted by their offsets
+	 * @return
+	 */
 	public static Field[] sortFieldsByOffset (List<Field> allFields) {
 		Field[] allFieldsArray = allFields.toArray(new Field[] {});
 

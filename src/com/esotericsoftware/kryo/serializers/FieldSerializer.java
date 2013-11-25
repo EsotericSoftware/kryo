@@ -103,7 +103,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			Object unsafe = unsafeMethod.invoke(null);
 			if (unsafe != null) unsafeAvailable = true;
 		} catch (Throwable e) {
-			if (TRACE) trace("kryo", "java.misc.Unsafe is not available");
+			if (TRACE) trace("kryo", "sun.misc.Unsafe is not available");
 		}
 	}
 	
@@ -122,7 +122,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.useAsmEnabled = kryo.getAsmEnabled();
 		if (!this.useAsmEnabled && !unsafeAvailable) {
 			this.useAsmEnabled = true;
-			if (TRACE) trace("kryo", "java.misc.Unsafe is unavailable. Using ASM instead.");
+			if (TRACE) trace("kryo", "sun.misc.Unsafe is unavailable. Using ASM instead.");
 		}
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
 		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
@@ -138,7 +138,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.useAsmEnabled = kryo.getAsmEnabled();
 		if (!this.useAsmEnabled && !unsafeAvailable) {
 			this.useAsmEnabled = true;
-			if (TRACE) trace("kryo", "java.misc.Unsafe is unavailable. Using ASM instead.");
+			if (TRACE) trace("kryo", "sun.misc.Unsafe is unavailable. Using ASM instead.");
 		}
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
 		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
@@ -423,7 +423,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		useAsmEnabled = setUseAsm;
 		if (!useAsmEnabled && !unsafeAvailable) {
 			useAsmEnabled = true;
-			if (TRACE) trace("kryo", "setUseAsm: java.misc.Unsafe is unavailable. Using ASM instead.");
+			if (TRACE) trace("kryo", "setUseAsm: sun.misc.Unsafe is unavailable. Using ASM instead.");
 		}
 		// optimizeInts = useAsmBackend;
 		if (TRACE) trace("kryo", "setUseAsm: " + setUseAsm);

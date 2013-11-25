@@ -11,7 +11,7 @@ import com.esotericsoftware.kryo.KryoException;
 import static com.esotericsoftware.kryo.util.UnsafeUtil.*;
 
 /** An optimized InputStream that reads data directly from the off-heap memory. Utility methods are provided for efficiently
- * reading primitive types, arrays of primitive types and strings. It uses @link{java.misc.Unsafe} to achieve a very good
+ * reading primitive types, arrays of primitive types and strings. It uses @link{sun.misc.Unsafe} to achieve a very good
  * performance.
  * 
  * <p>

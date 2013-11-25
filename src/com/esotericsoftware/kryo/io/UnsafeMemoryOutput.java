@@ -14,7 +14,7 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.util.Util;
 
 /** An optimized OutputStream that writes data directly into the off-heap memory. Utility methods are provided for efficiently
- * writing primitive types, arrays of primitive types and strings. It uses @link{java.misc.Unsafe} to achieve a very good
+ * writing primitive types, arrays of primitive types and strings. It uses @link{sun.misc.Unsafe} to achieve a very good
  * performance.
  * 
  * <p>
