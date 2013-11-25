@@ -203,7 +203,7 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 
 	/** {@inheritDoc} */
 	final public double[] readDoubles (int length) throws KryoException {
-		int bytesToCopy = length << 2;
+		int bytesToCopy = length << 3;
 		double[] array = new double[length];
 		readBytes(array, doubleArrayBaseOffset, 0, bytesToCopy);
 		return array;
