@@ -118,7 +118,7 @@ public class BeanSerializer<T> extends Serializer<T> {
 		}
 	}
 
-	public T read (Kryo kryo, Input input, Class<T> type) {
+	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		T object = kryo.newInstance(type);
 		kryo.reference(object);
 		for (int i = 0, n = properties.length; i < n; i++) {
