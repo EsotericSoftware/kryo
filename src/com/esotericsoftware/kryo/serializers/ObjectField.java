@@ -35,7 +35,7 @@ class ObjectField extends CachedField {
 		field.set(object, value);
 	}
 
-	final public void write (Output output, Object object) {
+	 public void write (Output output, Object object) {
 		try {
 			// if(typeVar2concreteClass != null) {
 			// // Push a new scope for generics
@@ -88,7 +88,7 @@ class ObjectField extends CachedField {
 		}
 	}
 
-	final public void read (Input input, Object object) {
+	public void read (Input input, Object object) {
 		try {
 			if (TRACE) trace("kryo", "Read field: " + this + " (" + type.getName() + ")" + " pos=" + input.position());
 			Object value;
@@ -154,8 +154,45 @@ class ObjectField extends CachedField {
 		public ObjectIntField (FieldSerializer fieldSerializer) {
 			super(fieldSerializer);
 		}
+
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getInt(object);
+		}
+
+		public void write (Output output, Object object) {
+			try {
+				if (varIntsEnabled)
+					output.writeInt(field.getInt(object), false);
+				else
+					output.writeInt(field.getInt(object));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void read (Input input, Object object) {
+			try {
+				if (varIntsEnabled)
+					field.setInt(object, input.readInt(false));
+				else
+					field.setInt(object, input.readInt());
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void copy (Object original, Object copy) {
+			try {
+				field.setInt(copy, field.getInt(original));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
 		}
 	}
 
@@ -163,8 +200,39 @@ class ObjectField extends CachedField {
 		public ObjectFloatField (FieldSerializer fieldSerializer) {
 			super(fieldSerializer);
 		}
+
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getFloat(object);
+		}
+
+		public void write (Output output, Object object) {
+			try {
+				output.writeFloat(field.getFloat(object));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void read (Input input, Object object) {
+			try {
+				field.setFloat(object, input.readFloat());
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void copy (Object original, Object copy) {
+			try {
+				field.setFloat(copy, field.getFloat(original));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
 		}
 	}
 
@@ -172,17 +240,79 @@ class ObjectField extends CachedField {
 		public ObjectShortField (FieldSerializer fieldSerializer) {
 			super(fieldSerializer);
 		}
+
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getShort(object);
 		}
+
+		public void write (Output output, Object object) {
+			try {
+				output.writeShort(field.getShort(object));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void read (Input input, Object object) {
+			try {
+				field.setShort(object, input.readShort());
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void copy (Object original, Object copy) {
+			try {
+				field.setShort(copy, field.getShort(original));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
 	}
-	
+
 	final static class ObjectByteField extends ObjectField {
 		public ObjectByteField (FieldSerializer fieldSerializer) {
 			super(fieldSerializer);
 		}
+
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getByte(object);
+		}
+
+		public void write (Output output, Object object) {
+			try {
+				output.writeByte(field.getByte(object));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void read (Input input, Object object) {
+			try {
+				field.setByte(object, input.readByte());
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void copy (Object original, Object copy) {
+			try {
+				field.setByte(copy, field.getByte(original));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
 		}
 	}
 
@@ -190,8 +320,39 @@ class ObjectField extends CachedField {
 		public ObjectBooleanField (FieldSerializer fieldSerializer) {
 			super(fieldSerializer);
 		}
+
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getBoolean(object);
+		}
+
+		public void write (Output output, Object object) {
+			try {
+				output.writeBoolean(field.getBoolean(object));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void read (Input input, Object object) {
+			try {
+				field.setBoolean(object, input.readBoolean());
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void copy (Object original, Object copy) {
+			try {
+				field.setBoolean(copy, field.getBoolean(original));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
 		}
 	}
 
@@ -199,8 +360,39 @@ class ObjectField extends CachedField {
 		public ObjectCharField (FieldSerializer fieldSerializer) {
 			super(fieldSerializer);
 		}
+
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getChar(object);
+		}
+
+		public void write (Output output, Object object) {
+			try {
+				output.writeChar(field.getChar(object));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void read (Input input, Object object) {
+			try {
+				field.setChar(object, input.readChar());
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void copy (Object original, Object copy) {
+			try {
+				field.setChar(copy, field.getChar(original));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
 		}
 	}
 
@@ -208,8 +400,45 @@ class ObjectField extends CachedField {
 		public ObjectLongField (FieldSerializer fieldSerializer) {
 			super(fieldSerializer);
 		}
+
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getLong(object);
+		}
+
+		public void write (Output output, Object object) {
+			try {
+				if (varIntsEnabled)
+					output.writeLong(field.getLong(object), false);
+				else
+					output.writeLong(field.getLong(object));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void read (Input input, Object object) {
+			try {
+				if (varIntsEnabled)
+					field.setLong(object, input.readLong(false));
+				else
+					field.setLong(object, input.readLong());
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void copy (Object original, Object copy) {
+			try {
+				field.setLong(copy, field.getLong(original));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
 		}
 	}
 
@@ -217,8 +446,40 @@ class ObjectField extends CachedField {
 		public ObjectDoubleField (FieldSerializer fieldSerializer) {
 			super(fieldSerializer);
 		}
+
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getDouble(object);
 		}
+
+		public void write (Output output, Object object) {
+			try {
+				output.writeDouble(field.getDouble(object));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void read (Input input, Object object) {
+			try {
+				field.setDouble(object, input.readDouble());
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
+
+		public void copy (Object original, Object copy) {
+			try {
+				field.setDouble(copy, field.getDouble(original));
+			} catch (Exception e) {
+				KryoException ex = new KryoException(e);
+				ex.addTrace(this + " (" + type.getName() + ")");
+				throw ex;
+			}
+		}
 	}
 }
+
