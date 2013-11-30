@@ -128,16 +128,8 @@
 					<artifactSet>
 						<includes>
 							<include>com.esotericsoftware.reflectasm:reflectasm:shaded</include>
-							<include>com.esotericsoftware.minlog:minlog</include>
-							<include>org.objenesis:objenesis</include>
 						</includes>
 					</artifactSet>
-					<relocations>
-						<relocation>
-							<pattern>org.objenesis</pattern>
-							<shadedPattern>com.esotericsoftware.shaded.org.objenesis</shadedPattern>
-						</relocation>
-					</relocations>
 				</configuration>
 				<executions>
 					<execution>
