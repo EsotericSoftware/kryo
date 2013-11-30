@@ -51,6 +51,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	final private TypeVariable[] typeParameters;
 	private CachedField[] fields = new CachedField[0];
 	private CachedField[] transientFields = new CachedField[0];
+	private Map<String, String> removedFields = new HashMap<String, String>();
 	Object access;
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 	private boolean ignoreSyntheticFields = true;
@@ -227,6 +228,9 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		initializeCachedFields();
 
 		if (genericsScope != null) kryo.popGenericsScope();
+		
+		for(String fieldName: removedFields.keySet())
+			removeField(fieldName);
 	}
 
 	private List<Field> buildValidFields (boolean transientFields, List<Field> allFields, ObjectMap context, IntArray useAsm) {
@@ -527,6 +531,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				System.arraycopy(fields, 0, newFields, 0, i);
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
 				fields = newFields;
+				removedFields.put(fieldName, fieldName);
 				return;
 			}
 		}
