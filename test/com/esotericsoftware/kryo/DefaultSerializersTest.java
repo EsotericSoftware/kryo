@@ -8,10 +8,12 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.TimeZone;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.LocaleSerializer;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest extends KryoTestCase {
@@ -277,6 +279,20 @@ public class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(void.class, kryo.readObject(in, Class.class));
 		assertEquals(ArrayList.class, kryo.readObject(in, Class.class));
 		assertEquals(TestEnum.class, kryo.readObject(in, Class.class));
+	}
+
+	public void testLocaleUsingReflection() {
+		doTestLocale(true);
+	}
+
+	public void testLocaleUsingConstructor() {
+		doTestLocale(false);
+	}
+
+	private void doTestLocale (boolean useReflection) {
+		kryo.setRegistrationRequired(true);
+		kryo.register(Locale.class, new LocaleSerializer(useReflection));
+		roundTrip(5, 5, Locale.ENGLISH);
 	}
 
 	public enum TestEnum {

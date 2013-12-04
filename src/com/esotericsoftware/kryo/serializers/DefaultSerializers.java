@@ -1,8 +1,10 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,6 +14,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -29,6 +32,8 @@ import com.esotericsoftware.kryo.io.Output;
 
 import static com.esotericsoftware.kryo.Kryo.*;
 import static com.esotericsoftware.kryo.util.Util.*;
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.trace;
 
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
  * @author Nathan Sweet <misc@n4te.com> */
@@ -572,6 +577,78 @@ public class DefaultSerializers {
 
 		protected TreeSet createCopy (Kryo kryo, Collection original) {
 			return new TreeSet(((TreeSet)original).comparator());
+		}
+	}
+
+	/**
+	 * Serializer for {@link Locale}.
+	 * <p>
+	 * For deserialization by default (and if available) the static method <code>Locale.getInstance(String, String, String)</code>
+	 * is used via reflection to make use of the Locale cache.<br/>
+	 * To use the {@link Locale#Locale(String, String, String) Locale(String, String, String)} constructor instead the
+	 * {@link LocaleSerializer#LocaleSerializer(boolean) LocaleSerializer(boolean)} has to be used with <code>useReflection</code>
+	 * set to <code>false</code>.
+	 * </p>
+	 *
+	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a>
+	 */
+	static public class LocaleSerializer extends Serializer<Locale> {
+
+		private static Method getInstance;
+
+		static {
+			try {
+				getInstance = Locale.class.getDeclaredMethod("getInstance", String.class, String.class, String.class);
+				getInstance.setAccessible(true);
+			} catch (final Exception e) {
+				if (TRACE) trace("kryo", "java.util.Locale.getInstance is not available");
+				getInstance = null;
+			}
+		}
+
+		private final boolean useReflection;
+
+		/**
+		 * Creates a new instance with {@link #useReflection} set to <code>true</code>.
+		 *
+		 * @see #LocaleSerializer(boolean)
+		 */
+		public LocaleSerializer() {
+			this(true);
+		}
+
+		/**
+		 * Creates a new instance and activates the usage of reflection (for getting the
+		 * {@link Locale} during deserialization) if <code>true</code> was provided for <code>useReflection</code>
+		 * and if the static method <code>Locale.getInstance(String, String, String)</code> is available.
+		 *
+		 * @param useReflection asks to activate reflection usage.
+		 */
+		public LocaleSerializer(final boolean useReflection) {
+			setImmutable(true);
+			this.useReflection = getInstance != null && useReflection;
+		}
+
+		@Override
+		public void write (Kryo kryo, Output output, Locale object) {
+			output.writeString(object.getLanguage());
+			output.writeString(object.getCountry());
+			output.writeString(object.getVariant());
+		}
+
+		@Override
+		public Locale read (Kryo kryo, Input input, Class<Locale> type) {
+			final String language = input.readString();
+			final String country = input.readString();
+			final String variant = input.readString();
+			if(useReflection) {
+				try {
+					return (Locale) getInstance.invoke(null, language, country, variant);
+				} catch (final Exception e) {
+					throw new RuntimeException("Could not get Locale using Locale.getInstance", e);
+				}
+			}
+			return new Locale(language, country, variant);
 		}
 	}
 }
