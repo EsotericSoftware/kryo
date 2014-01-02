@@ -190,7 +190,8 @@ public class ByteBufferOutput extends Output {
 			// Grow buffer.
 			capacity = Math.min(capacity * 2, maxCapacity);
 			if (capacity < 0) capacity = maxCapacity;
-			ByteBuffer newBuffer = ByteBuffer.allocateDirect(capacity);
+			ByteBuffer newBuffer = (niobuffer != null && !niobuffer.isDirect()) ? ByteBuffer.allocate(capacity) : ByteBuffer
+				.allocateDirect(capacity);
 			// Copy the whole buffer
 			niobuffer.position(0);
 			newBuffer.put(niobuffer);
