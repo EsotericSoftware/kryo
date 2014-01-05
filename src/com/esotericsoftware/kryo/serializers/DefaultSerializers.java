@@ -267,6 +267,8 @@ public class DefaultSerializers {
 			}
 			// other cases, reflection
 			try {
+				// Try to avoid invoking the no-args constructor
+				// (which is expected to initialize the instance with the current time)
 				Constructor constructor = type.getDeclaredConstructor(long.class);
 				if (constructor!=null) {
 					if (!constructor.isAccessible()) {
