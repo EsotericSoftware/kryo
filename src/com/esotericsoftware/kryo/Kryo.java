@@ -41,6 +41,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSetSerialize
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.FloatSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.IntSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.LocaleSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
@@ -76,6 +77,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Currency;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.TreeMap;
@@ -190,6 +192,7 @@ public class Kryo {
 		addDefaultSerializer(Map.class, MapSerializer.class);
 		addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
 		addDefaultSerializer(Calendar.class, CalendarSerializer.class);
+		addDefaultSerializer(Locale.class, LocaleSerializer.class);
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
