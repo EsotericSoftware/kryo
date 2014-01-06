@@ -253,16 +253,16 @@ public class DefaultSerializers {
 	 * @author serverperformance */
 	static public class DateSerializer extends Serializer<Date> {
 		private Date create(Kryo kryo, Class<?> type, long time) throws KryoException {
-			if (type.equals(Date.class)) {
+			if (type==Date.class) {
 				return new Date(time);
 			}
-			if (type.equals(Timestamp.class)) {
+			if (type==Timestamp.class) {
 				return new Timestamp(time);
 			}
-			if (type.equals(java.sql.Date.class)) {
+			if (type==java.sql.Date.class) {
 				return new java.sql.Date(time);
 			}
-			if (type.equals(Time.class)) {
+			if (type==Time.class) {
 				return new Time(time);
 			}
 			// other cases, reflection
@@ -627,6 +627,11 @@ public class DefaultSerializers {
 		}
 		
 		protected Locale create(String language, String country, String variant) {
+			// Fast-path for default locale (may not be in the Locale constants list,
+			// for example Spanish locales
+			Locale defaultLocale = Locale.getDefault();
+			if (isSameLocale(defaultLocale, language, country, variant))
+				return defaultLocale;
 			// Fast-paths for constants declared in java.util.Locale
 			if (isSameLocale(Locale.US, language, country, variant))
 				return Locale.US;
