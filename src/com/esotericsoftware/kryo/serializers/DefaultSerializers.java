@@ -675,12 +675,12 @@ public class DefaultSerializers {
 				return Locale.JAPAN;
 			if (isSameLocale(Locale.KOREA, language, country, variant))
 				return Locale.KOREA;
-			if (isSameLocale(Locale.CHINA, language, country, variant))
-				return Locale.CHINA;
-			if (isSameLocale(Locale.PRC, language, country, variant))
-				return Locale.PRC;
-			if (isSameLocale(Locale.TAIWAN, language, country, variant))
-				return Locale.TAIWAN;
+			//if (isSameLocale(Locale.CHINA, language, country, variant)) // See Locale.java, CHINA==SIMPLIFIED_CHINESE
+			//	return Locale.CHINA;
+			//if (isSameLocale(Locale.PRC, language, country, variant)) // See Locale.java, PRC==SIMPLIFIED_CHINESE
+			//	return Locale.PRC;
+			//if (isSameLocale(Locale.TAIWAN, language, country, variant)) // See Locale.java, TAIWAN==SIMPLIFIED_CHINESE
+			//	return Locale.TAIWAN;
 			if (isSameLocale(Locale.CANADA, language, country, variant))
 				return Locale.CANADA;
 			if (isSameLocale(Locale.CANADA_FRENCH, language, country, variant))
@@ -703,9 +703,13 @@ public class DefaultSerializers {
 		}
 
 		protected static boolean isSameLocale(Locale locale, String language, String country, String variant) {
-			if (locale==null)
+			try {
+				return (locale.getLanguage().equals(language) && locale.getCountry().equals(country) && locale.getVariant().equals(variant));
+			}
+			catch (NullPointerException npe) {
+				// Shouldn't happen
 				return false;
-			return (locale.getLanguage().equals(language) && locale.getCountry().equals(country) && locale.getVariant().equals(variant));
+			}
 		}
 	}
 }
