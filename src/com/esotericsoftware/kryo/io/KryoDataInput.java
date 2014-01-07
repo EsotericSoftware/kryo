@@ -1,6 +1,4 @@
-package com.esotericsoftware.kryo.adapters;
-
-import com.esotericsoftware.kryo.io.Input;
+package com.esotericsoftware.kryo.io;
 
 import java.io.DataInput;
 import java.io.EOFException;
@@ -12,11 +10,11 @@ import java.io.IOException;
  *
  * @author Robert DiFalco <robert.difalco@gmail.com>
  */
-public class DataInputAdapter implements DataInput {
+public class KryoDataInput implements DataInput {
 
     protected final Input input;
 
-    public DataInputAdapter( Input input ) {
+    public KryoDataInput( Input input ) {
         this.input = input;
     }
 
@@ -39,14 +37,7 @@ public class DataInputAdapter implements DataInput {
     }
 
     public int skipBytes( int n ) throws IOException {
-        int total = 0;
-        int cur = 0;
-
-        while ((total<n) && ((cur = (int) input.skip( (long)n-total) ) > 0)) {
-            total += cur;
-        }
-
-        return total;
+        return (int)input.skip( (long)n );
     }
 
     public boolean readBoolean() throws IOException {
@@ -89,10 +80,23 @@ public class DataInputAdapter implements DataInput {
         return input.readDouble();
     }
 
-    public String readLine() throws IOException {
+    /**
+     * This is not currently implemented. The method will currently throw an {@link java.lang.UnsupportedOperationException}
+     * whenever it is called.
+     * @throws UnsupportedOperationException when called.
+     */
+    public String readLine() throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Reads the length and string of UTF8 characters, or null. This can read strings written by
+     * {@link KryoDataOutput#writeUTF(String)},
+     * {@link com.esotericsoftware.kryo.io.Output#writeString(String)},
+     * {@link com.esotericsoftware.kryo.io.Output#writeString(CharSequence)}, and
+     * {@link com.esotericsoftware.kryo.io.Output#writeAscii(String)}.
+     * @return May be null.
+     */
     public String readUTF() throws IOException {
         return input.readString();
     }

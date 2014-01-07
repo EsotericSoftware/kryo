@@ -1,4 +1,4 @@
-package com.esotericsoftware.kryo.adapters;
+package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.io.Output;
 
@@ -9,11 +9,11 @@ import java.io.IOException;
  * A kryo implementation of {@link java.io.DataOutput}.
  * @author Robert DiFalco <robert.difalco@gmail.com>
  */
-public class DataOutputAdapter implements DataOutput {
+public class KryoDataOutput implements DataOutput {
 
     protected final Output output;
 
-    public DataOutputAdapter( Output output ) {
+    public KryoDataOutput( Output output ) {
         this.output = output;
     }
 

@@ -34,10 +34,8 @@ public class ExternalizableSerializerTest extends KryoTestCase {
     }
 
     public void testReadResolve() {
-        ExternalizableSerializer serializer = new ExternalizableSerializer();
-        serializer.setCheckForReplaceMethods( true );
         kryo.setRegistrationRequired( false );
-        kryo.addDefaultSerializer( Externalizable.class, serializer );
+        kryo.addDefaultSerializer( Externalizable.class, ExternalizableMaySerializeSerializer.class );
 
         ReadResolvable test = new ReadResolvable( "foobar" );
         Output output = new Output( 1024 );
@@ -54,9 +52,8 @@ public class ExternalizableSerializerTest extends KryoTestCase {
     }
 
     public void testSuppressReadResolve() {
-        ExternalizableSerializer serializer = new ExternalizableSerializer();
         kryo.setRegistrationRequired( false );
-        kryo.addDefaultSerializer( Externalizable.class, serializer );
+        kryo.addDefaultSerializer( Externalizable.class, ExternalizableSerializer.class );
 
         ReadResolvable test = new ReadResolvable( "foobar" );
         Output output = new Output( 1024 );

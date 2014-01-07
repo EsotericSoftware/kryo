@@ -1,7 +1,6 @@
-package com.esotericsoftware.kryo.adapters;
+package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Output;
 
 import java.io.IOException;
 import java.io.ObjectOutput;
@@ -15,7 +14,7 @@ import java.io.ObjectOutput;
  *
  * @author Robert DiFalco <robert.difalco@gmail.com>
  */
-public class KryoObjectOutput extends DataOutputAdapter implements ObjectOutput {
+public class KryoObjectOutput extends KryoDataOutput implements ObjectOutput {
 
     private final Kryo kryo;
 
