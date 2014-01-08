@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 
 import com.esotericsoftware.kryo.io.ByteBufferInputStream;
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.ByteBufferOutputStream;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -783,5 +784,13 @@ public class InputOutputTest extends KryoTestCase {
 		input.readBytes(toRead);
 
 		input.readBytes(toRead);
+	}
+	
+	public void testZeroLengthOutputs() throws Exception {
+		Output output = new Output(0, 10000);
+		kryo.writeClassAndObject(output, "Test string");
+
+		Output byteBufferOutput = new ByteBufferOutput(0, 10000);
+		kryo.writeClassAndObject(byteBufferOutput, "Test string");
 	}
 }

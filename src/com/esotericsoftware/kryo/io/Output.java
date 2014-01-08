@@ -144,6 +144,7 @@ public class Output extends OutputStream {
 			if (capacity == maxCapacity)
 				throw new KryoException("Buffer overflow. Available: " + (capacity - position) + ", required: " + required);
 			// Grow buffer.
+			if (capacity == 0) capacity = 1;
 			capacity = Math.min(capacity * 2, maxCapacity);
 			if (capacity < 0) capacity = maxCapacity;
 			byte[] newBuffer = new byte[capacity];
