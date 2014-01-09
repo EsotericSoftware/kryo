@@ -16,7 +16,7 @@ import com.esotericsoftware.kryo.io.Output;
  */
 public class DefaultStreamFactory implements StreamFactory {
 
-	private Kryo kryo;
+	//private Kryo kryo; // removed reference to allow reusing the instance as singleton AND avoid offending the GC in such case
 
 	@Override
 	public Input getInput() {
@@ -81,11 +81,6 @@ public class DefaultStreamFactory implements StreamFactory {
 	@Override
 	public Output getOutput(OutputStream outputStream, int bufferSize) {
 		return new Output(outputStream, bufferSize);
-	}
-
-	@Override
-	public void setKryo(Kryo kryo) {
-		this.kryo = kryo;
 	}
 
 }
