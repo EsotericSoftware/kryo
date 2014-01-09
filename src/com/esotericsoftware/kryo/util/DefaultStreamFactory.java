@@ -10,13 +10,14 @@ import com.esotericsoftware.kryo.io.Output;
 
 /**
  * StreamFactory which provides usual Input/Output streams, which are
- * present in all versions of Kryo. 
+ * present in all versions of Kryo.
+ * 
+ * <p/>Instances of this class can be reused / singleton, as don't
+ * reference any Kryo instance.
  * 
  * @author Roman Levenstein <romixlev@gmail.com>
  */
 public class DefaultStreamFactory implements StreamFactory {
-
-	//private Kryo kryo; // removed reference to allow reusing the instance as singleton AND avoid offending the GC in such case
 
 	@Override
 	public Input getInput() {
