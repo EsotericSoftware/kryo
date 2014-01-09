@@ -21,7 +21,7 @@ import com.esotericsoftware.kryo.io.UnsafeOutput;
 public class FastestStreamFactory implements StreamFactory {
 	
 	static private boolean isUnsafe = UnsafeUtil.unsafe() != null;
-	private Kryo kryo; 
+	//private Kryo kryo; // removed reference to allow reusing the instance as singleton AND avoid offending the GC in such case
 
 	@Override
 	public Input getInput() {
@@ -86,13 +86,6 @@ public class FastestStreamFactory implements StreamFactory {
 	@Override
 	public Output getOutput(OutputStream outputStream, int bufferSize) {
 		return (isUnsafe)? new UnsafeOutput(outputStream, bufferSize) : new Output(outputStream, bufferSize);
-	}
-
-	@Override
-	public void setKryo(Kryo kryo) {
-		this.kryo = kryo;
-		// Only use Unsafe-based streams if this Kryo instance supports it
-		//isUnsafe = UnsafeUtil.unsafe() != null && kryo.getUnsafe();
 	}
 
 }
