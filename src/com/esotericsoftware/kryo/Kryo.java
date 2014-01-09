@@ -52,6 +52,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeMapSerialize
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeSetSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.VoidSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultStreamFactory;
@@ -152,7 +153,6 @@ public class Kryo {
 		classResolver.setKryo(this);
 
 		this.streamFactory = streamFactory;
-		streamFactory.setKryo(this);
 
 		this.referenceResolver = referenceResolver;
 		if (referenceResolver != null) {
