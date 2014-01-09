@@ -15,13 +15,15 @@ import com.esotericsoftware.kryo.io.UnsafeOutput;
  * It may return sun.misc.Unsafe based implementations of streams, which are
  * very fast, but not portable across platforms.
  * 
+ * <p/>Instances of this class can be reused / singleton, as don't
+ * reference any Kryo instance.
+ * 
  * @author Roman Levenstein <romixlev@gmail.com>
  *
  */
 public class FastestStreamFactory implements StreamFactory {
 	
 	static private boolean isUnsafe = UnsafeUtil.unsafe() != null;
-	//private Kryo kryo; // removed reference to allow reusing the instance as singleton AND avoid offending the GC in such case
 
 	@Override
 	public Input getInput() {
