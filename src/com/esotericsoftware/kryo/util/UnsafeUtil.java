@@ -102,7 +102,6 @@ public class UnsafeUtil {
 	 * Sort the set of lists by their offsets from the object start address.
 	 * 
 	 * @param allFields set of fields to be sorted by their offsets
-	 * @return
 	 */
 	public static Field[] sortFieldsByOffset (List<Field> allFields) {
 		Field[] allFieldsArray = allFields.toArray(new Field[] {});
