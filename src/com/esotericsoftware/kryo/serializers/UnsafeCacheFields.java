@@ -21,7 +21,7 @@ import com.esotericsoftware.reflectasm.FieldAccess;
 /*** Implementations of sun.misc.Unsafe-based serializers for fields.
  * 
  * @author Roman Levenstein <romixlev@gmail.com> */
-public class UnsafeCacheFields {
+class UnsafeCacheFields {
 
 	abstract static class UnsafeCachedField extends CachedField {
 		UnsafeCachedField (long offset) {
