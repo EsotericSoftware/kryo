@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import junit.framework.TestCase;
 
@@ -264,5 +266,12 @@ abstract public class KryoTestCase extends TestCase {
 		for (Object item : items)
 			list.add(item);
 		return list;
+	}
+	
+	static public <T> Set<T> toSet(Iterable<T> items) {
+		Set<T> result = new HashSet<T>();
+		for (T item : items)
+			result.add(item);
+		return result;
 	}
 }

@@ -101,7 +101,7 @@ public class Kryo {
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(32);
 	private final int lowPriorityDefaultSerializerCount;
 
-	private final ClassResolver classResolver;
+	private ClassResolver classResolver;
 	private int nextRegisterID;
 	private ClassLoader classLoader = getClass().getClassLoader();
 	private InstantiatorStrategy defaultStrategy = new DefaultInstantiatorStrategy();
@@ -146,19 +146,10 @@ public class Kryo {
 
 	/** @param referenceResolver May be null to disable references. */
 	public Kryo (ClassResolver classResolver, ReferenceResolver referenceResolver, StreamFactory streamFactory) {
-		if (classResolver == null) throw new IllegalArgumentException("classResolver cannot be null.");
 
-		this.classResolver = classResolver;
-		classResolver.setKryo(this);
-
-		this.streamFactory = streamFactory;
-		streamFactory.setKryo(this);
-
-		this.referenceResolver = referenceResolver;
-		if (referenceResolver != null) {
-			referenceResolver.setKryo(this);
-			references = true;
-		}
+		setClassResolver(classResolver, false);
+		setStreamFactory(streamFactory);
+		setReferenceResolver(referenceResolver);
 
 		addDefaultSerializer(byte[].class, ByteArraySerializer.class);
 		addDefaultSerializer(char[].class, CharArraySerializer.class);
@@ -196,6 +187,7 @@ public class Kryo {
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
+		// If changed remember to adjust copyPrimitivesAndString.
 		register(int.class, new IntSerializer());
 		register(String.class, new StringSerializer());
 		register(float.class, new FloatSerializer());
@@ -969,6 +961,41 @@ public class Kryo {
 		return classResolver;
 	}
 
+	/**
+	 * Sets the new class resolver and may copy all registrations from the former class resolver. Is expected to be invoked before
+	 * any serialization/deserialization is performed (other behaviour is not tested).
+	 * @param classResolver the new class resolver to set, will get set this kryo instance.
+	 * @param copyAllRegistrations if <code>true</code> all registrations from the currently set class resolver to the new one. If
+	 *           <code>false</code>, only registrations for primitive types are copied.
+	 */
+	public void setClassResolver (ClassResolver classResolver, boolean copyAllRegistrations) {
+		if (classResolver == null) throw new IllegalArgumentException("classResolver cannot be null.");
+		if (copyAllRegistrations) {
+			for (Registration registration : this.classResolver.getRegistrations()) {
+				classResolver.register(registration);
+			}
+		}
+		else if (this.classResolver != null) {
+			copyPrimitivesAndString(this.classResolver, classResolver);
+		}
+		classResolver.setKryo(this);
+		this.classResolver = classResolver;
+	}
+
+	/** The same types as registered in the constructor */
+	private void copyPrimitivesAndString (ClassResolver from, ClassResolver to) {
+		to.register(from.getRegistration(int.class));
+		to.register(from.getRegistration(String.class));
+		to.register(from.getRegistration(float.class));
+		to.register(from.getRegistration(boolean.class));
+		to.register(from.getRegistration(byte.class));
+		to.register(from.getRegistration(char.class));
+		to.register(from.getRegistration(short.class));
+		to.register(from.getRegistration(long.class));
+		to.register(from.getRegistration(double.class));
+		to.register(from.getRegistration(void.class));
+	}
+
 	/** @return May be null. */
 	public ReferenceResolver getReferenceResolver () {
 		return referenceResolver;
@@ -1021,12 +1048,18 @@ public class Kryo {
 		this.copyReferences = copyReferences;
 	}
 
-	/** Sets the reference resolver and enables references. */
+	/** Sets the reference resolver and enables references if the reference resolver is not <code>null</code>. */
 	public void setReferenceResolver (ReferenceResolver referenceResolver) {
-		if (referenceResolver == null) throw new IllegalArgumentException("referenceResolver cannot be null.");
-		this.references = true;
-		this.referenceResolver = referenceResolver;
-		if (TRACE) trace("kryo", "Reference resolver: " + referenceResolver.getClass().getName());
+		if (referenceResolver == null) {
+			this.references = false;
+			if (TRACE) trace("kryo", "Reference resolver: <null>");
+		}
+		else {
+			this.references = true;
+			this.referenceResolver = referenceResolver;
+			referenceResolver.setKryo(this);
+			if (TRACE) trace("kryo", "Reference resolver: " + referenceResolver.getClass().getName());
+		}
 	}
 
 	public boolean getReferences () {
@@ -1145,7 +1178,9 @@ public class Kryo {
 	}
 
 	public void setStreamFactory (StreamFactory streamFactory) {
+		if (streamFactory == null) throw new IllegalArgumentException("streamFactory cannot be null.");
 		this.streamFactory = streamFactory;
+		streamFactory.setKryo(this);
 	}
 
 	/** Tells Kryo, if ASM-based backend should be used by new serializer instances created using this Kryo instance. Already

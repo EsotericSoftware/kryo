@@ -35,6 +35,10 @@ public class DefaultClassResolver implements ClassResolver {
 		this.kryo = kryo;
 	}
 
+	public Iterable<Registration> getRegistrations () {
+		return classToRegistration.values();
+	}
+
 	public Registration register (Registration registration) {
 		if (registration == null) throw new IllegalArgumentException("registration cannot be null.");
 		if (registration.getId() != NAME) {
