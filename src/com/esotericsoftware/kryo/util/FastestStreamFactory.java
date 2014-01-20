@@ -15,13 +15,15 @@ import com.esotericsoftware.kryo.io.UnsafeOutput;
  * It may return sun.misc.Unsafe based implementations of streams, which are
  * very fast, but not portable across platforms.
  * 
+ * <p/>Instances of this class can be reused / singleton, as don't
+ * reference any Kryo instance.
+ * 
  * @author Roman Levenstein <romixlev@gmail.com>
  *
  */
 public class FastestStreamFactory implements StreamFactory {
 	
 	static private boolean isUnsafe = UnsafeUtil.unsafe() != null;
-	private Kryo kryo; 
 
 	@Override
 	public Input getInput() {
@@ -86,13 +88,6 @@ public class FastestStreamFactory implements StreamFactory {
 	@Override
 	public Output getOutput(OutputStream outputStream, int bufferSize) {
 		return (isUnsafe)? new UnsafeOutput(outputStream, bufferSize) : new Output(outputStream, bufferSize);
-	}
-
-	@Override
-	public void setKryo(Kryo kryo) {
-		this.kryo = kryo;
-		// Only use Unsafe-based streams if this Kryo instance supports it
-		//isUnsafe = UnsafeUtil.unsafe() != null && kryo.getUnsafe();
 	}
 
 }

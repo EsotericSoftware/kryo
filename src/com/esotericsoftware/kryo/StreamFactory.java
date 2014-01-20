@@ -58,6 +58,4 @@ public interface StreamFactory {
 	/** Creates a new Output for writing to an OutputStream. */
 	public Output getOutput(OutputStream outputStream, int bufferSize);
 
-	public void setKryo(Kryo kryo);
-	
 }

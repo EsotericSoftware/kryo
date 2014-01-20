@@ -10,13 +10,14 @@ import com.esotericsoftware.kryo.io.Output;
 
 /**
  * StreamFactory which provides usual Input/Output streams, which are
- * present in all versions of Kryo. 
+ * present in all versions of Kryo.
+ * 
+ * <p/>Instances of this class can be reused / singleton, as don't
+ * reference any Kryo instance.
  * 
  * @author Roman Levenstein <romixlev@gmail.com>
  */
 public class DefaultStreamFactory implements StreamFactory {
-
-	private Kryo kryo;
 
 	@Override
 	public Input getInput() {
@@ -81,11 +82,6 @@ public class DefaultStreamFactory implements StreamFactory {
 	@Override
 	public Output getOutput(OutputStream outputStream, int bufferSize) {
 		return new Output(outputStream, bufferSize);
-	}
-
-	@Override
-	public void setKryo(Kryo kryo) {
-		this.kryo = kryo;
 	}
 
 }

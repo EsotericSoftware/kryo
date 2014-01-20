@@ -32,12 +32,12 @@ import static com.esotericsoftware.minlog.Log.*;
 public class BeanSerializer<T> extends Serializer<T> {
 	static final Object[] noArgs = {};
 
-	private final Kryo kryo;
+	//private final Kryo kryo; // removed reference to allow reusing the instance as singleton AND avoid offending the GC in such case
 	private CachedProperty[] properties;
 	Object access;
 
 	public BeanSerializer (Kryo kryo, Class type) {
-		this.kryo = kryo;
+		//this.kryo = kryo;
 
 		BeanInfo info;
 		try {

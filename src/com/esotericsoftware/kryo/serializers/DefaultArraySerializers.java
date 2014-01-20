@@ -290,16 +290,16 @@ public class DefaultArraySerializers{
 		private boolean elementsAreSameType;
 		private boolean elementsCanBeNull = true;
 		private Class[] generics;
-		private final Class type;
-		private final Kryo kryo;
+		//private final Class type;
+		//private final Kryo kryo;
 
 		{
 			setAcceptsNull(true);
 		}
 		
 		public ObjectArraySerializer(Kryo kryo, Class type) {
-			this.kryo = kryo;
-			this.type = type;
+			//this.kryo = kryo;
+			//this.type = type;
 			Class componentType = type.getComponentType();
 			boolean isFinal = 0!=(componentType.getModifiers() & Modifier.FINAL);
 			if(isFinal)

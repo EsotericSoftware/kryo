@@ -12,6 +12,7 @@ import java.util.TimeZone;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import java.util.Locale;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest extends KryoTestCase {
@@ -155,6 +156,27 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(2, 9, new Date(0));
 		roundTrip(4, 9, new Date(1234567));
 		roundTrip(10, 9, new Date(-1234567));
+
+		kryo.register(java.sql.Date.class);
+		roundTrip(10, 9, new java.sql.Date(Long.MIN_VALUE));
+		roundTrip(2, 9, new java.sql.Date(0));
+		roundTrip(4, 9, new java.sql.Date(1234567));
+		roundTrip(10, 9, new java.sql.Date(Long.MAX_VALUE));
+		roundTrip(10, 9, new java.sql.Date(-1234567));
+
+		kryo.register(java.sql.Time.class);
+		roundTrip(10, 9, new java.sql.Time(Long.MIN_VALUE));
+		roundTrip(2, 9, new java.sql.Time(0));
+		roundTrip(4, 9, new java.sql.Time(1234567));
+		roundTrip(10, 9, new java.sql.Time(Long.MAX_VALUE));
+		roundTrip(10, 9, new java.sql.Time(-1234567));
+
+		kryo.register(java.sql.Timestamp.class);
+		roundTrip(10, 9, new java.sql.Timestamp(Long.MIN_VALUE));
+		roundTrip(2, 9, new java.sql.Timestamp(0));
+		roundTrip(4, 9, new java.sql.Timestamp(1234567));
+		roundTrip(10, 9, new java.sql.Timestamp(Long.MAX_VALUE));
+		roundTrip(10, 9, new java.sql.Timestamp(-1234567));
 	}
 
 	public void testBigDecimalSerializer () {
@@ -277,6 +299,17 @@ public class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(void.class, kryo.readObject(in, Class.class));
 		assertEquals(ArrayList.class, kryo.readObject(in, Class.class));
 		assertEquals(TestEnum.class, kryo.readObject(in, Class.class));
+	}
+	
+	public void testLocaleSerializer () {
+		kryo.setRegistrationRequired(true);
+		kryo.register(Locale.class);
+		
+		roundTrip(5, 5, Locale.ENGLISH);
+		roundTrip(6, 6, Locale.US);
+		roundTrip(6, 6, Locale.SIMPLIFIED_CHINESE);
+		roundTrip(5, 5, new Locale("es"));		
+		roundTrip(10, 10, new Locale("es", "ES", "ñç"));		
 	}
 
 	public enum TestEnum {
