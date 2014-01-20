@@ -130,7 +130,7 @@ public class DefaultClassResolver implements ClassResolver {
 		if (type == null) {
 			// Only read the class name the first time encountered in object graph.
 			String className = input.readString();
-			if (nameToClass != null) type = nameToClass.get(className);
+			type = getTypeByName(className);
 			if (type == null) {
 				try {
 					type = Class.forName(className, false, kryo.getClassLoader());
@@ -146,6 +146,10 @@ public class DefaultClassResolver implements ClassResolver {
 			if (TRACE) trace("kryo", "Read class name reference " + nameId + ": " + className(type));
 		}
 		return kryo.getRegistration(type);
+	}
+
+	protected Class<?> getTypeByName(final String className) {
+		return nameToClass != null ? nameToClass.get(className) : null;
 	}
 
 	public void reset () {
