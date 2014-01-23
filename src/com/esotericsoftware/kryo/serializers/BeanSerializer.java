@@ -31,14 +31,10 @@ import static com.esotericsoftware.minlog.Log.*;
  * @author Nathan Sweet <misc@n4te.com> */
 public class BeanSerializer<T> extends Serializer<T> {
 	static final Object[] noArgs = {};
-
-	private final Kryo kryo;
 	private CachedProperty[] properties;
 	Object access;
 
 	public BeanSerializer (Kryo kryo, Class type) {
-		this.kryo = kryo;
-
 		BeanInfo info;
 		try {
 			info = Introspector.getBeanInfo(type);

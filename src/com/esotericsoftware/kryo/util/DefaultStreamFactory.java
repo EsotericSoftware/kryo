@@ -15,9 +15,7 @@ import com.esotericsoftware.kryo.io.Output;
  * @author Roman Levenstein <romixlev@gmail.com>
  */
 public class DefaultStreamFactory implements StreamFactory {
-
-	private Kryo kryo;
-
+	
 	@Override
 	public Input getInput() {
 		return new Input();
@@ -85,7 +83,6 @@ public class DefaultStreamFactory implements StreamFactory {
 
 	@Override
 	public void setKryo(Kryo kryo) {
-		this.kryo = kryo;
 	}
 
 }
