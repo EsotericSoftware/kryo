@@ -33,7 +33,7 @@ public class BlowfishSerializer extends Serializer {
 				// Don't allow the CipherOutputStream to close the output.
 			}
 		};
-		kryo.writeObject(cipherOutput, object, serializer);
+		serializer.write(kryo, cipherOutput, object);
 		cipherOutput.flush();
 		try {
 			cipherStream.close();
@@ -45,7 +45,7 @@ public class BlowfishSerializer extends Serializer {
 	public Object read (Kryo kryo, Input input, Class type) {
 		Cipher cipher = getCipher(Cipher.DECRYPT_MODE);
 		CipherInputStream cipherInput = new CipherInputStream(input, cipher);
-		return kryo.readObject(new Input(cipherInput, 256), type, serializer);
+		return serializer.read(kryo, new Input(cipherInput, 256), type); 
 	}
 
 	public Object copy (Kryo kryo, Object original) {
