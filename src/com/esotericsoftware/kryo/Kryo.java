@@ -338,9 +338,8 @@ public class Kryo {
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
 			if (entry.type.isAssignableFrom(type)) {
 				Serializer defaultSerializer = entry.serializerFactory.makeSerializer(this, type);
-				//Remember that it is a default serializer set internally by Kryo
-				if(i > n - lowPriorityDefaultSerializerCount)
-					defaultSerializer.setDefaultSerializer(true);
+				// Remember that it is a default serializer set internally by Kryo
+				if (i > n - lowPriorityDefaultSerializerCount) defaultSerializer.setDefaultSerializer(true);
 				return defaultSerializer;
 			}
 		}
@@ -494,7 +493,7 @@ public class Kryo {
 			if (depth == 0 && autoReset) reset();
 		}
 	}
-	
+
 	/** Writes an object using the registered serializer. */
 	public void writeObject (Output output, Object object) {
 		if (output == null) throw new IllegalArgumentException("output cannot be null.");
@@ -1040,11 +1039,10 @@ public class Kryo {
 	public void setInstantiatorStrategy (InstantiatorStrategy strategy) {
 		this.strategy = strategy;
 	}
-	
-	public InstantiatorStrategy getInstantiatorStrategy() {
+
+	public InstantiatorStrategy getInstantiatorStrategy () {
 		return strategy;
 	}
-	
 
 	/** Returns a new instantiator for creating new instances of the specified type. By default, an instantiator is returned that
 	 * uses reflection if the class has a zero argument constructor, an exception is thrown. If a
@@ -1060,7 +1058,7 @@ public class Kryo {
 		Registration registration = getRegistration(type);
 		ObjectInstantiator instantiator = registration.getInstantiator();
 		if (instantiator == null) {
-			if(registration.getSerializer().isDefaultSerializer())
+			if (registration.getSerializer().isDefaultSerializer())
 				instantiator = defaultStrategy.newInstantiatorOf(type);
 			else
 				instantiator = newInstantiator(type);
@@ -1085,6 +1083,13 @@ public class Kryo {
 	/** Returns the number of child objects away from the object graph root. */
 	public int getDepth () {
 		return depth;
+	}
+
+	/** Returns the internal map of original to copy objects when a copy method is used. This can be used after a copy to map old
+	 * objects to the copies, however it is cleared automatically by {@link #reset()} so this is only useful when
+	 * {@link #setAutoReset(boolean)} is false. */
+	public IdentityMap getOriginalToCopyMap () {
+		return originalToCopy;
 	}
 
 	/** If true (the default), {@link #reset()} is called automatically after an entire object graph has been read or written. If
@@ -1168,14 +1173,14 @@ public class Kryo {
 	static public class DefaultInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
 		private InstantiatorStrategy fallbackStrategy;
 
-		public void setFallbackInstantiatorStrategy(final InstantiatorStrategy fallbackStrategy) {
+		public void setFallbackInstantiatorStrategy (final InstantiatorStrategy fallbackStrategy) {
 			this.fallbackStrategy = fallbackStrategy;
 		}
-		
-		public InstantiatorStrategy getFallbackInstantiatorStrategy() {
+
+		public InstantiatorStrategy getFallbackInstantiatorStrategy () {
 			return fallbackStrategy;
 		}
-		
+
 		public ObjectInstantiator newInstantiatorOf (final Class type) {
 			if (!Util.isAndroid) {
 				// Use ReflectASM if the class is not a non-static member class.
@@ -1227,6 +1232,6 @@ public class Kryo {
 			}
 			// InstantiatorStrategy.
 			return fallbackStrategy.newInstantiatorOf(type);
-		}		
-	}	
+		}
+	}
 }
