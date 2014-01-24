@@ -1144,7 +1144,7 @@ public class Kryo {
 		return streamFactory;
 	}
 
-	public void setStreamFactory (FastestStreamFactory streamFactory) {
+	public void setStreamFactory (StreamFactory streamFactory) {
 		this.streamFactory = streamFactory;
 	}
 

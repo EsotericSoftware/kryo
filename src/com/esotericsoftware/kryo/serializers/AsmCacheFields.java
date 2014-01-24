@@ -10,7 +10,7 @@ import com.esotericsoftware.reflectasm.FieldAccess;
 /*** Implementations of ASM-based serializers for fields.
  * 
  * @author Nathan Sweet <misc@n4te.com> */
-public class AsmCacheFields {
+class AsmCacheFields {
 
 	abstract static class AsmCachedField extends CachedField {
 	}
