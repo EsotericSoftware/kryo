@@ -196,7 +196,7 @@ final class FieldSerializerGenericsUtil {
 		cachedField = serializer.newMatchingCachedField(field, accessIndex, fieldClass[0], fieldGenericType, fieldGenerics);
 
 		if (fieldGenerics != null && cachedField instanceof ObjectField) {
-			if (fieldGenerics[0] != null) {
+			if (fieldGenerics.length > 0 && fieldGenerics[0] != null) {
 				// If any information about concrete types for generic arguments of current field's type
 				// was deriver, remember it.
 				((ObjectField)cachedField).generics = fieldGenerics;
