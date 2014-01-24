@@ -61,7 +61,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	private FieldSerializerUnsafeUtil unsafeUtil;
 
 	private FieldSerializerGenericsUtil genericsUtil;
-	
+
 	/** Concrete classes passed as values for type variables */
 	private Class[] generics;
 
@@ -86,12 +86,11 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	private final boolean serializeTransient = false;
 
 	private boolean hasObjectFields = false;
-	
-	
+
 	static CachedFieldFactory asmFieldFactory;
 	static CachedFieldFactory objectFieldFactory;
 	static CachedFieldFactory unsafeFieldFactory;
-	
+
 	static boolean unsafeAvailable;
 	static Class<?> unsafeUtilClass;
 	static Method sortFieldsByOffsetMethod;
@@ -104,18 +103,16 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			Object unsafe = unsafeMethod.invoke(null);
 			if (unsafe != null) unsafeAvailable = true;
 		} catch (Throwable e) {
-			if (TRACE) trace("kryo", "sun.misc.Unsafe is not available");
+			if (TRACE) trace("kryo", "sun.misc.Unsafe is unavailable.");
 		}
 	}
-	
+
 	{
 		useAsmEnabled = !unsafeAvailable;
 		varIntsEnabled = true;
-		if (TRACE) trace("kryo", "optimize ints is " + varIntsEnabled);
+		if (TRACE) trace("kryo", "Optimize ints: " + varIntsEnabled);
 	}
-	
 
-	// BOZO - Get rid of kryo here?
 	public FieldSerializer (Kryo kryo, Class type) {
 		this.kryo = kryo;
 		this.type = type;
@@ -123,11 +120,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.useAsmEnabled = kryo.getAsmEnabled();
 		if (!this.useAsmEnabled && !unsafeAvailable) {
 			this.useAsmEnabled = true;
-			if (TRACE) trace("kryo", "sun.misc.Unsafe is unavailable. Using ASM instead.");
+			if (TRACE) trace("kryo", "sun.misc.Unsafe is unavailable, using ASM.");
 		}
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
 		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
-		if (TRACE) trace("kryo", "FieldSerializer(Kryo, Class)");
 		rebuildCachedFields();
 	}
 
@@ -139,21 +135,18 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.useAsmEnabled = kryo.getAsmEnabled();
 		if (!this.useAsmEnabled && !unsafeAvailable) {
 			this.useAsmEnabled = true;
-			if (TRACE) trace("kryo", "sun.misc.Unsafe is unavailable. Using ASM instead.");
+			if (TRACE) trace("kryo", "sun.misc.Unsafe is unavailable, using ASM.");
 		}
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
 		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
-		if (TRACE) trace("kryo", "FieldSerializer(Kryo, Class, Generics)");
 		rebuildCachedFields();
 	}
-
-
 
 	/** Called when the list of cached fields must be rebuilt. This is done any time settings are changed that affect which fields
 	 * will be used. It is called from the constructor for FieldSerializer, but not for subclasses. Subclasses must call this from
 	 * their constructor. */
 	protected void rebuildCachedFields () {
-		if (TRACE && generics != null) trace("kryo", "generic type parameters are: " + Arrays.toString(generics));
+		if (TRACE && generics != null) trace("kryo", "Generic type parameters: " + Arrays.toString(generics));
 		if (type.isInterface()) {
 			fields = new CachedField[0]; // No fields to serialize.
 			return;
@@ -228,8 +221,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		initializeCachedFields();
 
 		if (genericsScope != null) kryo.popGenericsScope();
-		
-		for(String fieldName: removedFields.keySet())
+
+		for (String fieldName : removedFields.keySet())
 			removeField(fieldName);
 	}
 
@@ -264,10 +257,9 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		}
 		return result;
 	}
-	
-	private void createCachedFields (IntArray useAsm, List<Field> validFields, List<CachedField> cachedFields,
-		int baseIndex) {
-		
+
+	private void createCachedFields (IntArray useAsm, List<Field> validFields, List<CachedField> cachedFields, int baseIndex) {
+
 		if (useAsmEnabled || !useMemRegions) {
 			for (int i = 0, n = validFields.size(); i < n; i++) {
 				Field field = validFields.get(i);
@@ -280,14 +272,12 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		}
 	}
 
-
 	public void setGenerics (Kryo kryo, Class[] generics) {
 		this.generics = generics;
-		if (TRACE) trace("kryo", "setGenerics");
 		if (typeParameters != null && typeParameters.length > 0) {
 			// TODO: There is probably no need to rebuild all cached fields from scratch.
 			// Generic parameter types do not affect the set of fields, offsets of fields,
-			// transient and non-transient properties. They only affect the type of 
+			// transient and non-transient properties. They only affect the type of
 			// fields and serializers selected for each field.
 			rebuildCachedFields();
 		}
@@ -296,22 +286,19 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	protected void initializeCachedFields () {
 	}
 
-
 	CachedField newCachedField (Field field, int fieldIndex, int accessIndex) {
-		Class[] fieldClass = new Class[] { field.getType() };
+		Class[] fieldClass = new Class[] {field.getType()};
 		Type fieldGenericType = field.getGenericType();
 		CachedField cachedField;
-		
+
 		if (fieldGenericType == fieldClass[0]) {
 			// This is a field without generic type parameters
-			if (TRACE) {
-					trace("kryo", "Field '" + field.getName() + "' of type " + fieldClass[0]);
-			}
+			if (TRACE) trace("kryo", "Field " + field.getName() + ": " + fieldClass[0]);
 			cachedField = newMatchingCachedField(field, accessIndex, fieldClass[0], fieldGenericType, null);
 		} else {
 			cachedField = genericsUtil.newCachedFieldOfGenericType(field, accessIndex, fieldClass, fieldGenericType);
 		}
-		
+
 		if (cachedField instanceof ObjectField) {
 			hasObjectFields = true;
 		}
@@ -353,32 +340,31 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		return cachedField;
 	}
 
-	private CachedFieldFactory getAsmFieldFactory() {
-		if(asmFieldFactory == null)
-			asmFieldFactory = new AsmCachedFieldFactory();
+	private CachedFieldFactory getAsmFieldFactory () {
+		if (asmFieldFactory == null) asmFieldFactory = new AsmCachedFieldFactory();
 		return asmFieldFactory;
 	}
-	
-	private CachedFieldFactory getObjectFieldFactory() {
-		if(objectFieldFactory == null)
-			objectFieldFactory = new ObjectCachedFieldFactory();
+
+	private CachedFieldFactory getObjectFieldFactory () {
+		if (objectFieldFactory == null) objectFieldFactory = new ObjectCachedFieldFactory();
 		return objectFieldFactory;
 	}
-	
-	private CachedFieldFactory getUnsafeFieldFactory() {
+
+	private CachedFieldFactory getUnsafeFieldFactory () {
 		// Use reflection to load UnsafeFieldFactory, so that there is no explicit dependency
 		// on anything using Unsafe. This is required to make FieldSerializer work on those
 		// platforms that do not support sun.misc.Unsafe properly.
-		if(unsafeFieldFactory == null) {
+		if (unsafeFieldFactory == null) {
 			try {
-				unsafeFieldFactory = (CachedFieldFactory)this.getClass().getClassLoader().loadClass("com.esotericsoftware.kryo.serializers.UnsafeCachedFieldFactory").newInstance();
+				unsafeFieldFactory = (CachedFieldFactory)this.getClass().getClassLoader()
+					.loadClass("com.esotericsoftware.kryo.serializers.UnsafeCachedFieldFactory").newInstance();
 			} catch (Exception e) {
 				throw new RuntimeException("Cannot create UnsafeFieldFactory", e);
 			}
 		}
 		return unsafeFieldFactory;
 	}
-	
+
 	public int compare (CachedField o1, CachedField o2) {
 		// Fields are sorted by alpha so the order of the data is known.
 		return o1.field.getName().compareTo(o2.field.getName());
@@ -427,7 +413,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		useAsmEnabled = setUseAsm;
 		if (!useAsmEnabled && !unsafeAvailable) {
 			useAsmEnabled = true;
-			if (TRACE) trace("kryo", "setUseAsm: sun.misc.Unsafe is unavailable. Using ASM instead.");
+			if (TRACE) trace("kryo", "sun.misc.Unsafe is unavailable, using ASM.");
 		}
 		// optimizeInts = useAsmBackend;
 		if (TRACE) trace("kryo", "setUseAsm: " + setUseAsm);
@@ -446,7 +432,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 * TODO: Cache serializer instances generated for a given set of generic parameters. Reuse it later instead of recomputing
 	 * every time. */
 	public void write (Kryo kryo, Output output, T object) {
-		if (TRACE) trace("kryo", "FieldSerializer.write fields of class " + object.getClass().getName());
+		if (TRACE) trace("kryo", "FieldSerializer.write fields of class: " + object.getClass().getName());
 
 		if (typeParameters != null && generics != null) {
 			// Rebuild fields info. It may result in rebuilding the genericScope
@@ -545,23 +531,23 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	public Class getType () {
 		return type;
 	}
-	
-	public Kryo getKryo() {
+
+	public Kryo getKryo () {
 		return kryo;
 	}
-	
-	public boolean getUseAsmEnabled() {
+
+	public boolean getUseAsmEnabled () {
 		return useAsmEnabled;
 	}
 
-	public boolean getUseMemRegions() {
+	public boolean getUseMemRegions () {
 		return useMemRegions;
 	}
 
-	public boolean getCopyTransient() {
+	public boolean getCopyTransient () {
 		return copyTransient;
 	}
-	
+
 	/** Used by {@link #copy(Kryo, Object)} to create the new object. This can be overridden to customize object creation, eg to
 	 * call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
 	protected T createCopy (Kryo kryo, T original) {
@@ -636,9 +622,9 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		abstract public void copy (Object original, Object copy);
 	}
-	
+
 	public static interface CachedFieldFactory {
-		public CachedField createCachedField(Class fieldClass, Field field, FieldSerializer ser);
+		public CachedField createCachedField (Class fieldClass, Field field, FieldSerializer ser);
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
