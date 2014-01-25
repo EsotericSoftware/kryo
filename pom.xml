@@ -43,7 +43,7 @@
 		<dependency>
 			<groupId>com.esotericsoftware.reflectasm</groupId>
 			<artifactId>reflectasm</artifactId>
-			<version>1.07</version>
+			<version>1.09</version>
 			<classifier>shaded</classifier>
 			<exclusions>
 				<exclusion>
