@@ -14,7 +14,7 @@
 	<packaging>bundle</packaging>
 	<name>Kryo</name>
 	<description>Fast, efficient Java serialization</description>
-	<url>http://code.google.com/p/kryo/</url>
+	<url>https://github.com/EsotericSoftware/kryo</url>
 
 	<licenses>
 		<license>
@@ -25,8 +25,8 @@
 	</licenses>
 
 	<scm>
-		<url>http://kryo.googlecode.com/svn/</url>
-		<connection>scm:svn:http://kryo.googlecode.com/svn/</connection>
+		<url>https://github.com/EsotericSoftware/kryo</url>
+		<connection>scm:git:git@github.com:EsotericSoftware/kryo.git</connection>
 	</scm>
 
 	<developers>
