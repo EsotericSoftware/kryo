@@ -3,15 +3,26 @@ package com.esotericsoftware.kryo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.IntArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.LongArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.BindKryoSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
+import com.esotericsoftware.kryo.serializers.MapSerializer;
+import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class FieldSerializerTest extends KryoTestCase {
@@ -411,7 +422,70 @@ public class FieldSerializerTest extends KryoTestCase {
 		HasTransients objectWithTransients2 = kryo.copy(objectWithTransients1);
 		assertEquals("Objects should be equal if copy includes transient fields", objectWithTransients2, objectWithTransients1);
 	}
+	
+	public void testCorrectlyAnnotatedFields () {
+		kryo.register(int[].class);
+		kryo.register(long[].class);
+		kryo.register(HashMap.class);
+		kryo.register(ArrayList.class);
+		kryo.register(AnnotatedFields.class);
+		AnnotatedFields obj1 = new AnnotatedFields();
+		obj1.map = new HashMap<String, int[]>();
+		obj1.map.put("key1", new int[] {1, 2, 3});
+		obj1.map.put("key2", new int[] {3, 4, 5});
+		obj1.map.put("key3", null);
 
+		obj1.collection = new ArrayList<long[]>();
+		obj1.collection.add(new long[] {1, 2, 3});
+
+		roundTrip(31, 73, obj1);
+	}
+
+	public void testWronglyAnnotatedCollectionFields () {
+		try {
+			kryo.register(WronglyAnnotatedCollectionFields.class);
+			WronglyAnnotatedCollectionFields obj1 = new WronglyAnnotatedCollectionFields();
+			roundTrip(31, 73, obj1);
+		} catch (RuntimeException e) {
+			Throwable cause = e.getCause().getCause();
+			assertTrue("Exception should complain about a field not implementing java.util.Collection",
+				cause.getMessage().contains("be used only with fields implementing java.util.Collection"));
+			return;
+		}
+		
+		assertFalse("Exception was expected", true);
+	}
+
+	public void testWronglyAnnotatedMapFields () {
+		try {
+			kryo.register(WronglyAnnotatedMapFields.class);
+			WronglyAnnotatedMapFields obj1 = new WronglyAnnotatedMapFields();
+			roundTrip(31, 73, obj1);
+		} catch (RuntimeException e) {
+			Throwable cause = e.getCause().getCause();
+			assertTrue("Exception should complain about a field not implementing java.util.Map ",
+				cause.getMessage().contains("be used only with fields implementing java.util.Map"));
+			return;
+		}
+
+		assertFalse("Exception was expected", true);
+	}
+	
+	public void testMultipleTimesAnnotatedMapFields () {
+		try {
+			kryo.register(MultipleTimesAnnotatedCollectionFields.class);
+			MultipleTimesAnnotatedCollectionFields obj1 = new MultipleTimesAnnotatedCollectionFields();
+			roundTrip(31, 73, obj1);
+		} catch (RuntimeException e) {
+			Throwable cause = e.getCause().getCause();
+			assertTrue("Exception should complain about a field that has a serializer already",
+				cause.getMessage().contains("already"));
+			return;
+		}
+
+		assertFalse("Exception was expected", true);
+	}
+	
 	static public class DefaultTypes {
 		// Primitives.
 		public boolean booleanField;
@@ -822,6 +896,91 @@ public class FieldSerializerTest extends KryoTestCase {
 			if (map1 == null) {
 				if (other.map1 != null) return false;
 			} else if (!map1.equals(other.map1)) return false;
+			return true;
+		}
+	}
+	
+	static public class MultipleTimesAnnotatedCollectionFields {
+		// This annotation should result in an exception, because
+		// it is applied to a non-collection field
+		@CollectionSerializer.BindKryoSerializer(
+			elementSerializer = LongArraySerializer.class, 
+			elementClass = long[].class, 
+			elementsCanBeNull = false) 
+		@BindKryoSerializer(CollectionSerializer.class)
+		Collection collection;
+	}
+	
+	static public class WronglyAnnotatedCollectionFields {
+		// This annotation should result in an exception, because
+		// it is applied to a non-collection field
+		@CollectionSerializer.BindKryoSerializer(
+			elementSerializer = LongArraySerializer.class, 
+			elementClass = long[].class, 
+			elementsCanBeNull = false) 
+		int collection;
+	}
+
+	static public class WronglyAnnotatedMapFields {
+		// This annotation should result in an exception, because
+		// it is applied to a non-map field
+		@MapSerializer.BindKryoSerializer(
+			valueSerializer = IntArraySerializer.class, 
+			keySerializer = StringSerializer.class, 
+			valueClass = int[].class, 
+			keyClass = String.class, 
+			keysCanBeNull = false) 
+		Object map;
+	}
+
+	static public class AnnotatedFields {
+		@BindKryoSerializer(StringSerializer.class) Object stringField;
+
+		@MapSerializer.BindKryoSerializer(
+			valueSerializer = IntArraySerializer.class, 
+			keySerializer = StringSerializer.class, 
+			valueClass = int[].class, 
+			keyClass = String.class, 
+			keysCanBeNull = false) 
+		Map map;
+
+		@CollectionSerializer.BindKryoSerializer(
+			elementSerializer = LongArraySerializer.class, 
+			elementClass = long[].class, 
+			elementsCanBeNull = false) 
+		Collection collection;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			AnnotatedFields other = (AnnotatedFields)obj;
+			if (map == null) {
+				if (other.map != null) return false;
+			} else {
+				if (other.map == null) return false;
+				if (map.size() != other.map.size()) return false;
+				for (Object e : map.entrySet()) {
+					Map.Entry entry = (Map.Entry)e;
+					if (!other.map.containsKey(entry.getKey())) return false;
+					Object otherValue = other.map.get(entry.getKey());
+					if (entry.getValue() == null && otherValue != null) return false;
+					if (!Arrays.equals((int[])entry.getValue(), (int[])otherValue)) return false;
+				}
+			}
+			if (collection == null) {
+				if (other.collection != null) return false;
+			} else {
+				if (other.collection == null) return false;
+				if (collection.size() != other.collection.size()) return false;
+				Iterator it1 = collection.iterator();
+				Iterator it2 = other.collection.iterator();
+				while (it1.hasNext()) {
+					Object e1 = it1.next();
+					Object e2 = it2.next();
+					if (!Arrays.equals((long[])e1, (long[])e2)) return false;
+				}
+			}
 			return true;
 		}
 	}
