@@ -1,29 +1,8 @@
 
 package com.esotericsoftware.kryo;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Proxy;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.Currency;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
-import org.objenesis.instantiator.ObjectInstantiator;
-import org.objenesis.strategy.InstantiatorStrategy;
-import org.objenesis.strategy.SerializingInstantiatorStrategy;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import static com.esotericsoftware.kryo.util.Util.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.factories.PseudoSerializerFactory;
 import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
@@ -62,6 +41,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSetSerialize
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.FloatSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.IntSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.LocaleSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
@@ -83,8 +63,30 @@ import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.reflectasm.ConstructorAccess;
 
-import static com.esotericsoftware.kryo.util.Util.*;
-import static com.esotericsoftware.minlog.Log.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
+import java.util.Currency;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import org.objenesis.instantiator.ObjectInstantiator;
+import org.objenesis.strategy.InstantiatorStrategy;
+import org.objenesis.strategy.SerializingInstantiatorStrategy;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** Maps classes to serializers so object graphs can be serialized automatically.
  * @author Nathan Sweet <misc@n4te.com> */
@@ -102,7 +104,8 @@ public class Kryo {
 	private final ClassResolver classResolver;
 	private int nextRegisterID;
 	private ClassLoader classLoader = getClass().getClassLoader();
-	private InstantiatorStrategy strategy;
+	private InstantiatorStrategy defaultStrategy = new DefaultInstantiatorStrategy();
+	private InstantiatorStrategy strategy = new DefaultInstantiatorStrategy();
 	private boolean registrationRequired;
 
 	private int depth, maxDepth = Integer.MAX_VALUE;
@@ -112,7 +115,7 @@ public class Kryo {
 
 	private ReferenceResolver referenceResolver;
 	private final IntArray readReferenceIds = new IntArray(0);
-	private boolean references;
+	private boolean references, copyReferences = true;
 	private Object readObject;
 
 	private int copyDepth;
@@ -189,6 +192,7 @@ public class Kryo {
 		addDefaultSerializer(Map.class, MapSerializer.class);
 		addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
 		addDefaultSerializer(Calendar.class, CalendarSerializer.class);
+		addDefaultSerializer(Locale.class, LocaleSerializer.class);
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
@@ -205,14 +209,14 @@ public class Kryo {
 	}
 
 	// --- Default serializers ---
-	/** Sets the serializer factory to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's type.
-	 * Default is {@link ReflectionSerializerFactory} with {@link FieldSerializer}.
+	/** Sets the serializer factory to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's
+	 * type. Default is {@link ReflectionSerializerFactory} with {@link FieldSerializer}.
 	 * @see #newDefaultSerializer(Class) */
 	public void setDefaultSerializer (SerializerFactory serializer) {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		defaultSerializer = serializer;
 	}
-	
+
 	/** Sets the serializer to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's type.
 	 * Default is {@link FieldSerializer}.
 	 * @see #newDefaultSerializer(Class) */
@@ -229,7 +233,7 @@ public class Kryo {
 		DefaultSerializerEntry entry = new DefaultSerializerEntry(type, new PseudoSerializerFactory(serializer));
 		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
 	}
-	
+
 	public void addDefaultSerializer (Class type, SerializerFactory serializerFactory) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerFactory == null) throw new IllegalArgumentException("serializerFactory cannot be null.");
@@ -238,8 +242,8 @@ public class Kryo {
 	}
 
 	/** Instances of the specified class will use the specified serializer. Serializer instances are created as needed via
-	 * {@link ReflectionSerializerFactory#makeSerializer(Kryo, Class, Class)}.
-	 * By default, the following classes have a default serializer set:
+	 * {@link ReflectionSerializerFactory#makeSerializer(Kryo, Class, Class)}. By default, the following classes have a default
+	 * serializer set:
 	 * <p>
 	 * <table>
 	 * <tr>
@@ -333,7 +337,10 @@ public class Kryo {
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
 			if (entry.type.isAssignableFrom(type)) {
-				return entry.serializerFactory.makeSerializer(this, type);
+				Serializer defaultSerializer = entry.serializerFactory.makeSerializer(this, type);
+				// Remember that it is a default serializer set internally by Kryo
+				if (i > n - lowPriorityDefaultSerializerCount) defaultSerializer.setDefaultSerializer(true);
+				return defaultSerializer;
 			}
 		}
 
@@ -341,8 +348,8 @@ public class Kryo {
 	}
 
 	/** Called by {@link #getDefaultSerializer(Class)} when no default serializers matched the type. Subclasses can override this
-	 * method to customize behavior. The default implementation calls {@link SerializerFactory#makeSerializer(Kryo, Class)}
-	 * using the {@link #setDefaultSerializer(Class) default serializer}. */
+	 * method to customize behavior. The default implementation calls {@link SerializerFactory#makeSerializer(Kryo, Class)} using
+	 * the {@link #setDefaultSerializer(Class) default serializer}. */
 	protected Serializer newDefaultSerializer (Class type) {
 		return defaultSerializer.makeSerializer(this, type);
 	}
@@ -850,7 +857,7 @@ public class Kryo {
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
-			needsCopyReference = object;
+			if (copyReferences) needsCopyReference = object;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
@@ -876,7 +883,7 @@ public class Kryo {
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
-			needsCopyReference = object;
+			if (copyReferences) needsCopyReference = object;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
@@ -902,7 +909,7 @@ public class Kryo {
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
-			needsCopyReference = object;
+			if (copyReferences) needsCopyReference = object;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
@@ -929,7 +936,7 @@ public class Kryo {
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
-			needsCopyReference = object;
+			if (copyReferences) needsCopyReference = object;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
@@ -1005,6 +1012,14 @@ public class Kryo {
 		return !references;
 	}
 
+	/** If true, when {@link #copy(Object)} and other copy methods encounter an object for the first time the object is copied and
+	 * on subsequent encounters the copied object is used. If false, the overhead of tracking which objects have already been
+	 * copied is avoided because each object is copied every time it is encountered, however a stack overflow will occur if an
+	 * object graph is copied that contains a circular reference. Default is true. */
+	public void setCopyReferences (boolean copyReferences) {
+		this.copyReferences = copyReferences;
+	}
+
 	/** Sets the reference resolver and enables references. */
 	public void setReferenceResolver (ReferenceResolver referenceResolver) {
 		if (referenceResolver == null) throw new IllegalArgumentException("referenceResolver cannot be null.");
@@ -1025,58 +1040,14 @@ public class Kryo {
 		this.strategy = strategy;
 	}
 
+	public InstantiatorStrategy getInstantiatorStrategy () {
+		return strategy;
+	}
+
 	/** Returns a new instantiator for creating new instances of the specified type. By default, an instantiator is returned that
 	 * uses reflection if the class has a zero argument constructor, an exception is thrown. If a
 	 * {@link #setInstantiatorStrategy(InstantiatorStrategy) strategy} is set, it will be used instead of throwing an exception. */
 	protected ObjectInstantiator newInstantiator (final Class type) {
-		if (!Util.isAndroid) {
-			// Use ReflectASM if the class is not a non-static member class.
-			Class enclosingType = type.getEnclosingClass();
-			boolean isNonStaticMemberClass = enclosingType != null && type.isMemberClass()
-				&& !Modifier.isStatic(type.getModifiers());
-			if (!isNonStaticMemberClass) {
-				try {
-					final ConstructorAccess access = ConstructorAccess.get(type);
-					return new ObjectInstantiator() {
-						public Object newInstance () {
-							try {
-								return access.newInstance();
-							} catch (Exception ex) {
-								throw new KryoException("Error constructing instance of class: " + className(type), ex);
-							}
-						}
-					};
-				} catch (Exception ignored) {
-				}
-			}
-		}
-		// Reflection.
-		try {
-			Constructor ctor;
-			try {
-				ctor = type.getConstructor((Class[])null);
-			} catch (Exception ex) {
-				ctor = type.getDeclaredConstructor((Class[])null);
-				ctor.setAccessible(true);
-			}
-			final Constructor constructor = ctor;
-			return new ObjectInstantiator() {
-				public Object newInstance () {
-					try {
-						return constructor.newInstance();
-					} catch (Exception ex) {
-						throw new KryoException("Error constructing instance of class: " + className(type), ex);
-					}
-				}
-			};
-		} catch (Exception ignored) {
-		}
-		if (strategy == null) {
-			if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()))
-				throw new KryoException("Class cannot be created (non-static member class): " + className(type));
-			else
-				throw new KryoException("Class cannot be created (missing no-arg constructor): " + className(type));
-		}
 		// InstantiatorStrategy.
 		return strategy.newInstantiatorOf(type);
 	}
@@ -1087,7 +1058,10 @@ public class Kryo {
 		Registration registration = getRegistration(type);
 		ObjectInstantiator instantiator = registration.getInstantiator();
 		if (instantiator == null) {
-			instantiator = newInstantiator(type);
+			if (registration.getSerializer().isDefaultSerializer())
+				instantiator = defaultStrategy.newInstantiatorOf(type);
+			else
+				instantiator = newInstantiator(type);
 			registration.setInstantiator(instantiator);
 		}
 		return (T)instantiator.newInstance();
@@ -1109,6 +1083,13 @@ public class Kryo {
 	/** Returns the number of child objects away from the object graph root. */
 	public int getDepth () {
 		return depth;
+	}
+
+	/** Returns the internal map of original to copy objects when a copy method is used. This can be used after a copy to map old
+	 * objects to the copies, however it is cleared automatically by {@link #reset()} so this is only useful when
+	 * {@link #setAutoReset(boolean)} is false. */
+	public IdentityMap getOriginalToCopyMap () {
+		return originalToCopy;
 	}
 
 	/** If true (the default), {@link #reset()} is called automatically after an entire object graph has been read or written. If
@@ -1168,7 +1149,7 @@ public class Kryo {
 		return streamFactory;
 	}
 
-	public void setStreamFactory (FastestStreamFactory streamFactory) {
+	public void setStreamFactory (StreamFactory streamFactory) {
 		this.streamFactory = streamFactory;
 	}
 
@@ -1187,5 +1168,70 @@ public class Kryo {
 
 	public boolean getAsmEnabled () {
 		return asmEnabled;
+	}
+
+	static public class DefaultInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
+		private InstantiatorStrategy fallbackStrategy;
+
+		public void setFallbackInstantiatorStrategy (final InstantiatorStrategy fallbackStrategy) {
+			this.fallbackStrategy = fallbackStrategy;
+		}
+
+		public InstantiatorStrategy getFallbackInstantiatorStrategy () {
+			return fallbackStrategy;
+		}
+
+		public ObjectInstantiator newInstantiatorOf (final Class type) {
+			if (!Util.isAndroid) {
+				// Use ReflectASM if the class is not a non-static member class.
+				Class enclosingType = type.getEnclosingClass();
+				boolean isNonStaticMemberClass = enclosingType != null && type.isMemberClass()
+					&& !Modifier.isStatic(type.getModifiers());
+				if (!isNonStaticMemberClass) {
+					try {
+						final ConstructorAccess access = ConstructorAccess.get(type);
+						return new ObjectInstantiator() {
+							public Object newInstance () {
+								try {
+									return access.newInstance();
+								} catch (Exception ex) {
+									throw new KryoException("Error constructing instance of class: " + className(type), ex);
+								}
+							}
+						};
+					} catch (Exception ignored) {
+					}
+				}
+			}
+			// Reflection.
+			try {
+				Constructor ctor;
+				try {
+					ctor = type.getConstructor((Class[])null);
+				} catch (Exception ex) {
+					ctor = type.getDeclaredConstructor((Class[])null);
+					ctor.setAccessible(true);
+				}
+				final Constructor constructor = ctor;
+				return new ObjectInstantiator() {
+					public Object newInstance () {
+						try {
+							return constructor.newInstance();
+						} catch (Exception ex) {
+							throw new KryoException("Error constructing instance of class: " + className(type), ex);
+						}
+					}
+				};
+			} catch (Exception ignored) {
+			}
+			if (fallbackStrategy == null) {
+				if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()))
+					throw new KryoException("Class cannot be created (non-static member class): " + className(type));
+				else
+					throw new KryoException("Class cannot be created (missing no-arg constructor): " + className(type));
+			}
+			// InstantiatorStrategy.
+			return fallbackStrategy.newInstantiatorOf(type);
+		}
 	}
 }

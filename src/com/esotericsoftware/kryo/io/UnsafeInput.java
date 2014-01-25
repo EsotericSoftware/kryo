@@ -11,7 +11,7 @@ import static com.esotericsoftware.kryo.util.UnsafeUtil.*;
 
 /** An optimized InputStream that reads data from a byte array and optionally fills the byte array from another InputStream as
  * needed. Utility methods are provided for efficiently writing primitive types, arrays of primitive types and strings. It uses
- * @link{java.misc.Unsafe} to achieve a very good performance.
+ * @link{sun.misc.Unsafe} to achieve a very good performance.
  * 
  * <p>
  * Important notes:<br/>

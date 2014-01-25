@@ -21,7 +21,6 @@ import com.esotericsoftware.kryo.io.UnsafeOutput;
 public class FastestStreamFactory implements StreamFactory {
 	
 	static private boolean isUnsafe = UnsafeUtil.unsafe() != null;
-	private Kryo kryo; 
 
 	@Override
 	public Input getInput() {
@@ -90,7 +89,6 @@ public class FastestStreamFactory implements StreamFactory {
 
 	@Override
 	public void setKryo(Kryo kryo) {
-		this.kryo = kryo;
 		// Only use Unsafe-based streams if this Kryo instance supports it
 		//isUnsafe = UnsafeUtil.unsafe() != null && kryo.getUnsafe();
 	}

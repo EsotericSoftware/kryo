@@ -29,6 +29,10 @@ import com.esotericsoftware.kryo.io.Output;
 
 import static com.esotericsoftware.kryo.Kryo.*;
 import static com.esotericsoftware.kryo.util.Util.*;
+import java.lang.reflect.Constructor;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Locale;
 
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
  * @author Nathan Sweet <misc@n4te.com> */
@@ -233,29 +237,68 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, Class object) {
 			kryo.writeClass(output, object);
-			output.writeByte(object.isPrimitive()?1:0);
+			output.writeByte((object != null && object.isPrimitive()) ? 1 : 0);
 		}
 
 		public Class read (Kryo kryo, Input input, Class<Class> type) {
 			Registration registration = kryo.readClass(input);
 			int isPrimitive = input.read();
-			Class typ = registration.getType();
-			if (!typ.isPrimitive()) return typ;
+			Class typ = registration != null ? registration.getType() : null;
+			if (typ == null || !typ.isPrimitive()) return typ;
 			return (isPrimitive == 1) ? typ : getWrapperClass(typ);
 		}
 	}
 
+	/** Serializer for {@link Date}, {@link java.sql.Date}, {@link Time}, {@link Timestamp} and any other subclass.
+	 * @author serverperformance */
 	static public class DateSerializer extends Serializer<Date> {
+		private Date create(Kryo kryo, Class<?> type, long time) throws KryoException {
+			if (type.equals(Date.class)) {
+				return new Date(time);
+			}
+			if (type.equals(Timestamp.class)) {
+				return new Timestamp(time);
+			}
+			if (type.equals(java.sql.Date.class)) {
+				return new java.sql.Date(time);
+			}
+			if (type.equals(Time.class)) {
+				return new Time(time);
+			}
+			// other cases, reflection
+			try {
+				// Try to avoid invoking the no-args constructor
+				// (which is expected to initialize the instance with the current time)
+				Constructor constructor = type.getDeclaredConstructor(long.class);
+				if (constructor!=null) {
+					if (!constructor.isAccessible()) {
+						try {
+							constructor.setAccessible(true);
+						}
+						catch (Throwable t) {}
+					}
+					return (Date)constructor.newInstance(time);
+				}
+				else {
+					Date d = (Date)kryo.newInstance(type); // default strategy
+					d.setTime(time);
+					return d;
+				}
+			} catch (Exception ex) {
+				throw new KryoException(ex);
+			}
+		}
+		
 		public void write (Kryo kryo, Output output, Date object) {
 			output.writeLong(object.getTime(), true);
 		}
 
 		public Date read (Kryo kryo, Input input, Class<Date> type) {
-			return new Date(input.readLong(true));
+			return create(kryo, type, input.readLong(true));
 		}
 
 		public Date copy (Kryo kryo, Date original) {
-			return new Date(original.getTime());
+			return create(kryo, original.getClass(), original.getTime());
 		}
 	}
 
@@ -572,6 +615,86 @@ public class DefaultSerializers {
 
 		protected TreeSet createCopy (Kryo kryo, Collection original) {
 			return new TreeSet(((TreeSet)original).comparator());
+		}
+	}
+
+
+	/** Serializer for {@link Locale} (immutables).
+	 * @author serverperformance */
+	static public class LocaleSerializer extends Serializer<Locale> {
+		{
+			setImmutable(true);
+		}
+		
+		protected Locale create(String language, String country, String variant) {
+			// Fast-paths for constants declared in java.util.Locale
+			if (isSameLocale(Locale.US, language, country, variant))
+				return Locale.US;
+			if (isSameLocale(Locale.UK, language, country, variant))
+				return Locale.UK;
+			if (isSameLocale(Locale.ENGLISH, language, country, variant))
+				return Locale.ENGLISH;
+			if (isSameLocale(Locale.FRENCH, language, country, variant))
+				return Locale.FRENCH;
+			if (isSameLocale(Locale.GERMAN, language, country, variant))
+				return Locale.GERMAN;
+			if (isSameLocale(Locale.ITALIAN, language, country, variant))
+				return Locale.ITALIAN;
+			if (isSameLocale(Locale.FRANCE, language, country, variant))
+				return Locale.FRANCE;
+			if (isSameLocale(Locale.GERMANY, language, country, variant))
+				return Locale.GERMANY;
+			if (isSameLocale(Locale.ITALY, language, country, variant))
+				return Locale.ITALY;
+			if (isSameLocale(Locale.JAPAN, language, country, variant))
+				return Locale.JAPAN;
+			if (isSameLocale(Locale.KOREA, language, country, variant))
+				return Locale.KOREA;
+			if (isSameLocale(Locale.CHINA, language, country, variant))
+				return Locale.CHINA;
+			if (isSameLocale(Locale.PRC, language, country, variant))
+				return Locale.PRC;
+			if (isSameLocale(Locale.TAIWAN, language, country, variant))
+				return Locale.TAIWAN;
+			if (isSameLocale(Locale.CANADA, language, country, variant))
+				return Locale.CANADA;
+			if (isSameLocale(Locale.CANADA_FRENCH, language, country, variant))
+				return Locale.CANADA_FRENCH;
+			if (isSameLocale(Locale.JAPANESE, language, country, variant))
+				return Locale.JAPANESE;
+			if (isSameLocale(Locale.KOREAN, language, country, variant))
+				return Locale.KOREAN;
+			if (isSameLocale(Locale.CHINESE, language, country, variant))
+				return Locale.CHINESE;
+			if (isSameLocale(Locale.SIMPLIFIED_CHINESE, language, country, variant))
+				return Locale.SIMPLIFIED_CHINESE;
+			if (isSameLocale(Locale.TRADITIONAL_CHINESE, language, country, variant))
+				return Locale.TRADITIONAL_CHINESE;
+
+			return new Locale(language, country, variant);
+		}
+		
+		public void write(Kryo kryo, Output output, Locale l) {
+			output.writeString(l.getLanguage());
+			output.writeString(l.getCountry());
+			output.writeString(l.getVariant());
+		}
+
+		public Locale read (Kryo kryo, Input input, Class<Locale> type) {
+			String language = input.readString();
+			String country = input.readString();
+			String variant = input.readString();
+			return create(language, country, variant);
+		}
+
+		public Locale copy (Kryo kryo, Locale original) {
+			return create(original.getLanguage(), original.getDisplayCountry(), original.getVariant());
+		}
+
+		protected static boolean isSameLocale(Locale locale, String language, String country, String variant) {
+			if (locale==null)
+				return false;
+			return (locale.getLanguage().equals(language) && locale.getCountry().equals(country) && locale.getVariant().equals(variant));
 		}
 	}
 }

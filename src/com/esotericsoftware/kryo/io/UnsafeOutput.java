@@ -12,7 +12,7 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.util.Util;
 
 /** An optimized OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are
- * provided for efficiently writing primitive types, arrays of primitive types and strings. It uses @link{java.misc.Unsafe} to
+ * provided for efficiently writing primitive types, arrays of primitive types and strings. It uses @link{sun.misc.Unsafe} to
  * achieve a very good performance.
  * 
  * <p>

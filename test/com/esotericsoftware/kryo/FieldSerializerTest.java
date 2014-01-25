@@ -314,6 +314,33 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(4, 4, test);
 	}
 
+	/** This test uses StdInstantiatorStrategy and therefore requires a no-arg constructor. **/
+	@SuppressWarnings("synthetic-access")
+	public void testDefaultInstantiatorStrategy () {
+		kryo.register(HasArgumentConstructor.class);
+		HasArgumentConstructor test = new HasPrivateConstructor();
+		HasPrivateConstructor.invocations = 0;
+
+		kryo.register(HasPrivateConstructor.class);
+		roundTrip(4, 4, test);
+		assertEquals("Default constructor should not be invoked with StdInstantiatorStrategy strategy", 25,
+			HasPrivateConstructor.invocations);
+	}
+
+	/** This test uses StdInstantiatorStrategy and should bypass invocation of no-arg constructor, even if it is provided. **/
+	@SuppressWarnings("synthetic-access")
+	public void testStdInstantiatorStrategy () {
+		kryo.register(HasArgumentConstructor.class);
+		kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+		HasArgumentConstructor test = new HasPrivateConstructor();
+		HasPrivateConstructor.invocations = 0;
+
+		kryo.register(HasPrivateConstructor.class);
+		roundTrip(4, 4, test);
+		assertEquals("Default constructor should not be invoked with StdInstantiatorStrategy strategy", 0,
+			HasPrivateConstructor.invocations);
+	}
+	
 	public void testGenericTypes () {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(true);
@@ -757,8 +784,10 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	static public class HasPrivateConstructor extends HasArgumentConstructor {
+		static int invocations;
 		private HasPrivateConstructor () {
 			super("cow");
+			HasPrivateConstructor.invocations++;
 		}
 	}
 

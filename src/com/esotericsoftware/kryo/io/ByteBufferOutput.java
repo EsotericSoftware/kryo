@@ -188,9 +188,11 @@ public class ByteBufferOutput extends Output {
 			if (capacity == maxCapacity)
 				throw new KryoException("Buffer overflow. Available: " + (capacity - position) + ", required: " + required);
 			// Grow buffer.
+			if (capacity == 0) capacity = 1;
 			capacity = Math.min(capacity * 2, maxCapacity);
 			if (capacity < 0) capacity = maxCapacity;
-			ByteBuffer newBuffer = ByteBuffer.allocateDirect(capacity);
+			ByteBuffer newBuffer = (niobuffer != null && !niobuffer.isDirect()) ? ByteBuffer.allocate(capacity) : ByteBuffer
+				.allocateDirect(capacity);
 			// Copy the whole buffer
 			niobuffer.position(0);
 			newBuffer.put(niobuffer);

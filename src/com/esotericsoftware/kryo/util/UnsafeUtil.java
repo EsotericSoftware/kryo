@@ -15,7 +15,7 @@ import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
 /**
- * A few utility methods for using @link{java.misc.Unsafe}, mostly for private
+ * A few utility methods for using @link{sun.misc.Unsafe}, mostly for private
  * use.
  * 
  * Use of Unsafe on Android is forbidden, as Android provides only a very limited
@@ -39,34 +39,43 @@ public class UnsafeUtil {
 	
 	
 	static {
+		Unsafe tmpUnsafe = null;
+		long tmpByteArrayBaseOffset = 0;
+		long tmpFloatArrayBaseOffset = 0;
+		long tmpDoubleArrayBaseOffset = 0;
+		long tmpIntArrayBaseOffset = 0;
+		long tmpLongArrayBaseOffset = 0;
+		long tmpShortArrayBaseOffset = 0;
+		long tmpCharArrayBaseOffset = 0;
+
 		try {
 			if (!Util.isAndroid) {
-				java.lang.reflect.Field field = sun.misc.Unsafe.class
-						.getDeclaredField("theUnsafe");
+				java.lang.reflect.Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
 				field.setAccessible(true);
-				_unsafe = (sun.misc.Unsafe) field.get(null);
-				byteArrayBaseOffset = _unsafe.arrayBaseOffset(byte[].class);
-				charArrayBaseOffset = _unsafe.arrayBaseOffset(char[].class);
-				shortArrayBaseOffset = _unsafe.arrayBaseOffset(short[].class);
-				intArrayBaseOffset = _unsafe.arrayBaseOffset(int[].class);
-				floatArrayBaseOffset = _unsafe.arrayBaseOffset(float[].class);
-				longArrayBaseOffset = _unsafe.arrayBaseOffset(long[].class);
-				doubleArrayBaseOffset = _unsafe.arrayBaseOffset(double[].class);
+				tmpUnsafe = (sun.misc.Unsafe)field.get(null);
+				tmpByteArrayBaseOffset = tmpUnsafe.arrayBaseOffset(byte[].class);
+				tmpCharArrayBaseOffset = tmpUnsafe.arrayBaseOffset(char[].class);
+				tmpShortArrayBaseOffset = tmpUnsafe.arrayBaseOffset(short[].class);
+				tmpIntArrayBaseOffset = tmpUnsafe.arrayBaseOffset(int[].class);
+				tmpFloatArrayBaseOffset = tmpUnsafe.arrayBaseOffset(float[].class);
+				tmpLongArrayBaseOffset = tmpUnsafe.arrayBaseOffset(long[].class);
+				tmpDoubleArrayBaseOffset = tmpUnsafe.arrayBaseOffset(double[].class);
 			} else {
-				byteArrayBaseOffset = 0;
-				charArrayBaseOffset = 0;
-				shortArrayBaseOffset = 0;
-				intArrayBaseOffset = 0;
-				floatArrayBaseOffset = 0;
-				longArrayBaseOffset = 0;
-				doubleArrayBaseOffset = 0;
-				_unsafe = null;
-				if (TRACE) 
-					trace("kryo", "Running on Android platform. Use of java.misc.Unsafe should be disabled");
+				if (TRACE) trace("kryo", "Running on Android platform. Use of sun.misc.Unsafe should be disabled");
 			}
 		} catch (java.lang.Exception e) {
-			throw new RuntimeException(e);
+			if (TRACE)
+				trace("kryo", "sun.misc.Unsafe is not accessible or not available. Use of sun.misc.Unsafe should be disabled");
 		}
+
+		byteArrayBaseOffset = tmpByteArrayBaseOffset;
+		charArrayBaseOffset = tmpCharArrayBaseOffset;
+		shortArrayBaseOffset = tmpShortArrayBaseOffset;
+		intArrayBaseOffset = tmpIntArrayBaseOffset;
+		floatArrayBaseOffset = tmpFloatArrayBaseOffset;
+		longArrayBaseOffset = tmpLongArrayBaseOffset;
+		doubleArrayBaseOffset = tmpDoubleArrayBaseOffset;
+		_unsafe = tmpUnsafe;
 	}
 	
 	static {
@@ -80,13 +89,20 @@ public class UnsafeUtil {
 	}
 	
 	/***
-	 * 
-	 * @return instance of java.misc.Unsafe
+	 * Return the sun.misc.Unsafe object. If null is returned,
+	 * no further Unsafe-related methods are allowed to be invoked from UnsafeUtil.
+	 *  
+	 * @return instance of sun.misc.Unsafe or null, if this class is not available or not accessible
 	 */
 	final static public Unsafe unsafe() {
 		return _unsafe;
 	}
 	
+	/***
+	 * Sort the set of lists by their offsets from the object start address.
+	 * 
+	 * @param allFields set of fields to be sorted by their offsets
+	 */
 	public static Field[] sortFieldsByOffset (List<Field> allFields) {
 		Field[] allFieldsArray = allFields.toArray(new Field[] {});
 

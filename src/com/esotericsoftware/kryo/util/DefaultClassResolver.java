@@ -1,15 +1,15 @@
 
 package com.esotericsoftware.kryo.util;
 
+import static com.esotericsoftware.kryo.util.Util.*;
+import static com.esotericsoftware.minlog.Log.*;
+
 import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-
-import static com.esotericsoftware.kryo.util.Util.*;
-import static com.esotericsoftware.minlog.Log.*;
 
 /** Resolves classes by ID or by fully qualified class name.
  * @author Nathan Sweet <misc@n4te.com> */
@@ -37,17 +37,17 @@ public class DefaultClassResolver implements ClassResolver {
 
 	public Registration register (Registration registration) {
 		if (registration == null) throw new IllegalArgumentException("registration cannot be null.");
-		if (TRACE) {
-			if (registration.getId() == NAME) {
-				trace("kryo", "Register class name: " + className(registration.getType()) + " ("
-					+ registration.getSerializer().getClass().getName() + ")");
-			} else {
+		if (registration.getId() != NAME) {
+			if (TRACE) {
 				trace("kryo", "Register class ID " + registration.getId() + ": " + className(registration.getType()) + " ("
 					+ registration.getSerializer().getClass().getName() + ")");
 			}
+			idToRegistration.put(registration.getId(), registration);
+		} else if (TRACE) {
+			trace("kryo", "Register class name: " + className(registration.getType()) + " ("
+				+ registration.getSerializer().getClass().getName() + ")");
 		}
 		classToRegistration.put(registration.getType(), registration);
-		idToRegistration.put(registration.getId(), registration);
 		if (registration.getType().isPrimitive()) classToRegistration.put(getWrapperClass(registration.getType()), registration);
 		return registration;
 	}
@@ -130,7 +130,7 @@ public class DefaultClassResolver implements ClassResolver {
 		if (type == null) {
 			// Only read the class name the first time encountered in object graph.
 			String className = input.readString();
-			if (nameToClass != null) type = nameToClass.get(className);
+			type = getTypeByName(className);
 			if (type == null) {
 				try {
 					type = Class.forName(className, false, kryo.getClassLoader());
@@ -146,6 +146,10 @@ public class DefaultClassResolver implements ClassResolver {
 			if (TRACE) trace("kryo", "Read class name reference " + nameId + ": " + className(type));
 		}
 		return kryo.getRegistration(type);
+	}
+
+	protected Class<?> getTypeByName(final String className) {
+		return nameToClass != null ? nameToClass.get(className) : null;
 	}
 
 	public void reset () {
