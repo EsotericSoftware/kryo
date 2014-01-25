@@ -27,6 +27,7 @@
 	<scm>
 		<url>https://github.com/EsotericSoftware/kryo</url>
 		<connection>scm:git:git@github.com:EsotericSoftware/kryo.git</connection>
+		<developerConnection>scm:git:git@github.com:EsotericSoftware/kryo.git</developerConnection>
 	</scm>
 
 	<developers>
