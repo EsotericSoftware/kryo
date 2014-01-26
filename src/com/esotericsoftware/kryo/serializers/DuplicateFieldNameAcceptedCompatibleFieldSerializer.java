@@ -48,6 +48,21 @@ public class DuplicateFieldNameAcceptedCompatibleFieldSerializer<T> extends Comp
 		//set cached fields, the fields order will be ignored because of read field don't depends on its order
 		setFields(cachedFiledMap.values().toArray(new CachedField[cachedFiledMap.size()]));
 	}
+
+    public void removeField (String fieldName) {
+        for (int i = 0; i < fields.length; i++) {
+            CachedField cachedField = fields[i];
+            if (cachedField.field.getName().equals(fieldName)) {
+                CachedField[] newFields = new CachedField[fields.length - 1];
+                System.arraycopy(fields, 0, newFields, 0, i);
+                System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
+                fields = newFields;
+                super.removeField(fieldName);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
+    }
 	
 	/**
 	 * override the
