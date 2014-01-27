@@ -421,8 +421,8 @@ public class Kryo {
 		if (id < 0) throw new IllegalArgumentException("id must be > 0: " + id);
 
 		Registration existing = getRegistration(registration.getId());
-		if (existing != null && existing.getType() != registration.getType()) {
-			throw new KryoException("An existing registration with a different type already uses ID: " + registration.getId()
+		if (DEBUG && existing != null && existing.getType() != registration.getType()) {
+			debug("An existing registration with a different type already uses ID: " + registration.getId()
 				+ "\nExisting registration: " + existing + "\nUnable to set registration: " + registration);
 		}
 
