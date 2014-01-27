@@ -1,9 +1,11 @@
 
 package com.esotericsoftware.kryo.io;
 
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.UnsafeUtil;
+
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
@@ -12,9 +14,6 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
-
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.util.UnsafeUtil;
 
 /** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
  * for efficiently writing primitive types and strings.
@@ -30,17 +29,18 @@ public class ByteBufferOutput extends Output {
 
 	protected final static ByteOrder nativeOrder = ByteOrder.nativeOrder();
 
-	/** Creates an uninitialized Output. {@link #setBuffer(ByteBuffer, int)} must be called before the Output is used. */
+	/** Creates an uninitialized Output. A buffer must be set before the Output is used.
+	 * @see #setBuffer(ByteBuffer, int) */
 	public ByteBufferOutput () {
 	}
 
-	/** Creates a new Output for writing to a byte array.
+	/** Creates a new Output for writing to a direct ByteBuffer.
 	 * @param bufferSize The initial and maximum size of the buffer. An exception is thrown if this size is exceeded. */
 	public ByteBufferOutput (int bufferSize) {
 		this(bufferSize, bufferSize);
 	}
 
-	/** Creates a new Output for writing to a byte array.
+	/** Creates a new Output for writing to a direct ByteBuffer.
 	 * @param bufferSize The initial size of the buffer.
 	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. */
 	public ByteBufferOutput (int bufferSize, int maxBufferSize) {
@@ -65,42 +65,18 @@ public class ByteBufferOutput extends Output {
 		this.outputStream = outputStream;
 	}
 
-	/** Creates a new Output for reading from a byte array.
-	 * @param buffer An exception is thrown if more bytes than this are read. */
+	/** Creates a new Output for writing to a ByteBuffer. */
 	public ByteBufferOutput (ByteBuffer buffer) {
-		this(buffer, 0, buffer.position());
+		setBuffer(buffer);
 	}
 
-	/** Creates a new Output for reading from a byte array.
-	 * @param buffer An exception is thrown if more bytes than this are read. */
-	public ByteBufferOutput (ByteBuffer buffer, int offset, int count) {
-		ByteBuffer newBuffer = buffer.duplicate();
-		newBuffer.limit(count);
-		newBuffer.rewind();
-		setBuffer(newBuffer, count);
-		buffer.order(byteOrder);
+	/** Creates a new Output for writing to a ByteBuffer.
+	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxCapacity and an exception is thrown. */
+	public ByteBufferOutput (ByteBuffer buffer, int maxBufferSize) {
+		setBuffer(buffer, maxBufferSize);
 	}
 
-	public ByteOrder order () {
-		return byteOrder;
-	}
-
-	public void order (ByteOrder byteOrder) {
-		this.byteOrder = byteOrder;
-	}
-
-	/*** Release a direct buffer. {@link #setBuffer(ByteBuffer, int)} should be called before next write operations can be called.
-	 * 
-	 * NOTE: If Cleaner is not accessible due to SecurityManager restrictions, reflection could be used to obtain the "clean"
-	 * method and then invoke it. */
-	public void release () {
-		clear();
-		UnsafeUtil.releaseBuffer(niobuffer);
-		niobuffer = null;
-	}
-
-	/*** This constructor allows for creation of a direct ByteBuffer of a given size at a given address.
-	 * 
+	/** Creates a direct ByteBuffer of a given size at a given address.
 	 * <p>
 	 * Typical usage could look like this snippet:
 	 * 
@@ -117,12 +93,29 @@ public class ByteBufferOutput extends Output {
 	 * // Release the allocated region
 	 * UnsafeUtil.unsafe().freeMemory(bufAddress);
 	 * </pre>
-	 * 
 	 * @param address starting address of a memory region pre-allocated using Unsafe.allocateMemory()
 	 * @param maxBufferSize */
 	public ByteBufferOutput (long address, int maxBufferSize) {
 		niobuffer = UnsafeUtil.getDirectBufferAt(address, maxBufferSize);
 		setBuffer(niobuffer, maxBufferSize);
+	}
+
+	/** Release a direct buffer. {@link #setBuffer(ByteBuffer, int)} should be called before next write operations can be called.
+	 * 
+	 * NOTE: If Cleaner is not accessible due to SecurityManager restrictions, reflection could be used to obtain the "clean"
+	 * method and then invoke it. */
+	public void release () {
+		clear();
+		UnsafeUtil.releaseBuffer(niobuffer);
+		niobuffer = null;
+	}
+
+	public ByteOrder order () {
+		return byteOrder;
+	}
+
+	public void order (ByteOrder byteOrder) {
+		this.byteOrder = byteOrder;
 	}
 
 	public OutputStream getOutputStream () {
@@ -137,16 +130,23 @@ public class ByteBufferOutput extends Output {
 		total = 0;
 	}
 
-	/** Sets the buffer that will be written to. The position and total are reset, discarding any buffered bytes. The
-	 * {@link #setOutputStream(OutputStream) OutputStream} is set to null.
-	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. */
+	/** Sets the buffer that will be written to. maxCapacity is set to the specified buffer's capacity.
+	 * @see #setBuffer(ByteBuffer, int) */
+	public void setBuffer (ByteBuffer buffer) {
+		setBuffer(buffer, buffer.capacity());
+	}
+
+	/** Sets the buffer that will be written to. The byte order, position and capacity are set to match the specified buffer. The
+	 * total is set to 0. The {@link #setOutputStream(OutputStream) OutputStream} is set to null.
+	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxCapacity and an exception is thrown. */
 	public void setBuffer (ByteBuffer buffer, int maxBufferSize) {
 		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.niobuffer = buffer;
 		this.maxCapacity = maxBufferSize == -1 ? Integer.MAX_VALUE : maxBufferSize;
+		byteOrder = buffer.order();
 		capacity = buffer.capacity();
-		position = 0;
+		position = buffer.position();
 		total = 0;
 		outputStream = null;
 	}
@@ -907,13 +907,13 @@ public class ByteBufferOutput extends Output {
 		return byteOrder == nativeOrder;
 	}
 
-	/*** Return current setting for variable length encoding of integers
+	/** Return current setting for variable length encoding of integers
 	 * @return current setting for variable length encoding of integers */
 	public boolean getVarIntsEnabled () {
 		return varIntsEnabled;
 	}
 
-	/*** Controls if a variable length encoding for integer types should be used when serializers suggest it.
+	/** Controls if a variable length encoding for integer types should be used when serializers suggest it.
 	 * 
 	 * @param varIntsEnabled */
 	public void setVarIntsEnabled (boolean varIntsEnabled) {

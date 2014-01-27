@@ -51,7 +51,7 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 	}
 
 	public UnsafeMemoryInput (ByteBuffer buffer) {
-		super(buffer, 0, buffer.position());
+		super(buffer);
 		updateBufferAddress();
 	}
 
@@ -72,8 +72,8 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 		updateBufferAddress();
 	}
 
-	public void setBuffer (ByteBuffer buffer, int offset, int count) {
-		super.setBuffer(buffer, offset, count);
+	public void setBuffer (ByteBuffer buffer) {
+		super.setBuffer(buffer);
 		updateBufferAddress();
 	}
 

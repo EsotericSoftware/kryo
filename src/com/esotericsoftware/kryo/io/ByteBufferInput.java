@@ -1,6 +1,9 @@
 
 package com.esotericsoftware.kryo.io;
 
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.UnsafeUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -11,9 +14,6 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
-
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.util.UnsafeUtil;
 
 /** An InputStream that reads data from a byte array and optionally fills the byte array from another InputStream as needed.
  * Utility methods are provided for efficiently reading primitive types and strings.
@@ -29,7 +29,8 @@ public class ByteBufferInput extends Input {
 
 	protected final static ByteOrder nativeOrder = ByteOrder.nativeOrder();
 
-	/** Creates an uninitialized Input. {@link #setBuffer(byte[])} must be called before the Input is used. */
+	/** Creates an uninitialized Input. A buffer must be set before the Input is used.
+	 * @see #setBuffer(ByteBuffer) */
 	public ByteBufferInput () {
 	}
 
@@ -41,24 +42,13 @@ public class ByteBufferInput extends Input {
 		niobuffer.order(byteOrder);
 	}
 
-	/** Creates a new Input for reading from a byte array.
-	 * @param buffer An exception is thrown if more bytes than this are read. */
-	public ByteBufferInput (ByteBuffer buffer) {
-		this(buffer, 0, buffer.position());
-	}
-
 	public ByteBufferInput (byte[] buffer) {
 		setBuffer(buffer);
 	}
 
-	/** Creates a new Input for reading from a byte array.
-	 * @param buffer An exception is thrown if more bytes than this are read. */
-	public ByteBufferInput (ByteBuffer buffer, int offset, int count) {
-		ByteBuffer newBuffer = buffer.duplicate();
-		newBuffer.order(byteOrder);
-		newBuffer.limit(count);
-		newBuffer.rewind();
-		setBuffer(newBuffer, offset, count);
+	/** Creates a new Input for reading from a ByteBuffer. */
+	public ByteBufferInput (ByteBuffer buffer) {
+		setBuffer(buffer);
 	}
 
 	/** Creates a new Input for reading from an InputStream with a buffer size of 4096. */
@@ -83,36 +73,36 @@ public class ByteBufferInput extends Input {
 		this.byteOrder = byteOrder;
 	}
 
-	/** Sets a new buffer. The position and total are reset, discarding any buffered bytes. */
+	/** Sets a new buffer, discarding any previous buffer. The position and total are reset. */
 	public void setBuffer (byte[] bytes) {
 		ByteBuffer directBuffer = ByteBuffer.allocateDirect(bytes.length);
 		directBuffer.put(bytes);
 		directBuffer.position(0);
+		directBuffer.limit(bytes.length);
 		directBuffer.order(byteOrder);
-		setBuffer(directBuffer, 0, bytes.length);
+		setBuffer(directBuffer);
 	}
 
-	/** Sets a new buffer. The position and total are reset, discarding any buffered bytes. */
-	public void setBuffer (ByteBuffer bytes, int offset, int count) {
-		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
-		niobuffer = bytes;
-		position = offset;
-		limit = offset + count;
-		capacity = bytes.capacity();
+	/** Sets a new buffer, discarding any previous buffer. The byte order, position, limit and capacity are set to match the
+	 * specified buffer. The total is reset. The {@link #setInputStream(InputStream) InputStream} is set to null. */
+	public void setBuffer (ByteBuffer buffer) {
+		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
+		niobuffer = buffer;
+		position = buffer.position();
+		limit = buffer.limit();
+		capacity = buffer.capacity();
 		total = 0;
 		inputStream = null;
-		niobuffer.position(position);
 	}
 
-	/*** Release a direct buffer. {@link #setBuffer(ByteBuffer, int, int)} should be called before next write operations can be
-	 * called. */
+	/** Releases a direct buffer. {@link #setBuffer(ByteBuffer)} must be called before any write operations can be performed. */
 	public void release () {
 		close();
 		UnsafeUtil.releaseBuffer(niobuffer);
 		niobuffer = null;
 	}
 
-	/*** This constructor allows for creation of a direct ByteBuffer of a given size at a given address.
+	/** This constructor allows for creation of a direct ByteBuffer of a given size at a given address.
 	 * 
 	 * <p>
 	 * Typical usage could look like this snippet:
@@ -131,11 +121,9 @@ public class ByteBufferInput extends Input {
 	 * UnsafeUtil.unsafe().freeMemory(bufAddress);
 	 * </pre>
 	 * 
-	 * @param address starting address of a memory region pre-allocated using Unsafe.allocateMemory()
-	 * @param maxBufferSize */
-	public ByteBufferInput (long address, int maxBufferSize) {
-		niobuffer = UnsafeUtil.getDirectBufferAt(address, maxBufferSize);
-		setBuffer(niobuffer, 0, maxBufferSize);
+	 * @param address starting address of a memory region pre-allocated using Unsafe.allocateMemory() */
+	public ByteBufferInput (long address, int size) {
+		setBuffer(UnsafeUtil.getDirectBufferAt(address, size));
 	}
 
 	public ByteBuffer getByteBuffer () {
@@ -939,13 +927,13 @@ public class ByteBufferInput extends Input {
 		return byteOrder == nativeOrder;
 	}
 
-	/*** Return current setting for variable length encoding of integers
+	/** Return current setting for variable length encoding of integers
 	 * @return current setting for variable length encoding of integers */
 	public boolean getVarIntsEnabled () {
 		return varIntsEnabled;
 	}
 
-	/*** Controls if a variable length encoding for integer types should be used when serializers suggest it.
+	/** Controls if a variable length encoding for integer types should be used when serializers suggest it.
 	 * 
 	 * @param varIntsEnabled */
 	public void setVarIntsEnabled (boolean varIntsEnabled) {
