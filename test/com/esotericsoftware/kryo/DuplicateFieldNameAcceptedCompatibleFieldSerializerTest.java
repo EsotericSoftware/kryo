@@ -3,7 +3,6 @@ package com.esotericsoftware.kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
-import com.esotericsoftware.kryo.serializers.DuplicateFieldNameAcceptedCompatibleFieldSerializer;
 
 import java.io.FileNotFoundException;
 
@@ -18,7 +17,7 @@ public class DuplicateFieldNameAcceptedCompatibleFieldSerializerTest extends Kry
 		object1.child = new TestClass();
 		object1.other = new AnotherClass();
 		object1.other.value = "meow";
-		kryo.setDefaultSerializer(DuplicateFieldNameAcceptedCompatibleFieldSerializer.class);
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
 		kryo.register(TestClass.class);
 		kryo.register(AnotherClass.class);
 		roundTrip(100, 100, object1);
@@ -30,15 +29,15 @@ public class DuplicateFieldNameAcceptedCompatibleFieldSerializerTest extends Kry
 		object1.other = new AnotherClass();
 		object1.other.value = "meow";
 		
-		CompatibleFieldSerializer serializer = new DuplicateFieldNameAcceptedCompatibleFieldSerializer(
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(
 			kryo, TestClass.class);
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
-		kryo.register(AnotherClass.class, new DuplicateFieldNameAcceptedCompatibleFieldSerializer(
+		kryo.register(AnotherClass.class, new CompatibleFieldSerializer(
 			kryo, AnotherClass.class));
 		roundTrip(74, 74, object1);
 		
-		kryo.register(TestClass.class, new DuplicateFieldNameAcceptedCompatibleFieldSerializer(
+		kryo.register(TestClass.class, new CompatibleFieldSerializer(
 			kryo, TestClass.class));
 		Object object2 = kryo.readClassAndObject(input);
 		assertEquals(object1, object2);
@@ -48,11 +47,11 @@ public class DuplicateFieldNameAcceptedCompatibleFieldSerializerTest extends Kry
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();
 		
-		kryo.register(TestClass.class, new DuplicateFieldNameAcceptedCompatibleFieldSerializer(
+		kryo.register(TestClass.class, new CompatibleFieldSerializer(
 			kryo, TestClass.class));
 		roundTrip(88, 88, object1);
 		
-		CompatibleFieldSerializer serializer = new DuplicateFieldNameAcceptedCompatibleFieldSerializer(
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(
 			kryo, TestClass.class);
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
@@ -60,31 +59,10 @@ public class DuplicateFieldNameAcceptedCompatibleFieldSerializerTest extends Kry
 		assertEquals(object1, object2);
 	}
 	
-	/**
-	 * test CompatibleFieldSerializer, duplicate field's value will missing
-	 * @throws FileNotFoundException
-	 */
-	public void testDuplicateFieldNameFailure() throws FileNotFoundException {
-		PojoClass pojoClass = new PojoClass();
-		pojoClass.setAnInt(1);
-		pojoClass.setLongValue(2l);
-		pojoClass.setText("text");
-		pojoClass.setText1("text");
-		kryo.register(PojoClass.class, new CompatibleFieldSerializer(kryo, PojoClass.class));
-		Output output = new Output(2048);
-		kryo.writeClassAndObject(output, pojoClass);
-		byte[] bytes = output.toBytes();
-		Input input = new Input();
-		input.setBuffer(bytes);
-		PojoClass result = (PojoClass) kryo.readClassAndObject(input);
-		assertNotSame(pojoClass, result);
-		System.out.println(result);
-		//PojoClass{text='null', anInt=0, longValue=0, text1='text'}
-		//text\anInt\longValue's value will missing
-	}
+
 	
 	/**
-	 * use DuplicateFieldNameAcceptedCompatibleFieldSerializer,duplicate field's
+	 * use CompatibleFieldSerializer,duplicate field's
 	 * value will not missing
 	 * @throws FileNotFoundException
 	 */
@@ -95,7 +73,7 @@ public class DuplicateFieldNameAcceptedCompatibleFieldSerializerTest extends Kry
 		pojoClass.setText("text");
 		pojoClass.setText1("text1");
 		
-		kryo.register(PojoClass.class, new DuplicateFieldNameAcceptedCompatibleFieldSerializer(
+		kryo.register(PojoClass.class, new CompatibleFieldSerializer(
 			kryo, PojoClass.class));
 		Output output = new Output(2048);
 		kryo.writeClassAndObject(output, pojoClass);
