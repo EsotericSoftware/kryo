@@ -25,6 +25,9 @@ import static com.esotericsoftware.minlog.Log.*;
  * for each field value an int is written that is the length of the value in
  * bytes.
  * <p>
+ * Note that the field data is identified by name. The situation where a super
+ * class and its sub class have same field name,super class's  field which conflicted
+ * will be ignored. this will avoid conflicted field data being set to null when deserialize.
  * @author Nathan Sweet <misc@n4te.com>
  * @author Bohr Qiu <bohr.qiu@gmail.com>
  */
