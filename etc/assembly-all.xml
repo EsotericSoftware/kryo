@@ -18,7 +18,7 @@
 			<directory>target</directory>
 			<outputDirectory></outputDirectory>
 			<includes>
-				<include>kryo*.jar</include>
+				<include>*.jar</include>
 			</includes>
 		</fileSet>
 	</fileSets>
