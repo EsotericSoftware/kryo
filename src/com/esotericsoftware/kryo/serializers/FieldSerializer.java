@@ -233,7 +233,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			Field field = allFields.get(i);
 
 			int modifiers = field.getModifiers();
-			if (Modifier.isTransient(modifiers) && !transientFields) continue;
+			if (Modifier.isTransient(modifiers) != transientFields) continue;
 			if (Modifier.isStatic(modifiers)) continue;
 			if (field.isSynthetic() && ignoreSyntheticFields) continue;
 
