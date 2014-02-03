@@ -155,8 +155,7 @@
 						*
 						]]>
 						</Import-Package>
-						<Export-Package>com.esotericsoftware*</Export-Package>
-						<Embed-Dependency>com.esotericsoftware*;scope=compile|runtime</Embed-Dependency>
+						<Export-Package>com.esotericsoftware.kryo*,com.esotericsoftware.reflectasm*</Export-Package>
 					</instructions>
 				</configuration>
 			</plugin>
