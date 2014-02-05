@@ -1,3 +1,4 @@
+
 package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.minlog.Log.TRACE;
@@ -11,58 +12,53 @@ import java.lang.reflect.TypeVariable;
 import java.util.HashMap;
 import java.util.Map;
 
-/***
- * Helper class to map type name variables to concrete classes that are used during instantiation
-
- * @author Roman Levenstein <romixlev@gmail.com>
- *
- */
+/*** Helper class to map type name variables to concrete classes that are used during instantiation
+ * 
+ * @author Roman Levenstein <romixlev@gmail.com> */
 public class Generics {
 	private Map<String, Class> typeVar2class;
 
 	private Generics parentScope;
-	
-	public Generics() {
+
+	public Generics () {
 		typeVar2class = new HashMap<String, Class>();
 		parentScope = null;
 	}
-	
-	public Generics(Map<String, Class> mappings) {
+
+	public Generics (Map<String, Class> mappings) {
 		typeVar2class = new HashMap<String, Class>(mappings);
 		parentScope = null;
 	}
-	
-	public Generics(Generics parentScope) {
+
+	public Generics (Generics parentScope) {
 		typeVar2class = new HashMap<String, Class>();
 		this.parentScope = parentScope;
 	}
-	
-	public void add(String typeVar, Class clazz) {
+
+	public void add (String typeVar, Class clazz) {
 		typeVar2class.put(typeVar, clazz);
 	}
-	
-	public Class getConcreteClass(String typeVar) {
+
+	public Class getConcreteClass (String typeVar) {
 		Class clazz = typeVar2class.get(typeVar);
-		if(clazz == null && parentScope != null)
-			return parentScope.getConcreteClass(typeVar);
+		if (clazz == null && parentScope != null) return parentScope.getConcreteClass(typeVar);
 		return clazz;
 	}
 
-	public void setParentScope(Generics scope) {
-		if(parentScope != null)
-			throw new RuntimeException("Parent scope can be set just once");
+	public void setParentScope (Generics scope) {
+		if (parentScope != null) throw new IllegalStateException("Parent scope can be set just once");
 		parentScope = scope;
 	}
 
-	public Generics getParentScope() {
+	public Generics getParentScope () {
 		return parentScope;
 	}
-	
-	public String toString() {
+
+	public String toString () {
 		return typeVar2class.toString();
 	}
 
-	public void resetParentScope() {
+	public void resetParentScope () {
 		parentScope = null;
-	}	
+	}
 }
