@@ -155,10 +155,29 @@
 						*
 						]]>
 						</Import-Package>
-						<Export-Package>com.esotericsoftware*</Export-Package>
-						<Embed-Dependency>com.esotericsoftware*;scope=compile|runtime</Embed-Dependency>
+						<Export-Package>com.esotericsoftware.kryo*,com.esotericsoftware.reflectasm*</Export-Package>
 					</instructions>
 				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<descriptor>etc/assembly-all.xml</descriptor>
+				</configuration>
+				<!--
+					According to http://stackoverflow.com/questions/2244344/deploying-assembly-package-with-maven-release-plugin
+					this should add the assembly zip to the files uploaded during release:perform/deploy.
+				-->
+				<executions>
+					<execution>
+						<id>dist-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
