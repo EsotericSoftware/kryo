@@ -52,6 +52,8 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				writeFieldCount--;
 			}
 		}
+		
+		this.removedFields.clear();
 	}
 
 	public void removeField (String fieldName) {
