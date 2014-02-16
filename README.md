@@ -20,7 +20,7 @@ Kryo can also perform automatic deep and shallow copying/cloning. This is direct
 
 This documentation is for v2 of Kryo. See [V1Documentation](https://github.com/EsotericSoftware/kryo/wiki/Documentation-for-Kryo-version-1.x) for v1.x.
 
-If you are planning to use Kryo for network communication, the [KryoNet](http://code.google.com/p/kryonet/) project may prove useful.
+If you are planning to use Kryo for network communication, the [KryoNet](https://github.com/EsotericSoftware/kryonet) project may prove useful.
 
 ## Contents
 

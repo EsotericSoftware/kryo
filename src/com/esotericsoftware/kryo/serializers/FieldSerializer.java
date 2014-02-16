@@ -51,7 +51,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	final private TypeVariable[] typeParameters;
 	private CachedField[] fields = new CachedField[0];
 	private CachedField[] transientFields = new CachedField[0];
-	private Map<String, String> removedFields = new HashMap<String, String>();
+	protected Map<String, String> removedFields = new HashMap<String, String>();
 	Object access;
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 	private boolean ignoreSyntheticFields = true;
