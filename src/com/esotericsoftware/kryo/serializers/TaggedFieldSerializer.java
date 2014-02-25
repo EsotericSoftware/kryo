@@ -36,7 +36,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			Field field = fields[i].getField();
 			if (field.getAnnotation(Tag.class) == null) {
 				if (TRACE) trace("kryo", "Ignoring field without tag: " + fields[i]);
-				super.removeField(field.getName());
+				super.removeField(fields[i]);
 			}
 		}
 		// Cache tag values.
@@ -52,12 +52,17 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				writeFieldCount--;
 			}
 		}
-		
+
 		this.removedFields.clear();
 	}
 
 	public void removeField (String fieldName) {
 		super.removeField(fieldName);
+		initializeCachedFields();
+	}
+
+	public void removeField (CachedField field) {
+		super.removeField(field);
 		initializeCachedFields();
 	}
 

@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -30,9 +31,9 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.ObjectMap;
-
 import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.reflectasm.FieldAccess;
+
 import static com.esotericsoftware.minlog.Log.*;
 
 // BOZO - Make primitive serialization with ReflectASM configurable?
@@ -51,7 +52,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	final private TypeVariable[] typeParameters;
 	private CachedField[] fields = new CachedField[0];
 	private CachedField[] transientFields = new CachedField[0];
-	protected Map<String, String> removedFields = new HashMap<String, String>();
+	protected HashSet<CachedField> removedFields = new HashSet();
 	Object access;
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 	private boolean ignoreSyntheticFields = true;
@@ -222,8 +223,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		if (genericsScope != null) kryo.popGenericsScope();
 
-		for (String fieldName : removedFields.keySet())
-			removeField(fieldName);
+		for (CachedField field : removedFields)
+			removeField(field);
 	}
 
 	private List<Field> buildValidFields (boolean transientFields, List<Field> allFields, ObjectMap context, IntArray useAsm) {
@@ -517,11 +518,27 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				System.arraycopy(fields, 0, newFields, 0, i);
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
 				fields = newFields;
-				removedFields.put(fieldName, fieldName);
+				removedFields.add(cachedField);
 				return;
 			}
 		}
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
+	}
+
+	/** Removes a field so that it won't be serialized. */
+	public void removeField (CachedField removeField) {
+		for (int i = 0; i < fields.length; i++) {
+			CachedField cachedField = fields[i];
+			if (cachedField == removeField) {
+				CachedField[] newFields = new CachedField[fields.length - 1];
+				System.arraycopy(fields, 0, newFields, 0, i);
+				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
+				fields = newFields;
+				removedFields.add(cachedField);
+				return;
+			}
+		}
+		throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + type.getName());
 	}
 
 	public CachedField[] getFields () {
