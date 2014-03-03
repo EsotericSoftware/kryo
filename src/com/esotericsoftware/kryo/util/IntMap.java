@@ -16,6 +16,9 @@
 
 package com.esotericsoftware.kryo.util;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /** An unordered map that uses int keys. This implementation is a cuckoo hash map using 3 hashes, random walking, and a small stash
  * for problematic keys. Null values are allowed. No allocation is done except when growing the table size. <br>
@@ -59,7 +62,7 @@ public class IntMap<V> {
 	 * before growing the backing table. */
 	public IntMap (int initialCapacity, float loadFactor) {
 		if (initialCapacity < 0) throw new IllegalArgumentException("initialCapacity must be >= 0: " + initialCapacity);
-		if (capacity > 1 << 30) throw new IllegalArgumentException("initialCapacity is too large: " + initialCapacity);
+		if (initialCapacity > 1 << 30) throw new IllegalArgumentException("initialCapacity is too large: " + initialCapacity);
 		capacity = ObjectMap.nextPowerOfTwo(initialCapacity);
 
 		if (loadFactor <= 0) throw new IllegalArgumentException("loadFactor must be > 0: " + loadFactor);
@@ -75,12 +78,25 @@ public class IntMap<V> {
 		valueTable = (V[])new Object[keyTable.length];
 	}
 
+	/** Creates a new map identical to the specified map. */
+	public IntMap (IntMap<? extends V> map) {
+		this(map.capacity, map.loadFactor);
+		stashSize = map.stashSize;
+		System.arraycopy(map.keyTable, 0, keyTable, 0, map.keyTable.length);
+		System.arraycopy(map.valueTable, 0, valueTable, 0, map.valueTable.length);
+		size = map.size;
+		zeroValue = map.zeroValue;
+		hasZeroValue = map.hasZeroValue;
+	}
+
 	public V put (int key, V value) {
 		if (key == 0) {
 			V oldValue = zeroValue;
 			zeroValue = value;
-			hasZeroValue = true;
-			size++;
+			if (!hasZeroValue) {
+				hasZeroValue = true;
+				size++;
+			}
 			return oldValue;
 		}
 
@@ -113,7 +129,7 @@ public class IntMap<V> {
 
 		// Update key in the stash.
 		for (int i = capacity, n = i + stashSize; i < n; i++) {
-			if (key == keyTable[i]) {
+			if (keyTable[i] == key) {
 				V oldValue = valueTable[i];
 				valueTable[i] = value;
 				return oldValue;
@@ -144,6 +160,11 @@ public class IntMap<V> {
 
 		push(key, value, index1, key1, index2, key2, index3, key3);
 		return null;
+	}
+
+	public void putAll (IntMap<V> map) {
+		for (Entry<V> entry : map.entries())
+			put(entry.key, entry.value);
 	}
 
 	/** Skips checks for existing keys. */
@@ -187,6 +208,7 @@ public class IntMap<V> {
 
 	private void push (int insertKey, V insertValue, int index1, int key1, int index2, int key2, int index3, int key3) {
 		int[] keyTable = this.keyTable;
+
 		V[] valueTable = this.valueTable;
 		int mask = this.mask;
 
@@ -270,7 +292,10 @@ public class IntMap<V> {
 	}
 
 	public V get (int key) {
-		if (key == 0) return zeroValue;
+		if (key == 0) {
+			if (!hasZeroValue) return null;
+			return zeroValue;
+		}
 		int index = key & mask;
 		if (keyTable[index] != key) {
 			index = hash2(key);
@@ -283,7 +308,10 @@ public class IntMap<V> {
 	}
 
 	public V get (int key, V defaultValue) {
-		if (key == 0) return zeroValue;
+		if (key == 0) {
+			if (!hasZeroValue) return defaultValue;
+			return zeroValue;
+		}
 		int index = key & mask;
 		if (keyTable[index] != key) {
 			index = hash2(key);
@@ -368,7 +396,7 @@ public class IntMap<V> {
 	}
 
 	/** Reduces the size of the backing arrays to be the specified capacity or less. If the capacity is already less, nothing is
-	 * done. If the map contains more items than the specified capacity, nothing is done. */
+	 * done. If the map contains more items than the specified capacity, the next highest power of two capacity is used instead. */
 	public void shrink (int maximumCapacity) {
 		if (maximumCapacity < 0) throw new IllegalArgumentException("maximumCapacity must be >= 0: " + maximumCapacity);
 		if (size > maximumCapacity) maximumCapacity = size;
@@ -542,5 +570,173 @@ public class IntMap<V> {
 		}
 		buffer.append(']');
 		return buffer.toString();
+	}
+
+	/** Returns an iterator for the entries in the map. Remove is supported. Note that the same iterator instance is returned each
+	 * time this method is called. Use the {@link Entries} constructor for nested or multithreaded iteration. */
+	public Entries<V> entries () {
+		return new Entries(this);
+	}
+
+	/** Returns an iterator for the values in the map. Remove is supported. Note that the same iterator instance is returned each
+	 * time this method is called. Use the {@link Entries} constructor for nested or multithreaded iteration. */
+	public Values<V> values () {
+		return new Values(this);
+	}
+
+	/** Returns an iterator for the keys in the map. Remove is supported. Note that the same iterator instance is returned each time
+	 * this method is called. Use the {@link Entries} constructor for nested or multithreaded iteration. */
+	public Keys keys () {
+		return new Keys(this);
+	}
+
+	static public class Entry<V> {
+		public int key;
+		public V value;
+
+		public String toString () {
+			return key + "=" + value;
+		}
+	}
+
+	static private class MapIterator<V> {
+		static final int INDEX_ILLEGAL = -2;
+		static final int INDEX_ZERO = -1;
+
+		public boolean hasNext;
+
+		final IntMap<V> map;
+		int nextIndex, currentIndex;
+
+		public MapIterator (IntMap<V> map) {
+			this.map = map;
+			reset();
+		}
+
+		public void reset () {
+			currentIndex = INDEX_ILLEGAL;
+			nextIndex = INDEX_ZERO;
+			if (map.hasZeroValue)
+				hasNext = true;
+			else
+				findNextIndex();
+		}
+
+		void findNextIndex () {
+			hasNext = false;
+			int[] keyTable = map.keyTable;
+			for (int n = map.capacity + map.stashSize; ++nextIndex < n;) {
+				if (keyTable[nextIndex] != EMPTY) {
+					hasNext = true;
+					break;
+				}
+			}
+		}
+
+		public void remove () {
+			if (currentIndex == INDEX_ZERO && map.hasZeroValue) {
+				map.zeroValue = null;
+				map.hasZeroValue = false;
+			} else if (currentIndex < 0) {
+				throw new IllegalStateException("next must be called before remove.");
+			} else if (currentIndex >= map.capacity) {
+				map.removeStashIndex(currentIndex);
+				nextIndex = currentIndex - 1;
+				findNextIndex();
+			} else {
+				map.keyTable[currentIndex] = EMPTY;
+				map.valueTable[currentIndex] = null;
+			}
+			currentIndex = INDEX_ILLEGAL;
+			map.size--;
+		}
+	}
+
+	static public class Entries<V> extends MapIterator<V> implements Iterable<Entry<V>>, Iterator<Entry<V>> {
+		private Entry<V> entry = new Entry();
+
+		public Entries (IntMap map) {
+			super(map);
+		}
+
+		/** Note the same entry instance is returned each time this method is called. */
+		public Entry<V> next () {
+			if (!hasNext) throw new NoSuchElementException();
+			int[] keyTable = map.keyTable;
+			if (nextIndex == INDEX_ZERO) {
+				entry.key = 0;
+				entry.value = map.zeroValue;
+			} else {
+				entry.key = keyTable[nextIndex];
+				entry.value = map.valueTable[nextIndex];
+			}
+			currentIndex = nextIndex;
+			findNextIndex();
+			return entry;
+		}
+
+		public boolean hasNext () {
+			return hasNext;
+		}
+
+		public Iterator<Entry<V>> iterator () {
+			return this;
+		}
+	}
+
+	static public class Values<V> extends MapIterator<V> implements Iterable<V>, Iterator<V> {
+		public Values (IntMap<V> map) {
+			super(map);
+		}
+
+		public boolean hasNext () {
+			return hasNext;
+		}
+
+		public V next () {
+			if (!hasNext) throw new NoSuchElementException();
+			V value;
+			if (nextIndex == INDEX_ZERO)
+				value = map.zeroValue;
+			else
+				value = map.valueTable[nextIndex];
+			currentIndex = nextIndex;
+			findNextIndex();
+			return value;
+		}
+
+		public Iterator<V> iterator () {
+			return this;
+		}
+
+		/** Returns a new array containing the remaining values. */
+		public ArrayList<V> toArray () {
+			ArrayList array = new ArrayList(map.size);
+			while (hasNext)
+				array.add(next());
+			return array;
+		}
+	}
+
+	static public class Keys extends MapIterator {
+		public Keys (IntMap map) {
+			super(map);
+		}
+
+		public int next () {
+			if (!hasNext) throw new NoSuchElementException();
+			int key = nextIndex == INDEX_ZERO ? 0 : map.keyTable[nextIndex];
+			currentIndex = nextIndex;
+			findNextIndex();
+			return key;
+		}
+
+		/** Returns a new array containing the remaining keys. */
+		public IntArray toArray () {
+			IntArray array = new IntArray(true, map.size);
+			while (hasNext)
+				array.add(next());
+			return array;
+		}
 	}
 }
