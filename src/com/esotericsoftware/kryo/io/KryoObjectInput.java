@@ -13,39 +13,38 @@ import java.io.ObjectInput;
  */
 public class KryoObjectInput extends KryoDataInput implements ObjectInput {
 
-    private final Kryo kryo;
+	 private final Kryo kryo;
 
-    public KryoObjectInput( Kryo kryo, Input in ) {
-        super( in );
-        this.kryo = kryo;
-    }
+	 public KryoObjectInput (Kryo kryo, Input in) {
+		  super(in);
+		  this.kryo = kryo;
+	 }
 
-    public Object readObject() throws ClassNotFoundException, IOException {
-        return kryo.readClassAndObject( input );
-    }
+	 public Object readObject () throws ClassNotFoundException, IOException {
+		  return kryo.readClassAndObject(input);
+	 }
 
+	 public int read () throws IOException {
+		  return input.read();
+	 }
 
-    public int read() throws IOException {
-        return input.read();
-    }
+	 public int read (byte[] b) throws IOException {
+		  return input.read(b);
+	 }
 
-    public int read( byte[] b ) throws IOException {
-        return input.read( b );
-    }
+	 public int read (byte[] b, int off, int len) throws IOException {
+		  return input.read(b, off, len);
+	 }
 
-    public int read( byte[] b, int off, int len ) throws IOException {
-        return input.read( b, off, len );
-    }
+	 public long skip (long n) throws IOException {
+		  return input.skip(n);
+	 }
 
-    public long skip( long n ) throws IOException {
-        return input.skip( n );
-    }
+	 public int available () throws IOException {
+		  return 0;
+	 }
 
-    public int available() throws IOException {
-        return 0;
-    }
-
-    public void close() throws IOException {
-        input.close();
-    }
+	 public void close () throws IOException {
+		  input.close();
+	 }
 }

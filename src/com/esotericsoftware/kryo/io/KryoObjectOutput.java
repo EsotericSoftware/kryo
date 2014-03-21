@@ -16,22 +16,22 @@ import java.io.ObjectOutput;
  */
 public class KryoObjectOutput extends KryoDataOutput implements ObjectOutput {
 
-    private final Kryo kryo;
+	 private final Kryo kryo;
 
-    public KryoObjectOutput( Kryo kryo, Output output ) {
-        super( output );
-        this.kryo = kryo;
-    }
+	 public KryoObjectOutput (Kryo kryo, Output output) {
+		  super(output);
+		  this.kryo = kryo;
+	 }
 
-    public void writeObject( Object obj ) throws IOException {
-        kryo.writeClassAndObject( output, obj );
-    }
+	 public void writeObject (Object obj) throws IOException {
+		  kryo.writeClassAndObject(output, obj);
+	 }
 
-    public void flush() throws IOException {
-        output.flush();
-    }
+	 public void flush () throws IOException {
+		  output.flush();
+	 }
 
-    public void close() throws IOException {
-        output.close();
-    }
+	 public void close () throws IOException {
+		  output.close();
+	 }
 }
