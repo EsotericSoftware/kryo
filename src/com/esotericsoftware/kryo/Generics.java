@@ -53,6 +53,10 @@ public class Generics {
 	public Generics getParentScope () {
 		return parentScope;
 	}
+	
+	public Map<String, Class> getMappings() {
+		return typeVar2class;
+	}
 
 	public String toString () {
 		return typeVar2class.toString();

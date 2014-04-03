@@ -1131,6 +1131,9 @@ public class Kryo {
 	public void pushGenericsScope (Class type, Generics generics) {
 		if (TRACE) trace("kryo", "Settting a new generics scope for class " + type.getName() + ": " + generics);
 		Generics currentScope = genericsScope;
+		if (generics.getParentScope() != null) {
+			generics = new Generics(generics.getMappings());
+		}
 		genericsScope = generics;
 		genericsScope.setParentScope(currentScope);
 	}
