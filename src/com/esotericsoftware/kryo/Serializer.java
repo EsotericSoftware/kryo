@@ -7,7 +7,7 @@ import com.esotericsoftware.kryo.io.Output;
 /** Reads and writes objects to and from bytes.
  * @author Nathan Sweet <misc@n4te.com> */
 public abstract class Serializer<T> {
-	private boolean acceptsNull, immutable, defaultSerializer;
+	private boolean acceptsNull, immutable;
 
 	public Serializer () {
 	}
@@ -65,16 +65,6 @@ public abstract class Serializer<T> {
 		this.immutable = immutable;
 	}
 	
-	
-	public boolean isDefaultSerializer () {
-		return defaultSerializer;
-	}
-
-	/** If true, this is a default serializer */
-	public void setDefaultSerializer (boolean defaultSerializer) {
-		this.defaultSerializer = defaultSerializer;
-	}
-
 	/** Sets the generic types of the field or method this serializer will be used for on the next call to read or write. Subsequent
 	 * calls to read and write must not use this generic type information. The default implementation does nothing. Subclasses may
 	 * use the information provided to this method for more efficient serialization, eg to use the same type for all items in a

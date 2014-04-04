@@ -104,7 +104,6 @@ public class Kryo {
 	private final ClassResolver classResolver;
 	private int nextRegisterID;
 	private ClassLoader classLoader = getClass().getClassLoader();
-	private InstantiatorStrategy defaultStrategy = new DefaultInstantiatorStrategy();
 	private InstantiatorStrategy strategy = new DefaultInstantiatorStrategy();
 	private boolean registrationRequired;
 
@@ -338,8 +337,6 @@ public class Kryo {
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
 			if (entry.type.isAssignableFrom(type)) {
 				Serializer defaultSerializer = entry.serializerFactory.makeSerializer(this, type);
-				// Remember that it is a default serializer set internally by Kryo
-				if (i > n - lowPriorityDefaultSerializerCount) defaultSerializer.setDefaultSerializer(true);
 				return defaultSerializer;
 			}
 		}
@@ -1058,9 +1055,6 @@ public class Kryo {
 		Registration registration = getRegistration(type);
 		ObjectInstantiator instantiator = registration.getInstantiator();
 		if (instantiator == null) {
-			if (registration.getSerializer().isDefaultSerializer())
-				instantiator = defaultStrategy.newInstantiatorOf(type);
-			else
 				instantiator = newInstantiator(type);
 			registration.setInstantiator(instantiator);
 		}
