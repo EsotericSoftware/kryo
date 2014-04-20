@@ -153,6 +153,18 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 * will be used. It is called from the constructor for FieldSerializer, but not for subclasses. Subclasses must call this from
 	 * their constructor. */
 	protected void rebuildCachedFields () {
+		rebuildCachedFields(false);
+	}
+
+	/**
+	 * Rebuilds the list of cached fields.
+	 * @param minorRebuild if set, processing due to changes in generic type parameters will be optimized
+	 */
+	protected void rebuildCachedFields (boolean minorRebuild) {
+		/**
+		 * TODO: Optimize rebuildCachedFields invocations performed due to changes in generic type parameters
+		 */
+		
 		if (TRACE && generics != null) trace("kryo", "Generic type parameters: " + Arrays.toString(generics));
 		if (type.isInterface()) {
 			fields = new CachedField[0]; // No fields to serialize.
@@ -169,46 +181,55 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		// Push proper scopes at serializer construction time
 		if (genericsScope != null) kryo.pushGenericsScope(type, genericsScope);
 
-		// Collect all fields.
-		List<Field> allFields = new ArrayList();
-		Class nextClass = type;
-		while (nextClass != Object.class) {
-			Field[] declaredFields = nextClass.getDeclaredFields();
-			if (declaredFields != null) {
-				for (Field f : declaredFields) {
-					if (Modifier.isStatic(f.getModifiers())) continue;
-					allFields.add(f);
+		List<Field> validFields;
+		List<Field> validTransientFields;
+		IntArray useAsm = new IntArray();
+		
+		if (!minorRebuild) {
+			// Collect all fields.
+			List<Field> allFields = new ArrayList();
+			Class nextClass = type;
+			while (nextClass != Object.class) {
+				Field[] declaredFields = nextClass.getDeclaredFields();
+				if (declaredFields != null) {
+					for (Field f : declaredFields) {
+						if (Modifier.isStatic(f.getModifiers())) continue;
+						allFields.add(f);
+					}
+				}
+				nextClass = nextClass.getSuperclass();
+			}
+
+			ObjectMap context = kryo.getContext();
+
+			// Sort fields by their offsets
+			if (useMemRegions && !useAsmEnabled && unsafeAvailable) {
+				try {
+					Field[] allFieldsArray = (Field[])sortFieldsByOffsetMethod.invoke(null, allFields);
+					allFields = Arrays.asList(allFieldsArray);
+				} catch (Exception e) {
+					throw new RuntimeException("Cannot invoke UnsafeUtil.sortFieldsByOffset()", e);
 				}
 			}
-			nextClass = nextClass.getSuperclass();
-		}
 
-		ObjectMap context = kryo.getContext();
+			// TODO: useAsm is modified as a side effect, this should be pulled out of buildValidFields
+			// Build a list of valid non-transient fields
+			validFields = buildValidFields(false, allFields, context, useAsm);
+			// Build a list of valid transient fields
+			validTransientFields = buildValidFields(true, allFields, context, useAsm);
 
-		IntArray useAsm = new IntArray();
-
-		// Sort fields by their offsets
-		if (useMemRegions && !useAsmEnabled && unsafeAvailable) {
-			try {
-				Field[] allFieldsArray = (Field[])sortFieldsByOffsetMethod.invoke(null, allFields);
-				allFields = Arrays.asList(allFieldsArray);
-			} catch (Exception e) {
-				throw new RuntimeException("Cannot invoke UnsafeUtil.sortFieldsByOffset()", e);
+			// Use ReflectASM for any public fields.
+			if (useAsmEnabled && !Util.isAndroid && Modifier.isPublic(type.getModifiers()) && useAsm.indexOf(1) != -1) {
+				try {
+					access = FieldAccess.get(type);
+				} catch (RuntimeException ignored) {
+				}
 			}
-		}
-
-		// TODO: useAsm is modified as a side effect, this should be pulled out of buildValidFields
-		// Build a list of valid non-transient fields
-		List<Field> validFields = buildValidFields(false, allFields, context, useAsm);
-		// Build a list of valid transient fields
-		List<Field> validTransientFields = buildValidFields(true, allFields, context, useAsm);
-
-		// Use ReflectASM for any public fields.
-		if (useAsmEnabled && !Util.isAndroid && Modifier.isPublic(type.getModifiers()) && useAsm.indexOf(1) != -1) {
-			try {
-				access = FieldAccess.get(type);
-			} catch (RuntimeException ignored) {
-			}
+		} else {
+			// It is a minor rebuild
+			validFields = buildValidFieldsFromCachedFields(fields, useAsm);
+			// Build a list of valid transient fields
+			validTransientFields = buildValidFieldsFromCachedFields(transientFields, useAsm);
 		}
 
 		List<CachedField> cachedFields = new ArrayList(validFields.size());
@@ -233,6 +254,15 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			removeField(field);
 		
 		annotationsUtil.processAnnotatedFields(this);
+	}
+
+	private List<Field> buildValidFieldsFromCachedFields (CachedField[] cachedFields, IntArray useAsm) {
+		ArrayList<Field> fields = new ArrayList<Field>(cachedFields.length);
+		for(CachedField f: cachedFields) {
+			fields.add(f.field);
+			useAsm.add((f.accessIndex > -1)?1:0);
+		}
+		return fields;
 	}
 
 	private List<Field> buildValidFields (boolean transientFields, List<Field> allFields, ObjectMap context, IntArray useAsm) {
@@ -284,11 +314,11 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	public void setGenerics (Kryo kryo, Class[] generics) {
 		this.generics = generics;
 		if (typeParameters != null && typeParameters.length > 0) {
-			// TODO: There is probably no need to rebuild all cached fields from scratch.
+			// There is no need to rebuild all cached fields from scratch.
 			// Generic parameter types do not affect the set of fields, offsets of fields,
 			// transient and non-transient properties. They only affect the type of
 			// fields and serializers selected for each field.
-			rebuildCachedFields();
+			rebuildCachedFields(true);
 		}
 	}
 
