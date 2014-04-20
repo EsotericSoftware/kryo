@@ -14,6 +14,7 @@ import java.lang.reflect.TypeVariable;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.IntArray;
@@ -62,6 +64,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	private FieldSerializerUnsafeUtil unsafeUtil;
 
 	private FieldSerializerGenericsUtil genericsUtil;
+	
+	private FieldSerializerAnnotationsUtil annotationsUtil;
 
 	/** Concrete classes passed as values for type variables */
 	private Class[] generics;
@@ -125,6 +129,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		}
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
 		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
+		this.annotationsUtil = new FieldSerializerAnnotationsUtil(this);
 		rebuildCachedFields();
 	}
 
@@ -140,6 +145,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		}
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
 		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
+		this.annotationsUtil = new FieldSerializerAnnotationsUtil(this);
 		rebuildCachedFields();
 	}
 
@@ -225,6 +231,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		for (CachedField field : removedFields)
 			removeField(field);
+		
+		annotationsUtil.processAnnotatedFields(this);
 	}
 
 	private List<Field> buildValidFields (boolean transientFields, List<Field> allFields, ObjectMap context, IntArray useAsm) {
@@ -541,10 +549,14 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + type.getName());
 	}
 
+	/**
+	 * Get all fields controlled by this FieldSerializer 
+	 * @return all fields controlled by this FieldSerializer
+	 */
 	public CachedField[] getFields () {
 		return fields;
 	}
-
+	
 	public Class getType () {
 		return type;
 	}
@@ -620,6 +632,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		public void setSerializer (Serializer serializer) {
 			this.serializer = serializer;
 		}
+		
+		public Serializer getSerializer() {
+			return this.serializer;
+		}
 
 		public void setCanBeNull (boolean canBeNull) {
 			this.canBeNull = canBeNull;
@@ -653,5 +669,22 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	@Target(ElementType.FIELD)
 	static public @interface Optional {
 		public String value();
+	}
+
+	/**
+	 * Used to annotate fields with a specific Kryo serializer.
+	 */
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.FIELD)
+	public @interface Bind {
+
+	    /**
+	     * Value.
+	     * 
+	     * @return the class<? extends serializer> used for this field
+	     */
+	    @SuppressWarnings("rawtypes")
+	    Class<? extends Serializer> value();
+
 	}
 }

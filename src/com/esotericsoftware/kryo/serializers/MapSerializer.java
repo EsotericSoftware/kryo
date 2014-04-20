@@ -1,6 +1,10 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -153,5 +157,58 @@ public class MapSerializer extends Serializer<Map> {
 			copy.put(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));
 		}
 		return copy;
+	}
+
+	/** 
+	 * Used to annotate fields that are maps with specific Kryo serializers for 
+	 * their keys or values. 
+	 */
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.FIELD)
+	public @interface BindMap {
+
+		/** 
+		 * Serializer to be used for keys
+		 * 
+		 * @return the class<? extends serializer> used for keys serialization
+		 */
+		@SuppressWarnings("rawtypes")
+		Class<? extends Serializer> keySerializer() default Serializer.class;
+
+		/** 
+		 * Serializer to be used for values
+		 * 
+		 * @return the class<? extends serializer> used for values serialization 
+		 */
+		@SuppressWarnings("rawtypes")
+		Class<? extends Serializer> valueSerializer() default Serializer.class;
+
+		/** 
+		 * Class used for keys
+		 * 
+		 * @return the class used for keys 
+		 */
+		Class<?> keyClass() default Object.class;
+
+		/** 
+		 * Class used for values
+		 * 
+		 * @return the class used for values 
+		 */
+		Class<?> valueClass() default Object.class;
+
+		/** 
+		 * Indicates if keys can be null
+		 * 
+		 * @return true, if keys can be null 
+		 */
+		boolean keysCanBeNull() default true;
+
+		/** 
+		 * Indicates if values can be null
+		 * 
+		 * @return true, if values can be null 
+		 */
+		boolean valuesCanBeNull() default true;
 	}
 }

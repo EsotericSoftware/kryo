@@ -1,6 +1,10 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -126,5 +130,35 @@ public class CollectionSerializer extends Serializer<Collection> {
 		for (Object element : original)
 			copy.add(kryo.copy(element));
 		return copy;
+	}
+
+	/**
+	 * Used to annotate fields that are collections with specific Kryo serializers
+	 * for their values.
+	 */
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.FIELD)
+	public @interface BindCollection {
+	    /**
+	     * Serializer to be used for values
+	     * 
+	     * @return the class<? extends Serializer> used for values serialization
+	     */
+	    @SuppressWarnings("rawtypes")
+	    Class<? extends Serializer> elementSerializer() default Serializer.class;
+	    
+	    /**
+	     * Class used for elements
+	     * 
+	     * @return the class used for elements
+	     */
+	    Class<?> elementClass() default Object.class;
+	    
+	    /**
+	     * Indicates if elements can be null
+	     * 
+	     * @return true, if elements can be null
+	     */
+	    boolean elementsCanBeNull() default true;
 	}
 }
