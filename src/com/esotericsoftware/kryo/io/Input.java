@@ -271,7 +271,9 @@ public class Input extends InputStream {
 	public long skip (long count) throws KryoException {
 		long remaining = count;
 		while (remaining > 0) {
-			int skip = Math.min(Integer.MAX_VALUE, (int)remaining);
+			//int skip = Math.min(Integer.MAX_VALUE, (int)remaining);
+            //if remaining is greater than Integer.MAX_VALUE, "(int) remaining" will be negative.
+			int skip = (int)Math.min(Integer.MAX_VALUE, remaining);
 			skip(skip);
 			remaining -= skip;
 		}
