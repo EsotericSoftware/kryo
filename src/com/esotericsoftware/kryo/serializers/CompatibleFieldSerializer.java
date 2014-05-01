@@ -73,8 +73,15 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		InputChunked inputChunked = new InputChunked(input, 1024);
+		boolean hasGenerics = getGenerics() != null;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
+			if(cachedField != null && hasGenerics) {
+				// Generic type used to instantiate this field could have 
+				// been changed in the meantime. Therefore take the most 
+				// up-to-date definition of a field
+				cachedField = getField(cachedField.field.getName());
+			}
 			if (cachedField == null) {
 				if (TRACE) trace("kryo", "Skip obsolete field.");
 				inputChunked.nextChunks();

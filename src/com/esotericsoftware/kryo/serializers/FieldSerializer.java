@@ -321,6 +321,13 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			rebuildCachedFields(true);
 		}
 	}
+	
+	/** Get generic type parameters of the class controlled by this serializer.
+	 * @return generic type parameters or null, if there are none.
+	 */
+	public Class[] getGenerics() {
+		return generics;
+	}
 
 	protected void initializeCachedFields () {
 	}
