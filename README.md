@@ -6,11 +6,11 @@ Please use the [Kryo discussion group](http://groups.google.com/group/kryo-users
 
 Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](http://search.maven.org/#browse|1975274176). Latest snapshots of Kryo including snapshot builds of master are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/kryo).
 
-## New in 2.22
+## Latest release is 2.24.0
 
-The 2.22 release fixes many reported issues and improves stability and performance. It also introduces a number of new features, most notably that it can use Unsafe to read and write object memory directly. This is the absolute fastest way to do serialization, especially for large primitive arrays. 
+## New in relase 2.24.0
 
-The Maven JARs now contain a "shaded" version of ObjectWeb's ASM library to avoid conflicts with a different ASM version in your application. There's no longer a separate shaded jar.
+The 2.24.0 release fixes many reported issues and improves stability and performance. It also introduces a new feature: [annotations](#class-fields-annotations) that can be used to indicate which serializer should be used for a given field of a class. 
 
 ## Overview
 
@@ -32,6 +32,8 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [Default serializers](#default-serializers)
 - [FieldSerializer](#fieldserializer)
 - [KryoSerializable](#kryoserializable)
+- [Class fields annotations](#class-fields-annotations)
+- [Java Serialization](#java-serialization)
 - [Reading and writing](#reading-and-writing)
 - [References](#references)
 - [Object creation](#object-creation)
@@ -45,6 +47,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [Threading](#threading)
 - [Logging](#logging)
 - [Integration with Maven](#integration-with-maven)
+- [Using Kryo without Maven](#using-kryo-without-maven)
 - [Scala](#scala)
 - [Objective-C](#objective-c)
 - [Benchmarks](#benchmarks)
@@ -234,6 +237,7 @@ Other general purpose serializes are provided, such as BeanSerializer, TaggedFie
 While FieldSerializer is ideal for most classes, sometimes it is convenient for a class to do its own serialization. This can be done by implementing KryoSerializable interface (similar to the java.io.Externalizable interface in the JDK).
 
 ```java
+
     public class SomeClass implements KryoSerializable {
        // ...
     
@@ -246,6 +250,53 @@ While FieldSerializer is ideal for most classes, sometimes it is convenient for 
        }
     }
 ```
+
+
+## Using standard Java Serialization
+
+While very rare, some classes cannot be serialized by Kryo. In such situations it is possible to use a fallback solution provided by Kryo's JavaSerializer and use the standard Java Serialization instead. This approach would be as slow as usual Java serialization, but would make your class serialize as long as Java serialization is able to serialize it.
+
+```java
+    kryo.register(SomeClass.class, new JavaSerializer());
+```
+
+
+## Class fields annotations
+
+Typically, when FieldSerializer is used it is able to automatically guess which serializer should be used for each field of a class. But in certain situations you may want to change a default behavior and customize the way how this field is serialized.
+
+Kryo provides a set of annotations that can be used exactly for this purpose. `@Bind` can be used for any field, `@CollectionBind` for fields whose type is a collection and `@MapBind` for fields whose type is a map:
+
+```java
+
+    public class SomeClass {
+       // Use a StringSerializer for this field
+       @Bind(StringSerializer.class) 
+       Object stringField;
+       
+       // Use a MapSerializer for this field. Keys should be serialized
+       // using a StringSerializer, whereas values should be serialized
+       // using IntArraySerializer
+       @BindMap(
+     			valueSerializer = IntArraySerializer.class, 
+     			keySerializer = StringSerializer.class, 
+     			valueClass = int[].class, 
+     			keyClass = String.class, 
+     			keysCanBeNull = false) 
+       Map map;
+       
+       // Use a CollectionSerializer for this field. Elements should be serialized
+       // using LongArraySerializer
+       @BindCollection(
+     			elementSerializer = LongArraySerializer.class,
+     			elementClass = long[].class, 
+     			elementsCanBeNull = false) 
+       Collection collection;
+       
+       // ...
+    }
+```
+
 
 ## Reading and writing
 
@@ -428,7 +479,7 @@ The serializers Kryo provides use the call stack when serializing nested objects
 
 ## Threading
 
-Kryo is not thread safe. Each thread should have its own Kryo, Input, and Output instances. Also, the byte[] Input uses may be modified and then returned to its original state during deserialization, so the same byte[] should not be used concurrently in separate threads.
+**Kryo is not thread safe. Each thread should have its own Kryo, Input, and Output instances. Also, the byte[] Input uses may be modified and then returned to its original state during deserialization, so the same byte[] "should not be used concurrently in separate threads**.
 
 ## Logging
 
@@ -482,6 +533,10 @@ If you want to test the latest snapshot of Kryo, please use the following snippe
         <version>2.24.1-SNAPSHOT</version>
     </dependency>
 ```
+
+## Using Kryo without Maven
+
+If you use Kryo without Maven, be aware that Kryo jar file has a couple of external dependencies, whose JARs you need to add to your classpath as well. These dependencies are [MinLog logging library](http://code.google.com/p/minlog/) and [Objenesis library](https://code.google.com/p/objenesis/).
 
 ## Scala
 
