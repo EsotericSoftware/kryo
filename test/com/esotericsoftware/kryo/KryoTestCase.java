@@ -49,7 +49,7 @@ abstract public class KryoTestCase extends TestCase {
 	}
 
 	protected void setUp() throws Exception {
-		Log.TRACE();
+		// Log.TRACE();
 
 		kryo = new Kryo();
 		kryo.setReferences(false);
