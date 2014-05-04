@@ -10,7 +10,9 @@ Kryo JARs are available on the [releases page](https://github.com/EsotericSoftwa
 
 ## New in relase 2.24.0
 
-The 2.24.0 release fixes many reported issues and improves stability and performance. It also introduces a new feature: [annotations](#class-fields-annotations) that can be used to indicate which serializer should be used for a given field of a class. 
+The 2.24.0 release fixes many reported issues and improves stability and performance. It also introduces a new feature: [annotations](#class-fields-annotations) that can be used to indicate which serializer should be used for a given field of a class.
+
+See [ChangeLog](https://github.com/EsotericSoftware/kryo/blob/master/CHANGES.md) for more details about this release.
 
 ## Overview
 
