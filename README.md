@@ -463,7 +463,7 @@ To use the official release of Kryo, please use the following snippet in your po
     <dependency>
         <groupId>com.esotericsoftware.kryo</groupId>
         <artifactId>kryo</artifactId>
-        <version>2.22</version>
+        <version>2.24.0</version>
     </dependency>
 ```
 
@@ -479,7 +479,7 @@ If you want to test the latest snapshot of Kryo, please use the following snippe
     <dependency>
        <groupId>com.esotericsoftware.kryo</groupId>
        <artifactId>kryo</artifactId>
-        <version>2.23-SNAPSHOT</version>
+        <version>2.24.1-SNAPSHOT</version>
     </dependency>
 ```
 
