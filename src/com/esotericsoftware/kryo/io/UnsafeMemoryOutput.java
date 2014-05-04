@@ -40,7 +40,7 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 
 	}
 
-	/** Creates an uninitialized Output. {@link #setBuffer must be called before the Output is used. */
+	/** Creates an uninitialized Output. {@link #setBuffer(byte[])} must be called before the Output is used. */
 	public UnsafeMemoryOutput () {
 	}
 

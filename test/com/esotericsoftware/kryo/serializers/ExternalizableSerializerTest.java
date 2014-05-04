@@ -83,8 +83,8 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 	 }
 
 	 public static class TestClass implements Externalizable {
-		  private String stringField;
-		  private int intField;
+		  String stringField;
+		  int intField;
 
 		  public boolean equals (Object obj) {
 				if (this == obj) {
@@ -161,7 +161,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 	 }
 
 	 public static class ReadResolvable implements Externalizable {
-		  private String value;
+		  String value;
 		  private Object makeSureNullWorks;
 
 		  public ReadResolvable () {
