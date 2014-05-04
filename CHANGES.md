@@ -2,19 +2,19 @@
 
 ## 2.23.0 - 2.24.0 (2014-05-04)
 
-* Fixed #213. Now CompatibleFieldSerializer should work properly with classes having generic type parameters. ([1e9b23f](https://github.com/EsotericSoftware/kryo/commit/1e9b23fb05232e485cde476c130e1c02b245f830))
-* Fixed #211. Integer overflows should be fixed now. ([8d7d0b5](https://github.com/EsotericSoftware/kryo/commit/8d7d0b596d04970ac24cef1f7bc289913f645dee))
+* Fixed [[#213](https://github.com/EsotericSoftware/kryo/issues/213)](https://github.com/EsotericSoftware/kryo/issues/213). Now CompatibleFieldSerializer should work properly with classes having generic type parameters. ([1e9b23f](https://github.com/EsotericSoftware/kryo/commit/1e9b23fb05232e485cde476c130e1c02b245f830))
+* Fixed [#211](https://github.com/EsotericSoftware/kryo/issues/211). Integer overflows should be fixed now. ([8d7d0b5](https://github.com/EsotericSoftware/kryo/commit/8d7d0b596d04970ac24cef1f7bc289913f645dee))
 * Speed up the rebuildCachedFields method, which is very often used for generic types. ([219d4a7](https://github.com/EsotericSoftware/kryo/commit/219d4a77d7100176aaa18db489cd446cf5ec71ac))
-* Fix #198 by removing defaultStrategy for instantiators. ([acf4dfe](https://github.com/EsotericSoftware/kryo/commit/acf4dfe5e3b9f8cb7e2824ac85e76faf9b6c8ea5))
-* Fixed a generics-related bug reported in #207, hopefully without introducing a new one. ([6ebf7bb](https://github.com/EsotericSoftware/kryo/commit/6ebf7bb8ebf3193fdcb9bbd2e9727535b1427034))
+* Fix [#198](https://github.com/EsotericSoftware/kryo/issues/198) by removing defaultStrategy for instantiators. ([acf4dfe](https://github.com/EsotericSoftware/kryo/commit/acf4dfe5e3b9f8cb7e2824ac85e76faf9b6c8ea5))
+* Fixed a generics-related bug reported in [#207](https://github.com/EsotericSoftware/kryo/issues/207), hopefully without introducing a new one. ([6ebf7bb](https://github.com/EsotericSoftware/kryo/commit/6ebf7bb8ebf3193fdcb9bbd2e9727535b1427034))
 * Do not invoke updateBufferAddress from a default constructor, because a buffer is not set yet. ([cef85c5](https://github.com/EsotericSoftware/kryo/commit/cef85c5cfe6c30a65243266772de0c25514314b3))
 * Fixed IntMap. ([2d398bc](https://github.com/EsotericSoftware/kryo/commit/2d398bce497c4fb73aa46d5e4eaa8dcfaf4492ea))
 * Fixed map iterator remove failing rarely. ([b02a589](https://github.com/EsotericSoftware/kryo/commit/b02a589c1b414f3987debaa856e03a8c2252cdde))
 * Remove fields by reference, not name. ([5d9917d](https://github.com/EsotericSoftware/kryo/commit/5d9917dcab338d9a5f44313d330aab3da5bb0045))
 * ObjectMap updated to latest. ([440a7a6](https://github.com/EsotericSoftware/kryo/commit/440a7a6f418f74574c63f0f2cfc20aacb7d5ae2c))
-* Fixed #192 ([90fd4c4](https://github.com/EsotericSoftware/kryo/commit/90fd4c4ae08c1be7adb02248ad05e96f436cf3c9))
+* Fixed [#192](https://github.com/EsotericSoftware/kryo/issues/192) ([90fd4c4](https://github.com/EsotericSoftware/kryo/commit/90fd4c4ae08c1be7adb02248ad05e96f436cf3c9))
 * Formatting, changed exception type. ([2adc6ed](https://github.com/EsotericSoftware/kryo/commit/2adc6ed9d2568eb31e249af2954940f530a874a6))
-* Fix #189 Don't embed minlog Logger in jar ([cfd0ff9](https://github.com/EsotericSoftware/kryo/commit/cfd0ff9e617d8283166eddce97ba1bc80dff7b69))
+* Fix [#189](https://github.com/EsotericSoftware/kryo/issues/189) Don't embed minlog Logger in jar ([cfd0ff9](https://github.com/EsotericSoftware/kryo/commit/cfd0ff9e617d8283166eddce97ba1bc80dff7b69))
 * Fix a condition for proper filtering of transient/non-transient fields. ([81fda1d](https://github.com/EsotericSoftware/kryo/commit/81fda1d6ae940cd3ad1c3ed4c3d0e6ee3004e331))
 * Add assembly execution so that the zip is uploaded during release:perform. ([001a420](https://github.com/EsotericSoftware/kryo/commit/001a420e2aed92850b35dfcc25aa2621f9e77aa1))
 * Update assembly descriptor to include all jars (also the original-kryo*) ([3371d4f](https://github.com/EsotericSoftware/kryo/commit/3371d4f514cdc2452109e96f5df73345fa169051))
@@ -23,8 +23,8 @@
 * Fixed EOS being returned when 0 bytes should be read. ([bd01d4b](https://github.com/EsotericSoftware/kryo/commit/bd01d4bf091ff35ee9ec57d1445c06d5861a2a8b))
 * Changed registration of a different class with the same ID to a debug message. ([7c8bc3b](https://github.com/EsotericSoftware/kryo/commit/7c8bc3b329da6d2e0b5f2e325ad59325e70547c8))
 * Update to reflectasm-1.09-shaded. ([ac41721](https://github.com/EsotericSoftware/kryo/commit/ac41721f956f14982f41d7edec67b4ef5742c196))
-* Fixed #180. Added support for field annotations. ([c8b6367](https://github.com/EsotericSoftware/kryo/commit/c8b6367f0f736dfc4baade7b9afc8fa055401eef))
-* Pull Request #167: Add an externalizable serializer that uses ObjectInput and ObjectOutput adapters but has the ability to switch when fancy serialization stuff is tried. ([4a93030](https://github.com/EsotericSoftware/kryo/commit/4a93030adfe8b978f8dee67e4eec93c3704430ea))
+* Fixed [#180](https://github.com/EsotericSoftware/kryo/issues/180). Added support for field annotations. ([c8b6367](https://github.com/EsotericSoftware/kryo/commit/c8b6367f0f736dfc4baade7b9afc8fa055401eef))
+* Pull Request [#167](https://github.com/EsotericSoftware/kryo/issues/167): Add an externalizable serializer that uses ObjectInput and ObjectOutput adapters but has the ability to switch when fancy serialization stuff is tried. ([4a93030](https://github.com/EsotericSoftware/kryo/commit/4a93030adfe8b978f8dee67e4eec93c3704430ea))
 
 ### Compatibility
 
