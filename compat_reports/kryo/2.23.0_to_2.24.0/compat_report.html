@@ -1,0 +1,2461 @@
+<!-- kind:binary;verdict:incompatible;affected:2.4;added:108;removed:38;type_problems_high:3;type_problems_medium:0;type_problems_low:0;method_problems_high:0;method_problems_medium:0;method_problems_low:0;tool_version:1.3.5 -->
+<!-- kind:source;verdict:incompatible;affected:2.4;added:108;removed:38;type_problems_high:3;type_problems_medium:0;type_problems_low:0;method_problems_high:0;method_problems_medium:0;method_problems_low:0;tool_version:1.3.5 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="keywords" content="kryo, compatibility" />
+    <meta name="description" content="Compatibility report for the kryo library between 2.23.0 and 2.24.0 versions" />
+    <title>
+        kryo: 2.23.0 to 2.24.0 compatibility report
+    </title>
+    <style type="text/css">
+    
+    body {
+        font-family:Arial, sans-serif;
+        color:Black;
+        font-size:14px;
+    }
+    hr {
+        color:Black;
+        background-color:Black;
+        height:1px;
+        border:0;
+    }
+    h1 {
+        margin-bottom:0px;
+        padding-bottom:0px;
+        font-size:26px;
+    }
+    h2 {
+        margin-bottom:0px;
+        padding-bottom:0px;
+        font-size:20px;
+        white-space:nowrap;
+    }
+    span.section {
+        font-weight:bold;
+        cursor:pointer;
+        font-size:16px;
+        color:#003E69;
+        white-space:nowrap;
+        margin-left:5px;
+    }
+    span:hover.section {
+        color:#336699;
+    }
+    span.section_affected {
+        cursor:pointer;
+        margin-left:7px;
+        padding-left:15px;
+        font-size:14px;
+        color:#cc3300;
+    }
+    span.extension {
+        font-weight:100;
+        font-size:16px;
+    }
+    span.jar {
+        color:#cc3300;
+        font-size:14px;
+        font-weight:bold;
+    }
+    div.class_list {
+        padding-left:5px;
+        font-size:15px;
+    }
+    div.jar_list {
+        padding-left:5px;
+        font-size:15px;
+    }
+    span.package_title {
+        color:#408080;
+        font-size:14px;
+    }
+    span.package_list {
+        font-size:14px;
+    }
+    span.package {
+        color:#408080;
+        font-size:14px;
+        font-weight:bold;
+    }
+    span.cname {
+        color:Green;
+        font-size:14px;
+        font-weight:bold;
+    }
+    span.nblack {
+        font-weight:bold;
+        font-size:15px;
+    }
+    span.sym_p {
+        font-weight:normal;
+        white-space:normal;
+    }
+    span.sym_kind {
+        color:Black;
+        font-weight:normal;
+    }
+    div.affect {
+        padding-left:15px;
+        padding-bottom:4px;
+        font-size:14px;
+        font-style:italic;
+        line-height:13px;
+    }
+    div.affected {
+        padding-left:30px;
+        padding-top:3px;
+    }
+    table.ptable {
+        border-collapse:collapse;
+        border:1px outset black;
+        line-height:16px;
+        margin-left:15px;
+        margin-top:3px;
+        margin-bottom:3px;
+        width:900px;
+    }
+    table.ptable td {
+        border:1px solid Gray;
+        padding: 3px;
+    }
+    table.ptable th {
+        background-color:#eeeeee;
+        font-weight:bold;
+        font-size:13px;
+        font-family:Verdana;
+        border:1px solid Gray;
+        text-align:center;
+        vertical-align:top;
+        white-space:nowrap;
+        padding: 3px;
+    }
+    td.code_line {
+        padding-left:15px;
+        text-align:left;
+        white-space:nowrap;
+    }
+    table.code_view {
+        cursor:text;
+        margin-top:7px;
+        width:50%;
+        margin-left:20px;
+        font-family:Consolas, 'DejaVu Sans Mono', 'Droid Sans Mono', Monaco, Monospace;
+        font-size:14px;
+        padding:10px;
+        border:1px solid #e0e8e5;
+        color:#444444;
+        background-color:#eff3f2;
+        overflow:auto;
+    }
+    table.summary {
+        border-collapse:collapse;
+        border:1px outset black;
+    }
+    table.summary th {
+        background-color:#eeeeee;
+        font-weight:100;
+        text-align:left;
+        font-size:15px;
+        white-space:nowrap;
+        border:1px inset gray;
+    }
+    table.summary td {
+        padding-left:10px;
+        padding-right:5px;
+        text-align:right;
+        font-size:16px;
+        white-space:nowrap;
+        border:1px inset gray;
+    }
+    span.mangled {
+        padding-left:15px;
+        font-size:14px;
+        cursor:text;
+        color:#444444;
+    }
+    span.color_p {
+        font-style:italic;
+        color:Brown;
+    }
+    span.param {
+        font-style:italic;
+    }
+    span.focus_p {
+        font-style:italic;
+        color:Red;
+    }
+    span.nowrap {
+        white-space:nowrap;
+    }
+    td.passed {
+        background-color:#CCFFCC;
+    }
+    td.warning {
+        background-color:#F4F4AF;
+    }
+    td.failed {
+        background-color:#FFCCCC;
+    }
+    td.new {
+        background-color:#C6DEFF;
+    }
+    .tabset {
+        float:left;
+    }
+    a.tab {
+        border:1px solid #AAA;
+        float:left;
+        margin:0px 5px -1px 0px;
+        padding:3px 5px 3px 5px;
+        position:relative;
+        font-size:14px;
+        background-color:#DDD;
+        text-decoration:none;
+        color:Black;
+    }
+    a.disabled:hover
+    {
+        color:Black;
+        background:#EEE;
+    }
+    a.active:hover
+    {
+        color:Black;
+        background:White;
+    }
+    a.active {
+        border-bottom-color:White;
+        background-color:White;
+    }
+    div.tab {
+        border:1px solid #AAA;
+        padding:0 7px 0 12px;
+        width:97%;
+        clear:both;
+    }
+    </style>
+    <script type="text/javascript" language="JavaScript">
+    <!--
+    
+    function showContent(header, id)
+    {
+        e = document.getElementById(id);
+        if(e.style.display == 'none')
+        {
+            e.style.display = 'block';
+            e.style.visibility = 'visible';
+            header.innerHTML = header.innerHTML.replace(/\[[^0-9 ]\]/gi,"[&minus;]");
+        }
+        else
+        {
+            e.style.display = 'none';
+            e.style.visibility = 'hidden';
+            header.innerHTML = header.innerHTML.replace(/\[[^0-9 ]\]/gi,"[+]");
+        }
+    }
+    function initTabs()
+    {
+        var url = window.location.href;
+        if(url.indexOf('_Source_')!=-1 || url.indexOf('#Source')!=-1)
+        {
+            var tab1 = document.getElementById('BinaryID');
+            var tab2 = document.getElementById('SourceID');
+            tab1.className='tab disabled';
+            tab2.className='tab active';
+        }
+        var sets = document.getElementsByTagName('div');
+        for (var i = 0; i < sets.length; i++)
+        {
+            if (sets[i].className.indexOf('tabset') != -1)
+            {
+                var tabs = [];
+                var links = sets[i].getElementsByTagName('a');
+                for (var j = 0; j < links.length; j++)
+                {
+                    if (links[j].className.indexOf('tab') != -1)
+                    {
+                        tabs.push(links[j]);
+                        links[j].tabs = tabs;
+                        var tab = document.getElementById(links[j].href.substr(links[j].href.indexOf('#') + 1));
+                        //reset all tabs on start
+                        if (tab)
+                        {
+                            if (links[j].className.indexOf('active')!=-1) {
+                                tab.style.display = 'block';
+                            }
+                            else {
+                                tab.style.display = 'none';
+                            }
+                        }
+                        links[j].onclick = function()
+                        {
+                            var tab = document.getElementById(this.href.substr(this.href.indexOf('#') + 1));
+                            if (tab)
+                            {
+                                //reset all tabs before change
+                                for (var k = 0; k < this.tabs.length; k++)
+                                {
+                                    document.getElementById(this.tabs[k].href.substr(this.tabs[k].href.indexOf('#') + 1)).style.display = 'none';
+                                    this.tabs[k].className = this.tabs[k].className.replace('active', 'disabled');
+                                }
+                                this.className = 'tab active';
+                                tab.style.display = 'block';
+                                // window.location.hash = this.id.replace('ID', '');
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if(url.indexOf('#')!=-1) {
+            location.href=location.href;
+        }
+    }
+    if (window.addEventListener) window.addEventListener('load', initTabs, false);
+    else if (window.attachEvent) window.attachEvent('onload', initTabs);
+    -->
+    </script>
+    </head><body><a name='Source'></a><a name='Binary'></a><a name='Top'></a><h1><span class='nowrap'>API compatibility report for the <span style='color:Blue;'>kryo</span> library </span><span class='nowrap'>&#160;between <span style='color:Red;'>2.23.0</span> and <span style='color:Red;'>2.24.0</span> versions</span></h1>
+
+        <br/><div class='tabset'>
+        <a id='BinaryID' href='#BinaryTab' class='tab active'>Binary<br/>Compatibility</a>
+        <a id='SourceID' href='#SourceTab' style='margin-left:3px' class='tab disabled'>Source<br/>Compatibility</a>
+        </div><div id='BinaryTab' class='tab'>
+<h2>Test Info</h2><hr/>
+<table cellpadding='3' cellspacing='0' class='summary'>
+<tr><th>Library Name</th><td>kryo</td></tr>
+<tr><th>Version #1</th><td>2.23.0</td></tr>
+<tr><th>Version #2</th><td>2.24.0</td></tr>
+<tr><th>Subject</th><td width='150px'>Binary Compatibility</td></tr>
+</table>
+<h2>Test Results</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th>Total Java ARchives</th><td><a href='#Checked_Archives' style='color:Blue;'>1</a></td></tr><tr><th>Total Methods / Classes</th><td>1572 / 176</td></tr><tr><th>Verdict</th><td><span style='color:Red;'><b>Incompatible<br/>(2.4%)</b></span></td></tr>
+</table>
+<h2>Problem Summary</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr><tr><th>Added Methods</th><td>-</td><td class='new'><a href='#Binary_Added' style='color:Blue;'>108</a></td></tr><tr><th>Removed Methods</th><td>High</td><td class='failed'><a href='#Binary_Removed' style='color:Blue;'>38</a></td></tr><tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td class='failed'><a href='#Type_Binary_Problems_High' style='color:Blue;'>3</a></td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td>0</td></tr><tr><th rowspan='3'>Problems with<br/>Methods</th><td>High</td><td>0</td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td>0</td></tr></table>
+
+<a name='Binary_Added'></a><h2>Added Methods (108)</h2><hr/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Bind.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_1')">
+FieldSerializer.Bind.value&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Serializer&gt;</span></span>
+<br/>
+<div id="c_1" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/FieldSerializer.Bind.value:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>BindCollection.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_2')">
+CollectionSerializer.BindCollection.elementClass&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class&lt;?&gt;</span></span>
+<br/>
+<div id="c_2" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/CollectionSerializer.BindCollection.elementClass:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_3')">
+CollectionSerializer.BindCollection.elementsCanBeNull&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_3" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/CollectionSerializer.BindCollection.elementsCanBeNull:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_4')">
+CollectionSerializer.BindCollection.elementSerializer&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Serializer&gt;</span></span>
+<br/>
+<div id="c_4" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/CollectionSerializer.BindCollection.elementSerializer:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>BindMap.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_5')">
+MapSerializer.BindMap.keyClass&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class&lt;?&gt;</span></span>
+<br/>
+<div id="c_5" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.keyClass:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_6')">
+MapSerializer.BindMap.keysCanBeNull&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_6" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.keysCanBeNull:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_7')">
+MapSerializer.BindMap.keySerializer&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Serializer&gt;</span></span>
+<br/>
+<div id="c_7" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.keySerializer:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_8')">
+MapSerializer.BindMap.valueClass&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class&lt;?&gt;</span></span>
+<br/>
+<div id="c_8" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.valueClass:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_9')">
+MapSerializer.BindMap.valuesCanBeNull&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_9" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.valuesCanBeNull:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_10')">
+MapSerializer.BindMap.valueSerializer&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Serializer&gt;</span></span>
+<br/>
+<div id="c_10" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.valueSerializer:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>ByteBufferInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_11')">
+ByteBufferInput.setBuffer&#160;<span class='sym_p'>(&#160;<span class='nowrap'>java.nio.ByteBuffer <span class='color_p'>buffer</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_11" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferInput.setBuffer:(Ljava/nio/ByteBuffer;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>ByteBufferOutput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_12')">
+ByteBufferOutput.ByteBufferOutput&#160;<span class='sym_p'>(&#160;java.nio.ByteBuffer <span class='color_p'>buffer</span>, <span class='nowrap'>int <span class='color_p'>maxBufferSize</span> )</span></span></span>
+<br/>
+<div id="c_12" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferOutput.&quot;&lt;init&gt;&quot;:(Ljava/nio/ByteBuffer;I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_13')">
+ByteBufferOutput.setBuffer&#160;<span class='sym_p'>(&#160;<span class='nowrap'>java.nio.ByteBuffer <span class='color_p'>buffer</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_13" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferOutput.setBuffer:(Ljava/nio/ByteBuffer;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>CachedField&lt;X.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_14')">
+FieldSerializer.CachedField&lt;X.getSerializer&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Serializer</span></span>
+<br/>
+<div id="c_14" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/FieldSerializer.CachedField&lt;X.getSerializer:()Lcom/esotericsoftware/kryo/Serializer;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Entries&lt;V&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_15')">
+IntMap.Entries&lt;V&gt;.IntMap.Entries&#160;<span class='sym_p'>(&#160;<span class='nowrap'>IntMap <span class='color_p'>map</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_15" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.com.esotericsoftware.kryo.util.IntMap.Entries:(Lcom/esotericsoftware/kryo/util/IntMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_16')">
+IntMap.Entries&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_16" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.hasNext:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_17')">
+IntMap.Entries&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.util.Iterator&lt;IntMap.Entry&lt;V&gt;&gt;</span></span>
+<br/>
+<div id="c_17" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.iterator:()Ljava/util/Iterator;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_18')">
+IntMap.Entries&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntMap.Entry&lt;V&gt;</span></span>
+<br/>
+<div id="c_18" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.next:()Lcom/esotericsoftware/kryo/util/IntMap$Entry;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_19')">
+IntMap.Entries&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_19" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.next:()Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_20')">
+IntMap.Entries&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_20" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.remove:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_21')">
+IntMap.Entries&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_21" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.reset:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Entry&lt;V&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_22')">
+IntMap.Entry&lt;V&gt;.IntMap.Entry&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_22" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entry&lt;V&gt;.com.esotericsoftware.kryo.util.IntMap.Entry:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_23')">
+IntMap.Entry&lt;V&gt;.toString&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_23" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entry&lt;V&gt;.toString:()Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>ExternalizableSerializer.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_24')">
+ExternalizableSerializer.ExternalizableSerializer&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_24" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/ExternalizableSerializer.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_25')">
+ExternalizableSerializer.read&#160;<span class='sym_p'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, com.esotericsoftware.kryo.io.Input <span class='color_p'>input</span>, <span class='nowrap'>Class <span class='color_p'>type</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_25" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/ExternalizableSerializer.read:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;Ljava/lang/Class;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_26')">
+ExternalizableSerializer.write&#160;<span class='sym_p'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, com.esotericsoftware.kryo.io.Output <span class='color_p'>output</span>, <span class='nowrap'>Object <span class='color_p'>object</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_26" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/ExternalizableSerializer.write:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;Ljava/lang/Object;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>FieldAccess.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.reflectasm</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_27')">
+FieldAccess.getFieldCount&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_27" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/reflectasm/FieldAccess.getFieldCount:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_28')">
+FieldAccess.getFieldTypes&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class[&#160;]</span></span>
+<br/>
+<div id="c_28" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/reflectasm/FieldAccess.getFieldTypes:()[Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>FieldSerializer&lt;T.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_29')">
+FieldSerializer&lt;T.getGenerics&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class[&#160;]</span></span>
+<br/>
+<div id="c_29" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T.getGenerics:()[Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_30')">
+FieldSerializer&lt;T.rebuildCachedFields&#160;<span class='sym_p'>(&#160;<span class='nowrap'>boolean <span class='color_p'>minorRebuild</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_30" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T.rebuildCachedFields:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_31')">
+FieldSerializer&lt;T.removeField&#160;<span class='sym_p'>(&#160;<span class='nowrap'>FieldSerializer.CachedField <span class='color_p'>removeField</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_31" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T.removeField:(Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedField;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Generics.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_32')">
+Generics.getMappings&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.util.Map&lt;String,Class&gt;</span></span>
+<br/>
+<div id="c_32" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/Generics.getMappings:()Ljava/util/Map;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>IntMap&lt;V&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_33')">
+IntMap&lt;V&gt;.IntMap&#160;<span class='sym_p'>(&#160;<span class='nowrap'>IntMap&lt;? extends V&gt; <span class='color_p'>map</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_33" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.com.esotericsoftware.kryo.util.IntMap:(Lcom/esotericsoftware/kryo/util/IntMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_34')">
+IntMap&lt;V&gt;.entries&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntMap.Entries&lt;V&gt;</span></span>
+<br/>
+<div id="c_34" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.entries:()Lcom/esotericsoftware/kryo/util/IntMap$Entries;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_35')">
+IntMap&lt;V&gt;.keys&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntMap.Keys</span></span>
+<br/>
+<div id="c_35" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.keys:()Lcom/esotericsoftware/kryo/util/IntMap$Keys;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_36')">
+IntMap&lt;V&gt;.putAll&#160;<span class='sym_p'>(&#160;<span class='nowrap'>IntMap&lt;V&gt; <span class='color_p'>map</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_36" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.putAll:(Lcom/esotericsoftware/kryo/util/IntMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_37')">
+IntMap&lt;V&gt;.values&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntMap.Values&lt;V&gt;</span></span>
+<br/>
+<div id="c_37" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.values:()Lcom/esotericsoftware/kryo/util/IntMap$Values;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Keys.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_38')">
+IntMap.Keys.IntMap.Keys&#160;<span class='sym_p'>(&#160;<span class='nowrap'>IntMap <span class='color_p'>map</span> )</span></span></span>
+<br/>
+<div id="c_38" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Keys.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/util/IntMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_39')">
+IntMap.Keys.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_39" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Keys.next:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_40')">
+IntMap.Keys.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_40" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Keys.remove:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_41')">
+IntMap.Keys.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_41" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Keys.reset:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_42')">
+IntMap.Keys.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntArray</span></span>
+<br/>
+<div id="c_42" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Keys.toArray:()Lcom/esotericsoftware/kryo/util/IntArray;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoCallback&lt;T.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.pool</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_43')">
+KryoPool.KryoCallback&lt;T.execute&#160;<span class='sym_p'>(&#160;<span class='nowrap'>com.esotericsoftware.kryo.Kryo <span class='color_p'>p1</span> )</span></span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;T</span></span>
+<br/>
+<div id="c_43" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.KryoCallback&lt;T.execute:(Lcom/esotericsoftware/kryo/Kryo;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoDataInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_44')">
+KryoDataInput.KryoDataInput&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Input <span class='color_p'>input</span> )</span></span></span>
+<br/>
+<div id="c_44" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/io/Input;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_45')">
+KryoDataInput.readBoolean&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_45" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readBoolean:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_46')">
+KryoDataInput.readByte&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;byte</span></span>
+<br/>
+<div id="c_46" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readByte:()B</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_47')">
+KryoDataInput.readChar&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;char</span></span>
+<br/>
+<div id="c_47" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readChar:()C</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_48')">
+KryoDataInput.readDouble&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;double</span></span>
+<br/>
+<div id="c_48" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readDouble:()D</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_49')">
+KryoDataInput.readFloat&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;float</span></span>
+<br/>
+<div id="c_49" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readFloat:()F</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_50')">
+KryoDataInput.readFully&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_50" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readFully:([B)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_51')">
+KryoDataInput.readFully&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span>,</span> <span class='nowrap'>int <span class='color_p'>off</span>,</span> <span class='nowrap'>int <span class='color_p'>len</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_51" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readFully:([BII)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_52')">
+KryoDataInput.readInt&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_52" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readInt:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_53')">
+KryoDataInput.readLine&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_53" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readLine:()Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_54')">
+KryoDataInput.readLong&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;long</span></span>
+<br/>
+<div id="c_54" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readLong:()J</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_55')">
+KryoDataInput.readShort&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;short</span></span>
+<br/>
+<div id="c_55" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readShort:()S</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_56')">
+KryoDataInput.readUnsignedByte&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_56" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readUnsignedByte:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_57')">
+KryoDataInput.readUnsignedShort&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_57" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readUnsignedShort:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_58')">
+KryoDataInput.readUTF&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_58" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readUTF:()Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_59')">
+KryoDataInput.setInput&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Input <span class='color_p'>input</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_59" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.setInput:(Lcom/esotericsoftware/kryo/io/Input;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_60')">
+KryoDataInput.skipBytes&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>n</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_60" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.skipBytes:(I)I</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoDataOutput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_61')">
+KryoDataOutput.KryoDataOutput&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Output <span class='color_p'>output</span> )</span></span></span>
+<br/>
+<div id="c_61" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/io/Output;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_62')">
+KryoDataOutput.setOutput&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Output <span class='color_p'>output</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_62" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.setOutput:(Lcom/esotericsoftware/kryo/io/Output;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_63')">
+KryoDataOutput.write&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_63" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.write:([B)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_64')">
+KryoDataOutput.write&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span>,</span> <span class='nowrap'>int <span class='color_p'>off</span>,</span> <span class='nowrap'>int <span class='color_p'>len</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_64" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.write:([BII)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_65')">
+KryoDataOutput.write&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>b</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_65" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.write:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_66')">
+KryoDataOutput.writeBoolean&#160;<span class='sym_p'>(&#160;<span class='nowrap'>boolean <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_66" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeBoolean:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_67')">
+KryoDataOutput.writeByte&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_67" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeByte:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_68')">
+KryoDataOutput.writeBytes&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>s</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_68" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeBytes:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_69')">
+KryoDataOutput.writeChar&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_69" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeChar:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_70')">
+KryoDataOutput.writeChars&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>s</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_70" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeChars:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_71')">
+KryoDataOutput.writeDouble&#160;<span class='sym_p'>(&#160;<span class='nowrap'>double <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_71" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeDouble:(D)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_72')">
+KryoDataOutput.writeFloat&#160;<span class='sym_p'>(&#160;<span class='nowrap'>float <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_72" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeFloat:(F)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_73')">
+KryoDataOutput.writeInt&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_73" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeInt:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_74')">
+KryoDataOutput.writeLong&#160;<span class='sym_p'>(&#160;<span class='nowrap'>long <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_74" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeLong:(J)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_75')">
+KryoDataOutput.writeShort&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_75" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeShort:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_76')">
+KryoDataOutput.writeUTF&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>s</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_76" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeUTF:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoFactory.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.pool</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_77')">
+KryoPool.KryoFactory.create&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Kryo</span></span>
+<br/>
+<div id="c_77" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.KryoFactory.create:()Lcom/esotericsoftware/kryo/Kryo;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoObjectInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_78')">
+KryoObjectInput.available&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_78" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.available:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_79')">
+KryoObjectInput.close&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_79" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.close:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_80')">
+KryoObjectInput.KryoObjectInput&#160;<span class='sym_p'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, <span class='nowrap'>Input <span class='color_p'>in</span> )</span></span></span>
+<br/>
+<div id="c_80" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_81')">
+KryoObjectInput.read&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_81" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.read:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_82')">
+KryoObjectInput.read&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_82" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.read:([B)I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_83')">
+KryoObjectInput.read&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span>,</span> <span class='nowrap'>int <span class='color_p'>off</span>,</span> <span class='nowrap'>int <span class='color_p'>len</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_83" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.read:([BII)I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_84')">
+KryoObjectInput.readObject&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_84" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.readObject:()Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_85')">
+KryoObjectInput.skip&#160;<span class='sym_p'>(&#160;<span class='nowrap'>long <span class='color_p'>n</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;long</span></span>
+<br/>
+<div id="c_85" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.skip:(J)J</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoObjectOutput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_86')">
+KryoObjectOutput.close&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_86" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectOutput.close:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_87')">
+KryoObjectOutput.flush&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_87" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectOutput.flush:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_88')">
+KryoObjectOutput.KryoObjectOutput&#160;<span class='sym_p'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, <span class='nowrap'>Output <span class='color_p'>output</span> )</span></span></span>
+<br/>
+<div id="c_88" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectOutput.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_89')">
+KryoObjectOutput.writeObject&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Object <span class='color_p'>obj</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_89" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectOutput.writeObject:(Ljava/lang/Object;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoPool.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.pool</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_90')">
+KryoPool.borrow&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Kryo</span></span>
+<br/>
+<div id="c_90" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.borrow:()Lcom/esotericsoftware/kryo/Kryo;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_91')">
+KryoPool.KryoPool&#160;<span class='sym_p'>(&#160;<span class='nowrap'>KryoPool.KryoFactory <span class='color_p'>factory</span> )</span></span></span>
+<br/>
+<div id="c_91" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/pool/KryoPool$KryoFactory;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_92')">
+KryoPool.release&#160;<span class='sym_p'>(&#160;<span class='nowrap'>com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_92" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.release:(Lcom/esotericsoftware/kryo/Kryo;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_93')">
+KryoPool.run&#160;<span class='sym_p'>(&#160;<span class='nowrap'>KryoPool.KryoCallback&lt;T&gt; <span class='color_p'>callback</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;T</span></span>
+<br/>
+<div id="c_93" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.run:(Lcom/esotericsoftware/kryo/pool/KryoPool$KryoCallback;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_94')">
+KryoPool.size&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_94" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.size:()I</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>MethodAccess.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.reflectasm</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_95')">
+MethodAccess.getIndex&#160;<span class='sym_p'>(&#160;String <span class='color_p'>methodName</span>, <span class='nowrap'>int <span class='color_p'>paramsCount</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_95" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/reflectasm/MethodAccess.getIndex:(Ljava/lang/String;I)I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_96')">
+MethodAccess.getReturnTypes&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class[&#160;]</span></span>
+<br/>
+<div id="c_96" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/reflectasm/MethodAccess.getReturnTypes:()[Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_97')">
+MethodAccess.invoke&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Object <span class='color_p'>object</span>,</span> String <span class='color_p'>methodName</span>, Class[&#160;] <span class='color_p'>paramTypes</span>, <span class='nowrap'>Object... <span class='color_p'>args</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_97" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/reflectasm/MethodAccess.invoke:(Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Class;[Ljava/lang/Object;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>ObjectMap&lt;K.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_98')">
+ObjectMap&lt;K.ObjectMap&#160;<span class='sym_p'>(&#160;ObjectMap&lt;? extends K&#160;<span class='color_p'>map</span>, <span class='nowrap'>? extends V&gt; <span class='color_p'>map</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_98" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/ObjectMap&lt;K.com.esotericsoftware.kryo.util.ObjectMap:(Lcom/esotericsoftware/kryo/util/ObjectMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_99')">
+ObjectMap&lt;K.get&#160;<span class='sym_p'>(&#160;<span class='nowrap'>K <span class='color_p'>key</span>,</span> <span class='nowrap'>V <span class='color_p'>defaultValue</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_99" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/ObjectMap&lt;K.get:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>TaggedFieldSerializer&lt;T.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_100')">
+TaggedFieldSerializer&lt;T.removeField&#160;<span class='sym_p'>(&#160;<span class='nowrap'>FieldSerializer.CachedField <span class='color_p'>field</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_100" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializer&lt;T.removeField:(Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedField;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>UnsafeMemoryInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_101')">
+UnsafeMemoryInput.setBuffer&#160;<span class='sym_p'>(&#160;<span class='nowrap'>java.nio.ByteBuffer <span class='color_p'>buffer</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_101" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/UnsafeMemoryInput.setBuffer:(Ljava/nio/ByteBuffer;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Values&lt;V&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_102')">
+IntMap.Values&lt;V&gt;.IntMap.Values&#160;<span class='sym_p'>(&#160;<span class='nowrap'>IntMap&lt;V&gt; <span class='color_p'>map</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_102" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.com.esotericsoftware.kryo.util.IntMap.Values:(Lcom/esotericsoftware/kryo/util/IntMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_103')">
+IntMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_103" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.hasNext:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_104')">
+IntMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.util.Iterator&lt;V&gt;</span></span>
+<br/>
+<div id="c_104" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.iterator:()Ljava/util/Iterator;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_105')">
+IntMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_105" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.next:()Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_106')">
+IntMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_106" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.remove:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_107')">
+IntMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_107" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.reset:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_108')">
+IntMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.util.ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_108" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.toArray:()Ljava/util/ArrayList;</b>]</span><br/><br/></div>
+
+<br/>
+<a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<a name='Binary_Removed'></a><a name='Binary_Withdrawn'></a><h2>Removed Methods (38)</h2><hr/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>ByteBufferInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_109')">
+ByteBufferInput.ByteBufferInput&#160;<span class='sym_p'>(&#160;java.nio.ByteBuffer <span class='color_p'>buffer</span>, <span class='nowrap'>int <span class='color_p'>offset</span>,</span> <span class='nowrap'>int <span class='color_p'>count</span> )</span></span></span>
+<br/>
+<div id="c_109" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferInput.&quot;&lt;init&gt;&quot;:(Ljava/nio/ByteBuffer;II)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_110')">
+ByteBufferInput.setBuffer&#160;<span class='sym_p'>(&#160;java.nio.ByteBuffer <span class='color_p'>bytes</span>, <span class='nowrap'>int <span class='color_p'>offset</span>,</span> <span class='nowrap'>int <span class='color_p'>count</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_110" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferInput.setBuffer:(Ljava/nio/ByteBuffer;II)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>ByteBufferOutput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_111')">
+ByteBufferOutput.ByteBufferOutput&#160;<span class='sym_p'>(&#160;java.nio.ByteBuffer <span class='color_p'>buffer</span>, <span class='nowrap'>int <span class='color_p'>offset</span>,</span> <span class='nowrap'>int <span class='color_p'>count</span> )</span></span></span>
+<br/>
+<div id="c_111" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferOutput.&quot;&lt;init&gt;&quot;:(Ljava/nio/ByteBuffer;II)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>DefaultSerializers.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_112')">
+DefaultSerializers.DefaultSerializers&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_112" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/DefaultSerializers.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>Log.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.minlog</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_113')">
+Log.DEBUG&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_113" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.DEBUG:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_114')">
+Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_114" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.debug:(Ljava/lang/String;Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_115')">
+Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_115" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.debug:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_116')">
+Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_116" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.debug:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_117')">
+Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_117" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.debug:(Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_118')">
+Log.ERROR&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_118" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.ERROR:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_119')">
+Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_119" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.error:(Ljava/lang/String;Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_120')">
+Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_120" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.error:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_121')">
+Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_121" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.error:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_122')">
+Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_122" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.error:(Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_123')">
+Log.INFO&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_123" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.INFO:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_124')">
+Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_124" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.info:(Ljava/lang/String;Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_125')">
+Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_125" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.info:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_126')">
+Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_126" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.info:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_127')">
+Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_127" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.info:(Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_128')">
+Log.NONE&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_128" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.NONE:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_129')">
+Log.set&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>level</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_129" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.set:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_130')">
+Log.setLogger&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Log.Logger <span class='color_p'>logger</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_130" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.setLogger:(Lcom/esotericsoftware/minlog/Log$Logger;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_131')">
+Log.TRACE&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_131" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.TRACE:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_132')">
+Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_132" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.trace:(Ljava/lang/String;Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_133')">
+Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_133" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.trace:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_134')">
+Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_134" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.trace:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_135')">
+Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_135" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.trace:(Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_136')">
+Log.WARN&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_136" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.WARN:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_137')">
+Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_137" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.warn:(Ljava/lang/String;Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_138')">
+Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_138" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.warn:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_139')">
+Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_139" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.warn:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_140')">
+Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_140" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.warn:(Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>Logger.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.minlog</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_141')">
+Log.Logger.log&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>level</span>,</span> <span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_141" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.Logger.log:(ILjava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_142')">
+Log.Logger.Log.Logger&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_142" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.Logger.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_143')">
+Log.Logger.print&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_143" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.Logger.print:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>Serializer&lt;T.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_144')">
+Serializer&lt;T.isDefaultSerializer&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_144" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/Serializer&lt;T.isDefaultSerializer:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_145')">
+Serializer&lt;T.setDefaultSerializer&#160;<span class='sym_p'>(&#160;<span class='nowrap'>boolean <span class='color_p'>defaultSerializer</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_145" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/Serializer&lt;T.setDefaultSerializer:(Z)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>UnsafeMemoryInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_146')">
+UnsafeMemoryInput.setBuffer&#160;<span class='sym_p'>(&#160;java.nio.ByteBuffer <span class='color_p'>buffer</span>, <span class='nowrap'>int <span class='color_p'>offset</span>,</span> <span class='nowrap'>int <span class='color_p'>count</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_146" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/UnsafeMemoryInput.setBuffer:(Ljava/nio/ByteBuffer;II)V</b>]</span><br/><br/></div>
+
+<br/>
+<a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<a name='High_Risk_Binary_Problems'></a><a name='Type_Binary_Problems_High'></a>
+<h2>Problems with Data Types, High Severity (3)</h2><hr/>
+<span class='jar'>kryo-2.23.0.jar</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_147')">
+<span class='extension'>[+]</span> DefaultSerializers (1)</span>
+<br/>
+<div id="c_147" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr><th align='center' valign='top'>1</th><td align='left' valign='top'>This class has been removed.</td><td align='left' valign='top'>A client program may be interrupted by <b>NoClassDefFoundError</b> exception.</td></tr>
+</table><span class="section_affected" onclick="javascript:showContent(this, 'c_148')">
+[+] affected methods (1)</span>
+<div id="c_148" style="display:none;">
+<div class='affected'><span class='nblack'>DefaultSerializers.DefaultSerializers&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'DefaultSerializers' class.</div>
+</div></div>
+<br/><br/></div>
+
+<br/><span class='package_title'>package</span> <span class='package'>com.esotericsoftware.minlog</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_149')">
+<span class='extension'>[+]</span> Log (1)</span>
+<br/>
+<div id="c_149" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr><th align='center' valign='top'>1</th><td align='left' valign='top'>This class has been removed.</td><td align='left' valign='top'>A client program may be interrupted by <b>NoClassDefFoundError</b> exception.</td></tr>
+</table><span class="section_affected" onclick="javascript:showContent(this, 'c_150')">
+[+] affected methods (28)</span>
+<div id="c_150" style="display:none;">
+<div class='affected'><span class='nblack'>Log.DEBUG&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.ERROR&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.INFO&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.NONE&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.set&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='param'>level</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.setLogger&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Log.Logger <span class='param'>logger</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.TRACE&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.WARN&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_151')">
+<span class='extension'>[+]</span> Log.Logger (1)</span>
+<br/>
+<div id="c_151" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr><th align='center' valign='top'>1</th><td align='left' valign='top'>This class has been removed.</td><td align='left' valign='top'>A client program may be interrupted by <b>NoClassDefFoundError</b> exception.</td></tr>
+</table><span class="section_affected" onclick="javascript:showContent(this, 'c_152')">
+[+] affected methods (3)</span>
+<div id="c_152" style="display:none;">
+<div class='affected'><span class='nblack'>Log.Logger.log&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='param'>level</span>,</span> <span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log.Logger' class.</div>
+<span class='nblack'>Log.Logger.Log.Logger&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'Log.Logger' class.</div>
+<span class='nblack'>Log.Logger.print&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log.Logger' class.</div>
+</div></div>
+<br/><br/></div>
+
+<br/><a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<a name='Checked_Archives'></a><h2>Java ARchives (1)</h2>
+<hr/><div class='jar_list'>
+kryo-2.23.0.jar<br/>
+</div><br/><a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<br/><br/><br/></div><div id='SourceTab' class='tab'>
+<h2>Test Info</h2><hr/>
+<table cellpadding='3' cellspacing='0' class='summary'>
+<tr><th>Library Name</th><td>kryo</td></tr>
+<tr><th>Version #1</th><td>2.23.0</td></tr>
+<tr><th>Version #2</th><td>2.24.0</td></tr>
+<tr><th>Subject</th><td width='150px'>Source Compatibility</td></tr>
+</table>
+<h2>Test Results</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th>Total Java ARchives</th><td><a href='#Checked_Archives' style='color:Blue;'>1</a></td></tr><tr><th>Total Methods / Classes</th><td>1572 / 176</td></tr><tr><th>Verdict</th><td><span style='color:Red;'><b>Incompatible<br/>(2.4%)</b></span></td></tr>
+</table>
+<h2>Problem Summary</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr><tr><th>Added Methods</th><td>-</td><td class='new'><a href='#Source_Added' style='color:Blue;'>108</a></td></tr><tr><th>Removed Methods</th><td>High</td><td class='failed'><a href='#Source_Removed' style='color:Blue;'>38</a></td></tr><tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td class='failed'><a href='#Type_Source_Problems_High' style='color:Blue;'>3</a></td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td>0</td></tr><tr><th rowspan='3'>Problems with<br/>Methods</th><td>High</td><td>0</td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td>0</td></tr></table>
+
+<a name='Source_Added'></a><h2>Added Methods (108)</h2><hr/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Bind.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_153')">
+FieldSerializer.Bind.value&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Serializer&gt;</span></span>
+<br/>
+<div id="c_153" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/FieldSerializer.Bind.value:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>BindCollection.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_154')">
+CollectionSerializer.BindCollection.elementClass&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class&lt;?&gt;</span></span>
+<br/>
+<div id="c_154" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/CollectionSerializer.BindCollection.elementClass:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_155')">
+CollectionSerializer.BindCollection.elementsCanBeNull&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_155" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/CollectionSerializer.BindCollection.elementsCanBeNull:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_156')">
+CollectionSerializer.BindCollection.elementSerializer&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Serializer&gt;</span></span>
+<br/>
+<div id="c_156" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/CollectionSerializer.BindCollection.elementSerializer:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>BindMap.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_157')">
+MapSerializer.BindMap.keyClass&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class&lt;?&gt;</span></span>
+<br/>
+<div id="c_157" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.keyClass:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_158')">
+MapSerializer.BindMap.keysCanBeNull&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_158" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.keysCanBeNull:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_159')">
+MapSerializer.BindMap.keySerializer&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Serializer&gt;</span></span>
+<br/>
+<div id="c_159" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.keySerializer:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_160')">
+MapSerializer.BindMap.valueClass&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class&lt;?&gt;</span></span>
+<br/>
+<div id="c_160" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.valueClass:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_161')">
+MapSerializer.BindMap.valuesCanBeNull&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_161" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.valuesCanBeNull:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_162')">
+MapSerializer.BindMap.valueSerializer&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Serializer&gt;</span></span>
+<br/>
+<div id="c_162" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/MapSerializer.BindMap.valueSerializer:()Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>ByteBufferInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_163')">
+ByteBufferInput.setBuffer&#160;<span class='sym_p'>(&#160;<span class='nowrap'>java.nio.ByteBuffer <span class='color_p'>buffer</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_163" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferInput.setBuffer:(Ljava/nio/ByteBuffer;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>ByteBufferOutput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_164')">
+ByteBufferOutput.ByteBufferOutput&#160;<span class='sym_p'>(&#160;java.nio.ByteBuffer <span class='color_p'>buffer</span>, <span class='nowrap'>int <span class='color_p'>maxBufferSize</span> )</span></span></span>
+<br/>
+<div id="c_164" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferOutput.&quot;&lt;init&gt;&quot;:(Ljava/nio/ByteBuffer;I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_165')">
+ByteBufferOutput.setBuffer&#160;<span class='sym_p'>(&#160;<span class='nowrap'>java.nio.ByteBuffer <span class='color_p'>buffer</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_165" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferOutput.setBuffer:(Ljava/nio/ByteBuffer;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>CachedField&lt;X.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_166')">
+FieldSerializer.CachedField&lt;X.getSerializer&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Serializer</span></span>
+<br/>
+<div id="c_166" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/FieldSerializer.CachedField&lt;X.getSerializer:()Lcom/esotericsoftware/kryo/Serializer;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Entries&lt;V&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_167')">
+IntMap.Entries&lt;V&gt;.IntMap.Entries&#160;<span class='sym_p'>(&#160;<span class='nowrap'>IntMap <span class='color_p'>map</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_167" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.com.esotericsoftware.kryo.util.IntMap.Entries:(Lcom/esotericsoftware/kryo/util/IntMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_168')">
+IntMap.Entries&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_168" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.hasNext:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_169')">
+IntMap.Entries&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.util.Iterator&lt;IntMap.Entry&lt;V&gt;&gt;</span></span>
+<br/>
+<div id="c_169" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.iterator:()Ljava/util/Iterator;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_170')">
+IntMap.Entries&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntMap.Entry&lt;V&gt;</span></span>
+<br/>
+<div id="c_170" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.next:()Lcom/esotericsoftware/kryo/util/IntMap$Entry;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_171')">
+IntMap.Entries&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_171" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.next:()Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_172')">
+IntMap.Entries&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_172" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.remove:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_173')">
+IntMap.Entries&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_173" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entries&lt;V&gt;.reset:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Entry&lt;V&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_174')">
+IntMap.Entry&lt;V&gt;.IntMap.Entry&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_174" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entry&lt;V&gt;.com.esotericsoftware.kryo.util.IntMap.Entry:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_175')">
+IntMap.Entry&lt;V&gt;.toString&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_175" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Entry&lt;V&gt;.toString:()Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>ExternalizableSerializer.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_176')">
+ExternalizableSerializer.ExternalizableSerializer&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_176" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/ExternalizableSerializer.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_177')">
+ExternalizableSerializer.read&#160;<span class='sym_p'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, com.esotericsoftware.kryo.io.Input <span class='color_p'>input</span>, <span class='nowrap'>Class <span class='color_p'>type</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_177" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/ExternalizableSerializer.read:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;Ljava/lang/Class;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_178')">
+ExternalizableSerializer.write&#160;<span class='sym_p'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, com.esotericsoftware.kryo.io.Output <span class='color_p'>output</span>, <span class='nowrap'>Object <span class='color_p'>object</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_178" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/ExternalizableSerializer.write:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;Ljava/lang/Object;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>FieldAccess.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.reflectasm</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_179')">
+FieldAccess.getFieldCount&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_179" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/reflectasm/FieldAccess.getFieldCount:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_180')">
+FieldAccess.getFieldTypes&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class[&#160;]</span></span>
+<br/>
+<div id="c_180" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/reflectasm/FieldAccess.getFieldTypes:()[Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>FieldSerializer&lt;T.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_181')">
+FieldSerializer&lt;T.getGenerics&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class[&#160;]</span></span>
+<br/>
+<div id="c_181" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T.getGenerics:()[Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_182')">
+FieldSerializer&lt;T.rebuildCachedFields&#160;<span class='sym_p'>(&#160;<span class='nowrap'>boolean <span class='color_p'>minorRebuild</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_182" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T.rebuildCachedFields:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_183')">
+FieldSerializer&lt;T.removeField&#160;<span class='sym_p'>(&#160;<span class='nowrap'>FieldSerializer.CachedField <span class='color_p'>removeField</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_183" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T.removeField:(Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedField;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Generics.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_184')">
+Generics.getMappings&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.util.Map&lt;String,Class&gt;</span></span>
+<br/>
+<div id="c_184" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/Generics.getMappings:()Ljava/util/Map;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>IntMap&lt;V&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_185')">
+IntMap&lt;V&gt;.IntMap&#160;<span class='sym_p'>(&#160;<span class='nowrap'>IntMap&lt;? extends V&gt; <span class='color_p'>map</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_185" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.com.esotericsoftware.kryo.util.IntMap:(Lcom/esotericsoftware/kryo/util/IntMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_186')">
+IntMap&lt;V&gt;.entries&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntMap.Entries&lt;V&gt;</span></span>
+<br/>
+<div id="c_186" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.entries:()Lcom/esotericsoftware/kryo/util/IntMap$Entries;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_187')">
+IntMap&lt;V&gt;.keys&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntMap.Keys</span></span>
+<br/>
+<div id="c_187" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.keys:()Lcom/esotericsoftware/kryo/util/IntMap$Keys;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_188')">
+IntMap&lt;V&gt;.putAll&#160;<span class='sym_p'>(&#160;<span class='nowrap'>IntMap&lt;V&gt; <span class='color_p'>map</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_188" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.putAll:(Lcom/esotericsoftware/kryo/util/IntMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_189')">
+IntMap&lt;V&gt;.values&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntMap.Values&lt;V&gt;</span></span>
+<br/>
+<div id="c_189" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.values:()Lcom/esotericsoftware/kryo/util/IntMap$Values;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Keys.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_190')">
+IntMap.Keys.IntMap.Keys&#160;<span class='sym_p'>(&#160;<span class='nowrap'>IntMap <span class='color_p'>map</span> )</span></span></span>
+<br/>
+<div id="c_190" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Keys.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/util/IntMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_191')">
+IntMap.Keys.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_191" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Keys.next:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_192')">
+IntMap.Keys.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_192" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Keys.remove:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_193')">
+IntMap.Keys.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_193" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Keys.reset:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_194')">
+IntMap.Keys.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntArray</span></span>
+<br/>
+<div id="c_194" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Keys.toArray:()Lcom/esotericsoftware/kryo/util/IntArray;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoCallback&lt;T.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.pool</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_195')">
+KryoPool.KryoCallback&lt;T.execute&#160;<span class='sym_p'>(&#160;<span class='nowrap'>com.esotericsoftware.kryo.Kryo <span class='color_p'>p1</span> )</span></span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;T</span></span>
+<br/>
+<div id="c_195" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.KryoCallback&lt;T.execute:(Lcom/esotericsoftware/kryo/Kryo;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoDataInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_196')">
+KryoDataInput.KryoDataInput&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Input <span class='color_p'>input</span> )</span></span></span>
+<br/>
+<div id="c_196" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/io/Input;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_197')">
+KryoDataInput.readBoolean&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_197" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readBoolean:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_198')">
+KryoDataInput.readByte&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;byte</span></span>
+<br/>
+<div id="c_198" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readByte:()B</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_199')">
+KryoDataInput.readChar&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;char</span></span>
+<br/>
+<div id="c_199" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readChar:()C</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_200')">
+KryoDataInput.readDouble&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;double</span></span>
+<br/>
+<div id="c_200" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readDouble:()D</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_201')">
+KryoDataInput.readFloat&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;float</span></span>
+<br/>
+<div id="c_201" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readFloat:()F</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_202')">
+KryoDataInput.readFully&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_202" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readFully:([B)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_203')">
+KryoDataInput.readFully&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span>,</span> <span class='nowrap'>int <span class='color_p'>off</span>,</span> <span class='nowrap'>int <span class='color_p'>len</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_203" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readFully:([BII)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_204')">
+KryoDataInput.readInt&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_204" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readInt:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_205')">
+KryoDataInput.readLine&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_205" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readLine:()Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_206')">
+KryoDataInput.readLong&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;long</span></span>
+<br/>
+<div id="c_206" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readLong:()J</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_207')">
+KryoDataInput.readShort&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;short</span></span>
+<br/>
+<div id="c_207" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readShort:()S</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_208')">
+KryoDataInput.readUnsignedByte&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_208" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readUnsignedByte:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_209')">
+KryoDataInput.readUnsignedShort&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_209" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readUnsignedShort:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_210')">
+KryoDataInput.readUTF&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_210" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.readUTF:()Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_211')">
+KryoDataInput.setInput&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Input <span class='color_p'>input</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_211" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.setInput:(Lcom/esotericsoftware/kryo/io/Input;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_212')">
+KryoDataInput.skipBytes&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>n</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_212" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataInput.skipBytes:(I)I</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoDataOutput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_213')">
+KryoDataOutput.KryoDataOutput&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Output <span class='color_p'>output</span> )</span></span></span>
+<br/>
+<div id="c_213" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/io/Output;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_214')">
+KryoDataOutput.setOutput&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Output <span class='color_p'>output</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_214" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.setOutput:(Lcom/esotericsoftware/kryo/io/Output;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_215')">
+KryoDataOutput.write&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_215" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.write:([B)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_216')">
+KryoDataOutput.write&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span>,</span> <span class='nowrap'>int <span class='color_p'>off</span>,</span> <span class='nowrap'>int <span class='color_p'>len</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_216" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.write:([BII)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_217')">
+KryoDataOutput.write&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>b</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_217" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.write:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_218')">
+KryoDataOutput.writeBoolean&#160;<span class='sym_p'>(&#160;<span class='nowrap'>boolean <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_218" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeBoolean:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_219')">
+KryoDataOutput.writeByte&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_219" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeByte:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_220')">
+KryoDataOutput.writeBytes&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>s</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_220" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeBytes:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_221')">
+KryoDataOutput.writeChar&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_221" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeChar:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_222')">
+KryoDataOutput.writeChars&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>s</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_222" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeChars:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_223')">
+KryoDataOutput.writeDouble&#160;<span class='sym_p'>(&#160;<span class='nowrap'>double <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_223" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeDouble:(D)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_224')">
+KryoDataOutput.writeFloat&#160;<span class='sym_p'>(&#160;<span class='nowrap'>float <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_224" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeFloat:(F)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_225')">
+KryoDataOutput.writeInt&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_225" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeInt:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_226')">
+KryoDataOutput.writeLong&#160;<span class='sym_p'>(&#160;<span class='nowrap'>long <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_226" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeLong:(J)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_227')">
+KryoDataOutput.writeShort&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>v</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_227" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeShort:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_228')">
+KryoDataOutput.writeUTF&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>s</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_228" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoDataOutput.writeUTF:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoFactory.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.pool</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_229')">
+KryoPool.KryoFactory.create&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Kryo</span></span>
+<br/>
+<div id="c_229" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.KryoFactory.create:()Lcom/esotericsoftware/kryo/Kryo;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoObjectInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_230')">
+KryoObjectInput.available&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_230" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.available:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_231')">
+KryoObjectInput.close&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_231" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.close:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_232')">
+KryoObjectInput.KryoObjectInput&#160;<span class='sym_p'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, <span class='nowrap'>Input <span class='color_p'>in</span> )</span></span></span>
+<br/>
+<div id="c_232" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_233')">
+KryoObjectInput.read&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_233" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.read:()I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_234')">
+KryoObjectInput.read&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_234" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.read:([B)I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_235')">
+KryoObjectInput.read&#160;<span class='sym_p'>(&#160;<span class='nowrap'>byte[&#160;] <span class='color_p'>b</span>,</span> <span class='nowrap'>int <span class='color_p'>off</span>,</span> <span class='nowrap'>int <span class='color_p'>len</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_235" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.read:([BII)I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_236')">
+KryoObjectInput.readObject&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_236" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.readObject:()Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_237')">
+KryoObjectInput.skip&#160;<span class='sym_p'>(&#160;<span class='nowrap'>long <span class='color_p'>n</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;long</span></span>
+<br/>
+<div id="c_237" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectInput.skip:(J)J</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoObjectOutput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_238')">
+KryoObjectOutput.close&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_238" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectOutput.close:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_239')">
+KryoObjectOutput.flush&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_239" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectOutput.flush:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_240')">
+KryoObjectOutput.KryoObjectOutput&#160;<span class='sym_p'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, <span class='nowrap'>Output <span class='color_p'>output</span> )</span></span></span>
+<br/>
+<div id="c_240" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectOutput.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_241')">
+KryoObjectOutput.writeObject&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Object <span class='color_p'>obj</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_241" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/KryoObjectOutput.writeObject:(Ljava/lang/Object;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>KryoPool.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.pool</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_242')">
+KryoPool.borrow&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Kryo</span></span>
+<br/>
+<div id="c_242" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.borrow:()Lcom/esotericsoftware/kryo/Kryo;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_243')">
+KryoPool.KryoPool&#160;<span class='sym_p'>(&#160;<span class='nowrap'>KryoPool.KryoFactory <span class='color_p'>factory</span> )</span></span></span>
+<br/>
+<div id="c_243" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/pool/KryoPool$KryoFactory;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_244')">
+KryoPool.release&#160;<span class='sym_p'>(&#160;<span class='nowrap'>com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_244" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.release:(Lcom/esotericsoftware/kryo/Kryo;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_245')">
+KryoPool.run&#160;<span class='sym_p'>(&#160;<span class='nowrap'>KryoPool.KryoCallback&lt;T&gt; <span class='color_p'>callback</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;T</span></span>
+<br/>
+<div id="c_245" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.run:(Lcom/esotericsoftware/kryo/pool/KryoPool$KryoCallback;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_246')">
+KryoPool.size&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_246" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/pool/KryoPool.size:()I</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>MethodAccess.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.reflectasm</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_247')">
+MethodAccess.getIndex&#160;<span class='sym_p'>(&#160;String <span class='color_p'>methodName</span>, <span class='nowrap'>int <span class='color_p'>paramsCount</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_247" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/reflectasm/MethodAccess.getIndex:(Ljava/lang/String;I)I</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_248')">
+MethodAccess.getReturnTypes&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Class[&#160;]</span></span>
+<br/>
+<div id="c_248" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/reflectasm/MethodAccess.getReturnTypes:()[Ljava/lang/Class;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_249')">
+MethodAccess.invoke&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Object <span class='color_p'>object</span>,</span> String <span class='color_p'>methodName</span>, Class[&#160;] <span class='color_p'>paramTypes</span>, <span class='nowrap'>Object... <span class='color_p'>args</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_249" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/reflectasm/MethodAccess.invoke:(Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Class;[Ljava/lang/Object;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>ObjectMap&lt;K.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_250')">
+ObjectMap&lt;K.ObjectMap&#160;<span class='sym_p'>(&#160;ObjectMap&lt;? extends K&#160;<span class='color_p'>map</span>, <span class='nowrap'>? extends V&gt; <span class='color_p'>map</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_250" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/ObjectMap&lt;K.com.esotericsoftware.kryo.util.ObjectMap:(Lcom/esotericsoftware/kryo/util/ObjectMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_251')">
+ObjectMap&lt;K.get&#160;<span class='sym_p'>(&#160;<span class='nowrap'>K <span class='color_p'>key</span>,</span> <span class='nowrap'>V <span class='color_p'>defaultValue</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_251" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/ObjectMap&lt;K.get:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>TaggedFieldSerializer&lt;T.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_252')">
+TaggedFieldSerializer&lt;T.removeField&#160;<span class='sym_p'>(&#160;<span class='nowrap'>FieldSerializer.CachedField <span class='color_p'>field</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_252" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializer&lt;T.removeField:(Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedField;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>UnsafeMemoryInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_253')">
+UnsafeMemoryInput.setBuffer&#160;<span class='sym_p'>(&#160;<span class='nowrap'>java.nio.ByteBuffer <span class='color_p'>buffer</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_253" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/UnsafeMemoryInput.setBuffer:(Ljava/nio/ByteBuffer;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.24.0.jar</span>, <span class='cname'>Values&lt;V&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_254')">
+IntMap.Values&lt;V&gt;.IntMap.Values&#160;<span class='sym_p'>(&#160;<span class='nowrap'>IntMap&lt;V&gt; <span class='color_p'>map</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_254" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.com.esotericsoftware.kryo.util.IntMap.Values:(Lcom/esotericsoftware/kryo/util/IntMap;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_255')">
+IntMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_255" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.hasNext:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_256')">
+IntMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.util.Iterator&lt;V&gt;</span></span>
+<br/>
+<div id="c_256" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.iterator:()Ljava/util/Iterator;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_257')">
+IntMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_257" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.next:()Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_258')">
+IntMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_258" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.remove:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_259')">
+IntMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_259" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.reset:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_260')">
+IntMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.util.ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_260" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.toArray:()Ljava/util/ArrayList;</b>]</span><br/><br/></div>
+
+<br/>
+<a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<a name='Source_Removed'></a><a name='Source_Withdrawn'></a><h2>Removed Methods (38)</h2><hr/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>ByteBufferInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_261')">
+ByteBufferInput.ByteBufferInput&#160;<span class='sym_p'>(&#160;java.nio.ByteBuffer <span class='color_p'>buffer</span>, <span class='nowrap'>int <span class='color_p'>offset</span>,</span> <span class='nowrap'>int <span class='color_p'>count</span> )</span></span></span>
+<br/>
+<div id="c_261" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferInput.&quot;&lt;init&gt;&quot;:(Ljava/nio/ByteBuffer;II)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_262')">
+ByteBufferInput.setBuffer&#160;<span class='sym_p'>(&#160;java.nio.ByteBuffer <span class='color_p'>bytes</span>, <span class='nowrap'>int <span class='color_p'>offset</span>,</span> <span class='nowrap'>int <span class='color_p'>count</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_262" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferInput.setBuffer:(Ljava/nio/ByteBuffer;II)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>ByteBufferOutput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_263')">
+ByteBufferOutput.ByteBufferOutput&#160;<span class='sym_p'>(&#160;java.nio.ByteBuffer <span class='color_p'>buffer</span>, <span class='nowrap'>int <span class='color_p'>offset</span>,</span> <span class='nowrap'>int <span class='color_p'>count</span> )</span></span></span>
+<br/>
+<div id="c_263" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/ByteBufferOutput.&quot;&lt;init&gt;&quot;:(Ljava/nio/ByteBuffer;II)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>DefaultSerializers.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_264')">
+DefaultSerializers.DefaultSerializers&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_264" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/DefaultSerializers.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>Log.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.minlog</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_265')">
+Log.DEBUG&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_265" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.DEBUG:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_266')">
+Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_266" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.debug:(Ljava/lang/String;Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_267')">
+Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_267" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.debug:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_268')">
+Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_268" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.debug:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_269')">
+Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_269" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.debug:(Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_270')">
+Log.ERROR&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_270" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.ERROR:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_271')">
+Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_271" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.error:(Ljava/lang/String;Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_272')">
+Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_272" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.error:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_273')">
+Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_273" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.error:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_274')">
+Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_274" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.error:(Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_275')">
+Log.INFO&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_275" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.INFO:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_276')">
+Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_276" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.info:(Ljava/lang/String;Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_277')">
+Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_277" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.info:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_278')">
+Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_278" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.info:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_279')">
+Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_279" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.info:(Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_280')">
+Log.NONE&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_280" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.NONE:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_281')">
+Log.set&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>level</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_281" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.set:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_282')">
+Log.setLogger&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Log.Logger <span class='color_p'>logger</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_282" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.setLogger:(Lcom/esotericsoftware/minlog/Log$Logger;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_283')">
+Log.TRACE&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_283" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.TRACE:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_284')">
+Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_284" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.trace:(Ljava/lang/String;Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_285')">
+Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_285" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.trace:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_286')">
+Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_286" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.trace:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_287')">
+Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_287" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.trace:(Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_288')">
+Log.WARN&#160;<span class='sym_p'>(&#160;)</span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_288" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.WARN:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_289')">
+Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_289" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.warn:(Ljava/lang/String;Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_290')">
+Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_290" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.warn:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_291')">
+Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_291" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.warn:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_292')">
+Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span> <span class='sym_kind'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_292" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.warn:(Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>Logger.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.minlog</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_293')">
+Log.Logger.log&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='color_p'>level</span>,</span> <span class='nowrap'>String <span class='color_p'>category</span>,</span> <span class='nowrap'>String <span class='color_p'>message</span>,</span> <span class='nowrap'>Throwable <span class='color_p'>ex</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_293" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.Logger.log:(ILjava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_294')">
+Log.Logger.Log.Logger&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_294" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.Logger.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_295')">
+Log.Logger.print&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='color_p'>message</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_295" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/minlog/Log.Logger.print:(Ljava/lang/String;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>Serializer&lt;T.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_296')">
+Serializer&lt;T.isDefaultSerializer&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_296" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/Serializer&lt;T.isDefaultSerializer:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_297')">
+Serializer&lt;T.setDefaultSerializer&#160;<span class='sym_p'>(&#160;<span class='nowrap'>boolean <span class='color_p'>defaultSerializer</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_297" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/Serializer&lt;T.setDefaultSerializer:(Z)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-2.23.0.jar</span>, <span class='cname'>UnsafeMemoryInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_298')">
+UnsafeMemoryInput.setBuffer&#160;<span class='sym_p'>(&#160;java.nio.ByteBuffer <span class='color_p'>buffer</span>, <span class='nowrap'>int <span class='color_p'>offset</span>,</span> <span class='nowrap'>int <span class='color_p'>count</span> )</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_298" style="display:none;">
+<span class='mangled'>[run-time name: <b>com/esotericsoftware/kryo/io/UnsafeMemoryInput.setBuffer:(Ljava/nio/ByteBuffer;II)V</b>]</span><br/><br/></div>
+
+<br/>
+<a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<a name='High_Risk_Source_Problems'></a><a name='Type_Source_Problems_High'></a>
+<h2>Problems with Data Types, High Severity (3)</h2><hr/>
+<span class='jar'>kryo-2.23.0.jar</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_299')">
+<span class='extension'>[+]</span> DefaultSerializers (1)</span>
+<br/>
+<div id="c_299" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr><th align='center' valign='top'>1</th><td align='left' valign='top'>This class has been removed.</td><td align='left' valign='top'>Recompilation of a client program may be terminated with the message: cannot find class <b>DefaultSerializers</b>.</td></tr>
+</table><span class="section_affected" onclick="javascript:showContent(this, 'c_300')">
+[+] affected methods (1)</span>
+<div id="c_300" style="display:none;">
+<div class='affected'><span class='nblack'>DefaultSerializers.DefaultSerializers&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'DefaultSerializers' class.</div>
+</div></div>
+<br/><br/></div>
+
+<br/><span class='package_title'>package</span> <span class='package'>com.esotericsoftware.minlog</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_301')">
+<span class='extension'>[+]</span> Log (1)</span>
+<br/>
+<div id="c_301" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr><th align='center' valign='top'>1</th><td align='left' valign='top'>This class has been removed.</td><td align='left' valign='top'>Recompilation of a client program may be terminated with the message: cannot find class <b>Log</b>.</td></tr>
+</table><span class="section_affected" onclick="javascript:showContent(this, 'c_302')">
+[+] affected methods (28)</span>
+<div id="c_302" style="display:none;">
+<div class='affected'><span class='nblack'>Log.DEBUG&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.debug&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.ERROR&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.error&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.INFO&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.info&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.NONE&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.set&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='param'>level</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.setLogger&#160;<span class='sym_p'>(&#160;<span class='nowrap'>Log.Logger <span class='param'>logger</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.TRACE&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.trace&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.WARN&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+<span class='nblack'>Log.warn&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_303')">
+<span class='extension'>[+]</span> Log.Logger (1)</span>
+<br/>
+<div id="c_303" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr><th align='center' valign='top'>1</th><td align='left' valign='top'>This class has been removed.</td><td align='left' valign='top'>Recompilation of a client program may be terminated with the message: cannot find class <b>Log.Logger</b>.</td></tr>
+</table><span class="section_affected" onclick="javascript:showContent(this, 'c_304')">
+[+] affected methods (3)</span>
+<div id="c_304" style="display:none;">
+<div class='affected'><span class='nblack'>Log.Logger.log&#160;<span class='sym_p'>(&#160;<span class='nowrap'>int <span class='param'>level</span>,</span> <span class='nowrap'>String <span class='param'>category</span>,</span> <span class='nowrap'>String <span class='param'>message</span>,</span> <span class='nowrap'>Throwable <span class='param'>ex</span> )</span></span></span><br/><div class='affect'>This method is from 'Log.Logger' class.</div>
+<span class='nblack'>Log.Logger.Log.Logger&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'Log.Logger' class.</div>
+<span class='nblack'>Log.Logger.print&#160;<span class='sym_p'>(&#160;<span class='nowrap'>String <span class='param'>message</span> )</span></span></span><br/><div class='affect'>This method is from 'Log.Logger' class.</div>
+</div></div>
+<br/><br/></div>
+
+<br/><a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<a name='Checked_Archives'></a><h2>Java ARchives (1)</h2>
+<hr/><div class='jar_list'>
+kryo-2.23.0.jar<br/>
+</div><br/><a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<br/><br/><br/></div><div style='width:97%;padding-top:3px;font-size:11px;' align='right'><i>Generated on Sun May  4 15:06:16 2014 for <span style='font-weight:bold'>kryo</span> by <a href='http://ispras.linuxbase.org/index.php/Java_API_Compliance_Checker'>Java API Compliance Checker</a> 1.3.5 &#160;<br/>A tool for checking backward compatibility of a Java library API&#160;&#160;</i></div>
+<div style='height:999px;'></div>
+</body></html>
