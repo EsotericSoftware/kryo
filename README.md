@@ -2,20 +2,6 @@
 
 [![Build Status](https://jenkins.inoio.de/buildStatus/icon?job=kryo)](https://jenkins.inoio.de/job/kryo/)
 
-Please use the [Kryo discussion group](http://groups.google.com/group/kryo-users) for support.
-
-Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](http://search.maven.org/#browse|1975274176). Latest snapshots of Kryo including snapshot builds of master are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/kryo).
-
-## Latest release is 2.24.0
-
-## New in relase 2.24.0
-
-The 2.24.0 release fixes many reported issues and improves stability and performance. It also introduces a new feature: [annotations](#class-fields-annotations) that can be used to indicate which serializer should be used for a given field of a class.
-
-See [ChangeLog](https://github.com/EsotericSoftware/kryo/blob/master/CHANGES.md) for more details about this release.
-
-## Overview
-
 Kryo is a fast and efficient object graph serialization framework for Java. The goals of the project are speed, efficiency, and an easy to use API. The project is useful any time objects need to be persisted, whether to a file, database, or over the network.
 
 Kryo can also perform automatic deep and shallow copying/cloning. This is direct copying from object to object, not object->bytes->object.
@@ -26,6 +12,8 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 
 ## Contents
 
+- [New in release 2.24.0](#new-in-release-2240)
+- [Installation](#installation)
 - [Quickstart](#quickstart)
 - [IO](#io)
 - [Unsafe-based IO](#unsafe-based-io)
@@ -55,6 +43,49 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [Benchmarks](#benchmarks)
 - [Projects using Kryo](#projects-using-kryo)
 - [Contact / Mailing list](#contact--mailing-list)
+
+## New in release 2.24.0
+
+The 2.24.0 release fixes many reported issues and improves stability and performance. It also introduces a new feature: [annotations](#class-fields-annotations) that can be used to indicate which serializer should be used for a given field of a class.
+
+See [ChangeLog](https://github.com/EsotericSoftware/kryo/blob/master/CHANGES.md) for more details about this release.
+
+## Installation
+
+Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](http://search.maven.org/#browse|1975274176). Latest snapshots of Kryo including snapshot builds of master are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/kryo).
+
+### Integration with Maven
+
+To use the official release of Kryo, please use the following snippet in your pom.xml
+
+```xml
+    <dependency>
+        <groupId>com.esotericsoftware.kryo</groupId>
+        <artifactId>kryo</artifactId>
+        <version>2.24.0</version>
+    </dependency>
+```
+
+If you want to test the latest snapshot of Kryo, please use the following snippet in your pom.xml
+
+```xml
+    <repository>
+       <id>sonatype-snapshots</id>
+       <name>sonatype snapshots repo</name>
+       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </repository>
+    
+    <dependency>
+       <groupId>com.esotericsoftware.kryo</groupId>
+       <artifactId>kryo</artifactId>
+        <version>2.24.1-SNAPSHOT</version>
+    </dependency>
+```
+
+### Using Kryo without Maven
+
+If you use Kryo without Maven, be aware that Kryo jar file has a couple of external dependencies, whose JARs you need to add to your classpath as well. These dependencies are [MinLog logging library](http://code.google.com/p/minlog/) and [Objenesis library](https://code.google.com/p/objenesis/).
+
 
 ## Quickstart
 
@@ -498,47 +529,6 @@ Kryo makes use of the low overhead, lightweight [MinLog logging library](http://
 Kryo does no logging at `INFO` (the default) and above levels. `DEBUG` is convenient to use during development. `TRACE` is good to use when debugging a specific problem, but generally outputs too much information to leave on.
 
 MinLog supports a fixed logging level, which causes javac to remove logging statements below that level at compile time. In the Kryo distribution ZIP, the "debug" JARs have logging enabled. The "production" JARs use a fixed logging level of `NONE`, which means all logging code has been removed.
-
-## Integration with Maven
-
-To use the official release of Kryo, please use the following snippet in your pom.xml
-
-```xml
-    <repository>
-        <snapshots>
-            <enabled>false</enabled>
-        </snapshots>
-        <id>central</id>
-        <name>Maven Central Repository</name>
-        <url>http://repo1.maven.org/maven2</url>
-    </repository>
-    
-    <dependency>
-        <groupId>com.esotericsoftware.kryo</groupId>
-        <artifactId>kryo</artifactId>
-        <version>2.24.0</version>
-    </dependency>
-```
-
-If you want to test the latest snapshot of Kryo, please use the following snippet in your pom.xml
-
-```xml
-    <repository>
-       <id>sonatype-snapshots</id>
-       <name>sonatype snapshots repo</name>
-       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </repository>
-    
-    <dependency>
-       <groupId>com.esotericsoftware.kryo</groupId>
-       <artifactId>kryo</artifactId>
-        <version>2.24.1-SNAPSHOT</version>
-    </dependency>
-```
-
-## Using Kryo without Maven
-
-If you use Kryo without Maven, be aware that Kryo jar file has a couple of external dependencies, whose JARs you need to add to your classpath as well. These dependencies are [MinLog logging library](http://code.google.com/p/minlog/) and [Objenesis library](https://code.google.com/p/objenesis/).
 
 ## Scala
 
