@@ -61,6 +61,7 @@ import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
+import com.esotericsoftware.minlog.Log;
 import com.esotericsoftware.reflectasm.ConstructorAccess;
 
 import java.lang.reflect.Constructor;
@@ -205,6 +206,20 @@ public class Kryo {
 		register(long.class, new LongSerializer());
 		register(double.class, new DoubleSerializer());
 		register(void.class, new VoidSerializer());
+		
+		// Lambdas support
+		// Enable only if JVM supports it
+		try {
+			String version = System.getProperty("java.version");
+			char minor = version.charAt(2);
+			if (minor >= '8') {
+				register(Class.forName("java.lang.invoke.SerializedLambda"));
+				register(Closure.class, (Serializer)Class.forName("com.esotericsoftware.kryo.serializers.ClosureSerializer")
+					.newInstance());
+			}
+		} catch (Exception e) {
+			Log.trace("Serialization of Java8 lambdas is not available on this system.");
+		}
 	}
 
 	// --- Default serializers ---
@@ -452,6 +467,8 @@ public class Kryo {
 				registration = getRegistration(type.getEnclosingClass());
 			} else if (EnumSet.class.isAssignableFrom(type)) {
 				registration = classResolver.getRegistration(EnumSet.class);
+			} else if (isClousre(type)) {
+				registration = classResolver.getRegistration(Closure.class);
 			}
 			if (registration == null) {
 				if (registrationRequired) {
@@ -1111,6 +1128,15 @@ public class Kryo {
 		if (type.isArray()) return Modifier.isFinal(Util.getElementClass(type).getModifiers());
 		return Modifier.isFinal(type.getModifiers());
 	}
+	
+	/** Returns true if the specified type is a closure.
+	 * <p>
+	 * This can be overridden to support alternative implementations of clousres. Current version supports 
+	 * Oracle's Java8 only */
+	public boolean isClousre (Class type) {
+		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		return type.getName().indexOf('/') >= 0;
+	}
 
 	static final class DefaultSerializerEntry {
 		final Class type;
@@ -1230,5 +1256,8 @@ public class Kryo {
 			// InstantiatorStrategy.
 			return fallbackStrategy.newInstantiatorOf(type);
 		}
+	}
+	
+	private static class Closure {
 	}
 }
