@@ -23,7 +23,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [FieldSerializer](#fieldserializer)
 - [KryoSerializable](#kryoserializable)
 - [Class fields annotations](#class-fields-annotations)
-- [Java Serialization](#java-serialization)
+- [Java Serialization](#using-standard-java-serialization)
 - [Reading and writing](#reading-and-writing)
 - [References](#references)
 - [Object creation](#object-creation)
@@ -124,7 +124,7 @@ Kryo provides additional IO classes, which are based on the functionalities expo
 
 For the case you need to serialize to or deserialize from direct-memory ByteBuffers or even off-heap memory, there are two dedicated classes UnsafeMemoryInput and UnsafeMemoryOutput whose instances can be used for this purpose instead of the usual Input and Output classes.
 
-Using Unsafe-based IO may result in a quite significant performance boost, depending on your application. In particular, it helps a lot when serializing large primitive arrays as part of your object graphs.
+Using Unsafe-based IO may result in a quite significant performance boost (sometimes up-to an oder of magnitude), depending on your application. In particular, it helps a lot when serializing large primitive arrays as part of your object graphs.
 
 ### ** DISCLAIMER ABOUT USING UNSAFE-BASED IO **
 
@@ -134,6 +134,8 @@ This means that data written by Unsafe-based output streams can be read only by
 Unsafe-based input streams, but not by usual Input streams. The same applies on the opposite direction: data written by usual Output streams cannot be correctly read by Unsafe-based input streams.
 
 It should be safe to use Unsafe IO streams as long as both serialization and deserialization are using them and are executed on the same processor architecture (more precisely, if the endianness and internal representation of native integer and floating point types is the same).
+
+Unsafe IO was extensively tested on X86 hardware. Other processor architectures are not tested to the same extent. For example, there were some bug reports from users trying to use it on SPARC-based platforms. 
 
 ## Serializers
 
@@ -287,10 +289,19 @@ While FieldSerializer is ideal for most classes, sometimes it is convenient for 
 
 ## Using standard Java Serialization
 
-While very rare, some classes cannot be serialized by Kryo. In such situations it is possible to use a fallback solution provided by Kryo's JavaSerializer and use the standard Java Serialization instead. This approach would be as slow as usual Java serialization, but would make your class serialize as long as Java serialization is able to serialize it.
+While very rare, some classes cannot be serialized by Kryo. In such situations it is possible to use a fallback solution provided by Kryo's JavaSerializer and use the standard Java Serialization instead. This approach would be as slow as usual Java serialization, but would make your class serialize as long as Java serialization is able to serialize it. Of course, your classs should implement the `Serializable` or `Externalizable` interface as it is required by usual Java serialization.
+
+If your class impements Java's `Serializable` interface, then you may want to use Kryo's dedicated `JavaSerializer` serializer for it:
 
 ```java
     kryo.register(SomeClass.class, new JavaSerializer());
+```
+
+
+If your class impements Java's `Externalizable` interface, then you may want to use Kryo's dedicated `ExternalizableSerializer` serializer for it:
+
+```java
+    kryo.register(SomeClass.class, new ExternalizableSerializer());
 ```
 
 
@@ -385,6 +396,12 @@ When ReflectASM or reflection cannot be used, Kryo can be configured to use an I
 ```
 
 Note that classes must be designed to be created in this way. If a class expects its constructor to be called, it may be in an uninitialized state when created through this mechanism.
+
+In many situations, you may want to have a strategy, where Kryo first tries to find and use a no-arg constructor and if it fails to do so, it should try to use `StdInstantiatorStrategy` as a fallback, because this one does not invoke any constructor at all. This can be expressed e.g. like this:
+
+```java
+((Kryo.DefaultInstantiatorStrategy) kryo.getInstantiatorStrategy()).setFallbackInstantiatorStrategy(new StdInstantiatorStrategy());
+```
 
 Objenesis can also create new objects using Java's built-in serialization mechanism. Using this, the class must implement java.io.Serializable and the first zero argument constructor in a super class is invoked.
 
