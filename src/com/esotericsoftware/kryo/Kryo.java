@@ -343,10 +343,8 @@ public class Kryo {
 	public Serializer getDefaultSerializer (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 
-		if (type.isAnnotationPresent(DefaultSerializer.class)) {
-			DefaultSerializer defaultSerializerAnnotation = (DefaultSerializer)type.getAnnotation(DefaultSerializer.class);
-			return ReflectionSerializerFactory.makeSerializer(this, defaultSerializerAnnotation.value(), type);
-		}
+		final Serializer serializerForAnnotation = getDefaultSerializerForAnnotatedType(type);
+		if (serializerForAnnotation!=null) return serializerForAnnotation;
 
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
@@ -357,6 +355,16 @@ public class Kryo {
 		}
 
 		return newDefaultSerializer(type);
+	}
+
+	protected Serializer getDefaultSerializerForAnnotatedType(Class type)
+	{
+		if (type.isAnnotationPresent(DefaultSerializer.class)) {
+			DefaultSerializer defaultSerializerAnnotation = (DefaultSerializer)type.getAnnotation(DefaultSerializer.class);
+			return ReflectionSerializerFactory.makeSerializer(this, defaultSerializerAnnotation.value(), type);
+		}
+
+		return null;
 	}
 
 	/** Called by {@link #getDefaultSerializer(Class)} when no default serializers matched the type. Subclasses can override this
