@@ -567,6 +567,18 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				return;
 			}
 		}
+		
+		for (int i = 0; i < transientFields.length; i++) {
+			CachedField cachedField = transientFields[i];
+			if (cachedField.field.getName().equals(fieldName)) {
+				CachedField[] newFields = new CachedField[transientFields.length - 1];
+				System.arraycopy(transientFields, 0, newFields, 0, i);
+				System.arraycopy(transientFields, i + 1, newFields, i, newFields.length - i);
+				transientFields = newFields;
+				removedFields.add(cachedField);
+				return;
+			}
+		}
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
 	}
 
@@ -579,6 +591,18 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				System.arraycopy(fields, 0, newFields, 0, i);
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
 				fields = newFields;
+				removedFields.add(cachedField);
+				return;
+			}
+		}
+		
+		for (int i = 0; i < transientFields.length; i++) {
+			CachedField cachedField = transientFields[i];
+			if (cachedField == removeField) {
+				CachedField[] newFields = new CachedField[transientFields.length - 1];
+				System.arraycopy(transientFields, 0, newFields, 0, i);
+				System.arraycopy(transientFields, i + 1, newFields, i, newFields.length - i);
+				transientFields = newFields;
 				removedFields.add(cachedField);
 				return;
 			}
