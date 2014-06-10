@@ -64,6 +64,7 @@ import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.minlog.Log;
 import com.esotericsoftware.reflectasm.ConstructorAccess;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
@@ -78,6 +79,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Currency;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
@@ -427,6 +429,108 @@ public class Kryo {
 		if (id < 0) throw new IllegalArgumentException("id must be >= 0: " + id);
 		return register(new Registration(type, serializer, id));
 	}
+	
+	/** Registers this class and all array types up to the dimensions specified using the lowest, next available integer ID and the 
+	 * {@link Kryo#getDefaultSerializer(Class) default serializer}. If the class is already registered, the existing entry is updated
+	 * with the new serializer. Registering a primitive also affects the corresponding primitive wrapper.
+	 * <p>
+	 * Because the ID assigned is affected by the IDs registered before it, the order classes are registered is important when
+	 * using this method. The order must be the same at deserialization as it was for serialization.
+	 * <p>
+	 * This method is a convenience method for registering a class and all array types of that class up to the specified dimension.
+	 * For example, if type is Object and dimensions is 3 then Object.class, Object[].class, Object[][].class and Object[][][].class
+	 * will all be registered.
+	 * @param dimensions The dimensions of array types to register, will register all array types from dimensions 1 to the specified value. */
+	public List<Registration> registerArrays(Class<?> type, int dimensions) {
+		if (dimensions < 1) throw new IllegalArgumentException("array dimensions must be > 1: " + dimensions);
+		List<Registration> registrations = new ArrayList<Registration>(dimensions + 1);
+		registrations.add(this.register(type));
+      for (int i = 1; i <= dimensions; i++) {
+      	registrations.add(this.register(Array.newInstance(type, new int[i]).getClass()));
+      }
+      return registrations;
+   }
+	
+	/** Registers the class and all array types up to the dimensions specified using the specified ID and the 
+	 * {@link Kryo#getDefaultSerializer(Class) default serializer}. If the ID is already in use by the same type, the old entry is
+	 * overwritten. If the ID is already in use by a different type, a {@link KryoException} is thrown. Registering a primitive also 
+	 * affects the corresponding primitive wrapper.
+	 * <p>
+	 * IDs must be the same at deserialization as they were for serialization.
+	 * <p>
+	 * This method is a convenience method for registering a class and all array types of that class up to the specified dimension.
+	 * For example, if type is Object and dimensions is 3 then Object.class, Object[].class, Object[][].class and Object[][][].class
+	 * will all be registered. The types will use the corresponding id specified in the ids array such that ids[0]
+	 * well be used for the non-array type and ids[n] will be used for the corresponding nth array dimension.
+	 * @param dimensions The dimensions of array types to register, will register all array types from dimensions 1 to the specified value.
+	 * @param ids The ids to be used. All values must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for
+	 * 			 primitive types and String, but these IDs can be repurposed. */
+	public List<Registration> registerArrays(Class<?> type, int dimensions, int[] ids) {
+		if (dimensions < 1) throw new IllegalArgumentException("array dimensions must be > 1: " + dimensions);
+		if (ids == null) throw new IllegalArgumentException("ids cannot be null");
+		if (ids.length == dimensions + 1) throw new IllegalArgumentException("ids must be specified for all array types");
+		List<Registration> registrations = new ArrayList<Registration>(dimensions + 1);
+		registrations.add(this.register(type, ids[0]));
+      for (int i = 1; i <= dimensions; i++) {
+      	registrations.add(this.register(Array.newInstance(type, new int[i]).getClass(), ids[i]));
+      }
+      return registrations;
+   }
+	
+	/** Registers the class and all array types up to the dimensions specified using the lowest, next available integer ID and the
+	 * specified serializer. If the class is already registered, the existing entry is updated with the new serializer. Registering
+	 * a primitive also affects the corresponding primitive wrapper.
+	 * <p>
+	 * Because the ID assigned is affected by the IDs registered before it, the order classes are registered is important when
+	 * using this method. The order must be the same at deserialization as it was for serialization.
+ 	 * <p>
+	 * This method is a convenience method for registering a class and all array types of that class up to the specified dimension.
+	 * For example, if type is Object and dimensions is 3 then Object.class, Object[].class, Object[][].class and Object[][][].class
+	 * will all be registered. The types will use the corresponding serializer specified in the serializers array such that serializers[0]
+	 * well be used for the non-array type and serializers[n] will be used for the corresponding nth array dimension.
+	 * @param dimensions The dimensions of array types to register, will register all array types from dimensions 1 to the specified value.
+    * @param serializers The serializers to be used for type and each array type. */
+	public List<Registration> registerArrays(Class<?> type, int dimensions, Serializer[] serializers) {
+		if (dimensions < 1) throw new IllegalArgumentException("array dimensions must be > 1: " + dimensions);
+		if (serializers == null) throw new IllegalArgumentException("serializers cannot be null");
+		if (serializers.length == dimensions + 1) throw new IllegalArgumentException("serializers must be specified for all array types");
+		List<Registration> registrations = new ArrayList<Registration>(dimensions + 1);
+		registrations.add(this.register(type, serializers[0]));
+      for (int i = 1; i <= dimensions; i++) {
+      	registrations.add(this.register(Array.newInstance(type, new int[i]).getClass(), serializers[i]));
+      }
+      return registrations;
+   }
+	
+	/** Registers the class and all array types up to the dimensions specified using the specified ID and serializer. If the ID is
+	 * already in use by the same type, the old entry is overwritten. If the ID is already in use by a different type, a
+	 * {@link KryoException} is thrown. Registering a primitive also affects the corresponding primitive wrapper.
+	 * <p>
+	 * IDs must be the same at deserialization as they were for serialization.
+	 * <p>
+	 * This method is a convenience method for registering a class and all array types of that class up to the specified dimension.
+	 * For example, if type is Object and dimensions is 3 then Object.class, Object[].class, Object[][].class and Object[][][].class
+	 * will all be registered. The types will use the corresponding serializer specified in the serializers array such that serializers[0]
+	 * well be used for the non-array type and serializers[n] will be used for the corresponding nth array dimension. The types will use
+	 * the corresponding id specified in the ids array such that ids[0] well be used for the non-array type and ids[n] will be used for
+	 * the corresponding nth array dimension.
+	 * @param dimensions The dimensions of array types to register, will register all array types from dimensions 1 to the specified value.
+	 * @param serializers The serializers to be used for type and each array type.
+	 * @param ids The ids to be used. All values must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for
+	 * 			 primitive types and String, but these IDs can be repurposed. */
+	public List<Registration> registerArrays(Class<?> type, int dimensions, Serializer[] serializers, int[] ids) {
+		if (dimensions < 1) throw new IllegalArgumentException("array dimensions must be > 1: " + dimensions);
+		if (serializers == null) throw new IllegalArgumentException("serializers cannot be null");
+		if (serializers.length == dimensions + 1) throw new IllegalArgumentException("serializers must be specified for all array types");
+		if (ids == null) throw new IllegalArgumentException("ids cannot be null");
+		if (ids.length == dimensions + 1) throw new IllegalArgumentException("ids must be specified for all array types");
+		List<Registration> registrations = new ArrayList<Registration>(dimensions + 1);
+		registrations.add(this.register(type, serializers[0], ids[0]));
+      for (int i = 1; i <= dimensions; i++) {
+      	registrations.add(this.register(Array.newInstance(type, new int[i]).getClass(), serializers[i], ids[i]));
+      }
+      return registrations;
+   }
 
 	/** Stores the specified registration. If the ID is already in use by the same type, the old entry is overwritten. If the ID is
 	 * already in use by a different type, a {@link KryoException} is thrown. Registering a primitive also affects the
