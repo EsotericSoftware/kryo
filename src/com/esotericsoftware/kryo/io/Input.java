@@ -96,7 +96,7 @@ public class Input extends InputStream {
 	}
 
 	/** Sets the number of bytes read. */
-	public void setTotal (long total) {
+	public void setTotal (int total) {
 		this.total = total;
 	}
 
