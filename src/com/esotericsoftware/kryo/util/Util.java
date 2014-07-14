@@ -94,7 +94,7 @@ public class Util {
 		}
                 try {
 		    return String.valueOf(object);
-                } catch(Exception e) {
+                } catch(Throwable e) {
                     return (TRACE ? className(type) : type.getSimpleName()) + "(Exception " + e + " in toString)";
                 }
 	}
