@@ -253,16 +253,16 @@ public class DefaultSerializers {
 	 * @author serverperformance */
 	static public class DateSerializer extends Serializer<Date> {
 		private Date create(Kryo kryo, Class<?> type, long time) throws KryoException {
-			if (type.equals(Date.class)) {
+			if (type==Date.class) {
 				return new Date(time);
 			}
-			if (type.equals(Timestamp.class)) {
+			if (type==Timestamp.class) {
 				return new Timestamp(time);
 			}
-			if (type.equals(java.sql.Date.class)) {
+			if (type==java.sql.Date.class) {
 				return new java.sql.Date(time);
 			}
-			if (type.equals(Time.class)) {
+			if (type==Time.class) {
 				return new Time(time);
 			}
 			// other cases, reflection
@@ -622,61 +622,76 @@ public class DefaultSerializers {
 	/** Serializer for {@link Locale} (immutables).
 	 * @author serverperformance */
 	static public class LocaleSerializer extends Serializer<Locale> {
+		// Missing constants in j.u.Locale for common locale
+		private static final Locale SPANISH = new Locale("es", "", "");
+		private static final Locale SPAIN = new Locale("es", "ES", "");
+		
 		{
 			setImmutable(true);
 		}
 		
 		protected Locale create(String language, String country, String variant) {
-			// Fast-paths for constants declared in java.util.Locale
-			if (isSameLocale(Locale.US, language, country, variant))
+			// Fast-path for default locale in this system (may not be in the Locale constants list)
+			Locale defaultLocale = Locale.getDefault();
+			if (isSameLocale(defaultLocale, language, country, variant))
+				return defaultLocale;
+			// Fast-paths for constants declared in java.util.Locale :
+			// 1. "US" locale (typical forced default in many applications)
+			if (defaultLocale!=Locale.US && isSameLocale(Locale.US, language, country, variant))
 				return Locale.US;
-			if (isSameLocale(Locale.UK, language, country, variant))
-				return Locale.UK;
+			// 2. Language-only constant locales
 			if (isSameLocale(Locale.ENGLISH, language, country, variant))
 				return Locale.ENGLISH;
-			if (isSameLocale(Locale.FRENCH, language, country, variant))
-				return Locale.FRENCH;
 			if (isSameLocale(Locale.GERMAN, language, country, variant))
 				return Locale.GERMAN;
+			if (isSameLocale(SPANISH, language, country, variant))
+				return SPANISH;
+			if (isSameLocale(Locale.FRENCH, language, country, variant))
+				return Locale.FRENCH;
 			if (isSameLocale(Locale.ITALIAN, language, country, variant))
 				return Locale.ITALIAN;
-			if (isSameLocale(Locale.FRANCE, language, country, variant))
-				return Locale.FRANCE;
+			if (isSameLocale(Locale.JAPANESE, language, country, variant))
+				return Locale.JAPANESE;
+			if (isSameLocale(Locale.KOREAN, language, country, variant))
+				return Locale.KOREAN;
+			if (isSameLocale(Locale.SIMPLIFIED_CHINESE, language, country, variant))
+				return Locale.SIMPLIFIED_CHINESE;
+			if (isSameLocale(Locale.CHINESE, language, country, variant))
+				return Locale.CHINESE;
+			if (isSameLocale(Locale.TRADITIONAL_CHINESE, language, country, variant))
+				return Locale.TRADITIONAL_CHINESE;
+			// 2. Language with Country constant locales
+			if (isSameLocale(Locale.UK, language, country, variant))
+				return Locale.UK;
 			if (isSameLocale(Locale.GERMANY, language, country, variant))
 				return Locale.GERMANY;
+			if (isSameLocale(SPAIN, language, country, variant))
+				return SPAIN;
+			if (isSameLocale(Locale.FRANCE, language, country, variant))
+				return Locale.FRANCE;
 			if (isSameLocale(Locale.ITALY, language, country, variant))
 				return Locale.ITALY;
 			if (isSameLocale(Locale.JAPAN, language, country, variant))
 				return Locale.JAPAN;
 			if (isSameLocale(Locale.KOREA, language, country, variant))
 				return Locale.KOREA;
-			if (isSameLocale(Locale.CHINA, language, country, variant))
-				return Locale.CHINA;
-			if (isSameLocale(Locale.PRC, language, country, variant))
-				return Locale.PRC;
-			if (isSameLocale(Locale.TAIWAN, language, country, variant))
-				return Locale.TAIWAN;
+			//if (isSameLocale(Locale.CHINA, language, country, variant)) // CHINA==SIMPLIFIED_CHINESE, see Locale.java
+			//	return Locale.CHINA;
+			//if (isSameLocale(Locale.PRC, language, country, variant)) // PRC==SIMPLIFIED_CHINESE, see Locale.java
+			//	return Locale.PRC;
+			//if (isSameLocale(Locale.TAIWAN, language, country, variant)) // TAIWAN==SIMPLIFIED_CHINESE, see Locale.java
+			//	return Locale.TAIWAN;
 			if (isSameLocale(Locale.CANADA, language, country, variant))
 				return Locale.CANADA;
 			if (isSameLocale(Locale.CANADA_FRENCH, language, country, variant))
 				return Locale.CANADA_FRENCH;
-			if (isSameLocale(Locale.JAPANESE, language, country, variant))
-				return Locale.JAPANESE;
-			if (isSameLocale(Locale.KOREAN, language, country, variant))
-				return Locale.KOREAN;
-			if (isSameLocale(Locale.CHINESE, language, country, variant))
-				return Locale.CHINESE;
-			if (isSameLocale(Locale.SIMPLIFIED_CHINESE, language, country, variant))
-				return Locale.SIMPLIFIED_CHINESE;
-			if (isSameLocale(Locale.TRADITIONAL_CHINESE, language, country, variant))
-				return Locale.TRADITIONAL_CHINESE;
 
 			return new Locale(language, country, variant);
 		}
 		
 		public void write(Kryo kryo, Output output, Locale l) {
-			output.writeString(l.getLanguage());
-			output.writeString(l.getCountry());
+			output.writeAscii(l.getLanguage());
+			output.writeAscii(l.getCountry());
 			output.writeString(l.getVariant());
 		}
 
@@ -687,14 +702,19 @@ public class DefaultSerializers {
 			return create(language, country, variant);
 		}
 
-		public Locale copy (Kryo kryo, Locale original) {
-			return create(original.getLanguage(), original.getDisplayCountry(), original.getVariant());
-		}
+		//Removed as Locale is declares as immutable
+		//public Locale copy (Kryo kryo, Locale original) {
+		//	return create(original.getLanguage(), original.getDisplayCountry(), original.getVariant());
+		//}
 
 		protected static boolean isSameLocale(Locale locale, String language, String country, String variant) {
-			if (locale==null)
+			try {
+				return (locale.getLanguage().equals(language) && locale.getCountry().equals(country) && locale.getVariant().equals(variant));
+			}
+			catch (NullPointerException npe) {
+				// Shouldn't ever happen, no nulls
 				return false;
-			return (locale.getLanguage().equals(language) && locale.getCountry().equals(country) && locale.getVariant().equals(variant));
+			}
 		}
 	}
 }
