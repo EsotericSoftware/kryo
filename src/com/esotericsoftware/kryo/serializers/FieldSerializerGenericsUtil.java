@@ -52,7 +52,7 @@ final class FieldSerializerGenericsUtil {
 
 		if (typeParams != null && typeParams.length > 0) {
 			Generics genScope;
-			trace("kryo", "Class " + clazz.getName() + " has generic type parameters");
+			if (TRACE) trace("kryo", "Class " + clazz.getName() + " has generic type parameters");
 			int typeVarNum = 0;
 			Map<String, Class> typeVar2concreteClass;
 			typeVar2concreteClass = new HashMap<String, Class>();
