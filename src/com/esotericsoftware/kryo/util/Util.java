@@ -92,7 +92,11 @@ public class Util {
 				return TRACE ? className(type) : type.getSimpleName();
 		} catch (Exception ignored) {
 		}
-		return String.valueOf(object);
+                try {
+		    return String.valueOf(object);
+                } catch(Throwable e) {
+                    return (TRACE ? className(type) : type.getSimpleName()) + "(Exception " + e + " in toString)";
+                }
 	}
 
 	/** Returns the class formatted as a string. The format varies depending on the type. */
