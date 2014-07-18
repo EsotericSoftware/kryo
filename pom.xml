@@ -179,8 +179,47 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>clirr-maven-plugin</artifactId>
+				<version>2.6.1</version>
+				<executions>
+					<!-- Automatically run clirr:check on compile -->
+					<execution>
+						<id>check-on-compile</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+				<!-- See http://mojo.codehaus.org/clirr-maven-plugin/check-mojo.html -->
+				<configuration>
+					<logResults>true</logResults>
+					<minSeverity>warning</minSeverity>
+					<!-- Configure ignored differences: http://mojo.codehaus.org/clirr-maven-plugin/examples/ignored-differences.html -->
+					<ignored>
+						<!-- reflectasm classes are reported to be removed (as they're added by shade/bundle plugin during packaging) -->
+						<difference>
+							<className>com/esotericsoftware/reflectasm/**</className>
+							<differenceType>8001</differenceType>
+						</difference>
+					</ignored>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
+
+	<reporting>
+		<plugins>
+			<!-- Generate compatibility report with `mvn clirr:clirr` -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>clirr-maven-plugin</artifactId>
+				<version>2.6.1</version>
+			</plugin>
+		</plugins>
+	</reporting>
 
 	<profiles>
 		<profile>
