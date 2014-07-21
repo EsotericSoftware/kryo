@@ -35,6 +35,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [Interoperability](#interoperability)
 - [Stack size](#stack-size)
 - [Threading](#threading)
+- [Pooling Kryo instances](#pooling-kryo-instances)
 - [Logging](#logging)
 - [Integration with Maven](#integration-with-maven)
 - [Using Kryo without Maven](#using-kryo-without-maven)
@@ -530,6 +531,59 @@ The serializers Kryo provides use the call stack when serializing nested objects
 ## Threading
 
 **Kryo is not thread safe. Each thread should have its own Kryo, Input, and Output instances. Also, the byte[] Input uses may be modified and then returned to its original state during deserialization, so the same byte[] "should not be used concurrently in separate threads**.
+
+## Pooling Kryo instances
+
+Because the creation/initialization of `Kryo` instances is rather expensive, in a multithreaded scenario you should pool `Kryo` instances.
+A very simple solution is to bind `Kryo` instances to Threads using `ThreadLocal`, like this:
+
+```java
+// Setup ThreadLocal of Kryo instances
+private ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
+	protected Kryo initialValue() {
+		Kryo kryo = new Kryo();
+		// configure kryo instance, customize settings
+		return kryo;
+	};
+};
+
+// Somewhere else, use Kryo
+Kryo k = kryos.get();
+...
+```
+
+Alternatively you may want to use the `KryoPool` provided by kryo. The `KryoPool` keeps references to `Kryo` instances
+using `SoftReference`s, so that `Kryo` instances will be GC'ed when the JVM starts to run out of memory
+(of course you could use `ThreadLocal` with `SoftReference`s as well).
+
+Here's an example that shows how to use the `KryoPool`:
+
+```java
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.pool.KryoCallback;
+import com.esotericsoftware.kryo.pool.KryoFactory;
+import com.esotericsoftware.kryo.pool.KryoPool;
+
+KryoFactory factory = new KryoFactory() {
+  public Kryo create () {
+    Kryo kryo = new Kryo();
+    // configure kryo instance, customize settings
+    return kryo;
+  }
+};
+KryoPool pool = new KryoPool(factory);
+Kryo kryo = pool.borrow();
+// do s.th. with kryo here, and afterwards release it
+pool.release(kryo);
+
+// or use a callback to work with kryo - no need to borrow/release,
+// that's done by `run`.
+String value = pool.run(new KryoCallback() {
+  public String execute(Kryo kryo) {
+    return kryo.readObject(input, String.class);
+  }
+});
+```
 
 ## Logging
 
