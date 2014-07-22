@@ -6,11 +6,11 @@
 		<version>7</version>
 	</parent>
 	<groupId>com.esotericsoftware.kryo</groupId>
-	<artifactId>kryo</artifactId>
+	<artifactId>kryo-parent</artifactId>
 	<version>2.24.1-SNAPSHOT</version>
-	<packaging>bundle</packaging>
-	<name>Kryo</name>
-	<description>Fast, efficient Java serialization</description>
+	<packaging>pom</packaging>
+	<name>Kryo Parent</name>
+	<description>Fast, efficient Java serialization. This is the parent pom that assembles the main kryo and shaded kryo artifacts.</description>
 	<url>https://github.com/EsotericSoftware/kryo</url>
 
 	<licenses>
@@ -37,21 +37,31 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<versions.reflectasm>1.10.0</versions.reflectasm>
 	</properties>
+	
+	<modules>
+		<module>pom-main.xml</module>
+		<module>pom-shaded.xml</module>
+	</modules>
+	
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.esotericsoftware</groupId>
+				<artifactId>reflectasm</artifactId>
+				<version>${versions.reflectasm}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.esotericsoftware</groupId>
+				<artifactId>reflectasm</artifactId>
+				<classifier>shaded</classifier>
+				<version>${versions.reflectasm}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<dependencies>
-		<dependency>
-			<groupId>com.esotericsoftware.reflectasm</groupId>
-			<artifactId>reflectasm</artifactId>
-			<version>1.09</version>
-			<classifier>shaded</classifier>
-			<exclusions>
-				<exclusion>
-					<groupId>org.ow2.asm</groupId>
-					<artifactId>asm</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
 		<dependency>
 			<groupId>com.esotericsoftware</groupId>
 			<artifactId>minlog</artifactId>
@@ -115,111 +125,8 @@
 					</excludes>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<version>2.1</version>
-				<configuration>
-					<!-- remove all classes of dependencies that are not used by the project -->
-					<minimizeJar>true</minimizeJar>
-					<shadedArtifactAttached>false</shadedArtifactAttached>
-					<artifactSet>
-						<includes>
-							<include>com.esotericsoftware.reflectasm:reflectasm:shaded</include>
-						</includes>
-					</artifactSet>
-				</configuration>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.felix</groupId>
-				<artifactId>maven-bundle-plugin</artifactId>
-				<version>2.4.0</version>
-				<extensions>true</extensions>
-				<configuration>
-					<instructions>
-						<Import-Package><![CDATA[
-						COM.jrockit*;resolution:=optional,
-						COM.newmonics*;resolution:=optional,
-						jrockit*;resolution:=optional,
-						sun.reflect;resolution:=optional,
-						sun.misc;resolution:=optional,
-						sun.nio.ch;resolution:=optional,
-						*
-						]]>
-						</Import-Package>
-						<Export-Package>com.esotericsoftware.kryo*,com.esotericsoftware.reflectasm*</Export-Package>
-					</instructions>
-				</configuration>
-			</plugin>
-			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<version>2.4</version>
-				<configuration>
-					<descriptor>etc/assembly-all.xml</descriptor>
-				</configuration>
-				<!--
-					According to http://stackoverflow.com/questions/2244344/deploying-assembly-package-with-maven-release-plugin
-					this should add the assembly zip to the files uploaded during release:perform/deploy.
-				-->
-				<executions>
-					<execution>
-						<id>dist-assembly</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>clirr-maven-plugin</artifactId>
-				<version>2.6.1</version>
-				<executions>
-					<!-- Automatically run clirr:check on compile -->
-					<execution>
-						<id>check-on-compile</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
-				<!-- See http://mojo.codehaus.org/clirr-maven-plugin/check-mojo.html -->
-				<configuration>
-					<logResults>true</logResults>
-					<minSeverity>warning</minSeverity>
-					<!-- Configure ignored differences: http://mojo.codehaus.org/clirr-maven-plugin/examples/ignored-differences.html -->
-					<ignored>
-						<!-- reflectasm classes are reported to be removed (as they're added by shade/bundle plugin during packaging) -->
-						<difference>
-							<className>com/esotericsoftware/reflectasm/**</className>
-							<differenceType>8001</differenceType>
-						</difference>
-					</ignored>
-				</configuration>
-			</plugin>
 		</plugins>
 	</build>
-
-	<reporting>
-		<plugins>
-			<!-- Generate compatibility report with `mvn clirr:clirr` -->
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>clirr-maven-plugin</artifactId>
-				<version>2.6.1</version>
-			</plugin>
-		</plugins>
-	</reporting>
 
 	<profiles>
 		<profile>
