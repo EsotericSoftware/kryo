@@ -398,10 +398,10 @@ When ReflectASM or reflection cannot be used, Kryo can be configured to use an I
 
 Note that classes must be designed to be created in this way. If a class expects its constructor to be called, it may be in an uninitialized state when created through this mechanism.
 
-In many situations, you may want to have a strategy, where Kryo first tries to find and use a no-arg constructor and if it fails to do so, it should try to use `StdInstantiatorStrategy` as a fallback, because this one does not invoke any constructor at all. This can be expressed e.g. like this:
+In many situations, you may want to have a strategy, where Kryo first tries to find and use a no-arg constructor and if it fails to do so, it should try to use `StdInstantiatorStrategy` as a fallback, because this one does not invoke any constructor at all. This is actually the default configuration and could be expressed like this:
 
 ```java
-((Kryo.DefaultInstantiatorStrategy) kryo.getInstantiatorStrategy()).setFallbackInstantiatorStrategy(new StdInstantiatorStrategy());
+kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 ```
 
 Objenesis can also create new objects using Java's built-in serialization mechanism. Using this, the class must implement java.io.Serializable and the first zero argument constructor in a super class is invoked.

@@ -105,7 +105,7 @@ public class Kryo {
 	private final ClassResolver classResolver;
 	private int nextRegisterID;
 	private ClassLoader classLoader = getClass().getClassLoader();
-	private InstantiatorStrategy strategy = new DefaultInstantiatorStrategy();
+	private InstantiatorStrategy strategy = new DefaultInstantiatorStrategy(new StdInstantiatorStrategy());
 	private boolean registrationRequired;
 
 	private int depth, maxDepth = Integer.MAX_VALUE;
@@ -1203,6 +1203,13 @@ public class Kryo {
 
 	static public class DefaultInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
 		private InstantiatorStrategy fallbackStrategy;
+
+		public DefaultInstantiatorStrategy () {
+		}
+
+		public DefaultInstantiatorStrategy (InstantiatorStrategy fallbackStrategy) {
+			this.fallbackStrategy = fallbackStrategy;
+		}
 
 		public void setFallbackInstantiatorStrategy (final InstantiatorStrategy fallbackStrategy) {
 			this.fallbackStrategy = fallbackStrategy;
