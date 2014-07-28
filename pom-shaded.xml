@@ -54,7 +54,7 @@
 					<shadedArtifactAttached>false</shadedArtifactAttached>
 					<artifactSet>
 						<includes>
-							<include>com.esotericsoftware.reflectasm:reflectasm:shaded</include>
+							<include>com.esotericsoftware:reflectasm:shaded</include>
 						</includes>
 					</artifactSet>
 				</configuration>
