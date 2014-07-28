@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>com.esotericsoftware.kryo</groupId>
+		<groupId>com.esotericsoftware</groupId>
 		<artifactId>kryo-parent</artifactId>
 		<version>2.24.1-SNAPSHOT</version>
 		<relativePath>./pom.xml</relativePath>
@@ -77,6 +77,8 @@
 				</executions>
 				<!-- See http://mojo.codehaus.org/clirr-maven-plugin/check-mojo.html -->
 				<configuration>
+					<!-- Only for this release: Temporarily disable because otherwise it compares with 1.04 -->
+					<skip>true</skip>
 					<logResults>true</logResults>
 					<minSeverity>warning</minSeverity>
 					<!-- Configure ignored differences: http://mojo.codehaus.org/clirr-maven-plugin/examples/ignored-differences.html -->

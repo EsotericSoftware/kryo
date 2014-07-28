@@ -5,7 +5,7 @@
 		<artifactId>oss-parent</artifactId>
 		<version>7</version>
 	</parent>
-	<groupId>com.esotericsoftware.kryo</groupId>
+	<groupId>com.esotericsoftware</groupId>
 	<artifactId>kryo-parent</artifactId>
 	<version>2.24.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
