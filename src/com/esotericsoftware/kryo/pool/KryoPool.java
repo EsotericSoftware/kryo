@@ -8,16 +8,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import com.esotericsoftware.kryo.Kryo;
 
 /**
- * A simple, queue based pool for {@link Kryo} instances. Kryo instances
- * are cached using {@link SoftReference}s and therefore should not cause
- * OOMEs.
+ * A simple pool interface for {@link Kryo} instances. Use the {@link KryoPool.Builder} to
+ * construct a pool instance.
  * 
  * Usage:
  * <pre>
  * import com.esotericsoftware.kryo.Kryo;
- * import com.esotericsoftware.kryo.pool.KryoCallback;
- * import com.esotericsoftware.kryo.pool.KryoFactory;
- * import com.esotericsoftware.kryo.pool.KryoPool;
+ * import com.esotericsoftware.kryo.pool.*;
  * 
  * KryoFactory factory = new KryoFactory() {
  *   public Kryo create () {
@@ -26,7 +23,8 @@ import com.esotericsoftware.kryo.Kryo;
  *     return kryo;
  *   }
  * };
- * KryoPool pool = new KryoPool(factory);
+ * // Simple pool, you might also activate SoftReferences to fight OOMEs.
+ * KryoPool pool = new KryoPool.Builder(factory).build();
  * Kryo kryo = pool.borrow();
  * // do s.th. with kryo here, and afterwards release it
  * pool.release(kryo);
@@ -42,45 +40,74 @@ import com.esotericsoftware.kryo.Kryo;
  * 
  * @author Martin Grotzke
  */
-public class KryoPool {
-	
-	private final Queue<SoftReference<Kryo>> queue;
-	private final KryoFactory factory;
+public interface KryoPool {
 
-	public KryoPool(KryoFactory factory) {
-		this(factory, new ConcurrentLinkedQueue<SoftReference<Kryo>>());
-	}
+	/**
+	 * Takes a {@link Kryo} instance from the pool or creates a new one
+	 * (using the factory) if the pool is empty.
+	 */
+	Kryo borrow ();
 
-	public KryoPool(KryoFactory factory, Queue<SoftReference<Kryo>> queue) {
-		this.factory = factory;
-		this.queue = queue;
-	}
+	/**
+	 * Returns the given {@link Kryo} instance to the pool.
+	 */
+	void release (Kryo kryo);
 
-	public int size () {
-		return queue.size();
-	}
+	/**
+	 * Runs the provided {@link KryoCallback} with a {@link Kryo} instance
+	 * from the pool (borrow/release around {@link KryoCallback#execute(Kryo)}).
+	 */
+	<T> T run(KryoCallback<T> callback);
 
-	public Kryo borrow () {
-		Kryo res;
-		SoftReference<Kryo> ref;
-		while((ref = queue.poll()) != null) {
-			if((res = ref.get()) != null) {
-				return res;
+	/**
+	 * Builder for a {@link KryoPool} instance, constructs a {@link KryoPoolQueueImpl} instance.
+	 */
+	public static class Builder {
+
+		private final KryoFactory factory;
+		private Queue<Kryo> queue = new ConcurrentLinkedQueue<Kryo>();
+		private boolean softReferences;
+
+		public Builder(KryoFactory factory) {
+			if(factory == null) {
+				throw new IllegalArgumentException("factory must not be null");
 			}
+			this.factory = factory;
 		}
-		return factory.create();
-	}
 
-	public void release (Kryo kryo) {
-		queue.offer(new SoftReference(kryo));
-	}
+		/**
+		 * Use the given queue for pooling kryo instances (by default a {@link ConcurrentLinkedQueue}
+		 * is used).
+		 */
+		public Builder queue(Queue<Kryo> queue) {
+			if(queue == null) {
+				throw new IllegalArgumentException("queue must not be null");
+			}
+			this.queue = queue;
+			return this;
+		}
 
-	public <T> T run(KryoCallback<T> callback) {
-		Kryo kryo = borrow();
-		try {
-			return callback.execute(kryo);
-		} finally {
-			release(kryo);
+		/**
+		 * Use {@link SoftReference}s for pooled {@link Kryo} instances, so that
+		 * instances may be garbage collected when there's memory demand (by default
+		 * disabled).
+		 */
+		public Builder softReferences() {
+			softReferences = true;
+			return this;
+		}
+
+		/**
+		 * Build the pool.
+		 */
+		public KryoPool build() {
+			Queue<Kryo> q = softReferences ? new SoftReferenceQueue(queue) : queue;
+			return new KryoPoolQueueImpl(factory, q);
+		}
+
+		@Override
+		public String toString () {
+			return getClass().getName() + "[queue.class=" + queue.getClass() + ", softReferences=" + softReferences + "]";
 		}
 	}
 
