@@ -1,28 +1,12 @@
 package com.esotericsoftware.kryo.pool;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import com.esotericsoftware.kryo.FieldSerializerTest.DefaultTypes;
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoSerializable;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 
 public class KryoPoolBenchmarkTest {
 
@@ -35,23 +19,17 @@ public class KryoPoolBenchmarkTest {
 // private static final int ITER_CNT = 200000;
 	private static final int ITER_CNT = 10000;
 	private static final int SLEEP_BETWEEN_RUNS = 100;
-	
-	KryoFactory factory;
-	KryoPool pool;
-	
-	@Before
-	public void beforeMethod() {
-		factory = new KryoFactory() {
-			@Override
-			public Kryo create () {
-				Kryo kryo = new Kryo();
-				kryo.register(DefaultTypes.class);
-				kryo.register(SampleObject.class);
-				return kryo;
-			}
-		};
-		pool = new KryoPool(factory);
-	}
+
+	// not private to prevent the synthetic accessor method
+	static KryoFactory factory = new KryoFactory() {
+		@Override
+		public Kryo create () {
+			Kryo kryo = new Kryo();
+			kryo.register(DefaultTypes.class);
+			kryo.register(SampleObject.class);
+			return kryo;
+		}
+	};
 
 	@Test
 	public void testWithoutPool() throws Exception {
@@ -62,9 +40,18 @@ public class KryoPoolBenchmarkTest {
 
 	@Test
 	public void testWithPool() throws Exception {
+		KryoPool.Builder builder = new KryoPool.Builder(factory);
 		// Warm-up phase: Perform 100000 iterations
-		runWithPool(1, WARMUP_ITERATIONS, false);
-		runWithPool(RUN_CNT, ITER_CNT, true);
+		runWithPool(builder, 1, WARMUP_ITERATIONS, false);
+		runWithPool(builder, RUN_CNT, ITER_CNT, true);
+	}
+
+	@Test
+	public void testWithPoolWithSoftReferences() throws Exception {
+		KryoPool.Builder builder = new KryoPool.Builder(factory).softReferences();
+		// Warm-up phase: Perform 100000 iterations
+		runWithPool(builder, 1, WARMUP_ITERATIONS, false);
+		runWithPool(builder, RUN_CNT, ITER_CNT, true);
 	}
 
 	private void run (String description, Runnable runnable, final int runCount, final int iterCount, boolean outputResults) throws Exception {
@@ -105,8 +92,9 @@ public class KryoPoolBenchmarkTest {
 		}, runCount, iterCount, outputResults);
 	}
 
-	private void runWithPool (final int runCount, final int iterCount, boolean outputResults) throws Exception {
-		run("With pool", new Runnable() {
+	private void runWithPool (final KryoPool.Builder builder, final int runCount, final int iterCount, boolean outputResults) throws Exception {
+		final KryoPool pool = builder.build();
+		run("With pool " + builder.toString(), new Runnable() {
 			@Override
 			public void run () {
 				Kryo kryo = pool.borrow();

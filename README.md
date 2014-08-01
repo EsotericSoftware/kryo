@@ -552,17 +552,15 @@ Kryo k = kryos.get();
 ...
 ```
 
-Alternatively you may want to use the `KryoPool` provided by kryo. The `KryoPool` keeps references to `Kryo` instances
-using `SoftReference`s, so that `Kryo` instances will be GC'ed when the JVM starts to run out of memory
+Alternatively you may want to use the `KryoPool` provided by kryo. The `KryoPool` allows to keep references to `Kryo` instances
+using `SoftReference`s, so that `Kryo` instances can be GC'ed when the JVM starts to run out of memory
 (of course you could use `ThreadLocal` with `SoftReference`s as well).
 
 Here's an example that shows how to use the `KryoPool`:
 
 ```java
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.pool.KryoCallback;
-import com.esotericsoftware.kryo.pool.KryoFactory;
-import com.esotericsoftware.kryo.pool.KryoPool;
+import com.esotericsoftware.kryo.pool.*;
 
 KryoFactory factory = new KryoFactory() {
   public Kryo create () {
@@ -571,7 +569,8 @@ KryoFactory factory = new KryoFactory() {
     return kryo;
   }
 };
-KryoPool pool = new KryoPool(factory);
+// Build pool with SoftReferences enabled (optional)
+KryoPool pool = new KryoPool.Builder(factory).softReferences().build();
 Kryo kryo = pool.borrow();
 // do s.th. with kryo here, and afterwards release it
 pool.release(kryo);
