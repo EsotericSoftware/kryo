@@ -384,7 +384,7 @@ By default, each appearance of an object in the graph after the first is stored 
     // ...
 ```
 
-When writing serializers that use Kryo for nested objects, `kryo.reference()` must be called in `read()`. See [Serializers](#Serializers) for more information.
+When writing serializers that use Kryo for nested objects, `kryo.reference()` must be called in `read()`. See [Serializers](#serializers) for more information.
 
 ## Object creation
 
