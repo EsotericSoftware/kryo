@@ -3,7 +3,6 @@ package com.esotericsoftware.kryo;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -11,6 +10,7 @@ import com.esotericsoftware.kryo.MapSerializerTest.KeyComparator;
 import com.esotericsoftware.kryo.MapSerializerTest.KeyThatIsntComparable;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
+import java.util.Comparator;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class CollectionSerializerTest extends KryoTestCase {
@@ -54,6 +54,21 @@ public class CollectionSerializerTest extends KryoTestCase {
 		set.add(new KeyThatIsntComparable("1"));
 		set.add(new KeyThatIsntComparable("2"));
 		roundTrip(9, 9, set);
+		
+		kryo.register(TreeSetSubclass.class);
+		set = new TreeSetSubclass<Integer>();
+		set.add(12);
+		set.add(63);
+		set.add(34);
+		set.add(45);
+		roundTrip(11, 23, set);
 	}
 
+	static public class TreeSetSubclass<E> extends TreeSet<E> {
+		public TreeSetSubclass() {
+		}
+		public TreeSetSubclass(Comparator<? super E> comparator) {
+			super(comparator);
+		}
+	}
 }

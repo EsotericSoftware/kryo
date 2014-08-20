@@ -159,12 +159,24 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 	public void testBigDecimalSerializer () {
 		kryo.register(BigDecimal.class);
+		kryo.register(BigDecimalSubclass.class);
 		roundTrip(5, 8, BigDecimal.valueOf(12345, 2));
+		roundTrip(7, 10, new BigDecimal("12345.12345"));
+		roundTrip(4, 7, BigDecimal.ZERO);
+		roundTrip(4, 7, BigDecimal.ONE);
+		roundTrip(4, 7, BigDecimal.TEN);
+		roundTrip(5, 8, new BigDecimalSubclass(new BigInteger("12345"), 2));
+		roundTrip(7, 10, new BigDecimalSubclass("12345.12345"));
 	}
 
 	public void testBigIntegerSerializer () {
 		kryo.register(BigInteger.class);
+		kryo.register(BigIntegerSubclass.class);
 		roundTrip(8, 8, BigInteger.valueOf(1270507903945L));
+		roundTrip(3, 3, BigInteger.ZERO);
+		roundTrip(3, 3, BigInteger.ONE);
+		roundTrip(3, 3, BigInteger.TEN);
+		roundTrip(8, 8, new BigIntegerSubclass("1270507903945"));
 	}
 
 	public void testEnumSerializer () {
@@ -291,4 +303,23 @@ public class DefaultSerializersTest extends KryoTestCase {
 		c {
 		}
 	}
+	
+	static class BigDecimalSubclass extends BigDecimal {
+		public BigDecimalSubclass(BigInteger unscaledVal, int scale) {
+			super(unscaledVal, scale);
+		}
+		public BigDecimalSubclass(String val) {
+			super(val);
+		}
+	}
+	
+	static class BigIntegerSubclass extends BigInteger {
+		public BigIntegerSubclass(byte[] val) {
+			super(val);
+		}
+		public BigIntegerSubclass(String val) {
+			super(val);
+		}
+	}
+	
 }
