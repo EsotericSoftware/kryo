@@ -12,9 +12,6 @@ import java.util.TimeZone;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import java.util.Comparator;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest extends KryoTestCase {
