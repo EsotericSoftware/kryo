@@ -178,6 +178,8 @@ public class DefaultSerializers {
 		}
 	}
 
+	/** Serializer for {@link BigInteger} and any subclass.
+	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
 	static public class BigIntegerSerializer extends Serializer<BigInteger> {
 		{
 			setImmutable(true);
@@ -190,19 +192,63 @@ public class DefaultSerializers {
 				return;
 			}
 			BigInteger value = (BigInteger)object;
-			byte[] bytes = value.toByteArray();
-			output.writeVarInt(bytes.length + 1, true);
-			output.writeBytes(bytes);
+			// fast-path optimizations for BigInteger constants
+			if (value == BigInteger.ZERO) {
+				output.writeVarInt(2, true);
+				output.writeByte((byte)0);
+			}
+			else if (value == BigInteger.ONE) {
+				output.writeVarInt(2, true);
+				output.writeByte((byte)1);
+			}
+			else if (value == BigInteger.TEN) {
+				output.writeVarInt(2, true);
+				output.writeByte((byte)10);				
+			}
+			else {
+				// default behaviour
+				byte[] bytes = value.toByteArray();
+				output.writeVarInt(bytes.length + 1, true);
+				output.writeBytes(bytes);
+			}
 		}
 
 		public BigInteger read (Kryo kryo, Input input, Class<BigInteger> type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			byte[] bytes = input.readBytes(length - 1);
+			if (type != null && type != BigInteger.class) {
+				// For subclasses, use reflection
+				try {
+					Constructor<BigInteger> constructor = type.getConstructor(byte[].class);
+					if (!constructor.isAccessible()) {
+						try {
+							constructor.setAccessible(true);
+						}
+						catch (SecurityException se) {}
+					}
+					return constructor.newInstance(bytes);
+				} catch (Exception ex) {
+					throw new KryoException(ex);
+				}
+			}
+			if (length == 2) {
+				// fast-path optimizations for BigInteger constants
+				switch (bytes[0]) {
+				case 0:
+					return BigInteger.ZERO;
+				case 1:
+					return BigInteger.ONE;
+				case 10:
+					return BigInteger.TEN;
+				}
+			}
 			return new BigInteger(bytes);
 		}
 	}
 
+	/** Serializer for {@link BigDecimal} and any subclass.
+	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
 	static public class BigDecimalSerializer extends Serializer<BigDecimal> {
 		private BigIntegerSerializer bigIntegerSerializer = new BigIntegerSerializer();
 
@@ -217,14 +263,56 @@ public class DefaultSerializers {
 				return;
 			}
 			BigDecimal value = (BigDecimal)object;
-			bigIntegerSerializer.write(kryo, output, value.unscaledValue());
-			output.writeInt(value.scale(), false);
+			// fast-path optimizations for BigDecimal constants
+			if (value == BigDecimal.ZERO) {
+				bigIntegerSerializer.write(kryo, output, BigInteger.ZERO);
+				output.writeInt(0, false); // for backwards compatibility
+			}
+			else if (value == BigDecimal.ONE) {
+				bigIntegerSerializer.write(kryo, output, BigInteger.ONE);
+				output.writeInt(0, false); // for backwards compatibility
+			}
+			else if (value == BigDecimal.TEN) {
+				bigIntegerSerializer.write(kryo, output, BigInteger.TEN);
+				output.writeInt(0, false); // for backwards compatibility
+			}
+			else {
+				// default behaviour
+				bigIntegerSerializer.write(kryo, output, value.unscaledValue());
+				output.writeInt(value.scale(), false);
+			}
 		}
 
 		public BigDecimal read (Kryo kryo, Input input, Class<BigDecimal> type) {
 			BigInteger unscaledValue = bigIntegerSerializer.read(kryo, input, null);
 			if (unscaledValue == null) return null;
 			int scale = input.readInt(false);
+			if (type != BigDecimal.class) {
+				// For subclasses, use reflection
+				try {
+					Constructor<BigDecimal> constructor = type.getConstructor(BigInteger.class, int.class);
+					if (!constructor.isAccessible()) {
+						try {
+							constructor.setAccessible(true);
+						}
+						catch (SecurityException se) {}
+					}
+					return constructor.newInstance(unscaledValue, scale);
+				} catch (Exception ex) {
+					throw new KryoException(ex);
+				}
+			}
+			// fast-path optimizations for BigDecimal constants
+			if (unscaledValue == BigInteger.ZERO && scale == 0) {
+				return BigDecimal.ZERO;
+			}
+			if (unscaledValue == BigInteger.ONE && scale == 0) {
+				return BigDecimal.ONE;
+			}
+			if (unscaledValue == BigInteger.TEN && scale == 0) {
+				return BigDecimal.TEN;
+			}
+			// default behaviour
 			return new BigDecimal(unscaledValue, scale);
 		}
 	}
@@ -586,6 +674,8 @@ public class DefaultSerializers {
 		}
 	}
 
+	/** Serializer for {@link TreeMap} and any subclass.
+	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
 	static public class TreeMapSerializer extends MapSerializer {
 		public void write (Kryo kryo, Output output, Map map) {
 			TreeMap treeMap = (TreeMap)map;
@@ -594,14 +684,35 @@ public class DefaultSerializers {
 		}
 
 		protected Map create (Kryo kryo, Input input, Class<Map> type) {
-			return new TreeMap((Comparator)kryo.readClassAndObject(input));
+			return createTreeMap(type, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected Map createCopy (Kryo kryo, Map original) {
-			return new TreeMap(((TreeMap)original).comparator());
+			return createTreeMap(original.getClass(), ((TreeMap)original).comparator());
+		}
+		
+		private TreeMap createTreeMap(Class<? extends Map> type, Comparator comparator) {
+			if (type != null && type != TreeMap.class) {
+				// For subclasses, use reflection
+				try {
+					Constructor constructor = type.getConstructor(Comparator.class);
+					if (!constructor.isAccessible()) {
+						try {
+							constructor.setAccessible(true);
+						}
+						catch (SecurityException se) {}
+					}
+					return (TreeMap)constructor.newInstance(comparator);
+				} catch (Exception ex) {
+					throw new KryoException(ex);
+				}
+			}
+			return new TreeMap(comparator);
 		}
 	}
 
+	/** Serializer for {@link TreeMap} and any subclass.
+	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
 	static public class TreeSetSerializer extends CollectionSerializer {
 		public void write (Kryo kryo, Output output, Collection collection) {
 			TreeSet treeSet = (TreeSet)collection;
@@ -610,11 +721,30 @@ public class DefaultSerializers {
 		}
 
 		protected TreeSet create (Kryo kryo, Input input, Class<Collection> type) {
-			return new TreeSet((Comparator)kryo.readClassAndObject(input));
+			return createTreeSet(type, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected TreeSet createCopy (Kryo kryo, Collection original) {
-			return new TreeSet(((TreeSet)original).comparator());
+			return createTreeSet(original.getClass(), ((TreeSet)original).comparator());
+		}
+		
+		private TreeSet createTreeSet(Class<? extends Collection> type, Comparator comparator) {
+			if (type != null && type != TreeSet.class) {
+				// For subclasses, use reflection
+				try {
+					Constructor constructor = type.getConstructor(Comparator.class);
+					if (!constructor.isAccessible()) {
+						try {
+							constructor.setAccessible(true);
+						}
+						catch (SecurityException se) {}
+					}
+					return (TreeSet)constructor.newInstance(comparator);
+				} catch (Exception ex) {
+					throw new KryoException(ex);
+				}
+			}
+			return new TreeSet(comparator);
 		}
 	}
 
