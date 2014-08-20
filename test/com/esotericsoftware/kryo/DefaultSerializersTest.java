@@ -182,40 +182,6 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(8, 8, new BigIntegerSubclass("1270507903945"));
 	}
 
-	public void testTreeMapSerializer () {
-		kryo.register(TreeMap.class);
-		kryo.register(TreeMapSubclass.class);
-		TreeMap<String, Integer> map = new TreeMap<String, Integer>();
-		map.put("1", 47);
-		map.put("2", 34);
-		map.put("3", 65);
-		map.put("4", 44);
-		roundTrip(24, 38, map);
-		TreeMapSubclass<String, Integer> map2 = new TreeMapSubclass<String, Integer>();
-		map2.put("1", 47);
-		map2.put("2", 34);
-		map2.put("3", 65);
-		map2.put("4", 44);
-		roundTrip(24, 38, map2);
-	}
-
-	public void testTreeSetSerializer () {
-		kryo.register(TreeSet.class);
-		kryo.register(TreeSetSubclass.class);
-		TreeSet<Integer> tree = new TreeSet<Integer>();
-		tree.add(12);
-		tree.add(63);
-		tree.add(34);
-		tree.add(45);
-		roundTrip(11, 23, tree);
-		TreeSetSubclass<Integer> tree2 = new TreeSetSubclass<Integer>();
-		tree2.add(12);
-		tree2.add(63);
-		tree2.add(34);
-		tree2.add(45);
-		roundTrip(11, 23, tree2);
-	}
-
 	public void testEnumSerializer () {
 		kryo.register(TestEnum.class);
 		roundTrip(2, 2, TestEnum.a);
@@ -356,22 +322,6 @@ public class DefaultSerializersTest extends KryoTestCase {
 		}
 		public BigIntegerSubclass(String val) {
 			super(val);
-		}
-	}
-	
-	static class TreeMapSubclass<K,V> extends TreeMap<K,V> {
-		public TreeMapSubclass() {
-		}
-		public TreeMapSubclass(Comparator<? super K> comparator) {
-			super(comparator);
-		}
-	}
-	
-	static class TreeSetSubclass<E> extends TreeSet<E> {
-		public TreeSetSubclass() {
-		}
-		public TreeSetSubclass(Comparator<? super E> comparator) {
-			super(comparator);
 		}
 	}
 	
