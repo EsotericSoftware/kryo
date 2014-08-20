@@ -252,7 +252,7 @@ public class DefaultSerializers {
 	/** Serializer for {@link Date}, {@link java.sql.Date}, {@link Time}, {@link Timestamp} and any other subclass.
 	 * @author Tumi <serverperformance@gmail.com> */
 	static public class DateSerializer extends Serializer<Date> {
-		private Date create(Kryo kryo, Class<?> type, long time) throws KryoException {
+		private Date create(Kryo kryo, Class<? extends Date> type, long time) throws KryoException {
 			if (type==Date.class) {
 				return new Date(time);
 			}
@@ -269,15 +269,15 @@ public class DefaultSerializers {
 			try {
 				// Try to avoid invoking the no-args constructor
 				// (which is expected to initialize the instance with the current time)
-				Constructor constructor = type.getDeclaredConstructor(long.class);
+				Constructor<? extends Date> constructor = type.getDeclaredConstructor(long.class);
 				if (constructor!=null) {
 					if (!constructor.isAccessible()) {
 						try {
 							constructor.setAccessible(true);
 						}
-						catch (Throwable t) {}
+						catch (SecurityException t) {}
 					}
-					return (Date)constructor.newInstance(time);
+					return constructor.newInstance(time);
 				}
 				else {
 					Date d = (Date)kryo.newInstance(type); // default strategy
