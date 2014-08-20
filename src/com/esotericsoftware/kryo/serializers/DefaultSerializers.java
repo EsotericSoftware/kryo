@@ -269,23 +269,19 @@ public class DefaultSerializers {
 			try {
 				// Try to avoid invoking the no-args constructor
 				// (which is expected to initialize the instance with the current time)
-				Constructor<? extends Date> constructor = type.getDeclaredConstructor(long.class);
-				if (constructor!=null) {
-					if (!constructor.isAccessible()) {
-						try {
-							constructor.setAccessible(true);
-						}
-						catch (SecurityException se) {}
+				Constructor<? extends Date> constructor = type.getConstructor(long.class);
+				if (!constructor.isAccessible()) {
+					try {
+						constructor.setAccessible(true);
 					}
-					return constructor.newInstance(time);
+					catch (SecurityException se) {}
 				}
-				else {
-					Date d = (Date)kryo.newInstance(type); // default strategy
-					d.setTime(time);
-					return d;
-				}
+				return constructor.newInstance(time);
 			} catch (Exception ex) {
-				throw new KryoException(ex);
+				// default strategy
+				Date d = (Date)kryo.newInstance(type);
+				d.setTime(time);
+				return d;
 			}
 		}
 		
