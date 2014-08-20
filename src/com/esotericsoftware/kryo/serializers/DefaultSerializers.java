@@ -196,13 +196,12 @@ public class DefaultSerializers {
 			if (value == BigInteger.ZERO) {
 				output.writeVarInt(2, true);
 				output.writeByte((byte)0);
+				return;
 			}
-			else {
-				// default behaviour
-				byte[] bytes = value.toByteArray();
-				output.writeVarInt(bytes.length + 1, true);
-				output.writeBytes(bytes);
-			}
+			// default behaviour
+			byte[] bytes = value.toByteArray();
+			output.writeVarInt(bytes.length + 1, true);
+			output.writeBytes(bytes);
 		}
 
 		public BigInteger read (Kryo kryo, Input input, Class<BigInteger> type) {
