@@ -253,16 +253,16 @@ public class DefaultSerializers {
 	 * @author Tumi <serverperformance@gmail.com> */
 	static public class DateSerializer extends Serializer<Date> {
 		private Date create(Kryo kryo, Class<? extends Date> type, long time) throws KryoException {
-			if (type==Date.class) {
+			if (type == null || type == Date.class) {
 				return new Date(time);
 			}
-			if (type==Timestamp.class) {
+			if (type == Timestamp.class) {
 				return new Timestamp(time);
 			}
-			if (type==java.sql.Date.class) {
+			if (type == java.sql.Date.class) {
 				return new java.sql.Date(time);
 			}
-			if (type==Time.class) {
+			if (type == Time.class) {
 				return new Time(time);
 			}
 			// other cases, reflection
