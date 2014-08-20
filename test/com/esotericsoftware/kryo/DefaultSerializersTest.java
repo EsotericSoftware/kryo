@@ -186,16 +186,16 @@ public class DefaultSerializersTest extends KryoTestCase {
 		kryo.register(TreeMap.class);
 		kryo.register(TreeMapSubclass.class);
 		TreeMap<String, Integer> map = new TreeMap<String, Integer>();
-        map.put("1", 47);
-        map.put("2", 34);
-        map.put("3", 65);
-        map.put("4", 44);
+		map.put("1", 47);
+		map.put("2", 34);
+		map.put("3", 65);
+		map.put("4", 44);
 		roundTrip(24, 38, map);
 		TreeMapSubclass<String, Integer> map2 = new TreeMapSubclass<String, Integer>();
-        map2.put("1", 47);
-        map2.put("2", 34);
-        map2.put("3", 65);
-        map2.put("4", 44);
+		map2.put("1", 47);
+		map2.put("2", 34);
+		map2.put("3", 65);
+		map2.put("4", 44);
 		roundTrip(24, 38, map2);
 	}
 
