@@ -208,7 +208,7 @@ public class DefaultSerializers {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			byte[] bytes = input.readBytes(length - 1);
-			if (type != null && type != BigInteger.class) {
+			if (type != BigInteger.class && type != null) {
 				// For subclasses, use reflection
 				try {
 					Constructor<BigInteger> constructor = type.getConstructor(byte[].class);
@@ -266,10 +266,10 @@ public class DefaultSerializers {
 		}
 
 		public BigDecimal read (Kryo kryo, Input input, Class<BigDecimal> type) {
-			BigInteger unscaledValue = bigIntegerSerializer.read(kryo, input, null);
+			BigInteger unscaledValue = bigIntegerSerializer.read(kryo, input, BigInteger.class);
 			if (unscaledValue == null) return null;
 			int scale = input.readInt(false);
-			if (type != BigDecimal.class) {
+			if (type != BigDecimal.class && type != null) {
 				// For subclasses, use reflection
 				try {
 					Constructor<BigDecimal> constructor = type.getConstructor(BigInteger.class, int.class);
@@ -668,7 +668,7 @@ public class DefaultSerializers {
 		}
 		
 		private TreeMap createTreeMap(Class<? extends Map> type, Comparator comparator) {
-			if (type != null && type != TreeMap.class) {
+			if (type != TreeMap.class && type != null) {
 				// For subclasses, use reflection
 				try {
 					Constructor constructor = type.getConstructor(Comparator.class);
@@ -705,7 +705,7 @@ public class DefaultSerializers {
 		}
 		
 		private TreeSet createTreeSet(Class<? extends Collection> type, Comparator comparator) {
-			if (type != null && type != TreeSet.class) {
+			if (type != TreeSet.class && type != null) {
 				// For subclasses, use reflection
 				try {
 					Constructor constructor = type.getConstructor(Comparator.class);
