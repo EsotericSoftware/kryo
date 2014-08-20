@@ -192,18 +192,10 @@ public class DefaultSerializers {
 				return;
 			}
 			BigInteger value = (BigInteger)object;
-			// fast-path optimizations for BigInteger constants
+			// fast-path optimizations for BigInteger.ZERO constant
 			if (value == BigInteger.ZERO) {
 				output.writeVarInt(2, true);
 				output.writeByte((byte)0);
-			}
-			else if (value == BigInteger.ONE) {
-				output.writeVarInt(2, true);
-				output.writeByte((byte)1);
-			}
-			else if (value == BigInteger.TEN) {
-				output.writeVarInt(2, true);
-				output.writeByte((byte)10);				
 			}
 			else {
 				// default behaviour
@@ -267,20 +259,11 @@ public class DefaultSerializers {
 			if (value == BigDecimal.ZERO) {
 				bigIntegerSerializer.write(kryo, output, BigInteger.ZERO);
 				output.writeInt(0, false); // for backwards compatibility
+				return;
 			}
-			else if (value == BigDecimal.ONE) {
-				bigIntegerSerializer.write(kryo, output, BigInteger.ONE);
-				output.writeInt(0, false); // for backwards compatibility
-			}
-			else if (value == BigDecimal.TEN) {
-				bigIntegerSerializer.write(kryo, output, BigInteger.TEN);
-				output.writeInt(0, false); // for backwards compatibility
-			}
-			else {
-				// default behaviour
-				bigIntegerSerializer.write(kryo, output, value.unscaledValue());
-				output.writeInt(value.scale(), false);
-			}
+			// default behaviour
+			bigIntegerSerializer.write(kryo, output, value.unscaledValue());
+			output.writeInt(value.scale(), false);
 		}
 
 		public BigDecimal read (Kryo kryo, Input input, Class<BigDecimal> type) {
@@ -305,12 +288,6 @@ public class DefaultSerializers {
 			// fast-path optimizations for BigDecimal constants
 			if (unscaledValue == BigInteger.ZERO && scale == 0) {
 				return BigDecimal.ZERO;
-			}
-			if (unscaledValue == BigInteger.ONE && scale == 0) {
-				return BigDecimal.ONE;
-			}
-			if (unscaledValue == BigInteger.TEN && scale == 0) {
-				return BigDecimal.TEN;
 			}
 			// default behaviour
 			return new BigDecimal(unscaledValue, scale);
