@@ -141,7 +141,6 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 	final public void writeDouble (double value) throws KryoException {
 		require(8);
 		unsafe().putDouble(bufaddress + position, value);
-		double check = unsafe().getDouble(bufaddress + position);
 		position += 8;
 	}
 
