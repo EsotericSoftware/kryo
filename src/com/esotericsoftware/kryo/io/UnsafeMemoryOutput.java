@@ -21,7 +21,7 @@ import com.esotericsoftware.kryo.util.Util;
  * Important notes:<br/>
  * <li>This class increases performance, but may result in bigger size of serialized representation.</li>
  * <li>Bulk operations, e.g. on arrays of primitive types, are always using native byte order.</li>
- * <li>Fixed-size int, long, short, float and double elements are always written using native byte order.</li>
+ * <li>Fixed-size char, int, long, short, float and double elements are always written using native byte order.</li>
  * <li>Best performance is achieved if no variable length encoding for integers is used.</li>
  * <li>Output serialized using this class should always be deserilized using @link{UnsafeMemoryInput}</li>
  * 
@@ -132,15 +132,15 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 
 	/** Writes a 2 byte char. */
 	final public void writeChar (char value) throws KryoException {
-		super.niobuffer.position(position);
-		super.writeChar(value);
+		require(2);
+		unsafe().putChar(bufaddress + position, value);
+		position += 2;
 	}
 
 	/** Writes an 8 byte double. */
 	final public void writeDouble (double value) throws KryoException {
 		require(8);
 		unsafe().putDouble(bufaddress + position, value);
-		double check = unsafe().getDouble(bufaddress + position);
 		position += 8;
 	}
 

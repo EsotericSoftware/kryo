@@ -16,7 +16,7 @@ import static com.esotericsoftware.kryo.util.UnsafeUtil.*;
  * <p>
  * Important notes:<br/>
  * <li>Bulk operations, e.g. on arrays of primitive types, are always using native byte order.</li>
- * <li>Fixed-size int, long, short, float and double elements are always read using native byte order.</li>
+ * <li>Fixed-size char, int, long, short, float and double elements are always read using native byte order.</li>
  * <li>Best performance is achieved if no variable length encoding for integers is used.</li>
  * <li>Serialized representation used as input for this class should always be produced using @link{UnsafeOutput}</li>
  * </p>
@@ -106,6 +106,16 @@ public final class UnsafeInput extends Input {
 		position += 8;
 		return result;
 	}
+	
+	// char
+	
+	public char readChar () throws KryoException {
+		require(2);
+		char result = unsafe().getChar(buffer, byteArrayBaseOffset + position);
+		position += 2;
+		return result;
+	}
+
 
 	public int readInt (boolean optimizePositive) throws KryoException {
 		if (!varIntsEnabled)
