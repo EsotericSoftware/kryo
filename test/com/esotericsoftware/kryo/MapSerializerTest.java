@@ -112,6 +112,14 @@ public class MapSerializerTest extends KryoTestCase {
 		key2.value = "1234";
 		map.put(key2, "4567");
 		roundTrip(21, 24, map);
+
+		kryo.register(TreeMapSubclass.class);
+		map = new TreeMapSubclass<String, Integer>();
+		map.put("1", 47);
+		map.put("2", 34);
+		map.put("3", 65);
+		map.put("4", 44);
+		roundTrip(24, 38, map);
 	}
 
 	public void testTreeMapWithReferences () {
@@ -132,6 +140,14 @@ public class MapSerializerTest extends KryoTestCase {
 		key2.value = "1234";
 		map.put(key2, "4567");
 		roundTrip(29, 32, map);
+
+		kryo.register(TreeMapSubclass.class);
+		map = new TreeMapSubclass<String, Integer>();
+		map.put("1", 47);
+		map.put("2", 34);
+		map.put("3", 65);
+		map.put("4", 44);
+		roundTrip(29, 43, map);
 	}
 	
 	static public class HasGenerics {
@@ -151,6 +167,14 @@ public class MapSerializerTest extends KryoTestCase {
 		}
 		public KeyThatIsntComparable (String value) {
 			this.value = value;
+		}
+	}
+
+	static public class TreeMapSubclass<K,V> extends TreeMap<K,V> {
+		public TreeMapSubclass() {
+		}
+		public TreeMapSubclass(Comparator<? super K> comparator) {
+			super(comparator);
 		}
 	}
 }
