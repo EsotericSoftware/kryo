@@ -29,7 +29,7 @@ public class DeflateSerializer extends Serializer {
 		OutputChunked outputChunked = new OutputChunked(output, 256);
 		DeflaterOutputStream deflaterStream = new DeflaterOutputStream(outputChunked, deflater);
 		Output deflaterOutput = new Output(deflaterStream, 256);
-		kryo.writeObject(deflaterOutput, object, serializer);
+		serializer.write(kryo, deflaterOutput, object);
 		deflaterOutput.flush();
 		try {
 			deflaterStream.finish();
@@ -42,7 +42,7 @@ public class DeflateSerializer extends Serializer {
 	public Object read (Kryo kryo, Input input, Class type) {
 		// The inflater would read from input beyond the compressed bytes if chunked enoding wasn't used.
 		InflaterInputStream inflaterStream = new InflaterInputStream(new InputChunked(input, 256), new Inflater(noHeaders));
-		return kryo.readObject(new Input(inflaterStream, 256), type, serializer);
+		return serializer.read(kryo, new Input(inflaterStream, 256), type);
 	}
 
 	public void setNoHeaders (boolean noHeaders) {
