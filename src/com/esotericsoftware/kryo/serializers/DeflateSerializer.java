@@ -25,24 +25,31 @@ public class DeflateSerializer extends Serializer {
 	}
 
 	public void write (Kryo kryo, Output output, Object object) {
-		Deflater deflater = new Deflater(compressionLevel, noHeaders);
 		OutputChunked outputChunked = new OutputChunked(output, 256);
-		DeflaterOutputStream deflaterStream = new DeflaterOutputStream(outputChunked, deflater);
-		Output deflaterOutput = new Output(deflaterStream, 256);
-		serializer.write(kryo, deflaterOutput, object);
-		deflaterOutput.flush();
+		Deflater deflater = new Deflater(compressionLevel, noHeaders);
 		try {
+			DeflaterOutputStream deflaterStream = new DeflaterOutputStream(outputChunked, deflater);
+			Output deflaterOutput = new Output(deflaterStream, 256);
+			serializer.write(kryo, deflaterOutput, object);
+			deflaterOutput.flush();
 			deflaterStream.finish();
 		} catch (IOException ex) {
 			throw new KryoException(ex);
+		} finally {
+			deflater.end();
 		}
 		outputChunked.endChunks();
 	}
 
 	public Object read (Kryo kryo, Input input, Class type) {
 		// The inflater would read from input beyond the compressed bytes if chunked enoding wasn't used.
-		InflaterInputStream inflaterStream = new InflaterInputStream(new InputChunked(input, 256), new Inflater(noHeaders));
-		return serializer.read(kryo, new Input(inflaterStream, 256), type);
+		Inflater inflater = new Inflater(noHeaders);
+		try {
+			InflaterInputStream inflaterStream = new InflaterInputStream(new InputChunked(input, 256), inflater);
+			return serializer.read(kryo, new Input(inflaterStream, 256), type);
+		} finally {
+			inflater.end();
+		}
 	}
 
 	public void setNoHeaders (boolean noHeaders) {
