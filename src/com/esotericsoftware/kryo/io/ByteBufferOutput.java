@@ -160,7 +160,6 @@ public class ByteBufferOutput extends Output {
 	/** Returns a new byte array containing the bytes currently in the buffer between zero and {@link #position()}. */
 	public byte[] toBytes () {
 		byte[] newBuffer = new byte[position];
-		niobuffer.position(position);
 		niobuffer.position(0);
 		niobuffer.get(newBuffer, 0, position);
 		return newBuffer;
@@ -195,8 +194,9 @@ public class ByteBufferOutput extends Output {
 				.allocateDirect(capacity);
 			// Copy the whole buffer
 			niobuffer.position(0);
+			niobuffer.limit(position);
 			newBuffer.put(niobuffer);
-			newBuffer.order(byteOrder);
+			newBuffer.order(niobuffer.order());
 			niobuffer = newBuffer;
 		}
 		return true;

@@ -785,6 +785,21 @@ public class InputOutputTest extends KryoTestCase {
 
 		input.readBytes(toRead);
 	}
+
+	public void testVerySmallBuffers() throws Exception {
+        	Output out1 = new Output(4, -1);
+        	Output out2 = new ByteBufferOutput(4, -1);
+
+        	for (int i = 0; i < 16; i++) {
+            		out1.writeVarInt(92, false);
+        	}
+
+        	for (int i = 0; i < 16; i++) {
+            		out2.writeVarInt(92, false);
+        	}
+        	
+        	assertEquals(out1.toBytes(), out2.toBytes());
+	}
 	
 	public void testZeroLengthOutputs() throws Exception {
 		Output output = new Output(0, 10000);
