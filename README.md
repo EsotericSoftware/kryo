@@ -12,7 +12,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 
 ## Contents
 
-- [New in release 2.24.0](#new-in-release-2240)
+- [New in release 3.0.0](#new-in-release-300)
 - [Installation](#installation)
  - [Integration with Maven](#integration-with-maven)
  - [Using Kryo without Maven](#using-kryo-without-maven)
@@ -63,6 +63,16 @@ To use the official release of Kryo, please use the following snippet in your po
     <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo</artifactId>
+        <version>3.0.0</version>
+    </dependency>
+```
+
+If you experience issues because you already have a different version of asm in your classpath, you can use the kryo-shaded jar which has its version of asm included, relocated in a different package:
+
+```xml
+    <dependency>
+        <groupId>com.esotericsoftware</groupId>
+        <artifactId>kryo-shaded</artifactId>
         <version>3.0.0</version>
     </dependency>
 ```
