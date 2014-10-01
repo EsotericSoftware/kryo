@@ -6,7 +6,7 @@ Kryo is a fast and efficient object graph serialization framework for Java. The 
 
 Kryo can also perform automatic deep and shallow copying/cloning. This is direct copying from object to object, not object->bytes->object.
 
-This documentation is for v2 of Kryo. See [V1Documentation](https://github.com/EsotericSoftware/kryo/wiki/Documentation-for-Kryo-version-1.x) for v1.x.
+This documentation is for v2+ of Kryo. See [V1Documentation](https://github.com/EsotericSoftware/kryo/wiki/Documentation-for-Kryo-version-1.x) for v1.x.
 
 If you are planning to use Kryo for network communication, the [KryoNet](https://github.com/EsotericSoftware/kryonet) project may prove useful.
 
@@ -14,6 +14,8 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 
 - [New in release 2.24.0](#new-in-release-2240)
 - [Installation](#installation)
+ - [Integration with Maven](#integration-with-maven)
+ - [Using Kryo without Maven](#using-kryo-without-maven)
 - [Quickstart](#quickstart)
 - [IO](#io)
 - [Unsafe-based IO](#unsafe-based-io)
@@ -37,17 +39,15 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [Threading](#threading)
 - [Pooling Kryo instances](#pooling-kryo-instances)
 - [Logging](#logging)
-- [Integration with Maven](#integration-with-maven)
-- [Using Kryo without Maven](#using-kryo-without-maven)
 - [Scala](#scala)
 - [Objective-C](#objective-c)
 - [Benchmarks](#benchmarks)
 - [Projects using Kryo](#projects-using-kryo)
 - [Contact / Mailing list](#contact--mailing-list)
 
-## New in release 2.24.0
+## New in release 3.0.0
 
-The 2.24.0 release fixes many reported issues and improves stability and performance. It also introduces a new feature: [annotations](#class-fields-annotations) that can be used to indicate which serializer should be used for a given field of a class.
+The 3.0.0 release fixes many reported issues and improves stability and performance. The maven groupId is changed from `com.esotericsoftware.kryo` to `com.esotericsoftware`. The Unsafe-based IO serialization format was changed and is incompatible with previous versions (therefore the new major version), the standard serialization format is still compatible.
 
 See [ChangeLog](https://github.com/EsotericSoftware/kryo/blob/master/CHANGES.md) for more details about this release.
 
@@ -61,9 +61,9 @@ To use the official release of Kryo, please use the following snippet in your po
 
 ```xml
     <dependency>
-        <groupId>com.esotericsoftware.kryo</groupId>
+        <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo</artifactId>
-        <version>2.24.0</version>
+        <version>3.0.0</version>
     </dependency>
 ```
 
@@ -77,15 +77,15 @@ If you want to test the latest snapshot of Kryo, please use the following snippe
     </repository>
     
     <dependency>
-       <groupId>com.esotericsoftware.kryo</groupId>
+       <groupId>com.esotericsoftware</groupId>
        <artifactId>kryo</artifactId>
-        <version>2.24.1-SNAPSHOT</version>
+        <version>3.0.1-SNAPSHOT</version>
     </dependency>
 ```
 
 ### Using Kryo without Maven
 
-If you use Kryo without Maven, be aware that Kryo jar file has a couple of external dependencies, whose JARs you need to add to your classpath as well. These dependencies are [MinLog logging library](http://code.google.com/p/minlog/) and [Objenesis library](https://code.google.com/p/objenesis/).
+If you use Kryo without Maven, be aware that Kryo jar file has a couple of external dependencies, whose JARs you need to add to your classpath as well. These dependencies are [MinLog logging library](https://github.com/EsotericSoftware/minlog/) and [Objenesis library](https://code.google.com/p/objenesis/).
 
 
 ## Quickstart

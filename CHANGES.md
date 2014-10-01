@@ -1,5 +1,44 @@
 # Changelog
 
+## 2.24.0 - 3.0.0 (2014-0-04)
+
+* Fixed [#248](https://github.com/EsotericSoftware/kryo/issues/248). There was a bug in the buffer resizing code. ([23830f6](https://github.com/EsotericSoftware/kryo/commit/23830f64cffd7ee7844fc582ef2b68023aeab908))
+* end() for deflater and inflater. ([a306471](https://github.com/EsotericSoftware/kryo/commit/a3064716bb47c64e55b0048a6f5dac15dd67aabe))
+* Fixed DeflateSerializer. ([86aecf1](https://github.com/EsotericSoftware/kryo/commit/86aecf10b522bb99e126e2c89cfab33ad00d03d0))
+* BigIntegerSerializer, BigDecimalSerializer, TreeMapSerializer and TreeSetSerializer optimizations and enhacements ([2d6204d](https://github.com/EsotericSoftware/kryo/commit/2d6204dc5a04c10689a413d5365a607bdd1edab9)):
+ * Proper handle of subclasses (Fix [#166](https://github.com/EsotericSoftware/kryo/issues/166))
+ * Small optimizations for common BigDecimal and BigInteger constants (Fix [#238](https://github.com/EsotericSoftware/kryo/issues/238))
+ * Unit test to avoid regression of PermGen leaks (ensure fix of [#170](https://github.com/EsotericSoftware/kryo/issues/170) contributed by [#173](https://github.com/EsotericSoftware/kryo/issues/173))
+* Remove unnecesary code ([8efb79c](https://github.com/EsotericSoftware/kryo/commit/8efb79c163b7ad539cb3099782e218b5bbe272f6))
+* Override writeChar and readChar methods to use unsafe: writeChar now performs about 125% faster and readChar 10% faster than overriden safe versions. ([45f510d](https://github.com/EsotericSoftware/kryo/commit/45f510de2dc07a65cf3807f28f6a9f9aa1749aca))
+* Small optimization ([19d88db](https://github.com/EsotericSoftware/kryo/commit/19d88db264a912fbc2ed33149a4398b91cc89202))
+* Fix a NPE ([004cc5c](https://github.com/EsotericSoftware/kryo/commit/004cc5cd2a6c2ecc2c839f34ab5ce4951ca32700))
+* DateSerializer and LocaleSerializer enhacements and tests ([ac4ebef](https://github.com/EsotericSoftware/kryo/commit/ac4ebef070f82a419263c97d18146c35d9e0cde7), [9e63c65](https://github.com/EsotericSoftware/kryo/commit/9e63c65c51937c1a6d95ec2f7a972112fa37ee5b), [2f403c7](https://github.com/EsotericSoftware/kryo/commit/2f403c7b26fa056cd1bd807d3c330d5731e61193), [213a767](https://github.com/EsotericSoftware/kryo/commit/213a767a87a0e067d38b25bdd3c2f33e0ca0d31e))
+* Change KryoPool to interface + Builder, make SoftReferences optional. ([38c6815](https://github.com/EsotericSoftware/kryo/commit/38c681594cb48876f88b83cda731752d4b387a1f))
+* Set StdInstantiatorStrategy as default fallback instantiator strategy. ([0a43a64](https://github.com/EsotericSoftware/kryo/commit/0a43a642f4fe77d7cf6d7ee22b44d4e2bac568e2))
+* Fix [#223](https://github.com/EsotericSoftware/kryo/issues/223). setTotal should take long as a parameter. ([ffe6931](https://github.com/EsotericSoftware/kryo/commit/ffe6931b559c1579f44936f13e73a9f71640a96b))
+* Bump version to 2.25.0-SNAPSHOT ([ca153ba](https://github.com/EsotericSoftware/kryo/commit/ca153ba7deca816f9b95405e6cf956da56f2e464))
+* Change groupId to com.esotericsoftware. ([d8e519a](https://github.com/EsotericSoftware/kryo/commit/d8e519a65dc16d06ec37e25dfc2cc11a7332ee2f))
+* Fix shaded pom to use the correct reflectasm groupId ([4259143](https://github.com/EsotericSoftware/kryo/commit/425914333db7271536dcb6f0f34c6bac8bf5f3e6))
+* Add simple, queue based kryo pool. ([05fed9c](https://github.com/EsotericSoftware/kryo/commit/05fed9cfe0a775afa38c49c34822c10193d7b67a))
+* Change default artifact *not* to shade reflectasm, use OSGi'ed reflectasm 1.3.0 ([e1e3b0b](https://github.com/EsotericSoftware/kryo/commit/e1e3b0b18684961bd0b97665a4e662ec64b8c1e5))
+* Update minlog to 1.3.0 which is now OSGi'ed ([de5d2a3](https://github.com/EsotericSoftware/kryo/commit/de5d2a3209c3122031f130e82f0267e7229ae731))
+* Add automated compatibility check (with previous version) ([f85d6c9](https://github.com/EsotericSoftware/kryo/commit/f85d6c98a371b4c25f1fcc5e753855e5371e279d))
+* Fixed [#227](https://github.com/EsotericSoftware/kryo/issues/227) ([96f7225](https://github.com/EsotericSoftware/kryo/commit/96f7225694322e27268dd698fefdffff5f4cfb6c))
+* Exception -> Throwable ([1f0ba1b](https://github.com/EsotericSoftware/kryo/commit/1f0ba1b94c83cf26fc6ce108641d32c2e3c171c3))
+* Recover from exceptions in Util.string() ([2d15fc2](https://github.com/EsotericSoftware/kryo/commit/2d15fc2652ee777ba153409be0b258b30fc8a6ff))
+* Properly handle removal of transient fields. Till now it was not possible to remove them. ([faca949](https://github.com/EsotericSoftware/kryo/commit/faca94981c41aa9bd92a8a7f81b073d6b85ba0c4))
+* Fixed [#218](https://github.com/EsotericSoftware/kryo/issues/218) ([3bac35c](https://github.com/EsotericSoftware/kryo/commit/3bac35c8f28216295b391372e89a6cbf61b943a0))
+* Add support for serialization of Java8 closures (see [#215](https://github.com/EsotericSoftware/kryo/issues/215)). ([0b733dd](https://github.com/EsotericSoftware/kryo/commit/0b733ddad02e51b08e85a28fd960790ff4e69e8e))
+
+### Compatibility
+
+* Serialization compatible
+ * Standard IO: Yes
+ * Unsafe-based IO: No
+* Binary compatible - TODO
+* Source compatible - TODO
+
 ## 2.23.0 - 2.24.0 (2014-05-04)
 
 * Fixed [[#213](https://github.com/EsotericSoftware/kryo/issues/213)](https://github.com/EsotericSoftware/kryo/issues/213). Now CompatibleFieldSerializer should work properly with classes having generic type parameters. ([1e9b23f](https://github.com/EsotericSoftware/kryo/commit/1e9b23fb05232e485cde476c130e1c02b245f830))
