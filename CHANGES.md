@@ -36,8 +36,8 @@
 * Serialization compatible
  * Standard IO: Yes
  * Unsafe-based IO: No
-* Binary compatible - TODO
-* Source compatible - TODO
+* Binary compatible - No ([Details](https://rawgithub.com/EsotericSoftware/kryo/master/compat_reports/kryo/2.24.0_to_3.0.0/compat_report.html))
+* Source compatible - No ([Details](https://rawgithub.com/EsotericSoftware/kryo/master/compat_reports/kryo/2.24.0_to_3.0.0/compat_report.html#Source))
 
 ## 2.23.0 - 2.24.0 (2014-05-04)
 
