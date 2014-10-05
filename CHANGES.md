@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.24.0 - 3.0.0 (2014-0-04)
+## 2.24.0 - 3.0.0 (2014-10-04)
 
 * Fixed [#248](https://github.com/EsotericSoftware/kryo/issues/248). There was a bug in the buffer resizing code. ([23830f6](https://github.com/EsotericSoftware/kryo/commit/23830f64cffd7ee7844fc582ef2b68023aeab908))
 * end() for deflater and inflater. ([a306471](https://github.com/EsotericSoftware/kryo/commit/a3064716bb47c64e55b0048a6f5dac15dd67aabe))
