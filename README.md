@@ -135,7 +135,7 @@ Kryo provides additional IO classes, which are based on the functionalities expo
 
 For the case you need to serialize to or deserialize from direct-memory ByteBuffers or even off-heap memory, there are two dedicated classes UnsafeMemoryInput and UnsafeMemoryOutput whose instances can be used for this purpose instead of the usual Input and Output classes.
 
-Using Unsafe-based IO may result in a quite significant performance boost (sometimes up-to an oder of magnitude), depending on your application. In particular, it helps a lot when serializing large primitive arrays as part of your object graphs.
+Using Unsafe-based IO may result in a quite significant performance boost (sometimes up-to an order of magnitude), depending on your application. In particular, it helps a lot when serializing large primitive arrays as part of your object graphs.
 
 ### ** DISCLAIMER ABOUT USING UNSAFE-BASED IO **
 
