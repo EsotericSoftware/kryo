@@ -1,6 +1,5 @@
 package com.esotericsoftware.kryo.pool;
 
-import java.lang.ref.SoftReference;
 import java.util.Queue;
 
 import com.esotericsoftware.kryo.Kryo;
