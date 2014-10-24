@@ -74,7 +74,8 @@ public class ReferenceTest extends KryoTestCase {
 			// This is JDK > = 1.7
 			kryo.register(subList.getClass(), new ArraySubListSerializer());			
 		} else {
-			kryo.register(subList.getClass(), new SubListSerializer());		    
+			kryo.register(subList.getClass(), new SubListSerializer());
+		    
 		}
 		roundTrip(26, 26,  subList);
 	}
