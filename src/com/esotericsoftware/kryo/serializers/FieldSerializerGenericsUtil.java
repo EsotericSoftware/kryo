@@ -43,9 +43,15 @@ final class FieldSerializerGenericsUtil {
 		TypeVariable[] typeParams = null;
 
 		while (typ != null) {
-			typeParams = typ.getTypeParameters();
+			if (typ == this.serializer.type)
+				typeParams = this.serializer.typeParameters;
+			else
+				typeParams = typ.getTypeParameters();
 			if (typeParams == null || typeParams.length == 0) {
-				typ = typ.getComponentType();
+				if (typ == this.serializer.type)
+					typ = this.serializer.componentType;
+				else
+					typ = typ.getComponentType();
 			} else
 				break;
 		}

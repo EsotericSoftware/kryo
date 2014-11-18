@@ -51,7 +51,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	final Kryo kryo;
 	final Class type;
 	/** type variables declared for this type */
-	final private TypeVariable[] typeParameters;
+	final TypeVariable[] typeParameters;
+	final Class componentType;
 	private CachedField[] fields = new CachedField[0];
 	private CachedField[] transientFields = new CachedField[0];
 	protected HashSet<CachedField> removedFields = new HashSet();
@@ -122,6 +123,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.kryo = kryo;
 		this.type = type;
 		this.typeParameters = type.getTypeParameters();
+		if (this.typeParameters == null || this.typeParameters.length == 0)
+			this.componentType = type.getComponentType();
+		else
+			this.componentType = null;
 		this.useAsmEnabled = kryo.getAsmEnabled();
 		if (!this.useAsmEnabled && !unsafeAvailable) {
 			this.useAsmEnabled = true;
@@ -138,6 +143,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.type = type;
 		this.generics = generics;
 		this.typeParameters = type.getTypeParameters();
+		if (this.typeParameters == null || this.typeParameters.length == 0)
+			this.componentType = type.getComponentType();
+		else
+			this.componentType = null;
 		this.useAsmEnabled = kryo.getAsmEnabled();
 		if (!this.useAsmEnabled && !unsafeAvailable) {
 			this.useAsmEnabled = true;
