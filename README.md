@@ -139,10 +139,9 @@ Using Unsafe-based IO may result in a quite significant performance boost (somet
 
 ### ** DISCLAIMER ABOUT USING UNSAFE-BASED IO **
 
-*Unsafe-based IO is not 100% compatible with Kryo's Input and Output streams when it comes to the binary  format of serialized data!* 
+*Unsafe-based IO is not 100% compatible with Kryo's Input and Output streams when it comes to the binary format of serialized data.* 
 
-This means that data written by Unsafe-based output streams can be read only by  
-Unsafe-based input streams, but not by usual Input streams. The same applies on the opposite direction: data written by usual Output streams cannot be correctly read by Unsafe-based input streams.
+This means that data written by Unsafe-based output streams can be read only by Unsafe-based input streams, but not by usual Input streams. The same applies on the opposite direction: data written by usual Output streams cannot be correctly read by Unsafe-based input streams.
 
 It should be safe to use Unsafe IO streams as long as both serialization and deserialization are using them and are executed on the same processor architecture (more precisely, if the endianness and internal representation of native integer and floating point types is the same).
 
@@ -518,15 +517,17 @@ To read the chunked data, InputChunked is used. It extends Input, so has all the
 
 ## Compatibility
 
-For some needs, especially long term storage of serialized bytes, it can be important how serialization handles changes to classes. This is known as forward and backward compatibility. By default, most user classes will be serialized using FieldSerializer, which does not support adding, removing, or changing the type of fields without invalidating previously serialized bytes. This is acceptable in many situations, such as sending data over a network. If necessary, an alternate generic serializer can be used:
+For some needs, especially long term storage of serialized bytes, it can be important how serialization handles changes to classes. This is known as forward (reading byte serialized by new classes) and backward (reading bytes serialized by older classes) compatibility. By default, most user classes will be serialized using FieldSerializer, which does not support adding, removing, or changing the type of fields without invalidating previously serialized bytes. This is acceptable in many situations, such as sending data over a network. If necessary, an alternate generic serializer can be used:
 
 ```java
     kryo.setDefaultSerializer(TaggedFieldSerializer.class);
 ```
 
-TaggedFieldSerializer only serializes fields that have a @Tag annotation. This is less flexible than FieldSerializer, which can handle most classes without needing annotations, but allows TaggedFieldSerializer to support adding new fields without invalidating previously serialized bytes. If a field is removed it will invalidate previously serialized bytes, so fields should be annotated with @Deprecated instead of being removed.
+TaggedFieldSerializer only serializes fields that have a @Tag annotation. This is less flexible than FieldSerializer, which can handle most classes without needing annotations, but allows TaggedFieldSerializer to support both renaming fields and adding new fields without invalidating previously serialized bytes. Fields with the @Tag annotation should never be removed, instead they can be marked with the @Deprecated annotation. Deprecated fields can optionally be renamed so they don't clutter the class (eg, `ignored`, `ignored2`).
 
-Alternatively, CompatibleFieldSerializer can be used, which writes a simple schema before the object data the first time the class is encountered in the serialized bytes. Like FieldSerializer, it can serialize most classes without needing annotations. Fields can be added or removed without invalidating previously serialized bytes, but changing the type of a field is not supported. This has some additional overhead, both in speed and size, when compared to FieldSerializer.
+Alternatively, CompatibleFieldSerializer can be used, which writes a simple schema before the object data the first time the class is encountered in the serialized bytes. Like FieldSerializer, it can serialize most classes without needing annotations. Fields can be added or removed without invalidating previously serialized bytes, but changing the type of a field is not supported.
+
+FieldSerializer is most efficient, but does not allow the serialized classes to be changed. TaggedFieldSerializer is very efficient, usually the serialized size is only increased by 1 additional byte per field and there is no speed penalty. TaggedFieldSerializer allows classes to evolve and is the ideal solution when backward compatibility is required. CompatibleFieldSerializer is much less efficient, both in speed and size. The schema it writes contains field names as strings and it has to allocate buffers during serialization and deserialization. CompatibleFieldSerializer should only be used if TaggedFieldSerializer cannot.
 
 Additional serializers could be developed for forward and backward compatibility, such as a serializer that uses an external, hand written schema.
 
