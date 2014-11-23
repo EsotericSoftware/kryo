@@ -17,6 +17,9 @@ public interface ClassResolver {
 	/** Called when an unregistered type is encountered and {@link Kryo#setRegistrationRequired(boolean)} is false. */
 	public Registration registerImplicit (Class type);
 
+	/** Returns the registrations */
+	public Iterable<Registration> getRegistrations ();
+
 	/** Returns the registration for the specified class, or null if the class is not registered. */
 	public Registration getRegistration (Class type);
 
