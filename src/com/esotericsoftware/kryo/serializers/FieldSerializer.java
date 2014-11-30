@@ -261,7 +261,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		if (!minorRebuild) {
 			for (CachedField field : removedFields)
-                removeField(field);
+                		removeField(field);
 		}
 
 		annotationsUtil.processAnnotatedFields(this);
