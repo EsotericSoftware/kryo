@@ -96,6 +96,26 @@ public class FieldSerializerTest extends KryoTestCase {
 		supportsCopy = true;
 	}
 
+	public void testFieldRemovalOnGenerics () {
+		kryo.register(IsGeneric.class);
+		kryo.register(DefaultTypes.class);
+		kryo.register(byte[].class);
+
+		FieldSerializer serializer = new FieldSerializer<IsGeneric>(kryo, IsGeneric.class);
+		serializer.removeField("y");
+		kryo.register(IsGeneric.class, serializer);
+
+		IsGeneric<IsGeneric<DefaultTypes>> test = new IsGeneric<IsGeneric<DefaultTypes>>();
+		test.item = new IsGeneric<DefaultTypes>();
+
+		try {
+			roundTrip(5, 11, test);
+		} catch (KryoException e) {
+			e.printStackTrace();
+			fail("Couldn't serialize generic with a removed field.");
+		}
+	}
+
 	public void testOptionalRegistration () {
 		kryo.setRegistrationRequired(false);
 		DefaultTypes test = new DefaultTypes();
@@ -983,6 +1003,25 @@ public class FieldSerializerTest extends KryoTestCase {
 					if (!Arrays.equals((long[])e1, (long[])e2)) return false;
 				}
 			}
+			return true;
+		}
+	}
+
+	static public class IsGeneric<E> {
+		private E item;
+		private int y;
+		private int z;
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (!(o instanceof IsGeneric)) return false;
+
+			IsGeneric isGeneric = (IsGeneric) o;
+
+			if (z != isGeneric.z) return false;
+			if (item != null ? !item.equals(isGeneric.item) : isGeneric.item != null) return false;
+
 			return true;
 		}
 	}

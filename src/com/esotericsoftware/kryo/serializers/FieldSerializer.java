@@ -259,9 +259,11 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		if (genericsScope != null) kryo.popGenericsScope();
 
-		for (CachedField field : removedFields)
-			removeField(field);
-		
+		if (!minorRebuild) {
+			for (CachedField field : removedFields)
+                		removeField(field);
+		}
+
 		annotationsUtil.processAnnotatedFields(this);
 	}
 
