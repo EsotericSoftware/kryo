@@ -1025,8 +1025,8 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class IsGeneric<E> {
-		private E item;
+	static public class IsGeneric<T> {
+		T item;
 		private int y;
 		private int z;
 
