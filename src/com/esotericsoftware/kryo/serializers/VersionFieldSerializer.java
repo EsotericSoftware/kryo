@@ -31,44 +31,46 @@ import com.esotericsoftware.kryo.io.Output;
 import static com.esotericsoftware.minlog.Log.DEBUG;
 import static com.esotericsoftware.minlog.Log.debug;
 
-/** Serializes objects using direct field assignment, with versioning backward compatibility. Fields can be
- * added without invalidating previously serialized bytes. Note that removing, renaming or changing the type of a field is not supported.
+/** Serializes objects using direct field assignment, with versioning backward compatibility.
+ * Fields can be added without invalidating previously serialized bytes.
+ * Note that removing, renaming or changing the type of a field is not always supported.
  * In addition, forward compatibility is not considered.
+ * (Use with caution, this could cause cached objects seems invalidated from the view of older version of your program)
  * <p>
- * There is additional overhead compared to {@link FieldSerializer}. 
- * A varible length version code is appended before object. 
+ * There is a little additional overhead compared to {@link FieldSerializer}.
+ * A variable length version code is appended before every object.
  * When deserializing, input version will be examined to decide which field to skip.
+ * If there is any unrecognized field in input (which not included in current type), the deserialization may fail.
  * <p>
+ *
  * @author Tianyi HE <hty0807@gmail.com> */
-public class VersioningFieldSerializer<T> extends FieldSerializer<T> {
+public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 
-    // use magic number to assume data format, this is not precise but will work
-    // unicode char: 釒
-    private final static char FORMAT_MAGIC = 37330;
-
-    // minimal version of each field
+    // version of each field
     private int[] fieldVersion;
 
+    // version of current type
     private int typeVersion = 0;
 
     /**
-     * modification on persist entities must use since to annotate new fields
-     * in order to maintain backward compatibility
+     * incremental modification on persist objects must add {@link Since} new fields
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.FIELD)
     public @interface Since {
 
         /**
-         * Version of field, must less than 32768
+         * Version of annotated field, default is 0, and must be incremental to
+         * maintain compatibility.
          *
          * @return
          */
-        short value() default 0;
+        int value() default 0;
     }
 
-    public VersioningFieldSerializer(Kryo kryo, Class type) {
+    public VersionFieldSerializer(Kryo kryo, Class type) {
         super(kryo, type);
+        // make sure this is done before any read / write operations
         initializeCachedFields();
     }
 
@@ -106,9 +108,7 @@ public class VersioningFieldSerializer<T> extends FieldSerializer<T> {
     @Override
     public void write(Kryo kryo, Output output, T object) {
         CachedField[] fields = getFields();
-        // write magic number
-        output.writeChar(FORMAT_MAGIC);
-        // write version
+        // write type version
         output.writeVarInt(typeVersion, true);
         // write fields
         for (int i = 0, n = fields.length; i < n; i++) {
@@ -120,21 +120,12 @@ public class VersioningFieldSerializer<T> extends FieldSerializer<T> {
     public T read(Kryo kryo, Input input, Class<T> type) {
         T object = create(kryo, input, type);
         kryo.reference(object);
-        // read magic
-        char magic = input.readChar();
-        int version = 0;
-        // magic indicates whether input supports versioning
-        if (magic != FORMAT_MAGIC) {
-            // roll back previous operation, first 2 bytes may overlap the first field
-            input.setPosition(input.position() - 2);
-            if (DEBUG)
-                debug("No version information, using 0");
-        } else {
-            // format is verified, read version
-            version = input.readVarInt(true);
-        }
+
+        // read input version
+        int version = input.readVarInt(true);
         CachedField[] fields = getFields();
         for (int i = 0, n = fields.length; i < n; i++) {
+            // field would not present in input, skip it
             if (fieldVersion[i] > version) {
                 if (DEBUG)
                     debug("Skip field " + fields[i].getField().getName());
