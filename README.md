@@ -275,7 +275,7 @@ In this example, FieldSerializer will be used for SomeClass. FieldSerializer is 
 
 By default, most classes will end up using FieldSerializer. It essentially does what hand written serialization would, but does it automatically. FieldSerializer does direct assignment to the object's fields. If the fields are public, protected, or default access (package private), bytecode generation is used for maximum speed (see [ReflectASM](https://github.com/EsotericSoftware/reflectasm)). For private fields, setAccessible and cached reflection is used, which is still quite fast.
 
-Other general purpose serializes are provided, such as BeanSerializer, TaggedFieldSerializer, and CompatibleFieldSerializer. Additional serializers are available in a separate project on github, [kryo-serializers](https://github.com/magro/kryo-serializers).
+Other general purpose serializes are provided, such as BeanSerializer, TaggedFieldSerializer, CompatibleFieldSerializer, and VersionFieldSerializer. Additional serializers are available in a separate project on github, [kryo-serializers](https://github.com/magro/kryo-serializers).
 
 ## KryoSerializable
 
@@ -524,6 +524,8 @@ For some needs, especially long term storage of serialized bytes, it can be impo
 ```
 
 TaggedFieldSerializer only serializes fields that have a @Tag annotation. This is less flexible than FieldSerializer, which can handle most classes without needing annotations, but allows TaggedFieldSerializer to support both renaming fields and adding new fields without invalidating previously serialized bytes. Fields with the @Tag annotation should never be removed, instead they can be marked with the @Deprecated annotation. Deprecated fields can optionally be renamed so they don't clutter the class (eg, `ignored`, `ignored2`).
+
+VersionFieldSerializer supports fields to have a @Since annotation to indicate version. This will handle most backward-compatibility critical cases with little overhead, but removing, renaming or changing the type of any field may invalidate previous serialized bytes. For a particular field, value in @Since should never change once created.
 
 Alternatively, CompatibleFieldSerializer can be used, which writes a simple schema before the object data the first time the class is encountered in the serialized bytes. Like FieldSerializer, it can serialize most classes without needing annotations. Fields can be added or removed without invalidating previously serialized bytes, but changing the type of a field is not supported.
 
