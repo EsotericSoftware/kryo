@@ -29,7 +29,7 @@ import com.esotericsoftware.kryo.io.Output;
 /** Serializer for Java8 closures. To serialize closures, use:
  * <p>
  * <code>
- * kryo.register(java.lang.invoke.SerializedLambda);<br>
+ * kryo.register(java.lang.invoke.SerializedLambda.class);<br>
  * kryo.register(Closure.class, new ClosureSerializer());</code>
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class ClosureSerializer extends Serializer {
