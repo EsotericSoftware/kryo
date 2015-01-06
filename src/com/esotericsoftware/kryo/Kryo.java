@@ -103,7 +103,6 @@ import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
-import com.esotericsoftware.minlog.Log;
 import com.esotericsoftware.reflectasm.ConstructorAccess;
 
 /** Maps classes to serializers so object graphs can be serialized automatically.
@@ -223,20 +222,6 @@ public class Kryo {
 		register(long.class, new LongSerializer());
 		register(double.class, new DoubleSerializer());
 		register(void.class, new VoidSerializer());
-		
-		// Lambdas support
-		// Enable only if JVM supports it
-		try {
-			String version = System.getProperty("java.version");
-			char minor = version.charAt(2);
-			if (minor >= '8') {
-				register(Class.forName("java.lang.invoke.SerializedLambda"));
-				register(Closure.class, (Serializer)Class.forName("com.esotericsoftware.kryo.serializers.ClosureSerializer")
-					.newInstance());
-			}
-		} catch (Exception e) {
-			Log.trace("Serialization of Java8 lambdas is not available on this system.");
-		}
 	}
 
 	// --- Default serializers ---
@@ -361,7 +346,7 @@ public class Kryo {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 
 		final Serializer serializerForAnnotation = getDefaultSerializerForAnnotatedType(type);
-		if (serializerForAnnotation!=null) return serializerForAnnotation;
+		if (serializerForAnnotation != null) return serializerForAnnotation;
 
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
@@ -374,8 +359,7 @@ public class Kryo {
 		return newDefaultSerializer(type);
 	}
 
-	protected Serializer getDefaultSerializerForAnnotatedType(Class type)
-	{
+	protected Serializer getDefaultSerializerForAnnotatedType (Class type) {
 		if (type.isAnnotationPresent(DefaultSerializer.class)) {
 			DefaultSerializer defaultSerializerAnnotation = (DefaultSerializer)type.getAnnotation(DefaultSerializer.class);
 			return ReflectionSerializerFactory.makeSerializer(this, defaultSerializerAnnotation.value(), type);
@@ -1097,7 +1081,7 @@ public class Kryo {
 		Registration registration = getRegistration(type);
 		ObjectInstantiator instantiator = registration.getInstantiator();
 		if (instantiator == null) {
-				instantiator = newInstantiator(type);
+			instantiator = newInstantiator(type);
 			registration.setInstantiator(instantiator);
 		}
 		return (T)instantiator.newInstance();
@@ -1153,11 +1137,10 @@ public class Kryo {
 		if (type.isArray()) return Modifier.isFinal(Util.getElementClass(type).getModifiers());
 		return Modifier.isFinal(type.getModifiers());
 	}
-	
+
 	/** Returns true if the specified type is a closure.
 	 * <p>
-	 * This can be overridden to support alternative implementations of clousres. Current version supports 
-	 * Oracle's Java8 only */
+	 * This can be overridden to support alternative implementations of clousres. Current version supports Oracle's Java8 only */
 	public boolean isClousre (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		return type.getName().indexOf('/') >= 0;
@@ -1289,7 +1272,7 @@ public class Kryo {
 			return fallbackStrategy.newInstantiatorOf(type);
 		}
 	}
-	
+
 	private static class Closure {
 	}
 }
