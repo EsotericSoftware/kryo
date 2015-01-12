@@ -273,7 +273,7 @@ In this example, FieldSerializer will be used for SomeClass. FieldSerializer is 
 
 ## FieldSerializer
 
-By default, most classes will end up using FieldSerializer. It essentially does what hand written serialization would, but does it automatically. FieldSerializer does direct assignment to the object's fields. If the fields are public, protected, or default access (package private), bytecode generation is used for maximum speed (see [ReflectASM](https://github.com/EsotericSoftware/reflectasm)). For private fields, setAccessible and cached reflection is used, which is still quite fast.
+By default, most classes will end up using FieldSerializer. It essentially does what hand written serialization would, but does it automatically. FieldSerializer does direct assignment to the object's fields. If the fields are public, protected, or default access (package private) and not marked as final, bytecode generation is used for maximum speed (see [ReflectASM](https://github.com/EsotericSoftware/reflectasm)). For private fields, setAccessible and cached reflection is used, which is still quite fast.
 
 Other general purpose serializes are provided, such as BeanSerializer, TaggedFieldSerializer, CompatibleFieldSerializer, and VersionFieldSerializer. Additional serializers are available in a separate project on github, [kryo-serializers](https://github.com/magro/kryo-serializers).
 
