@@ -28,6 +28,7 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -41,11 +42,17 @@ import com.esotericsoftware.kryo.io.Output;
 public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	private int[] fieldVersion; // version of each field
 	private int typeVersion = 0; // version of current type
+	private boolean compatible = true; // whether current type is compatible with serialized objects in different version
 
 	public VersionFieldSerializer (Kryo kryo, Class type) {
 		super(kryo, type);
 		// Make sure this is done before any read / write operations.
 		initializeCachedFields();
+	}
+
+	public VersionFieldSerializer (Kryo kryo, Class type, boolean compatible) {
+		this(kryo, type);
+		this.compatible = compatible;
 	}
 
 	@Override
@@ -96,6 +103,10 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 
 		// Read input version.
 		int version = input.readVarInt(true);
+		if (!compatible && version != typeVersion) {
+			// Reject to read
+			throw new KryoException("Version not compatible: " + version + " <-> " + typeVersion);
+		}
 		CachedField[] fields = getFields();
 		for (int i = 0, n = fields.length; i < n; i++) {
 			// Field is not present in input, skip it.
