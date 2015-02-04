@@ -96,6 +96,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeSetSerialize
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.VoidSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
+import com.esotericsoftware.kryo.serializers.UnmodifiableCollectionsSerializer;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultStreamFactory;
 import com.esotericsoftware.kryo.util.IdentityMap;
@@ -202,13 +203,16 @@ public class Kryo {
 		addDefaultSerializer(Collections.singletonList(null).getClass(), CollectionsSingletonListSerializer.class);
 		addDefaultSerializer(Collections.singletonMap(null, null).getClass(), CollectionsSingletonMapSerializer.class);
 		addDefaultSerializer(Collections.singleton(null).getClass(), CollectionsSingletonSetSerializer.class);
-		addDefaultSerializer(TreeSet.class, TreeSetSerializer.class);
-		addDefaultSerializer(Collection.class, CollectionSerializer.class);
-		addDefaultSerializer(TreeMap.class, TreeMapSerializer.class);
-		addDefaultSerializer(Map.class, MapSerializer.class);
-		addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
-		addDefaultSerializer(Calendar.class, CalendarSerializer.class);
-		addDefaultSerializer(Locale.class, LocaleSerializer.class);
+        addDefaultSerializer(Collections.unmodifiableCollection(Collections.EMPTY_LIST).getClass(), UnmodifiableCollectionsSerializer.class);
+        addDefaultSerializer(Collections.unmodifiableMap(Collections.EMPTY_MAP).getClass(), UnmodifiableCollectionsSerializer.class);
+        addDefaultSerializer(Collections.unmodifiableSet(Collections.EMPTY_SET).getClass(), UnmodifiableCollectionsSerializer.class);
+        addDefaultSerializer(TreeSet.class, TreeSetSerializer.class);
+        addDefaultSerializer(Collection.class, CollectionSerializer.class);
+        addDefaultSerializer(TreeMap.class, TreeMapSerializer.class);
+        addDefaultSerializer(Map.class, MapSerializer.class);
+        addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
+        addDefaultSerializer(Calendar.class, CalendarSerializer.class);
+        addDefaultSerializer(Locale.class, LocaleSerializer.class);
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
