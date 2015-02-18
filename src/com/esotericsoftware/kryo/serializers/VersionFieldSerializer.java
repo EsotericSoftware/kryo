@@ -40,9 +40,9 @@ import com.esotericsoftware.kryo.io.Output;
  * deserializing, the input version will be examined to decide what fields are not in the input.
  * @author Tianyi HE <hty0807@gmail.com> */
 public class VersionFieldSerializer<T> extends FieldSerializer<T> {
-	private int[] fieldVersion; // version of each field
-	private int typeVersion = 0; // version of current type
-	private boolean compatible = true; // whether current type is compatible with serialized objects in different version
+	private int typeVersion = 0; // Version of current type.
+	private int[] fieldVersion; // Version of each field.
+	private boolean compatible = true; // Whether current type is compatible with serialized objects with different version.
 
 	public VersionFieldSerializer (Kryo kryo, Class type) {
 		super(kryo, type);
@@ -61,9 +61,10 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		fieldVersion = new int[fields.length];
 		for (int i = 0, n = fields.length; i < n; i++) {
 			Field field = fields[i].getField();
-			if (field.getAnnotation(Since.class) != null) {
-				fieldVersion[i] = field.getAnnotation(Since.class).value();
-				// use maximum version among fields as type version
+			Since since = field.getAnnotation(Since.class);
+			if (since != null) {
+				fieldVersion[i] = since.value();
+				// Use the maximum version among fields as the entire type's version.
 				typeVersion = Math.max(fieldVersion[i], typeVersion);
 			} else {
 				fieldVersion[i] = 0;
