@@ -28,6 +28,7 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -39,13 +40,19 @@ import com.esotericsoftware.kryo.io.Output;
  * deserializing, the input version will be examined to decide what fields are not in the input.
  * @author Tianyi HE <hty0807@gmail.com> */
 public class VersionFieldSerializer<T> extends FieldSerializer<T> {
-	private int typeVersion = 0; // Version of current type.
-	private int[] fieldVersion; // Version of each field.
+	private int[] fieldVersion; // version of each field
+	private int typeVersion = 0; // version of current type
+	private boolean compatible = true; // whether current type is compatible with serialized objects in different version
 
 	public VersionFieldSerializer (Kryo kryo, Class type) {
 		super(kryo, type);
 		// Make sure this is done before any read / write operations.
 		initializeCachedFields();
+	}
+
+	public VersionFieldSerializer (Kryo kryo, Class type, boolean compatible) {
+		this(kryo, type);
+		this.compatible = compatible;
 	}
 
 	@Override
@@ -54,10 +61,9 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		fieldVersion = new int[fields.length];
 		for (int i = 0, n = fields.length; i < n; i++) {
 			Field field = fields[i].getField();
-			Since since = field.getAnnotation(Since.class);
-			if (since != null) {
-				fieldVersion[i] = since.value();
-				// Use the maximum version among fields as the entire type's version.
+			if (field.getAnnotation(Since.class) != null) {
+				fieldVersion[i] = field.getAnnotation(Since.class).value();
+				// use maximum version among fields as type version
 				typeVersion = Math.max(fieldVersion[i], typeVersion);
 			} else {
 				fieldVersion[i] = 0;
@@ -97,6 +103,10 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 
 		// Read input version.
 		int version = input.readVarInt(true);
+		if (!compatible && version != typeVersion) {
+			// Reject to read
+			throw new KryoException("Version not compatible: " + version + " <-> " + typeVersion);
+		}
 		CachedField[] fields = getFields();
 		for (int i = 0, n = fields.length; i < n; i++) {
 			// Field is not present in input, skip it.
