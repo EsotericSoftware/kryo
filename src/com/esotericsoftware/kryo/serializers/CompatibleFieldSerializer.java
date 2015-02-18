@@ -31,6 +31,9 @@ import static com.esotericsoftware.minlog.Log.*;
 /** Serializes objects using direct field assignment, with limited support for forward and backward compatibility. Fields can be
  * added or removed without invalidating previously serialized bytes. Note that changing the type of a field is not supported.
  * <p>
+ * Removing fields when {@link Kryo#setReferences(boolean) references} are enabled can cause compatibility issues. See <a
+ * href="https://github.com/EsotericSoftware/kryo/issues/286#issuecomment-74870545">here</a>.
+ * <p>
  * There is additional overhead compared to {@link FieldSerializer}. A header is output the first time an object of a given type
  * is serialized. The header consists of an int for the number of fields, then a String for each field name. Also, to support
  * skipping the bytes for a field that no longer exists, for each field value an int is written that is the length of the value in
@@ -94,9 +97,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		boolean hasGenerics = getGenerics() != null;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
-			if(cachedField != null && hasGenerics) {
-				// Generic type used to instantiate this field could have 
-				// been changed in the meantime. Therefore take the most 
+			if (cachedField != null && hasGenerics) {
+				// Generic type used to instantiate this field could have
+				// been changed in the meantime. Therefore take the most
 				// up-to-date definition of a field
 				cachedField = getField(cachedField.field.getName());
 			}
