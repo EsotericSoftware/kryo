@@ -37,7 +37,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<versions.reflectasm>1.10.0</versions.reflectasm>
+		<versions.reflectasm>1.10.1</versions.reflectasm>
 	</properties>
 	
 	<modules>
