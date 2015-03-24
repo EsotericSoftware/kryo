@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.0.0 - 3.0.1 (2015-03-24)
+
+* Update reflectasm to 1.10.1 with java 8 support ([a2c0699](https://github.com/EsotericSoftware/kryo/commit/a2c0699e03de3638382f2a04062fdd700f60f14d))
+* Warning about use when references are enabled. ([7e67a1f](https://github.com/EsotericSoftware/kryo/commit/7e67a1f285e98ba43bbe2b11262cda0615df54a2))
+* Fix [#286](https://github.com/EsotericSoftware/kryo/issues/286) CompatibleFieldSerializer fails with IndexOutOfBoundsException on field removal: Add compatible option for VersionFieldSerializer ([907c58b](https://github.com/EsotericSoftware/kryo/commit/907c58b833d4fb9a6a0a72d7883eb2e2f1877283))
+* Removed auto registration of Java8 closures. ([1c5562d](https://github.com/EsotericSoftware/kryo/commit/1c5562d4035a72904d1d0fd724998b722bf80f3a))
+* Changed to no longer use StdInstantiatorStrategy by default. ([bfc02be](https://github.com/EsotericSoftware/kryo/commit/bfc02befd7f479165cf86fc7c8b22b75c2ff35ca))
+* Add VersionFieldSerializer ([#274](https://github.com/EsotericSoftware/kryo/pull/274))
+* Kryo would previously throw an error when you tried used a serializer with removed fields where the class contained a generic, and you removed a field on that generic. ([d54a59c](https://github.com/EsotericSoftware/kryo/commit/d54a59cfe357ffcaf98da7ca83f4c95dd358bced))
+* Fix #265. Don't invoke getTypeParameters and getComponentType on each call of setGenerics(). Pre-compute and cache them instead whenever it is possible. ([143c097](https://github.com/EsotericSoftware/kryo/commit/143c097f9d081fdb3490b3ebb24c7f3713bce9df))
+
 ## 2.24.0 - 3.0.0 (2014-10-04)
 
 * Fixed [#248](https://github.com/EsotericSoftware/kryo/issues/248). There was a bug in the buffer resizing code. ([23830f6](https://github.com/EsotericSoftware/kryo/commit/23830f64cffd7ee7844fc582ef2b68023aeab908))

@@ -63,7 +63,7 @@ To use the official release of Kryo, please use the following snippet in your po
     <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo</artifactId>
-        <version>3.0.0</version>
+        <version>3.0.1</version>
     </dependency>
 ```
 
@@ -73,7 +73,7 @@ If you experience issues because you already have a different version of asm in 
     <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo-shaded</artifactId>
-        <version>3.0.0</version>
+        <version>3.0.1</version>
     </dependency>
 ```
 
