@@ -11,6 +11,14 @@
 * Kryo would previously throw an error when you tried used a serializer with removed fields where the class contained a generic, and you removed a field on that generic. ([d54a59c](https://github.com/EsotericSoftware/kryo/commit/d54a59cfe357ffcaf98da7ca83f4c95dd358bced))
 * Fix #265. Don't invoke getTypeParameters and getComponentType on each call of setGenerics(). Pre-compute and cache them instead whenever it is possible. ([143c097](https://github.com/EsotericSoftware/kryo/commit/143c097f9d081fdb3490b3ebb24c7f3713bce9df))
 
+### Compatibility
+
+* Serialization compatible
+ * Standard IO: Yes
+ * Unsafe-based IO: Yes
+* Binary compatible - Yes ([Details](https://rawgithub.com/EsotericSoftware/kryo/master/compat_reports/kryo/3.0.0_to_3.0.1/compat_report.html))
+* Source compatible - Yes ([Details](https://rawgithub.com/EsotericSoftware/kryo/master/compat_reports/kryo/3.0.0_to_3.0.1/compat_report.html#Source))
+
 ## 2.24.0 - 3.0.0 (2014-10-04)
 
 * Fixed [#248](https://github.com/EsotericSoftware/kryo/issues/248). There was a bug in the buffer resizing code. ([23830f6](https://github.com/EsotericSoftware/kryo/commit/23830f64cffd7ee7844fc582ef2b68023aeab908))
