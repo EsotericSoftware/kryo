@@ -77,8 +77,7 @@
 				</executions>
 				<!-- See http://mojo.codehaus.org/clirr-maven-plugin/check-mojo.html -->
 				<configuration>
-					<!-- Only for this release: Temporarily disable because otherwise it compares with 1.04 -->
-					<skip>true</skip>
+					<skip>false</skip>
 					<logResults>true</logResults>
 					<minSeverity>warning</minSeverity>
 					<!-- Configure ignored differences: http://mojo.codehaus.org/clirr-maven-plugin/examples/ignored-differences.html -->
