@@ -517,21 +517,25 @@ To read the chunked data, InputChunked is used. It extends Input, so has all the
 
 ## Compatibility
 
-For some needs, especially long term storage of serialized bytes, it can be important how serialization handles changes to classes. This is known as forward (reading byte serialized by new classes) and backward (reading bytes serialized by older classes) compatibility. By default, most user classes will be serialized using FieldSerializer, which does not support adding, removing, or changing the type of fields without invalidating previously serialized bytes. This is acceptable in many situations, such as sending data over a network. If necessary, an alternate generic serializer can be used:
+For some needs, especially long term storage of serialized bytes, it can be important how serialization handles changes to classes. This is known as forward (reading byte serialized by new classes) and backward (reading bytes serialized by older classes) compatibility.
+
+FieldSerializer is the most commonly used serializer. It is generic and can serialize most classes without any configuration. It is efficient and writes only the field data, without any extra information. It does not support adding, removing, or changing the type of fields without invalidating previously serialized bytes. This can be acceptable in many situations, such as when sending data over a network, but may not be a good choice for long term data storage because the Java classes cannot evolve. Because FieldSerializer attempts to read and write non-public fields by default, it is important to evaluate each class that will be serialized.
+
+When no serializer is specified, FieldSerializer is used by default. If necessary, an alternate generic serializer can be used:
 
 ```java
     kryo.setDefaultSerializer(TaggedFieldSerializer.class);
 ```
 
-TaggedFieldSerializer only serializes fields that have a @Tag annotation. This is less flexible than FieldSerializer, which can handle most classes without needing annotations, but allows TaggedFieldSerializer to support both renaming fields and adding new fields without invalidating previously serialized bytes. Fields with the @Tag annotation should never be removed, instead they can be marked with the @Deprecated annotation. Deprecated fields can optionally be renamed so they don't clutter the class (eg, `ignored`, `ignored2`).
+BeanSerializer is very similar to FieldSerializer, except it uses bean getter and setter methods rather than direct field access. This slightly slower, but may be safer because it uses the public API to configure the object.
 
-VersionFieldSerializer supports fields to have a @Since annotation to indicate version. This will handle most backward-compatibility critical cases with little overhead, but removing, renaming or changing the type of any field may invalidate previous serialized bytes. For a particular field, value in @Since should never change once created.
+VersionFieldSerializer allows fields to have a `@Since(int)` annotation to indicate the version they were added. For a particular field, value in `@Since` should never change once created. This is less flexible than FieldSerializer, which can handle most classes without needing annotations, but it provides backward compatibility. This means that new fields can be added, but removing, renaming or changing the type of any field will invalidate previous serialized bytes. VersionFieldSerializer has very little overhead (a single additional varint) compared to FieldSerializer.
 
-Alternatively, CompatibleFieldSerializer can be used, which writes a simple schema before the object data the first time the class is encountered in the serialized bytes. Like FieldSerializer, it can serialize most classes without needing annotations. Fields can be added or removed without invalidating previously serialized bytes, but changing the type of a field is not supported.
+TaggedFieldSerializer only serializes fields that have a `@Tag(int)` annotation, providing backward compatibility so new fields can be added. TaggedFieldSerializer has two advantages over VersionFieldSerializer: 1) fields can be renamed and 2) fields marked with the `@Deprecated` annotation will be ignored when reading old bytes and won't be written to new bytes. Deprecation effectively removes the field from serialization, though the field and `@Tag` annotation must still stay on the class. Deprecated fields can optionally be renamed so they don't clutter the class (eg, `ignored`, `ignored2`). For these reasons, TaggedFieldSerializer generally provides more flexibility for classes to evolve. The downside is that it has a small amount of additional overhead compared to VersionFieldSerializer (an additional varint per field).
 
-FieldSerializer is most efficient, but does not allow the serialized classes to be changed. TaggedFieldSerializer is very efficient, usually the serialized size is only increased by 1 additional byte per field and there is no speed penalty. TaggedFieldSerializer allows classes to evolve and is the ideal solution when backward compatibility is required. CompatibleFieldSerializer is much less efficient, both in speed and size. The schema it writes contains field names as strings and it has to allocate buffers during serialization and deserialization. CompatibleFieldSerializer should only be used if TaggedFieldSerializer cannot.
+CompatibleFieldSerializer provides both forward and backward compatibility, meaning fields can be added or removed without invalidating previously serialized bytes. Changing the type of a field is not supported. Like FieldSerializer, it can serialize most classes without needing annotations. The forward and backward compatibility comes at a cost: the first time the class is encountered in the serialized bytes, a simple schema is written containing the field names. During serialization and deserialization a small buffer is allocated for chunked encoding. This is what enables CompatibleFieldSerializer to skip bytes for fields it does not know about.
 
-Additional serializers could be developed for forward and backward compatibility, such as a serializer that uses an external, hand written schema.
+Additional serializers can easily be developed for forward and backward compatibility, such as a serializer that uses an external, hand written schema.
 
 ## Interoperability
 
@@ -661,4 +665,3 @@ There are a number of projects using Kryo. A few are listed below. Please post a
 ## Contact / Mailing list
 
 You can use the [kryo mailing list](https://groups.google.com/forum/#!forum/kryo-users) for questions/discussions/support.
-
