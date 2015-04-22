@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.minlog.Log.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
@@ -26,18 +28,15 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
 import com.esotericsoftware.kryo.util.ObjectMap;
 
-import static com.esotericsoftware.minlog.Log.*;
-
-/** Serializes objects using direct field assignment, with limited support for forward and backward compatibility. Fields can be
- * added or removed without invalidating previously serialized bytes. Note that changing the type of a field is not supported.
+/** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
+ * added or removed without invalidating previously serialized bytes. Changing the type of a field is not supported. Like
+ * {@link FieldSerializer}, it can serialize most classes without needing annotations. The forward and backward compatibility
+ * comes at a cost: the first time the class is encountered in the serialized bytes, a simple schema is written containing the
+ * field name strings. Also, during serialization and deserialization buffers are allocated to perform chunked encoding. This is
+ * what enables CompatibleFieldSerializer to skip bytes for fields it does not know about.
  * <p>
  * Removing fields when {@link Kryo#setReferences(boolean) references} are enabled can cause compatibility issues. See <a
  * href="https://github.com/EsotericSoftware/kryo/issues/286#issuecomment-74870545">here</a>.
- * <p>
- * There is additional overhead compared to {@link FieldSerializer}. A header is output the first time an object of a given type
- * is serialized. The header consists of an int for the number of fields, then a String for each field name. Also, to support
- * skipping the bytes for a field that no longer exists, for each field value an int is written that is the length of the value in
- * bytes.
  * <p>
  * Note that the field data is identified by name. The situation where a super class has a field with the same name as a subclass
  * must be avoided.

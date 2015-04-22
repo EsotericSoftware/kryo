@@ -19,11 +19,12 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.minlog.Log.*;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -32,21 +33,15 @@ import java.lang.reflect.TypeVariable;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 import com.esotericsoftware.kryo.Generics;
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.NotNull;
-import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.IntArray;
@@ -54,15 +49,19 @@ import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
-import static com.esotericsoftware.minlog.Log.*;
-
 // BOZO - Make primitive serialization with ReflectASM configurable?
 
-/** Serializes objects using direct field assignment. No header or schema data is stored, only the data for each field. This
- * reduces output size but means if any field is added or removed, previously serialized bytes are invalidated. If fields are
- * public, bytecode generation will be used instead of reflection.
+/** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
+ * configuration. It is efficient and writes only the field data, without any extra information. It does not support adding,
+ * removing, or changing the type of fields without invalidating previously serialized bytes. This can be acceptable in many
+ * situations, such as when sending data over a network, but may not be a good choice for long term data storage because the Java
+ * classes cannot evolve. Because FieldSerializer attempts to read and write non-public fields by default, it is important to
+ * evaluate each class that will be serialized. If fields are public, bytecode generation will be used instead of reflection.
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
+ * @see VersionFieldSerializer
+ * @see TaggedFieldSerializer
+ * @see CompatibleFieldSerializer
  * @author Nathan Sweet <misc@n4te.com>
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class FieldSerializer<T> extends Serializer<T> implements Comparator<FieldSerializer.CachedField> {
@@ -83,7 +82,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	private FieldSerializerUnsafeUtil unsafeUtil;
 
 	private FieldSerializerGenericsUtil genericsUtil;
-	
+
 	private FieldSerializerAnnotationsUtil annotationsUtil;
 
 	/** Concrete classes passed as values for type variables */
@@ -183,15 +182,11 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		rebuildCachedFields(false);
 	}
 
-	/**
-	 * Rebuilds the list of cached fields.
-	 * @param minorRebuild if set, processing due to changes in generic type parameters will be optimized
-	 */
+	/** Rebuilds the list of cached fields.
+	 * @param minorRebuild if set, processing due to changes in generic type parameters will be optimized */
 	protected void rebuildCachedFields (boolean minorRebuild) {
-		/**
-		 * TODO: Optimize rebuildCachedFields invocations performed due to changes in generic type parameters
-		 */
-		
+		/** TODO: Optimize rebuildCachedFields invocations performed due to changes in generic type parameters */
+
 		if (TRACE && generics != null) trace("kryo", "Generic type parameters: " + Arrays.toString(generics));
 		if (type.isInterface()) {
 			fields = new CachedField[0]; // No fields to serialize.
@@ -211,7 +206,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		List<Field> validFields;
 		List<Field> validTransientFields;
 		IntArray useAsm = new IntArray();
-		
+
 		if (!minorRebuild) {
 			// Collect all fields.
 			List<Field> allFields = new ArrayList();
@@ -279,7 +274,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		if (!minorRebuild) {
 			for (CachedField field : removedFields)
-                		removeField(field);
+				removeField(field);
 		}
 
 		annotationsUtil.processAnnotatedFields(this);
@@ -287,9 +282,9 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	private List<Field> buildValidFieldsFromCachedFields (CachedField[] cachedFields, IntArray useAsm) {
 		ArrayList<Field> fields = new ArrayList<Field>(cachedFields.length);
-		for(CachedField f: cachedFields) {
+		for (CachedField f : cachedFields) {
 			fields.add(f.field);
-			useAsm.add((f.accessIndex > -1)?1:0);
+			useAsm.add((f.accessIndex > -1) ? 1 : 0);
 		}
 		return fields;
 	}
@@ -350,11 +345,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			rebuildCachedFields(true);
 		}
 	}
-	
+
 	/** Get generic type parameters of the class controlled by this serializer.
-	 * @return generic type parameters or null, if there are none.
-	 */
-	public Class[] getGenerics() {
+	 * @return generic type parameters or null, if there are none. */
+	public Class[] getGenerics () {
 		return generics;
 	}
 
@@ -596,7 +590,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				return;
 			}
 		}
-		
+
 		for (int i = 0; i < transientFields.length; i++) {
 			CachedField cachedField = transientFields[i];
 			if (cachedField.field.getName().equals(fieldName)) {
@@ -624,7 +618,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				return;
 			}
 		}
-		
+
 		for (int i = 0; i < transientFields.length; i++) {
 			CachedField cachedField = transientFields[i];
 			if (cachedField == removeField) {
@@ -639,14 +633,12 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + type.getName());
 	}
 
-	/**
-	 * Get all fields controlled by this FieldSerializer 
-	 * @return all fields controlled by this FieldSerializer
-	 */
+	/** Get all fields controlled by this FieldSerializer
+	 * @return all fields controlled by this FieldSerializer */
 	public CachedField[] getFields () {
 		return fields;
 	}
-	
+
 	public Class getType () {
 		return type;
 	}
@@ -722,8 +714,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		public void setSerializer (Serializer serializer) {
 			this.serializer = serializer;
 		}
-		
-		public Serializer getSerializer() {
+
+		public Serializer getSerializer () {
 			return this.serializer;
 		}
 
@@ -761,20 +753,16 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		public String value();
 	}
 
-	/**
-	 * Used to annotate fields with a specific Kryo serializer.
-	 */
+	/** Used to annotate fields with a specific Kryo serializer. */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface Bind {
 
-	    /**
-	     * Value.
-	     * 
-	     * @return the class<? extends serializer> used for this field
-	     */
-	    @SuppressWarnings("rawtypes")
-	    Class<? extends Serializer> value();
+		/** Value.
+		 * 
+		 * @return the class<? extends serializer> used for this field */
+		@SuppressWarnings("rawtypes")
+		Class<? extends Serializer> value();
 
 	}
 }

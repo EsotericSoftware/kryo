@@ -21,22 +21,26 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.minlog.Log.*;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 
-/** Serializes objects using direct field assignment for fields that have been {@link Tag tagged}. Fields without the {@link Tag}
- * annotation are not serialized. New tagged fields can be added without invalidating previously serialized bytes. If any tagged
- * field is removed, previously serialized bytes are invalidated. Instead of removing fields, apply the {@link Deprecated}
- * annotation and they will still be deserialized but won't be serialized. If fields are public, bytecode generation will be used
- * instead of reflection.
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
+/** Serializes objects using direct field assignment for fields that have a <code>@Tag(int)</code> annotation. This provides
+ * backward compatibility so new fields can be added. TaggedFieldSerializer has two advantages over {@link VersionFieldSerializer}
+ * : 1) fields can be renamed and 2) fields marked with the <code>@Deprecated</code> annotation will be ignored when reading old
+ * bytes and won't be written to new bytes. Deprecation effectively removes the field from serialization, though the field and
+ * <code>@Tag</code> annotation must remain in the class. Deprecated fields can optionally be made private and/or renamed so they
+ * don't clutter the class (eg, <code>ignored</code>, <code>ignored2</code>). For these reasons, TaggedFieldSerializer generally
+ * provides more flexibility for classes to evolve. The downside is that it has a small amount of additional overhead compared to
+ * VersionFieldSerializer (an additional varint per field). Forward compatibility is not supported.
+ * @see VersionFieldSerializer
  * @author Nathan Sweet <misc@n4te.com> */
 public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	private int[] tags;

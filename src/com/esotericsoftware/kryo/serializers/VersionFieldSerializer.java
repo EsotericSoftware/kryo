@@ -32,12 +32,13 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-/** Serializes objects using direct field assignment, with versioning backward compatibility. Fields can be added without
- * invalidating previously serialized bytes. Note that removing, renaming or changing the type of a field is not supported. In
- * addition, forward compatibility is not supported.
- * <p>
- * There is a little additional overhead compared to {@link FieldSerializer}. A version varint is written before each object. When
- * deserializing, the input version will be examined to decide what fields are not in the input.
+/** Serializes objects using direct field assignment, with versioning backward compatibility. Allows fields to have a
+ * <code>@Since(int)</code> annotation to indicate the version they were added. For a particular field, the value in
+ * <code>@Since</code> should never change once created. This is less flexible than FieldSerializer, which can handle most classes
+ * without needing annotations, but it provides backward compatibility. This means that new fields can be added, but removing,
+ * renaming or changing the type of any field will invalidate previous serialized bytes. VersionFieldSerializer has very little
+ * overhead (a single additional varint) compared to FieldSerializer. Forward compatibility is not supported.
+ * @see TaggedFieldSerializer
  * @author Tianyi HE <hty0807@gmail.com> */
 public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	private int typeVersion = 0; // Version of current type.
