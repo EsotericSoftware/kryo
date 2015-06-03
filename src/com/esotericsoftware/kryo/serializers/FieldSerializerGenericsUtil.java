@@ -67,9 +67,27 @@ final class FieldSerializerGenericsUtil {
 			else
 				typeParams = typ.getTypeParameters();
 			if (typeParams == null || typeParams.length == 0) {
-				if (typ == this.serializer.type)
+				if (typ == this.serializer.type) {
 					typ = this.serializer.componentType;
-				else
+					if (typ != null) continue;
+					// This is not a generic type.
+					// Check if its superclass is generic.
+					typ = this.serializer.type;
+					Type superclass = null;
+					do {
+						superclass = typ.getGenericSuperclass();
+						typ = typ.getSuperclass();
+					} while (superclass != null && !(superclass instanceof ParameterizedType));
+					if (superclass == null) break;
+					ParameterizedType pt = (ParameterizedType)superclass;
+					Type[] typeArgs = pt.getActualTypeArguments();
+					typeParams = typ.getTypeParameters();
+					generics = new Class[typeArgs.length];
+					for (int i = 0; i < typeArgs.length; i++) {
+						generics[i] = (typeArgs[i] instanceof Class) ? (Class)typeArgs[i] : Object.class;
+					}
+					break;
+				} else
 					typ = typ.getComponentType();
 			} else
 				break;
@@ -142,8 +160,12 @@ final class FieldSerializerGenericsUtil {
 							fieldGenerics[i] = (Class)t;
 						else if (t instanceof ParameterizedType)
 							fieldGenerics[i] = (Class)((ParameterizedType)t).getRawType();
-						else if (t instanceof TypeVariable && serializer.getGenericsScope() != null)
-							fieldGenerics[i] = serializer.getGenericsScope().getConcreteClass(((TypeVariable)t).getName());
+						else if (t instanceof TypeVariable && serializer.getGenericsScope() != null) {
+							fieldGenerics[i] = serializer.getGenericsScope().
+								getConcreteClass(((TypeVariable)t).getName());
+							if (fieldGenerics[i] == null)
+								fieldGenerics[i] = Object.class;
+						}
 						else if (t instanceof WildcardType)
 							fieldGenerics[i] = Object.class;
 						else if (t instanceof GenericArrayType) {
