@@ -378,8 +378,8 @@ public class Kryo {
 	// --- Registration ---
 
 	/** Registers the class using the lowest, next available integer ID and the {@link Kryo#getDefaultSerializer(Class) default
-	 * serializer}. If the class is already registered, the existing entry is updated with the new serializer. Registering a
-	 * primitive also affects the corresponding primitive wrapper.
+	 * serializer}. If the class is already registered, no change will be made and the existing registration will be
+	 * returned. Registering a primitive also affects the corresponding primitive wrapper.
 	 * <p>
 	 * Because the ID assigned is affected by the IDs registered before it, the order classes are registered is important when
 	 * using this method. The order must be the same at deserialization as it was for serialization. */
@@ -389,9 +389,10 @@ public class Kryo {
 		return register(type, getDefaultSerializer(type));
 	}
 
-	/** Registers the class using the specified ID and the {@link Kryo#getDefaultSerializer(Class) default serializer}. If the ID is
-	 * already in use by the same type, the old entry is overwritten. If the ID is already in use by a different type, a
-	 * {@link KryoException} is thrown. Registering a primitive also affects the corresponding primitive wrapper.
+	/** Registers the class using the specified ID and the {@link Kryo#getDefaultSerializer(Class) default serializer}.
+	 * If the class is already registered this has no effect and the existing registration is returned. Providing an
+	 * ID that is already in use by a different type is unsupported and may result in undefined behavior. Registering a
+	 * primitive also affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
 	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for primitive types and
@@ -417,9 +418,9 @@ public class Kryo {
 		return classResolver.register(new Registration(type, serializer, getNextRegistrationId()));
 	}
 
-	/** Registers the class using the specified ID and serializer. If the ID is already in use by the same type, the old entry is
-	 * overwritten. If the ID is already in use by a different type, a {@link KryoException} is thrown. Registering a primitive
-	 * also affects the corresponding primitive wrapper.
+	/** Registers the class using the specified ID and serializer. Providing an ID that is already in use by the same type
+	 * will cause the old entry to be overwritten. Providing an ID that is already in use by a different type is unsupported
+	 * and may cause undefined behavior. Registering a primitive also affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
 	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for primitive types and
@@ -429,9 +430,9 @@ public class Kryo {
 		return register(new Registration(type, serializer, id));
 	}
 
-	/** Stores the specified registration. If the ID is already in use by the same type, the old entry is overwritten. If the ID is
-	 * already in use by a different type, a {@link KryoException} is thrown. Registering a primitive also affects the
-	 * corresponding primitive wrapper.
+	/** Stores the specified registration. If the ID is already in use by the same type, the old entry is overwritten.
+	 * If the ID is already in use by a different type, undefined behavior may result. Registering a primitive also affects
+	 * the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
 	 * <p>
