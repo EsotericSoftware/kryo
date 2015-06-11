@@ -89,6 +89,15 @@
 						</difference>
 					</ignored>
 				</configuration>
+				<!-- prevent "clirr-maven-plugin:2.6.1:check failed: Invalid byte tag in constant pool: 18" -->
+				<!-- once 6.0 is released, the apache-snapshots pluginRepository can be removed as well -->
+				<dependencies>
+					<dependency>
+						<groupId>org.apache.bcel</groupId>
+						<artifactId>bcel</artifactId>
+						<version>6.0-SNAPSHOT</version>
+					</dependency>
+				</dependencies>
 			</plugin>
 		</plugins>
 	</build>
@@ -103,5 +112,13 @@
 			</plugin>
 		</plugins>
 	</reporting>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>apache-snapshots</id>
+			<name>apache snapshots repo</name>
+			<url>https://repository.apache.org/content/repositories/snapshots</url>
+		</pluginRepository>
+	</pluginRepositories>
 
 </project>
