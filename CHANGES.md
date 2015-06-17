@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.0.1 - 3.0.2 (2015-06-17)
+
+* Fixed issue [#314](https://github.com/EsotericSoftware/kryo/issues/314), improves serialisation of generics. ([4764dee](https://github.com/EsotericSoftware/kryo/commit/4764dee63cf65ceb59364f731ac444f7fab765b3))
+* Build improvements, for java 8
+* Docs improvements
+
+### Compatibility
+
+* Serialization compatible
+ * Standard IO: Yes
+ * Unsafe-based IO: Yes
+* Binary compatible - Yes ([Details](https://rawgithub.com/EsotericSoftware/kryo/master/compat_reports/kryo/3.0.1_to_3.0.2/compat_report.html))
+* Source compatible - Yes ([Details](https://rawgithub.com/EsotericSoftware/kryo/master/compat_reports/kryo/3.0.1_to_3.0.2/compat_report.html#Source))
+
 ## 3.0.0 - 3.0.1 (2015-03-24)
 
 * Update reflectasm to 1.10.1 with java 8 support ([a2c0699](https://github.com/EsotericSoftware/kryo/commit/a2c0699e03de3638382f2a04062fdd700f60f14d))

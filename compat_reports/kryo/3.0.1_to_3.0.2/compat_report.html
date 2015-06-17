@@ -1,0 +1,368 @@
+<!-- kind:binary;verdict:compatible;affected:0;added:0;removed:0;type_problems_high:0;type_problems_medium:0;type_problems_low:0;method_problems_high:0;method_problems_medium:0;method_problems_low:0;tool_version:1.4.1 -->
+<!-- kind:source;verdict:compatible;affected:0;added:0;removed:0;type_problems_high:0;type_problems_medium:0;type_problems_low:0;method_problems_high:0;method_problems_medium:0;method_problems_low:0;tool_version:1.4.1 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="keywords" content="kryo, compatibility" />
+    <meta name="description" content="Compatibility report for the kryo library between 3.0.1 and 3.0.2 versions" />
+    <title>
+        kryo: 3.0.1 to 3.0.2 compatibility report
+    </title>
+    <style type="text/css">
+    
+    body {
+        font-family:Arial, sans-serif;
+        color:Black;
+        font-size:14px;
+    }
+    hr {
+        color:Black;
+        background-color:Black;
+        height:1px;
+        border:0;
+    }
+    h1 {
+        margin-bottom:0px;
+        padding-bottom:0px;
+        font-size:26px;
+    }
+    h2 {
+        margin-bottom:0px;
+        padding-bottom:0px;
+        font-size:20px;
+        white-space:nowrap;
+    }
+    span.section {
+        font-weight:bold;
+        cursor:pointer;
+        font-size:16px;
+        color:#003E69;
+        white-space:nowrap;
+        margin-left:5px;
+    }
+    span:hover.section {
+        color:#336699;
+    }
+    span.section_affected {
+        cursor:pointer;
+        margin-left:7px;
+        padding-left:15px;
+        font-size:14px;
+        color:#cc3300;
+    }
+    span.extension {
+        font-weight:100;
+        font-size:16px;
+    }
+    span.jar {
+        color:#cc3300;
+        font-size:14px;
+        font-weight:bold;
+    }
+    div.class_list {
+        padding-left:5px;
+        font-size:15px;
+    }
+    div.jar_list {
+        padding-left:5px;
+        font-size:15px;
+    }
+    span.package_title {
+        color:#408080;
+        font-size:14px;
+    }
+    span.package_list {
+        font-size:14px;
+    }
+    span.package {
+        color:#408080;
+        font-size:14px;
+        font-weight:bold;
+    }
+    span.cname {
+        color:Green;
+        font-size:14px;
+        font-weight:bold;
+    }
+    span.nblack {
+        font-weight:bold;
+        font-size:15px;
+    }
+    span.sym_p {
+        font-weight:normal;
+        white-space:normal;
+    }
+    span.attr {
+        color:Black;
+        font-weight:100;
+    }
+    span.deprecated {
+        color:Red;
+        font-weight:bold;
+    }
+    div.affect {
+        padding-left:15px;
+        padding-bottom:4px;
+        font-size:14px;
+        font-style:italic;
+        line-height:13px;
+    }
+    div.affected {
+        padding-left:30px;
+        padding-top:3px;
+    }
+    table.ptable {
+        border-collapse:collapse;
+        border:1px outset black;
+        line-height:16px;
+        margin-left:15px;
+        margin-top:3px;
+        margin-bottom:3px;
+        width:900px;
+    }
+    table.ptable td {
+        border:1px solid Gray;
+        padding: 3px;
+    }
+    table.ptable th {
+        background-color:#eeeeee;
+        font-weight:bold;
+        color:#333333;
+        font-size:13px;
+        font-family:Verdana;
+        border:1px solid Gray;
+        text-align:center;
+        vertical-align:top;
+        white-space:nowrap;
+        padding: 3px;
+    }
+    td.code_line {
+        padding-left:15px;
+        text-align:left;
+        white-space:nowrap;
+    }
+    table.code_view {
+        cursor:text;
+        margin-top:7px;
+        width:50%;
+        margin-left:20px;
+        font-family:Consolas, 'DejaVu Sans Mono', 'Droid Sans Mono', Monaco, Monospace;
+        font-size:14px;
+        padding:10px;
+        border:1px solid #e0e8e5;
+        color:#444444;
+        background-color:#eff3f2;
+        overflow:auto;
+    }
+    table.summary {
+        border-collapse:collapse;
+        border:1px outset black;
+    }
+    table.summary th {
+        background-color:#eeeeee;
+        font-weight:100;
+        text-align:left;
+        font-size:15px;
+        white-space:nowrap;
+        border:1px inset gray;
+    }
+    table.summary td {
+        padding-left:10px;
+        padding-right:5px;
+        text-align:right;
+        font-size:16px;
+        white-space:nowrap;
+        border:1px inset gray;
+    }
+    span.mangled {
+        padding-left:15px;
+        font-size:14px;
+        cursor:text;
+        color:#444444;
+    }
+    span.color_p {
+        font-style:italic;
+        color:Brown;
+    }
+    span.param {
+        font-style:italic;
+    }
+    span.focus_p {
+        font-style:italic;
+        color:Red;
+    }
+    span.nowrap {
+        white-space:nowrap;
+    }
+    td.passed {
+        background-color:#CCFFCC;
+    }
+    td.warning {
+        background-color:#F4F4AF;
+    }
+    td.failed {
+        background-color:#FFCCCC;
+    }
+    td.new {
+        background-color:#C6DEFF;
+    }
+    .tabset {
+        float:left;
+    }
+    a.tab {
+        border:1px solid #AAA;
+        float:left;
+        margin:0px 5px -1px 0px;
+        padding:3px 5px 3px 5px;
+        position:relative;
+        font-size:14px;
+        background-color:#DDD;
+        text-decoration:none;
+        color:Black;
+    }
+    a.disabled:hover
+    {
+        color:Black;
+        background:#EEE;
+    }
+    a.active:hover
+    {
+        color:Black;
+        background:White;
+    }
+    a.active {
+        border-bottom-color:White;
+        background-color:White;
+    }
+    div.tab {
+        border:1px solid #AAA;
+        padding:0 7px 0 12px;
+        width:97%;
+        clear:both;
+    }
+    </style>
+    <script type="text/javascript" language="JavaScript">
+    <!--
+    
+    function showContent(header, id)
+    {
+        e = document.getElementById(id);
+        if(e.style.display == 'none')
+        {
+            e.style.display = 'block';
+            e.style.visibility = 'visible';
+            header.innerHTML = header.innerHTML.replace(/\[[^0-9 ]\]/gi,"[&minus;]");
+        }
+        else
+        {
+            e.style.display = 'none';
+            e.style.visibility = 'hidden';
+            header.innerHTML = header.innerHTML.replace(/\[[^0-9 ]\]/gi,"[+]");
+        }
+    }
+    function initTabs()
+    {
+        var url = window.location.href;
+        if(url.indexOf('_Source_')!=-1 || url.indexOf('#Source')!=-1)
+        {
+            var tab1 = document.getElementById('BinaryID');
+            var tab2 = document.getElementById('SourceID');
+            tab1.className='tab disabled';
+            tab2.className='tab active';
+        }
+        var sets = document.getElementsByTagName('div');
+        for (var i = 0; i < sets.length; i++)
+        {
+            if (sets[i].className.indexOf('tabset') != -1)
+            {
+                var tabs = [];
+                var links = sets[i].getElementsByTagName('a');
+                for (var j = 0; j < links.length; j++)
+                {
+                    if (links[j].className.indexOf('tab') != -1)
+                    {
+                        tabs.push(links[j]);
+                        links[j].tabs = tabs;
+                        var tab = document.getElementById(links[j].href.substr(links[j].href.indexOf('#') + 1));
+                        //reset all tabs on start
+                        if (tab)
+                        {
+                            if (links[j].className.indexOf('active')!=-1) {
+                                tab.style.display = 'block';
+                            }
+                            else {
+                                tab.style.display = 'none';
+                            }
+                        }
+                        links[j].onclick = function()
+                        {
+                            var tab = document.getElementById(this.href.substr(this.href.indexOf('#') + 1));
+                            if (tab)
+                            {
+                                //reset all tabs before change
+                                for (var k = 0; k < this.tabs.length; k++)
+                                {
+                                    document.getElementById(this.tabs[k].href.substr(this.tabs[k].href.indexOf('#') + 1)).style.display = 'none';
+                                    this.tabs[k].className = this.tabs[k].className.replace('active', 'disabled');
+                                }
+                                this.className = 'tab active';
+                                tab.style.display = 'block';
+                                // window.location.hash = this.id.replace('ID', '');
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if(url.indexOf('#')!=-1) {
+            location.href=location.href;
+        }
+    }
+    if (window.addEventListener) window.addEventListener('load', initTabs, false);
+    else if (window.attachEvent) window.attachEvent('onload', initTabs);
+    -->
+    </script>
+    </head><body><a name='Source'></a><a name='Binary'></a><a name='Top'></a><h1><span class='nowrap'>API compatibility report for the <span style='color:Blue;'>kryo</span> library </span><span class='nowrap'>&#160;between <span style='color:Red;'>3.0.1</span> and <span style='color:Red;'>3.0.2</span> versions</span></h1>
+
+        <br/><div class='tabset'>
+        <a id='BinaryID' href='#BinaryTab' class='tab active'>Binary<br/>Compatibility</a>
+        <a id='SourceID' href='#SourceTab' style='margin-left:3px' class='tab disabled'>Source<br/>Compatibility</a>
+        </div><div id='BinaryTab' class='tab'>
+<h2>Test Info</h2><hr/>
+<table cellpadding='3' cellspacing='0' class='summary'>
+<tr><th>Library Name</th><td>kryo</td></tr>
+<tr><th>Version #1</th><td>3.0.1</td></tr>
+<tr><th>Version #2</th><td>3.0.2</td></tr>
+<tr><th>Java Version</th><td>1.8.0_45</td></tr>
+<tr><th>Subject</th><td width='150px'>Binary Compatibility</td></tr>
+</table>
+<h2>Test Results</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th>Total Java ARchives</th><td><a href='#Checked_Archives' style='color:Blue;'>1</a></td></tr><tr><th>Total Methods / Classes</th><td>1369 / 177</td></tr><tr><th>Verdict</th><td><span style='color:Green;'><b>Compatible</b></span></td></tr>
+</table>
+<h2>Problem Summary</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr><tr><th>Added Methods</th><td>-</td><td>0</td></tr><tr><th>Removed Methods</th><td>High</td><td>0</td></tr><tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td>0</td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td>0</td></tr><tr><th rowspan='3'>Problems with<br/>Methods</th><td>High</td><td>0</td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td>0</td></tr></table>
+
+<a name='Checked_Archives'></a><h2>Java ARchives (1)</h2>
+<hr/><div class='jar_list'>
+kryo-3.0.1.jar<br/>
+</div><br/><a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<br/><br/><br/></div><div id='SourceTab' class='tab'>
+<h2>Test Info</h2><hr/>
+<table cellpadding='3' cellspacing='0' class='summary'>
+<tr><th>Library Name</th><td>kryo</td></tr>
+<tr><th>Version #1</th><td>3.0.1</td></tr>
+<tr><th>Version #2</th><td>3.0.2</td></tr>
+<tr><th>Java Version</th><td>1.8.0_45</td></tr>
+<tr><th>Subject</th><td width='150px'>Source Compatibility</td></tr>
+</table>
+<h2>Test Results</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th>Total Java ARchives</th><td><a href='#Checked_Archives' style='color:Blue;'>1</a></td></tr><tr><th>Total Methods / Classes</th><td>1369 / 177</td></tr><tr><th>Verdict</th><td><span style='color:Green;'><b>Compatible</b></span></td></tr>
+</table>
+<h2>Problem Summary</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr><tr><th>Added Methods</th><td>-</td><td>0</td></tr><tr><th>Removed Methods</th><td>High</td><td>0</td></tr><tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td>0</td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td>0</td></tr><tr><th rowspan='3'>Problems with<br/>Methods</th><td>High</td><td>0</td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td>0</td></tr></table>
+
+<a name='Checked_Archives'></a><h2>Java ARchives (1)</h2>
+<hr/><div class='jar_list'>
+kryo-3.0.1.jar<br/>
+</div><br/><a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<br/><br/><br/></div><div style='width:97%;padding-top:3px;font-size:11px;' align='right'><i>Generated on Wed Jun 17 21:38:33 2015 for <span style='font-weight:bold'>kryo</span> by <a href='http://ispras.linuxbase.org/index.php/Java_API_Compliance_Checker'>Java API Compliance Checker</a> 1.4.1 &#160;<br/>A tool for checking backward compatibility of a Java library API&#160;&#160;</i></div>
+<div style='height:999px;'></div>
+</body></html>
