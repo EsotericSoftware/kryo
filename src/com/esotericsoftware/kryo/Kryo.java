@@ -19,8 +19,22 @@
 
 package com.esotericsoftware.kryo;
 
-import static com.esotericsoftware.kryo.util.Util.*;
-import static com.esotericsoftware.minlog.Log.*;
+import com.esotericsoftware.kryo.factories.PseudoSerializerFactory;
+import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
+import com.esotericsoftware.kryo.factories.SerializerFactory;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.CollectionSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.*;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.*;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.MapSerializer;
+import com.esotericsoftware.kryo.util.*;
+import com.esotericsoftware.reflectasm.ConstructorAccess;
+import org.objenesis.instantiator.ObjectInstantiator;
+import org.objenesis.strategy.InstantiatorStrategy;
+import org.objenesis.strategy.SerializingInstantiatorStrategy;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
@@ -28,82 +42,10 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.Currency;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
-import org.objenesis.instantiator.ObjectInstantiator;
-import org.objenesis.strategy.InstantiatorStrategy;
-import org.objenesis.strategy.SerializingInstantiatorStrategy;
-import org.objenesis.strategy.StdInstantiatorStrategy;
-
-import com.esotericsoftware.kryo.factories.PseudoSerializerFactory;
-import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
-import com.esotericsoftware.kryo.factories.SerializerFactory;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.CollectionSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.BooleanArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ByteArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.CharArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.DoubleArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.FloatArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.IntArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.LongArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ShortArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.StringArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigIntegerSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.BooleanSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.ByteSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.CalendarSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.CharSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.ClassSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsEmptyListSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsEmptyMapSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsEmptySetSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonListSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonMapSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonSetSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.CurrencySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.DateSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.DoubleSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSetSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.FloatSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.IntSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.LocaleSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimeZoneSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeMapSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeSetSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.VoidSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.serializers.MapSerializer;
-import com.esotericsoftware.kryo.util.DefaultClassResolver;
-import com.esotericsoftware.kryo.util.DefaultStreamFactory;
-import com.esotericsoftware.kryo.util.IdentityMap;
-import com.esotericsoftware.kryo.util.IntArray;
-import com.esotericsoftware.kryo.util.MapReferenceResolver;
-import com.esotericsoftware.kryo.util.ObjectMap;
-import com.esotericsoftware.kryo.util.Util;
-import com.esotericsoftware.reflectasm.ConstructorAccess;
+import static com.esotericsoftware.kryo.util.Util.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 /** Maps classes to serializers so object graphs can be serialized automatically.
  * @author Nathan Sweet <misc@n4te.com> */
@@ -1070,7 +1012,7 @@ public class Kryo {
 	/** Returns a new instantiator for creating new instances of the specified type. By default, an instantiator is returned that
 	 * uses reflection if the class has a zero argument constructor, an exception is thrown. If a
 	 * {@link #setInstantiatorStrategy(InstantiatorStrategy) strategy} is set, it will be used instead of throwing an exception. */
-	protected ObjectInstantiator newInstantiator (final Class type) {
+	protected <T> ObjectInstantiator newInstantiator (final Class<T> type) {
 		// InstantiatorStrategy.
 		return strategy.newInstantiatorOf(type);
 	}
