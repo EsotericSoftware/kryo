@@ -146,8 +146,7 @@ public class GenericsTest extends KryoTestCase {
 	// This is a non-generic class with a generic superclass.
 	private static class ConcreteClass2 extends BaseGeneric<SerializableObjectFoo> {
 		/** Kryo Constructor */
-		@SuppressWarnings("unused")
-		private ConcreteClass2 () {
+		ConcreteClass2 () {
 			super();
 		}
 
@@ -158,8 +157,7 @@ public class GenericsTest extends KryoTestCase {
 
 	private static class ConcreteClass1 extends ConcreteClass2 {
 		/** Kryo Constructor */
-		@SuppressWarnings("unused")
-		private ConcreteClass1 () {
+		ConcreteClass1 () {
 			super();
 		}
 
@@ -170,8 +168,7 @@ public class GenericsTest extends KryoTestCase {
 
 	private static class ConcreteClass extends ConcreteClass1 {
 		/** Kryo Constructor */
-		@SuppressWarnings("unused")
-		private ConcreteClass () {
+		ConcreteClass () {
 			super();
 		}
 

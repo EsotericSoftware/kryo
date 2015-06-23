@@ -1,18 +1,16 @@
+
 package com.esotericsoftware.kryo.serializers;
+
+import java.util.EnumSet;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import java.util.EnumSet;
-
-/**
- * @author KwonNam Son <kwon37xi@gmail.com>
- */
+/** @author KwonNam Son <kwon37xi@gmail.com> */
 public class EnumNameSerializerTest extends KryoTestCase {
-
-	public void testEnumNameSerializer() {
+	public void testEnumNameSerializer () {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.register(TestNameEnum.class);
 		kryo.register(TestAnotherNameEnum.class);
@@ -33,7 +31,7 @@ public class EnumNameSerializerTest extends KryoTestCase {
 		roundTrip(91, 91, TestAnotherNameEnum.MONDAY);
 	}
 
-	public void testEnumSetSerializerWithEnumNameSerializer() throws Exception {
+	public void testEnumSetSerializerWithEnumNameSerializer () throws Exception {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.register(EnumSet.class);
 		kryo.register(TestNameEnum.class);
@@ -45,7 +43,7 @@ public class EnumNameSerializerTest extends KryoTestCase {
 		kryo.writeClassAndObject(output, EnumSet.of(TestNameEnum.HELLO, TestNameEnum.WORLD));
 		byte[] bytes = output.toBytes();
 
-		EnumSet<TestNameEnum> enumSet = (EnumSet<TestNameEnum>) kryo.readClassAndObject(new Input(bytes));
+		EnumSet<TestNameEnum> enumSet = (EnumSet<TestNameEnum>)kryo.readClassAndObject(new Input(bytes));
 		assertEquals(enumSet.size(), 2);
 		assertTrue(enumSet.contains(TestNameEnum.HELLO));
 		assertTrue(enumSet.contains(TestNameEnum.WORLD));
@@ -53,10 +51,9 @@ public class EnumNameSerializerTest extends KryoTestCase {
 
 		// empty EnumSet
 		roundTrip(3, 6, EnumSet.noneOf(TestNameEnum.class));
-
 	}
 
-	public void testEnumNameSerializerWithMethods() {
+	public void testEnumNameSerializerWithMethods () {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 
 		kryo.register(TestNameEnumWithMethods.class);
