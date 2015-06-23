@@ -10,25 +10,21 @@ import com.esotericsoftware.kryo.io.Output;
 /** Serializes enums using the enum's name. This prevents invalidating previously serialized byts when the enum order changes.
  * @author KwonNam Son <kwon37xi@gmail.com> */
 public class EnumNameSerializer extends Serializer<Enum> {
-	private Class<? extends Enum> enumType;
+	private final Class<? extends Enum> enumType;
+	private final Serializer stringSerializer;
 
-	public EnumNameSerializer (Class<? extends Enum> type) {
+	public EnumNameSerializer (Kryo kryo, Class<? extends Enum> type) {
 		this.enumType = type;
+		stringSerializer = kryo.getSerializer(String.class);
 		setImmutable(true);
-		setAcceptsNull(true);
 	}
 
 	public void write (Kryo kryo, Output output, Enum object) {
-		if (object == null) {
-			output.writeString(null);
-			return;
-		}
-		output.writeString(object.name());
+		kryo.writeObject(output, object.name(), stringSerializer);
 	}
 
 	public Enum read (Kryo kryo, Input input, Class<Enum> type) {
-		String name = input.readString();
-		if (name == null) return null;
+		String name = kryo.readObject(input, String.class, stringSerializer);
 		try {
 			return Enum.valueOf(enumType, name);
 		} catch (IllegalArgumentException e) {
