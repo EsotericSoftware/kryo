@@ -241,7 +241,8 @@ public class Kryo {
 		defaultSerializer = new ReflectionSerializerFactory(serializer);
 	}
 
-	/** Instances of the specified class will use the specified serializer.
+	/** Instances of the specified class will use the specified serializer when {@link #register(Class)} or
+	 * {@link #register(Class, int)} are called.
 	 * @see #setDefaultSerializer(Class) */
 	public void addDefaultSerializer (Class type, Serializer serializer) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
@@ -250,6 +251,9 @@ public class Kryo {
 		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
 	}
 
+	/** Instances of the specified class will use the specified factory to create a serializer when {@link #register(Class)} or
+	 * {@link #register(Class, int)} are called.
+	 * @see #setDefaultSerializer(Class) */
 	public void addDefaultSerializer (Class type, SerializerFactory serializerFactory) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerFactory == null) throw new IllegalArgumentException("serializerFactory cannot be null.");
@@ -257,7 +261,8 @@ public class Kryo {
 		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
 	}
 
-	/** Instances of the specified class will use the specified serializer. Serializer instances are created as needed via
+	/** Instances of the specified class will use the specified serializer when {@link #register(Class)} or
+	 * {@link #register(Class, int)} are called. Serializer instances are created as needed via
 	 * {@link ReflectionSerializerFactory#makeSerializer(Kryo, Class, Class)}. By default, the following classes have a default
 	 * serializer set:
 	 * <p>
