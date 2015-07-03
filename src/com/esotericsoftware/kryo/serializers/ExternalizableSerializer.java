@@ -85,7 +85,7 @@ public class ExternalizableSerializer extends Serializer {
 
 	 private Object readExternal (Kryo kryo, Input input, Class type) {
 		  try {
-				Externalizable object = (Externalizable)type.newInstance();
+				Externalizable object = kryo.newInstance(type);
 				object.readExternal(getObjectInput(kryo, input));
 				return object;
 		  } catch (ClassCastException e) {
@@ -93,10 +93,6 @@ public class ExternalizableSerializer extends Serializer {
 		  } catch (ClassNotFoundException e) {
 				throw new KryoException(e);
 		  } catch (IOException e) {
-				throw new KryoException(e);
-		  } catch (InstantiationException e) {
-				throw new KryoException(e);
-		  } catch (IllegalAccessException e) {
 				throw new KryoException(e);
 		  }
 	 }
