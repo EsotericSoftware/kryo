@@ -132,7 +132,7 @@ public class Output extends OutputStream {
 	}
 
 	/** Returns the current position in the buffer. This is the number of bytes that have not been flushed. */
-	final public int position () {
+	public int position () {
 		return position;
 	}
 
@@ -142,7 +142,7 @@ public class Output extends OutputStream {
 	}
 
 	/** Returns the total number of bytes written. This may include bytes that have not been flushed. */
-	final public long total () {
+	public long total () {
 		return total + position;
 	}
 
