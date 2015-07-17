@@ -119,7 +119,7 @@ public class Input extends InputStream {
 	}
 
 	/** Returns the current position in the buffer. */
-	final public int position () {
+	public int position () {
 		return position;
 	}
 
@@ -129,7 +129,7 @@ public class Input extends InputStream {
 	}
 
 	/** Returns the limit for the buffer. */
-	final public int limit () {
+	public int limit () {
 		return limit;
 	}
 
