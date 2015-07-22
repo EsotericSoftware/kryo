@@ -390,6 +390,12 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 		writeBytes(object, doubleArrayBaseOffset, 0, bytesToCopy);
 	}
 
+	/** Writes the bytes. Note the byte[] length is not written. */
+	public void writeBytes (byte[] bytes) throws KryoException {
+		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
+		writeBytes(bytes, 0, (long)bytes.length);
+	}
+
 	/*** Output count bytes from a memory region starting at the given #{offset} inside the in-memory representation of obj object.
 	 * @param obj
 	 * @param offset
