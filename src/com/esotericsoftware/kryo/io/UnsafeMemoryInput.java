@@ -228,11 +228,18 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 		readBytes(array, doubleArrayBaseOffset, 0, bytesToCopy);
 		return array;
 	}
-
+	
+	/** Reads the specified number of bytes into a new byte[]. */
+	public byte[] readBytes (int length) throws KryoException {
+		byte[] bytes = new byte[length];
+		readBytes(bytes, 0, (long)bytes.length);
+		return bytes;
+	}
+	
 	final public void readBytes (Object dstObj, long offset, long count) throws KryoException {
 		/* Unsafe supports efficient bulk reading into arrays of primitives only because of JVM limitations due to GC */
 		if (dstObj.getClass().isArray())
-			readBytes(dstObj, 0, offset, (int)count);
+			readBytes(dstObj, byteArrayBaseOffset, offset, (int)count);
 		else {
 			throw new KryoException("Only bulk reads of arrays is supported");
 		}

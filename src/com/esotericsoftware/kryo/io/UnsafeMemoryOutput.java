@@ -401,7 +401,7 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 	 * @param offset
 	 * @param count */
 	final public void writeBytes (Object obj, long offset, long count) throws KryoException {
-		writeBytes(obj, 0, offset, count);
+		writeBytes(obj, byteArrayBaseOffset, offset, count);
 	}
 
 	/*** Output count bytes from a memory region starting at the given #{offset} inside the in-memory representation of obj object.
