@@ -2,7 +2,7 @@
 
 ## 3.0.2 - 3.0.3 (2015-07-26)
 
-* Fixed ([#331](https://github.com/EsotericSoftware/kryo/issues/331)). Reading and writing arrays of bytes was broken by ([1408cfd](https://github.com/EsotericSoftware/kryo/commit/1408cfd76f26fca3d6a0a7dd9e38feaa2e36eb46)) in UnsafeMemoryInput/UnsafeMemoryOutput. ([9f822f7](https://github.com/EsotericSoftware/kryo/commit/9f822f7cc42ff30add4bb870d9e6dca9f2eb0518))
+* Fixed [#331](https://github.com/EsotericSoftware/kryo/issues/331). Reading and writing arrays of bytes was broken by ([1408cfd](https://github.com/EsotericSoftware/kryo/commit/1408cfd76f26fca3d6a0a7dd9e38feaa2e36eb46)) in UnsafeMemoryInput/UnsafeMemoryOutput. ([9f822f7](https://github.com/EsotericSoftware/kryo/commit/9f822f7cc42ff30add4bb870d9e6dca9f2eb0518))
 * Fix a problem with UnsafeMemoryOutput, which was reported on the mailing list. ([1408cfd](https://github.com/EsotericSoftware/kryo/commit/1408cfd76f26fca3d6a0a7dd9e38feaa2e36eb46))
 * Fixed compile errors by reverting cast externalizable in ExternalizableSerializer ([6a4f956](https://github.com/EsotericSoftware/kryo/commit/6a4f956a6b1890415c5007503ffe77a9f56af385))
 * Removed final modifier, so Input/Output can have all methods overridden ([22131ec](https://github.com/EsotericSoftware/kryo/commit/22131ecf59848dc222470874f38e655fe956a1be))
@@ -12,7 +12,7 @@
 * Fixed containsValue. ([3b2a6e1](https://github.com/EsotericSoftware/kryo/commit/3b2a6e18cbb36486f78000707975fb0109da5aef))
 * Improved enum name serializer. ([3398ca7](https://github.com/EsotericSoftware/kryo/commit/3398ca78a5fe38dbf2abd2c4aa4e94e389574157))
 * Clean up. ([4c33c5e](https://github.com/EsotericSoftware/kryo/commit/4c33c5e47b5aaac8f6d869a667e2148ed91c3ff0))
-* Fix for ([#321](https://github.com/EsotericSoftware/kryo/issues/321)) EnumNameSerializer ([538bd6c](https://github.com/EsotericSoftware/kryo/commit/538bd6c6d7da78ddd2b5c99ddc1d20033d85afdc))
+* Fix for [#321](https://github.com/EsotericSoftware/kryo/issues/321) EnumNameSerializer ([538bd6c](https://github.com/EsotericSoftware/kryo/commit/538bd6c6d7da78ddd2b5c99ddc1d20033d85afdc))
 
 ### Compatibility
 
