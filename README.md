@@ -157,7 +157,7 @@ Kryo is a serialization framework. It doesn't enforce a schema or care what data
     		output.writeInt(object.getRGB());
     	}
     
-    	public Color read (Kryo kryo, Input input, Class<T> type) {
+    	public Color read (Kryo kryo, Input input, Class<Color> type) {
     		return new Color(input.readInt(), true);
     	}
     }
