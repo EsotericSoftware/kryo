@@ -90,6 +90,13 @@ public final class KryoBuilder implements KryoFactory {
 		args = new Object[] {classResolver, referenceResolver, streamFactory};
 	}
 	
+	public KryoBuilder(KryoFactory factory) {
+		head = this;
+		tail = null;
+		step = Step.NEW_INSTANCE;
+		args = new Object[] { factory };
+	}
+	
 	private KryoBuilder(KryoBuilder prev, Step step, Object... args) {
 		head = prev.head;
 		tail = null;
@@ -150,7 +157,7 @@ public final class KryoBuilder implements KryoFactory {
 		if(args.length != types.length)
 			return false;
 		for(int i = 0; i < args.length; i++)
-			if(!types[i].isInstance(args[i]))
+			if(args[i] != null && !types[i].isInstance(args[i]))
 				return false;
 		return true;
 	}
@@ -159,14 +166,19 @@ public final class KryoBuilder implements KryoFactory {
 		switch(step) {
 		case NEW_INSTANCE:
 			if(kryo == null) {
-				Object[] args = this.args.clone();
-				if(args[0] == null)
-					args[0] = new DefaultClassResolver();
-				if(args[1] == null)
-					args[1] = new MapReferenceResolver();
-				if(args[2] == null)
-					args[2] = new DefaultStreamFactory();
-				kryo = new Kryo((ClassResolver) args[0], (ReferenceResolver) args[1], (StreamFactory) args[2]);
+				if(argtypes(KryoFactory.class))
+					kryo = ((KryoFactory) args[0]).create();
+				else if(argtypes(ClassResolver.class, ReferenceResolver.class, StreamFactory.class)) {
+					Object[] args = this.args.clone();
+					if(args[0] == null)
+						args[0] = new DefaultClassResolver();
+					if(args[1] == null)
+						args[1] = new MapReferenceResolver();
+					if(args[2] == null)
+						args[2] = new DefaultStreamFactory();
+					kryo = new Kryo((ClassResolver) args[0], (ReferenceResolver) args[1], (StreamFactory) args[2]);
+				} else
+					throw new IllegalStateException();
 			}
 			break;
 		case SET_DEFAULT_SERIALIZER:
