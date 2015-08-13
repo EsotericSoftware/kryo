@@ -40,7 +40,6 @@ public final class KryoBuilder implements KryoFactory {
 		@SuppressWarnings("synthetic-access")
 		@Override
 		public void write (Kryo kryo, Output output, KryoBuilder object) {
-			output.writeBoolean(object.head == object);
 			output.writeInt(object.step.ordinal(), true);
 			output.writeInt(object.args.length, true);
 			for(int i = 0; i < object.args.length; i++)
@@ -54,14 +53,13 @@ public final class KryoBuilder implements KryoFactory {
 			KryoBuilder object = new KryoBuilder(null, null, null, null);
 			kryo.reference(object);
 			
-			boolean head = input.readBoolean();
 			object.step = Step.VALUES[input.readInt(true)];
 			object.args = new Object[input.readInt(true)];
 			for(int i = 0; i < object.args.length; i++)
 				object.args[i] = kryo.readClassAndObject(input);
 			object.tail = kryo.readObjectOrNull(input, KryoBuilder.class);
 
-			if(head) {
+			if(object.step == Step.NEW_INSTANCE) {
 				for(KryoBuilder h = object; h != null; h = h.tail)
 					h.head = object;
 			}

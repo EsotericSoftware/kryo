@@ -34,6 +34,6 @@ public class KryoBuilderTest extends KryoTestCase {
 		builder.setRegistrationRequired(true);
 		builder.register(int[].class);
 		
-		roundTrip(40, 58, builder);
+		roundTrip(37, 55, builder);
 	}
 }
