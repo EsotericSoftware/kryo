@@ -3,11 +3,13 @@ package com.esotericsoftware.kryo;
 import org.objenesis.strategy.InstantiatorStrategy;
 
 import com.esotericsoftware.kryo.factories.SerializerFactory;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultStreamFactory;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
-public class KryoBuilder {
+public final class KryoBuilder {
 
 	private static enum Step {
 		NEW_INSTANCE,
@@ -24,23 +26,56 @@ public class KryoBuilder {
 		SET_MAX_DEPTH,
 		SET_STREAM_FACTORY,
 		SET_ASM_ENABLED,
+		
+		;
+		
+		static final Step[] VALUES = values();
 	}
 	
-	private KryoBuilder head;
-	private KryoBuilder tail;
-	private Step step;
-	private Object[] args;
+	public static class KryoBuilderSerializer extends Serializer<KryoBuilder> {
+
+		@Override
+		public void write (Kryo kryo, Output output, KryoBuilder object) {
+			kryo.writeObject(output, object.head);
+			output.writeInt(object.step.ordinal(), true);
+			output.writeInt(object.args.length, true);
+			for(int i = 0; i < object.args.length; i++)
+				kryo.writeClassAndObject(output, object.args[i]);
+			kryo.writeObject(output, object.tail);
+		}
+
+		@Override
+		public KryoBuilder read (Kryo kryo, Input input, Class<KryoBuilder> type) {
+			KryoBuilder object = new KryoBuilder(null, null, null, null);
+			kryo.reference(object);
+			
+			object.head = kryo.readObject(input, KryoBuilder.class);
+			object.step = Step.VALUES[input.readInt(true)];
+			object.args = new Object[input.readInt(true)];
+			for(int i = 0; i < object.args.length; i++)
+				object.args[i] = kryo.readClassAndObject(input);
+			object.tail = kryo.readObject(input, KryoBuilder.class);
+			
+			return object;
+		}
+		
+	}
+	
+	KryoBuilder head;
+	KryoBuilder tail;
+	Step step;
+	Object[] args;
 
 	public KryoBuilder () {
-		this(new DefaultClassResolver(), new MapReferenceResolver(), new DefaultStreamFactory());
+		this((ClassResolver) null, (ReferenceResolver) null, (StreamFactory) null);
 	}
 
 	public KryoBuilder (ReferenceResolver referenceResolver) {
-		this(new DefaultClassResolver(), referenceResolver, new DefaultStreamFactory());
+		this((ClassResolver) null, referenceResolver, (StreamFactory) null);
 	}
 
 	public KryoBuilder (ClassResolver classResolver, ReferenceResolver referenceResolver) {
-		this(classResolver, referenceResolver, new DefaultStreamFactory());
+		this(classResolver, referenceResolver, (StreamFactory) null);
 	}
 	
 	public KryoBuilder(ClassResolver classResolver, ReferenceResolver referenceResolver, StreamFactory streamFactory) {
@@ -50,7 +85,7 @@ public class KryoBuilder {
 		args = new Object[] {classResolver, referenceResolver, streamFactory};
 	}
 	
-	private KryoBuilder(KryoBuilder prev, Step step, Object... args) {
+	KryoBuilder(KryoBuilder prev, Step step, Object... args) {
 		head = prev.head;
 		tail = null;
 		this.step = step;
@@ -60,7 +95,7 @@ public class KryoBuilder {
 		prev.tail = this;
 	}
 	
-	private KryoBuilder(KryoBuilder head, KryoBuilder tail, Step step, Object[] args) {
+	KryoBuilder(KryoBuilder head, KryoBuilder tail, Step step, Object[] args) {
 		this.head = head;
 		this.tail = tail;
 		this.step = step;
@@ -75,7 +110,7 @@ public class KryoBuilder {
 		return (T) head.step(kryo);
 	}
 	
-	protected boolean argtypes(Class<?>... types) {
+	boolean argtypes(Class<?>... types) {
 		if(args.length != types.length)
 			return false;
 		for(int i = 0; i < args.length; i++)
@@ -84,11 +119,19 @@ public class KryoBuilder {
 		return true;
 	}
 	
-	protected Kryo step(Kryo kryo) {
+	Kryo step(Kryo kryo) {
 		switch(step) {
 		case NEW_INSTANCE:
-			if(kryo == null)
+			if(kryo == null) {
+				Object[] args = this.args.clone();
+				if(args[0] == null)
+					args[0] = new DefaultClassResolver();
+				if(args[1] == null)
+					args[1] = new MapReferenceResolver();
+				if(args[2] == null)
+					args[2] = new DefaultStreamFactory();
 				kryo = new Kryo((ClassResolver) args[0], (ReferenceResolver) args[1], (StreamFactory) args[2]);
+			}
 			break;
 		case SET_DEFAULT_SERIALIZER:
 			if(argtypes(SerializerFactory.class))
