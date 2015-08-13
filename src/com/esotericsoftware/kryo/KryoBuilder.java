@@ -32,11 +32,12 @@ public final class KryoBuilder implements KryoFactory {
 		
 		;
 		
-		static final Step[] VALUES = values();
+		private static final Step[] VALUES = values();
 	}
 	
 	public static final class KryoBuilderSerializer extends Serializer<KryoBuilder> {
 
+		@SuppressWarnings("synthetic-access")
 		@Override
 		public void write (Kryo kryo, Output output, KryoBuilder object) {
 			kryo.writeObject(output, object.head);
@@ -47,6 +48,7 @@ public final class KryoBuilder implements KryoFactory {
 			kryo.writeObjectOrNull(output, object.tail, KryoBuilder.class);
 		}
 
+		@SuppressWarnings("synthetic-access")
 		@Override
 		public KryoBuilder read (Kryo kryo, Input input, Class<KryoBuilder> type) {
 			KryoBuilder object = new KryoBuilder(null, null, null, null);
@@ -64,10 +66,10 @@ public final class KryoBuilder implements KryoFactory {
 		
 	}
 	
-	KryoBuilder head;
-	KryoBuilder tail;
-	Step step;
-	Object[] args;
+	private KryoBuilder head;
+	private KryoBuilder tail;
+	private Step step;
+	private Object[] args;
 
 	public KryoBuilder () {
 		this((ClassResolver) null, (ReferenceResolver) null, (StreamFactory) null);
@@ -88,7 +90,7 @@ public final class KryoBuilder implements KryoFactory {
 		args = new Object[] {classResolver, referenceResolver, streamFactory};
 	}
 	
-	KryoBuilder(KryoBuilder prev, Step step, Object... args) {
+	private KryoBuilder(KryoBuilder prev, Step step, Object... args) {
 		head = prev.head;
 		tail = null;
 		this.step = step;
@@ -98,7 +100,7 @@ public final class KryoBuilder implements KryoFactory {
 		prev.tail = this;
 	}
 	
-	KryoBuilder(KryoBuilder head, KryoBuilder tail, Step step, Object[] args) {
+	private KryoBuilder(KryoBuilder head, KryoBuilder tail, Step step, Object[] args) {
 		this.head = head;
 		this.tail = tail;
 		this.step = step;
@@ -144,7 +146,7 @@ public final class KryoBuilder implements KryoFactory {
 		return (T) head.step(kryo);
 	}
 	
-	boolean argtypes(Class<?>... types) {
+	private boolean argtypes(Class<?>... types) {
 		if(args.length != types.length)
 			return false;
 		for(int i = 0; i < args.length; i++)
@@ -153,7 +155,7 @@ public final class KryoBuilder implements KryoFactory {
 		return true;
 	}
 	
-	Kryo step(Kryo kryo) {
+	private Kryo step(Kryo kryo) {
 		switch(step) {
 		case NEW_INSTANCE:
 			if(kryo == null) {
