@@ -1,5 +1,7 @@
 package com.esotericsoftware.kryo;
 
+import java.util.Arrays;
+
 import org.objenesis.strategy.InstantiatorStrategy;
 
 import com.esotericsoftware.kryo.factories.SerializerFactory;
@@ -41,7 +43,7 @@ public final class KryoBuilder {
 			output.writeInt(object.args.length, true);
 			for(int i = 0; i < object.args.length; i++)
 				kryo.writeClassAndObject(output, object.args[i]);
-			kryo.writeObject(output, object.tail);
+			kryo.writeObjectOrNull(output, object.tail, KryoBuilder.class);
 		}
 
 		@Override
@@ -54,7 +56,7 @@ public final class KryoBuilder {
 			object.args = new Object[input.readInt(true)];
 			for(int i = 0; i < object.args.length; i++)
 				object.args[i] = kryo.readClassAndObject(input);
-			object.tail = kryo.readObject(input, KryoBuilder.class);
+			object.tail = kryo.readObjectOrNull(input, KryoBuilder.class);
 			
 			return object;
 		}
@@ -100,6 +102,37 @@ public final class KryoBuilder {
 		this.tail = tail;
 		this.step = step;
 		this.args = args;
+	}
+	
+	@Override
+	public boolean equals (Object obj) {
+		if(obj == this)
+			return true;
+		if(obj instanceof KryoBuilder) {
+			KryoBuilder h1 = this.head;
+			KryoBuilder h2 = ((KryoBuilder) obj).head;
+			while(h1 != null && h2 != null) {
+				if(h1.step != h2.step)
+					return false;
+				if(!Arrays.equals(h1.args, h2.args))
+					return false;
+				h1 = h1.tail;
+				h2 = h2.tail;
+			}
+			return h1 == null && h2 == null;
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode () {
+		int hash = 0;
+		KryoBuilder h = this.head;
+		while(h != null) {
+			hash = 31 * hash + h.step.hashCode() + Arrays.hashCode(h.args);
+			h = h.tail;
+		}
+		return hash;
 	}
 	
 	public Kryo build() {
