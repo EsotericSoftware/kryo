@@ -35,7 +35,7 @@ public final class KryoBuilder implements KryoFactory {
 		static final Step[] VALUES = values();
 	}
 	
-	public static class KryoBuilderSerializer extends Serializer<KryoBuilder> {
+	public static final class KryoBuilderSerializer extends Serializer<KryoBuilder> {
 
 		@Override
 		public void write (Kryo kryo, Output output, KryoBuilder object) {
