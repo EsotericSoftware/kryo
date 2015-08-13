@@ -29,12 +29,11 @@ public class KryoBuilderTest extends KryoTestCase {
 		setUp();
 		kryo.register(KryoBuilder.class, new KryoBuilder.KryoBuilderSerializer());
 		kryo.setRegistrationRequired(false);
-		kryo.setReferences(true);
 		
 		KryoBuilder builder = new KryoBuilder();
 		builder.setRegistrationRequired(true);
 		builder.register(int[].class);
 		
-		roundTrip(42, 60, builder);
+		roundTrip(40, 58, builder);
 	}
 }
