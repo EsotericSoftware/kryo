@@ -7,11 +7,12 @@ import org.objenesis.strategy.InstantiatorStrategy;
 import com.esotericsoftware.kryo.factories.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultStreamFactory;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
-public final class KryoBuilder {
+public final class KryoBuilder implements KryoFactory {
 
 	private static enum Step {
 		NEW_INSTANCE,
@@ -135,7 +136,7 @@ public final class KryoBuilder {
 		return hash;
 	}
 	
-	public Kryo build() {
+	public Kryo create() {
 		return head.step(null);
 	}
 	

@@ -15,11 +15,11 @@ public class KryoBuilderTest extends KryoTestCase {
 		builder.register(int[].class);
 		
 		Output output = new Output(bytes);
-		builder.build().writeClassAndObject(output, new int[] {1,2,3});
+		builder.create().writeClassAndObject(output, new int[] {1,2,3});
 		output.close();
 		
 		Input input = new Input(bytes.toByteArray());
-		int[] ia = (int[]) builder.build().readClassAndObject(input);
+		int[] ia = (int[]) builder.create().readClassAndObject(input);
 		
 		assertEquals((Object) new int[] {1, 2,3}, (Object) ia);
 	}
