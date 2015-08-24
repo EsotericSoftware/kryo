@@ -152,6 +152,7 @@ final class FieldSerializerGenericsUtil {
 				// Get actual type arguments of the current field's type
 				Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
 				// if(actualTypeArguments != null && generics != null) {
+				Generics genericsScope = serializer.getGenericsScope();
 				if (actualTypeArguments != null) {
 					fieldGenerics = new Class[actualTypeArguments.length];
 					for (int i = 0; i < actualTypeArguments.length; ++i) {
@@ -160,8 +161,8 @@ final class FieldSerializerGenericsUtil {
 							fieldGenerics[i] = (Class)t;
 						else if (t instanceof ParameterizedType)
 							fieldGenerics[i] = (Class)((ParameterizedType)t).getRawType();
-						else if (t instanceof TypeVariable && serializer.getGenericsScope() != null) {
-							fieldGenerics[i] = serializer.getGenericsScope().
+						else if (t instanceof TypeVariable && genericsScope != null) {
+							fieldGenerics[i] = genericsScope.
 								getConcreteClass(((TypeVariable)t).getName());
 							if (fieldGenerics[i] == null)
 								fieldGenerics[i] = Object.class;
@@ -173,7 +174,7 @@ final class FieldSerializerGenericsUtil {
 							if (componentType instanceof Class)
 								fieldGenerics[i] = Array.newInstance((Class)componentType, 0).getClass();
 							else if (componentType instanceof TypeVariable) {
-								Generics scope = serializer.getGenericsScope();
+								Generics scope = genericsScope;
 								if (scope != null) {
 									Class clazz = scope.getConcreteClass(((TypeVariable)componentType).getName());
 									if (clazz != null) {
