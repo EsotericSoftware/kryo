@@ -88,7 +88,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	/** Concrete classes passed as values for type variables */
 	private Class[] generics;
 
-//	private Generics genericsScope;
+	private Generics genericsScope;
 
 	/** If set, this serializer tries to use a variable length encoding for int and long fields */
 	private boolean varIntsEnabled;
@@ -197,7 +197,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		// For generic classes, generate a mapping from type variable names to the concrete types
 		// This mapping is the same for the whole class.
-		Generics genericsScope = genericsUtil.buildGenericsScope(type, generics);
+		Generics genScope = genericsUtil.buildGenericsScope(type, generics);
+		genericsScope = genScope;
 
 		// Push proper scopes at serializer construction time
 		if (genericsScope != null) kryo.pushGenericsScope(type, genericsScope);
@@ -507,8 +508,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			rebuildCachedFields();
 		}
 
-		Generics genericsScope = genericsUtil.buildGenericsScope(type, generics);
-
 		if (genericsScope != null) {
 			// Push proper scopes at serializer usage time
 			kryo.pushGenericsScope(type, genericsScope);
@@ -531,7 +530,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	}
 
 	public T read (Kryo kryo, Input input, Class<T> type) {
-		Generics genericsScope = genericsUtil.buildGenericsScope(type, generics);
 		try {
 
 			if (typeParameters != null && generics != null) {
@@ -684,7 +682,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	}
 
 	public final Generics getGenericsScope () {
-		return genericsUtil.buildGenericsScope(type, generics);
+		return genericsScope;
 	}
 
 	/** Controls how a field will be serialized. */
