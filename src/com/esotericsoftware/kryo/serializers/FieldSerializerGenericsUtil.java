@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.esotericsoftware.kryo.Generics;
+import com.esotericsoftware.kryo.GenericsResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
@@ -126,8 +127,8 @@ final class FieldSerializerGenericsUtil {
 		} else {
 			// Otherwise try to derive the information from the current GenericScope
 			if (TRACE) trace("kryo", "Trying to use kryo.getGenericScope");
-			Generics scope = kryo.getGenericsScope();
-			if (scope != null) {
+			GenericsResolver scope = kryo.getGenericsScope();
+			if (scope.isSet()) {
 				return scope.getConcreteClass(typeVarName);
 			}
 		}
@@ -278,8 +279,8 @@ final class FieldSerializerGenericsUtil {
 			else if (actualType instanceof ParameterizedType)
 				generics[i] = (Class)((ParameterizedType)actualType).getRawType();
 			else if (actualType instanceof TypeVariable) {
-				Generics scope = kryo.getGenericsScope();
-				if (scope != null) {
+				GenericsResolver scope = kryo.getGenericsScope();
+				if (scope.isSet()) {
 					Class clazz = scope.getConcreteClass(((TypeVariable)actualType).getName());
 					if (clazz != null) {
 						generics[i] = clazz;
@@ -292,8 +293,8 @@ final class FieldSerializerGenericsUtil {
 				if (componentType instanceof Class)
 					generics[i] = Array.newInstance((Class)componentType, 0).getClass();
 				else if (componentType instanceof TypeVariable) {
-					Generics scope = kryo.getGenericsScope();
-					if (scope != null) {
+					GenericsResolver scope = kryo.getGenericsScope();
+					if (scope.isSet()) {
 						Class clazz = scope.getConcreteClass(((TypeVariable)componentType).getName());
 						if (clazz != null) {
 							generics[i] = Array.newInstance(clazz, 0).getClass();

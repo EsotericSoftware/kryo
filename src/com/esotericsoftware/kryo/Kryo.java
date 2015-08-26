@@ -138,7 +138,7 @@ public class Kryo {
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
-	private Generics genericsScope;
+	private GenericsResolver genericsResolver = new GenericsResolver();
 	/** Tells if ASM-based backend should be used by new serializer instances created using this Kryo instance. */
 	private boolean asmEnabled = false;
 
@@ -1161,22 +1161,15 @@ public class Kryo {
 
 	public void pushGenericsScope (Class type, Generics generics) {
 		if (TRACE) trace("kryo", "Settting a new generics scope for class " + type.getName() + ": " + generics);
-		Generics currentScope = genericsScope;
-		if (generics.getParentScope() != null) {
-			generics = new Generics(generics.getMappings());
-		}
-		genericsScope = generics;
-		genericsScope.setParentScope(currentScope);
+		genericsResolver.pushScope(generics);
 	}
 
 	public void popGenericsScope () {
-		Generics oldScope = genericsScope;
-		if (genericsScope != null) genericsScope = genericsScope.getParentScope();
-		if (oldScope != null) oldScope.resetParentScope();
+		genericsResolver.popScope();
 	}
 
-	public Generics getGenericsScope () {
-		return genericsScope;
+	public GenericsResolver getGenericsScope () {
+		return genericsResolver;
 	}
 
 	public StreamFactory getStreamFactory () {
