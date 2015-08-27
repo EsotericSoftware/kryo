@@ -1168,7 +1168,7 @@ public class Kryo {
 		genericsResolver.popScope();
 	}
 
-	public GenericsResolver getGenericsScope () {
+	public GenericsResolver getGenericsResolver () {
 		return genericsResolver;
 	}
 

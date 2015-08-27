@@ -557,7 +557,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			}
 			return object;
 		} finally {
-			if (genericsScope != null && kryo.getGenericsScope() != null) {
+			if (genericsScope != null && kryo.getGenericsResolver() != null) {
 				// Pop the scope for generics
 				kryo.popGenericsScope();
 			}

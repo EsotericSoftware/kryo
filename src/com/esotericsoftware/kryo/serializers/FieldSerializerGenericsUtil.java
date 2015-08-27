@@ -127,7 +127,7 @@ final class FieldSerializerGenericsUtil {
 		} else {
 			// Otherwise try to derive the information from the current GenericScope
 			if (TRACE) trace("kryo", "Trying to use kryo.getGenericScope");
-			GenericsResolver scope = kryo.getGenericsScope();
+			GenericsResolver scope = kryo.getGenericsResolver();
 			if (scope.isSet()) {
 				return scope.getConcreteClass(typeVarName);
 			}
@@ -278,7 +278,7 @@ final class FieldSerializerGenericsUtil {
 			else if (actualType instanceof ParameterizedType)
 				generics[i] = (Class)((ParameterizedType)actualType).getRawType();
 			else if (actualType instanceof TypeVariable) {
-				GenericsResolver scope = kryo.getGenericsScope();
+				GenericsResolver scope = kryo.getGenericsResolver();
 				if (scope.isSet()) {
 					Class clazz = scope.getConcreteClass(((TypeVariable)actualType).getName());
 					if (clazz != null) {
@@ -292,7 +292,7 @@ final class FieldSerializerGenericsUtil {
 				if (componentType instanceof Class)
 					generics[i] = Array.newInstance((Class)componentType, 0).getClass();
 				else if (componentType instanceof TypeVariable) {
-					GenericsResolver scope = kryo.getGenericsScope();
+					GenericsResolver scope = kryo.getGenericsResolver();
 					if (scope.isSet()) {
 						Class clazz = scope.getConcreteClass(((TypeVariable)componentType).getName());
 						if (clazz != null) {
