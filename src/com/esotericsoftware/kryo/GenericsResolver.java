@@ -1,15 +1,15 @@
 /* Copyright (c) 2008, Nathan Sweet
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
  * conditions are met:
- * 
+ *
  * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
  * disclaimer in the documentation and/or other materials provided with the distribution.
  * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
  * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
  * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
@@ -19,37 +19,34 @@
 
 package com.esotericsoftware.kryo;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedList;
 
-/*** Helper class to map type name variables to concrete classes that are used during instantiation
- * 
- * @author Roman Levenstein <romixlev@gmail.com> */
-public class Generics {
-	private Map<String, Class> typeVar2class;
+/** Helper class that resolves a type name variable to a concrete class using the current class serialization stack
+ *
+ * @author Jeroen van Erp <jeroen@hierynomus.com> */
+public class GenericsResolver {
+    private LinkedList<Generics> stack = new LinkedList<Generics>();
 
-	public Generics () {
-		typeVar2class = new HashMap<String, Class>();
-	}
+    GenericsResolver () {
+    }
 
-	public Generics (Map<String, Class> mappings) {
-		typeVar2class = new HashMap<String, Class>(mappings);
-	}
+    public Class getConcreteClass (String typeVar) {
+        for (Generics generics : stack) {
+            Class clazz = generics.getConcreteClass(typeVar);
+            if (clazz != null) return clazz;
+        }
+        return null;
+    }
 
-	public void add (String typeVar, Class clazz) {
-		typeVar2class.put(typeVar, clazz);
-	}
+    public boolean isSet () {
+        return !stack.isEmpty();
+    }
 
-	public Class getConcreteClass (String typeVar) {
-		return typeVar2class.get(typeVar);
-	}
+    void pushScope (Generics scope) {
+        stack.addFirst(scope);
+    }
 
-	public Map<String, Class> getMappings () {
-		return typeVar2class;
-	}
-
-	public String toString () {
-		return typeVar2class.toString();
-	}
-
+    void popScope () {
+        stack.removeFirst();
+    }
 }
