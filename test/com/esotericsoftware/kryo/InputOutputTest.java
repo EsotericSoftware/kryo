@@ -22,6 +22,8 @@ package com.esotericsoftware.kryo;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
@@ -825,5 +827,34 @@ public class InputOutputTest extends KryoTestCase {
 
 		Output byteBufferOutput = new ByteBufferOutput(0, 10000);
 		kryo.writeClassAndObject(byteBufferOutput, "Test string");
+	}
+
+	public void testFlushRoundTrip() throws Exception {
+
+      Kryo kryo = new Kryo();
+
+		String s1 = "12345";
+
+		ByteArrayOutputStream os=new ByteArrayOutputStream();
+		ObjectOutputStream objOutput = new ObjectOutputStream(os);
+		Output output = new Output(objOutput);
+
+		kryo.writeClass(output, s1.getClass());
+		kryo.writeObject(output, s1);
+		output.flush();
+//		objOutput.flush();  // this layer wasn't flushed prior to this bugfix, add it for a workaround
+
+		byte [] b = os.toByteArray();
+		System.out.println("size: " + b.length);
+
+		ByteArrayInputStream in = new ByteArrayInputStream(b);
+		ObjectInputStream objIn = new ObjectInputStream(in);
+		Input input = new Input(objIn);
+
+		Registration r = kryo.readClass(input);
+		String s2 = kryo.readObject(input,r.getType());
+
+		assertEquals(s1, s2);
+
 	}
 }
