@@ -179,6 +179,7 @@ public class Output extends OutputStream {
 		if (outputStream == null) return;
 		try {
 			outputStream.write(buffer, 0, position);
+			outputStream.flush();
 		} catch (IOException ex) {
 			throw new KryoException(ex);
 		}
