@@ -212,9 +212,10 @@ public final class UnsafeOutput extends Output {
 			return 4;
 		}
 
-		varInt |= 0x80 << 24;
-		long varLong = varInt | (((long)(value & 0x7F)) << 32);
-		varInt &= 0xFFFFFFFFL;
+		long varLong = varInt;
+		varLong |= (0x80L << 24);
+		varLong |= ((long)(value & 0x7F) << 32);
+		varLong &= 0xFFFFFFFFFL;
 		writeLittleEndianLong(varLong);
 		position -= 3;
 		return 5;
@@ -235,7 +236,7 @@ public final class UnsafeOutput extends Output {
 		}
 
 		varInt |= 0x80;
-		varInt |= (value << 8);
+		varInt |= ((value & 0x7F) << 8);
 
 		value >>>= 7;
 
@@ -246,7 +247,7 @@ public final class UnsafeOutput extends Output {
 		}
 
 		varInt |= (0x80 << 8);
-		varInt |= (value << 16);
+		varInt |= ((value & 0x7F) << 16);
 
 		value >>>= 7;
 
@@ -257,7 +258,7 @@ public final class UnsafeOutput extends Output {
 		}
 
 		varInt |= (0x80 << 16);
-		varInt |= (value << 24);
+		varInt |= ((value & 0x7F) << 24);
 
 		value >>>= 7;
 
@@ -267,8 +268,8 @@ public final class UnsafeOutput extends Output {
 			return 4;
 		}
 
-		varInt |= (0x80 << 24);
-		long varLong = varInt | (((long)value) << 32);
+		long varLong = (varInt & 0xFFFFFFFFL) | (0x80L << 24);
+		varLong |= ((value & 0x7F) << 32);
 
 		value >>>= 7;
 
@@ -278,8 +279,8 @@ public final class UnsafeOutput extends Output {
 			return 5;
 		}
 
-		varLong |= (0x80 << 32);
-		varLong = varInt | (((long)value) << 40);
+		varLong |= (0x80L << 32);
+		varLong |= ((value & 0x7F) << 40);
 
 		value >>>= 7;
 
@@ -289,8 +290,8 @@ public final class UnsafeOutput extends Output {
 			return 6;
 		}
 
-		varLong |= (0x80 << 40);
-		varLong = varInt | (((long)value) << 48);
+		varLong |= (0x80L << 40);
+		varLong |= ((value & 0x7F) << 48);
 
 		value >>>= 7;
 
@@ -300,20 +301,19 @@ public final class UnsafeOutput extends Output {
 			return 7;
 		}
 
-		varLong |= (0x80 << 48);
-		varLong = varInt | (((long)value) << 56);
+		varLong |= (0x80L << 48);
+		varLong |= ((value & 0x7F) << 56);
 
 		value >>>= 7;
 
 		if (value == 0) {
 			writeLittleEndianLong(varLong);
-// position -= 1;
 			return 8;
 		}
 
-		varLong |= (0x80 << 56);
+		varLong |= (0x80L << 56);
 		writeLittleEndianLong(varLong);
-		write((byte)(value >>> 7));
+		write((int)(value & 0xFF));
 		return 9;
 	}
 

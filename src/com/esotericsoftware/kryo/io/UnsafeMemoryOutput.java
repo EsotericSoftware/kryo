@@ -225,9 +225,9 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 			return 4;
 		}
 
-		varInt |= (0x80 << 24);
+		varInt |= (0x80L << 24);
 		varInt |= ((value & 0x7F) << 32);
-		varInt &= 0xFFFFFFFFL;
+		varInt &= 0xFFFFFFFFFL;
 		writeLittleEndianLong(varInt);
 		position -= 3;
 		return 5;
@@ -242,7 +242,7 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 		value >>>= 7;
 
 		if (value == 0) {
-			write(varInt);
+			writeByte(varInt);
 			return 1;
 		}
 
@@ -279,8 +279,9 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 			return 4;
 		}
 
-		varInt |= (0x80 << 24);
-		long varLong = (varInt & 0xFFFFFFFFL) | (((long)(value & 0x7F)) << 32);
+		varInt |= (0x80L << 24);
+		long varLong = (varInt & 0xFFFFFFFFL);
+		varLong |= ((value & 0x7F) << 32);
 
 		value >>>= 7;
 
@@ -291,7 +292,7 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 		}
 
 		varLong |= (0x80L << 32);
-		varLong |= (((long)(value & 0x7F)) << 40);
+		varLong |= ((value & 0x7F) << 40);
 
 		value >>>= 7;
 
@@ -302,7 +303,7 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 		}
 
 		varLong |= (0x80L << 40);
-		varLong |= (((long)(value & 0x7F)) << 48);
+		varLong |= ((value & 0x7F) << 48);
 
 		value >>>= 7;
 
@@ -313,7 +314,7 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 		}
 
 		varLong |= (0x80L << 48);
-		varLong |= (((long)(value & 0x7F)) << 56);
+		varLong |= ((value & 0x7F) << 56);
 
 		value >>>= 7;
 
@@ -324,7 +325,7 @@ public final class UnsafeMemoryOutput extends ByteBufferOutput {
 
 		varLong |= (0x80L << 56);
 		writeLittleEndianLong(varLong);
-		write((byte)((value & 0x7F)));
+		writeByte((int)(value & 0xFF));
 		return 9;
 	}
 

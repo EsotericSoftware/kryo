@@ -210,6 +210,8 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 	}
 
 	private void runIntTest (UnsafeOutput write) throws IOException {
+		write.supportVarInts(false);
+		
 		write.writeInt(0);
 		write.writeInt(63);
 		write.writeInt(64);
@@ -229,50 +231,60 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		write.writeInt(-268435455);
 		write.writeInt(-134217728);
 		write.writeInt(-268435456);
-		assertEquals(4, write.writeInt(0, true));
-		assertEquals(4, write.writeInt(0, false));
-		assertEquals(4, write.writeInt(63, true));
-		assertEquals(4, write.writeInt(63, false));
-		assertEquals(4, write.writeInt(64, true));
-		assertEquals(4, write.writeInt(64, false));
-		assertEquals(4, write.writeInt(127, true));
-		assertEquals(4, write.writeInt(127, false));
-		assertEquals(4, write.writeInt(128, true));
-		assertEquals(4, write.writeInt(128, false));
-		assertEquals(4, write.writeInt(8191, true));
-		assertEquals(4, write.writeInt(8191, false));
-		assertEquals(4, write.writeInt(8192, true));
-		assertEquals(4, write.writeInt(8192, false));
-		assertEquals(4, write.writeInt(16383, true));
-		assertEquals(4, write.writeInt(16383, false));
-		assertEquals(4, write.writeInt(16384, true));
-		assertEquals(4, write.writeInt(16384, false));
-		assertEquals(4, write.writeInt(2097151, true));
+		
+		write.supportVarInts(true);
+		
+		assertEquals(1, write.writeInt(0, true));
+		assertEquals(1, write.writeInt(0, false));
+		assertEquals(1, write.writeInt(63, true));
+		assertEquals(1, write.writeInt(63, false));
+		assertEquals(1, write.writeInt(64, true));
+		assertEquals(2, write.writeInt(64, false));
+		assertEquals(1, write.writeInt(127, true));
+		assertEquals(2, write.writeInt(127, false));
+		assertEquals(2, write.writeInt(128, true));
+		assertEquals(2, write.writeInt(128, false));
+		assertEquals(2, write.writeInt(8191, true));
+		assertEquals(2, write.writeInt(8191, false));
+		assertEquals(2, write.writeInt(8192, true));
+		assertEquals(3, write.writeInt(8192, false));
+		assertEquals(2, write.writeInt(16383, true));
+		assertEquals(3, write.writeInt(16383, false));
+		assertEquals(3, write.writeInt(16384, true));
+		assertEquals(3, write.writeInt(16384, false));
+		assertEquals(3, write.writeInt(2097151, true));
 		assertEquals(4, write.writeInt(2097151, false));
-		assertEquals(4, write.writeInt(1048575, true));
-		assertEquals(4, write.writeInt(1048575, false));
+		assertEquals(3, write.writeInt(1048575, true));
+		assertEquals(3, write.writeInt(1048575, false));
 		assertEquals(4, write.writeInt(134217727, true));
 		assertEquals(4, write.writeInt(134217727, false));
 		assertEquals(4, write.writeInt(268435455, true));
-		assertEquals(4, write.writeInt(268435455, false));
+		assertEquals(5, write.writeInt(268435455, false));
 		assertEquals(4, write.writeInt(134217728, true));
-		assertEquals(4, write.writeInt(134217728, false));
-		assertEquals(4, write.writeInt(268435456, true));
-		assertEquals(4, write.writeInt(268435456, false));
-		assertEquals(4, write.writeInt(-64, false));
-		assertEquals(4, write.writeInt(-64, true));
-		assertEquals(4, write.writeInt(-65, false));
-		assertEquals(4, write.writeInt(-65, true));
-		assertEquals(4, write.writeInt(-8192, false));
-		assertEquals(4, write.writeInt(-8192, true));
-		assertEquals(4, write.writeInt(-1048576, false));
-		assertEquals(4, write.writeInt(-1048576, true));
+		assertEquals(5, write.writeInt(134217728, false));
+		assertEquals(5, write.writeInt(268435456, true));
+		assertEquals(5, write.writeInt(268435456, false));
+		assertEquals(1, write.writeInt(-64, false));
+		assertEquals(5, write.writeInt(-64, true));
+		assertEquals(2, write.writeInt(-65, false));
+		assertEquals(5, write.writeInt(-65, true));
+		assertEquals(2, write.writeInt(-8192, false));
+		assertEquals(5, write.writeInt(-8192, true));
+		assertEquals(3, write.writeInt(-1048576, false));
+		assertEquals(5, write.writeInt(-1048576, true));
 		assertEquals(4, write.writeInt(-134217728, false));
-		assertEquals(4, write.writeInt(-134217728, true));
-		assertEquals(4, write.writeInt(-134217729, false));
-		assertEquals(4, write.writeInt(-134217729, true));
+		assertEquals(5, write.writeInt(-134217728, true));
+		assertEquals(5, write.writeInt(-134217729, false));
+		assertEquals(5, write.writeInt(-134217729, true));
+		assertEquals(5, write.writeInt(1000000000, false));
+		assertEquals(5, write.writeInt(1000000000, true));
+		assertEquals(5, write.writeInt(Integer.MAX_VALUE - 1, false));
+		assertEquals(5, write.writeInt(Integer.MAX_VALUE - 1, true));
+		assertEquals(5, write.writeInt(Integer.MAX_VALUE, false));
+		assertEquals(5, write.writeInt(Integer.MAX_VALUE, true));
 
-		Input read = new UnsafeInput(write.toBytes());
+
+		UnsafeInput read = new UnsafeInput(write.toBytes());
 		assertEquals(0, read.readInt());
 		assertEquals(63, read.readInt());
 		assertEquals(64, read.readInt());
@@ -295,6 +307,9 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(true, read.canReadInt());
 		assertEquals(true, read.canReadInt());
 		assertEquals(true, read.canReadInt());
+		
+		read.setVarIntsEnabled(true);
+		
 		assertEquals(0, read.readInt(true));
 		assertEquals(0, read.readInt(false));
 		assertEquals(63, read.readInt(true));
@@ -337,6 +352,12 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(-134217728, read.readInt(true));
 		assertEquals(-134217729, read.readInt(false));
 		assertEquals(-134217729, read.readInt(true));
+		assertEquals(1000000000, read.readInt(false));
+		assertEquals(1000000000, read.readInt(true));
+		assertEquals(Integer.MAX_VALUE - 1, read.readInt(false));
+		assertEquals(Integer.MAX_VALUE - 1, read.readInt(true));
+		assertEquals(Integer.MAX_VALUE, read.readInt(false));
+		assertEquals(Integer.MAX_VALUE, read.readInt(true));
 		assertEquals(false, read.canReadInt());
 
 		Random random = new Random();
@@ -359,6 +380,8 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 	}
 
 	private void runLongTest (UnsafeOutput write) throws IOException {
+		write.supportVarInts(false);
+		
 		write.writeLong(0);
 		write.writeLong(63);
 		write.writeLong(64);
@@ -378,50 +401,53 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		write.writeLong(-268435455);
 		write.writeLong(-134217728);
 		write.writeLong(-268435456);
-		assertEquals(8, write.writeLong(0, true));
-		assertEquals(8, write.writeLong(0, false));
-		assertEquals(8, write.writeLong(63, true));
-		assertEquals(8, write.writeLong(63, false));
-		assertEquals(8, write.writeLong(64, true));
-		assertEquals(8, write.writeLong(64, false));
-		assertEquals(8, write.writeLong(127, true));
-		assertEquals(8, write.writeLong(127, false));
-		assertEquals(8, write.writeLong(128, true));
-		assertEquals(8, write.writeLong(128, false));
-		assertEquals(8, write.writeLong(8191, true));
-		assertEquals(8, write.writeLong(8191, false));
-		assertEquals(8, write.writeLong(8192, true));
-		assertEquals(8, write.writeLong(8192, false));
-		assertEquals(8, write.writeLong(16383, true));
-		assertEquals(8, write.writeLong(16383, false));
-		assertEquals(8, write.writeLong(16384, true));
-		assertEquals(8, write.writeLong(16384, false));
-		assertEquals(8, write.writeLong(2097151, true));
-		assertEquals(8, write.writeLong(2097151, false));
-		assertEquals(8, write.writeLong(1048575, true));
-		assertEquals(8, write.writeLong(1048575, false));
-		assertEquals(8, write.writeLong(134217727, true));
-		assertEquals(8, write.writeLong(134217727, false));
-		assertEquals(8, write.writeLong(268435455l, true));
-		assertEquals(8, write.writeLong(268435455l, false));
-		assertEquals(8, write.writeLong(134217728l, true));
-		assertEquals(8, write.writeLong(134217728l, false));
-		assertEquals(8, write.writeLong(268435456l, true));
-		assertEquals(8, write.writeLong(268435456l, false));
-		assertEquals(8, write.writeLong(-64, false));
-		assertEquals(8, write.writeLong(-64, true));
-		assertEquals(8, write.writeLong(-65, false));
-		assertEquals(8, write.writeLong(-65, true));
-		assertEquals(8, write.writeLong(-8192, false));
-		assertEquals(8, write.writeLong(-8192, true));
-		assertEquals(8, write.writeLong(-1048576, false));
-		assertEquals(8, write.writeLong(-1048576, true));
-		assertEquals(8, write.writeLong(-134217728, false));
-		assertEquals(8, write.writeLong(-134217728, true));
-		assertEquals(8, write.writeLong(-134217729, false));
-		assertEquals(8, write.writeLong(-134217729, true));
 
-		Input read = new UnsafeInput(write.toBytes());
+		write.supportVarInts(true);
+		
+		assertEquals(1, write.writeLong(0, true));
+		assertEquals(1, write.writeLong(0, false));
+		assertEquals(1, write.writeLong(63, true));
+		assertEquals(1, write.writeLong(63, false));
+		assertEquals(1, write.writeLong(64, true));
+		assertEquals(2, write.writeLong(64, false));
+		assertEquals(1, write.writeLong(127, true));
+		assertEquals(2, write.writeLong(127, false));
+		assertEquals(2, write.writeLong(128, true));
+		assertEquals(2, write.writeLong(128, false));
+		assertEquals(2, write.writeLong(8191, true));
+		assertEquals(2, write.writeLong(8191, false));
+		assertEquals(2, write.writeLong(8192, true));
+		assertEquals(3, write.writeLong(8192, false));
+		assertEquals(2, write.writeLong(16383, true));
+		assertEquals(3, write.writeLong(16383, false));
+		assertEquals(3, write.writeLong(16384, true));
+		assertEquals(3, write.writeLong(16384, false));
+		assertEquals(3, write.writeLong(2097151, true));
+		assertEquals(4, write.writeLong(2097151, false));
+		assertEquals(3, write.writeLong(1048575, true));
+		assertEquals(3, write.writeLong(1048575, false));
+		assertEquals(4, write.writeLong(134217727, true));
+		assertEquals(4, write.writeLong(134217727, false));
+		assertEquals(4, write.writeLong(268435455l, true));
+		assertEquals(5, write.writeLong(268435455l, false));
+		assertEquals(4, write.writeLong(134217728l, true));
+		assertEquals(5, write.writeLong(134217728l, false));
+		assertEquals(5, write.writeLong(268435456l, true));
+		assertEquals(5, write.writeLong(268435456l, false));
+		assertEquals(1, write.writeLong(-64, false));
+		assertEquals(9, write.writeLong(-64, true));
+		assertEquals(2, write.writeLong(-65, false));
+		assertEquals(9, write.writeLong(-65, true));
+		assertEquals(2, write.writeLong(-8192, false));
+		assertEquals(9, write.writeLong(-8192, true));
+		assertEquals(3, write.writeLong(-1048576, false));
+		assertEquals(9, write.writeLong(-1048576, true));
+		assertEquals(4, write.writeLong(-134217728, false));
+		assertEquals(9, write.writeLong(-134217728, true));
+		assertEquals(5, write.writeLong(-134217729, false));
+		assertEquals(9, write.writeLong(-134217729, true));
+
+		UnsafeInput read = new UnsafeInput(write.toBytes());
 		assertEquals(0, read.readLong());
 		assertEquals(63, read.readLong());
 		assertEquals(64, read.readLong());
@@ -441,6 +467,9 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(-268435455, read.readLong());
 		assertEquals(-134217728, read.readLong());
 		assertEquals(-268435456, read.readLong());
+		
+		read.setVarIntsEnabled(true);
+		
 		assertEquals(0, read.readLong(true));
 		assertEquals(0, read.readLong(false));
 		assertEquals(63, read.readLong(true));

@@ -283,6 +283,12 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(5, write.writeInt(-134217728, true));
 		assertEquals(5, write.writeInt(-134217729, false));
 		assertEquals(5, write.writeInt(-134217729, true));
+		assertEquals(5, write.writeInt(1000000000, false));
+		assertEquals(5, write.writeInt(1000000000, true));
+		assertEquals(5, write.writeInt(Integer.MAX_VALUE - 1, false));
+		assertEquals(5, write.writeInt(Integer.MAX_VALUE - 1, true));
+		assertEquals(5, write.writeInt(Integer.MAX_VALUE, false));
+		assertEquals(5, write.writeInt(Integer.MAX_VALUE, true));
 
 		Input read = new Input(write.toBytes());
 		assertEquals(0, read.readInt());
@@ -349,6 +355,12 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(-134217728, read.readInt(true));
 		assertEquals(-134217729, read.readInt(false));
 		assertEquals(-134217729, read.readInt(true));
+		assertEquals(1000000000, read.readInt(false));
+		assertEquals(1000000000, read.readInt(true));
+		assertEquals(Integer.MAX_VALUE - 1, read.readInt(false));
+		assertEquals(Integer.MAX_VALUE - 1, read.readInt(true));
+		assertEquals(Integer.MAX_VALUE, read.readInt(false));
+		assertEquals(Integer.MAX_VALUE, read.readInt(true));
 		assertEquals(false, read.canReadInt());
 
 		Random random = new Random();
