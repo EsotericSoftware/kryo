@@ -52,7 +52,7 @@ public class ByteBufferInputStream extends InputStream {
 
 	public int read () throws IOException {
 		if (!byteBuffer.hasRemaining()) return -1;
-		return byteBuffer.get();
+		return byteBuffer.get() & 0xFF;
 	}
 
 	public int read (byte[] bytes, int offset, int length) throws IOException {
