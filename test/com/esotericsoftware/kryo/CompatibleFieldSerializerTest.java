@@ -37,7 +37,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
 		kryo.register(TestClass.class);
 		kryo.register(AnotherClass.class);
-		roundTrip(100, 100, object1);
+		roundTrip(107, 107, object1);
 	}
 
 	public void testAddedField () throws FileNotFoundException {
@@ -50,7 +50,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
 		kryo.register(AnotherClass.class, new CompatibleFieldSerializer(kryo, AnotherClass.class));
-		roundTrip(74, 74, object1);
+		roundTrip(80, 80, object1);
 
 		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
 		Object object2 = kryo.readClassAndObject(input);
@@ -62,7 +62,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.child = new TestClass();
 
 		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
-		roundTrip(88, 88, object1);
+		roundTrip(94, 94, object1);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
 		serializer.removeField("text");
