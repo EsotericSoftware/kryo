@@ -215,7 +215,7 @@ public class ByteBufferOutput extends Output {
 			niobuffer.limit(position);
 			newBuffer.put(niobuffer);
 			newBuffer.order(niobuffer.order());
-			niobuffer = newBuffer;
+			setBuffer(newBuffer, maxCapacity);
 		}
 		return true;
 	}
