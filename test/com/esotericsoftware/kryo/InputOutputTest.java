@@ -864,7 +864,7 @@ public class InputOutputTest extends KryoTestCase {
 		Input input = new Input(objIn);
 
 		Registration r = kryo.readClass(input);
-		String s2 = kryo.readObject(input,r.getType());
+		String s2 = (String)kryo.readObject(input,r.getType());
 
 		assertEquals(s1, s2);
 
