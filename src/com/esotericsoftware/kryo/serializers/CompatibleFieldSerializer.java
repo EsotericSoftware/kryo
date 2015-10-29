@@ -19,7 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.trace;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
@@ -42,6 +43,9 @@ import com.esotericsoftware.kryo.util.ObjectMap;
  * must be avoided.
  * @author Nathan Sweet <misc@n4te.com> */
 public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
+	/* For object with more than BINARY_SEARCH_THRESHOLD fields, use binary search instead of iterative search */
+	private static final int THRESHOLD_BINARY_SEARCH = 32;
+
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
 		super(kryo, type);
 	}
@@ -78,17 +82,50 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 			fields = new CachedField[length];
 			CachedField[] allFields = getFields();
-			outer:
-			for (int i = 0, n = names.length; i < n; i++) {
-				String schemaName = names[i];
-				for (int ii = 0, nn = allFields.length; ii < nn; ii++) {
-					if (allFields[ii].field.getName().equals(schemaName)) {
-						fields[i] = allFields[ii];
-						continue outer;
+
+			if (length < THRESHOLD_BINARY_SEARCH) {
+				outer:
+					for (int i = 0; i < length; i++) {
+						String schemaName = names[i];
+						for (int ii = 0, nn = allFields.length; ii < nn; ii++) {
+							if (allFields[ii].field.getName().equals(schemaName)) {
+								fields[i] = allFields[ii];
+								continue outer;
+							}
+						}
+						if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
 					}
-				}
-				if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
+			} else {
+				// binary search for schemaName
+				int low, mid, high;
+				int compare;
+				outerBinarySearch:
+					for (int i = 0; i < length; i++) {
+						String schemaName = names[i];
+
+						low = 0;
+						high = length - 1;
+
+						while (low <= high) {
+							mid = (low + high) >>> 1;
+							String midVal = allFields[mid].field.getName();
+							compare = schemaName.compareTo(midVal);
+
+							if (compare < 0) {
+								high = mid - 1;
+							}
+							else if (compare > 0) {
+								low = mid + 1;
+							}
+							else {
+								fields[i] = allFields[mid];
+								continue outerBinarySearch;
+							}
+						}
+						if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
+					}
 			}
+
 			context.put(this, fields);
 		}
 
