@@ -69,6 +69,8 @@ import static com.esotericsoftware.kryo.ReflectionAssert.assertReflectionEquals;
 public class SerializationCompatTest extends KryoTestCase {
 
     private static final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
+    private static final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
+    private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 33 : 34;
 
     @Override
     protected void setUp() throws Exception {
@@ -94,7 +96,7 @@ public class SerializationCompatTest extends KryoTestCase {
                 " type of the new default serializer.\n" +
                 "After that's done, you must create new versions of 'test/resources/data*'" +
                 " because the new TestData instance will no longer be equals the formerly written/serialized one.",
-                33, defaultSerializers.size());
+                EXPECTED_DEFAULT_SERIALIZER_COUNT, defaultSerializers.size());
     }
 
     public void testStandard () throws Exception {
