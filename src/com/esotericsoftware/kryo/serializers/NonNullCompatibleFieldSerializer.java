@@ -205,8 +205,8 @@ public class NonNullCompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				return (Boolean)fieldValue == false;
 			}
 			return fieldValue == null;
-		} catch (IllegalArgumentException | IllegalAccessException e) {
-			return true;
+		} catch (Exception e) {
+			return false;
 		}
 	}
 
