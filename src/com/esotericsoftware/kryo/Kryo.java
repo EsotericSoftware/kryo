@@ -136,6 +136,7 @@ public class Kryo {
 
 	private int copyDepth;
 	private boolean copyShallow;
+	private boolean copyTransient = true;
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
 	private GenericsResolver genericsResolver = new GenericsResolver();
@@ -1044,6 +1045,22 @@ public class Kryo {
 	 * object graph is copied that contains a circular reference. Default is true. */
 	public void setCopyReferences (boolean copyReferences) {
 		this.copyReferences = copyReferences;
+	}
+
+	/**
+	 * If true, when {@link #copy(Object)} is called all transient fields that are accessible will be ignored from
+	 * being copied. Default is true.
+   */
+	public void setCopyTransient(boolean copyTransient) {
+		this.copyTransient = copyTransient;
+	}
+
+	/**
+	 * Returns true if copying of transient fields is enabled for {@link #copy(Object)}.
+	 * @return true if transient field copy is enable
+	 */
+	public boolean getCopyTransient() {
+		return copyTransient;
 	}
 
 	/** Sets the reference resolver and enables references. */

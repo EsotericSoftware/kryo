@@ -102,9 +102,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 * </p> */
 	private boolean useMemRegions = false;
 
-	/** If set, transient fields will be copied */
-	private boolean copyTransient = true;
-
 	/** If set, transient fields will be serialized */
 	private final boolean serializeTransient = false;
 
@@ -489,11 +486,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		rebuildCachedFields();
 	}
 
-	// Enable/disable copying of transient fields
-	public void setCopyTransient (boolean setCopyTransient) {
-		copyTransient = setCopyTransient;
-	}
-
 	/** This method can be called for different fields having the same type. Even though the raw type is the same, if the type is
 	 * generic, it could happen that different concrete classes are used to instantiate it. Therefore, in case of different
 	 * instantiation parameters, the fields analysis should be repeated.
@@ -655,10 +647,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		return useMemRegions;
 	}
 
-	public boolean getCopyTransient () {
-		return copyTransient;
-	}
-
 	/** Used by {@link #copy(Kryo, Object)} to create the new object. This can be overridden to customize object creation, eg to
 	 * call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
 	protected T createCopy (Kryo kryo, T original) {
@@ -670,7 +658,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		kryo.reference(copy);
 
 		// Copy transient fields
-		if (copyTransient) {
+		if (kryo.getCopyTransient()) {
 			for (int i = 0, n = transientFields.length; i < n; i++)
 				transientFields[i].copy(original, copy);
 		}
