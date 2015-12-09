@@ -26,19 +26,22 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer.BindCollection;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.IntArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.LongArraySerializer;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
+import com.esotericsoftware.kryo.serializers.MapSerializer;
+import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
 
 /** @author Nathan Sweet <misc@n4te.com> */
@@ -447,13 +450,15 @@ public class FieldSerializerTest extends KryoTestCase {
 		objectWithTransients1.anotherField2 = 5;
 		objectWithTransients1.anotherField3 = "Field2";
 
-		kryo.setCopyTransient(false);
+		FieldSerializer<HasTransients> ser = (FieldSerializer<HasTransients>)kryo.getSerializer(HasTransients.class);
+		ser.setCopyTransient(false);
+
 		HasTransients objectWithTransients3 = kryo.copy(objectWithTransients1);
 		assertTrue("Objects should be different if copy does not include transient fields",
 			!objectWithTransients3.equals(objectWithTransients1));
 		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
 
-		kryo.setCopyTransient(true);
+		ser.setCopyTransient(true);
 		HasTransients objectWithTransients2 = kryo.copy(objectWithTransients1);
 		assertEquals("Objects should be equal if copy includes transient fields", objectWithTransients2, objectWithTransients1);
 	}
