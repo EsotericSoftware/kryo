@@ -1048,8 +1048,10 @@ public class Kryo {
 	}
 
 	/**
-	 * If true, when {@link #copy(Object)} is called all transient fields that are accessible will be ignored from
-	 * being copied. Default is true.
+	 * If false, when {@link #copy(Object)} is called all transient fields that are accessible will be ignored from
+	 * being copied. This has to be set before registering classes with kryo for it to be used by all field
+	 * serializers. If transient fields has to be copied for specific classes then use {@link FieldSerializer#setCopyTransient(boolean)}.
+	 * Default is true.
    */
 	public void setCopyTransient(boolean copyTransient) {
 		this.copyTransient = copyTransient;
