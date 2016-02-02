@@ -25,8 +25,9 @@
 	</licenses>
 
 	<scm>
-		<url>http://kryo.googlecode.com/svn/</url>
-		<connection>scm:svn:http://kryo.googlecode.com/svn/</connection>
+		<url>https://github.com/EsotericSoftware/kryo</url>
+		<connection>scm:git:git@github.com:EsotericSoftware/kryo.git</connection>
+		<developerConnection>scm:git:git@github.com:EsotericSoftware/kryo.git</developerConnection>
 	</scm>
 
 	<developers>
