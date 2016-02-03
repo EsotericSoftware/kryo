@@ -12,6 +12,8 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 
 ## Contents
 
+[![Join the chat at https://gitter.im/EsotericSoftware/kryo](https://badges.gitter.im/EsotericSoftware/kryo.svg)](https://gitter.im/EsotericSoftware/kryo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 - [New in release 3.0.0](#new-in-release-300)
 - [Installation](#installation)
  - [Integration with Maven](#integration-with-maven)
