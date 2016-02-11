@@ -704,7 +704,10 @@ public class Kryo {
 			T object;
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, false);
-				if (stackSize == REF) return (T)readObject;
+				if (stackSize == REF) {
+					serializer.setGenerics(this, null);
+					return (T)readObject;
+				}
 				object = (T)serializer.read(this, input, type);
 				if (stackSize == readReferenceIds.size) reference(object);
 			} else
