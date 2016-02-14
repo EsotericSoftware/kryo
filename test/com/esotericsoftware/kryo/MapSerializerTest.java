@@ -19,9 +19,13 @@
 
 package com.esotericsoftware.kryo;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
@@ -167,7 +171,32 @@ public class MapSerializerTest extends KryoTestCase {
 		map.put("4", 44);
 		roundTrip(29, 43, map);
 	}
-	
+
+	public void testSerializingMapAfterDeserializingMultipleReferencesToSameMap() throws Exception {
+		Kryo kryo = new Kryo();
+		Output output = new Output(4096);
+
+		kryo.writeClassAndObject(output, new HasMultipleReferenceToSameMap());
+		kryo.readClassAndObject(new Input(new ByteArrayInputStream(output.getBuffer())));
+		output.clear();
+
+		Map<Integer, List<String>> mapOfLists = new HashMap<Integer, List<String>>();
+		mapOfLists.put(1, new ArrayList<String>());
+		kryo.writeClassAndObject(output, mapOfLists);
+
+		@SuppressWarnings("unchecked")
+		Map<Integer, List<String>> deserializedMap =
+				(Map<Integer, List<String>>) kryo.readClassAndObject(new Input(new ByteArrayInputStream(output.getBuffer())));
+		assertEquals(1, deserializedMap.size());
+	}
+
+	@SuppressWarnings("unused")
+	static class HasMultipleReferenceToSameMap {
+		private Map<Integer, String> mapOne = new HashMap<Integer, String>();
+		private Map<Integer, String> mapTwo = this.mapOne;
+	}
+
+
 	static public class HasGenerics {
 		public HashMap<String, Integer[]> map = new HashMap();
 		public HashMap<String, ?> map2 = new HashMap();
