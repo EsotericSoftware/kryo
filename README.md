@@ -15,6 +15,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 ## Contents
 
 - [New in release 3.0.0](#new-in-release-300)
+- [Versioning Semantics, Upgrading](#versioning-semantics-upgrading)
 - [Installation](#installation)
  - [Integration with Maven](#integration-with-maven)
  - [Using Kryo without Maven](#using-kryo-without-maven)
@@ -52,6 +53,28 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 The 3.0.0 release fixes many reported issues and improves stability and performance. The maven groupId is changed from `com.esotericsoftware.kryo` to `com.esotericsoftware`. The Unsafe-based IO serialization format was changed and is incompatible with previous versions (therefore the new major version), the standard serialization format is still compatible.
 
 See [ChangeLog](https://github.com/EsotericSoftware/kryo/blob/master/CHANGES.md) for more details about this release.
+
+## Versioning Semantics, Upgrading
+
+For a serialization library the most important value is that it can deserialize previously serialized data.
+With kryo we're following these rules of thumb for versioning:
+
+1. we increase the major version if serialization compatibility is broken (data serialized with the previous version cannot be deserialized with the new version)
+2. we increase the minor version if binary or source compatibility of the documented public api is broken
+
+Re rule 1.): It's applied if any of the underlying binary formats is changed (see [IO](#io) and [Unsafe-based IO](unsafe-based-io))
+  or if the data written by a commonly used serializer is changed (e.g. some [default serializer](#default-serializers)).
+
+Re rule 2.): Due to the limits of java's access modifiers the technical api is broader than the semantic api (documented on this page).
+  Therefore technical binary compatibility may be broken while no user is affected.
+
+Keep in mind, that any upgrade of a serialization library is a significant event.
+When upgrading kryo check the included changes and test thoroughly the new version with your own data structures and your setup.
+
+We try to make it as easy as possible:
+* at development time we track binary and source compatibility with [clirr](http://www.mojohaus.org/clirr-maven-plugin/)
+* for each release we provide a [ChangeLog](https://github.com/EsotericSoftware/kryo/blob/master/CHANGES.md) that additionally contains
+a section reporting the serialization, binary and source compatibilities (for reporting binary and source compatibility we use [japi-compliance-checker](https://github.com/lvc/japi-compliance-checker/))
 
 ## Installation
 
