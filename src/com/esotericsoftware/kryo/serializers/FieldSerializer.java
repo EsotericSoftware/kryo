@@ -152,6 +152,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
 		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
 		this.annotationsUtil = new FieldSerializerAnnotationsUtil(this);
+		this.copyTransient = kryo.getCopyTransient();
 		rebuildCachedFields();
 	}
 
@@ -172,6 +173,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
 		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
 		this.annotationsUtil = new FieldSerializerAnnotationsUtil(this);
+		this.copyTransient = kryo.getCopyTransient();
 		rebuildCachedFields();
 	}
 
