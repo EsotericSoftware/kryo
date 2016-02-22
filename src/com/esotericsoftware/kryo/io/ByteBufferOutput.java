@@ -134,6 +134,7 @@ public class ByteBufferOutput extends Output {
 
 	public void order (ByteOrder byteOrder) {
 		this.byteOrder = byteOrder;
+		this.niobuffer.order(byteOrder);
 	}
 
 	public OutputStream getOutputStream () {
@@ -186,6 +187,7 @@ public class ByteBufferOutput extends Output {
 	/** Sets the current position in the buffer. */
 	public void setPosition (int position) {
 		this.position = position;
+		this.niobuffer.position(position);
 	}
 
 	/** Sets the position and total to zero. */
@@ -198,12 +200,16 @@ public class ByteBufferOutput extends Output {
 	/** @return true if the buffer has been resized. */
 	protected boolean require (int required) throws KryoException {
 		if (capacity - position >= required) return false;
-		if (required > maxCapacity)
+		if (required > maxCapacity) {
+			niobuffer.order(byteOrder);
 			throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
+		}
 		flush();
 		while (capacity - position < required) {
-			if (capacity == maxCapacity)
+			if (capacity == maxCapacity) {
+				niobuffer.order(byteOrder);
 				throw new KryoException("Buffer overflow. Available: " + (capacity - position) + ", required: " + required);
+			}
 			// Grow buffer.
 			if (capacity == 0) capacity = 1;
 			capacity = Math.min(capacity * 2, maxCapacity);
