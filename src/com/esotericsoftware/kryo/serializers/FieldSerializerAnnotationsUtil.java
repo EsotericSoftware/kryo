@@ -22,23 +22,12 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.minlog.Log.TRACE;
 import static com.esotericsoftware.minlog.Log.trace;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 
-import com.esotericsoftware.kryo.Generics;
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
 /**

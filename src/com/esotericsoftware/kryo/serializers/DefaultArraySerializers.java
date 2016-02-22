@@ -20,12 +20,8 @@
 package com.esotericsoftware.kryo.serializers;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.TypeVariable;
-import java.util.Arrays;
 
-import com.esotericsoftware.kryo.Generics;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;

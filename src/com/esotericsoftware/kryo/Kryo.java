@@ -43,6 +43,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import com.esotericsoftware.kryo.serializers.OptionalSerializers;
+import com.esotericsoftware.kryo.serializers.GenericsResolver;
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.strategy.SerializingInstantiatorStrategy;
@@ -1178,15 +1179,6 @@ public class Kryo {
 			this.type = type;
 			this.serializerFactory = serializerFactory;
 		}
-	}
-
-	public void pushGenericsScope (Class type, Generics generics) {
-		if (TRACE) trace("kryo", "Settting a new generics scope for class " + type.getName() + ": " + generics);
-		genericsResolver.pushScope(generics);
-	}
-
-	public void popGenericsScope () {
-		genericsResolver.popScope();
 	}
 
 	public GenericsResolver getGenericsResolver () {

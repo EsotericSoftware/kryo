@@ -17,20 +17,26 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo;
+package com.esotericsoftware.kryo.serializers;
 
 import java.util.LinkedList;
 
-/** Helper class that resolves a type name variable to a concrete class using the current class serialization stack
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.trace;
+
+/**
+ * INTERNAL API
+ *
+ * Helper class that resolves a type name variable to a concrete class using the current class serialization stack
  *
  * @author Jeroen van Erp <jeroen@hierynomus.com> */
-public class GenericsResolver {
+public final class GenericsResolver {
     private LinkedList<Generics> stack = new LinkedList<Generics>();
 
-    GenericsResolver () {
+    public GenericsResolver () {
     }
 
-    public Class getConcreteClass (String typeVar) {
+    Class getConcreteClass(String typeVar) {
         for (Generics generics : stack) {
             Class clazz = generics.getConcreteClass(typeVar);
             if (clazz != null) return clazz;
@@ -38,15 +44,16 @@ public class GenericsResolver {
         return null;
     }
 
-    public boolean isSet () {
+    boolean isSet () {
         return !stack.isEmpty();
     }
 
-    void pushScope (Generics scope) {
+    void pushScope(Class type, Generics scope) {
+        if (TRACE) trace("generics", "Settting a new generics scope for class " + type.getName() + ": " + scope);
         stack.addFirst(scope);
     }
 
-    void popScope () {
+    void popScope() {
         stack.removeFirst();
     }
 }
