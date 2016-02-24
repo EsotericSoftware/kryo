@@ -8,6 +8,32 @@ import java.nio.ByteOrder;
 
 public class ByteBufferInputOutputTest extends KryoTestCase {
 
+	public void testByteBufferOutputResetEndiannessAfterException() {
+		ByteBufferOutput outputBuffer = new ByteBufferOutput(10, 10);
+		boolean exceptionTriggered = false;
+		try {
+			for (int i = 0; i < 10; i++) {
+				outputBuffer.writeVarInt(1234, true);
+			}
+		} catch (KryoException exception) {
+			exceptionTriggered = true;
+			assertEquals(outputBuffer.order(), outputBuffer.getByteBuffer().order());
+		}
+
+		assertTrue(exceptionTriggered);
+
+		exceptionTriggered = false;
+		try {
+			for (int i = 0; i < 10; i++) {
+				outputBuffer.writeVarLong(1234L, true);
+			}
+		} catch (KryoException exception) {
+			assertEquals(outputBuffer.order(), outputBuffer.getByteBuffer().order());
+			exceptionTriggered = true;
+		}
+		assertTrue(exceptionTriggered);
+	}
+
 	public void testByteBufferInputPosition() {
 		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
 		ByteBufferInput inputBuffer = new ByteBufferInput(byteBuffer);
