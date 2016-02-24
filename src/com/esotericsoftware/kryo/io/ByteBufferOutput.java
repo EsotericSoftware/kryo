@@ -134,6 +134,7 @@ public class ByteBufferOutput extends Output {
 
 	public void order (ByteOrder byteOrder) {
 		this.byteOrder = byteOrder;
+		this.niobuffer.order(byteOrder);
 	}
 
 	public OutputStream getOutputStream () {
@@ -186,6 +187,7 @@ public class ByteBufferOutput extends Output {
 	/** Sets the current position in the buffer. */
 	public void setPosition (int position) {
 		this.position = position;
+		this.niobuffer.position(position);
 	}
 
 	/** Sets the position and total to zero. */

@@ -109,6 +109,7 @@ public class ByteBufferInput extends Input {
 		position = buffer.position();
 		limit = buffer.limit();
 		capacity = buffer.capacity();
+		byteOrder = buffer.order();
 		total = 0;
 		inputStream = null;
 	}
@@ -293,6 +294,22 @@ public class ByteBufferInput extends Input {
 			if (position == limit) break;
 		}
 		return startingCount - count;
+	}
+
+	public void setPosition (int position) {
+		this.position = position;
+		this.niobuffer.position(position);
+	}
+
+	/** Sets the limit in the buffer. */
+	public void setLimit (int limit) {
+		this.limit = limit;
+		this.niobuffer.limit(limit);
+	}
+
+	public void skip(int count) throws KryoException {
+		super.skip(count);
+		niobuffer.position(this.position());
 	}
 
 	/** Discards the specified number of bytes. */
