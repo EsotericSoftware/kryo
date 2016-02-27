@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo;
 
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
+import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava8;
 import com.esotericsoftware.kryo.io.*;
 import com.esotericsoftware.minlog.Log;
 import org.objenesis.strategy.StdInstantiatorStrategy;
@@ -30,6 +31,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -71,6 +73,12 @@ public class SerializationCompatTest extends KryoTestCase {
     private static final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
     private static final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
     private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 33 : 34;
+    private static final List<TestDataDescription<?>> TEST_DATAS = new ArrayList<TestDataDescription<?>>();
+
+    static {
+        TEST_DATAS.add(new TestDataDescription<TestData>("3.0.0", new TestData(), 1646, 1754));
+        if(JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("3.1.0", new TestDataJava8(), 1656, 1764));
+    };
 
     @Override
     protected void setUp() throws Exception {
@@ -100,7 +108,7 @@ public class SerializationCompatTest extends KryoTestCase {
     }
 
     public void testStandard () throws Exception {
-        runTest(
+        runTests(
                 "standard",
                 new Function1<File, Input>() {
                     public Input apply(File file) throws FileNotFoundException {
@@ -116,7 +124,7 @@ public class SerializationCompatTest extends KryoTestCase {
     }
 
     public void testByteBuffer () throws Exception {
-        runTest(
+        runTests(
                 "bytebuffer",
                 new Function1<File, Input>() {
                     public Input apply(File file) throws FileNotFoundException {
@@ -132,7 +140,7 @@ public class SerializationCompatTest extends KryoTestCase {
     }
 
     public void testFast () throws Exception {
-        runTest(
+        runTests(
                 "fast",
                 new Function1<File, Input>() {
                     public Input apply(File file) throws FileNotFoundException {
@@ -148,7 +156,7 @@ public class SerializationCompatTest extends KryoTestCase {
     }
 
     public void testUnsafe () throws Exception {
-        runTest(
+        runTests(
                 "unsafe-" + ENDIANNESS,
                 new Function1<File, Input>() {
                     public Input apply(File file) throws FileNotFoundException {
@@ -164,7 +172,7 @@ public class SerializationCompatTest extends KryoTestCase {
     }
 
     public void testUnsafeMemory () throws Exception {
-        runTest(
+        runTests(
                 "unsafeMemory-" + ENDIANNESS,
                 new Function1<File, Input>() {
                     public Input apply(File file) throws FileNotFoundException {
@@ -179,29 +187,41 @@ public class SerializationCompatTest extends KryoTestCase {
         );
     }
 
-    private void runTest(String variant, Function1<File, Input> inputFactory, Function1<File, Output> outputFactory) throws Exception {
-        File file = new File("test/resources/data-"+ variant +".ser");
-        file.getParentFile().mkdirs();
-
-        if(file.exists()) {
-            Log.info("Reading and testing data with mode '"+ variant +"' from file " + file.getAbsolutePath());
-            Input in = inputFactory.apply(file);
-            readAndRunTest(in);
-            in.close();
-        }
-        else {
-            Log.info("Testing and writing data with mode '"+ variant +"' to file " + file.getAbsolutePath());
-            Output out = outputFactory.apply(file);
-            runTestAndWrite(out);
-            out.close();
+    private void runTests(String variant, Function1<File, Input> inputFactory, Function1<File, Output> outputFactory) throws Exception {
+        for(TestDataDescription description : TEST_DATAS) {
+            runTest(description, variant, inputFactory, outputFactory);
         }
     }
 
-    private void readAndRunTest (Input in) throws FileNotFoundException {
-        TestData actual = kryo.readObject(in, TestData.class);
-        roundTrip(1646, 1754, actual);
+    private void runTest(TestDataDescription description, String variant, Function1<File, Input> inputFactory, Function1<File, Output> outputFactory) throws Exception {
+        File file = new File("test/resources/"+ description.classSimpleName() +"-"+ variant +".ser");
+        file.getParentFile().mkdirs();
+
+        if(file.exists()) {
+            Log.info("Reading and testing "+ description.classSimpleName() +" with mode '"+ variant +"' from file " + file.getAbsolutePath());
+            Input in = inputFactory.apply(file);
+            readAndRunTest(description, in);
+            in.close();
+        }
+        else {
+            Log.info("Testing and writing "+ description.classSimpleName() +" with mode '"+ variant +"' to file " + file.getAbsolutePath());
+            Output out = outputFactory.apply(file);
+            try {
+                runTestAndWrite(description, out);
+                out.close();
+            } catch (Exception e) {
+                // if anything failed (e.g. the initial test), we should delete the file as it may be empty or corruped
+                out.close();
+                file.delete();
+            }
+        }
+    }
+
+    private void readAndRunTest (TestDataDescription<?> description, Input in) throws FileNotFoundException {
+        TestData actual = kryo.readObject(in, description.testDataClass());
+        roundTrip(description.length, description.unsafeLength, actual);
         try {
-            assertReflectionEquals(actual, new TestData());
+            assertReflectionEquals(actual, description.testData);
         } catch(AssertionError e) {
             Log.info("Serialization format is broken, please check " + getClass().getSimpleName() + "'s class doc to see" +
                     " what this means and how to proceed.");
@@ -209,10 +229,9 @@ public class SerializationCompatTest extends KryoTestCase {
         }
     }
 
-    private void runTestAndWrite (Output out) throws FileNotFoundException {
-        TestData testData = new TestData();
-        roundTrip(1646, 1754, testData);
-        kryo.writeObject(out, testData);
+    private void runTestAndWrite (TestDataDescription<?> description, Output out) throws FileNotFoundException {
+        roundTrip(description.length, description.unsafeLength, description.testData);
+        kryo.writeObject(out, description.testData);
     }
 
     @Override
@@ -226,6 +245,28 @@ public class SerializationCompatTest extends KryoTestCase {
 
     private interface Function1<A, B> {
         B apply(A input) throws Exception;
+    }
+
+    private static class TestDataDescription<T extends TestData> {
+        private final String kryoVersion;
+        private final T testData;
+        private final int length;
+        private final int unsafeLength;
+        TestDataDescription(String kryoVersion, T testData, int length, int unsafeLength) {
+            this.kryoVersion = kryoVersion;
+            this.testData = testData;
+            this.length = length;
+            this.unsafeLength = unsafeLength;
+        }
+
+        Class<T> testDataClass() {
+            return (Class<T>) testData.getClass();
+        }
+
+        String classSimpleName() {
+            return testData.getClass().getSimpleName();
+        }
+
     }
 	
 }

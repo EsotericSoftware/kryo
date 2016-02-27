@@ -33,6 +33,14 @@ import java.util.concurrent.atomic.AtomicLong;
 /** Testdata for serialization compatibility check. */
 class SerializationCompatTestData {
 
+	static class TestDataJava8 extends TestData {
+		private Optional<String> _optionalString;
+
+		TestDataJava8() {
+			_optionalString = Optional.of("foo");
+		}
+	}
+
 	public static class TestData implements Serializable {
 
 		private boolean _boolean;
