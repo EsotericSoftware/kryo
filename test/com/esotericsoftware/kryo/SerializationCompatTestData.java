@@ -26,6 +26,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -34,16 +35,44 @@ import java.util.concurrent.atomic.AtomicLong;
 class SerializationCompatTestData {
 
 	static class TestDataJava8 extends TestData {
-		private Optional<String> _optionalString;
-		private OptionalInt _optionalInt;
-		private OptionalLong _optionalLong;
-		private OptionalDouble _optionalDouble;
+		private Optional<String> optionalString;
+		private OptionalInt optionalInt;
+		private OptionalLong optionalLong;
+		private OptionalDouble optionalDouble;
+
+		private Duration duration;
+		private Instant instant;
+		private LocalDate localDate;
+		private LocalTime localTime;
+		private LocalDateTime localDateTime;
+		private ZoneOffset zoneOffset;
+		private ZoneId zoneId;
+		private OffsetTime offsetTime;
+		private OffsetDateTime offsetDateTime;
+		private ZonedDateTime zonedDateTime;
+		private Year year;
+		private YearMonth yearMonth;
+		private Period period;
 
 		TestDataJava8() {
-			_optionalString = Optional.of("foo");
-			_optionalInt = OptionalInt.of(42);
-			_optionalLong = OptionalLong.of(42L);
-			_optionalDouble = OptionalDouble.of(42d);
+			optionalString = Optional.of("foo");
+			optionalInt = OptionalInt.of(42);
+			optionalLong = OptionalLong.of(42L);
+			optionalDouble = OptionalDouble.of(42d);
+
+			duration = Duration.ofSeconds(42, 23);
+			instant = Instant.ofEpochSecond(42);
+			localDate = LocalDate.of(2016, Month.MARCH, 1);
+			localTime = LocalTime.of(11, 11, 11, 1111);
+			localDateTime = LocalDateTime.of(localDate, localTime);
+			zoneOffset = ZoneOffset.ofHours(1);
+			zoneId = ZoneId.of("Europe/Berlin");
+			offsetTime = OffsetTime.of(localTime, zoneOffset);
+			offsetDateTime = OffsetDateTime.of(localDate, localTime, zoneOffset);
+			zonedDateTime = ZonedDateTime.of(localDate, localTime, zoneId);
+			year = Year.of(2016);
+			yearMonth = YearMonth.of(2016, Month.MARCH);
+			period = Period.of(11, 11, 11);
 		}
 	}
 
