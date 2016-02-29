@@ -37,7 +37,7 @@ import java.util.OptionalLong;
  */
 public final class OptionalSerializers {
 
-    public static void addDefaultSerializer(Kryo kryo) {
+    public static void addDefaultSerializers(Kryo kryo) {
         if (isJava8()) {
             kryo.addDefaultSerializer(Optional.class, new OptionalSerializer());
             kryo.addDefaultSerializer(OptionalInt.class, new OptionalIntSerializer());
