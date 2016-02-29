@@ -35,9 +35,15 @@ class SerializationCompatTestData {
 
 	static class TestDataJava8 extends TestData {
 		private Optional<String> _optionalString;
+		private OptionalInt _optionalInt;
+		private OptionalLong _optionalLong;
+		private OptionalDouble _optionalDouble;
 
 		TestDataJava8() {
 			_optionalString = Optional.of("foo");
+			_optionalInt = OptionalInt.of(42);
+			_optionalLong = OptionalLong.of(42L);
+			_optionalDouble = OptionalDouble.of(42d);
 		}
 	}
 

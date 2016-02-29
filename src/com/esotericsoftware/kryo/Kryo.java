@@ -42,7 +42,7 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import com.esotericsoftware.kryo.serializers.java8.OptionalSerializer;
+import com.esotericsoftware.kryo.serializers.java8.OptionalSerializers;
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.strategy.SerializingInstantiatorStrategy;
@@ -211,7 +211,7 @@ public class Kryo {
 		addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
 		addDefaultSerializer(Calendar.class, CalendarSerializer.class);
 		addDefaultSerializer(Locale.class, LocaleSerializer.class);
-		OptionalSerializer.addDefaultSerializer(this);
+		OptionalSerializers.addDefaultSerializer(this);
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
