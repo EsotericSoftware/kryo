@@ -21,16 +21,19 @@ package com.esotericsoftware.kryo;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.TimeZone;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import java.util.Locale;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest extends KryoTestCase {
@@ -340,6 +343,26 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(6, 6, Locale.SIMPLIFIED_CHINESE);
 		roundTrip(5, 5, new Locale("es"));		
 		roundTrip(16, 16, new Locale("es", "ES", "áéíóú"));		
+	}
+
+	public void testCharset() {
+		List<String> css = Arrays.asList("ISO-8859-1", "US-ASCII", "UTF-8", "UTF-16", "UTF-16BE", "UTF-16LE");
+
+		for(String cs : css) {
+			Charset charset = Charset.forName(cs);
+			kryo.register(charset.getClass());
+			int expectedLength = 1 + cs.length();
+			roundTrip(expectedLength, expectedLength, charset);
+		}
+
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+
+		for(String cs : css) {
+			Charset charset = Charset.forName(cs);
+			int expectedLength = 3 + charset.getClass().getName().length() + cs.length();
+			roundTrip(expectedLength, expectedLength, charset);
+		}
 	}
 
 	public enum TestEnum {

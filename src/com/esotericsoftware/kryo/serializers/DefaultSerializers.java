@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.serializers;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -836,4 +837,20 @@ public class DefaultSerializers {
 			}
 		}
 	}
+
+	/** Serializer for {@link Charset}. Added as default serializer for java >= 7. */
+	public static class CharsetSerializer extends Serializer<Charset> {
+
+		{ setImmutable(true); }
+
+		public void write(Kryo kryo, Output output, Charset object) {
+			output.writeString(object.name());
+		}
+
+		public Charset read(Kryo kryo, Input input, Class<Charset> type) {
+			return Charset.forName(input.readString());
+		}
+
+	}
+
 }

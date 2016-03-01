@@ -26,6 +26,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -112,6 +113,7 @@ class SerializationCompatTestData {
 		private TimeZone _timeZone;
 		private Calendar _calendar;
 		private Locale _locale;
+		List<Charset> _charsets;
 
 		private Gender _enum;
 		private EnumSet<Gender> _enumSet;
@@ -184,6 +186,8 @@ class SerializationCompatTestData {
 
 			_timeZone = TimeZone.getTimeZone("America/Los_Angeles");
 			_locale = Locale.ENGLISH;
+			_charsets = new ArrayList<Charset>(Arrays.asList(Charset.forName("ISO-8859-1"), Charset.forName("US-ASCII"),
+					Charset.forName("UTF-8"), Charset.forName("UTF-16"), Charset.forName("UTF-16BE"), Charset.forName("UTF-16LE")));
 
 			_enum = Gender.FEMALE;
 			_enumSet = EnumSet.allOf(Gender.class);
