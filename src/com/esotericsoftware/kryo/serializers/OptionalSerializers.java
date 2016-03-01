@@ -17,9 +17,9 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo.serializers.java8;
+package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.kryo.serializers.java8.JavaVersion.isJava8;
+import static com.esotericsoftware.kryo.util.JavaVersion.isJava;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
@@ -38,7 +38,7 @@ import java.util.OptionalLong;
 public final class OptionalSerializers {
 
     public static void addDefaultSerializers(Kryo kryo) {
-        if (isJava8()) {
+        if (isJava(8)) {
             kryo.addDefaultSerializer(Optional.class, new OptionalSerializer());
             kryo.addDefaultSerializer(OptionalInt.class, new OptionalIntSerializer());
             kryo.addDefaultSerializer(OptionalLong.class, new OptionalLongSerializer());

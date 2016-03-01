@@ -42,7 +42,7 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import com.esotericsoftware.kryo.serializers.java8.OptionalSerializers;
+import com.esotericsoftware.kryo.serializers.OptionalSerializers;
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.strategy.SerializingInstantiatorStrategy;

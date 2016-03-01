@@ -17,17 +17,20 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo.serializers.java8;
+package com.esotericsoftware.kryo.util;
 
 /**
+ * INTERNAL API.
+ *
  * Helper to determine the java version.
  */
-final class JavaVersion {
+public final class JavaVersion {
 
     private static final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
 
-    static boolean isJava8() {
-        return JAVA_VERSION >= 8;
+    /** Determines if the currently running java version is greater or equals the given version. */
+    public static boolean isJava(int version) {
+        return JAVA_VERSION >= version;
     }
 
 }

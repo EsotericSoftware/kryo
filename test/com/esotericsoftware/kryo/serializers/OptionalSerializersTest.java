@@ -17,11 +17,14 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo.serializers.java8;
+package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.util.*;
+
+import static com.esotericsoftware.kryo.util.JavaVersion.isJava;
+import static org.junit.Assume.assumeTrue;
 
 public class OptionalSerializersTest extends KryoTestCase {
 
@@ -31,6 +34,9 @@ public class OptionalSerializersTest extends KryoTestCase {
 
     @Override
     protected void setUp() throws Exception {
+
+        assumeTrue(isJava(8));
+
         super.setUp();
         kryo.register(Optional.class);
         kryo.register(OptionalInt.class);
