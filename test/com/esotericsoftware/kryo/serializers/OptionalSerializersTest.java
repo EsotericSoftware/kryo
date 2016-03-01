@@ -20,23 +20,32 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.KryoTestCase;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import java.util.*;
 
 import static com.esotericsoftware.kryo.util.JavaVersion.isJava;
 import static org.junit.Assume.assumeTrue;
 
+@RunWith(JUnit4.class) // needed for Assume (since 4.4), junit3 would fail the test
 public class OptionalSerializersTest extends KryoTestCase {
 
     {
         supportsCopy = true;
     }
 
-    @Override
-    protected void setUp() throws Exception {
-
+    @BeforeClass()
+    public static void beforeClass() {
         assumeTrue(isJava(8));
+    }
 
+    @Override
+    @Before
+    public void setUp() throws Exception {
         super.setUp();
         kryo.register(Optional.class);
         kryo.register(OptionalInt.class);
@@ -45,24 +54,28 @@ public class OptionalSerializersTest extends KryoTestCase {
         kryo.register(TestClass.class);
     }
 
+    @Test
     public void testOptional() {
         roundTrip(2, 2, new TestClass(null));
         roundTrip(3, 3, new TestClass(Optional.<String>empty()));
         roundTrip(6, 6, new TestClass(Optional.of("foo")));
     }
 
+    @Test
     public void testOptionalInt() {
         roundTrip(2, 2, OptionalInt.empty());
         roundTrip(6, 6, OptionalInt.of(Integer.MIN_VALUE));
         roundTrip(6, 6, OptionalInt.of(Integer.MAX_VALUE));
     }
 
+    @Test
     public void testOptionalLong() {
         roundTrip(2, 2, OptionalLong.empty());
         roundTrip(10, 10, OptionalLong.of(Long.MIN_VALUE));
         roundTrip(10, 10, OptionalLong.of(Long.MAX_VALUE));
     }
 
+    @Test
     public void testOptionalDouble() {
         roundTrip(2, 2, OptionalDouble.empty());
         roundTrip(10, 10, OptionalDouble.of(Double.MIN_VALUE));
