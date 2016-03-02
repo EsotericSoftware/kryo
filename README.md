@@ -283,7 +283,7 @@ Some serializers allow extra information to be provided so that the number of by
     Kryo kryo = new Kryo();
     FieldSerializer someClassSerializer = new FieldSerializer(kryo, SomeClass.class);
     CollectionSerializer listSerializer = new CollectionSerializer();
-    listSerializer.setElementClass(String.class);
+    listSerializer.setElementClass(String.class, kryo.getSerializer(String.class));
     listSerializer.setElementsCanBeNull(false);
     someClassSerializer.getField("list").setClass(LinkedList.class, listSerializer);
     kryo.register(SomeClass.class, someClassSerializer);
