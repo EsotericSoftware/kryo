@@ -115,7 +115,7 @@ If you want to test the latest snapshot of Kryo, please use the following snippe
     <dependency>
        <groupId>com.esotericsoftware</groupId>
        <artifactId>kryo</artifactId>
-        <version>3.0.4-SNAPSHOT</version>
+        <version>3.1.0-SNAPSHOT</version>
     </dependency>
 ```
 
