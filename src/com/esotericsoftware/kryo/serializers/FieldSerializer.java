@@ -38,7 +38,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
-import com.esotericsoftware.kryo.Generics;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
@@ -203,7 +202,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		genericsScope = genScope;
 
 		// Push proper scopes at serializer construction time
-		if (genericsScope != null) kryo.pushGenericsScope(type, genericsScope);
+		if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
 
 		List<Field> validFields;
 		List<Field> validTransientFields;
@@ -272,7 +271,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		initializeCachedFields();
 
-		if (genericsScope != null) kryo.popGenericsScope();
+		if (genericsScope != null) kryo.getGenericsResolver().popScope();
 
 		if (!minorRebuild) {
 			for (CachedField field : removedFields)
@@ -512,7 +511,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		if (genericsScope != null) {
 			// Push proper scopes at serializer usage time
-			kryo.pushGenericsScope(type, genericsScope);
+			kryo.getGenericsResolver().pushScope(type, genericsScope);
 		}
 
 		CachedField[] fields = this.fields;
@@ -527,7 +526,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		if (genericsScope != null) {
 			// Pop the scope for generics
-			kryo.popGenericsScope();
+			kryo.getGenericsResolver().popScope();
 		}
 	}
 
@@ -542,7 +541,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 			if (genericsScope != null) {
 				// Push a new scope for generics
-				kryo.pushGenericsScope(type, genericsScope);
+				kryo.getGenericsResolver().pushScope(type, genericsScope);
 			}
 
 			T object = create(kryo, input, type);
@@ -561,7 +560,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		} finally {
 			if (genericsScope != null && kryo.getGenericsResolver() != null) {
 				// Pop the scope for generics
-				kryo.popGenericsScope();
+				kryo.getGenericsResolver().popScope();
 			}
 		}
 	}
@@ -683,7 +682,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		return copy;
 	}
 
-	public final Generics getGenericsScope () {
+	final Generics getGenericsScope () {
 		return genericsScope;
 	}
 

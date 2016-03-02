@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>com.esotericsoftware</groupId>
 		<artifactId>kryo-parent</artifactId>
-		<version>4.0.0-SNAPSHOT</version>
+		<version>3.1.0-SNAPSHOT</version>
 		<relativePath>./pom.xml</relativePath>
 	</parent>
 	<artifactId>kryo</artifactId>
@@ -77,11 +77,33 @@
 				</executions>
 				<!-- See http://mojo.codehaus.org/clirr-maven-plugin/check-mojo.html -->
 				<configuration>
-					<skip>true</skip>
+					<skip>false</skip>
 					<logResults>true</logResults>
 					<minSeverity>warning</minSeverity>
 					<!-- Configure ignored differences: http://mojo.codehaus.org/clirr-maven-plugin/examples/ignored-differences.html -->
 					<ignored>
+						<!-- Internal APIs -->
+						<difference>
+							<className>com/esotericsoftware/kryo/Kryo</className>
+							<method>*GenericsScope*</method>
+							<differenceType>7002</differenceType>
+						</difference>
+						<difference>
+							<className>com/esotericsoftware/kryo/serializers/FieldSerializer</className>
+							<method>*getGenericsScope*</method>
+							<differenceType>7006</differenceType>
+							<to>*</to>
+						</difference>
+						<difference>
+							<className>com/esotericsoftware/kryo/serializers/FieldSerializer</className>
+							<method>*getGenericsScope*</method>
+							<differenceType>7009</differenceType>
+							<to>*</to>
+						</difference>
+						<difference>
+							<className>com/esotericsoftware/kryo/Generics</className>
+							<differenceType>8001</differenceType>
+						</difference>
 						<!-- reflectasm classes are reported to be removed (as they're added by shade/bundle plugin during packaging) -->
 						<difference>
 							<className>com/esotericsoftware/reflectasm/**</className>

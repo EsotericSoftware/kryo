@@ -17,15 +17,18 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo;
+package com.esotericsoftware.kryo.serializers;
 
 import java.util.HashMap;
 import java.util.Map;
 
-/*** Helper class to map type name variables to concrete classes that are used during instantiation
+/**
+ * INTERNAL API
+ *
+ * Helper class to map type name variables to concrete classes that are used during instantiation
  * 
  * @author Roman Levenstein <romixlev@gmail.com> */
-public class Generics {
+final class Generics {
 	private Map<String, Class> typeVar2class;
 
 	public Generics () {
