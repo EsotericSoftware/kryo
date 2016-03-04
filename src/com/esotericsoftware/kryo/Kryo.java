@@ -28,6 +28,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -72,6 +73,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.BooleanSerialize
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ByteSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CalendarSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CharSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.CharsetSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ClassSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsEmptyListSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsEmptyMapSerializer;
@@ -213,6 +215,7 @@ public class Kryo {
 		addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
 		addDefaultSerializer(Calendar.class, CalendarSerializer.class);
 		addDefaultSerializer(Locale.class, LocaleSerializer.class);
+		addDefaultSerializer(Charset.class, CharsetSerializer.class);
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();

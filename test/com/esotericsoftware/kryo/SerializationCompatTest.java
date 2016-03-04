@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo;
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava8;
 import com.esotericsoftware.kryo.io.*;
+import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.minlog.Log;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
@@ -32,6 +33,7 @@ import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -72,12 +74,12 @@ public class SerializationCompatTest extends KryoTestCase {
 
     private static final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
     private static final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
-    private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 33 : 51;
+    private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 34 : 52;
     private static final List<TestDataDescription<?>> TEST_DATAS = new ArrayList<TestDataDescription<?>>();
 
     static {
-        TEST_DATAS.add(new TestDataDescription<TestData>("3.0.0", new TestData(), 1646, 1754));
-        if(JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("3.1.0", new TestDataJava8(), 1806, 1958));
+        TEST_DATAS.add(new TestDataDescription<TestData>("3.0.0", new TestData(), 1824, 1932));
+        if(JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("3.1.0", new TestDataJava8(), 1984, 2136));
     };
 
     @Override
@@ -213,6 +215,7 @@ public class SerializationCompatTest extends KryoTestCase {
                 // if anything failed (e.g. the initial test), we should delete the file as it may be empty or corruped
                 out.close();
                 file.delete();
+                throw e;
             }
         }
     }
