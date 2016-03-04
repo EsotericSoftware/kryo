@@ -183,6 +183,29 @@
 				</plugins>
 			</build>
 		</profile>
+		<profile>
+			<id>until-java8</id>
+			<activation>
+				<!-- Use exclusive 1.8 range instead of inclusive 1.7, because an upper bound ",1.7]" is likely not to include most releases of 1.7,
+				   since they will have an additional "patch" release such as _05 that is not taken into consideration in the above range.
+				   See also http://maven.apache.org/guides/introduction/introduction-to-profiles.html#Details_on_profile_activation -->
+				<jdk>[1.5,1.8)</jdk>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<version>2.19</version>
+						<configuration>
+							<excludes>
+								<exclude>**/Java8*Test.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 	</profiles>
 
 	<repositories>

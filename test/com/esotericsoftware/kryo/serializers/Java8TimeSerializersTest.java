@@ -21,23 +21,15 @@ package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import java.time.*;
 
-import static com.esotericsoftware.kryo.util.JavaVersion.isJava;
-import static org.junit.Assume.assumeTrue;
-
-@RunWith(JUnit4.class) // needed for Assume (since 4.4), junit3 would fail the test
-public class TimeSerializersTest extends KryoTestCase {
-
-    @BeforeClass()
-    public static void beforeClass() {
-        assumeTrue(isJava(8));
-    }
+/**
+ * Test for java 8 java.time.* serializers.
+ * Excluded from surefire tests via the "until-java8" profile in pom.xml which excludes "Java8*Tests".
+ */
+public class Java8TimeSerializersTest extends KryoTestCase {
 
     @Override
     @Before

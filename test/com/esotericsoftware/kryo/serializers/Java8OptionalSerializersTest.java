@@ -21,26 +21,18 @@ package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import java.util.*;
 
-import static com.esotericsoftware.kryo.util.JavaVersion.isJava;
-import static org.junit.Assume.assumeTrue;
-
-@RunWith(JUnit4.class) // needed for Assume (since 4.4), junit3 would fail the test
-public class OptionalSerializersTest extends KryoTestCase {
+/**
+ * Test for java 8 Optional* serializers.
+ * Excluded from surefire tests via the "until-java8" profile in pom.xml which excludes "Java8*Tests".
+ */
+public class Java8OptionalSerializersTest extends KryoTestCase {
 
     {
         supportsCopy = true;
-    }
-
-    @BeforeClass()
-    public static void beforeClass() {
-        assumeTrue(isJava(8));
     }
 
     @Override
