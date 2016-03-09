@@ -24,14 +24,7 @@ import static com.esotericsoftware.minlog.Log.*;
 /** A few utility methods, mostly for private use.
  * @author Nathan Sweet <misc@n4te.com> */
 public class Util {
-	static public boolean isAndroid;
-	static {
-		try {
-			Class.forName("android.os.Process");
-			isAndroid = true;
-		} catch (Exception ignored) {
-		}
-	}
+	static public boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
 
 	/** Returns the primitive wrapper class for a primitive class.
 	 * @param type Must be a primitive class. */
