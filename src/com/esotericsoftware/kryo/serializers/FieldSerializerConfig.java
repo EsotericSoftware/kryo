@@ -35,6 +35,8 @@ public final class FieldSerializerConfig implements Cloneable {
     private boolean useAsm;
     /** If set, transient fields will be copied */
     private boolean copyTransient = true;
+    /** If set, transient fields will be serialized */
+    private boolean serializeTransient = false;
 
     {
         useAsm = !FieldSerializer.unsafeAvailable;
@@ -98,6 +100,15 @@ public final class FieldSerializerConfig implements Cloneable {
         copyTransient = setCopyTransient;
     }
 
+    /**
+     * If set, transient fields will be serialized
+     * Default is false
+     * @param serializeTransient
+     */
+    public void setSerializeTransient(boolean serializeTransient) {
+        this.serializeTransient = serializeTransient;
+    }
+
     public boolean isFieldsCanBeNull() {
         return fieldsCanBeNull;
     }
@@ -120,5 +131,9 @@ public final class FieldSerializerConfig implements Cloneable {
 
     public boolean isCopyTransient() {
         return copyTransient;
+    }
+
+    public boolean isSerializeTransient() {
+        return serializeTransient;
     }
 }
