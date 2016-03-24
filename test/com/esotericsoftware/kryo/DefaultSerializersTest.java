@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +35,7 @@ import java.util.TimeZone;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest extends KryoTestCase {
@@ -363,6 +365,15 @@ public class DefaultSerializersTest extends KryoTestCase {
 			int expectedLength = 3 + charset.getClass().getName().length() + cs.length();
 			roundTrip(expectedLength, expectedLength, charset);
 		}
+	}
+
+	public void testURLSerializer () throws Exception {
+		kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+		kryo.setRegistrationRequired(true);
+		kryo.register(URL.class);
+
+		roundTrip(41, 41, new URL("https://github.com/EsotericSoftware/kryo"));
+		roundTrip(78, 78, new URL("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
 	}
 
 	public enum TestEnum {

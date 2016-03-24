@@ -26,6 +26,8 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.time.*;
 import java.util.*;
@@ -114,6 +116,7 @@ class SerializationCompatTestData {
 		private Calendar _calendar;
 		private Locale _locale;
 		List<Charset> _charsets;
+		private URL _url;
 
 		private Gender _enum;
 		private EnumSet<Gender> _enumSet;
@@ -188,6 +191,11 @@ class SerializationCompatTestData {
 			_locale = Locale.ENGLISH;
 			_charsets = new ArrayList<Charset>(Arrays.asList(Charset.forName("ISO-8859-1"), Charset.forName("US-ASCII"),
 					Charset.forName("UTF-8"), Charset.forName("UTF-16"), Charset.forName("UTF-16BE"), Charset.forName("UTF-16LE")));
+			try {
+				_url = new java.net.URL("https://github.com/EsotericSoftware/kryo");
+			} catch (MalformedURLException e) {
+				throw new RuntimeException(e);
+			}
 
 			_enum = Gender.FEMALE;
 			_enumSet = EnumSet.allOf(Gender.class);

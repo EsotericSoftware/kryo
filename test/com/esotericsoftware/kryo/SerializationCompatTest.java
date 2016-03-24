@@ -74,12 +74,12 @@ public class SerializationCompatTest extends KryoTestCase {
 
     private static final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
     private static final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
-    private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 34 : 52;
+    private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 35 : 53;
     private static final List<TestDataDescription<?>> TEST_DATAS = new ArrayList<TestDataDescription<?>>();
 
     static {
-        TEST_DATAS.add(new TestDataDescription<TestData>("3.0.0", new TestData(), 1824, 1932));
-        if(JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("3.1.0", new TestDataJava8(), 1984, 2136));
+        TEST_DATAS.add(new TestDataDescription<TestData>("3.0.0", new TestData(), 1865, 1973));
+        if(JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("3.1.0", new TestDataJava8(), 2025, 2177));
     };
 
     @Override

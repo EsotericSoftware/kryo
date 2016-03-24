@@ -21,6 +21,8 @@ package com.esotericsoftware.kryo.serializers;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.Calendar;
 import java.util.Collection;
@@ -838,7 +840,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	/** Serializer for {@link Charset}. Added as default serializer for java >= 7. */
+	/** Serializer for {@link Charset}. */
 	public static class CharsetSerializer extends Serializer<Charset> {
 
 		{ setImmutable(true); }
@@ -849,6 +851,25 @@ public class DefaultSerializers {
 
 		public Charset read(Kryo kryo, Input input, Class<Charset> type) {
 			return Charset.forName(input.readString());
+		}
+
+	}
+
+	/** Serializer for {@link URL}. */
+	public static class URLSerializer extends Serializer<URL> {
+
+		{ setImmutable(true); }
+
+		public void write(Kryo kryo, Output output, URL object) {
+			output.writeString(object.toExternalForm());
+		}
+
+		public URL read(Kryo kryo, Input input, Class<URL> type) {
+			try {
+				return new java.net.URL(input.readString());
+			} catch (MalformedURLException e) {
+				throw new KryoException(e);
+			}
 		}
 
 	}
