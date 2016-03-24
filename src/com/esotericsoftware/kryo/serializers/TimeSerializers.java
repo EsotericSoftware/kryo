@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.kryo.util.JavaVersion.isJava;
+import static com.esotericsoftware.kryo.util.Util.isClassAvailable;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
@@ -40,22 +40,34 @@ import java.time.*;
 public final class TimeSerializers {
 
     public static void addDefaultSerializers(Kryo kryo) {
-        if(isJava(8)) {
+        if(isClassAvailable("java.time.Duration"))
             kryo.addDefaultSerializer(Duration.class, new DurationSerializer());
+        if(isClassAvailable("java.time.Instant"))
             kryo.addDefaultSerializer(Instant.class, new InstantSerializer());
+        if(isClassAvailable("java.time.LocalDate"))
             kryo.addDefaultSerializer(LocalDate.class, new LocalDateSerializer());
+        if(isClassAvailable("java.time.LocalTime"))
             kryo.addDefaultSerializer(LocalTime.class, new LocalTimeSerializer());
+        if(isClassAvailable("java.time.LocalDateTime"))
             kryo.addDefaultSerializer(LocalDateTime.class, new LocalDateTimeSerializer());
+        if(isClassAvailable("java.time.ZoneOffset"))
             kryo.addDefaultSerializer(ZoneOffset.class, new ZoneOffsetSerializer());
+        if(isClassAvailable("java.time.ZoneId"))
             kryo.addDefaultSerializer(ZoneId.class, new ZoneIdSerializer());
+        if(isClassAvailable("java.time.OffsetTime"))
             kryo.addDefaultSerializer(OffsetTime.class, new OffsetTimeSerializer());
+        if(isClassAvailable("java.time.OffsetDateTime"))
             kryo.addDefaultSerializer(OffsetDateTime.class, new OffsetDateTimeSerializer());
+        if(isClassAvailable("java.time.ZonedDateTime"))
             kryo.addDefaultSerializer(ZonedDateTime.class, new ZonedDateTimeSerializer());
+        if(isClassAvailable("java.time.Year"))
             kryo.addDefaultSerializer(Year.class, new YearSerializer());
+        if(isClassAvailable("java.time.YearMonth"))
             kryo.addDefaultSerializer(YearMonth.class, new YearMonthSerializer());
+        if(isClassAvailable("java.time.MonthDay"))
             kryo.addDefaultSerializer(MonthDay.class, new MonthDaySerializer());
+        if(isClassAvailable("java.time.Period"))
             kryo.addDefaultSerializer(Period.class, new PeriodSerializer());
-        }
     }
 
     private static class DurationSerializer extends Serializer<Duration> {

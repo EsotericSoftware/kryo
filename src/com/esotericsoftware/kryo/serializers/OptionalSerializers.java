@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.kryo.util.JavaVersion.isJava;
+import static com.esotericsoftware.kryo.util.Util.isClassAvailable;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
@@ -38,12 +38,14 @@ import java.util.OptionalLong;
 public final class OptionalSerializers {
 
     public static void addDefaultSerializers(Kryo kryo) {
-        if (isJava(8)) {
+        if(isClassAvailable("java.util.Optional"))
             kryo.addDefaultSerializer(Optional.class, new OptionalSerializer());
+        if(isClassAvailable("java.util.OptionalInt"))
             kryo.addDefaultSerializer(OptionalInt.class, new OptionalIntSerializer());
+        if(isClassAvailable("java.util.OptionalLong"))
             kryo.addDefaultSerializer(OptionalLong.class, new OptionalLongSerializer());
+        if(isClassAvailable("java.util.OptionalDouble"))
             kryo.addDefaultSerializer(OptionalDouble.class, new OptionalDoubleSerializer());
-        }
     }
 
     private static class OptionalSerializer extends Serializer<Optional> {

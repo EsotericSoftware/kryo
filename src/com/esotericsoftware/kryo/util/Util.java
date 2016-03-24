@@ -26,6 +26,16 @@ import static com.esotericsoftware.minlog.Log.*;
 public class Util {
 	static public boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
 
+	public static boolean isClassAvailable(String className) {
+		try {
+			Class.forName(className);
+			return true;
+		} catch (Exception e) {
+			debug("kryo", "Class not available: " + className);
+			return false;
+		}
+	}
+
 	/** Returns the primitive wrapper class for a primitive class.
 	 * @param type Must be a primitive class. */
 	static public Class getWrapperClass (Class type) {
