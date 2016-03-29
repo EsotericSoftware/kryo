@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.util;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 import static com.esotericsoftware.minlog.Log.*;
 
 /** A few utility methods, mostly for private use.
@@ -26,14 +28,21 @@ import static com.esotericsoftware.minlog.Log.*;
 public class Util {
 	static public boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
 
+	private static final ConcurrentHashMap<String, Boolean> classAvailabilities = new ConcurrentHashMap<String, Boolean>();
+
 	public static boolean isClassAvailable(String className) {
-		try {
-			Class.forName(className);
-			return true;
-		} catch (Exception e) {
-			debug("kryo", "Class not available: " + className);
-			return false;
+		Boolean result = classAvailabilities.get(className);
+		if(result == null) {
+			try {
+				Class.forName(className);
+				result = true;
+			} catch (Exception e) {
+				debug("kryo", "Class not available: " + className);
+				result = false;
+			}
+			classAvailabilities.put(className, result);
 		}
+		return result;
 	}
 
 	/** Returns the primitive wrapper class for a primitive class.
