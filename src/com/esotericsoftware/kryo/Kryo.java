@@ -45,6 +45,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.URLSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.OptionalSerializers;
 import com.esotericsoftware.kryo.serializers.GenericsResolver;
 import com.esotericsoftware.kryo.serializers.TimeSerializers;
@@ -143,12 +144,11 @@ public class Kryo {
 
 	private int copyDepth;
 	private boolean copyShallow;
-	private boolean copyTransient = true;
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
 	private GenericsResolver genericsResolver = new GenericsResolver();
-	/** Tells if ASM-based backend should be used by new serializer instances created using this Kryo instance. */
-	private boolean asmEnabled = false;
+
+	private FieldSerializerConfig fieldSerializerConfig = new FieldSerializerConfig();
 
 	private StreamFactory streamFactory;
 
@@ -1058,22 +1058,11 @@ public class Kryo {
 		this.copyReferences = copyReferences;
 	}
 
-	/**
-	 * If false, when {@link #copy(Object)} is called all transient fields that are accessible will be ignored from
-	 * being copied. This has to be set before registering classes with kryo for it to be used by all field
-	 * serializers. If transient fields has to be copied for specific classes then use {@link FieldSerializer#setCopyTransient(boolean)}.
-	 * Default is true.
-	 */
-	public void setCopyTransient(boolean copyTransient) {
-		this.copyTransient = copyTransient;
-	}
-
-	/**
-	 * Returns true if copying of transient fields is enabled for {@link #copy(Object)}.
-	 * @return true if transient field copy is enable
-	 */
-	public boolean getCopyTransient() {
-		return copyTransient;
+	/** The default configuration for {@link FieldSerializer} instances. Already existing serializer instances (e.g.
+	 * implicitely created for already registered classes) are not affected by this configuration. You can override
+	 * the configuration for a single {@link FieldSerializer}. */
+	public FieldSerializerConfig getFieldSerializerConfig() {
+		return fieldSerializerConfig;
 	}
 
 	/** Sets the reference resolver and enables references. */
@@ -1209,13 +1198,18 @@ public class Kryo {
 	 * </p>
 	 * 
 	 * @param flag if true, ASM-based backend will be used. Otherwise Unsafe-based backend could be used by some serializers, e.g.
-	 *           FieldSerializer */
+	 *           FieldSerializer
+	 *
+	 * @deprecated Use {@link #getFieldSerializerConfig()} to change the default {@link FieldSerializer} configuration. */
+	@Deprecated
 	public void setAsmEnabled (boolean flag) {
-		this.asmEnabled = flag;
+		fieldSerializerConfig.setUseAsm(flag);
 	}
 
+	/** @deprecated Use {@link #getFieldSerializerConfig()} to change the default {@link FieldSerializer} configuration. */
+	@Deprecated
 	public boolean getAsmEnabled () {
-		return asmEnabled;
+		return fieldSerializerConfig.isUseAsm();
 	}
 
 	static public class DefaultInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {

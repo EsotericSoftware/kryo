@@ -461,7 +461,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	public void testTransientsUsingGlobalConfig () {
-		kryo.setCopyTransient(false);
+		kryo.getFieldSerializerConfig().setCopyTransient(false);
 		kryo.register(HasTransients.class);
 		HasTransients objectWithTransients1 = new HasTransients();
 		objectWithTransients1.transientField1 = "Test";
