@@ -38,6 +38,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<versions.reflectasm>1.10.1</versions.reflectasm>
+		<test.exclude>**/Java8*Test.java</test.exclude>
 	</properties>
 	
 	<modules>
@@ -101,6 +102,9 @@
 						<source>1.5</source>
 						<target>1.5</target>
 						<encoding>utf-8</encoding>
+						<testExcludes>
+							<testExclude>${test.exclude}</testExclude>
+						</testExcludes>
 					</configuration>
 				</plugin>
 				<plugin>
@@ -205,6 +209,18 @@
 					</plugin>
 				</plugins>
 			</build>
+		</profile>
+		<profile>
+			<id>java8</id>
+			<!-- To disable this profile run mvn with '-P !java8' (maybe escape the exclamation mark) -->
+			<activation><jdk>[1.8,)</jdk></activation>
+			<!-- use properties to change compiler configuration because overriding build/plugin config just did not work -->
+			<properties>
+				<!-- Setting an empty values does not override/set the property -->
+				<test.exclude>someValueWhichDoesNotExist</test.exclude>
+				<maven.compiler.testSource>1.8</maven.compiler.testSource>
+				<maven.compiler.testTarget>1.8</maven.compiler.testTarget>
+			</properties>
 		</profile>
 	</profiles>
 

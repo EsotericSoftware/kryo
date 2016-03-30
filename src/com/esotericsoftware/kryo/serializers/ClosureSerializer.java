@@ -30,15 +30,18 @@ import com.esotericsoftware.kryo.io.Output;
  * <p>
  * <code>
  * kryo.register(java.lang.invoke.SerializedLambda.class);<br>
- * kryo.register(Closure.class, new ClosureSerializer());</code>
+ * kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());</code>
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class ClosureSerializer extends Serializer {
 
+	/** Marker class to bind ClosureSerializer to. See also {@link Kryo#isClosure(Class)} and {@link Kryo#getRegistration(Class)} */
+	public static class Closure {
+	}
+
 	private static Method readResolve;
-	private static Class serializedLambda;
+	private static Class serializedLambda = java.lang.invoke.SerializedLambda.class;
 	static {
 		try {
-			serializedLambda = Class.forName("java.lang.invoke.SerializedLambda");
 			readResolve = serializedLambda.getDeclaredMethod("readResolve");
 			readResolve.setAccessible(true);
 		} catch (Exception e) {

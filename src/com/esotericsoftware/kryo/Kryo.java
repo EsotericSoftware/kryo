@@ -44,6 +44,7 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.URLSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.OptionalSerializers;
@@ -491,8 +492,8 @@ public class Kryo {
 				registration = getRegistration(type.getEnclosingClass());
 			} else if (EnumSet.class.isAssignableFrom(type)) {
 				registration = classResolver.getRegistration(EnumSet.class);
-			} else if (isClousre(type)) {
-				registration = classResolver.getRegistration(Closure.class);
+			} else if (isClosure(type)) {
+				registration = classResolver.getRegistration(ClosureSerializer.Closure.class);
 			}
 			if (registration == null) {
 				if (registrationRequired) {
@@ -1163,7 +1164,7 @@ public class Kryo {
 	/** Returns true if the specified type is a closure.
 	 * <p>
 	 * This can be overridden to support alternative implementations of clousres. Current version supports Oracle's Java8 only */
-	public boolean isClousre (Class type) {
+	protected boolean isClosure(Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		return type.getName().indexOf('/') >= 0;
 	}
@@ -1284,6 +1285,4 @@ public class Kryo {
 		}
 	}
 
-	private static class Closure {
-	}
 }

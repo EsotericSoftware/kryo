@@ -109,6 +109,11 @@
 							<className>com/esotericsoftware/reflectasm/**</className>
 							<differenceType>8001</differenceType>
 						</difference>
+						<difference>
+							<className>com/esotericsoftware/kryo/Kryo</className>
+							<method>*isClousre*</method>
+							<differenceType>7002</differenceType>
+						</difference>
 					</ignored>
 				</configuration>
 				<!-- prevent "clirr-maven-plugin:2.6.1:check failed: Invalid byte tag in constant pool: 18" -->
