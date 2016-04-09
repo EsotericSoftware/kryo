@@ -869,4 +869,52 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(s1, s2);
 
 	}
+
+	public void testNewOutputMaxBufferSizeLessThanBufferSize() {
+		int bufferSize = 2;
+		int maxBufferSize = 1;
+
+		try {
+			new Output(bufferSize, maxBufferSize);
+			fail("Expecting IllegalArgumentException not thrown");
+		} catch (IllegalArgumentException e) {
+			// This exception is expected
+		}
+	}
+
+	public void testSetOutputMaxBufferSizeLessThanBufferSize() {
+		int bufferSize = 2;
+		int maxBufferSize = 1;
+
+		Output output = new Output(bufferSize, bufferSize);
+		assertNotNull(output);
+
+		try {
+			output.setBuffer(new byte[bufferSize], maxBufferSize);
+			fail("Expecting IllegalArgumentException not thrown");
+		} catch (IllegalArgumentException e) {
+			// This exception is expected
+		}
+
+	}
+
+	public void testNewOutputMaxBufferSizeIsMinusOne() {
+		int bufferSize = 2;
+		int maxBufferSize = -1;
+
+		Output output = new Output(bufferSize, maxBufferSize);
+		assertNotNull(output);
+		// This test should pass as long as no exception thrown
+	}
+
+	public void testSetOutputMaxBufferSizeIsMinusOne() {
+		int bufferSize = 2;
+		int maxBufferSize = -1;
+
+		Output output = new Output(bufferSize, bufferSize);
+		assertNotNull(output);
+		output.setBuffer(new byte[bufferSize], maxBufferSize);
+		// This test should pass as long as no exception thrown
+	}
+
 }
