@@ -70,7 +70,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	/** type variables declared for this type */
 	final TypeVariable[] typeParameters;
 	final Class componentType;
-	private final FieldSerializerConfig config;
+	protected final FieldSerializerConfig config;
 	private CachedField[] fields = new CachedField[0];
 	private CachedField[] transientFields = new CachedField[0];
 	protected HashSet<CachedField> removedFields = new HashSet();
@@ -133,6 +133,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	}
 
 	public FieldSerializer (Kryo kryo, Class type, Class[] generics) {
+		this(kryo, type, generics, kryo.getFieldSerializerConfig().clone());
+	}
+
+	protected FieldSerializer (Kryo kryo, Class type, Class[] generics, FieldSerializerConfig config) {
 		this.kryo = kryo;
 		this.type = type;
 		this.generics = generics;
@@ -141,7 +145,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			this.componentType = type.getComponentType();
 		else
 			this.componentType = null;
-		this.config = kryo.getFieldSerializerConfig().clone();
+		this.config = config;
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
 		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
 		this.annotationsUtil = new FieldSerializerAnnotationsUtil(this);

@@ -27,7 +27,7 @@ import static com.esotericsoftware.minlog.Log.trace;
 /** Configuration for FieldSerializer instances. To configure defaults for new FieldSerializer instances
  * use {@link Kryo#getFieldSerializerConfig()}, to configure a specific FieldSerializer instance use setters
  * for configuration settings on this specific FieldSerializer. */
-public final class FieldSerializerConfig implements Cloneable {
+public class FieldSerializerConfig implements Cloneable {
     private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
     private boolean ignoreSyntheticFields = true;
     private boolean fixedFieldTypes;
