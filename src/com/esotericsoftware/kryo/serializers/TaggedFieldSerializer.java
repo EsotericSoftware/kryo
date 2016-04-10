@@ -19,13 +19,16 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.trace;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -48,7 +51,24 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	private boolean[] deprecated;
 
 	public TaggedFieldSerializer (Kryo kryo, Class type) {
-		super(kryo, type);
+		super(kryo, type, null, kryo.getTaggedFieldSerializerConfig().clone());
+	}
+
+	/** Tells Kryo, if should ignore unknown field tags when using TaggedFieldSerializer. Already existing serializer instances
+	 * are not affected by this setting.
+	 *
+	 * <p>
+	 * By default, Kryo will throw KryoException if encounters unknown field tags.
+	 * </p>
+	 *
+	 * @param ignoreUnknownTags if true, unknown field tags will be ignored. Otherwise KryoException will be thrown */
+	public void setIgnoreUnknownTags (boolean ignoreUnknownTags) {
+		((TaggedFieldSerializerConfig) config).setIgnoreUnknownTags(ignoreUnknownTags);
+		rebuildCachedFields();
+	}
+
+	public boolean isIgnoreUnkownTags() {
+		return ((TaggedFieldSerializerConfig) config).isIgnoreUnknownTags();
 	}
 
 	protected void initializeCachedFields () {
@@ -66,6 +86,13 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		tags = new int[fields.length];
 		deprecated = new boolean[fields.length];
 		writeFieldCount = fields.length;
+
+		// fields are sorted to ensure write order: tag 0, tag 1, ... , tag N
+		Arrays.sort(fields, new Comparator<CachedField>() {
+			public int compare(CachedField o1, CachedField o2) {
+				return o1.getField().getAnnotation(Tag.class).value() - o2.getField().getAnnotation(Tag.class).value();
+			}
+		});
 		for (int i = 0, n = fields.length; i < n; i++) {
 			Field field = fields[i].getField();
 			tags[i] = field.getAnnotation(Tag.class).value();
@@ -114,8 +141,11 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 					break;
 				}
 			}
-			if (cachedField == null) throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
-			cachedField.read(input, object);
+			if (cachedField == null) {
+				if (!isIgnoreUnkownTags()) throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
+			} else {
+				cachedField.read(input, object);
+			}
 		}
 		return object;
 	}
