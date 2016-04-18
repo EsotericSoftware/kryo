@@ -98,9 +98,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 * </p> */
 	private boolean useMemRegions = false;
 
-	/** If set, transient fields will be serialized */
-	private final boolean serializeTransient = false;
-
 	private boolean hasObjectFields = false;
 
 	static CachedFieldFactory asmFieldFactory;
@@ -461,6 +458,11 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		config.setCopyTransient(setCopyTransient);
 	}
 
+	// Enable/disable serialization of transient fields
+	public void setSerializeTransient (boolean setSerializeTransient) {
+		config.setSerializeTransient(setSerializeTransient);
+	}
+
 	/** This method can be called for different fields having the same type. Even though the raw type is the same, if the type is
 	 * generic, it could happen that different concrete classes are used to instantiate it. Therefore, in case of different
 	 * instantiation parameters, the fields analysis should be repeated.
@@ -485,7 +487,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			fields[i].write(output, object);
 
 		// Serialize transient fields
-		if (serializeTransient) {
+		if (config.isSerializeTransient()) {
 			for (int i = 0, n = transientFields.length; i < n; i++)
 				transientFields[i].write(output, object);
 		}
@@ -518,7 +520,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				fields[i].read(input, object);
 
 			// De-serialize transient fields
-			if (serializeTransient) {
+			if (config.isSerializeTransient()) {
 				for (int i = 0, n = transientFields.length; i < n; i++)
 					transientFields[i].read(input, object);
 			}
@@ -606,6 +608,12 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		return fields;
 	}
 
+    /** Get all transient fields controlled by this FieldSerializer
+     * @return all transient  fields controlled by this FieldSerializer */
+	public CachedField[] getTransientFields () {
+		return transientFields;
+	}
+
 	public Class getType () {
 		return type;
 	}
@@ -624,6 +632,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	public boolean getCopyTransient () {
 		return config.isCopyTransient();
+	}
+	
+	public boolean getSerializeTransient() {
+		return config.isSerializeTransient();
 	}
 
 	/** Used by {@link #copy(Kryo, Object)} to create the new object. This can be overridden to customize object creation, eg to
