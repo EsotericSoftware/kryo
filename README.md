@@ -584,7 +584,7 @@ A very simple solution is to bind `Kryo` instances to Threads using `ThreadLocal
 
 ```java
 // Setup ThreadLocal of Kryo instances
-private ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
+private static final ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
 	protected Kryo initialValue() {
 		Kryo kryo = new Kryo();
 		// configure kryo instance, customize settings
