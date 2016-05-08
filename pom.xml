@@ -37,7 +37,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<versions.reflectasm>1.10.1</versions.reflectasm>
+		<versions.reflectasm>1.11.2</versions.reflectasm>
 		<test.exclude>**/Java8*Test.java</test.exclude>
 	</properties>
 	
