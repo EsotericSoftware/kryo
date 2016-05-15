@@ -479,7 +479,7 @@ A serialization library needs special knowledge on how to create new instances, 
 
 The Serializer class has a `copy` method that does the work. These methods can be ignored when implementing application specific serializers if the copying functionality will not be used. All serializers provided with Kryo support copying. Multiple references to the same object and circular references are handled by the framework automatically.
 
-Similar to the `read()` Serializer method, `kryo.reference()` must be called before Kryo can be used to copy child objects. See [Serializers](#Serializers) for more information.
+Similar to the `read()` Serializer method, `kryo.reference()` must be called before Kryo can be used to copy child objects. See [Serializers](#serializers) for more information.
 
 Similar to KryoSerializable, classes can implement KryoCopyable to do their own copying:
 
