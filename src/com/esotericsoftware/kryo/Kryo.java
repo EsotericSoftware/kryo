@@ -462,7 +462,7 @@ public class Kryo {
 		Registration existing = getRegistration(registration.getId());
 		if (DEBUG && existing != null && existing.getType() != registration.getType()) {
 			debug("An existing registration with a different type already uses ID: " + registration.getId()
-				+ "\nExisting registration: " + existing + "\nUnable to set registration: " + registration);
+				+ "\nExisting registration: " + existing + "\nis now overwritten with: " + registration);
 		}
 
 		return classResolver.register(registration);
