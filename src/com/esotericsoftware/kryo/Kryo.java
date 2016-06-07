@@ -133,6 +133,7 @@ public class Kryo {
 	private ClassLoader classLoader = getClass().getClassLoader();
 	private InstantiatorStrategy strategy = new DefaultInstantiatorStrategy();
 	private boolean registrationRequired;
+	private boolean warnUnregisteredClasses;
 
 	private int depth, maxDepth = Integer.MAX_VALUE;
 	private boolean autoReset = true;
@@ -499,13 +500,20 @@ public class Kryo {
 			}
 			if (registration == null) {
 				if (registrationRequired) {
-					throw new IllegalArgumentException("Class is not registered: " + className(type)
-						+ "\nNote: To register this class use: kryo.register(" + className(type) + ".class);");
+					throw new IllegalArgumentException(unregisteredClassMessage(type));
+				}
+				if(warnUnregisteredClasses) {
+					warn(unregisteredClassMessage(type));
 				}
 				registration = classResolver.registerImplicit(type);
 			}
 		}
 		return registration;
+	}
+
+	protected String unregisteredClassMessage (Class type) {
+		return "Class is not registered: " + className(type)
+			+ "\nNote: To register this class use: kryo.register(" + className(type) + ".class);";
 	}
 
 	/** @see ClassResolver#getRegistration(int) */
@@ -1039,6 +1047,21 @@ public class Kryo {
 
 	public boolean isRegistrationRequired () {
 		return registrationRequired;
+	}
+	
+	/**
+	 * If true, kryo writes a warn log telling about the classes unregistered. Default is false.
+	 * <p>
+	 * If false, no log are written when unregistered classes are encountered.
+	 * </p>
+	 */
+	public void setWarnUnregisteredClasses (boolean warnUnregisteredClasses) {
+		this.warnUnregisteredClasses = warnUnregisteredClasses;
+		if (TRACE) trace("kryo", "Warn unregistered classes: " + warnUnregisteredClasses);
+	}
+	
+	public boolean isWarnUnregisteredClasses () {
+		return warnUnregisteredClasses;
 	}
 
 	/** If true, each appearance of an object in the graph after the first is stored as an integer ordinal. When set to true,
