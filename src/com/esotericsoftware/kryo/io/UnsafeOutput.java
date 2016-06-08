@@ -93,6 +93,26 @@ public final class UnsafeOutput extends Output {
 		super(outputStream, bufferSize);
 	}
 
+	/** Writes a single byte. */
+	final public void writeByte (byte value) throws KryoException {
+		require(1);
+		unsafe().putByte(buffer, byteArrayBaseOffset + position, value);
+		position++;
+	}
+
+	final public void writeByte (int value) throws KryoException {
+		require(1);
+		unsafe().putByte(buffer, byteArrayBaseOffset + position, (byte)value);
+		position++;
+	}
+
+	/** Writes a 1 byte boolean.*/
+	final public void writeBoolean (boolean value) throws KryoException {
+		require(1);
+		unsafe().putBoolean(buffer, byteArrayBaseOffset + position, value);
+		position++;
+	}
+
 	/** Writes a 4 byte int. */
 	final public void writeInt (int value) throws KryoException {
 		require(4);

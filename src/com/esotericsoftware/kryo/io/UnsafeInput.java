@@ -75,6 +75,26 @@ public final class UnsafeInput extends Input {
 		super(inputStream, bufferSize);
 	}
 
+	// byte
+
+	/** Reads a single byte. */
+	public byte readByte () throws KryoException {
+		require(1);
+		byte result = unsafe().getByte(buffer, byteArrayBaseOffset + position);
+		position++;
+		return result;
+	}
+
+	// boolean
+
+	/** Reads a 1 byte boolean. */
+	public boolean readBoolean () throws KryoException {
+		require(1);
+		boolean result = unsafe().getBoolean(buffer, byteArrayBaseOffset + position);
+		position++;
+		return result;
+	}
+
 	// int
 
 	/** Reads a 4 byte int. */
