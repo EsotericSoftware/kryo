@@ -621,7 +621,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		assertFalse("Exception was expected", true);
 	}
-	
+
 	static public class DefaultTypes {
 		// Primitives.
 		public boolean booleanField;

@@ -58,7 +58,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			if (TRACE) trace("kryo", "Write " + fields.length + " field names.");
 			output.writeVarInt(fields.length, true);
 			for (int i = 0, n = fields.length; i < n; i++)
-				output.writeString(fields[i].field.getName());
+				output.writeString(getCachedFieldName(fields[i]));
 		}
 
 		OutputChunked outputChunked = new OutputChunked(output, 1024);
@@ -88,7 +88,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					for (int i = 0; i < length; i++) {
 						String schemaName = names[i];
 						for (int ii = 0, nn = allFields.length; ii < nn; ii++) {
-							if (allFields[ii].field.getName().equals(schemaName)) {
+							if (getCachedFieldName(allFields[ii]).equals(schemaName)) {
 								fields[i] = allFields[ii];
 								continue outer;
 							}
@@ -108,7 +108,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 						while (low <= high) {
 							mid = (low + high) >>> 1;
-							String midVal = allFields[mid].field.getName();
+							String midVal = getCachedFieldName(allFields[mid]);
 							compare = schemaName.compareTo(midVal);
 
 							if (compare < 0) {
@@ -137,7 +137,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				// Generic type used to instantiate this field could have
 				// been changed in the meantime. Therefore take the most
 				// up-to-date definition of a field
-				cachedField = getField(cachedField.field.getName());
+				cachedField = getField(getCachedFieldName(cachedField));
 			}
 			if (cachedField == null) {
 				if (TRACE) trace("kryo", "Skip obsolete field.");

@@ -410,7 +410,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	public int compare (CachedField o1, CachedField o2) {
 		// Fields are sorted by alpha so the order of the data is known.
-		return o1.field.getName().compareTo(o2.field.getName());
+		return getCachedFieldName(o1).compareTo(getCachedFieldName(o2));
 	}
 
 	/** Sets the default value for {@link CachedField#setCanBeNull(boolean)}. Calling this method resets the {@link #getFields()
@@ -542,15 +542,19 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	/** Allows specific fields to be optimized. */
 	public CachedField getField (String fieldName) {
 		for (CachedField cachedField : fields)
-			if (cachedField.field.getName().equals(fieldName)) return cachedField;
+			if (getCachedFieldName(cachedField).equals(fieldName)) return cachedField;
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
+	}
+
+	protected String getCachedFieldName(CachedField cachedField) {
+		return config.getCachedFieldNameStrategy().getName(cachedField);
 	}
 
 	/** Removes a field so that it won't be serialized. */
 	public void removeField (String fieldName) {
 		for (int i = 0; i < fields.length; i++) {
 			CachedField cachedField = fields[i];
-			if (cachedField.field.getName().equals(fieldName)) {
+			if (getCachedFieldName(cachedField).equals(fieldName)) {
 				CachedField[] newFields = new CachedField[fields.length - 1];
 				System.arraycopy(fields, 0, newFields, 0, i);
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
@@ -562,7 +566,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		for (int i = 0; i < transientFields.length; i++) {
 			CachedField cachedField = transientFields[i];
-			if (cachedField.field.getName().equals(fieldName)) {
+			if (getCachedFieldName(cachedField).equals(fieldName)) {
 				CachedField[] newFields = new CachedField[transientFields.length - 1];
 				System.arraycopy(transientFields, 0, newFields, 0, i);
 				System.arraycopy(transientFields, i + 1, newFields, i, newFields.length - i);
@@ -719,6 +723,25 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	public static interface CachedFieldFactory {
 		public CachedField createCachedField (Class fieldClass, Field field, FieldSerializer ser);
+	}
+
+	public interface CachedFieldNameStrategy {
+
+		CachedFieldNameStrategy DEFAULT = new CachedFieldNameStrategy() {
+			@Override
+			public String getName(CachedField cachedField) {
+				return cachedField.field.getName();
+			}
+		};
+
+		CachedFieldNameStrategy EXTENDED = new CachedFieldNameStrategy() {
+			@Override
+			public String getName(CachedField cachedField) {
+				return cachedField.field.getDeclaringClass().getSimpleName() + "." + cachedField.field.getName();
+			}
+		};
+
+		String getName(CachedField cachedField);
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
