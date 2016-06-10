@@ -38,6 +38,8 @@ public class FieldSerializerConfig implements Cloneable {
     /** If set, transient fields will be serialized */
     private boolean serializeTransient = false;
 
+    private FieldSerializer.CachedFieldNameStrategy cachedFieldNameStrategy = FieldSerializer.CachedFieldNameStrategy.DEFAULT;
+
     {
         useAsm = !FieldSerializer.unsafeAvailable;
         if (TRACE) trace("kryo.FieldSerializerConfig", "useAsm: " + useAsm);
@@ -135,5 +137,14 @@ public class FieldSerializerConfig implements Cloneable {
 
     public boolean isSerializeTransient() {
         return serializeTransient;
+    }
+
+    public FieldSerializer.CachedFieldNameStrategy getCachedFieldNameStrategy() {
+        return cachedFieldNameStrategy;
+    }
+
+    public void setCachedFieldNameStrategy(FieldSerializer.CachedFieldNameStrategy cachedFieldNameStrategy) {
+        this.cachedFieldNameStrategy = cachedFieldNameStrategy;
+        if (TRACE) trace("kryo.FieldSerializerConfig", "CachedFieldNameStrategy: " + cachedFieldNameStrategy);
     }
 }
