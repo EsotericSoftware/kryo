@@ -21,40 +21,48 @@ package com.esotericsoftware.kryo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.io.Serializable;
 
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.CollectionSerializer.BindCollection;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.IntArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.LongArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
-import com.esotericsoftware.kryo.serializers.MapSerializer;
-import com.esotericsoftware.kryo.serializers.CollectionSerializer;
-import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
 
 /** @author Nathan Sweet <misc@n4te.com> */
+@RunWith(Parameterized.class)
 public class GenericsTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
+	@Parameters(name = "optimizedGenerics_{0}")
+	public static Iterable<?> optimizedGenerics() {
+		return Arrays.asList(true, false);
+	}
+
+	private boolean optimizedGenerics;
+
+	public GenericsTest(boolean optimizedGenerics) {
+		this.optimizedGenerics = optimizedGenerics;
+	}
+
+	@Override
+	@Before
+	public void setUp() throws Exception {
+		super.setUp();
+	}
+
+	@Test
 	public void testGenericClassWithGenericFields () throws Exception {
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
 		kryo.setAsmEnabled(true);
+		kryo.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
 		kryo.register(BaseGeneric.class);
 
 		List list = Arrays.asList(
@@ -66,6 +74,7 @@ public class GenericsTest extends KryoTestCase {
 		roundTrip(108, 108, bg1);
 	}
 
+	@Test
 	public void testNonGenericClassWithGenericSuperclass () throws Exception {
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
@@ -80,6 +89,57 @@ public class GenericsTest extends KryoTestCase {
 		ConcreteClass cc1 = new ConcreteClass(list);
 
 		roundTrip(108, 108, cc1);
+	}
+
+	// Test for/from https://github.com/EsotericSoftware/kryo/issues/377
+	@Test
+	public void testDifferentTypeArgumentsNonOptimizedOnly() throws Exception {
+
+		// no other way to opt-out from parameterization? (would be possible with testng)
+		Assume.assumeFalse(optimizedGenerics); // will mark the test as skipped for 'true'
+
+		LongHolder o1 = new LongHolder(1L);
+		LongListHolder o2 = new LongListHolder(Arrays.asList(1L));
+
+		kryo.setRegistrationRequired(false);
+		kryo.getFieldSerializerConfig().setOptimizedGenerics(false);
+		Output buffer = new Output(512, 4048);
+		kryo.writeClassAndObject(buffer, o1);
+		kryo.writeClassAndObject(buffer, o2);
+	}
+
+	private interface Holder<V> {
+		V getValue();
+	}
+
+	private static abstract class AbstractValueHolder<V> implements Holder<V> {
+		private final V value;
+
+		AbstractValueHolder(V value) {
+			this.value = value;
+		}
+
+		public V getValue() {
+			return value;
+		}
+	}
+
+	private static abstract class AbstractValueListHolder<V> extends AbstractValueHolder<List<V>> {
+		AbstractValueListHolder(List<V> value) {
+			super(value);
+		}
+	}
+
+	private static class LongHolder extends AbstractValueHolder<Long> {
+		LongHolder(Long value) {
+			super(value);
+		}
+	}
+
+	private static class LongListHolder extends AbstractValueListHolder<Long> {
+		LongListHolder(java.util.List<Long> value) {
+			super(value);
+		}
 	}
 
 	// A simple serializable class.

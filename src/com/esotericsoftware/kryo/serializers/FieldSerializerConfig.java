@@ -28,6 +28,7 @@ import static com.esotericsoftware.minlog.Log.trace;
  * use {@link Kryo#getFieldSerializerConfig()}, to configure a specific FieldSerializer instance use setters
  * for configuration settings on this specific FieldSerializer. */
 public class FieldSerializerConfig implements Cloneable {
+
     private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
     private boolean ignoreSyntheticFields = true;
     private boolean fixedFieldTypes;
@@ -37,6 +38,8 @@ public class FieldSerializerConfig implements Cloneable {
     private boolean copyTransient = true;
     /** If set, transient fields will be serialized */
     private boolean serializeTransient = false;
+    /** Try to optimize handling of generics for smaller size */
+    private boolean optimizedGenerics = false;
 
     private FieldSerializer.CachedFieldNameStrategy cachedFieldNameStrategy = FieldSerializer.CachedFieldNameStrategy.DEFAULT;
 
@@ -93,6 +96,15 @@ public class FieldSerializerConfig implements Cloneable {
         if (TRACE) trace("kryo.FieldSerializerConfig", "setUseAsm: " + setUseAsm);
     }
 
+    /** Controls if the serialization of generics should be optimized for smaller size.
+     * <p><strong>Important:</strong> This setting changes the serialized representation, so that data can be deserialized
+     * only with if this setting is the same as it was for serialization.</p>
+     * @param setOptimizedGenerics If true, the serialization of generics will be optimize for smaller size (default: false) */
+    public void setOptimizedGenerics (boolean setOptimizedGenerics) {
+        optimizedGenerics = setOptimizedGenerics;
+        if (TRACE) trace("kryo.FieldSerializerConfig", "setOptimizedGenerics: " + setOptimizedGenerics);
+    }
+
     /** If false, when {@link Kryo#copy(Object)} is called all transient fields that are accessible will be ignored from
      * being copied. This has to be set before registering classes with kryo for it to be used by all field
      * serializers. If transient fields has to be copied for specific classes then use {@link FieldSerializer#setCopyTransient(boolean)}.
@@ -129,6 +141,10 @@ public class FieldSerializerConfig implements Cloneable {
 
     public boolean isUseAsm() {
         return useAsm;
+    }
+
+    public boolean isOptimizedGenerics() {
+        return optimizedGenerics;
     }
 
     public boolean isCopyTransient() {
