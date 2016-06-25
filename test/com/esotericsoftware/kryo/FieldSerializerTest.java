@@ -389,14 +389,46 @@ public class FieldSerializerTest extends KryoTestCase {
 		assertEquals("Default constructor should not be invoked with StdInstantiatorStrategy strategy", 0,
 			HasPrivateConstructor.invocations);
 	}
-	
-	public void testGenericTypes () {
-		kryo = new Kryo();
+
+	public void testGenericTypesOptimized() {
+		testGenericTypes(true);
+	}
+
+	public void testGenericTypesNonOptimized() {
+		testGenericTypes(false);
+	}
+
+	/** Check that it is OK to change the optimizedGenerics setting
+	 * on the same Kryo instance multiple times.
+	 */
+	public void testGenericTypesOptimizedAndNonOptimized() {
+		Kryo kryoInstance = kryo;
+		testGenericTypes(true);
+		assertEquals("The same instance of Kryo should be used", kryoInstance, kryo);
+		testGenericTypes(false);
+		assertEquals("The same instance of Kryo should be used", kryoInstance, kryo);
+		testGenericTypes(true);
+		assertEquals("The same instance of Kryo should be used", kryoInstance, kryo);
+		testGenericTypes(false);
+		assertEquals("The same instance of Kryo should be used", kryoInstance, kryo);
+	}
+
+	private void testGenericTypes(boolean optimizedGenerics) {
+		kryo.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
+		kryo.setReferences(true);
 		kryo.setRegistrationRequired(true);
 		kryo.register(HasGenerics.class);
 		kryo.register(ArrayList.class);
 		kryo.register(ArrayList[].class);
 		kryo.register(HashMap.class);
+		
+		// It may happen that classes were registered already befor this function
+		// was called. In this case, invoke the setters on the FieldSerializer
+		// objects directly.
+		FieldSerializer<?> fieldSerializer;
+		fieldSerializer =  (FieldSerializer<?>)kryo.getSerializer(HasGenerics.class);
+		fieldSerializer.setOptimizedGenerics(optimizedGenerics);
+		
 		HasGenerics test = new HasGenerics();
 		test.list1 = new ArrayList();
 		test.list1.add(1);
@@ -418,8 +450,8 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.list5 = new ArrayList();
 		test.list5.add("one");
 		test.list5.add("two");
-		roundTrip(53, 80, test);
-		ArrayList[] al = new ArrayList[1]; 
+		roundTrip(optimizedGenerics ? 53 : 56, optimizedGenerics ? 80 : 83, test);
+		ArrayList[] al = new ArrayList[1];
 		al[0] = new ArrayList(Arrays.asList(new String[] { "A", "B", "S" }));
 		roundTrip(18, 18, al);
 	}

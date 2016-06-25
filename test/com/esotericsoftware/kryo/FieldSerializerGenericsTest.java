@@ -3,11 +3,26 @@ package com.esotericsoftware.kryo;
 import com.esotericsoftware.kryo.io.FastOutput;
 import com.esotericsoftware.minlog.Log;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.ByteArrayOutputStream;
 import java.util.*;
 
+@RunWith(Parameterized.class)
 public class FieldSerializerGenericsTest {
+
+    @Parameters(name = "optimizedGenerics_{0}")
+    public static Iterable<?> optimizedGenerics() {
+        return Arrays.asList(true, false);
+    }
+
+    private boolean optimizedGenerics;
+
+    public FieldSerializerGenericsTest(boolean optimizedGenerics) {
+        this.optimizedGenerics = optimizedGenerics;
+    }
 
     @Test
     public void testNoStackOverflowForSimpleGenericsCase () {
@@ -19,6 +34,7 @@ public class FieldSerializerGenericsTest {
         foos.add(genFoo1);
         new FooContainer(foos);
         Kryo kryo = new Kryo();
+        kryo.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         kryo.writeObject(new FastOutput(outputStream), genFoo1);
@@ -34,6 +50,7 @@ public class FieldSerializerGenericsTest {
         bars.add(genBar1);
         new GenericBarContainer<GenericBar>(new BarContainer(bars));
         Kryo kryo = new Kryo();
+        kryo.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         kryo.writeObject(new FastOutput(outputStream), genBar1);
