@@ -25,6 +25,8 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldMappingCompatibleSerializer;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
+import junit.framework.Assert;
+
 /** @author Nathan Sweet <misc@n4te.com>, and modified by diaimm */
 public class FieldMappingCompatibleSerializerTest extends KryoTestCase {
 	{
@@ -147,8 +149,12 @@ public class FieldMappingCompatibleSerializerTest extends KryoTestCase {
 		Input input = new Input(new ByteArrayInputStream(inputSource));
 		input.close();
 
-		TestSample1 readObject = kryo.readObject(input, TestSample1.class);
-		System.out.println(readObject.x);
+		try {
+			TestSample1 readObject = kryo.readObject(input, TestSample1.class);
+			System.out.println(readObject.x);
+		} catch (Exception e) {
+			Assert.assertEquals(KryoException.class, e.getClass());
+		}
 // System.out.println(readObject.y);
 	}
 
