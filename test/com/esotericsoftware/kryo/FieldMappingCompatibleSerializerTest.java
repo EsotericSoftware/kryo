@@ -10,13 +10,20 @@
 
 package com.esotericsoftware.kryo;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
+
+import org.junit.Test;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.CompatibleFieldSerializerTest.AnotherClass;
 import com.esotericsoftware.kryo.CompatibleFieldSerializerTest.ExtendedTestClass;
 import com.esotericsoftware.kryo.CompatibleFieldSerializerTest.TestClass;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldMappingCompatibleSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 /** @author Nathan Sweet <misc@n4te.com>, and modified by diaimm */
 public class FieldMappingCompatibleSerializerTest extends KryoTestCase {
@@ -61,9 +68,9 @@ public class FieldMappingCompatibleSerializerTest extends KryoTestCase {
 
 		FieldMappingCompatibleSerializer serializer = new FieldMappingCompatibleSerializer(kryo, TestClass.class);
 		////////////////////////////////////////////////////////////////////////////////////
-		// When deserialize from Input, we sometimes cannot be aware of the fields we have to remove, 
+		// When deserialize from Input, we sometimes cannot be aware of the fields we have to remove,
 		// FieldMappingCompatibleSerializer is handing the missed fields just dumping the bytes with DummyCachedField.
-		// So next line must not be called. 
+		// So next line must not be called.
 		//
 		// by diaimm
 		////////////////////////////////////////////////////////////////////////////////////
@@ -77,10 +84,12 @@ public class FieldMappingCompatibleSerializerTest extends KryoTestCase {
 		ExtendedTestClass extendedObject = new ExtendedTestClass();
 
 		////////////////////////////////////////////////////////////////////////////////////
-		// I'm not sure about full functions of CachedFieldNameStrategies, but setting it with FieldSerializer.CachedFieldNameStrategy.EXTENDED seems to make the flow different.
+		// I'm not sure about full functions of CachedFieldNameStrategies, but setting it with
+		//////////////////////////////////////////////////////////////////////////////////// FieldSerializer.CachedFieldNameStrategy.EXTENDED
+		//////////////////////////////////////////////////////////////////////////////////// seems to make the flow different.
 		// FieldMappingCompatibleSerializer is following the basic process of Kryo, just dumping out useless data from Input.
 		//
-		// So, the code below is not required.		
+		// So, the code below is not required.
 		// by diaimm
 		////////////////////////////////////////////////////////////////////////////////////
 		// this test would fail with DEFAULT field name strategy
@@ -99,7 +108,6 @@ public class FieldMappingCompatibleSerializerTest extends KryoTestCase {
 
 		ExtendedTestClass object2 = (ExtendedTestClass)kryo.readClassAndObject(input);
 		assertEquals(extendedObject, object2);
-		
 
 		////////////////////////////////////////////////////////////////////////////////////
 		// these assertions are added to make it sure that all the fields overridden are deserialized correctly.
@@ -109,5 +117,43 @@ public class FieldMappingCompatibleSerializerTest extends KryoTestCase {
 		assertEquals(extendedObject.text, object2.text);
 		assertEquals(extendedObject.zzz, object2.zzz);
 		assertEquals(extendedObject.child, object2.child);
+	}
+
+	@Test
+	public void testTestSample1 () {
+		Kryo kryo = new Kryo();
+		kryo.setReferences(true);
+		kryo.setDefaultSerializer(FieldMappingCompatibleSerializer.class);
+		kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+
+		TestSample1 p = new TestSample1();
+		p.x = 1467196538633L;
+// p.y = 1467196538633L;
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		Output output = new Output(baos);
+		kryo.writeObject(output, p);
+		output.close();
+
+		String encode = Base64.encode(baos.toByteArray());
+		System.out.println(encode);
+
+		// serialized value + base64 encoded String that has both of x and y fields.
+		String serializedValueWithX = "AQKCeIJ5BpL807uzVQAGkvzTu7NVAA==";
+		// serializedValueWithX = encode;
+		byte[] inputSource = Base64.decode(serializedValueWithX);
+		System.out.println(inputSource);
+
+		Input input = new Input(new ByteArrayInputStream(inputSource));
+		input.close();
+
+		TestSample1 readObject = kryo.readObject(input, TestSample1.class);
+		System.out.println(readObject.x);
+// System.out.println(readObject.y);
+	}
+
+	public static class TestSample1 {
+		private long x;
+// private long y;
 	}
 }
