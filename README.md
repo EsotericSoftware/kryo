@@ -690,6 +690,7 @@ There are a number of projects using Kryo. A few are listed below. Please post a
 - [Twitter's Scalding](https://github.com/twitter/scalding) (Scala API for Cascading)
 - [Twitter's Chill](https://github.com/twitter/chill) (Kryo serializers for Scala)
 - [Apache Hive](http://hive.apache.org/) (query plan serialization)
+- [Apache Spark](http://spark.apache.org/) (shuffled/cached data serialization)
 - [DataNucleus](https://github.com/datanucleus/type-converter-kryo) (JDO/JPA persistence framework)
 - [CloudPelican](http://www.cloudpelican.com/)
 - [Yahoo's S4](http://www.s4.io/) (distributed stream computing)
