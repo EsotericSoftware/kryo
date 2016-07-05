@@ -1,0 +1,1309 @@
+<!-- kind:binary;verdict:incompatible;affected:0.4;added:63;removed:5;type_problems_high:0;type_problems_medium:0;type_problems_low:3;method_problems_high:0;method_problems_medium:0;method_problems_low:0;tool_version:1.4.1 -->
+<!-- kind:source;verdict:incompatible;affected:0.4;added:63;removed:5;type_problems_high:0;type_problems_medium:0;type_problems_low:0;method_problems_high:0;method_problems_medium:0;method_problems_low:0;tool_version:1.4.1 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="keywords" content="kryo, compatibility" />
+    <meta name="description" content="Compatibility report for the kryo library between 3.0.3 and 4.0.0 versions" />
+    <title>
+        kryo: 3.0.3 to 4.0.0 compatibility report
+    </title>
+    <style type="text/css">
+    
+    body {
+        font-family:Arial, sans-serif;
+        color:Black;
+        font-size:14px;
+    }
+    hr {
+        color:Black;
+        background-color:Black;
+        height:1px;
+        border:0;
+    }
+    h1 {
+        margin-bottom:0px;
+        padding-bottom:0px;
+        font-size:26px;
+    }
+    h2 {
+        margin-bottom:0px;
+        padding-bottom:0px;
+        font-size:20px;
+        white-space:nowrap;
+    }
+    span.section {
+        font-weight:bold;
+        cursor:pointer;
+        font-size:16px;
+        color:#003E69;
+        white-space:nowrap;
+        margin-left:5px;
+    }
+    span:hover.section {
+        color:#336699;
+    }
+    span.section_affected {
+        cursor:pointer;
+        margin-left:7px;
+        padding-left:15px;
+        font-size:14px;
+        color:#cc3300;
+    }
+    span.extension {
+        font-weight:100;
+        font-size:16px;
+    }
+    span.jar {
+        color:#cc3300;
+        font-size:14px;
+        font-weight:bold;
+    }
+    div.class_list {
+        padding-left:5px;
+        font-size:15px;
+    }
+    div.jar_list {
+        padding-left:5px;
+        font-size:15px;
+    }
+    span.package_title {
+        color:#408080;
+        font-size:14px;
+    }
+    span.package_list {
+        font-size:14px;
+    }
+    span.package {
+        color:#408080;
+        font-size:14px;
+        font-weight:bold;
+    }
+    span.cname {
+        color:Green;
+        font-size:14px;
+        font-weight:bold;
+    }
+    span.nblack {
+        font-weight:bold;
+        font-size:15px;
+    }
+    span.sym_p {
+        font-weight:normal;
+        white-space:normal;
+    }
+    span.attr {
+        color:Black;
+        font-weight:100;
+    }
+    span.deprecated {
+        color:Red;
+        font-weight:bold;
+    }
+    div.affect {
+        padding-left:15px;
+        padding-bottom:4px;
+        font-size:14px;
+        font-style:italic;
+        line-height:13px;
+    }
+    div.affected {
+        padding-left:30px;
+        padding-top:3px;
+    }
+    table.ptable {
+        border-collapse:collapse;
+        border:1px outset black;
+        line-height:16px;
+        margin-left:15px;
+        margin-top:3px;
+        margin-bottom:3px;
+        width:900px;
+    }
+    table.ptable td {
+        border:1px solid Gray;
+        padding: 3px;
+    }
+    table.ptable th {
+        background-color:#eeeeee;
+        font-weight:bold;
+        color:#333333;
+        font-size:13px;
+        font-family:Verdana;
+        border:1px solid Gray;
+        text-align:center;
+        vertical-align:top;
+        white-space:nowrap;
+        padding: 3px;
+    }
+    td.code_line {
+        padding-left:15px;
+        text-align:left;
+        white-space:nowrap;
+    }
+    table.code_view {
+        cursor:text;
+        margin-top:7px;
+        width:50%;
+        margin-left:20px;
+        font-family:Consolas, 'DejaVu Sans Mono', 'Droid Sans Mono', Monaco, Monospace;
+        font-size:14px;
+        padding:10px;
+        border:1px solid #e0e8e5;
+        color:#444444;
+        background-color:#eff3f2;
+        overflow:auto;
+    }
+    table.summary {
+        border-collapse:collapse;
+        border:1px outset black;
+    }
+    table.summary th {
+        background-color:#eeeeee;
+        font-weight:100;
+        text-align:left;
+        font-size:15px;
+        white-space:nowrap;
+        border:1px inset gray;
+    }
+    table.summary td {
+        padding-left:10px;
+        padding-right:5px;
+        text-align:right;
+        font-size:16px;
+        white-space:nowrap;
+        border:1px inset gray;
+    }
+    span.mangled {
+        padding-left:15px;
+        font-size:14px;
+        cursor:text;
+        color:#444444;
+    }
+    span.color_p {
+        font-style:italic;
+        color:Brown;
+    }
+    span.param {
+        font-style:italic;
+    }
+    span.focus_p {
+        font-style:italic;
+        color:Red;
+    }
+    span.nowrap {
+        white-space:nowrap;
+    }
+    td.passed {
+        background-color:#CCFFCC;
+    }
+    td.warning {
+        background-color:#F4F4AF;
+    }
+    td.failed {
+        background-color:#FFCCCC;
+    }
+    td.new {
+        background-color:#C6DEFF;
+    }
+    .tabset {
+        float:left;
+    }
+    a.tab {
+        border:1px solid #AAA;
+        float:left;
+        margin:0px 5px -1px 0px;
+        padding:3px 5px 3px 5px;
+        position:relative;
+        font-size:14px;
+        background-color:#DDD;
+        text-decoration:none;
+        color:Black;
+    }
+    a.disabled:hover
+    {
+        color:Black;
+        background:#EEE;
+    }
+    a.active:hover
+    {
+        color:Black;
+        background:White;
+    }
+    a.active {
+        border-bottom-color:White;
+        background-color:White;
+    }
+    div.tab {
+        border:1px solid #AAA;
+        padding:0 7px 0 12px;
+        width:97%;
+        clear:both;
+    }
+    </style>
+    <script type="text/javascript" language="JavaScript">
+    <!--
+    
+    function showContent(header, id)
+    {
+        e = document.getElementById(id);
+        if(e.style.display == 'none')
+        {
+            e.style.display = 'block';
+            e.style.visibility = 'visible';
+            header.innerHTML = header.innerHTML.replace(/\[[^0-9 ]\]/gi,"[&minus;]");
+        }
+        else
+        {
+            e.style.display = 'none';
+            e.style.visibility = 'hidden';
+            header.innerHTML = header.innerHTML.replace(/\[[^0-9 ]\]/gi,"[+]");
+        }
+    }
+    function initTabs()
+    {
+        var url = window.location.href;
+        if(url.indexOf('_Source_')!=-1 || url.indexOf('#Source')!=-1)
+        {
+            var tab1 = document.getElementById('BinaryID');
+            var tab2 = document.getElementById('SourceID');
+            tab1.className='tab disabled';
+            tab2.className='tab active';
+        }
+        var sets = document.getElementsByTagName('div');
+        for (var i = 0; i < sets.length; i++)
+        {
+            if (sets[i].className.indexOf('tabset') != -1)
+            {
+                var tabs = [];
+                var links = sets[i].getElementsByTagName('a');
+                for (var j = 0; j < links.length; j++)
+                {
+                    if (links[j].className.indexOf('tab') != -1)
+                    {
+                        tabs.push(links[j]);
+                        links[j].tabs = tabs;
+                        var tab = document.getElementById(links[j].href.substr(links[j].href.indexOf('#') + 1));
+                        //reset all tabs on start
+                        if (tab)
+                        {
+                            if (links[j].className.indexOf('active')!=-1) {
+                                tab.style.display = 'block';
+                            }
+                            else {
+                                tab.style.display = 'none';
+                            }
+                        }
+                        links[j].onclick = function()
+                        {
+                            var tab = document.getElementById(this.href.substr(this.href.indexOf('#') + 1));
+                            if (tab)
+                            {
+                                //reset all tabs before change
+                                for (var k = 0; k < this.tabs.length; k++)
+                                {
+                                    document.getElementById(this.tabs[k].href.substr(this.tabs[k].href.indexOf('#') + 1)).style.display = 'none';
+                                    this.tabs[k].className = this.tabs[k].className.replace('active', 'disabled');
+                                }
+                                this.className = 'tab active';
+                                tab.style.display = 'block';
+                                // window.location.hash = this.id.replace('ID', '');
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if(url.indexOf('#')!=-1) {
+            location.href=location.href;
+        }
+    }
+    if (window.addEventListener) window.addEventListener('load', initTabs, false);
+    else if (window.attachEvent) window.attachEvent('onload', initTabs);
+    -->
+    </script>
+    </head><body><a name='Source'></a><a name='Binary'></a><a name='Top'></a><h1><span class='nowrap'>API compatibility report for the <span style='color:Blue;'>kryo</span> library </span><span class='nowrap'>&#160;between <span style='color:Red;'>3.0.3</span> and <span style='color:Red;'>4.0.0</span> versions</span></h1>
+
+        <br/><div class='tabset'>
+        <a id='BinaryID' href='#BinaryTab' class='tab active'>Binary<br/>Compatibility</a>
+        <a id='SourceID' href='#SourceTab' style='margin-left:3px' class='tab disabled'>Source<br/>Compatibility</a>
+        </div><div id='BinaryTab' class='tab'>
+<h2>Test Info</h2><hr/>
+<table cellpadding='3' cellspacing='0' class='summary'>
+<tr><th>Library Name</th><td>kryo</td></tr>
+<tr><th>Version #1</th><td>3.0.3</td></tr>
+<tr><th>Version #2</th><td>4.0.0</td></tr>
+<tr><th>Java Version</th><td>1.8.0_92</td></tr>
+<tr><th>Subject</th><td width='150px'>Binary Compatibility</td></tr>
+</table>
+<h2>Test Results</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th>Total Java ARchives</th><td><a href='#Checked_Archives' style='color:Blue;'>1</a></td></tr><tr><th>Total Methods / Classes</th><td>1422 / 176</td></tr><tr><th>Verdict</th><td><span style='color:Red;'><b>Incompatible<br/>(0.4%)</b></span></td></tr>
+</table>
+<h2>Problem Summary</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr><tr><th>Added Methods</th><td>-</td><td class='new'><a href='#Binary_Added' style='color:Blue;'>63</a></td></tr><tr><th>Removed Methods</th><td>High</td><td class='failed'><a href='#Binary_Removed' style='color:Blue;'>5</a></td></tr><tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td>0</td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td class='warning'><a href='#Type_Binary_Problems_Low' style='color:Blue;'>3</a></td></tr><tr><th rowspan='3'>Problems with<br/>Methods</th><td>High</td><td>0</td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td>0</td></tr></table>
+
+<a name='Binary_Added'></a><h2>Added Methods (63)</h2><hr/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>ByteBufferInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_1')">
+ByteBufferInput.setLimit&#160;<span class='sym_p'><span class='nowrap'>(&#160;int <span class='color_p'>limit</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_1" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/io/ByteBufferInput.setLimit:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_2')">
+ByteBufferInput.setPosition&#160;<span class='sym_p'><span class='nowrap'>(&#160;int <span class='color_p'>position</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_2" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/io/ByteBufferInput.setPosition:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_3')">
+ByteBufferInput.skip&#160;<span class='sym_p'><span class='nowrap'>(&#160;int <span class='color_p'>count</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_3" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/io/ByteBufferInput.skip:(I)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>CachedFieldNameStrategy.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_4')">
+FieldSerializer.CachedFieldNameStrategy.getName&#160;<span class='sym_p'><span class='nowrap'>(&#160;FieldSerializer.CachedField <span class='color_p'>p1</span>&#160;)</span></span> <span class='attr'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_4" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer.CachedFieldNameStrategy.getName:(Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedField;)Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>CharsetSerializer.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_5')">
+DefaultSerializers.CharsetSerializer.DefaultSerializers.CharsetSerializer&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_5" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.CharsetSerializer.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_6')">
+DefaultSerializers.CharsetSerializer.read&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Input <span class='color_p'>input</span>, </span><span class='nowrap'>Class&lt;java.nio.charset.Charset&gt; <span class='color_p'>type</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.nio.charset.Charset</span></span>
+<br/>
+<div id="c_6" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.CharsetSerializer.read:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;Ljava/lang/Class;)Ljava/nio/charset/Charset;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_7')">
+DefaultSerializers.CharsetSerializer.read&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>p1</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Input <span class='color_p'>p2</span>, </span><span class='nowrap'>Class <span class='color_p'>p3</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_7" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.CharsetSerializer.read:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;Ljava/lang/Class;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_8')">
+DefaultSerializers.CharsetSerializer.write&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Output <span class='color_p'>output</span>, </span><span class='nowrap'>java.nio.charset.Charset <span class='color_p'>object</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_8" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.CharsetSerializer.write:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;Ljava/nio/charset/Charset;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_9')">
+DefaultSerializers.CharsetSerializer.write&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>p1</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Output <span class='color_p'>p2</span>, </span><span class='nowrap'>Object <span class='color_p'>p3</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_9" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.CharsetSerializer.write:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;Ljava/lang/Object;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>Closure.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_10')">
+ClosureSerializer.Closure.ClosureSerializer.Closure&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_10" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/ClosureSerializer.Closure.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>FieldSerializer&lt;T&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_11')">
+FieldSerializer&lt;T&gt;.FieldSerializer&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, </span><span class='nowrap'>Class <span class='color_p'>type</span>, </span><span class='nowrap'>Class[&#160;] <span class='color_p'>generics</span>, </span><span class='nowrap'>FieldSerializerConfig <span class='color_p'>config</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;protected</span></span>
+<br/>
+<div id="c_11" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.com.esotericsoftware.kryo.serializers.FieldSerializer:(Lcom/esotericsoftware/kryo/Kryo;Ljava/lang/Class;[Ljava/lang/Class;Lcom/esotericsoftware/kryo/serializers/FieldSerializerConfig;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_12')">
+FieldSerializer&lt;T&gt;.getCachedFieldName&#160;<span class='sym_p'><span class='nowrap'>(&#160;FieldSerializer.CachedField <span class='color_p'>cachedField</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_12" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.getCachedFieldName:(Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedField;)Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_13')">
+FieldSerializer&lt;T&gt;.getSerializeTransient&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_13" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.getSerializeTransient:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_14')">
+FieldSerializer&lt;T&gt;.getTransientFields&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;FieldSerializer.CachedField[&#160;]</span></span>
+<br/>
+<div id="c_14" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.getTransientFields:()[Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedField;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_15')">
+FieldSerializer&lt;T&gt;.setOptimizedGenerics&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setOptimizedGenerics</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_15" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.setOptimizedGenerics:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_16')">
+FieldSerializer&lt;T&gt;.setSerializeTransient&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setSerializeTransient</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_16" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.setSerializeTransient:(Z)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>FieldSerializerConfig.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_17')">
+FieldSerializerConfig.clone&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;FieldSerializerConfig</span></span>
+<br/>
+<div id="c_17" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.clone:()Lcom/esotericsoftware/kryo/serializers/FieldSerializerConfig;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_18')">
+FieldSerializerConfig.clone&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_18" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.clone:()Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_19')">
+FieldSerializerConfig.FieldSerializerConfig&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_19" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_20')">
+FieldSerializerConfig.getCachedFieldNameStrategy&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;FieldSerializer.CachedFieldNameStrategy</span></span>
+<br/>
+<div id="c_20" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.getCachedFieldNameStrategy:()Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedFieldNameStrategy;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_21')">
+FieldSerializerConfig.isCopyTransient&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_21" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isCopyTransient:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_22')">
+FieldSerializerConfig.isFieldsCanBeNull&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_22" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isFieldsCanBeNull:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_23')">
+FieldSerializerConfig.isFixedFieldTypes&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_23" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isFixedFieldTypes:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_24')">
+FieldSerializerConfig.isIgnoreSyntheticFields&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_24" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isIgnoreSyntheticFields:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_25')">
+FieldSerializerConfig.isOptimizedGenerics&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_25" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isOptimizedGenerics:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_26')">
+FieldSerializerConfig.isSerializeTransient&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_26" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isSerializeTransient:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_27')">
+FieldSerializerConfig.isSetFieldsAsAccessible&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_27" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isSetFieldsAsAccessible:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_28')">
+FieldSerializerConfig.isUseAsm&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_28" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isUseAsm:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_29')">
+FieldSerializerConfig.setCachedFieldNameStrategy&#160;<span class='sym_p'><span class='nowrap'>(&#160;FieldSerializer.CachedFieldNameStrategy <span class='color_p'>cachedFieldNameStrategy</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_29" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setCachedFieldNameStrategy:(Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedFieldNameStrategy;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_30')">
+FieldSerializerConfig.setCopyTransient&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setCopyTransient</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_30" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setCopyTransient:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_31')">
+FieldSerializerConfig.setFieldsAsAccessible&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setFieldsAsAccessible</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_31" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setFieldsAsAccessible:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_32')">
+FieldSerializerConfig.setFieldsCanBeNull&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>fieldsCanBeNull</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_32" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setFieldsCanBeNull:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_33')">
+FieldSerializerConfig.setFixedFieldTypes&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>fixedFieldTypes</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_33" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setFixedFieldTypes:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_34')">
+FieldSerializerConfig.setIgnoreSyntheticFields&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>ignoreSyntheticFields</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_34" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setIgnoreSyntheticFields:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_35')">
+FieldSerializerConfig.setOptimizedGenerics&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setOptimizedGenerics</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_35" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setOptimizedGenerics:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_36')">
+FieldSerializerConfig.setSerializeTransient&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>serializeTransient</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_36" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setSerializeTransient:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_37')">
+FieldSerializerConfig.setUseAsm&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setUseAsm</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_37" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setUseAsm:(Z)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>GenericsResolver.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_38')">
+GenericsResolver.GenericsResolver&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_38" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/GenericsResolver.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>Kryo.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_39')">
+Kryo.getFieldSerializerConfig&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;serializers.FieldSerializerConfig</span></span>
+<br/>
+<div id="c_39" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.getFieldSerializerConfig:()Lcom/esotericsoftware/kryo/serializers/FieldSerializerConfig;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_40')">
+Kryo.getGenericsResolver&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;serializers.GenericsResolver</span></span>
+<br/>
+<div id="c_40" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.getGenericsResolver:()Lcom/esotericsoftware/kryo/serializers/GenericsResolver;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_41')">
+Kryo.getTaggedFieldSerializerConfig&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;serializers.TaggedFieldSerializerConfig</span></span>
+<br/>
+<div id="c_41" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.getTaggedFieldSerializerConfig:()Lcom/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_42')">
+Kryo.isClosure&#160;<span class='sym_p'><span class='nowrap'>(&#160;Class <span class='color_p'>type</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_42" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.isClosure:(Ljava/lang/Class;)Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_43')">
+Kryo.isWarnUnregisteredClasses&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_43" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.isWarnUnregisteredClasses:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_44')">
+Kryo.setWarnUnregisteredClasses&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>warnUnregisteredClasses</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_44" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.setWarnUnregisteredClasses:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_45')">
+Kryo.unregisteredClassMessage&#160;<span class='sym_p'><span class='nowrap'>(&#160;Class <span class='color_p'>type</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_45" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.unregisteredClassMessage:(Ljava/lang/Class;)Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>OptionalSerializers.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_46')">
+OptionalSerializers.addDefaultSerializers&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>&#160;)</span></span> <span class='attr'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_46" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/OptionalSerializers.addDefaultSerializers:(Lcom/esotericsoftware/kryo/Kryo;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_47')">
+OptionalSerializers.OptionalSerializers&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_47" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/OptionalSerializers.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>TaggedFieldSerializer&lt;T&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_48')">
+TaggedFieldSerializer&lt;T&gt;.isIgnoreUnkownTags&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_48" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializer&lt;T&gt;.isIgnoreUnkownTags:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_49')">
+TaggedFieldSerializer&lt;T&gt;.setIgnoreUnknownTags&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>ignoreUnknownTags</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_49" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializer&lt;T&gt;.setIgnoreUnknownTags:(Z)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>TaggedFieldSerializerConfig.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_50')">
+TaggedFieldSerializerConfig.clone&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;FieldSerializerConfig</span></span>
+<br/>
+<div id="c_50" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.clone:()Lcom/esotericsoftware/kryo/serializers/FieldSerializerConfig;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_51')">
+TaggedFieldSerializerConfig.clone&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;TaggedFieldSerializerConfig</span></span>
+<br/>
+<div id="c_51" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.clone:()Lcom/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_52')">
+TaggedFieldSerializerConfig.clone&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_52" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.clone:()Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_53')">
+TaggedFieldSerializerConfig.isIgnoreUnknownTags&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_53" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.isIgnoreUnknownTags:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_54')">
+TaggedFieldSerializerConfig.setIgnoreUnknownTags&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>ignoreUnknownTags</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_54" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.setIgnoreUnknownTags:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_55')">
+TaggedFieldSerializerConfig.TaggedFieldSerializerConfig&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_55" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>TimeSerializers.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_56')">
+TimeSerializers.addDefaultSerializers&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>&#160;)</span></span> <span class='attr'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_56" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TimeSerializers.addDefaultSerializers:(Lcom/esotericsoftware/kryo/Kryo;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_57')">
+TimeSerializers.TimeSerializers&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_57" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TimeSerializers.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>URLSerializer.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_58')">
+DefaultSerializers.URLSerializer.DefaultSerializers.URLSerializer&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_58" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.URLSerializer.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_59')">
+DefaultSerializers.URLSerializer.read&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Input <span class='color_p'>input</span>, </span><span class='nowrap'>Class&lt;java.net.URL&gt; <span class='color_p'>type</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.net.URL</span></span>
+<br/>
+<div id="c_59" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.URLSerializer.read:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;Ljava/lang/Class;)Ljava/net/URL;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_60')">
+DefaultSerializers.URLSerializer.read&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>p1</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Input <span class='color_p'>p2</span>, </span><span class='nowrap'>Class <span class='color_p'>p3</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_60" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.URLSerializer.read:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;Ljava/lang/Class;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_61')">
+DefaultSerializers.URLSerializer.write&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Output <span class='color_p'>output</span>, </span><span class='nowrap'>java.net.URL <span class='color_p'>object</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_61" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.URLSerializer.write:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;Ljava/net/URL;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_62')">
+DefaultSerializers.URLSerializer.write&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>p1</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Output <span class='color_p'>p2</span>, </span><span class='nowrap'>Object <span class='color_p'>p3</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_62" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.URLSerializer.write:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;Ljava/lang/Object;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>Util.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_63')">
+Util.isClassAvailable&#160;<span class='sym_p'><span class='nowrap'>(&#160;String <span class='color_p'>className</span>&#160;)</span></span> <span class='attr'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_63" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/util/Util.isClassAvailable:(Ljava/lang/String;)Z</b>]</span><br/><br/></div>
+
+<br/>
+<a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<a name='Binary_Removed'></a><a name='Binary_Withdrawn'></a><h2>Removed Methods (5)</h2><hr/>
+<span class='jar'>kryo-3.0.3.jar</span>, <span class='cname'>FieldSerializer&lt;T&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_64')">
+FieldSerializer&lt;T&gt;.getGenericsScope&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Generics</span></span>
+<br/>
+<div id="c_64" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.getGenericsScope:()Lcom/esotericsoftware/kryo/Generics;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-3.0.3.jar</span>, <span class='cname'>Kryo.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_65')">
+Kryo.getGenericsScope&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Generics</span></span>
+<br/>
+<div id="c_65" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.getGenericsScope:()Lcom/esotericsoftware/kryo/Generics;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_66')">
+Kryo.isClousre&#160;<span class='sym_p'><span class='nowrap'>(&#160;Class <span class='color_p'>type</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_66" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.isClousre:(Ljava/lang/Class;)Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_67')">
+Kryo.popGenericsScope&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_67" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.popGenericsScope:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_68')">
+Kryo.pushGenericsScope&#160;<span class='sym_p'><span class='nowrap'>(&#160;Class <span class='color_p'>type</span>, </span><span class='nowrap'>Generics <span class='color_p'>generics</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_68" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.pushGenericsScope:(Ljava/lang/Class;Lcom/esotericsoftware/kryo/Generics;)V</b>]</span><br/><br/></div>
+
+<br/>
+<a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<a name='Low_Risk_Binary_Problems'></a><a name='Type_Binary_Problems_Low'></a>
+<h2>Problems with Data Types, Low Severity (3)</h2><hr/>
+<span class='jar'>kryo-3.0.3.jar</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_69')">
+<span class='extension'>[+]</span> ByteBufferInput (3)</span>
+<br/>
+<div id="c_69" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr><th align='center' valign='top'>1</th><td align='left' valign='top'>Method <span class='nblack'>setLimit&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span> has been overridden by <span class='nblack'>setLimit&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span></td><td align='left' valign='top'>Method <span class='nblack'>setLimit&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span> will be called instead of <span class='nblack'>setLimit&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span> in a client program.</td></tr>
+<tr><th align='center' valign='top'>2</th><td align='left' valign='top'>Method <span class='nblack'>setPosition&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span> has been overridden by <span class='nblack'>setPosition&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span></td><td align='left' valign='top'>Method <span class='nblack'>setPosition&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span> will be called instead of <span class='nblack'>setPosition&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span> in a client program.</td></tr>
+<tr><th align='center' valign='top'>3</th><td align='left' valign='top'>Method <span class='nblack'>skip&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span> has been overridden by <span class='nblack'>skip&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span></td><td align='left' valign='top'>Method <span class='nblack'>skip&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span> will be called instead of <span class='nblack'>skip&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span> in a client program.</td></tr>
+</table><span class="section_affected" onclick="javascript:showContent(this, 'c_70')">
+[+] affected methods (3)</span>
+<div id="c_70" style="display:none;">
+<div class='affected'><span class='nblack'>setLimit&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span><br/><div class='affect'>Method 'setLimit&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span>' will be called instead of this method in a client program.</div>
+<span class='nblack'>setPosition&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span><br/><div class='affect'>Method 'setPosition&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span>' will be called instead of this method in a client program.</div>
+<span class='nblack'>skip&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span></span><br/><div class='affect'>Method 'skip&#160;<span class='sym_p'><span class='nowrap'>(&#160;int&#160;)</span></span>' will be called instead of this method in a client program.</div>
+</div></div>
+<br/><br/></div>
+
+<br/><a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<a name='Checked_Archives'></a><h2>Java ARchives (1)</h2>
+<hr/><div class='jar_list'>
+kryo-3.0.3.jar<br/>
+</div><br/><a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<br/><br/><br/></div><div id='SourceTab' class='tab'>
+<h2>Test Info</h2><hr/>
+<table cellpadding='3' cellspacing='0' class='summary'>
+<tr><th>Library Name</th><td>kryo</td></tr>
+<tr><th>Version #1</th><td>3.0.3</td></tr>
+<tr><th>Version #2</th><td>4.0.0</td></tr>
+<tr><th>Java Version</th><td>1.8.0_92</td></tr>
+<tr><th>Subject</th><td width='150px'>Source Compatibility</td></tr>
+</table>
+<h2>Test Results</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th>Total Java ARchives</th><td><a href='#Checked_Archives' style='color:Blue;'>1</a></td></tr><tr><th>Total Methods / Classes</th><td>1422 / 176</td></tr><tr><th>Verdict</th><td><span style='color:Red;'><b>Incompatible<br/>(0.4%)</b></span></td></tr>
+</table>
+<h2>Problem Summary</h2><hr/><table cellpadding='3' cellspacing='0' class='summary'><tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr><tr><th>Added Methods</th><td>-</td><td class='new'><a href='#Source_Added' style='color:Blue;'>63</a></td></tr><tr><th>Removed Methods</th><td>High</td><td class='failed'><a href='#Source_Removed' style='color:Blue;'>5</a></td></tr><tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td>0</td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td>0</td></tr><tr><th rowspan='3'>Problems with<br/>Methods</th><td>High</td><td>0</td></tr><tr><td>Medium</td><td>0</td></tr><tr><td>Low</td><td>0</td></tr></table>
+
+<a name='Source_Added'></a><h2>Added Methods (63)</h2><hr/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>ByteBufferInput.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_71')">
+ByteBufferInput.setLimit&#160;<span class='sym_p'><span class='nowrap'>(&#160;int <span class='color_p'>limit</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_71" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/io/ByteBufferInput.setLimit:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_72')">
+ByteBufferInput.setPosition&#160;<span class='sym_p'><span class='nowrap'>(&#160;int <span class='color_p'>position</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_72" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/io/ByteBufferInput.setPosition:(I)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_73')">
+ByteBufferInput.skip&#160;<span class='sym_p'><span class='nowrap'>(&#160;int <span class='color_p'>count</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_73" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/io/ByteBufferInput.skip:(I)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>CachedFieldNameStrategy.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_74')">
+FieldSerializer.CachedFieldNameStrategy.getName&#160;<span class='sym_p'><span class='nowrap'>(&#160;FieldSerializer.CachedField <span class='color_p'>p1</span>&#160;)</span></span> <span class='attr'>[abstract]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_74" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer.CachedFieldNameStrategy.getName:(Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedField;)Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>CharsetSerializer.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_75')">
+DefaultSerializers.CharsetSerializer.DefaultSerializers.CharsetSerializer&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_75" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.CharsetSerializer.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_76')">
+DefaultSerializers.CharsetSerializer.read&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Input <span class='color_p'>input</span>, </span><span class='nowrap'>Class&lt;java.nio.charset.Charset&gt; <span class='color_p'>type</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.nio.charset.Charset</span></span>
+<br/>
+<div id="c_76" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.CharsetSerializer.read:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;Ljava/lang/Class;)Ljava/nio/charset/Charset;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_77')">
+DefaultSerializers.CharsetSerializer.read&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>p1</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Input <span class='color_p'>p2</span>, </span><span class='nowrap'>Class <span class='color_p'>p3</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_77" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.CharsetSerializer.read:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;Ljava/lang/Class;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_78')">
+DefaultSerializers.CharsetSerializer.write&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Output <span class='color_p'>output</span>, </span><span class='nowrap'>java.nio.charset.Charset <span class='color_p'>object</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_78" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.CharsetSerializer.write:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;Ljava/nio/charset/Charset;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_79')">
+DefaultSerializers.CharsetSerializer.write&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>p1</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Output <span class='color_p'>p2</span>, </span><span class='nowrap'>Object <span class='color_p'>p3</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_79" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.CharsetSerializer.write:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;Ljava/lang/Object;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>Closure.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_80')">
+ClosureSerializer.Closure.ClosureSerializer.Closure&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_80" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/ClosureSerializer.Closure.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>FieldSerializer&lt;T&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_81')">
+FieldSerializer&lt;T&gt;.FieldSerializer&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, </span><span class='nowrap'>Class <span class='color_p'>type</span>, </span><span class='nowrap'>Class[&#160;] <span class='color_p'>generics</span>, </span><span class='nowrap'>FieldSerializerConfig <span class='color_p'>config</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;protected</span></span>
+<br/>
+<div id="c_81" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.com.esotericsoftware.kryo.serializers.FieldSerializer:(Lcom/esotericsoftware/kryo/Kryo;Ljava/lang/Class;[Ljava/lang/Class;Lcom/esotericsoftware/kryo/serializers/FieldSerializerConfig;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_82')">
+FieldSerializer&lt;T&gt;.getCachedFieldName&#160;<span class='sym_p'><span class='nowrap'>(&#160;FieldSerializer.CachedField <span class='color_p'>cachedField</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_82" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.getCachedFieldName:(Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedField;)Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_83')">
+FieldSerializer&lt;T&gt;.getSerializeTransient&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_83" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.getSerializeTransient:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_84')">
+FieldSerializer&lt;T&gt;.getTransientFields&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;FieldSerializer.CachedField[&#160;]</span></span>
+<br/>
+<div id="c_84" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.getTransientFields:()[Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedField;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_85')">
+FieldSerializer&lt;T&gt;.setOptimizedGenerics&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setOptimizedGenerics</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_85" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.setOptimizedGenerics:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_86')">
+FieldSerializer&lt;T&gt;.setSerializeTransient&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setSerializeTransient</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_86" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.setSerializeTransient:(Z)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>FieldSerializerConfig.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_87')">
+FieldSerializerConfig.clone&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;FieldSerializerConfig</span></span>
+<br/>
+<div id="c_87" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.clone:()Lcom/esotericsoftware/kryo/serializers/FieldSerializerConfig;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_88')">
+FieldSerializerConfig.clone&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_88" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.clone:()Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_89')">
+FieldSerializerConfig.FieldSerializerConfig&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_89" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_90')">
+FieldSerializerConfig.getCachedFieldNameStrategy&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;FieldSerializer.CachedFieldNameStrategy</span></span>
+<br/>
+<div id="c_90" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.getCachedFieldNameStrategy:()Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedFieldNameStrategy;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_91')">
+FieldSerializerConfig.isCopyTransient&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_91" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isCopyTransient:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_92')">
+FieldSerializerConfig.isFieldsCanBeNull&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_92" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isFieldsCanBeNull:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_93')">
+FieldSerializerConfig.isFixedFieldTypes&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_93" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isFixedFieldTypes:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_94')">
+FieldSerializerConfig.isIgnoreSyntheticFields&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_94" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isIgnoreSyntheticFields:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_95')">
+FieldSerializerConfig.isOptimizedGenerics&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_95" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isOptimizedGenerics:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_96')">
+FieldSerializerConfig.isSerializeTransient&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_96" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isSerializeTransient:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_97')">
+FieldSerializerConfig.isSetFieldsAsAccessible&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_97" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isSetFieldsAsAccessible:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_98')">
+FieldSerializerConfig.isUseAsm&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_98" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.isUseAsm:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_99')">
+FieldSerializerConfig.setCachedFieldNameStrategy&#160;<span class='sym_p'><span class='nowrap'>(&#160;FieldSerializer.CachedFieldNameStrategy <span class='color_p'>cachedFieldNameStrategy</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_99" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setCachedFieldNameStrategy:(Lcom/esotericsoftware/kryo/serializers/FieldSerializer$CachedFieldNameStrategy;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_100')">
+FieldSerializerConfig.setCopyTransient&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setCopyTransient</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_100" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setCopyTransient:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_101')">
+FieldSerializerConfig.setFieldsAsAccessible&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setFieldsAsAccessible</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_101" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setFieldsAsAccessible:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_102')">
+FieldSerializerConfig.setFieldsCanBeNull&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>fieldsCanBeNull</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_102" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setFieldsCanBeNull:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_103')">
+FieldSerializerConfig.setFixedFieldTypes&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>fixedFieldTypes</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_103" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setFixedFieldTypes:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_104')">
+FieldSerializerConfig.setIgnoreSyntheticFields&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>ignoreSyntheticFields</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_104" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setIgnoreSyntheticFields:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_105')">
+FieldSerializerConfig.setOptimizedGenerics&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setOptimizedGenerics</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_105" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setOptimizedGenerics:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_106')">
+FieldSerializerConfig.setSerializeTransient&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>serializeTransient</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_106" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setSerializeTransient:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_107')">
+FieldSerializerConfig.setUseAsm&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>setUseAsm</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_107" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializerConfig.setUseAsm:(Z)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>GenericsResolver.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_108')">
+GenericsResolver.GenericsResolver&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_108" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/GenericsResolver.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>Kryo.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_109')">
+Kryo.getFieldSerializerConfig&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;serializers.FieldSerializerConfig</span></span>
+<br/>
+<div id="c_109" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.getFieldSerializerConfig:()Lcom/esotericsoftware/kryo/serializers/FieldSerializerConfig;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_110')">
+Kryo.getGenericsResolver&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;serializers.GenericsResolver</span></span>
+<br/>
+<div id="c_110" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.getGenericsResolver:()Lcom/esotericsoftware/kryo/serializers/GenericsResolver;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_111')">
+Kryo.getTaggedFieldSerializerConfig&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;serializers.TaggedFieldSerializerConfig</span></span>
+<br/>
+<div id="c_111" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.getTaggedFieldSerializerConfig:()Lcom/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_112')">
+Kryo.isClosure&#160;<span class='sym_p'><span class='nowrap'>(&#160;Class <span class='color_p'>type</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_112" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.isClosure:(Ljava/lang/Class;)Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_113')">
+Kryo.isWarnUnregisteredClasses&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_113" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.isWarnUnregisteredClasses:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_114')">
+Kryo.setWarnUnregisteredClasses&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>warnUnregisteredClasses</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_114" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.setWarnUnregisteredClasses:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_115')">
+Kryo.unregisteredClassMessage&#160;<span class='sym_p'><span class='nowrap'>(&#160;Class <span class='color_p'>type</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_115" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.unregisteredClassMessage:(Ljava/lang/Class;)Ljava/lang/String;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>OptionalSerializers.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_116')">
+OptionalSerializers.addDefaultSerializers&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>&#160;)</span></span> <span class='attr'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_116" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/OptionalSerializers.addDefaultSerializers:(Lcom/esotericsoftware/kryo/Kryo;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_117')">
+OptionalSerializers.OptionalSerializers&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_117" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/OptionalSerializers.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>TaggedFieldSerializer&lt;T&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_118')">
+TaggedFieldSerializer&lt;T&gt;.isIgnoreUnkownTags&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_118" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializer&lt;T&gt;.isIgnoreUnkownTags:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_119')">
+TaggedFieldSerializer&lt;T&gt;.setIgnoreUnknownTags&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>ignoreUnknownTags</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_119" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializer&lt;T&gt;.setIgnoreUnknownTags:(Z)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>TaggedFieldSerializerConfig.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_120')">
+TaggedFieldSerializerConfig.clone&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;FieldSerializerConfig</span></span>
+<br/>
+<div id="c_120" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.clone:()Lcom/esotericsoftware/kryo/serializers/FieldSerializerConfig;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_121')">
+TaggedFieldSerializerConfig.clone&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;TaggedFieldSerializerConfig</span></span>
+<br/>
+<div id="c_121" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.clone:()Lcom/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_122')">
+TaggedFieldSerializerConfig.clone&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_122" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.clone:()Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_123')">
+TaggedFieldSerializerConfig.isIgnoreUnknownTags&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_123" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.isIgnoreUnknownTags:()Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_124')">
+TaggedFieldSerializerConfig.setIgnoreUnknownTags&#160;<span class='sym_p'><span class='nowrap'>(&#160;boolean <span class='color_p'>ignoreUnknownTags</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_124" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.setIgnoreUnknownTags:(Z)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_125')">
+TaggedFieldSerializerConfig.TaggedFieldSerializerConfig&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_125" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TaggedFieldSerializerConfig.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>TimeSerializers.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_126')">
+TimeSerializers.addDefaultSerializers&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>&#160;)</span></span> <span class='attr'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_126" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TimeSerializers.addDefaultSerializers:(Lcom/esotericsoftware/kryo/Kryo;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_127')">
+TimeSerializers.TimeSerializers&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_127" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/TimeSerializers.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>URLSerializer.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_128')">
+DefaultSerializers.URLSerializer.DefaultSerializers.URLSerializer&#160;<span class='sym_p'>(&#160;)</span></span>
+<br/>
+<div id="c_128" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.URLSerializer.&quot;&lt;init&gt;&quot;:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_129')">
+DefaultSerializers.URLSerializer.read&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Input <span class='color_p'>input</span>, </span><span class='nowrap'>Class&lt;java.net.URL&gt; <span class='color_p'>type</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;java.net.URL</span></span>
+<br/>
+<div id="c_129" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.URLSerializer.read:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;Ljava/lang/Class;)Ljava/net/URL;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_130')">
+DefaultSerializers.URLSerializer.read&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>p1</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Input <span class='color_p'>p2</span>, </span><span class='nowrap'>Class <span class='color_p'>p3</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_130" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.URLSerializer.read:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Input;Ljava/lang/Class;)Ljava/lang/Object;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_131')">
+DefaultSerializers.URLSerializer.write&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>kryo</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Output <span class='color_p'>output</span>, </span><span class='nowrap'>java.net.URL <span class='color_p'>object</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_131" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.URLSerializer.write:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;Ljava/net/URL;)V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_132')">
+DefaultSerializers.URLSerializer.write&#160;<span class='sym_p'><span class='nowrap'>(&#160;com.esotericsoftware.kryo.Kryo <span class='color_p'>p1</span>, </span><span class='nowrap'>com.esotericsoftware.kryo.io.Output <span class='color_p'>p2</span>, </span><span class='nowrap'>Object <span class='color_p'>p3</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_132" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/DefaultSerializers.URLSerializer.write:(Lcom/esotericsoftware/kryo/Kryo;Lcom/esotericsoftware/kryo/io/Output;Ljava/lang/Object;)V</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-4.0.0.jar</span>, <span class='cname'>Util.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_133')">
+Util.isClassAvailable&#160;<span class='sym_p'><span class='nowrap'>(&#160;String <span class='color_p'>className</span>&#160;)</span></span> <span class='attr'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_133" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/util/Util.isClassAvailable:(Ljava/lang/String;)Z</b>]</span><br/><br/></div>
+
+<br/>
+<a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<a name='Source_Removed'></a><a name='Source_Withdrawn'></a><h2>Removed Methods (5)</h2><hr/>
+<span class='jar'>kryo-3.0.3.jar</span>, <span class='cname'>FieldSerializer&lt;T&gt;.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo.serializers</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_134')">
+FieldSerializer&lt;T&gt;.getGenericsScope&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;com.esotericsoftware.kryo.Generics</span></span>
+<br/>
+<div id="c_134" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/serializers/FieldSerializer&lt;T&gt;.getGenericsScope:()Lcom/esotericsoftware/kryo/Generics;</b>]</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-3.0.3.jar</span>, <span class='cname'>Kryo.class</span><br/>
+<span class='package_title'>package</span> <span class='package'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="javascript:showContent(this, 'c_135')">
+Kryo.getGenericsScope&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Generics</span></span>
+<br/>
+<div id="c_135" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.getGenericsScope:()Lcom/esotericsoftware/kryo/Generics;</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_136')">
+Kryo.isClousre&#160;<span class='sym_p'><span class='nowrap'>(&#160;Class <span class='color_p'>type</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_136" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.isClousre:(Ljava/lang/Class;)Z</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_137')">
+Kryo.popGenericsScope&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_137" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.popGenericsScope:()V</b>]</span><br/><br/></div>
+
+<span class="section" onclick="javascript:showContent(this, 'c_138')">
+Kryo.pushGenericsScope&#160;<span class='sym_p'><span class='nowrap'>(&#160;Class <span class='color_p'>type</span>, </span><span class='nowrap'>Generics <span class='color_p'>generics</span>&#160;)</span></span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_138" style="display:none;">
+<span class='mangled'>[mangled: <b>com/esotericsoftware/kryo/Kryo.pushGenericsScope:(Ljava/lang/Class;Lcom/esotericsoftware/kryo/Generics;)V</b>]</span><br/><br/></div>
+
+<br/>
+<a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<a name='Checked_Archives'></a><h2>Java ARchives (1)</h2>
+<hr/><div class='jar_list'>
+kryo-3.0.3.jar<br/>
+</div><br/><a style='font-size:11px;' href='#Top'>to the top</a><br/>
+<br/><br/><br/></div><div style='width:97%;padding-top:3px;font-size:11px;' align='right'><i>Generated on Sat Jul  2 00:06:47 2016 for <span style='font-weight:bold'>kryo</span> by <a href='http://ispras.linuxbase.org/index.php/Java_API_Compliance_Checker'>Java API Compliance Checker</a> 1.4.1 &#160;<br/>A tool for checking backward compatibility of a Java library API&#160;&#160;</i></div>
+<div style='height:999px;'></div>
+</body></html>

@@ -14,7 +14,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 
 ## Contents
 
-- [New in release 3.0.0](#new-in-release-300)
+- [New in release 4.0.0](#new-in-release-400)
 - [Versioning Semantics, Upgrading](#versioning-semantics-upgrading)
 - [Installation](#installation)
  - [Integration with Maven](#integration-with-maven)
@@ -48,11 +48,23 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [Projects using Kryo](#projects-using-kryo)
 - [Contact / Mailing list](#contact--mailing-list)
 
-## New in release 3.0.0
+## New in release 4.0.0
 
-The 3.0.0 release fixes many reported issues and improves stability and performance. The maven groupId is changed from `com.esotericsoftware.kryo` to `com.esotericsoftware`. The Unsafe-based IO serialization format was changed and is incompatible with previous versions (therefore the new major version), the standard serialization format is still compatible.
+The 4.0.0 release brings several new features and improvements for stability and performance. Here are some highlights and things you definitely should be aware of (left aside
+that studying the change log and testing the upgrade carefully is a must anyways).
 
-See [ChangeLog](https://github.com/EsotericSoftware/kryo/blob/master/CHANGES.md) for more details about this release.
+* *BREAKING (data):* Generics handling is more robust now, the former optimization for smaller size (but increased serialization time) is now optional and disabled by default.<br/>
+  **Important:** This change breaks the serialization format of the `FieldSerializer` for generic fields, therefore generic classes serialized with Kryo 3
+  and `FieldSerializer` cannot be deserialized with Kryo 4 by default. To deserialize such Kryo 3 serialized generic classes you have to set
+  `kryo.getFieldSerializerConfig().setOptimizedGenerics(true);`! In any case, test that (de)serialization works with the upgrade.
+* *BREAKING (source/binary):* `protected Kryo.isClousre` is renamed to `Kryo.isClosure`, `Generics` is moved to a different package and no longer part of the public api.
+* Since Kryo 4 the public api is reduced. Since java does not allow fine grained settings for visibility, some classes that are `public` but not considered to
+  be part of the public api are now marked with "INTERNAL API".
+* Kryo 4 adds serializers for Java 8 `java.time.*` and `Optional*`.
+* Now we test serialization compatibility for the different binary formats and default serializers for every change.
+* Many more improvements and fixes thanks to many contributors!
+
+For details check out the [Release Notes](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.0).
 
 ## Versioning Semantics, Upgrading
 
@@ -89,7 +101,7 @@ To use the official release of Kryo, please use the following snippet in your po
     <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo</artifactId>
-        <version>3.0.3</version>
+        <version>4.0.0</version>
     </dependency>
 ```
 
@@ -99,7 +111,7 @@ If you experience issues because you already have a different version of asm in 
     <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo-shaded</artifactId>
-        <version>3.0.3</version>
+        <version>4.0.0</version>
     </dependency>
 ```
 
@@ -115,7 +127,7 @@ If you want to test the latest snapshot of Kryo, please use the following snippe
     <dependency>
        <groupId>com.esotericsoftware</groupId>
        <artifactId>kryo</artifactId>
-        <version>3.1.0-SNAPSHOT</version>
+        <version>4.0.1-SNAPSHOT</version>
     </dependency>
 ```
 

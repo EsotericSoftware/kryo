@@ -1,5 +1,7 @@
 # Changelog
 
+*Discontinued, check out [Releases](https://github.com/EsotericSoftware/kryo/releases) for newer releases*
+
 ## 3.0.2 - 3.0.3 (2015-07-26)
 
 * Fixed [#331](https://github.com/EsotericSoftware/kryo/issues/331). Reading and writing arrays of bytes was broken by ([1408cfd](https://github.com/EsotericSoftware/kryo/commit/1408cfd76f26fca3d6a0a7dd9e38feaa2e36eb46)) in UnsafeMemoryInput/UnsafeMemoryOutput. ([9f822f7](https://github.com/EsotericSoftware/kryo/commit/9f822f7cc42ff30add4bb870d9e6dca9f2eb0518))
