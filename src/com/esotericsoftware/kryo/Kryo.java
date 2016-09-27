@@ -1129,7 +1129,9 @@ public class Kryo {
 			generics = new Generics(generics.getMappings());
 		}
 		genericsScope = generics;
-		genericsScope.setParentScope(currentScope);
+		if (genericsScope != currentScope) {
+			genericsScope.setParentScope(currentScope);
+		}
 	}
 
 	public void popGenericsScope () {
