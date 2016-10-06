@@ -102,4 +102,11 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(ByteOrder.LITTLE_ENDIAN, outputBuffer.order());
 		assertEquals(ByteOrder.LITTLE_ENDIAN, outputBuffer.getByteBuffer().order());
 	}
+
+	public void testByteBufferByteOrderTheSameAfterGrowingForVarInt() {
+		final ByteBufferOutput outputBuffer = new ByteBufferOutput(1, -1);
+		final ByteOrder byteOrder = outputBuffer.order();
+		outputBuffer.writeVarInt(300, true);
+		assertEquals(byteOrder, outputBuffer.order());
+	}
 }
