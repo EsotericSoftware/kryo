@@ -678,6 +678,7 @@ See the following projects which provide serializers for Scala classes:
 - [akka-kryo-serialization](https://github.com/romix/akka-kryo-serialization) (Kryo serializers for Scala and Akka)
 - [Twitter's Scalding](https://github.com/twitter/scalding) (Scala API for Cascading)
 - [Kryo Serializers](https://github.com/magro/kryo-serializers) (Additional serializers for Java)
+- [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) (Scala macros for compile-time generation of Kryo serializers)
 
 ## Clojure
 
