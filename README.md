@@ -697,11 +697,12 @@ Kryo can be compared to many other serialization libraries in the [JVM Serialize
 
 ## Projects using Kryo
 
-There are a number of projects using Kryo. A few are listed below. Please post a message to the [mailing list](https://groups.google.com/forum/#!forum/kryo-users) if you'd like your project included here.
+There are a number of projects using Kryo. A few are listed below. Please submit a pull request if you'd like your project included here.
 
 - [KryoNet](http://code.google.com/p/kryonet/) (NIO networking)
 - [Twitter's Scalding](https://github.com/twitter/scalding) (Scala API for Cascading)
 - [Twitter's Chill](https://github.com/twitter/chill) (Kryo serializers for Scala)
+- [Apache Fluo](https://fluo.apache.org) (Kryo is default serialization for Fluo Recipes)
 - [Apache Hive](http://hive.apache.org/) (query plan serialization)
 - [Apache Spark](http://spark.apache.org/) (shuffled/cached data serialization)
 - [DataNucleus](https://github.com/datanucleus/type-converter-kryo) (JDO/JPA persistence framework)
