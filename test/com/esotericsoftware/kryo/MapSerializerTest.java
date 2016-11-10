@@ -189,7 +189,6 @@ public class MapSerializerTest extends KryoTestCase {
 		assertEquals(1, deserializedMap.size());
 	}
 
-	@SuppressWarnings("unused")
 	static class HasMultipleReferenceToSameMap {
 		private Map<Integer, String> mapOne = new HashMap<Integer, String>();
 		private Map<Integer, String> mapTwo = this.mapOne;
