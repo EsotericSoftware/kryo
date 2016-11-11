@@ -22,15 +22,8 @@ package com.esotericsoftware.kryo;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.TimeZone;
 
 import com.esotericsoftware.kryo.KryoTestCase.StreamFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -38,98 +31,99 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.UnsafeMemoryInput;
 import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
 import com.esotericsoftware.minlog.Log;
-
-import static com.esotericsoftware.minlog.Log.Logger;
-
-import java.util.Locale;
+import com.esotericsoftware.minlog.Log.Logger;
 
 import junit.framework.TestCase;
 
 /** @author Tiago Albineli Motta <timotta@gmail.com> */
 public class WarnUnregisteredClassesTest extends TestCase {
-	
+
 	LoggerStub log;
-	
+
 	@Override
-	protected void setUp() throws Exception {
+	protected void setUp () throws Exception {
 		super.setUp();
 		log = new LoggerStub();
 		Log.setLogger(log);
 	}
-	
+
 	public void testLogOnlyOneTimePerClass () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setWarnUnregisteredClasses(true);
-		
+
 		write(kryo, new UnregisteredClass());
 		assertEquals(1, log.messages.size());
-		
+
 		write(kryo, new UnregisteredClass());
 		assertEquals(1, log.messages.size());
-		
+
 		write(kryo, new UnregisteredClass2());
 		assertEquals(2, log.messages.size());
-		
+
 		write(kryo, new UnregisteredClass2());
 		assertEquals(2, log.messages.size());
 	}
-	
+
 	public void testDontLogIfNotRequired () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setWarnUnregisteredClasses(false);
-		
+
 		write(kryo, new UnregisteredClass());
 		assertEquals(0, log.messages.size());
-		
+
 		write(kryo, new UnregisteredClass2());
 		assertEquals(0, log.messages.size());
 	}
-	
+
 	public void testDontLogClassIsRegistered () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setWarnUnregisteredClasses(true);
 		kryo.register(RegisteredClass.class);
-		
+
 		write(kryo, new RegisteredClass());
 		assertEquals(0, log.messages.size());
 	}
-	
+
 	public void testLogShouldBeWarn () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setWarnUnregisteredClasses(true);
-		
+
 		write(kryo, new UnregisteredClass());
 		assertEquals(Log.LEVEL_WARN, log.levels.get(0).intValue());
 	}
-	
+
 	public void testLogMessageShouldContainsClassName () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setWarnUnregisteredClasses(true);
-		
+
 		write(kryo, new UnregisteredClass());
 		assertTrue(log.messages.get(0).contains(UnregisteredClass.class.getName()));
 	}
-	
-	public void write(Kryo kryo, Object object) {
+
+	public void write (Kryo kryo, Object object) {
 		StreamFactory sf = new StreamFactory() {
-			public Output createOutput(OutputStream os) {
+			public Output createOutput (OutputStream os) {
 				return new UnsafeMemoryOutput(os);
 			}
-			public Output createOutput(OutputStream os, int size) {
+
+			public Output createOutput (OutputStream os, int size) {
 				return new UnsafeMemoryOutput(os, size);
 			}
-			public Output createOutput(int size, int limit) {
+
+			public Output createOutput (int size, int limit) {
 				return new UnsafeMemoryOutput(size, limit);
 			}
-			public Input createInput(InputStream os, int size) {
+
+			public Input createInput (InputStream os, int size) {
 				return new UnsafeMemoryInput(os, size);
 			}
-			public Input createInput(byte[] buffer) {
+
+			public Input createInput (byte[] buffer) {
 				return new UnsafeMemoryInput(buffer);
 			}
 		};
@@ -138,12 +132,12 @@ public class WarnUnregisteredClassesTest extends TestCase {
 		kryo.writeClassAndObject(output, object);
 		output.flush();
 	}
-	
+
 	class LoggerStub extends Logger {
-		
-		public List<Integer> levels = new ArrayList();		
+
+		public List<Integer> levels = new ArrayList();
 		public List<String> messages = new ArrayList();
-		
+
 		@Override
 		public void log (int level, String category, String message, Throwable ex) {
 			levels.add(level);
@@ -153,11 +147,16 @@ public class WarnUnregisteredClassesTest extends TestCase {
 }
 
 class UnregisteredClass {
-	public UnregisteredClass() {}
+	public UnregisteredClass () {
+	}
 }
+
 class UnregisteredClass2 {
-	public UnregisteredClass2() {}
+	public UnregisteredClass2 () {
+	}
 }
+
 class RegisteredClass {
-	public RegisteredClass() {}
+	public RegisteredClass () {
+	}
 }

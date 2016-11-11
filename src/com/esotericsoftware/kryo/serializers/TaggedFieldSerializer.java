@@ -19,8 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -54,8 +53,8 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		super(kryo, type, null, kryo.getTaggedFieldSerializerConfig().clone());
 	}
 
-	/** Tells Kryo, if should ignore unknown field tags when using TaggedFieldSerializer. Already existing serializer instances
-	 * are not affected by this setting.
+	/** Tells Kryo, if should ignore unknown field tags when using TaggedFieldSerializer. Already existing serializer instances are
+	 * not affected by this setting.
 	 *
 	 * <p>
 	 * By default, Kryo will throw KryoException if encounters unknown field tags.
@@ -63,12 +62,12 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	 *
 	 * @param ignoreUnknownTags if true, unknown field tags will be ignored. Otherwise KryoException will be thrown */
 	public void setIgnoreUnknownTags (boolean ignoreUnknownTags) {
-		((TaggedFieldSerializerConfig) config).setIgnoreUnknownTags(ignoreUnknownTags);
+		((TaggedFieldSerializerConfig)config).setIgnoreUnknownTags(ignoreUnknownTags);
 		rebuildCachedFields();
 	}
 
-	public boolean isIgnoreUnkownTags() {
-		return ((TaggedFieldSerializerConfig) config).isIgnoreUnknownTags();
+	public boolean isIgnoreUnkownTags () {
+		return ((TaggedFieldSerializerConfig)config).isIgnoreUnknownTags();
 	}
 
 	protected void initializeCachedFields () {
@@ -89,7 +88,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		// fields are sorted to ensure write order: tag 0, tag 1, ... , tag N
 		Arrays.sort(fields, new Comparator<CachedField>() {
-			public int compare(CachedField o1, CachedField o2) {
+			public int compare (CachedField o1, CachedField o2) {
 				return o1.getField().getAnnotation(Tag.class).value() - o2.getField().getAnnotation(Tag.class).value();
 			}
 		});

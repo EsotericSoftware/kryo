@@ -19,9 +19,9 @@
 
 package com.esotericsoftware.kryo.util;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 import static com.esotericsoftware.minlog.Log.*;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /** A few utility methods, mostly for private use.
  * @author Nathan Sweet <misc@n4te.com> */
@@ -30,9 +30,9 @@ public class Util {
 
 	private static final ConcurrentHashMap<String, Boolean> classAvailabilities = new ConcurrentHashMap<String, Boolean>();
 
-	public static boolean isClassAvailable(String className) {
+	public static boolean isClassAvailable (String className) {
 		Boolean result = classAvailabilities.get(className);
-		if(result == null) {
+		if (result == null) {
 			try {
 				Class.forName(className);
 				result = true;
@@ -62,8 +62,7 @@ public class Util {
 			return Character.class;
 		else if (type == short.class) //
 			return Short.class;
-		else if (type == double.class)
-			return Double.class;
+		else if (type == double.class) return Double.class;
 		return Void.class;
 	}
 
@@ -86,11 +85,10 @@ public class Util {
 			return short.class;
 		else if (type == Double.class) //
 			return double.class;
-		else if (type == Void.class)
-			return void.class;
+		else if (type == Void.class) return void.class;
 		return type;
 	}
-	
+
 	static public boolean isWrapperClass (Class type) {
 		return type == Integer.class || type == Float.class || type == Boolean.class || type == Long.class || type == Byte.class
 			|| type == Character.class || type == Short.class || type == Double.class;
@@ -122,11 +120,11 @@ public class Util {
 				return TRACE ? className(type) : type.getSimpleName();
 		} catch (Exception ignored) {
 		}
-                try {
-		    return String.valueOf(object);
-                } catch(Throwable e) {
-                    return (TRACE ? className(type) : type.getSimpleName()) + "(Exception " + e + " in toString)";
-                }
+		try {
+			return String.valueOf(object);
+		} catch (Throwable e) {
+			return (TRACE ? className(type) : type.getSimpleName()) + "(Exception " + e + " in toString)";
+		}
 	}
 
 	/** Returns the class formatted as a string. The format varies depending on the type. */
@@ -164,25 +162,16 @@ public class Util {
 			elementClass = elementClass.getComponentType();
 		return elementClass;
 	}
-	
+
 	/** Converts an "int" value between endian systems. */
-	static public int swapInt(int i) {
-		return   ((i & 0xFF) << 24) | 
-			    ((i & 0xFF00) << 8) | 
-			   ((i & 0xFF0000) >> 8)| 
-			   ((i >> 24) & 0xFF);
+	static public int swapInt (int i) {
+		return ((i & 0xFF) << 24) | ((i & 0xFF00) << 8) | ((i & 0xFF0000) >> 8) | ((i >> 24) & 0xFF);
 	}
 
 	/** Converts a "long" value between endian systems. */
-	static public long swapLong(long value) {
-        return
-            ( ( ( value >> 0 ) & 0xff ) << 56 )|
-            ( ( ( value >> 8 ) & 0xff ) << 48 )|
-            ( ( ( value >> 16 ) & 0xff ) << 40 )|
-            ( ( ( value >> 24 ) & 0xff ) << 32 )|
-            ( ( ( value >> 32 ) & 0xff ) << 24 )|
-            ( ( ( value >> 40 ) & 0xff ) << 16 )|
-            ( ( ( value >> 48 ) & 0xff ) << 8 )|
-            ( ( ( value >> 56 ) & 0xff ) << 0 );
-    }
+	static public long swapLong (long value) {
+		return (((value >> 0) & 0xff) << 56) | (((value >> 8) & 0xff) << 48) | (((value >> 16) & 0xff) << 40)
+			| (((value >> 24) & 0xff) << 32) | (((value >> 32) & 0xff) << 24) | (((value >> 40) & 0xff) << 16)
+			| (((value >> 48) & 0xff) << 8) | (((value >> 56) & 0xff) << 0);
+	}
 }

@@ -29,11 +29,11 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
-import junit.framework.Assert;
-
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
+
+import junit.framework.Assert;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class MapSerializerTest extends KryoTestCase {
@@ -170,7 +170,7 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(29, 43, map);
 	}
 
-	public void testSerializingMapAfterDeserializingMultipleReferencesToSameMap() throws Exception {
+	public void testSerializingMapAfterDeserializingMultipleReferencesToSameMap () throws Exception {
 		Kryo kryo = new Kryo();
 		kryo.getFieldSerializerConfig().setOptimizedGenerics(false);
 		Output output = new Output(4096);
@@ -184,8 +184,8 @@ public class MapSerializerTest extends KryoTestCase {
 		kryo.writeClassAndObject(output, mapOfLists);
 
 		@SuppressWarnings("unchecked")
-		Map<Integer, List<String>> deserializedMap =
-				(Map<Integer, List<String>>) kryo.readClassAndObject(new Input(new ByteArrayInputStream(output.getBuffer())));
+		Map<Integer, List<String>> deserializedMap = (Map<Integer, List<String>>)kryo
+			.readClassAndObject(new Input(new ByteArrayInputStream(output.getBuffer())));
 		assertEquals(1, deserializedMap.size());
 	}
 
@@ -193,7 +193,7 @@ public class MapSerializerTest extends KryoTestCase {
 		private Map<Integer, String> mapOne = new HashMap<Integer, String>();
 		private Map<Integer, String> mapTwo = this.mapOne;
 	}
-	
+
 	static public class HasGenerics {
 		public HashMap<String, Integer[]> map = new HashMap();
 		public HashMap<String, ?> map2 = new HashMap();
@@ -207,17 +207,20 @@ public class MapSerializerTest extends KryoTestCase {
 
 	static public class KeyThatIsntComparable {
 		public String value;
+
 		public KeyThatIsntComparable () {
 		}
+
 		public KeyThatIsntComparable (String value) {
 			this.value = value;
 		}
 	}
 
-	static public class TreeMapSubclass<K,V> extends TreeMap<K,V> {
-		public TreeMapSubclass() {
+	static public class TreeMapSubclass<K, V> extends TreeMap<K, V> {
+		public TreeMapSubclass () {
 		}
-		public TreeMapSubclass(Comparator<? super K> comparator) {
+
+		public TreeMapSubclass (Comparator<? super K> comparator) {
 			super(comparator);
 		}
 	}

@@ -39,6 +39,6 @@ public class TestKryoMainNate {
 		public String bbb = "bbb";
 		public String ccc = "ccc";
 		public String ddd = bbb;
-		//public String ddd = "ddd";
+		// public String ddd = "ddd";
 	}
 }

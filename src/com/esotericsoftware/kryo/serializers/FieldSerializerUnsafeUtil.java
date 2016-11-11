@@ -32,8 +32,8 @@ interface FieldSerializerUnsafeUtil {
 
 	/** Use Unsafe-based information about fields layout in memory to build a list of cached fields and memory regions representing
 	 * consecutive fields in memory */
-	public abstract void createUnsafeCacheFieldsAndRegions (List<Field> validFields, List<CachedField> cachedFields,
-		int baseIndex, IntArray useAsm);
+	public abstract void createUnsafeCacheFieldsAndRegions (List<Field> validFields, List<CachedField> cachedFields, int baseIndex,
+		IntArray useAsm);
 
 	public abstract long getObjectFieldOffset (Field field);
 

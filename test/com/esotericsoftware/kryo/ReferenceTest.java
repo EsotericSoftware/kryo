@@ -19,15 +19,15 @@
 
 package com.esotericsoftware.kryo;
 
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.MapSerializer;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.MapSerializer;
 
 public class ReferenceTest extends KryoTestCase {
 	static public class Ordering {
@@ -88,14 +88,14 @@ public class ReferenceTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		kryo.register(ArrayList.class);
 		Class<List> subListClass = (Class<List>)subList.getClass();
-		if(subListClass.getName().equals("java.util.ArrayList$SubList")) {
+		if (subListClass.getName().equals("java.util.ArrayList$SubList")) {
 			// This is JDK > = 1.7
-			kryo.register(subList.getClass(), new ArraySubListSerializer());			
+			kryo.register(subList.getClass(), new ArraySubListSerializer());
 		} else {
 			kryo.register(subList.getClass(), new SubListSerializer());
-		    
+
 		}
-		roundTrip(26, 26,  subList);
+		roundTrip(26, 26, subList);
 	}
 
 	static public class SubListSerializer extends Serializer<List> {

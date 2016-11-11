@@ -23,18 +23,15 @@ import java.util.Queue;
 
 import com.esotericsoftware.kryo.Kryo;
 
-/**
- * A simple {@link Queue} based {@link KryoPool} implementation, should be built
- * using the KryoPool.Builder.
+/** A simple {@link Queue} based {@link KryoPool} implementation, should be built using the KryoPool.Builder.
  *
- * @author Martin Grotzke
- */
+ * @author Martin Grotzke */
 class KryoPoolQueueImpl implements KryoPool {
 
 	private final Queue<Kryo> queue;
 	private final KryoFactory factory;
 
-	KryoPoolQueueImpl(KryoFactory factory, Queue<Kryo> queue) {
+	KryoPoolQueueImpl (KryoFactory factory, Queue<Kryo> queue) {
 		this.factory = factory;
 		this.queue = queue;
 	}
@@ -45,7 +42,7 @@ class KryoPoolQueueImpl implements KryoPool {
 
 	public Kryo borrow () {
 		Kryo res;
-		if((res = queue.poll()) != null) {
+		if ((res = queue.poll()) != null) {
 			return res;
 		}
 		return factory.create();
@@ -55,7 +52,7 @@ class KryoPoolQueueImpl implements KryoPool {
 		queue.offer(kryo);
 	}
 
-	public <T> T run(KryoCallback<T> callback) {
+	public <T> T run (KryoCallback<T> callback) {
 		Kryo kryo = borrow();
 		try {
 			return callback.execute(kryo);
@@ -64,7 +61,7 @@ class KryoPoolQueueImpl implements KryoPool {
 		}
 	}
 
-	public void clear() {
+	public void clear () {
 		queue.clear();
 	}
 

@@ -19,9 +19,6 @@
 
 package com.esotericsoftware.kryo.io;
 
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.util.UnsafeUtil;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -32,6 +29,9 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
+
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.UnsafeUtil;
 
 /** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
  * for efficiently writing primitive types and strings.
@@ -111,6 +111,7 @@ public class ByteBufferOutput extends Output {
 	 * // Release the allocated region
 	 * UnsafeUtil.unsafe().freeMemory(bufAddress);
 	 * </pre>
+	 * 
 	 * @param address starting address of a memory region pre-allocated using Unsafe.allocateMemory()
 	 * @param maxBufferSize */
 	public ByteBufferOutput (long address, int maxBufferSize) {
@@ -214,8 +215,8 @@ public class ByteBufferOutput extends Output {
 			if (capacity == 0) capacity = 1;
 			capacity = Math.min(capacity * 2, maxCapacity);
 			if (capacity < 0) capacity = maxCapacity;
-			ByteBuffer newBuffer = (niobuffer != null && !niobuffer.isDirect()) ? ByteBuffer.allocate(capacity) : ByteBuffer
-				.allocateDirect(capacity);
+			ByteBuffer newBuffer = (niobuffer != null && !niobuffer.isDirect()) ? ByteBuffer.allocate(capacity)
+				: ByteBuffer.allocateDirect(capacity);
 			// Copy the whole buffer
 			niobuffer.position(0);
 			niobuffer.limit(position);

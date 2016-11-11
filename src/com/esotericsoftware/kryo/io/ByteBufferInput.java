@@ -19,9 +19,6 @@
 
 package com.esotericsoftware.kryo.io;
 
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.util.UnsafeUtil;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -32,6 +29,9 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
+
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.UnsafeUtil;
 
 /** An InputStream that reads data from a byte array and optionally fills the byte array from another InputStream as needed.
  * Utility methods are provided for efficiently reading primitive types and strings.
@@ -307,7 +307,7 @@ public class ByteBufferInput extends Input {
 		this.niobuffer.limit(limit);
 	}
 
-	public void skip(int count) throws KryoException {
+	public void skip (int count) throws KryoException {
 		super.skip(count);
 		niobuffer.position(this.position());
 	}
@@ -492,8 +492,8 @@ public class ByteBufferInput extends Input {
 		return true;
 	}
 
-	/** Reads the length and string of UTF8 characters, or null. This can read strings written by {@link Output#writeString(String)}
-	 * , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
+	/** Reads the length and string of UTF8 characters, or null. This can read strings written by
+	 * {@link Output#writeString(String)} , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
 	 * @return May be null. */
 	public String readString () {
 		niobuffer.position(position);
@@ -678,8 +678,8 @@ public class ByteBufferInput extends Input {
 		return new String(chars, 0, charCount);
 	}
 
-	/** Reads the length and string of UTF8 characters, or null. This can read strings written by {@link Output#writeString(String)}
-	 * , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
+	/** Reads the length and string of UTF8 characters, or null. This can read strings written by
+	 * {@link Output#writeString(String)} , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
 	 * @return May be null. */
 	public StringBuilder readStringBuilder () {
 		niobuffer.position(position);

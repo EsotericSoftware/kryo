@@ -51,14 +51,14 @@ public class KryoPoolBenchmarkTest {
 	};
 
 	@Test
-	public void testWithoutPool() throws Exception {
+	public void testWithoutPool () throws Exception {
 		// Warm-up phase: Perform 100000 iterations
 		runWithoutPool(1, WARMUP_ITERATIONS, false);
 		runWithoutPool(RUN_CNT, ITER_CNT, true);
 	}
 
 	@Test
-	public void testWithPool() throws Exception {
+	public void testWithPool () throws Exception {
 		KryoPool.Builder builder = new KryoPool.Builder(factory);
 		// Warm-up phase: Perform 100000 iterations
 		runWithPool(builder, 1, WARMUP_ITERATIONS, false);
@@ -66,14 +66,15 @@ public class KryoPoolBenchmarkTest {
 	}
 
 	@Test
-	public void testWithPoolWithSoftReferences() throws Exception {
+	public void testWithPoolWithSoftReferences () throws Exception {
 		KryoPool.Builder builder = new KryoPool.Builder(factory).softReferences();
 		// Warm-up phase: Perform 100000 iterations
 		runWithPool(builder, 1, WARMUP_ITERATIONS, false);
 		runWithPool(builder, RUN_CNT, ITER_CNT, true);
 	}
 
-	private void run (String description, Runnable runnable, final int runCount, final int iterCount, boolean outputResults) throws Exception {
+	private void run (String description, Runnable runnable, final int runCount, final int iterCount, boolean outputResults)
+		throws Exception {
 		long avgDur = 0;
 		long bestTime = Long.MAX_VALUE;
 
@@ -111,7 +112,8 @@ public class KryoPoolBenchmarkTest {
 		}, runCount, iterCount, outputResults);
 	}
 
-	private void runWithPool (final KryoPool.Builder builder, final int runCount, final int iterCount, boolean outputResults) throws Exception {
+	private void runWithPool (final KryoPool.Builder builder, final int runCount, final int iterCount, boolean outputResults)
+		throws Exception {
 		final KryoPool pool = builder.build();
 		run("With pool " + builder.toString(), new Runnable() {
 			@Override
@@ -158,9 +160,9 @@ public class KryoPoolBenchmarkTest {
 			SampleObject obj = (SampleObject)other;
 
 			return intVal == obj.intVal && floatVal == obj.floatVal && shortVal.equals(obj.shortVal)
-				&& Arrays.equals(dblArr, obj.dblArr) && Arrays.equals(longArr, obj.longArr) && (str == null ? obj.str == null : str.equals(obj.str));
+				&& Arrays.equals(dblArr, obj.dblArr) && Arrays.equals(longArr, obj.longArr)
+				&& (str == null ? obj.str == null : str.equals(obj.str));
 		}
 	}
 
-	
 }

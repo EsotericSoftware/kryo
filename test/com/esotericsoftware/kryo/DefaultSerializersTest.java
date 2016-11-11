@@ -33,9 +33,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.objenesis.strategy.StdInstantiatorStrategy;
+
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest extends KryoTestCase {
@@ -143,7 +144,8 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(3, 3, "a");
 		roundTrip(3, 3, "\n");
 		roundTrip(2, 2, "");
-		roundTrip(100, 100,  "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
+		roundTrip(100, 100,
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
 
 		roundTrip(21, 21, "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u7C9F");
 	}
@@ -151,7 +153,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	public void testVoid () throws InstantiationException, IllegalAccessException {
 		roundTrip(1, 1, (Void)null);
 	}
-	
+
 	public void testNull () {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(true);
@@ -285,8 +287,8 @@ public class DefaultSerializersTest extends KryoTestCase {
 		calendar.set(1980, 7, 26, 12, 22, 46);
 		roundTrip(64, 73, calendar);
 	}
-	
-	public void testClassSerializer() {
+
+	public void testClassSerializer () {
 		kryo.register(Class.class);
 		kryo.register(ArrayList.class);
 		kryo.setRegistrationRequired(false);
@@ -339,18 +341,18 @@ public class DefaultSerializersTest extends KryoTestCase {
 	public void testLocaleSerializer () {
 		kryo.setRegistrationRequired(true);
 		kryo.register(Locale.class);
-		
+
 		roundTrip(5, 5, Locale.ENGLISH);
 		roundTrip(6, 6, Locale.US);
 		roundTrip(6, 6, Locale.SIMPLIFIED_CHINESE);
-		roundTrip(5, 5, new Locale("es"));		
-		roundTrip(16, 16, new Locale("es", "ES", "áéíóú"));		
+		roundTrip(5, 5, new Locale("es"));
+		roundTrip(16, 16, new Locale("es", "ES", "áéíóú"));
 	}
 
-	public void testCharset() {
+	public void testCharset () {
 		List<String> css = Arrays.asList("ISO-8859-1", "US-ASCII", "UTF-8", "UTF-16", "UTF-16BE", "UTF-16LE");
 
-		for(String cs : css) {
+		for (String cs : css) {
 			Charset charset = Charset.forName(cs);
 			kryo.register(charset.getClass());
 			int expectedLength = 1 + cs.length();
@@ -360,7 +362,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 
-		for(String cs : css) {
+		for (String cs : css) {
 			Charset charset = Charset.forName(cs);
 			int expectedLength = 3 + charset.getClass().getName().length() + cs.length();
 			roundTrip(expectedLength, expectedLength, charset);
@@ -388,23 +390,25 @@ public class DefaultSerializersTest extends KryoTestCase {
 		c {
 		}
 	}
-	
+
 	static class BigDecimalSubclass extends BigDecimal {
-		public BigDecimalSubclass(BigInteger unscaledVal, int scale) {
+		public BigDecimalSubclass (BigInteger unscaledVal, int scale) {
 			super(unscaledVal, scale);
 		}
-		public BigDecimalSubclass(String val) {
+
+		public BigDecimalSubclass (String val) {
 			super(val);
 		}
 	}
-	
+
 	static class BigIntegerSubclass extends BigInteger {
-		public BigIntegerSubclass(byte[] val) {
+		public BigIntegerSubclass (byte[] val) {
 			super(val);
 		}
-		public BigIntegerSubclass(String val) {
+
+		public BigIntegerSubclass (String val) {
 			super(val);
 		}
 	}
-	
+
 }

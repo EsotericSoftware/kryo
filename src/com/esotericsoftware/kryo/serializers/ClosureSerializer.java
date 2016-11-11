@@ -34,7 +34,8 @@ import com.esotericsoftware.kryo.io.Output;
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class ClosureSerializer extends Serializer {
 
-	/** Marker class to bind ClosureSerializer to. See also {@link Kryo#isClosure(Class)} and {@link Kryo#getRegistration(Class)} */
+	/** Marker class to bind ClosureSerializer to. See also {@link Kryo#isClosure(Class)} and
+	 * {@link Kryo#getRegistration(Class)} */
 	@SuppressWarnings("javadoc")
 	public static class Closure {
 	}

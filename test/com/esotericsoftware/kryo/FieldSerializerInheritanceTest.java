@@ -19,130 +19,129 @@
 
 package com.esotericsoftware.kryo;
 
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import org.junit.Assert;
 
-/**
- * Created by phamrak on 8.6.2016.
- */
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
+
+/** Created by phamrak on 8.6.2016. */
 public class FieldSerializerInheritanceTest extends KryoTestCase {
-    public void testDefaultStrategyForDefaultClass() {
-        TestDefault testDefault = new TestDefault();
-        testDefault.a = "someDefaultValue";
-        kryo.setDefaultSerializer(FieldSerializer.class);
-        kryo.register(TestDefault.class);
+	public void testDefaultStrategyForDefaultClass () {
+		TestDefault testDefault = new TestDefault();
+		testDefault.a = "someDefaultValue";
+		kryo.setDefaultSerializer(FieldSerializer.class);
+		kryo.register(TestDefault.class);
 
-        roundTrip(17, 17, testDefault);
+		roundTrip(17, 17, testDefault);
 
-        FieldSerializer serializer = (FieldSerializer) kryo.getSerializer(TestDefault.class);
-        assertNotNull(serializer.getField("a"));
-        serializer.removeField("a");
-        assertFieldRemoved(serializer, "a");
-    }
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestDefault.class);
+		assertNotNull(serializer.getField("a"));
+		serializer.removeField("a");
+		assertFieldRemoved(serializer, "a");
+	}
 
-    public void testDefaultStrategyForExtendedClass() {
-        TestExtended testExtended = new TestExtended();
-        ((TestDefault) testExtended).a = "someDefaultValue";
-        testExtended.a = "someExtendedValue";
-        kryo.setDefaultSerializer(FieldSerializer.class);
-        kryo.register(TestExtended.class);
+	public void testDefaultStrategyForExtendedClass () {
+		TestExtended testExtended = new TestExtended();
+		((TestDefault)testExtended).a = "someDefaultValue";
+		testExtended.a = "someExtendedValue";
+		kryo.setDefaultSerializer(FieldSerializer.class);
+		kryo.register(TestExtended.class);
 
-        roundTrip(34, 34, testExtended);
+		roundTrip(34, 34, testExtended);
 
-        FieldSerializer serializer = (FieldSerializer) kryo.getSerializer(TestExtended.class);
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestExtended.class);
 
-        // the "a" field needs to be removed 2x, once for TestDefault.a and once for TestExtended.a. You
-        // can't remove the second one without removing the first one (in DEFAULT field name strategy)
-        assertNotNull(serializer.getField("a"));
-        serializer.removeField("a");
-        assertNotNull(serializer.getField("a"));
-        serializer.removeField("a");
-        assertFieldRemoved(serializer, "a");
-    }
+		// the "a" field needs to be removed 2x, once for TestDefault.a and once for TestExtended.a. You
+		// can't remove the second one without removing the first one (in DEFAULT field name strategy)
+		assertNotNull(serializer.getField("a"));
+		serializer.removeField("a");
+		assertNotNull(serializer.getField("a"));
+		serializer.removeField("a");
+		assertFieldRemoved(serializer, "a");
+	}
 
-    public void testExtendedStrategyForExtendedClass() {
-        TestExtended testExtended = new TestExtended();
-        ((TestDefault) testExtended).a = "someDefaultValue";
-        testExtended.a = "someExtendedValue";
-        kryo.getFieldSerializerConfig().setCachedFieldNameStrategy(FieldSerializer.CachedFieldNameStrategy.EXTENDED);
-        kryo.setDefaultSerializer(FieldSerializer.class);
-        kryo.register(TestExtended.class);
+	public void testExtendedStrategyForExtendedClass () {
+		TestExtended testExtended = new TestExtended();
+		((TestDefault)testExtended).a = "someDefaultValue";
+		testExtended.a = "someExtendedValue";
+		kryo.getFieldSerializerConfig().setCachedFieldNameStrategy(FieldSerializer.CachedFieldNameStrategy.EXTENDED);
+		kryo.setDefaultSerializer(FieldSerializer.class);
+		kryo.register(TestExtended.class);
 
-        roundTrip(34, 34, testExtended);
+		roundTrip(34, 34, testExtended);
 
-        FieldSerializer serializer = (FieldSerializer) kryo.getSerializer(TestExtended.class);
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestExtended.class);
 
-        // Simple class name is part of field name in EXTENDED field name strategy.
-        assertNotNull(serializer.getField("TestDefault.a"));
-        serializer.removeField("TestDefault.a");
-        assertFieldRemoved(serializer, "TestDefault.a");
-        assertNotNull(serializer.getField("TestExtended.a"));
-        serializer.removeField("TestExtended.a");
-        assertFieldRemoved(serializer, "TestExtended.a");
-    }
+		// Simple class name is part of field name in EXTENDED field name strategy.
+		assertNotNull(serializer.getField("TestDefault.a"));
+		serializer.removeField("TestDefault.a");
+		assertFieldRemoved(serializer, "TestDefault.a");
+		assertNotNull(serializer.getField("TestExtended.a"));
+		serializer.removeField("TestExtended.a");
+		assertFieldRemoved(serializer, "TestExtended.a");
+	}
 
-    protected void assertFieldRemoved(FieldSerializer serializer, String fieldName) {
-        try {
-            assertNull(serializer.getField(fieldName));
-            Assert.fail("Expected IllegalArgumentException to be thrown for serializer.getField(" + fieldName + ")");
-        } catch (IllegalArgumentException iae) {
-            assertTrue(true);
-        }
-    }
+	protected void assertFieldRemoved (FieldSerializer serializer, String fieldName) {
+		try {
+			assertNull(serializer.getField(fieldName));
+			Assert.fail("Expected IllegalArgumentException to be thrown for serializer.getField(" + fieldName + ")");
+		} catch (IllegalArgumentException iae) {
+			assertTrue(true);
+		}
+	}
 
-    static public class TestDefault {
-        private String a;
+	static public class TestDefault {
+		private String a;
 
-        public String getA() {
-            return a;
-        }
+		public String getA () {
+			return a;
+		}
 
-        public void setA(String a) {
-            this.a = a;
-        }
+		public void setA (String a) {
+			this.a = a;
+		}
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
 
-            TestDefault that = (TestDefault) o;
+			TestDefault that = (TestDefault)o;
 
-            return a != null ? a.equals(that.a) : that.a == null;
+			return a != null ? a.equals(that.a) : that.a == null;
 
-        }
+		}
 
-        @Override
-        public int hashCode() {
-            return a != null ? a.hashCode() : 0;
-        }
-    }
+		@Override
+		public int hashCode () {
+			return a != null ? a.hashCode() : 0;
+		}
+	}
 
-    static public class TestExtended extends TestDefault {
-        private String a;
+	static public class TestExtended extends TestDefault {
+		private String a;
 
-        public String getA() {
-            return a;
-        }
+		public String getA () {
+			return a;
+		}
 
-        public void setA(String a) {
-            this.a = a;
-        }
+		public void setA (String a) {
+			this.a = a;
+		}
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
 
-            if (!super.equals(o)) return false;
+			if (!super.equals(o)) return false;
 
-            TestExtended that = (TestExtended) o;
-            return a != null ? a.equals(that.a) : that.a == null;
-        }
+			TestExtended that = (TestExtended)o;
+			return a != null ? a.equals(that.a) : that.a == null;
+		}
 
-        @Override
-        public int hashCode() {
-            return a != null ? a.hashCode() : 0;
-        }
-    }
+		@Override
+		public int hashCode () {
+			return a != null ? a.hashCode() : 0;
+		}
+	}
 }

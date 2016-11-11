@@ -64,8 +64,8 @@ public class MapSerializer extends Serializer<Map> {
 		this.valueSerializer = valueSerializer;
 	}
 
-	/** @param valuesCanBeNull True if values are not null. This saves 1 byte per value if keyClass is set. False if it is not known
-	 *           (default). */
+	/** @param valuesCanBeNull True if values are not null. This saves 1 byte per value if keyClass is set. False if it is not
+	 *           known (default). */
 	public void setValuesCanBeNull (boolean valuesCanBeNull) {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
@@ -73,7 +73,7 @@ public class MapSerializer extends Serializer<Map> {
 	public void setGenerics (Kryo kryo, Class[] generics) {
 		keyGenericType = null;
 		valueGenericType = null;
-		
+
 		if (generics != null && generics.length > 0) {
 			if (generics[0] != null && kryo.isFinal(generics[0])) keyGenericType = generics[0];
 			if (generics.length > 1 && generics[1] != null && kryo.isFinal(generics[1])) valueGenericType = generics[1];
@@ -177,56 +177,41 @@ public class MapSerializer extends Serializer<Map> {
 		return copy;
 	}
 
-	/** 
-	 * Used to annotate fields that are maps with specific Kryo serializers for 
-	 * their keys or values. 
-	 */
+	/** Used to annotate fields that are maps with specific Kryo serializers for their keys or values. */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindMap {
 
-		/** 
-		 * Serializer to be used for keys
+		/** Serializer to be used for keys
 		 * 
-		 * @return the class<? extends serializer> used for keys serialization
-		 */
+		 * @return the class<? extends serializer> used for keys serialization */
 		@SuppressWarnings("rawtypes")
 		Class<? extends Serializer> keySerializer() default Serializer.class;
 
-		/** 
-		 * Serializer to be used for values
+		/** Serializer to be used for values
 		 * 
-		 * @return the class<? extends serializer> used for values serialization 
-		 */
+		 * @return the class<? extends serializer> used for values serialization */
 		@SuppressWarnings("rawtypes")
 		Class<? extends Serializer> valueSerializer() default Serializer.class;
 
-		/** 
-		 * Class used for keys
+		/** Class used for keys
 		 * 
-		 * @return the class used for keys 
-		 */
+		 * @return the class used for keys */
 		Class<?> keyClass() default Object.class;
 
-		/** 
-		 * Class used for values
+		/** Class used for values
 		 * 
-		 * @return the class used for values 
-		 */
+		 * @return the class used for values */
 		Class<?> valueClass() default Object.class;
 
-		/** 
-		 * Indicates if keys can be null
+		/** Indicates if keys can be null
 		 * 
-		 * @return true, if keys can be null 
-		 */
+		 * @return true, if keys can be null */
 		boolean keysCanBeNull() default true;
 
-		/** 
-		 * Indicates if values can be null
+		/** Indicates if values can be null
 		 * 
-		 * @return true, if values can be null 
-		 */
+		 * @return true, if values can be null */
 		boolean valuesCanBeNull() default true;
 	}
 }

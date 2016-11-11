@@ -22,7 +22,6 @@ package com.esotericsoftware.kryo;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Random;
 
 import com.esotericsoftware.kryo.io.Input;
@@ -43,14 +42,14 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 
 		assertEquals(new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
-				31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
-				51, 52, 53, 54, 55, 56, 57, 58, //
-				61, 62, 63, 64, 65}, buffer.toByteArray());
+			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
+			51, 52, 53, 54, 55, 56, 57, 58, //
+			61, 62, 63, 64, 65}, buffer.toByteArray());
 	}
 
 	public void testInputStream () throws IOException {
 		byte[] bytes = new byte[] { //
-		11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
+			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
 			61, 62, 63, 64, 65};
@@ -86,9 +85,9 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 
 		assertEquals(new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
-				31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
-				51, 52, 53, 54, 55, 56, 57, 58, //
-				61, 62, 63, 64, 65}, buffer.toBytes());
+			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
+			51, 52, 53, 54, 55, 56, 57, 58, //
+			61, 62, 63, 64, 65}, buffer.toBytes());
 	}
 
 	public void testStrings () throws IOException {
@@ -211,7 +210,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 
 	private void runIntTest (UnsafeOutput write) throws IOException {
 		write.supportVarInts(false);
-		
+
 		write.writeInt(0);
 		write.writeInt(63);
 		write.writeInt(64);
@@ -231,9 +230,9 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		write.writeInt(-268435455);
 		write.writeInt(-134217728);
 		write.writeInt(-268435456);
-		
+
 		write.supportVarInts(true);
-		
+
 		assertEquals(1, write.writeInt(0, true));
 		assertEquals(1, write.writeInt(0, false));
 		assertEquals(1, write.writeInt(63, true));
@@ -283,7 +282,6 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(5, write.writeInt(Integer.MAX_VALUE, false));
 		assertEquals(5, write.writeInt(Integer.MAX_VALUE, true));
 
-
 		UnsafeInput read = new UnsafeInput(write.toBytes());
 		assertEquals(0, read.readInt());
 		assertEquals(63, read.readInt());
@@ -307,9 +305,9 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(true, read.canReadInt());
 		assertEquals(true, read.canReadInt());
 		assertEquals(true, read.canReadInt());
-		
+
 		read.setVarIntsEnabled(true);
-		
+
 		assertEquals(0, read.readInt(true));
 		assertEquals(0, read.readInt(false));
 		assertEquals(63, read.readInt(true));
@@ -381,7 +379,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 
 	private void runLongTest (UnsafeOutput write) throws IOException {
 		write.supportVarInts(false);
-		
+
 		write.writeLong(0);
 		write.writeLong(63);
 		write.writeLong(64);
@@ -403,7 +401,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		write.writeLong(-268435456);
 
 		write.supportVarInts(true);
-		
+
 		assertEquals(1, write.writeLong(0, true));
 		assertEquals(1, write.writeLong(0, false));
 		assertEquals(1, write.writeLong(63, true));
@@ -467,9 +465,9 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(-268435455, read.readLong());
 		assertEquals(-134217728, read.readLong());
 		assertEquals(-268435456, read.readLong());
-		
+
 		read.setVarIntsEnabled(true);
-		
+
 		assertEquals(0, read.readLong(true));
 		assertEquals(0, read.readLong(false));
 		assertEquals(63, read.readLong(true));
@@ -822,13 +820,13 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(true, read.eof());
 	}
 
-	public void testSimpleVarInt() {
-      final int value = 39117;
-      final Output out = new UnsafeOutput(1024);
-      out.writeVarInt(value, true);
-      out.flush();
-      final Input in = new UnsafeInput(out.toBytes());
-      final int actualValue = in.readVarInt(true);
-      assertEquals(value, actualValue);
-  }
+	public void testSimpleVarInt () {
+		final int value = 39117;
+		final Output out = new UnsafeOutput(1024);
+		out.writeVarInt(value, true);
+		out.flush();
+		final Input in = new UnsafeInput(out.toBytes());
+		final int actualValue = in.readVarInt(true);
+		assertEquals(value, actualValue);
+	}
 }

@@ -19,51 +19,45 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoTestCase;
-import org.junit.Assert;
-import org.junit.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
-
 import java.lang.invoke.SerializedLambda;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import org.junit.Assert;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
-/**
- * Test for java 8 closures.
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
+
+/** Test for java 8 closures.
  *
- * For jdk < 1.8 excluded from surefire tests via the "until-java8" profile in pom.xml which excludes "Java8*Tests".
- */
+ * For jdk < 1.8 excluded from surefire tests via the "until-java8" profile in pom.xml which excludes "Java8*Tests". */
 public class Java8ClosureSerializerTest extends KryoTestCase {
 
-    public void setUp() throws Exception {
-        super.setUp();
-        kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
-        // the following registrations are needed because registration is required
-        kryo.register(Object[].class);
-        kryo.register(java.lang.Class.class);
-        kryo.register(getClass()); // closure capturing class (in this test `this`), it would usually already be registered
-        kryo.register(SerializedLambda.class);
-        // always needed for closure serialization, also if registrationRequired=false
-        kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
-    }
+	public void setUp () throws Exception {
+		super.setUp();
+		kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+		// the following registrations are needed because registration is required
+		kryo.register(Object[].class);
+		kryo.register(java.lang.Class.class);
+		kryo.register(getClass()); // closure capturing class (in this test `this`), it would usually already be registered
+		kryo.register(SerializedLambda.class);
+		// always needed for closure serialization, also if registrationRequired=false
+		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
+	}
 
-    public void testSerializeSerializableLambdaWithKryo() throws Exception {
-        Callable<Boolean> doNothing = (Callable<Boolean> & java.io.Serializable)(() -> true);
-        roundTrip(222, 225, doNothing);
-    }
+	public void testSerializeSerializableLambdaWithKryo () throws Exception {
+		Callable<Boolean> doNothing = (Callable<Boolean> & java.io.Serializable)( () -> true);
+		roundTrip(222, 225, doNothing);
+	}
 
-    // we must override equals as lambdas have no equals check built in...
-    @Override
-    protected void doAssertEquals(Object object1, Object object2) {
-        try {
-            Assert.assertEquals(((Callable<?>)object1).call(), ((Callable<?>)object2).call());
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
-        }
-    }
+	// we must override equals as lambdas have no equals check built in...
+	@Override
+	protected void doAssertEquals (Object object1, Object object2) {
+		try {
+			Assert.assertEquals(((Callable<?>)object1).call(), ((Callable<?>)object2).call());
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage());
+		}
+	}
 
 }

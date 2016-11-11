@@ -22,8 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * INTERNAL API
+/** INTERNAL API
  *
  * Helper class to map type name variables to concrete classes that are used during instantiation
  * 

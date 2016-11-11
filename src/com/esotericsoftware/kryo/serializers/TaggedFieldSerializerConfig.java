@@ -19,34 +19,33 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
+import static com.esotericsoftware.minlog.Log.*;
 
 /** Configuration for TaggedFieldSerializer instances. */
 public class TaggedFieldSerializerConfig extends FieldSerializerConfig {
 
-    /** ignore unknown field tags when using TaggedFieldSerializer. */
-    private boolean ignoreUnknownTags = false;
+	/** ignore unknown field tags when using TaggedFieldSerializer. */
+	private boolean ignoreUnknownTags = false;
 
-    /** Tells Kryo, if should ignore unknown field tags when using TaggedFieldSerializer. Already existing serializer instances
-     * are not affected by this setting.
-     *
-     * <p>
-     * By default, Kryo will throw KryoException if encounters unknown field tags.
-     * </p>
-     *
-     * @param ignoreUnknownTags if true, unknown field tags will be ignored. Otherwise KryoException will be thrown */
-    public void setIgnoreUnknownTags (boolean ignoreUnknownTags) {
-        this.ignoreUnknownTags = ignoreUnknownTags;
-        if (TRACE) trace("kryo.TaggedFieldSerializerConfig", "setIgnoreUnknownTags: " + ignoreUnknownTags);
-    }
+	/** Tells Kryo, if should ignore unknown field tags when using TaggedFieldSerializer. Already existing serializer instances are
+	 * not affected by this setting.
+	 *
+	 * <p>
+	 * By default, Kryo will throw KryoException if encounters unknown field tags.
+	 * </p>
+	 *
+	 * @param ignoreUnknownTags if true, unknown field tags will be ignored. Otherwise KryoException will be thrown */
+	public void setIgnoreUnknownTags (boolean ignoreUnknownTags) {
+		this.ignoreUnknownTags = ignoreUnknownTags;
+		if (TRACE) trace("kryo.TaggedFieldSerializerConfig", "setIgnoreUnknownTags: " + ignoreUnknownTags);
+	}
 
-    public boolean isIgnoreUnknownTags () {
-        return ignoreUnknownTags;
-    }
+	public boolean isIgnoreUnknownTags () {
+		return ignoreUnknownTags;
+	}
 
-    @Override
-    protected TaggedFieldSerializerConfig clone() {
-        return (TaggedFieldSerializerConfig) super.clone();
-    }
+	@Override
+	protected TaggedFieldSerializerConfig clone () {
+		return (TaggedFieldSerializerConfig)super.clone();
+	}
 }

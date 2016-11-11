@@ -19,9 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.kryo.util.UnsafeUtil.unsafe;
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
+import static com.esotericsoftware.kryo.util.UnsafeUtil.*;
+import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -69,11 +68,10 @@ final class FieldSerializerUnsafeUtilImpl implements FieldSerializerUnsafeUtil {
 				endPrimitives = lastFieldEndOffset;
 				lastWasPrimitive = false;
 				if (primitiveLength > 1) {
-					if (TRACE)
-						trace("kryo", "Class " + serializer.getType().getName()
-							+ ". Found a set of consecutive primitive fields. Number of fields = " + primitiveLength
-							+ ". Byte length = " + (endPrimitives - startPrimitives) + " Start offset = " + startPrimitives
-							+ " endOffset=" + endPrimitives);
+					if (TRACE) trace("kryo",
+						"Class " + serializer.getType().getName() + ". Found a set of consecutive primitive fields. Number of fields = "
+							+ primitiveLength + ". Byte length = " + (endPrimitives - startPrimitives) + " Start offset = "
+							+ startPrimitives + " endOffset=" + endPrimitives);
 					// TODO: register a region instead of a field
 					CachedField cf = new UnsafeRegionField(startPrimitives, (endPrimitives - startPrimitives));
 					cf.field = lastField;
@@ -104,9 +102,10 @@ final class FieldSerializerUnsafeUtilImpl implements FieldSerializerUnsafeUtil {
 			endPrimitives = lastFieldEndOffset;
 			if (primitiveLength > 1) {
 				if (TRACE) {
-					trace("kryo", "Class " + serializer.getType().getName()
-						+ ". Found a set of consecutive primitive fields. Number of fields = " + primitiveLength + ". Byte length = "
-						+ (endPrimitives - startPrimitives) + " Start offset = " + startPrimitives + " endOffset=" + endPrimitives);
+					trace("kryo",
+						"Class " + serializer.getType().getName() + ". Found a set of consecutive primitive fields. Number of fields = "
+							+ primitiveLength + ". Byte length = " + (endPrimitives - startPrimitives) + " Start offset = "
+							+ startPrimitives + " endOffset=" + endPrimitives);
 				}
 				// register a region instead of a field
 				CachedField cf = new UnsafeRegionField(startPrimitives, (endPrimitives - startPrimitives));

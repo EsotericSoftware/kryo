@@ -23,7 +23,16 @@ import java.lang.reflect.Field;
 
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedFieldFactory;
-import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.*;
+import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.UnsafeBooleanField;
+import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.UnsafeByteField;
+import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.UnsafeCharField;
+import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.UnsafeDoubleField;
+import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.UnsafeFloatField;
+import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.UnsafeIntField;
+import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.UnsafeLongField;
+import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.UnsafeObjectField;
+import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.UnsafeShortField;
+import com.esotericsoftware.kryo.serializers.UnsafeCacheFields.UnsafeStringField;
 
 class UnsafeCachedFieldFactory implements CachedFieldFactory {
 	public CachedField createCachedField (Class fieldClass, Field field, FieldSerializer ser) {

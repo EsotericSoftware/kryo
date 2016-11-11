@@ -57,7 +57,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	private static final int ITER_CNT = 100;
 
 	private static final int SLEEP_BETWEEN_RUNS = 100;
-	
+
 	private static final int OUTPUT_BUFFER_SIZE = 4096 * 10 * 4;
 
 	SampleObject obj = createObject();
@@ -661,9 +661,8 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 			// never fail).
 			if (!obj.equals(newObj)) throw new RuntimeException("Unmarshalled object is not equal to original object.");
 
-			if (outputResults)
-				System.out.format(
-					">>> Kryo unsafe serialization without try-catch, without ASM, without references (run %d): %,d ms\n", i + 1, dur);
+			if (outputResults) System.out.format(
+				">>> Kryo unsafe serialization without try-catch, without ASM, without references (run %d): %,d ms\n", i + 1, dur);
 
 			avgDur += dur;
 			bestTime = Math.min(bestTime, dur);

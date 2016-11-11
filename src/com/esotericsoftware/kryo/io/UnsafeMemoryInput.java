@@ -19,14 +19,14 @@
 
 package com.esotericsoftware.kryo.io;
 
-import java.io.IOException;
+import static com.esotericsoftware.kryo.util.UnsafeUtil.*;
+
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import sun.nio.ch.DirectBuffer;
-
 import com.esotericsoftware.kryo.KryoException;
-import static com.esotericsoftware.kryo.util.UnsafeUtil.*;
+
+import sun.nio.ch.DirectBuffer;
 
 /** An optimized InputStream that reads data directly from the off-heap memory. Utility methods are provided for efficiently
  * reading primitive types, arrays of primitive types and strings. It uses @link{sun.misc.Unsafe} to achieve a very good
@@ -228,14 +228,14 @@ public final class UnsafeMemoryInput extends ByteBufferInput {
 		readBytes(array, doubleArrayBaseOffset, 0, bytesToCopy);
 		return array;
 	}
-	
+
 	/** Reads the specified number of bytes into a new byte[]. */
 	public byte[] readBytes (int length) throws KryoException {
 		byte[] bytes = new byte[length];
 		readBytes(bytes, 0, (long)bytes.length);
 		return bytes;
 	}
-	
+
 	final public void readBytes (Object dstObj, long offset, long count) throws KryoException {
 		/* Unsafe supports efficient bulk reading into arrays of primitives only because of JVM limitations due to GC */
 		if (dstObj.getClass().isArray())

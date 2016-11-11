@@ -1,17 +1,16 @@
+
 package com.esotericsoftware.kryo;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import com.esotericsoftware.minlog.Log;
 
-public class TestKryoMain1
-{
+public class TestKryoMain1 {
 
 	public static void main (String[] args) throws IOException {
 		Log.TRACE();

@@ -37,7 +37,7 @@ public class BeanSerializerTest extends KryoTestCase {
 		test.setChild(new TestClass());
 		roundTrip(37, 43, test);
 		test.setNullField(null);
-		roundTrip(33, 39,  test);
+		roundTrip(33, 39, test);
 	}
 
 	static public class TestClass {

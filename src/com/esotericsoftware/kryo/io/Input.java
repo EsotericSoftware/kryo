@@ -19,10 +19,10 @@
 
 package com.esotericsoftware.kryo.io;
 
-import com.esotericsoftware.kryo.KryoException;
-
 import java.io.IOException;
 import java.io.InputStream;
+
+import com.esotericsoftware.kryo.KryoException;
 
 /** An InputStream that reads data from a byte array and optionally fills the byte array from another InputStream as needed.
  * Utility methods are provided for efficiently reading primitive types and strings.
@@ -463,8 +463,8 @@ public class Input extends InputStream {
 
 	// string
 
-	/** Reads the length and string of UTF8 characters, or null. This can read strings written by {@link Output#writeString(String)}
-	 * , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
+	/** Reads the length and string of UTF8 characters, or null. This can read strings written by
+	 * {@link Output#writeString(String)} , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
 	 * @return May be null. */
 	public String readString () {
 		int available = require(1);
@@ -630,8 +630,8 @@ public class Input extends InputStream {
 		return new String(chars, 0, charCount);
 	}
 
-	/** Reads the length and string of UTF8 characters, or null. This can read strings written by {@link Output#writeString(String)}
-	 * , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
+	/** Reads the length and string of UTF8 characters, or null. This can read strings written by
+	 * {@link Output#writeString(String)} , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
 	 * @return May be null. */
 	public StringBuilder readStringBuilder () {
 		int available = require(1);
@@ -696,8 +696,8 @@ public class Input extends InputStream {
 
 	}
 
-	/** Reads a 1-9 byte long. This stream may consider such a variable length encoding request as a hint. It is not guaranteed that
-	 * a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
+	/** Reads a 1-9 byte long. This stream may consider such a variable length encoding request as a hint. It is not guaranteed
+	 * that a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
 	 * efficiency reasons. */
 	public long readLong (boolean optimizePositive) throws KryoException {
 		return readVarLong(optimizePositive);

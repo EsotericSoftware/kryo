@@ -19,10 +19,10 @@
 
 package com.esotericsoftware.kryo;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.io.Serializable;
 
 import org.junit.Assume;
 import org.junit.Before;
@@ -41,19 +41,19 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	@Parameters(name = "optimizedGenerics_{0}")
-	public static Iterable<?> optimizedGenerics() {
+	public static Iterable<?> optimizedGenerics () {
 		return Arrays.asList(true, false);
 	}
 
 	private boolean optimizedGenerics;
 
-	public GenericsTest(boolean optimizedGenerics) {
+	public GenericsTest (boolean optimizedGenerics) {
 		this.optimizedGenerics = optimizedGenerics;
 	}
 
 	@Override
 	@Before
-	public void setUp() throws Exception {
+	public void setUp () throws Exception {
 		super.setUp();
 	}
 
@@ -65,9 +65,7 @@ public class GenericsTest extends KryoTestCase {
 		kryo.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
 		kryo.register(BaseGeneric.class);
 
-		List list = Arrays.asList(
-			new SerializableObjectFoo("one"), 
-			new SerializableObjectFoo("two"),
+		List list = Arrays.asList(new SerializableObjectFoo("one"), new SerializableObjectFoo("two"),
 			new SerializableObjectFoo("three"));
 		BaseGeneric<SerializableObjectFoo> bg1 = new BaseGeneric<SerializableObjectFoo>(list);
 
@@ -82,9 +80,7 @@ public class GenericsTest extends KryoTestCase {
 		kryo.register(BaseGeneric.class);
 		kryo.register(ConcreteClass.class);
 
-		List list = Arrays.asList(
-			new SerializableObjectFoo("one"), 
-			new SerializableObjectFoo("two"),
+		List list = Arrays.asList(new SerializableObjectFoo("one"), new SerializableObjectFoo("two"),
 			new SerializableObjectFoo("three"));
 		ConcreteClass cc1 = new ConcreteClass(list);
 
@@ -93,7 +89,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for/from https://github.com/EsotericSoftware/kryo/issues/377
 	@Test
-	public void testDifferentTypeArgumentsNonOptimizedOnly() throws Exception {
+	public void testDifferentTypeArgumentsNonOptimizedOnly () throws Exception {
 
 		// no other way to opt-out from parameterization? (would be possible with testng)
 		Assume.assumeFalse(optimizedGenerics); // will mark the test as skipped for 'true'
@@ -109,35 +105,35 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	private interface Holder<V> {
-		V getValue();
+		V getValue ();
 	}
 
 	private static abstract class AbstractValueHolder<V> implements Holder<V> {
 		private final V value;
 
-		AbstractValueHolder(V value) {
+		AbstractValueHolder (V value) {
 			this.value = value;
 		}
 
-		public V getValue() {
+		public V getValue () {
 			return value;
 		}
 	}
 
 	private static abstract class AbstractValueListHolder<V> extends AbstractValueHolder<List<V>> {
-		AbstractValueListHolder(List<V> value) {
+		AbstractValueListHolder (List<V> value) {
 			super(value);
 		}
 	}
 
 	private static class LongHolder extends AbstractValueHolder<Long> {
-		LongHolder(Long value) {
+		LongHolder (Long value) {
 			super(value);
 		}
 	}
 
 	private static class LongListHolder extends AbstractValueListHolder<Long> {
-		LongListHolder(java.util.List<Long> value) {
+		LongListHolder (java.util.List<Long> value) {
 			super(value);
 		}
 	}

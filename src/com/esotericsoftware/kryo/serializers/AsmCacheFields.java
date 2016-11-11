@@ -19,7 +19,6 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;

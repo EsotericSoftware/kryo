@@ -19,8 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
+import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -31,7 +30,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
-/*** Defer generation of serializers until it is really required at run-time. By default, use reflection-based approach. 
+/*** Defer generation of serializers until it is really required at run-time. By default, use reflection-based approach.
  * @author Nathan Sweet <misc@n4te.com>
  * @author Roman Levenstein <romixlev@gmail.com> */
 class ObjectField extends CachedField {
@@ -54,7 +53,7 @@ class ObjectField extends CachedField {
 		field.set(object, value);
 	}
 
-	 public void write (Output output, Object object) {
+	public void write (Output output, Object object) {
 		try {
 			// if(typeVar2concreteClass != null) {
 			// // Push a new scope for generics
@@ -87,7 +86,8 @@ class ObjectField extends CachedField {
 					kryo.writeObjectOrNull(output, value, serializer);
 				} else {
 					if (value == null) {
-						throw new KryoException("Field value is null but canBeNull is false: " + this + " (" + object.getClass().getName() + ")");
+						throw new KryoException(
+							"Field value is null but canBeNull is false: " + this + " (" + object.getClass().getName() + ")");
 					}
 					kryo.writeObject(output, value, serializer);
 				}

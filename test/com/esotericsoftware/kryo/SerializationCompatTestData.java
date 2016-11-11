@@ -19,20 +19,54 @@
 
 package com.esotericsoftware.kryo;
 
-import com.esotericsoftware.kryo.SerializationCompatTestData.Person.Gender;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.time.*;
-import java.util.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Currency;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import com.esotericsoftware.kryo.SerializationCompatTestData.Person.Gender;
 
 /** Testdata for serialization compatibility check. */
 class SerializationCompatTestData {
@@ -57,7 +91,7 @@ class SerializationCompatTestData {
 		private YearMonth yearMonth;
 		private Period period;
 
-		TestDataJava8() {
+		TestDataJava8 () {
 			optionalString = Optional.of("foo");
 			optionalInt = OptionalInt.of(42);
 			optionalLong = OptionalLong.of(42L);
@@ -144,7 +178,7 @@ class SerializationCompatTestData {
 		private Person[] _personArray;
 
 		private Generic<String> _generic;
-	   	private GenericList<String> _genericList;
+		private GenericList<String> _genericList;
 		private GenericArray<String> _genericArray;
 		private PublicClass _public;
 
@@ -163,7 +197,7 @@ class SerializationCompatTestData {
 			_Boolean = Boolean.TRUE;
 			_Character = 'c';
 			_Byte = "b".getBytes()[0];
-			_Short = (short) 8;
+			_Short = (short)8;
 			_Integer = 5;
 			_Long = 4L;
 			_Float = 7f;
@@ -190,7 +224,7 @@ class SerializationCompatTestData {
 			_timeZone = TimeZone.getTimeZone("America/Los_Angeles");
 			_locale = Locale.ENGLISH;
 			_charsets = new ArrayList<Charset>(Arrays.asList(Charset.forName("ISO-8859-1"), Charset.forName("US-ASCII"),
-					Charset.forName("UTF-8"), Charset.forName("UTF-16"), Charset.forName("UTF-16BE"), Charset.forName("UTF-16LE")));
+				Charset.forName("UTF-8"), Charset.forName("UTF-16"), Charset.forName("UTF-16BE"), Charset.forName("UTF-16LE")));
 			try {
 				_url = new java.net.URL("https://github.com/EsotericSoftware/kryo");
 			} catch (MalformedURLException e) {
@@ -227,26 +261,25 @@ class SerializationCompatTestData {
 			_byteArray = "42".getBytes();
 			_charArray = "42".toCharArray();
 			_stringArray = new String[] {"23", "42"};
-			_personArray = new Person[] {
-					createPerson("foo", Gender.FEMALE, 42, "foo@example.org", "foo@example.com"),
-					createPerson("bar", Gender.MALE, 43, "bar@example.org")
-			};
+			_personArray = new Person[] {createPerson("foo", Gender.FEMALE, 42, "foo@example.org", "foo@example.com"),
+				createPerson("bar", Gender.MALE, 43, "bar@example.org")};
 			// cyclic references
 			_personArray[0].addFriend(_personArray[1]);
 			_personArray[1].addFriend(_personArray[0]);
 
 			_generic = new Generic<String>("foo");
-			_genericList = new GenericList<String>(new ArrayList(Arrays.asList(new Generic<String>("foo"), new Generic<String>("bar"))));
+			_genericList = new GenericList<String>(
+				new ArrayList(Arrays.asList(new Generic<String>("foo"), new Generic<String>("bar"))));
 			_genericArray = new GenericArray<String>(new Generic<String>("foo"), new Generic<String>("bar"));
 			_public = new PublicClass(new PrivateClass("foo"));
-			
+
 		}
-		
+
 		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
-		
+
 		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
@@ -256,17 +289,21 @@ class SerializationCompatTestData {
 
 	static class Generic<T> {
 		T item;
+
 		public Generic (final T item) {
 			this.item = item;
 		}
+
 		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
+
 		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
+
 		@Override
 		public String toString () {
 			return "Generic [item=" + item + "]";
@@ -279,10 +316,12 @@ class SerializationCompatTestData {
 		public GenericList (final List<Generic<T>> holders) {
 			this.generics = holders;
 		}
+
 		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
+
 		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
@@ -295,10 +334,12 @@ class SerializationCompatTestData {
 		public GenericArray (final Generic<T>... holders) {
 			this.holders = holders;
 		}
+
 		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
+
 		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
@@ -335,7 +376,7 @@ class SerializationCompatTestData {
 			return _name;
 		}
 
-		void addFriend(final Person p) {
+		void addFriend (final Person p) {
 			_friends.add(p);
 		}
 
@@ -347,7 +388,7 @@ class SerializationCompatTestData {
 			return _props;
 		}
 
-		void setProps(final Map<String, Object> props) {
+		void setProps (final Map<String, Object> props) {
 			_props = props;
 		}
 
@@ -355,7 +396,7 @@ class SerializationCompatTestData {
 			return _gender;
 		}
 
-		void setGender(final Gender gender) {
+		void setGender (final Gender gender) {
 			_gender = gender;
 		}
 
@@ -363,7 +404,7 @@ class SerializationCompatTestData {
 			return _age;
 		}
 
-		void setAge(final Integer age) {
+		void setAge (final Integer age) {
 			_age = age;
 		}
 
@@ -440,7 +481,7 @@ class SerializationCompatTestData {
 		@Override
 		public String toString () {
 			return "Person [_age=" + _age + ", _friends.size=" + _friends.size() + ", _gender=" + _gender + ", _name=" + _name
-					+ ", _props=" + _props + "]";
+				+ ", _props=" + _props + "]";
 		}
 
 	}
@@ -531,10 +572,12 @@ class SerializationCompatTestData {
 		public PublicClass (final PrivateClass protectedClass) {
 			this.privateClass = protectedClass;
 		}
+
 		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
+
 		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
@@ -547,10 +590,12 @@ class SerializationCompatTestData {
 		public PrivateClass (String foo) {
 			this.foo = foo;
 		}
+
 		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
+
 		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);

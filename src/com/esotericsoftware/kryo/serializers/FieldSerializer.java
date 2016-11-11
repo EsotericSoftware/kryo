@@ -95,7 +95,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 * <p>
 	 * FIXME: Not all versions of Sun/Oracle JDK properly work with this option. Disable it for now. Later add dynamic checks to
 	 * see if this feature is supported by a current JDK version.
-	 * </p> */
+	 * </p>
+	*/
 	private boolean useMemRegions = false;
 
 	private boolean hasObjectFields = false;
@@ -291,8 +292,9 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			result.add(field);
 
 			// BOZO - Must be public?
-			useAsm.add(!Modifier.isFinal(modifiers) && Modifier.isPublic(modifiers)
-				&& Modifier.isPublic(field.getType().getModifiers()) ? 1 : 0);
+			useAsm
+				.add(!Modifier.isFinal(modifiers) && Modifier.isPublic(modifiers) && Modifier.isPublic(field.getType().getModifiers())
+					? 1 : 0);
 		}
 		return result;
 	}
@@ -358,7 +360,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		cachedField.access = (FieldAccess)access;
 		cachedField.accessIndex = accessIndex;
-		cachedField.canBeNull = config.isFieldsCanBeNull() && !fieldClass[0].isPrimitive() && !field.isAnnotationPresent(NotNull.class);
+		cachedField.canBeNull = config.isFieldsCanBeNull() && !fieldClass[0].isPrimitive()
+			&& !field.isAnnotationPresent(NotNull.class);
 
 		// Always use the same serializer for this field if the field's class is final.
 		if (kryo.isFinal(fieldClass[0]) || config.isFixedFieldTypes()) cachedField.valueClass = fieldClass[0];
@@ -566,7 +569,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
 	}
 
-	protected String getCachedFieldName(CachedField cachedField) {
+	protected String getCachedFieldName (CachedField cachedField) {
 		return config.getCachedFieldNameStrategy().getName(cachedField);
 	}
 
@@ -632,8 +635,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		return fields;
 	}
 
-    /** Get all transient fields controlled by this FieldSerializer
-     * @return all transient  fields controlled by this FieldSerializer */
+	/** Get all transient fields controlled by this FieldSerializer
+	 * @return all transient fields controlled by this FieldSerializer */
 	public CachedField[] getTransientFields () {
 		return transientFields;
 	}
@@ -657,8 +660,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	public boolean getCopyTransient () {
 		return config.isCopyTransient();
 	}
-	
-	public boolean getSerializeTransient() {
+
+	public boolean getSerializeTransient () {
 		return config.isSerializeTransient();
 	}
 
@@ -699,9 +702,9 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		long offset = -1;
 		boolean varIntsEnabled = true;
 
-		/** @param valueClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for the
-		 *           specified class will be used. Only set to a non-null value if the field type in the class definition is final
-		 *           or the values for this field will not vary. */
+		/** @param valueClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for
+		 *           the specified class will be used. Only set to a non-null value if the field type in the class definition is
+		 *           final or the values for this field will not vary. */
 		public void setClass (Class valueClass) {
 			this.valueClass = valueClass;
 			this.serializer = null;
@@ -749,19 +752,19 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		CachedFieldNameStrategy DEFAULT = new CachedFieldNameStrategy() {
 			@Override
-			public String getName(CachedField cachedField) {
+			public String getName (CachedField cachedField) {
 				return cachedField.field.getName();
 			}
 		};
 
 		CachedFieldNameStrategy EXTENDED = new CachedFieldNameStrategy() {
 			@Override
-			public String getName(CachedField cachedField) {
+			public String getName (CachedField cachedField) {
 				return cachedField.field.getDeclaringClass().getSimpleName() + "." + cachedField.field.getName();
 			}
 		};
 
-		String getName(CachedField cachedField);
+		String getName (CachedField cachedField);
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has

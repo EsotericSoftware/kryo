@@ -19,11 +19,17 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.Kryo.*;
+import static com.esotericsoftware.kryo.util.Util.*;
+
+import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,6 +39,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -48,13 +55,6 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import static com.esotericsoftware.kryo.Kryo.*;
-import static com.esotericsoftware.kryo.util.Util.*;
-import java.lang.reflect.Constructor;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Locale;
-
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
  * @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializers {
@@ -64,13 +64,14 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, Object object) {
-			
+
 		}
 
 		public Object read (Kryo kryo, Input input, Class type) {
 			return null;
 		}
 	}
+
 	static public class BooleanSerializer extends Serializer<Boolean> {
 		{
 			setImmutable(true);
@@ -236,8 +237,8 @@ public class DefaultSerializers {
 					if (!constructor.isAccessible()) {
 						try {
 							constructor.setAccessible(true);
+						} catch (SecurityException se) {
 						}
-						catch (SecurityException se) {}
 					}
 					return constructor.newInstance(bytes);
 				} catch (Exception ex) {
@@ -297,8 +298,8 @@ public class DefaultSerializers {
 					if (!constructor.isAccessible()) {
 						try {
 							constructor.setAccessible(true);
+						} catch (SecurityException se) {
 						}
-						catch (SecurityException se) {}
 					}
 					return constructor.newInstance(unscaledValue, scale);
 				} catch (Exception ex) {
@@ -337,7 +338,7 @@ public class DefaultSerializers {
 	/** Serializer for {@link Date}, {@link java.sql.Date}, {@link Time}, {@link Timestamp} and any other subclass.
 	 * @author Tumi <serverperformance@gmail.com> */
 	static public class DateSerializer extends Serializer<Date> {
-		private Date create(Kryo kryo, Class<? extends Date> type, long time) throws KryoException {
+		private Date create (Kryo kryo, Class<? extends Date> type, long time) throws KryoException {
 			if (type == Date.class || type == null) {
 				return new Date(time);
 			}
@@ -358,8 +359,8 @@ public class DefaultSerializers {
 				if (!constructor.isAccessible()) {
 					try {
 						constructor.setAccessible(true);
+					} catch (SecurityException se) {
 					}
-					catch (SecurityException se) {}
 				}
 				return constructor.newInstance(time);
 			} catch (Exception ex) {
@@ -369,7 +370,7 @@ public class DefaultSerializers {
 				return d;
 			}
 		}
-		
+
 		public void write (Kryo kryo, Output output, Date object) {
 			output.writeLong(object.getTime(), true);
 		}
@@ -532,7 +533,8 @@ public class DefaultSerializers {
 		}
 	}
 
-	/** Serializer for maps created via {@link Collections#emptyMap()} or that were just assigned the {@link Collections#EMPTY_MAP}.
+	/** Serializer for maps created via {@link Collections#emptyMap()} or that were just assigned the
+	 * {@link Collections#EMPTY_MAP}.
 	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
 	static public class CollectionsEmptyMapSerializer extends Serializer {
 		{
@@ -547,7 +549,8 @@ public class DefaultSerializers {
 		}
 	}
 
-	/** Serializer for sets created via {@link Collections#emptySet()} or that were just assigned the {@link Collections#EMPTY_SET}.
+	/** Serializer for sets created via {@link Collections#emptySet()} or that were just assigned the
+	 * {@link Collections#EMPTY_SET}.
 	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
 	static public class CollectionsEmptySetSerializer extends Serializer {
 		{
@@ -683,8 +686,8 @@ public class DefaultSerializers {
 		protected Map createCopy (Kryo kryo, Map original) {
 			return createTreeMap(original.getClass(), ((TreeMap)original).comparator());
 		}
-		
-		private TreeMap createTreeMap(Class<? extends Map> type, Comparator comparator) {
+
+		private TreeMap createTreeMap (Class<? extends Map> type, Comparator comparator) {
 			if (type != TreeMap.class && type != null) {
 				// For subclasses, use reflection
 				try {
@@ -692,8 +695,8 @@ public class DefaultSerializers {
 					if (!constructor.isAccessible()) {
 						try {
 							constructor.setAccessible(true);
+						} catch (SecurityException se) {
 						}
-						catch (SecurityException se) {}
 					}
 					return (TreeMap)constructor.newInstance(comparator);
 				} catch (Exception ex) {
@@ -720,8 +723,8 @@ public class DefaultSerializers {
 		protected TreeSet createCopy (Kryo kryo, Collection original) {
 			return createTreeSet(original.getClass(), ((TreeSet)original).comparator());
 		}
-		
-		private TreeSet createTreeSet(Class<? extends Collection> type, Comparator comparator) {
+
+		private TreeSet createTreeSet (Class<? extends Collection> type, Comparator comparator) {
 			if (type != TreeSet.class && type != null) {
 				// For subclasses, use reflection
 				try {
@@ -729,8 +732,8 @@ public class DefaultSerializers {
 					if (!constructor.isAccessible()) {
 						try {
 							constructor.setAccessible(true);
+						} catch (SecurityException se) {
 						}
-						catch (SecurityException se) {}
 					}
 					return (TreeSet)constructor.newInstance(comparator);
 				} catch (Exception ex) {
@@ -747,71 +750,50 @@ public class DefaultSerializers {
 		// Missing constants in j.u.Locale for common locale
 		static public final Locale SPANISH = new Locale("es", "", "");
 		static public final Locale SPAIN = new Locale("es", "ES", "");
-		
+
 		{
 			setImmutable(true);
 		}
-		
-		protected Locale create(String language, String country, String variant) {
+
+		protected Locale create (String language, String country, String variant) {
 			// Fast-path for default locale in this system (may not be in the Locale constants list)
 			Locale defaultLocale = Locale.getDefault();
-			if (isSameLocale(defaultLocale, language, country, variant))
-				return defaultLocale;
+			if (isSameLocale(defaultLocale, language, country, variant)) return defaultLocale;
 			// Fast-paths for constants declared in java.util.Locale :
 			// 1. "US" locale (typical forced default in many applications)
-			if (defaultLocale!=Locale.US && isSameLocale(Locale.US, language, country, variant))
-				return Locale.US;
+			if (defaultLocale != Locale.US && isSameLocale(Locale.US, language, country, variant)) return Locale.US;
 			// 2. Language-only constant locales
-			if (isSameLocale(Locale.ENGLISH, language, country, variant))
-				return Locale.ENGLISH;
-			if (isSameLocale(Locale.GERMAN, language, country, variant))
-				return Locale.GERMAN;
-			if (isSameLocale(SPANISH, language, country, variant))
-				return SPANISH;
-			if (isSameLocale(Locale.FRENCH, language, country, variant))
-				return Locale.FRENCH;
-			if (isSameLocale(Locale.ITALIAN, language, country, variant))
-				return Locale.ITALIAN;
-			if (isSameLocale(Locale.JAPANESE, language, country, variant))
-				return Locale.JAPANESE;
-			if (isSameLocale(Locale.KOREAN, language, country, variant))
-				return Locale.KOREAN;
-			if (isSameLocale(Locale.SIMPLIFIED_CHINESE, language, country, variant))
-				return Locale.SIMPLIFIED_CHINESE;
-			if (isSameLocale(Locale.CHINESE, language, country, variant))
-				return Locale.CHINESE;
-			if (isSameLocale(Locale.TRADITIONAL_CHINESE, language, country, variant))
-				return Locale.TRADITIONAL_CHINESE;
+			if (isSameLocale(Locale.ENGLISH, language, country, variant)) return Locale.ENGLISH;
+			if (isSameLocale(Locale.GERMAN, language, country, variant)) return Locale.GERMAN;
+			if (isSameLocale(SPANISH, language, country, variant)) return SPANISH;
+			if (isSameLocale(Locale.FRENCH, language, country, variant)) return Locale.FRENCH;
+			if (isSameLocale(Locale.ITALIAN, language, country, variant)) return Locale.ITALIAN;
+			if (isSameLocale(Locale.JAPANESE, language, country, variant)) return Locale.JAPANESE;
+			if (isSameLocale(Locale.KOREAN, language, country, variant)) return Locale.KOREAN;
+			if (isSameLocale(Locale.SIMPLIFIED_CHINESE, language, country, variant)) return Locale.SIMPLIFIED_CHINESE;
+			if (isSameLocale(Locale.CHINESE, language, country, variant)) return Locale.CHINESE;
+			if (isSameLocale(Locale.TRADITIONAL_CHINESE, language, country, variant)) return Locale.TRADITIONAL_CHINESE;
 			// 2. Language with Country constant locales
-			if (isSameLocale(Locale.UK, language, country, variant))
-				return Locale.UK;
-			if (isSameLocale(Locale.GERMANY, language, country, variant))
-				return Locale.GERMANY;
-			if (isSameLocale(SPAIN, language, country, variant))
-				return SPAIN;
-			if (isSameLocale(Locale.FRANCE, language, country, variant))
-				return Locale.FRANCE;
-			if (isSameLocale(Locale.ITALY, language, country, variant))
-				return Locale.ITALY;
-			if (isSameLocale(Locale.JAPAN, language, country, variant))
-				return Locale.JAPAN;
-			if (isSameLocale(Locale.KOREA, language, country, variant))
-				return Locale.KOREA;
-			//if (isSameLocale(Locale.CHINA, language, country, variant)) // CHINA==SIMPLIFIED_CHINESE, see Locale.java
-			//	return Locale.CHINA;
-			//if (isSameLocale(Locale.PRC, language, country, variant)) // PRC==SIMPLIFIED_CHINESE, see Locale.java
-			//	return Locale.PRC;
-			//if (isSameLocale(Locale.TAIWAN, language, country, variant)) // TAIWAN==SIMPLIFIED_CHINESE, see Locale.java
-			//	return Locale.TAIWAN;
-			if (isSameLocale(Locale.CANADA, language, country, variant))
-				return Locale.CANADA;
-			if (isSameLocale(Locale.CANADA_FRENCH, language, country, variant))
-				return Locale.CANADA_FRENCH;
+			if (isSameLocale(Locale.UK, language, country, variant)) return Locale.UK;
+			if (isSameLocale(Locale.GERMANY, language, country, variant)) return Locale.GERMANY;
+			if (isSameLocale(SPAIN, language, country, variant)) return SPAIN;
+			if (isSameLocale(Locale.FRANCE, language, country, variant)) return Locale.FRANCE;
+			if (isSameLocale(Locale.ITALY, language, country, variant)) return Locale.ITALY;
+			if (isSameLocale(Locale.JAPAN, language, country, variant)) return Locale.JAPAN;
+			if (isSameLocale(Locale.KOREA, language, country, variant)) return Locale.KOREA;
+			// if (isSameLocale(Locale.CHINA, language, country, variant)) // CHINA==SIMPLIFIED_CHINESE, see Locale.java
+			// return Locale.CHINA;
+			// if (isSameLocale(Locale.PRC, language, country, variant)) // PRC==SIMPLIFIED_CHINESE, see Locale.java
+			// return Locale.PRC;
+			// if (isSameLocale(Locale.TAIWAN, language, country, variant)) // TAIWAN==SIMPLIFIED_CHINESE, see Locale.java
+			// return Locale.TAIWAN;
+			if (isSameLocale(Locale.CANADA, language, country, variant)) return Locale.CANADA;
+			if (isSameLocale(Locale.CANADA_FRENCH, language, country, variant)) return Locale.CANADA_FRENCH;
 
 			return new Locale(language, country, variant);
 		}
-		
-		public void write(Kryo kryo, Output output, Locale l) {
+
+		public void write (Kryo kryo, Output output, Locale l) {
 			output.writeAscii(l.getLanguage());
 			output.writeAscii(l.getCountry());
 			output.writeString(l.getVariant());
@@ -824,16 +806,16 @@ public class DefaultSerializers {
 			return create(language, country, variant);
 		}
 
-		//Removed as Locale is declares as immutable
-		//public Locale copy (Kryo kryo, Locale original) {
-		//	return create(original.getLanguage(), original.getDisplayCountry(), original.getVariant());
-		//}
+		// Removed as Locale is declares as immutable
+		// public Locale copy (Kryo kryo, Locale original) {
+		// return create(original.getLanguage(), original.getDisplayCountry(), original.getVariant());
+		// }
 
-		protected static boolean isSameLocale(Locale locale, String language, String country, String variant) {
+		protected static boolean isSameLocale (Locale locale, String language, String country, String variant) {
 			try {
-				return (locale.getLanguage().equals(language) && locale.getCountry().equals(country) && locale.getVariant().equals(variant));
-			}
-			catch (NullPointerException npe) {
+				return (locale.getLanguage().equals(language) && locale.getCountry().equals(country)
+					&& locale.getVariant().equals(variant));
+			} catch (NullPointerException npe) {
 				// Shouldn't ever happen, no nulls
 				return false;
 			}
@@ -843,13 +825,15 @@ public class DefaultSerializers {
 	/** Serializer for {@link Charset}. */
 	public static class CharsetSerializer extends Serializer<Charset> {
 
-		{ setImmutable(true); }
+		{
+			setImmutable(true);
+		}
 
-		public void write(Kryo kryo, Output output, Charset object) {
+		public void write (Kryo kryo, Output output, Charset object) {
 			output.writeString(object.name());
 		}
 
-		public Charset read(Kryo kryo, Input input, Class<Charset> type) {
+		public Charset read (Kryo kryo, Input input, Class<Charset> type) {
 			return Charset.forName(input.readString());
 		}
 
@@ -858,13 +842,15 @@ public class DefaultSerializers {
 	/** Serializer for {@link URL}. */
 	public static class URLSerializer extends Serializer<URL> {
 
-		{ setImmutable(true); }
+		{
+			setImmutable(true);
+		}
 
-		public void write(Kryo kryo, Output output, URL object) {
+		public void write (Kryo kryo, Output output, URL object) {
 			output.writeString(object.toExternalForm());
 		}
 
-		public URL read(Kryo kryo, Input input, Class<URL> type) {
+		public URL read (Kryo kryo, Input input, Class<URL> type) {
 			try {
 				return new java.net.URL(input.readString());
 			} catch (MalformedURLException e) {

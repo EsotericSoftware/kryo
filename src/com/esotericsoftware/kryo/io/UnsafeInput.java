@@ -19,25 +19,25 @@
 
 package com.esotericsoftware.kryo.io;
 
-import java.io.IOException;
+import static com.esotericsoftware.kryo.util.UnsafeUtil.*;
+
 import java.io.InputStream;
 
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.util.UnsafeUtil;
-
-import static com.esotericsoftware.kryo.util.UnsafeUtil.*;
 
 /** An optimized InputStream that reads data from a byte array and optionally fills the byte array from another InputStream as
  * needed. Utility methods are provided for efficiently writing primitive types, arrays of primitive types and strings. It uses
  * @link{sun.misc.Unsafe} to achieve a very good performance.
  * 
- * <p>
- * Important notes:<br/>
- * <li>Bulk operations, e.g. on arrays of primitive types, are always using native byte order.</li>
- * <li>Fixed-size char, int, long, short, float and double elements are always read using native byte order.</li>
- * <li>Best performance is achieved if no variable length encoding for integers is used.</li>
- * <li>Serialized representation used as input for this class should always be produced using @link{UnsafeOutput}</li>
- * </p>
+ *                        <p>
+ *                        Important notes:<br/>
+ *                        <li>Bulk operations, e.g. on arrays of primitive types, are always using native byte order.</li>
+ *                        <li>Fixed-size char, int, long, short, float and double elements are always read using native byte
+ *                        order.</li>
+ *                        <li>Best performance is achieved if no variable length encoding for integers is used.</li>
+ *                        <li>Serialized representation used as input for this class should always be produced
+ *                        using @link{UnsafeOutput}</li>
+ *                        </p>
  * @author Roman Levenstein <romixlev@gmail.com> */
 public final class UnsafeInput extends Input {
 
@@ -124,16 +124,15 @@ public final class UnsafeInput extends Input {
 		position += 8;
 		return result;
 	}
-	
+
 	// char
-	
+
 	public char readChar () throws KryoException {
 		require(2);
 		char result = unsafe().getChar(buffer, byteArrayBaseOffset + position);
 		position += 2;
 		return result;
 	}
-
 
 	public int readInt (boolean optimizePositive) throws KryoException {
 		if (!varIntsEnabled)

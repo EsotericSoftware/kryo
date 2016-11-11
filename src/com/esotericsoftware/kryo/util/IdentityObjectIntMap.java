@@ -22,7 +22,8 @@ package com.esotericsoftware.kryo.util;
 /** An unordered map where identity comparison is used for keys and the values are ints. This implementation is a cuckoo hash map
  * using 3 hashes (if table size is less than 2^16) or 4 hashes (if table size is greater than or equal to 2^16), random walking,
  * and a small stash for problematic keys. Null keys are not allowed. No allocation is done except when growing the table size.
- * <br><br>
+ * <br>
+ * <br>
  * This map performs very fast get, containsKey, and remove (typically O(1), worst case O(log(n))). Put may be a bit slower,
  * depending on hash collisions. Load factors greater than 0.91 greatly increase the chances the map will have to rehash to the
  * next higher POT size.
@@ -57,8 +58,8 @@ public class IdentityObjectIntMap<K> {
 		this(initialCapacity, 0.8f);
 	}
 
-	/** Creates a new map with the specified initial capacity and load factor. This map will hold initialCapacity * loadFactor items
-	 * before growing the backing table. */
+	/** Creates a new map with the specified initial capacity and load factor. This map will hold initialCapacity * loadFactor
+	 * items before growing the backing table. */
 	public IdentityObjectIntMap (int initialCapacity, float loadFactor) {
 		if (initialCapacity < 0) throw new IllegalArgumentException("initialCapacity must be >= 0: " + initialCapacity);
 		if (capacity > 1 << 30) throw new IllegalArgumentException("initialCapacity is too large: " + initialCapacity);
@@ -208,7 +209,8 @@ public class IdentityObjectIntMap<K> {
 		push(key, value, index1, key1, index2, key2, index3, key3, index4, key4);
 	}
 
-	private void push (K insertKey, int insertValue, int index1, K key1, int index2, K key2, int index3, K key3, int index4, K key4) {
+	private void push (K insertKey, int insertValue, int index1, K key1, int index2, K key2, int index3, K key3, int index4,
+		K key4) {
 		// avoid getfield opcode
 		K[] keyTable = this.keyTable;
 		int[] valueTable = this.valueTable;
@@ -325,8 +327,7 @@ public class IdentityObjectIntMap<K> {
 					if (isBigTable) {
 						index = hash4(hashCode);
 						if (key != keyTable[index]) return getStash(key, defaultValue);
-					}
-					else {
+					} else {
 						return getStash(key, defaultValue);
 					}
 				}
@@ -468,8 +469,8 @@ public class IdentityObjectIntMap<K> {
 		stashSize = 0;
 	}
 
-	/** Returns true if the specified value is in the map. Note this traverses the entire map and compares every value, which may be
-	 * an expensive operation. */
+	/** Returns true if the specified value is in the map. Note this traverses the entire map and compares every value, which may
+	 * be an expensive operation. */
 	public boolean containsValue (int value) {
 		K[] keyTable = this.keyTable;
 		int[] valueTable = this.valueTable;

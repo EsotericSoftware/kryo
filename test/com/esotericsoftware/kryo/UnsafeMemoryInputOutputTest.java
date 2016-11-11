@@ -24,12 +24,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Random;
 
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.UnsafeMemoryInput;
-import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.UnsafeMemoryInput;
+import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
 import com.esotericsoftware.kryo.util.UnsafeUtil;
 
 /** @author Roman Levenstein <romixlev@gmail.com> */
@@ -72,14 +71,14 @@ public class UnsafeMemoryInputOutputTest extends KryoTestCase {
 
 		assertEquals(new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
-				31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
-				51, 52, 53, 54, 55, 56, 57, 58, //
-				61, 62, 63, 64, 65}, buffer.toByteArray());
+			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
+			51, 52, 53, 54, 55, 56, 57, 58, //
+			61, 62, 63, 64, 65}, buffer.toByteArray());
 	}
 
 	public void testInputStream () throws IOException {
 		byte[] bytes = new byte[] { //
-		11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
+			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
 			61, 62, 63, 64, 65};
@@ -115,9 +114,9 @@ public class UnsafeMemoryInputOutputTest extends KryoTestCase {
 
 		assertEquals(new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
-				31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
-				51, 52, 53, 54, 55, 56, 57, 58, //
-				61, 62, 63, 64, 65}, buffer.toBytes());
+			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
+			51, 52, 53, 54, 55, 56, 57, 58, //
+			61, 62, 63, 64, 65}, buffer.toBytes());
 	}
 
 	public void testStrings () throws IOException {
@@ -240,7 +239,7 @@ public class UnsafeMemoryInputOutputTest extends KryoTestCase {
 
 	private void runIntTest (UnsafeMemoryOutput write) throws IOException {
 		write.setVarIntsEnabled(false);
-		
+
 		write.writeInt(0);
 		write.writeInt(63);
 		write.writeInt(64);
@@ -262,7 +261,7 @@ public class UnsafeMemoryInputOutputTest extends KryoTestCase {
 		write.writeInt(-268435456);
 
 		write.setVarIntsEnabled(true);
-		
+
 		assertEquals(1, write.writeInt(0, true));
 		assertEquals(1, write.writeInt(0, false));
 		assertEquals(1, write.writeInt(63, true));
@@ -335,9 +334,9 @@ public class UnsafeMemoryInputOutputTest extends KryoTestCase {
 		assertEquals(true, read.canReadInt());
 		assertEquals(true, read.canReadInt());
 		assertEquals(true, read.canReadInt());
-		
+
 		read.setVarIntsEnabled(true);
-		
+
 		assertEquals(0, read.readInt(true));
 		assertEquals(0, read.readInt(false));
 		assertEquals(63, read.readInt(true));
@@ -409,7 +408,7 @@ public class UnsafeMemoryInputOutputTest extends KryoTestCase {
 
 	private void runLongTest (UnsafeMemoryOutput write) throws IOException {
 		write.setVarIntsEnabled(false);
-		
+
 		write.writeLong(0);
 		write.writeLong(63);
 		write.writeLong(64);
@@ -497,7 +496,7 @@ public class UnsafeMemoryInputOutputTest extends KryoTestCase {
 		assertEquals(-268435456, read.readLong());
 
 		read.setVarIntsEnabled(true);
-		
+
 		assertEquals(0, read.readLong(true));
 		assertEquals(0, read.readLong(false));
 		assertEquals(63, read.readLong(true));

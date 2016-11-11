@@ -38,13 +38,13 @@ public class ArraySerializerTest extends KryoTestCase {
 		roundTrip(6, 18, new int[] {1, 2, 3, 4});
 		roundTrip(7, 18, new int[] {1, 2, -100, 4});
 		roundTrip(9, 18, new int[] {1, 2, -100, 40000});
-		roundTrip(9, 20, new int[][] { {1, 2}, {100, 4}});
-		roundTrip(11, 22, new int[][] { {1}, {2}, {100}, {4}});
-		roundTrip(13, 24, new int[][][] { { {1}, {2}}, { {100}, {4}}});
+		roundTrip(9, 20, new int[][] {{1, 2}, {100, 4}});
+		roundTrip(11, 22, new int[][] {{1}, {2}, {100}, {4}});
+		roundTrip(13, 24, new int[][][] {{{1}, {2}}, {{100}, {4}}});
 		roundTrip(12, 12, new String[] {"11", "2222", "3", "4"});
 		roundTrip(11, 11, new String[] {"11", "2222", null, "4"});
 		roundTrip(28, 51,
-			new Object[] {new String[] {"11", "2222", null, "4"}, new int[] {1, 2, 3, 4}, new int[][] { {1, 2}, {100, 4}}});
+			new Object[] {new String[] {"11", "2222", null, "4"}, new int[] {1, 2, 3, 4}, new int[][] {{1, 2}, {100, 4}}});
 
 		ObjectArraySerializer serializer = new ObjectArraySerializer(kryo, String[].class);
 		kryo.register(String[].class, serializer);

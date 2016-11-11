@@ -19,8 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
+import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
@@ -36,8 +35,8 @@ import com.esotericsoftware.kryo.util.ObjectMap;
  * field name strings. Also, during serialization and deserialization buffers are allocated to perform chunked encoding. This is
  * what enables CompatibleFieldSerializer to skip bytes for fields it does not know about.
  * <p>
- * Removing fields when {@link Kryo#setReferences(boolean) references} are enabled can cause compatibility issues. See <a
- * href="https://github.com/EsotericSoftware/kryo/issues/286#issuecomment-74870545">here</a>.
+ * Removing fields when {@link Kryo#setReferences(boolean) references} are enabled can cause compatibility issues. See
+ * <a href="https://github.com/EsotericSoftware/kryo/issues/286#issuecomment-74870545">here</a>.
  * <p>
  * Note that the field data is identified by name. The situation where a super class has a field with the same name as a subclass
  * must be avoided.
@@ -85,45 +84,43 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 			if (length < THRESHOLD_BINARY_SEARCH) {
 				outer:
-					for (int i = 0; i < length; i++) {
-						String schemaName = names[i];
-						for (int ii = 0, nn = allFields.length; ii < nn; ii++) {
-							if (getCachedFieldName(allFields[ii]).equals(schemaName)) {
-								fields[i] = allFields[ii];
-								continue outer;
-							}
+				for (int i = 0; i < length; i++) {
+					String schemaName = names[i];
+					for (int ii = 0, nn = allFields.length; ii < nn; ii++) {
+						if (getCachedFieldName(allFields[ii]).equals(schemaName)) {
+							fields[i] = allFields[ii];
+							continue outer;
 						}
-						if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
 					}
+					if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
+				}
 			} else {
 				// binary search for schemaName
 				int low, mid, high;
 				int compare;
 				outerBinarySearch:
-					for (int i = 0; i < length; i++) {
-						String schemaName = names[i];
+				for (int i = 0; i < length; i++) {
+					String schemaName = names[i];
 
-						low = 0;
-						high = length - 1;
+					low = 0;
+					high = length - 1;
 
-						while (low <= high) {
-							mid = (low + high) >>> 1;
-							String midVal = getCachedFieldName(allFields[mid]);
-							compare = schemaName.compareTo(midVal);
+					while (low <= high) {
+						mid = (low + high) >>> 1;
+						String midVal = getCachedFieldName(allFields[mid]);
+						compare = schemaName.compareTo(midVal);
 
-							if (compare < 0) {
-								high = mid - 1;
-							}
-							else if (compare > 0) {
-								low = mid + 1;
-							}
-							else {
-								fields[i] = allFields[mid];
-								continue outerBinarySearch;
-							}
+						if (compare < 0) {
+							high = mid - 1;
+						} else if (compare > 0) {
+							low = mid + 1;
+						} else {
+							fields[i] = allFields[mid];
+							continue outerBinarySearch;
 						}
-						if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
 					}
+					if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
+				}
 			}
 
 			context.put(this, fields);

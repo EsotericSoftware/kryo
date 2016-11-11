@@ -46,14 +46,14 @@ public class InputOutputTest extends KryoTestCase {
 
 		assertEquals(new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
-				31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
-				51, 52, 53, 54, 55, 56, 57, 58, //
-				61, 62, 63, 64, 65}, buffer.toByteArray());
+			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
+			51, 52, 53, 54, 55, 56, 57, 58, //
+			61, 62, 63, 64, 65}, buffer.toByteArray());
 	}
 
 	public void testInputStream () throws IOException {
 		byte[] bytes = new byte[] { //
-		11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
+			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
 			61, 62, 63, 64, 65};
@@ -89,9 +89,9 @@ public class InputOutputTest extends KryoTestCase {
 
 		assertEquals(new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
-				31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
-				51, 52, 53, 54, 55, 56, 57, 58, //
-				61, 62, 63, 64, 65}, buffer.toBytes());
+			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
+			51, 52, 53, 54, 55, 56, 57, 58, //
+			61, 62, 63, 64, 65}, buffer.toBytes());
 	}
 
 	public void testStrings () throws IOException {
@@ -818,22 +818,22 @@ public class InputOutputTest extends KryoTestCase {
 		input.readBytes(toRead);
 	}
 
-	public void testVerySmallBuffers() throws Exception {
-        	Output out1 = new Output(4, -1);
-        	Output out2 = new ByteBufferOutput(4, -1);
+	public void testVerySmallBuffers () throws Exception {
+		Output out1 = new Output(4, -1);
+		Output out2 = new ByteBufferOutput(4, -1);
 
-        	for (int i = 0; i < 16; i++) {
-            		out1.writeVarInt(92, false);
-        	}
+		for (int i = 0; i < 16; i++) {
+			out1.writeVarInt(92, false);
+		}
 
-        	for (int i = 0; i < 16; i++) {
-            		out2.writeVarInt(92, false);
-        	}
-        	
-        	assertEquals(out1.toBytes(), out2.toBytes());
+		for (int i = 0; i < 16; i++) {
+			out2.writeVarInt(92, false);
+		}
+
+		assertEquals(out1.toBytes(), out2.toBytes());
 	}
-	
-	public void testZeroLengthOutputs() throws Exception {
+
+	public void testZeroLengthOutputs () throws Exception {
 		Output output = new Output(0, 10000);
 		kryo.writeClassAndObject(output, "Test string");
 
@@ -841,22 +841,22 @@ public class InputOutputTest extends KryoTestCase {
 		kryo.writeClassAndObject(byteBufferOutput, "Test string");
 	}
 
-	public void testFlushRoundTrip() throws Exception {
+	public void testFlushRoundTrip () throws Exception {
 
-      Kryo kryo = new Kryo();
+		Kryo kryo = new Kryo();
 
 		String s1 = "12345";
 
-		ByteArrayOutputStream os=new ByteArrayOutputStream();
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		ObjectOutputStream objOutput = new ObjectOutputStream(os);
 		Output output = new Output(objOutput);
 
 		kryo.writeClass(output, s1.getClass());
 		kryo.writeObject(output, s1);
 		output.flush();
-//		objOutput.flush();  // this layer wasn't flushed prior to this bugfix, add it for a workaround
+// objOutput.flush(); // this layer wasn't flushed prior to this bugfix, add it for a workaround
 
-		byte [] b = os.toByteArray();
+		byte[] b = os.toByteArray();
 		System.out.println("size: " + b.length);
 
 		ByteArrayInputStream in = new ByteArrayInputStream(b);
@@ -864,13 +864,13 @@ public class InputOutputTest extends KryoTestCase {
 		Input input = new Input(objIn);
 
 		Registration r = kryo.readClass(input);
-		String s2 = (String)kryo.readObject(input,r.getType());
+		String s2 = (String)kryo.readObject(input, r.getType());
 
 		assertEquals(s1, s2);
 
 	}
 
-	public void testNewOutputMaxBufferSizeLessThanBufferSize() {
+	public void testNewOutputMaxBufferSizeLessThanBufferSize () {
 		int bufferSize = 2;
 		int maxBufferSize = 1;
 
@@ -882,7 +882,7 @@ public class InputOutputTest extends KryoTestCase {
 		}
 	}
 
-	public void testSetOutputMaxBufferSizeLessThanBufferSize() {
+	public void testSetOutputMaxBufferSizeLessThanBufferSize () {
 		int bufferSize = 2;
 		int maxBufferSize = 1;
 
@@ -898,7 +898,7 @@ public class InputOutputTest extends KryoTestCase {
 
 	}
 
-	public void testNewOutputMaxBufferSizeIsMinusOne() {
+	public void testNewOutputMaxBufferSizeIsMinusOne () {
 		int bufferSize = 2;
 		int maxBufferSize = -1;
 
@@ -907,7 +907,7 @@ public class InputOutputTest extends KryoTestCase {
 		// This test should pass as long as no exception thrown
 	}
 
-	public void testSetOutputMaxBufferSizeIsMinusOne() {
+	public void testSetOutputMaxBufferSizeIsMinusOne () {
 		int bufferSize = 2;
 		int maxBufferSize = -1;
 

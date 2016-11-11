@@ -26,16 +26,12 @@ import java.util.Queue;
 
 import com.esotericsoftware.kryo.Kryo;
 
-/**
- * Internally uses {@link SoftReference}s for queued Kryo instances,
- * most importantly adjusts the {@link Queue#poll() poll}
- * behavior so that gc'ed Kryo instances are skipped.
- * Most other methods are unsupported.
+/** Internally uses {@link SoftReference}s for queued Kryo instances, most importantly adjusts the {@link Queue#poll() poll}
+ * behavior so that gc'ed Kryo instances are skipped. Most other methods are unsupported.
  *
- * @author Martin Grotzke
- */
+ * @author Martin Grotzke */
 class SoftReferenceQueue implements Queue<Kryo> {
-	
+
 	private Queue<SoftReference<Kryo>> delegate;
 
 	public SoftReferenceQueue (Queue<?> delegate) {
@@ -45,8 +41,8 @@ class SoftReferenceQueue implements Queue<Kryo> {
 	public Kryo poll () {
 		Kryo res;
 		SoftReference<Kryo> ref;
-		while((ref = delegate.poll()) != null) {
-			if((res = ref.get()) != null) {
+		while ((ref = delegate.poll()) != null) {
+			if ((res = ref.get()) != null) {
 				return res;
 			}
 		}
@@ -84,7 +80,7 @@ class SoftReferenceQueue implements Queue<Kryo> {
 	public int hashCode () {
 		return delegate.hashCode();
 	}
-	
+
 	@Override
 	public String toString () {
 		return getClass().getSimpleName() + super.toString();

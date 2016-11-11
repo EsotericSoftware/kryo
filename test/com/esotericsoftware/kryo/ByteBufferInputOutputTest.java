@@ -1,14 +1,15 @@
-package com.esotericsoftware.kryo;
 
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.ByteBufferOutput;
+package com.esotericsoftware.kryo;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import com.esotericsoftware.kryo.io.ByteBufferInput;
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
+
 public class ByteBufferInputOutputTest extends KryoTestCase {
 
-	public void testByteBufferOutputResetEndiannessAfterException() {
+	public void testByteBufferOutputResetEndiannessAfterException () {
 		ByteBufferOutput outputBuffer = new ByteBufferOutput(10, 10);
 		boolean exceptionTriggered = false;
 		try {
@@ -34,7 +35,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertTrue(exceptionTriggered);
 	}
 
-	public void testByteBufferInputPosition() {
+	public void testByteBufferInputPosition () {
 		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
 		ByteBufferInput inputBuffer = new ByteBufferInput(byteBuffer);
 		assertEquals(0, inputBuffer.position());
@@ -44,7 +45,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(5, inputBuffer.getByteBuffer().position());
 	}
 
-	public void testByteBufferInputLimit() {
+	public void testByteBufferInputLimit () {
 		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
 		ByteBufferInput inputBuffer = new ByteBufferInput(byteBuffer);
 		assertEquals(4096, inputBuffer.limit());
@@ -54,7 +55,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(1000, inputBuffer.getByteBuffer().limit());
 	}
 
-	public void testByteBufferInputSetBufferEndianness() {
+	public void testByteBufferInputSetBufferEndianness () {
 		ByteBufferInput inputBuffer = new ByteBufferInput();
 		assertEquals(ByteOrder.BIG_ENDIAN, inputBuffer.order());
 
@@ -67,7 +68,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(byteBuffer.order(), inputBuffer.order());
 	}
 
-	public void testByteBufferInputSkip() {
+	public void testByteBufferInputSkip () {
 		ByteBuffer buffer = ByteBuffer.allocateDirect(4096);
 		ByteBufferInput inputBuffer = new ByteBufferInput(buffer);
 		assertEquals(0, inputBuffer.getByteBuffer().position());
@@ -75,7 +76,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(5, inputBuffer.getByteBuffer().position());
 	}
 
-	public void testByteBufferOutputPosition() {
+	public void testByteBufferOutputPosition () {
 		ByteBufferOutput outputBuffer = new ByteBufferOutput(4096);
 		assertEquals(0, outputBuffer.position());
 		assertEquals(0, outputBuffer.getByteBuffer().position());
@@ -93,7 +94,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(9, byteBuffer.position());
 	}
 
-	public void testByteBufferOutputSetOrder() {
+	public void testByteBufferOutputSetOrder () {
 		ByteBufferOutput outputBuffer = new ByteBufferOutput(4096);
 		assertEquals(ByteOrder.BIG_ENDIAN, outputBuffer.order());
 		assertEquals(ByteOrder.BIG_ENDIAN, outputBuffer.getByteBuffer().order());
@@ -103,7 +104,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(ByteOrder.LITTLE_ENDIAN, outputBuffer.getByteBuffer().order());
 	}
 
-	public void testByteBufferByteOrderTheSameAfterGrowingForVarInt() {
+	public void testByteBufferByteOrderTheSameAfterGrowingForVarInt () {
 		final ByteBufferOutput outputBuffer = new ByteBufferOutput(1, -1);
 		final ByteOrder byteOrder = outputBuffer.order();
 		outputBuffer.writeVarInt(300, true);

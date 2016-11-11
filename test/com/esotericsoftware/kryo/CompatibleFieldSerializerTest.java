@@ -72,7 +72,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals(object1, object2);
 	}
 
-	public void testExtendedClass() throws FileNotFoundException {
+	public void testExtendedClass () throws FileNotFoundException {
 		ExtendedTestClass extendedObject = new ExtendedTestClass();
 
 		// this test would fail with DEFAULT field name strategy
@@ -82,10 +82,9 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.register(ExtendedTestClass.class, serializer);
 		roundTrip(286, 286, extendedObject);
 
-		ExtendedTestClass object2 = (ExtendedTestClass) kryo.readClassAndObject(input);
+		ExtendedTestClass object2 = (ExtendedTestClass)kryo.readClassAndObject(input);
 		assertEquals(extendedObject, object2);
 	}
-
 
 	static public class TestClass {
 		public String text = "something";
@@ -126,7 +125,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 			if (this == obj) return true;
 			if (obj == null) return false;
 			if (getClass() != obj.getClass()) return false;
-			ExtendedTestClass other = (ExtendedTestClass) obj;
+			ExtendedTestClass other = (ExtendedTestClass)obj;
 
 			if (!super.equals(obj)) return false;
 			if (child == null) {

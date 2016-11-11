@@ -27,7 +27,7 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 public class JavaSerializerTest extends KryoTestCase {
 	public void testJavaSerializer () {
 		kryo.register(String.class, new JavaSerializer());
-		roundTrip(50, 50,  "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+		roundTrip(50, 50, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 		roundTrip(12, 12, "meow");
 
 		kryo.register(TestClass.class, new JavaSerializer());

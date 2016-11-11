@@ -55,7 +55,7 @@ class ObjectCachedFieldFactory implements CachedFieldFactory {
 			else {
 				cachedField = new ObjectField(ser);
 			}
-		}	else		
+		} else
 			cachedField = new ObjectField(ser);
 		return cachedField;
 	}

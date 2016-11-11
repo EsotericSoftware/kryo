@@ -44,13 +44,6 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import com.esotericsoftware.kryo.serializers.ClosureSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.URLSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
-import com.esotericsoftware.kryo.serializers.OptionalSerializers;
-import com.esotericsoftware.kryo.serializers.GenericsResolver;
-import com.esotericsoftware.kryo.serializers.TaggedFieldSerializerConfig;
-import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.strategy.SerializingInstantiatorStrategy;
@@ -61,6 +54,7 @@ import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.factories.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.BooleanArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ByteArraySerializer;
@@ -103,9 +97,15 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimeZoneSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeSetSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.URLSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.VoidSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
+import com.esotericsoftware.kryo.serializers.GenericsResolver;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
+import com.esotericsoftware.kryo.serializers.OptionalSerializers;
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializerConfig;
+import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultStreamFactory;
 import com.esotericsoftware.kryo.util.IdentityMap;
@@ -241,8 +241,8 @@ public class Kryo {
 	}
 
 	// --- Default serializers ---
-	/** Sets the serializer factory to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an object's
-	 * type. Default is {@link ReflectionSerializerFactory} with {@link FieldSerializer}.
+	/** Sets the serializer factory to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an
+	 * object's type. Default is {@link ReflectionSerializerFactory} with {@link FieldSerializer}.
 	 * @see #newDefaultSerializer(Class) */
 	public void setDefaultSerializer (SerializerFactory serializer) {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
@@ -399,8 +399,8 @@ public class Kryo {
 	// --- Registration ---
 
 	/** Registers the class using the lowest, next available integer ID and the {@link Kryo#getDefaultSerializer(Class) default
-	 * serializer}. If the class is already registered, no change will be made and the existing registration will be
-	 * returned. Registering a primitive also affects the corresponding primitive wrapper.
+	 * serializer}. If the class is already registered, no change will be made and the existing registration will be returned.
+	 * Registering a primitive also affects the corresponding primitive wrapper.
 	 * <p>
 	 * Because the ID assigned is affected by the IDs registered before it, the order classes are registered is important when
 	 * using this method. The order must be the same at deserialization as it was for serialization. */
@@ -410,9 +410,9 @@ public class Kryo {
 		return register(type, getDefaultSerializer(type));
 	}
 
-	/** Registers the class using the specified ID and the {@link Kryo#getDefaultSerializer(Class) default serializer}.
-	 * If the class is already registered this has no effect and the existing registration is returned. Registering a
-	 * primitive also affects the corresponding primitive wrapper.
+	/** Registers the class using the specified ID and the {@link Kryo#getDefaultSerializer(Class) default serializer}. If the
+	 * class is already registered this has no effect and the existing registration is returned. Registering a primitive also
+	 * affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
 	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for primitive types and
@@ -438,8 +438,8 @@ public class Kryo {
 		return classResolver.register(new Registration(type, serializer, getNextRegistrationId()));
 	}
 
-	/** Registers the class using the specified ID and serializer. Providing an ID that is already in use by the same type
-	 * will cause the old entry to be overwritten. Registering a primitive also affects the corresponding primitive wrapper.
+	/** Registers the class using the specified ID and serializer. Providing an ID that is already in use by the same type will
+	 * cause the old entry to be overwritten. Registering a primitive also affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
 	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for primitive types and
@@ -449,8 +449,8 @@ public class Kryo {
 		return register(new Registration(type, serializer, id));
 	}
 
-	/** Stores the specified registration. If the ID is already in use by the same type, the old entry is overwritten.
-	 * Registering a primitive also affects the corresponding primitive wrapper.
+	/** Stores the specified registration. If the ID is already in use by the same type, the old entry is overwritten. Registering
+	 * a primitive also affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
 	 * <p>
@@ -502,7 +502,7 @@ public class Kryo {
 				if (registrationRequired) {
 					throw new IllegalArgumentException(unregisteredClassMessage(type));
 				}
-				if(warnUnregisteredClasses) {
+				if (warnUnregisteredClasses) {
 					warn(unregisteredClassMessage(type));
 				}
 				registration = classResolver.registerImplicit(type);
@@ -512,8 +512,8 @@ public class Kryo {
 	}
 
 	protected String unregisteredClassMessage (Class type) {
-		return "Class is not registered: " + className(type)
-			+ "\nNote: To register this class use: kryo.register(" + className(type) + ".class);";
+		return "Class is not registered: " + className(type) + "\nNote: To register this class use: kryo.register("
+			+ className(type) + ".class);";
 	}
 
 	/** @see ClassResolver#getRegistration(int) */
@@ -1022,7 +1022,8 @@ public class Kryo {
 		return referenceResolver;
 	}
 
-	/** Sets the classloader to resolve unregistered class names to classes. The default is the loader that loaded the Kryo class. */
+	/** Sets the classloader to resolve unregistered class names to classes. The default is the loader that loaded the Kryo
+	 * class. */
 	public void setClassLoader (ClassLoader classLoader) {
 		if (classLoader == null) throw new IllegalArgumentException("classLoader cannot be null.");
 		this.classLoader = classLoader;
@@ -1048,18 +1049,17 @@ public class Kryo {
 	public boolean isRegistrationRequired () {
 		return registrationRequired;
 	}
-	
-	/**
-	 * If true, kryo writes a warn log telling about the classes unregistered. Default is false.
+
+	/** If true, kryo writes a warn log telling about the classes unregistered. Default is false.
 	 * <p>
 	 * If false, no log are written when unregistered classes are encountered.
 	 * </p>
-	 */
+	*/
 	public void setWarnUnregisteredClasses (boolean warnUnregisteredClasses) {
 		this.warnUnregisteredClasses = warnUnregisteredClasses;
 		if (TRACE) trace("kryo", "Warn unregistered classes: " + warnUnregisteredClasses);
 	}
-	
+
 	public boolean isWarnUnregisteredClasses () {
 		return warnUnregisteredClasses;
 	}
@@ -1084,14 +1084,14 @@ public class Kryo {
 		this.copyReferences = copyReferences;
 	}
 
-	/** The default configuration for {@link FieldSerializer} instances. Already existing serializer instances (e.g.
-	 * implicitely created for already registered classes) are not affected by this configuration. You can override
-	 * the configuration for a single {@link FieldSerializer}. */
-	public FieldSerializerConfig getFieldSerializerConfig() {
+	/** The default configuration for {@link FieldSerializer} instances. Already existing serializer instances (e.g. implicitely
+	 * created for already registered classes) are not affected by this configuration. You can override the configuration for a
+	 * single {@link FieldSerializer}. */
+	public FieldSerializerConfig getFieldSerializerConfig () {
 		return fieldSerializerConfig;
 	}
 
-	public TaggedFieldSerializerConfig getTaggedFieldSerializerConfig() {
+	public TaggedFieldSerializerConfig getTaggedFieldSerializerConfig () {
 		return taggedFieldSerializerConfig;
 	}
 
@@ -1193,7 +1193,7 @@ public class Kryo {
 	/** Returns true if the specified type is a closure.
 	 * <p>
 	 * This can be overridden to support alternative implementations of clousres. Current version supports Oracle's Java8 only */
-	protected boolean isClosure(Class type) {
+	protected boolean isClosure (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		return type.getName().indexOf('/') >= 0;
 	}

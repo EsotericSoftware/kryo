@@ -171,7 +171,7 @@ public class DefaultClassResolver implements ClassResolver {
 		return kryo.getRegistration(type);
 	}
 
-	protected Class<?> getTypeByName(final String className) {
+	protected Class<?> getTypeByName (final String className) {
 		return nameToClass != null ? nameToClass.get(className) : null;
 	}
 

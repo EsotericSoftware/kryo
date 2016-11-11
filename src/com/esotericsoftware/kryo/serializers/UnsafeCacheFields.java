@@ -19,13 +19,10 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.kryo.util.UnsafeUtil.unsafe;
+import static com.esotericsoftware.kryo.util.UnsafeUtil.*;
 
 import java.lang.reflect.Field;
 
-import sun.misc.Unsafe;
-
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -34,7 +31,8 @@ import com.esotericsoftware.kryo.io.UnsafeMemoryInput;
 import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
 import com.esotericsoftware.kryo.io.UnsafeOutput;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
-import com.esotericsoftware.reflectasm.FieldAccess;
+
+import sun.misc.Unsafe;
 
 /*** Implementations of sun.misc.Unsafe-based serializers for fields.
  * 
@@ -221,8 +219,8 @@ class UnsafeCacheFields {
 		}
 	}
 
-	/** Helper class for doing bulk copies of memory regions containing adjacent primitive fields. Should be normally used only with
-	 * Unsafe streams to deliver best performance. */
+	/** Helper class for doing bulk copies of memory regions containing adjacent primitive fields. Should be normally used only
+	 * with Unsafe streams to deliver best performance. */
 	final static class UnsafeRegionField extends UnsafeCachedField {
 		final long len;
 		static final boolean bulkReadsSupported = false;
@@ -266,8 +264,8 @@ class UnsafeCacheFields {
 			}
 		}
 
-		/*** This is a fall-back solution for the case that bulk reading of bytes into object memory is not supported. Unfortunately,
-		 * current Oracle JDKs do not allow for bulk reading in this style due to problems with GC.
+		/*** This is a fall-back solution for the case that bulk reading of bytes into object memory is not supported.
+		 * Unfortunately, current Oracle JDKs do not allow for bulk reading in this style due to problems with GC.
 		 * 
 		 * @param input
 		 * @param object */

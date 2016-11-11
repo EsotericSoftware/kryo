@@ -19,11 +19,7 @@
 
 package com.esotericsoftware.kryo.io;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-
-import sun.misc.Unsafe;
 
 import com.esotericsoftware.kryo.KryoException;
 

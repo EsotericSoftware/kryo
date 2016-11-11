@@ -19,19 +19,18 @@
 
 package com.esotericsoftware.kryo;
 
+import java.lang.ref.WeakReference;
+
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultStreamFactory;
 import com.esotericsoftware.kryo.util.FastestStreamFactory;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
-import java.lang.ref.WeakReference;
-import static junit.framework.Assert.assertNull;
+
 import junit.framework.TestCase;
 
-/**
- * Tests for detecting PermGen memory leaks.
+/** Tests for detecting PermGen memory leaks.
  * 
- * @author Tumi <serverperformance@gmail.com>
- */
+ * @author Tumi <serverperformance@gmail.com> */
 public class GarbageCollectionTest extends TestCase {
 
 	public void testDefaultStreamFactory () {
@@ -49,14 +48,17 @@ public class GarbageCollectionTest extends TestCase {
 		kryo = null; // remove strong ref, now kryo is only weak-reachable
 		reclaim(kryoWeakRef);
 	}
-	
+
 	private void reclaim (WeakReference<Kryo> kryoWeakRef) {
 		// Forces GC
 		System.gc();
 		// Waits for recaim the weaked-reachable kryo instance
 		int times = 0;
 		while (kryoWeakRef.get() != null && times < 30) { // limit 3 seconds
-			try { Thread.sleep(100); } catch (InterruptedException ignored) {}
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException ignored) {
+			}
 			times++;
 		}
 		assertNull(kryoWeakRef.get());

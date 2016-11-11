@@ -19,81 +19,87 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import com.esotericsoftware.kryo.KryoTestCase;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.*;
+import com.esotericsoftware.kryo.KryoTestCase;
 
-/**
- * Test for java 8 Optional* serializers.
- * Excluded from surefire tests via the "until-java8" profile in pom.xml which excludes "Java8*Tests".
- */
+/** Test for java 8 Optional* serializers. Excluded from surefire tests via the "until-java8" profile in pom.xml which excludes
+ * "Java8*Tests". */
 public class Java8OptionalSerializersTest extends KryoTestCase {
 
-    {
-        supportsCopy = true;
-    }
+	{
+		supportsCopy = true;
+	}
 
-    @Override
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        kryo.register(Optional.class);
-        kryo.register(OptionalInt.class);
-        kryo.register(OptionalLong.class);
-        kryo.register(OptionalDouble.class);
-        kryo.register(TestClass.class);
-    }
+	@Override
+	@Before
+	public void setUp () throws Exception {
+		super.setUp();
+		kryo.register(Optional.class);
+		kryo.register(OptionalInt.class);
+		kryo.register(OptionalLong.class);
+		kryo.register(OptionalDouble.class);
+		kryo.register(TestClass.class);
+	}
 
-    @Test
-    public void testOptional() {
-        roundTrip(2, 2, new TestClass(null));
-        roundTrip(3, 3, new TestClass(Optional.<String>empty()));
-        roundTrip(6, 6, new TestClass(Optional.of("foo")));
-    }
+	@Test
+	public void testOptional () {
+		roundTrip(2, 2, new TestClass(null));
+		roundTrip(3, 3, new TestClass(Optional.<String> empty()));
+		roundTrip(6, 6, new TestClass(Optional.of("foo")));
+	}
 
-    @Test
-    public void testOptionalInt() {
-        roundTrip(2, 2, OptionalInt.empty());
-        roundTrip(6, 6, OptionalInt.of(Integer.MIN_VALUE));
-        roundTrip(6, 6, OptionalInt.of(Integer.MAX_VALUE));
-    }
+	@Test
+	public void testOptionalInt () {
+		roundTrip(2, 2, OptionalInt.empty());
+		roundTrip(6, 6, OptionalInt.of(Integer.MIN_VALUE));
+		roundTrip(6, 6, OptionalInt.of(Integer.MAX_VALUE));
+	}
 
-    @Test
-    public void testOptionalLong() {
-        roundTrip(2, 2, OptionalLong.empty());
-        roundTrip(10, 10, OptionalLong.of(Long.MIN_VALUE));
-        roundTrip(10, 10, OptionalLong.of(Long.MAX_VALUE));
-    }
+	@Test
+	public void testOptionalLong () {
+		roundTrip(2, 2, OptionalLong.empty());
+		roundTrip(10, 10, OptionalLong.of(Long.MIN_VALUE));
+		roundTrip(10, 10, OptionalLong.of(Long.MAX_VALUE));
+	}
 
-    @Test
-    public void testOptionalDouble() {
-        roundTrip(2, 2, OptionalDouble.empty());
-        roundTrip(10, 10, OptionalDouble.of(Double.MIN_VALUE));
-        roundTrip(10, 10, OptionalDouble.of(Double.MAX_VALUE));
-    }
+	@Test
+	public void testOptionalDouble () {
+		roundTrip(2, 2, OptionalDouble.empty());
+		roundTrip(10, 10, OptionalDouble.of(Double.MIN_VALUE));
+		roundTrip(10, 10, OptionalDouble.of(Double.MAX_VALUE));
+	}
 
-    static class TestClass {
-        Optional<String> maybe;
-        public TestClass() {}
-        public TestClass(Optional<String> maybe) {
-            this.maybe = maybe;
-        }
+	static class TestClass {
+		Optional<String> maybe;
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            TestClass testClass = (TestClass) o;
-            return Objects.equals(maybe, testClass.maybe);
+		public TestClass () {
+		}
 
-        }
+		public TestClass (Optional<String> maybe) {
+			this.maybe = maybe;
+		}
 
-        @Override
-        public int hashCode() {
-            return Objects.hashCode(maybe);
-        }
-    }
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			TestClass testClass = (TestClass)o;
+			return Objects.equals(maybe, testClass.maybe);
+
+		}
+
+		@Override
+		public int hashCode () {
+			return Objects.hashCode(maybe);
+		}
+	}
 
 }

@@ -19,10 +19,10 @@
 
 package com.esotericsoftware.kryo.io;
 
-import com.esotericsoftware.kryo.KryoException;
-
 import java.io.IOException;
 import java.io.OutputStream;
+
+import com.esotericsoftware.kryo.KryoException;
 
 /** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
  * for efficiently writing primitive types and strings.
@@ -54,8 +54,8 @@ public class Output extends OutputStream {
 	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. Can be -1
 	 *           for no maximum. */
 	public Output (int bufferSize, int maxBufferSize) {
-		if (bufferSize > maxBufferSize && maxBufferSize != -1)
-			throw new IllegalArgumentException("bufferSize: " + bufferSize + " cannot be greater than maxBufferSize: " + maxBufferSize);
+		if (bufferSize > maxBufferSize && maxBufferSize != -1) throw new IllegalArgumentException(
+			"bufferSize: " + bufferSize + " cannot be greater than maxBufferSize: " + maxBufferSize);
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.capacity = bufferSize;
 		this.maxCapacity = maxBufferSize == -1 ? Integer.MAX_VALUE : maxBufferSize;
@@ -101,8 +101,8 @@ public class Output extends OutputStream {
 		total = 0;
 	}
 
-	/** Sets the buffer that will be written to. {@link #setBuffer(byte[], int)} is called with the specified buffer's length as the
-	 * maxBufferSize. */
+	/** Sets the buffer that will be written to. {@link #setBuffer(byte[], int)} is called with the specified buffer's length as
+	 * the maxBufferSize. */
 	public void setBuffer (byte[] buffer) {
 		setBuffer(buffer, buffer.length);
 	}
@@ -112,8 +112,8 @@ public class Output extends OutputStream {
 	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. */
 	public void setBuffer (byte[] buffer, int maxBufferSize) {
 		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
-		if (buffer.length > maxBufferSize && maxBufferSize != -1)
-			throw new IllegalArgumentException("buffer has length: " + buffer.length + " cannot be greater than maxBufferSize: " + maxBufferSize);
+		if (buffer.length > maxBufferSize && maxBufferSize != -1) throw new IllegalArgumentException(
+			"buffer has length: " + buffer.length + " cannot be greater than maxBufferSize: " + maxBufferSize);
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.buffer = buffer;
 		this.maxCapacity = maxBufferSize == -1 ? Integer.MAX_VALUE : maxBufferSize;
@@ -264,8 +264,8 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
-	/** Writes a 1-5 byte int. This stream may consider such a variable length encoding request as a hint. It is not guaranteed that
-	 * a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
+	/** Writes a 1-5 byte int. This stream may consider such a variable length encoding request as a hint. It is not guaranteed
+	 * that a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
 	 * efficiency reasons.
 	 * 
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be

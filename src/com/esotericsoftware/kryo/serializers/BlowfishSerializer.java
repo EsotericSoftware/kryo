@@ -63,7 +63,7 @@ public class BlowfishSerializer extends Serializer {
 	public Object read (Kryo kryo, Input input, Class type) {
 		Cipher cipher = getCipher(Cipher.DECRYPT_MODE);
 		CipherInputStream cipherInput = new CipherInputStream(input, cipher);
-		return serializer.read(kryo, new Input(cipherInput, 256), type); 
+		return serializer.read(kryo, new Input(cipherInput, 256), type);
 	}
 
 	public Object copy (Kryo kryo, Object original) {

@@ -21,8 +21,6 @@ package com.esotericsoftware.kryo.serializers;
 
 import java.lang.reflect.Field;
 
-import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedFieldFactory;
 import com.esotericsoftware.kryo.serializers.AsmCacheFields.AsmBooleanField;
 import com.esotericsoftware.kryo.serializers.AsmCacheFields.AsmByteField;
 import com.esotericsoftware.kryo.serializers.AsmCacheFields.AsmCharField;
@@ -30,9 +28,11 @@ import com.esotericsoftware.kryo.serializers.AsmCacheFields.AsmDoubleField;
 import com.esotericsoftware.kryo.serializers.AsmCacheFields.AsmFloatField;
 import com.esotericsoftware.kryo.serializers.AsmCacheFields.AsmIntField;
 import com.esotericsoftware.kryo.serializers.AsmCacheFields.AsmLongField;
+import com.esotericsoftware.kryo.serializers.AsmCacheFields.AsmObjectField;
 import com.esotericsoftware.kryo.serializers.AsmCacheFields.AsmShortField;
 import com.esotericsoftware.kryo.serializers.AsmCacheFields.AsmStringField;
-import com.esotericsoftware.kryo.serializers.AsmCacheFields.AsmObjectField;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedFieldFactory;
 
 class AsmCachedFieldFactory implements CachedFieldFactory {
 	public CachedField createCachedField (Class fieldClass, Field field, FieldSerializer ser) {

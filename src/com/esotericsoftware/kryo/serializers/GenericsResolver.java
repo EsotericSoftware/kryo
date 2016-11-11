@@ -19,41 +19,39 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.minlog.Log.*;
+
 import java.util.LinkedList;
 
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
-
-/**
- * INTERNAL API
+/** INTERNAL API
  *
  * Helper class that resolves a type name variable to a concrete class using the current class serialization stack
  *
  * @author Jeroen van Erp <jeroen@hierynomus.com> */
 public final class GenericsResolver {
-    private LinkedList<Generics> stack = new LinkedList<Generics>();
+	private LinkedList<Generics> stack = new LinkedList<Generics>();
 
-    public GenericsResolver () {
-    }
+	public GenericsResolver () {
+	}
 
-    Class getConcreteClass(String typeVar) {
-        for (Generics generics : stack) {
-            Class clazz = generics.getConcreteClass(typeVar);
-            if (clazz != null) return clazz;
-        }
-        return null;
-    }
+	Class getConcreteClass (String typeVar) {
+		for (Generics generics : stack) {
+			Class clazz = generics.getConcreteClass(typeVar);
+			if (clazz != null) return clazz;
+		}
+		return null;
+	}
 
-    boolean isSet () {
-        return !stack.isEmpty();
-    }
+	boolean isSet () {
+		return !stack.isEmpty();
+	}
 
-    void pushScope(Class type, Generics scope) {
-        if (TRACE) trace("generics", "Settting a new generics scope for class " + type.getName() + ": " + scope);
-        stack.addFirst(scope);
-    }
+	void pushScope (Class type, Generics scope) {
+		if (TRACE) trace("generics", "Settting a new generics scope for class " + type.getName() + ": " + scope);
+		stack.addFirst(scope);
+	}
 
-    void popScope() {
-        stack.removeFirst();
-    }
+	void popScope () {
+		stack.removeFirst();
+	}
 }

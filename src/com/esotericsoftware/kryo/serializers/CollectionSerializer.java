@@ -58,8 +58,8 @@ public class CollectionSerializer extends Serializer<Collection> {
 		this.elementsCanBeNull = elementsCanBeNull;
 	}
 
-	/** @param elementsCanBeNull False if all elements are not null. This saves 1 byte per element if elementClass is set. True if it
-	 *           is not known (default). */
+	/** @param elementsCanBeNull False if all elements are not null. This saves 1 byte per element if elementClass is set. True if
+	 *           it is not known (default). */
 	public void setElementsCanBeNull (boolean elementsCanBeNull) {
 		this.elementsCanBeNull = elementsCanBeNull;
 	}
@@ -136,8 +136,8 @@ public class CollectionSerializer extends Serializer<Collection> {
 		return collection;
 	}
 
-	/** Used by {@link #copy(Kryo, Collection)} to create the new object. This can be overridden to customize object creation, eg to
-	 * call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
+	/** Used by {@link #copy(Kryo, Collection)} to create the new object. This can be overridden to customize object creation, eg
+	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
 	protected Collection createCopy (Kryo kryo, Collection original) {
 		return kryo.newInstance(original.getClass());
 	}
@@ -150,33 +150,24 @@ public class CollectionSerializer extends Serializer<Collection> {
 		return copy;
 	}
 
-	/**
-	 * Used to annotate fields that are collections with specific Kryo serializers
-	 * for their values.
-	 */
+	/** Used to annotate fields that are collections with specific Kryo serializers for their values. */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindCollection {
-	    /**
-	     * Serializer to be used for values
-	     * 
-	     * @return the class<? extends Serializer> used for values serialization
-	     */
-	    @SuppressWarnings("rawtypes")
-	    Class<? extends Serializer> elementSerializer() default Serializer.class;
-	    
-	    /**
-	     * Class used for elements
-	     * 
-	     * @return the class used for elements
-	     */
-	    Class<?> elementClass() default Object.class;
-	    
-	    /**
-	     * Indicates if elements can be null
-	     * 
-	     * @return true, if elements can be null
-	     */
-	    boolean elementsCanBeNull() default true;
+		/** Serializer to be used for values
+		 * 
+		 * @return the class<? extends Serializer> used for values serialization */
+		@SuppressWarnings("rawtypes")
+		Class<? extends Serializer> elementSerializer() default Serializer.class;
+
+		/** Class used for elements
+		 * 
+		 * @return the class used for elements */
+		Class<?> elementClass() default Object.class;
+
+		/** Indicates if elements can be null
+		 * 
+		 * @return true, if elements can be null */
+		boolean elementsCanBeNull() default true;
 	}
 }
