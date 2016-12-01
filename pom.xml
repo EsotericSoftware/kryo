@@ -159,6 +159,30 @@
 
 	<profiles>
 		<profile>
+			<id>marklet-generation</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>2.9</version>
+						<configuration>
+							<doclet>fr.faylixe.marklet.Marklet</doclet>
+							<docletArtifact>
+								<groupId>fr.faylixe</groupId>
+								<artifactId>marklet</artifactId>
+								<version>1.0.5</version>
+							</docletArtifact>
+							<reportOutputDirectory>./</reportOutputDirectory>
+							<destDir>./</destDir>
+							<additionalparam>-d javadoc/</additionalparam>
+							<useStandardDocletOptions>false</useStandardDocletOptions>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
 			<id>requireSnapshot</id>
 			<!-- This profile is activated by the "-P requireSnapshot" switch to
 				be able to deploy SNAPSHOTs only (which is not allowed for releases) -->
