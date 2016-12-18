@@ -19,8 +19,11 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -57,12 +60,37 @@ public class JavaSerializer extends Serializer {
 			ObjectMap graphContext = kryo.getGraphContext();
 			ObjectInputStream objectStream = (ObjectInputStream)graphContext.get(this);
 			if (objectStream == null) {
-				objectStream = new ObjectInputStream(input);
+				objectStream = new ObjectInputStreamWithKryoClassLoader(input, kryo);
 				graphContext.put(this, objectStream);
 			}
 			return objectStream.readObject();
 		} catch (Exception ex) {
 			throw new KryoException("Error during Java deserialization.", ex);
+		}
+	}
+
+	/**
+	 * ${@link ObjectInputStream} uses the last user-defined ${@link ClassLoader} which may not be the correct one.
+		* This is a known Java issue and is often solved by using a specific class loader.
+	 * See:
+	 * https://github.com/apache/spark/blob/v1.6.3/streaming/src/main/scala/org/apache/spark/streaming/Checkpoint.scala#L154
+	 * https://issues.apache.org/jira/browse/GROOVY-1627
+	 */
+	private static class ObjectInputStreamWithKryoClassLoader extends ObjectInputStream {
+		private final ClassLoader loader;
+
+		ObjectInputStreamWithKryoClassLoader(InputStream in, Kryo kryo) throws IOException {
+			super(in);
+			this.loader = kryo.getClassLoader();
+		}
+
+		@Override
+		protected Class<?> resolveClass(ObjectStreamClass desc) {
+			try {
+				return Class.forName(desc.getName(), false, loader);
+			} catch (ClassNotFoundException e) {
+				throw new RuntimeException("Class not found: " + desc.getName(), e);
+			}
 		}
 	}
 }
