@@ -131,12 +131,4 @@
 		</plugins>
 	</reporting>
 
-	<pluginRepositories>
-		<pluginRepository>
-			<id>sonatype-clirr-staging</id>
-			<name>clirr staging repo</name>
-			<url>https://oss.sonatype.org/service/local/repositories/orgcodehausmojo-1069/content/</url>
-		</pluginRepository>
-	</pluginRepositories>
-
 </project>
