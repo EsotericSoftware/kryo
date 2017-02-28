@@ -15,7 +15,7 @@
 
 	<licenses>
 		<license>
-			<name>New BSD License</name>
+			<name>3-Clause BSD License</name>
 			<url>https://opensource.org/licenses/BSD-3-Clause</url>
 			<distribution>repo</distribution>
 		</license>
