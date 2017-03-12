@@ -1,4 +1,4 @@
-Project license(s): New BSD License
+Project license(s): 3-Clause BSD License
 
 * You will only Submit Contributions where You have authored 100% of the content.
 
