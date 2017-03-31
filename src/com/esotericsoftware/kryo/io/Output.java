@@ -482,8 +482,14 @@ public class Output extends OutputStream {
 	}
 
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
-		byte[] buffer = this.buffer;
+		if (charCount == 0)
+			return;
+		// It should be possible to write at least one character.
+		if (capacity == 0) {
+			require(1);
+		}
 		int charIndex = 0;
+		byte[] buffer = this.buffer;
 		int charsToWrite = Math.min(charCount, capacity - position);
 		while (charIndex < charCount) {
 			value.getBytes(charIndex, charIndex + charsToWrite, buffer, position);
