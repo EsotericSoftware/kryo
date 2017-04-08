@@ -448,7 +448,7 @@ Note that classes must be designed to be created in this way. If a class expects
 In many situations, you may want to have a strategy, where Kryo first tries to find and use a no-arg constructor and if it fails to do so, it should try to use `StdInstantiatorStrategy` as a fallback, because this one does not invoke any constructor at all. The configuration for this behavior could be expressed like this:
 
 ```java
-kryo.setInstantiatorStrategy(new Kyro.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 ```
 
 However, the default behavior is to require a no-arg constructor.
