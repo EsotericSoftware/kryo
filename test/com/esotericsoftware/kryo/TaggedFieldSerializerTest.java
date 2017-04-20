@@ -19,8 +19,10 @@
 
 package com.esotericsoftware.kryo;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 
+import com.esotericsoftware.kryo.io.Output;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
@@ -107,6 +109,23 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		assertEquals(rootWithNewOrderedField.b, root.b);
 	}
 
+	/** Attempts to register a class with a field tagged with a value already used in its superclass. Should receive
+	 * IllegalArgumentException. */
+	public void testInvalidTagValue () {
+		Kryo newKryo = new Kryo();
+		newKryo.setReferences(true);
+		newKryo.getTaggedFieldSerializerConfig().setIgnoreUnknownTags(true);
+		newKryo.setDefaultSerializer(TaggedFieldSerializer.class);
+
+		boolean receivedIAE = false;
+		try {
+			newKryo.register(IncompatibleClass.class);
+		} catch (IllegalArgumentException e){
+			receivedIAE = true;
+		}
+		assertTrue(receivedIAE);
+	}
+
 	static public class TestClass {
 		@Tag(0) public String text = "something";
 		@Tag(1) public int moo = 120;
@@ -132,6 +151,10 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 			if (zzz != other.zzz) return false;
 			return true;
 		}
+	}
+
+	static public class IncompatibleClass extends TestClass {
+		@Tag(3) public int poorlyTaggedField = 5;
 	}
 
 	static public class AnotherClass {

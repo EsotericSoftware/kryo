@@ -42,6 +42,9 @@ import com.esotericsoftware.kryo.io.Output;
  * don't clutter the class (eg, <code>ignored</code>, <code>ignored2</code>). For these reasons, TaggedFieldSerializer generally
  * provides more flexibility for classes to evolve. The downside is that it has a small amount of additional overhead compared to
  * VersionFieldSerializer (an additional varint per field). Forward compatibility is not supported.
+ * <p>
+ *     Tag values must be entirely unique, even among a class and its superclass(es). An IllegalArgumentException will be
+ *     thrown by {@link Kryo#register(Class)} (and its overloads) if duplicate Tag values are encountered.
  * @see VersionFieldSerializer
  * @author Nathan Sweet <misc@n4te.com> */
 public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
@@ -95,6 +98,8 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		for (int i = 0, n = fields.length; i < n; i++) {
 			Field field = fields[i].getField();
 			tags[i] = field.getAnnotation(Tag.class).value();
+			if (i > 0 && tags[i] == tags[i-1]) // This check relies on fields having been sorted
+				throw new KryoException(String.format("The fields [%s] and [%s] both have a Tag value of %d.", field, fields[i-1].getField(), tags[i]));
 			if (field.getAnnotation(Deprecated.class) != null) {
 				deprecated[i] = true;
 				writeFieldCount--;
