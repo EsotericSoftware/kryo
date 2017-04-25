@@ -226,18 +226,18 @@ Here SomeClass is registered with Kryo, which associates the class with an int I
 
 ```java
     Kryo kryo = new Kryo();
-    kryo.register(SomeClass.class, 0);
-    kryo.register(AnotherClass.class, 1);
-    kryo.register(YetAnotherClass.class, 2);
+    kryo.register(SomeClass.class, 10);
+    kryo.register(AnotherClass.class, 11);
+    kryo.register(YetAnotherClass.class, 12);
 ```
 
 The IDs are written most efficiently when they are small, positive integers. Negative IDs are not serialized efficiently. -1 and -2 are reserved.
 
-Use of registered and unregistered classes can be mixed. All primitives, primitive wrappers, and String are registered by default.
+Use of registered and unregistered classes can be mixed. All primitives, primitive wrappers, String, and void are registered by default using IDs 0-9. Carefully consider registering anything else in this range, as it will overwrite one of these registrations.
 
-Kryo#setRegistrationRequired can be set to true to throw an exception when any unregistered class is encountered. This prevents an application from accidentally using class name strings.
+`Kryo#setRegistrationRequired` can be set to true to throw an exception when any unregistered class is encountered. This prevents an application from accidentally using class name strings.
 
-If using unregistered classes, short package names could be considered.
+If using unregistered classes, short package names should be considered.
 
 ## Default serializers
 
