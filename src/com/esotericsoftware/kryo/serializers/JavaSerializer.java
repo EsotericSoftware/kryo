@@ -31,7 +31,6 @@ import com.esotericsoftware.kryo.KryoSerializable;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.util.ObjectMap;
 
 /** Serializes objects using Java's built in serialization mechanism. Note that this is very inefficient and should be avoided if
  * possible.
@@ -42,12 +41,7 @@ import com.esotericsoftware.kryo.util.ObjectMap;
 public class JavaSerializer extends Serializer {
 	public void write (Kryo kryo, Output output, Object object) {
 		try {
-			ObjectMap graphContext = kryo.getGraphContext();
-			ObjectOutputStream objectStream = (ObjectOutputStream)graphContext.get(this);
-			if (objectStream == null) {
-				objectStream = new ObjectOutputStream(output);
-				graphContext.put(this, objectStream);
-			}
+			ObjectOutputStream objectStream = new ObjectOutputStream(output);
 			objectStream.writeObject(object);
 			objectStream.flush();
 		} catch (Exception ex) {
@@ -57,12 +51,7 @@ public class JavaSerializer extends Serializer {
 
 	public Object read (Kryo kryo, Input input, Class type) {
 		try {
-			ObjectMap graphContext = kryo.getGraphContext();
-			ObjectInputStream objectStream = (ObjectInputStream)graphContext.get(this);
-			if (objectStream == null) {
-				objectStream = new ObjectInputStreamWithKryoClassLoader(input, kryo);
-				graphContext.put(this, objectStream);
-			}
+			ObjectInputStream objectStream = new ObjectInputStreamWithKryoClassLoader(input, kryo);
 			return objectStream.readObject();
 		} catch (Exception ex) {
 			throw new KryoException("Error during Java deserialization.", ex);
