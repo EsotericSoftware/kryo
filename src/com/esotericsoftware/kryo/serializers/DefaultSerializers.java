@@ -1,15 +1,15 @@
 /* Copyright (c) 2008, Nathan Sweet
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
  * conditions are met:
- * 
+ *
  * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
  * disclaimer in the documentation and/or other materials provided with the distribution.
  * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
  * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
  * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
@@ -46,6 +46,9 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -856,6 +859,44 @@ public class DefaultSerializers {
 			} catch (MalformedURLException e) {
 				throw new KryoException(e);
 			}
+		}
+
+	}
+
+	public static class Inet4AddressSerializer extends Serializer<Inet4Address> {
+		{
+			setImmutable(true);
+		}
+
+		public void write (Kryo kryo, Output output, Inet4Address object) {
+			output.write(object.getAddress(), 0, 4);
+		}
+
+		public Inet4Address read (Kryo kryo, Input input, Class<Inet4Address> type) {
+			try {
+        return (Inet4Address)InetAddress.getByAddress(input.readBytes(4));
+      } catch(java.net.UnknownHostException e) {
+        throw new KryoException(e);
+      }
+		}
+
+	}
+
+	public static class Inet6AddressSerializer extends Serializer<Inet6Address> {
+		{
+			setImmutable(true);
+		}
+
+		public void write (Kryo kryo, Output output, Inet6Address object) {
+			output.write(object.getAddress(), 0, 16);
+		}
+
+		public Inet6Address read (Kryo kryo, Input input, Class<Inet6Address> type) {
+			try {
+        return (Inet6Address)InetAddress.getByAddress(input.readBytes(16));
+      } catch(java.net.UnknownHostException e) {
+        throw new KryoException(e);
+      }
 		}
 
 	}
