@@ -58,7 +58,7 @@ public class Output extends OutputStream {
 			"bufferSize: " + bufferSize + " cannot be greater than maxBufferSize: " + maxBufferSize);
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.capacity = bufferSize;
-		this.maxCapacity = maxBufferSize == -1 ? Integer.MAX_VALUE : maxBufferSize;
+		this.maxCapacity = maxBufferSize == -1 ? Util.MAX_SAFE_ARRAY_SIZE : maxBufferSize;
 		buffer = new byte[bufferSize];
 	}
 
@@ -116,7 +116,7 @@ public class Output extends OutputStream {
 			"buffer has length: " + buffer.length + " cannot be greater than maxBufferSize: " + maxBufferSize);
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.buffer = buffer;
-		this.maxCapacity = maxBufferSize == -1 ? Integer.MAX_VALUE : maxBufferSize;
+		this.maxCapacity = maxBufferSize == -1 ? Util.MAX_SAFE_ARRAY_SIZE : maxBufferSize;
 		capacity = buffer.length;
 		position = 0;
 		total = 0;

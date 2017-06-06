@@ -289,7 +289,7 @@ public class Input extends InputStream {
 	public long skip (long count) throws KryoException {
 		long remaining = count;
 		while (remaining > 0) {
-			int skip = (int)Math.min(Integer.MAX_VALUE, remaining);
+			int skip = (int)Math.min(Util.MAX_SAFE_ARRAY_SIZE, remaining);
 			skip(skip);
 			remaining -= skip;
 		}
