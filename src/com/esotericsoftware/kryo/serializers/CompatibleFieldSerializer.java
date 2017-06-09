@@ -98,12 +98,13 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				// binary search for schemaName
 				int low, mid, high;
 				int compare;
+				int maxFieldLength = allFields.length > length ? allFields.length : length;
 				outerBinarySearch:
 				for (int i = 0; i < length; i++) {
 					String schemaName = names[i];
 
 					low = 0;
-					high = length - 1;
+					high = maxFieldLength - 1;
 
 					while (low <= high) {
 						mid = (low + high) >>> 1;
