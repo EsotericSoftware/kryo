@@ -1306,8 +1306,18 @@ public class Kryo {
 			if (fallbackStrategy == null) {
 				if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()))
 					throw new KryoException("Class cannot be created (non-static member class): " + className(type));
-				else
-					throw new KryoException("Class cannot be created (missing no-arg constructor): " + className(type));
+				else {
+					StringBuilder errorMessageSb = new StringBuilder("Class cannot be created (missing no-arg constructor): " + className(type));
+					if (type.getSimpleName().equals("")) {
+						errorMessageSb.append("\n\tThis is an anonymous class, which is not serializable by default in Kryo. Possible solutions: ")
+							.append("1. Remove uses of anonymous classes, including double brace initialization, from the containing ")
+							.append("class. This is the safest solution, as anonymous classes don't have predictable names for serialization.")
+							.append("\n\t2. Register a FieldSerializer for the containing class and call ")
+							.append( "FieldSerializer#setIgnoreSyntheticFields(false) on it. This is not safe but may be sufficient temporarily. ")
+							.append("Use at your own risk.");
+					}
+					throw new KryoException(errorMessageSb.toString());
+				}
 			}
 			// InstantiatorStrategy.
 			return fallbackStrategy.newInstantiatorOf(type);
