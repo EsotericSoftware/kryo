@@ -63,7 +63,7 @@ public class UnsafeUtil {
 		long tmpCharArrayBaseOffset = 0;
 
 		try {
-			if (!Util.isAndroid) {
+			if (!Util.IS_ANDROID) {
 				java.lang.reflect.Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
 				field.setAccessible(true);
 				tmpUnsafe = (sun.misc.Unsafe)field.get(null);

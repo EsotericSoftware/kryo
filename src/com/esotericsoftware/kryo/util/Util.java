@@ -26,7 +26,12 @@ import java.util.concurrent.ConcurrentHashMap;
 /** A few utility methods, mostly for private use.
  * @author Nathan Sweet <misc@n4te.com> */
 public class Util {
-	static public boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
+
+	static public final boolean IS_ANDROID = "Dalvik".equals(System.getProperty("java.vm.name"));
+
+	/** @deprecated Use {@link #IS_ANDROID} instead. */
+	@Deprecated
+	static public boolean isAndroid = IS_ANDROID;
 
 	private static final ConcurrentHashMap<String, Boolean> classAvailabilities = new ConcurrentHashMap<String, Boolean>();
 

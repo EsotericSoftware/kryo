@@ -1261,7 +1261,7 @@ public class Kryo {
 		}
 
 		public ObjectInstantiator newInstantiatorOf (final Class type) {
-			if (!Util.isAndroid) {
+			if (!Util.IS_ANDROID) {
 				// Use ReflectASM if the class is not a non-static member class.
 				Class enclosingType = type.getEnclosingClass();
 				boolean isNonStaticMemberClass = enclosingType != null && type.isMemberClass()

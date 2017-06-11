@@ -218,7 +218,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			validTransientFields = buildValidFields(true, allFields, context, useAsm);
 
 			// Use ReflectASM for any public fields.
-			if (config.isUseAsm() && !Util.isAndroid && Modifier.isPublic(type.getModifiers()) && useAsm.indexOf(1) != -1) {
+			if (config.isUseAsm() && !Util.IS_ANDROID && Modifier.isPublic(type.getModifiers()) && useAsm.indexOf(1) != -1) {
 				try {
 					access = FieldAccess.get(type);
 				} catch (RuntimeException ignored) {
