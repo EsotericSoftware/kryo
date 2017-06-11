@@ -99,8 +99,8 @@
 					<artifactId>maven-compiler-plugin</artifactId>
 					<inherited>true</inherited>
 					<configuration>
-						<source>1.5</source>
-						<target>1.5</target>
+						<source>1.7</source>
+						<target>1.7</target>
 						<encoding>utf-8</encoding>
 						<testExcludes>
 							<testExclude>${test.exclude}</testExclude>
