@@ -24,24 +24,49 @@ import static com.esotericsoftware.minlog.Log.*;
 /** Configuration for TaggedFieldSerializer instances. */
 public class TaggedFieldSerializerConfig extends FieldSerializerConfig {
 
-	/** ignore unknown field tags when using TaggedFieldSerializer. */
-	private boolean ignoreUnknownTags = false;
+	private boolean skipUnknownTags = false;
 
-	/** Tells Kryo, if should ignore unknown field tags when using TaggedFieldSerializer. Already existing serializer instances are
-	 * not affected by this setting.
-	 *
+	/** Set whether associated TaggedFieldSerializers should attempt to skip reading the data of unknown tags, rather
+	 * than throwing a KryoException. Data can be skipped if it was tagged with {@link TaggedFieldSerializer.Tag#annexed()}
+	 * set true. This enables forward compatibility.
 	 * <p>
-	 * By default, Kryo will throw KryoException if encounters unknown field tags.
+	 * This setting is false by default.
 	 * </p>
 	 *
-	 * @param ignoreUnknownTags if true, unknown field tags will be ignored. Otherwise KryoException will be thrown */
-	public void setIgnoreUnknownTags (boolean ignoreUnknownTags) {
-		this.ignoreUnknownTags = ignoreUnknownTags;
-		if (TRACE) trace("kryo.TaggedFieldSerializerConfig", "setIgnoreUnknownTags: " + ignoreUnknownTags);
+	 * @param skipUnknownTags If true, unknown field tags will be skipped, with the assumption that they are future
+	 *                          tagged values with {@link TaggedFieldSerializer.Tag#annexed()} set true. If false
+	 *                          KryoException will be thrown whenever unknown tags are encountered. */
+	public void setSkipUnknownTags (boolean skipUnknownTags) {
+		this.skipUnknownTags = skipUnknownTags;
+		if (TRACE) trace("kryo.TaggedFieldSerializerConfig", "setSkipUnknownTags: " + skipUnknownTags);
 	}
 
+	/**
+	 * Whether the TaggedFieldSerializers should attempt to skip reading the data of unknown tags, rather than
+	 * throwing a KryoException. The data may only be skipped if the later version of the application which created the
+	 * data set those unknown tags with {@link TaggedFieldSerializer.Tag#annexed()} true.
+	 * See {@link #setSkipUnknownTags(boolean)}.
+	 */
+	public boolean isSkipUnknownTags () {
+		return skipUnknownTags;
+	}
+
+	/**
+	 * @deprecated The {@code ignoreUnknownTags} feature is deprecated and the functionality is disabled, as it is an
+	 * invalid means of preserving forward compatibility. See {@link #setSkipUnknownTags(boolean)} for an alternate means.
+	 * @param ignoreUnknownTags This setting is now ignored.
+	 */
+	@Deprecated
+	public void setIgnoreUnknownTags (boolean ignoreUnknownTags) {
+	}
+
+	/**
+	 * @deprecated See {@link #setIgnoreUnknownTags(boolean)} for information.
+	 * @return Always returns false, as this feature has been disabled.
+	 */
+	@Deprecated
 	public boolean isIgnoreUnknownTags () {
-		return ignoreUnknownTags;
+		return false;
 	}
 
 	@Override

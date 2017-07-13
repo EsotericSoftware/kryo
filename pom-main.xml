@@ -114,6 +114,12 @@
 							<method>*isClousre*</method>
 							<differenceType>7002</differenceType>
 						</difference>
+						<!-- Nonbreaking (adding a method with default value to an annotation) -->
+						<difference>
+							<className>com/esotericsoftware/kryo/serializers/TaggedFieldSerializer$Tag</className>
+							<method>boolean annexed()</method>
+							<differenceType>7012</differenceType>
+						</difference>
 					</ignored>
 				</configuration>
 			</plugin>
