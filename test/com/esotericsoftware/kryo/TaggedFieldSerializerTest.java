@@ -96,10 +96,12 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		kryo.register(TestClass.class);
 		kryo.register(Object[].class);
 		TaggedFieldSerializer<FutureClass> futureSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
-		futureSerializer.getConfig().setSkipUnknownTags(true);
+		futureSerializer.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
+		futureSerializer.updateFields();
 		kryo.register(FutureClass.class, futureSerializer);
-		TaggedFieldSerializer futureSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
-		futureSerializer.getConfig().setSkipUnknownTags(true);
+		TaggedFieldSerializer<FutureClass2> futureSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
+		futureSerializer2.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
+		futureSerializer2.updateFields();
 		kryo.register(FutureClass2.class, futureSerializer2);
 
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -109,11 +111,13 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		byte[] futureArrayData = outStream.toByteArray();
 
 		TaggedFieldSerializer<FutureClass> presentSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
-		presentSerializer.getConfig().setSkipUnknownTags(true);
+		presentSerializer.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
+		presentSerializer.updateFields();
 		presentSerializer.removeField("futureString"); // simulate past version of application
 		kryo.register(FutureClass.class, presentSerializer);
 		TaggedFieldSerializer<FutureClass2> presentSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
-		presentSerializer2.getConfig().setSkipUnknownTags(true);
+		presentSerializer2.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
+		presentSerializer2.updateFields();
 		presentSerializer2.removeField("zzz"); // simulate past version of application
 		presentSerializer2.removeField("fc2"); // simulate past version of application
 		kryo.register(FutureClass2.class, presentSerializer2);
@@ -186,7 +190,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		@Tag(1) public FutureClass2 futureClass2;
 		@Tag(value = 2, annexed = true) public String futureString = "unchanged";
 
-		@Override
+		
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -227,7 +231,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		@Tag(value = 3, annexed = true) public int zzz = 123;
 		@Tag(value = 4, annexed = true) public FutureClass2 fc2;
 
-		@Override
+		
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;

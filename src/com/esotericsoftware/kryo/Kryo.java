@@ -22,7 +22,6 @@ package com.esotericsoftware.kryo;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
@@ -104,15 +103,15 @@ import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.serializers.OptionalSerializers;
 import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
-import com.esotericsoftware.reflectasm.ConstructorAccess;
 
 /** Maps classes to serializers so object graphs can be serialized automatically.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class Kryo {
 	static public final byte NULL = 0;
 	static public final byte NOT_NULL = 1;
@@ -121,14 +120,14 @@ public class Kryo {
 	static private final int NO_REF = -2;
 
 	private SerializerFactory defaultSerializer = new ReflectionSerializerFactory(FieldSerializer.class);
-	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(33);
+	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(53);
 	private final int lowPriorityDefaultSerializerCount;
 
 	private final ClassResolver classResolver;
 	private int nextRegisterID;
 	private ClassLoader classLoader = getClass().getClassLoader();
 	private InstantiatorStrategy strategy = new DefaultInstantiatorStrategy();
-	private boolean registrationRequired;
+	private boolean registrationRequired = true;
 	private boolean warnUnregisteredClasses;
 
 	private int depth, maxDepth = Integer.MAX_VALUE;
@@ -224,6 +223,7 @@ public class Kryo {
 	}
 
 	// --- Default serializers ---
+
 	/** Sets the serializer factory to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an
 	 * object's type. Default is {@link ReflectionSerializerFactory} with {@link FieldSerializer}.
 	 * @see #newDefaultSerializer(Class) */
@@ -641,11 +641,11 @@ public class Kryo {
 	boolean writeReferenceOrNull (Output output, Object object, boolean mayBeNull) {
 		if (object == null) {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", null);
-			output.writeVarInt(Kryo.NULL, true);
+			output.writeInt(Kryo.NULL, true);
 			return true;
 		}
 		if (!referenceResolver.useReferences(object.getClass())) {
-			if (mayBeNull) output.writeVarInt(Kryo.NOT_NULL, true);
+			if (mayBeNull) output.writeInt(Kryo.NOT_NULL, true);
 			return false;
 		}
 
@@ -655,13 +655,13 @@ public class Kryo {
 		// If not the first time encountered, only write reference ID.
 		if (id != -1) {
 			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object));
-			output.writeVarInt(id + 2, true); // + 2 because 0 and 1 are used for NULL and NOT_NULL.
+			output.writeInt(id + 2, true); // + 2 because 0 and 1 are used for NULL and NOT_NULL.
 			return true;
 		}
 
 		// Otherwise write NOT_NULL and then the object bytes.
 		id = referenceResolver.addWrittenObject(object);
-		output.writeVarInt(NOT_NULL, true);
+		output.writeInt(NOT_NULL, true);
 		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object));
 		return false;
 	}
@@ -810,7 +810,7 @@ public class Kryo {
 		boolean referencesSupported = referenceResolver.useReferences(type);
 		int id;
 		if (mayBeNull) {
-			id = input.readVarInt(true);
+			id = input.readInt(true);
 			if (id == Kryo.NULL) {
 				if (TRACE || (DEBUG && depth == 1)) log("Read", null);
 				readObject = null;
@@ -825,7 +825,7 @@ public class Kryo {
 				readReferenceIds.add(NO_REF);
 				return readReferenceIds.size;
 			}
-			id = input.readVarInt(true);
+			id = input.readInt(true);
 		}
 		if (id == NOT_NULL) {
 			// First time object has been encountered.
@@ -1015,14 +1015,18 @@ public class Kryo {
 		return classLoader;
 	}
 
-	/** If true, an exception is thrown when an unregistered class is encountered. Default is false.
+	/** If true, an exception is thrown when an unregistered class is encountered. Default is true.
 	 * <p>
 	 * If false, when an unregistered class is encountered, its fully qualified class name will be serialized and the
 	 * {@link #addDefaultSerializer(Class, Class) default serializer} for the class used to serialize the object. Subsequent
 	 * appearances of the class within the same object graph are serialized as an int id.
 	 * <p>
 	 * Registered classes are serialized as an int id, avoiding the overhead of serializing the class name, but have the drawback
-	 * of needing to know the classes to be serialized up front. */
+	 * of needing to know the classes to be serialized up front.
+	 * <p>
+	 * Requiring class registeration controls which classes Kryo will instantiate. When false, during deserialization Kryo will
+	 * invoke the constructor for whatever class name is found in the data. It can be a security problem to allow arbitrary classes
+	 * to be instantiated (and later finalized). */
 	public void setRegistrationRequired (boolean registrationRequired) {
 		this.registrationRequired = registrationRequired;
 		if (TRACE) trace("kryo", "Registration required: " + registrationRequired);
@@ -1032,15 +1036,13 @@ public class Kryo {
 		return registrationRequired;
 	}
 
-	/** If true, kryo writes a warn log telling about the classes unregistered. Default is false.
-	 * <p>
-	 * If false, no log are written when unregistered classes are encountered. */
+	/** If true, kryo writes a warn log entry when an unregistered class is encountered. Default is false. */
 	public void setWarnUnregisteredClasses (boolean warnUnregisteredClasses) {
 		this.warnUnregisteredClasses = warnUnregisteredClasses;
 		if (TRACE) trace("kryo", "Warn unregistered classes: " + warnUnregisteredClasses);
 	}
 
-	public boolean isWarnUnregisteredClasses () {
+	public boolean getWarnUnregisteredClasses () {
 		return warnUnregisteredClasses;
 	}
 
@@ -1166,6 +1168,10 @@ public class Kryo {
 		return type.getName().indexOf('/') >= 0;
 	}
 
+	public GenericsResolver getGenericsResolver () {
+		return genericsResolver;
+	}
+
 	static final class DefaultSerializerEntry {
 		final Class type;
 		final SerializerFactory serializerFactory;
@@ -1175,95 +1181,4 @@ public class Kryo {
 			this.serializerFactory = serializerFactory;
 		}
 	}
-
-	public GenericsResolver getGenericsResolver () {
-		return genericsResolver;
-	}
-
-	static public class DefaultInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
-		private InstantiatorStrategy fallbackStrategy;
-
-		public DefaultInstantiatorStrategy () {
-		}
-
-		public DefaultInstantiatorStrategy (InstantiatorStrategy fallbackStrategy) {
-			this.fallbackStrategy = fallbackStrategy;
-		}
-
-		public void setFallbackInstantiatorStrategy (final InstantiatorStrategy fallbackStrategy) {
-			this.fallbackStrategy = fallbackStrategy;
-		}
-
-		public InstantiatorStrategy getFallbackInstantiatorStrategy () {
-			return fallbackStrategy;
-		}
-
-		public ObjectInstantiator newInstantiatorOf (final Class type) {
-			if (!Util.isAndroid) {
-				// Use ReflectASM if the class is not a non-static member class.
-				Class enclosingType = type.getEnclosingClass();
-				boolean isNonStaticMemberClass = enclosingType != null && type.isMemberClass()
-					&& !Modifier.isStatic(type.getModifiers());
-				if (!isNonStaticMemberClass) {
-					try {
-						final ConstructorAccess access = ConstructorAccess.get(type);
-						return new ObjectInstantiator() {
-							public Object newInstance () {
-								try {
-									return access.newInstance();
-								} catch (Exception ex) {
-									throw new KryoException("Error constructing instance of class: " + className(type), ex);
-								}
-							}
-						};
-					} catch (Exception ignored) {
-					}
-				}
-			}
-			// Reflection.
-			try {
-				Constructor ctor;
-				try {
-					ctor = type.getConstructor((Class[])null);
-				} catch (Exception ex) {
-					ctor = type.getDeclaredConstructor((Class[])null);
-					ctor.setAccessible(true);
-				}
-				final Constructor constructor = ctor;
-				return new ObjectInstantiator() {
-					public Object newInstance () {
-						try {
-							return constructor.newInstance();
-						} catch (Exception ex) {
-							throw new KryoException("Error constructing instance of class: " + className(type), ex);
-						}
-					}
-				};
-			} catch (Exception ignored) {
-			}
-			if (fallbackStrategy == null) {
-				if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()))
-					throw new KryoException("Class cannot be created (non-static member class): " + className(type));
-				else {
-					StringBuilder errorMessageSb = new StringBuilder(
-						"Class cannot be created (missing no-arg constructor): " + className(type));
-					if (type.getSimpleName().equals("")) {
-						errorMessageSb
-							.append("\n\tThis is an anonymous class, which is not serializable by default in Kryo. Possible solutions: ")
-							.append("1. Remove uses of anonymous classes, including double brace initialization, from the containing ")
-							.append(
-								"class. This is the safest solution, as anonymous classes don't have predictable names for serialization.")
-							.append("\n\t2. Register a FieldSerializer for the containing class and call ")
-							.append(
-								"FieldSerializer#setIgnoreSyntheticFields(false) on it. This is not safe but may be sufficient temporarily. ")
-							.append("Use at your own risk.");
-					}
-					throw new KryoException(errorMessageSb.toString());
-				}
-			}
-			// InstantiatorStrategy.
-			return fallbackStrategy.newInstantiatorOf(type);
-		}
-	}
-
 }

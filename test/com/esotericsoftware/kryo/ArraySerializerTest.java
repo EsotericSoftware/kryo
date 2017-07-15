@@ -21,7 +21,7 @@ package com.esotericsoftware.kryo;
 
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
 
-/** @author Nathan Sweet <misc@n4te.com> */
+/** @author Nathan Sweet */
 public class ArraySerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
@@ -43,7 +43,8 @@ public class ArraySerializerTest extends KryoTestCase {
 		roundTrip(13, new int[][][] {{{1}, {2}}, {{100}, {4}}});
 		roundTrip(12, new String[] {"11", "2222", "3", "4"});
 		roundTrip(11, new String[] {"11", "2222", null, "4"});
-		roundTrip(28, new Object[] {new String[] {"11", "2222", null, "4"}, new int[] {1, 2, 3, 4}, new int[][] {{1, 2}, {100, 4}}});
+		roundTrip(28,
+			new Object[] {new String[] {"11", "2222", null, "4"}, new int[] {1, 2, 3, 4}, new int[][] {{1, 2}, {100, 4}}});
 
 		ObjectArraySerializer serializer = new ObjectArraySerializer(kryo, String[].class);
 		kryo.register(String[].class, serializer);

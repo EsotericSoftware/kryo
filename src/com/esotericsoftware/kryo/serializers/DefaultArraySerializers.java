@@ -33,7 +33,7 @@ import com.esotericsoftware.kryo.io.Output;
 
 /** Contains many serializer classes for specific array types that are provided by {@link Kryo#addDefaultSerializer(Class, Class)
  * default}.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class DefaultArraySerializers {
 	static public class ByteArraySerializer extends Serializer<byte[]> {
 		{
@@ -42,15 +42,15 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, byte[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeVarInt(object.length + 1, true);
+			output.writeInt(object.length + 1, true);
 			output.writeBytes(object);
 		}
 
 		public byte[] read (Kryo kryo, Input input, Class<byte[]> type) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readBytes(length - 1);
 		}
@@ -69,15 +69,15 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, int[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeVarInt(object.length + 1, true);
+			output.writeInt(object.length + 1, true);
 			output.writeInts(object, false);
 		}
 
 		public int[] read (Kryo kryo, Input input, Class<int[]> type) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readInts(length - 1, false);
 		}
@@ -96,15 +96,15 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, float[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeVarInt(object.length + 1, true);
+			output.writeInt(object.length + 1, true);
 			output.writeFloats(object);
 		}
 
 		public float[] read (Kryo kryo, Input input, Class<float[]> type) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readFloats(length - 1);
 		}
@@ -123,15 +123,15 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, long[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeVarInt(object.length + 1, true);
+			output.writeInt(object.length + 1, true);
 			output.writeLongs(object, false);
 		}
 
 		public long[] read (Kryo kryo, Input input, Class<long[]> type) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readLongs(length - 1, false);
 		}
@@ -150,15 +150,15 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, short[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeVarInt(object.length + 1, true);
+			output.writeInt(object.length + 1, true);
 			output.writeShorts(object);
 		}
 
 		public short[] read (Kryo kryo, Input input, Class<short[]> type) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readShorts(length - 1);
 		}
@@ -177,15 +177,15 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, char[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeVarInt(object.length + 1, true);
+			output.writeInt(object.length + 1, true);
 			output.writeChars(object);
 		}
 
 		public char[] read (Kryo kryo, Input input, Class<char[]> type) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readChars(length - 1);
 		}
@@ -204,15 +204,15 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, double[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeVarInt(object.length + 1, true);
+			output.writeInt(object.length + 1, true);
 			output.writeDoubles(object);
 		}
 
 		public double[] read (Kryo kryo, Input input, Class<double[]> type) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readDoubles(length - 1);
 		}
@@ -231,16 +231,16 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, boolean[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeVarInt(object.length + 1, true);
+			output.writeInt(object.length + 1, true);
 			for (int i = 0, n = object.length; i < n; i++)
 				output.writeBoolean(object[i]);
 		}
 
 		public boolean[] read (Kryo kryo, Input input, Class<boolean[]> type) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (length == NULL) return null;
 			boolean[] array = new boolean[--length];
 			for (int i = 0; i < length; i++)
@@ -262,10 +262,10 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, String[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeVarInt(object.length + 1, true);
+			output.writeInt(object.length + 1, true);
 			if (kryo.getReferences() && kryo.getReferenceResolver().useReferences(String.class)) {
 				Serializer serializer = kryo.getSerializer(String.class);
 				for (int i = 0, n = object.length; i < n; i++)
@@ -277,7 +277,7 @@ public class DefaultArraySerializers {
 		}
 
 		public String[] read (Kryo kryo, Input input, Class<String[]> type) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (length == NULL) return null;
 			String[] array = new String[--length];
 			if (kryo.getReferences() && kryo.getReferenceResolver().useReferences(String.class)) {
@@ -318,14 +318,13 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, Object[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeVarInt(object.length + 1, true);
+			output.writeInt(object.length + 1, true);
 			Class elementClass = object.getClass().getComponentType();
 			if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers())) {
 				Serializer elementSerializer = kryo.getSerializer(elementClass);
-// if(generics!=null)
 				elementSerializer.setGenerics(kryo, generics);
 				for (int i = 0, n = object.length; i < n; i++) {
 					if (elementsCanBeNull)
@@ -334,47 +333,24 @@ public class DefaultArraySerializers {
 						kryo.writeObject(output, object[i], elementSerializer);
 				}
 			} else {
-// Generics genericsScope = null;
-// Class componentType = type;
-// while(componentType.getComponentType() != null) {
-// componentType = componentType.getComponentType();
-// }
-// TypeVariable[] typeVars = type.getComponentType().getTypeParameters();
-// if(typeVars != null && generics != null) {
-// if(TRACE) trace("kryo", "Creating a new GenericsScope for " + type.getName() + " with type vars: " +
-// Arrays.toString(typeVars));
-// genericsScope = new Generics();
-// int i = 0;
-// for(TypeVariable typeVar: typeVars) {
-// genericsScope.add(typeVar.getName(), generics[i]);
-// i++;
-// }
-// kryo.pushGenericsScope(type, genericsScope);
-// }
-//
 				for (int i = 0, n = object.length; i < n; i++) {
-					// Propagate generics?
 					if (object[i] != null) {
 						Serializer serializer = kryo.getSerializer(object[i].getClass());
 						serializer.setGenerics(kryo, generics);
 					}
 					kryo.writeClassAndObject(output, object[i]);
 				}
-
-// if(genericsScope != null)
-// kryo.popGenericsScope();
 			}
 		}
 
 		public Object[] read (Kryo kryo, Input input, Class<Object[]> type) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (length == NULL) return null;
 			Object[] object = (Object[])Array.newInstance(type.getComponentType(), length - 1);
 			kryo.reference(object);
 			Class elementClass = object.getClass().getComponentType();
 			if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers())) {
 				Serializer elementSerializer = kryo.getSerializer(elementClass);
-// if(generics!=null)
 				elementSerializer.setGenerics(kryo, generics);
 				for (int i = 0, n = object.length; i < n; i++) {
 					if (elementsCanBeNull)
@@ -384,7 +360,6 @@ public class DefaultArraySerializers {
 				}
 			} else {
 				for (int i = 0, n = object.length; i < n; i++) {
-					// Propagate generics
 					Registration registration = kryo.readClass(input);
 					if (registration != null) {
 						registration.getSerializer().setGenerics(kryo, generics);
@@ -418,7 +393,7 @@ public class DefaultArraySerializers {
 		}
 
 		public void setGenerics (Kryo kryo, Class[] generics) {
-			if (TRACE) trace("kryo", "setting generics for ObjectArraySerializer");
+			if (TRACE) trace("kryo", "Setting generics for ObjectArraySerializer.");
 			this.generics = generics;
 		}
 	}

@@ -38,7 +38,7 @@ public class Java8OptionalSerializersTest extends KryoTestCase {
 		supportsCopy = true;
 	}
 
-	@Override
+	
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();
@@ -87,7 +87,7 @@ public class Java8OptionalSerializersTest extends KryoTestCase {
 			this.maybe = maybe;
 		}
 
-		@Override
+		
 		public boolean equals (Object o) {
 			if (this == o) return true;
 			if (o == null || getClass() != o.getClass()) return false;
@@ -96,7 +96,7 @@ public class Java8OptionalSerializersTest extends KryoTestCase {
 
 		}
 
-		@Override
+		
 		public int hashCode () {
 			return Objects.hashCode(maybe);
 		}

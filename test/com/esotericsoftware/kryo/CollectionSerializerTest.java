@@ -30,7 +30,7 @@ import com.esotericsoftware.kryo.MapSerializerTest.KeyThatIsntComparable;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 
-/** @author Nathan Sweet <misc@n4te.com> */
+/** @author Nathan Sweet */
 public class CollectionSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
@@ -74,7 +74,7 @@ public class CollectionSerializerTest extends KryoTestCase {
 		roundTrip(9, set);
 
 		kryo.register(TreeSetSubclass.class);
-		set = new TreeSetSubclass<Integer>();
+		set = new TreeSetSubclass();
 		set.add(12);
 		set.add(63);
 		set.add(34);

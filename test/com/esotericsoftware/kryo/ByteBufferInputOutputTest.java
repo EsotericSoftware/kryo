@@ -14,7 +14,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		boolean exceptionTriggered = false;
 		try {
 			for (int i = 0; i < 10; i++) {
-				outputBuffer.writeVarInt(1234, true);
+				outputBuffer.writeInt(1234, true);
 			}
 		} catch (KryoException exception) {
 			exceptionTriggered = true;
@@ -26,7 +26,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		exceptionTriggered = false;
 		try {
 			for (int i = 0; i < 10; i++) {
-				outputBuffer.writeVarLong(1234L, true);
+				outputBuffer.writeLong(1234L, true);
 			}
 		} catch (KryoException exception) {
 			assertEquals(outputBuffer.order(), outputBuffer.getByteBuffer().order());
@@ -107,7 +107,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 	public void testByteBufferByteOrderTheSameAfterGrowingForVarInt () {
 		final ByteBufferOutput outputBuffer = new ByteBufferOutput(1, -1);
 		final ByteOrder byteOrder = outputBuffer.order();
-		outputBuffer.writeVarInt(300, true);
+		outputBuffer.writeInt(300, true);
 		assertEquals(byteOrder, outputBuffer.order());
 	}
 }

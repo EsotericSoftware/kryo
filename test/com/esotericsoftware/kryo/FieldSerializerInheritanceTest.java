@@ -65,7 +65,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		((TestDefault)testExtended).a = "someDefaultValue";
 		testExtended.a = "someExtendedValue";
 		FieldSerializerFactory factory = new FieldSerializerFactory();
-		factory.getConfig().setCachedFieldNameStrategy(FieldSerializer.CachedFieldNameStrategy.EXTENDED);
+		factory.getConfig().setExtendedFieldNames(true);
 		kryo.setDefaultSerializer(factory);
 		kryo.register(TestExtended.class);
 
@@ -102,7 +102,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 			this.a = a;
 		}
 
-		@Override
+		
 		public boolean equals (Object o) {
 			if (this == o) return true;
 			if (o == null || getClass() != o.getClass()) return false;
@@ -113,7 +113,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 
 		}
 
-		@Override
+		
 		public int hashCode () {
 			return a != null ? a.hashCode() : 0;
 		}
@@ -130,7 +130,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 			this.a = a;
 		}
 
-		@Override
+		
 		public boolean equals (Object o) {
 			if (this == o) return true;
 			if (o == null || getClass() != o.getClass()) return false;
@@ -141,7 +141,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 			return a != null ? a.equals(that.a) : that.a == null;
 		}
 
-		@Override
+		
 		public int hashCode () {
 			return a != null ? a.hashCode() : 0;
 		}

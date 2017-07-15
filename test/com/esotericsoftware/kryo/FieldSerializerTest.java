@@ -41,10 +41,9 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
-import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
 
-/** @author Nathan Sweet <misc@n4te.com> */
+/** @author Nathan Sweet */
 public class FieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
@@ -79,7 +78,8 @@ public class FieldSerializerTest extends KryoTestCase {
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(DefaultTypes.class);
 		serializer.getField("hasStringField").setCanBeNull(false);
 		roundTrip(79, test);
-		serializer.setFixedFieldTypes(true);
+		serializer.getFieldSerializerConfig().setFixedFieldTypes(true);
+		serializer.updateFields();
 		serializer.getField("hasStringField").setCanBeNull(false);
 		roundTrip(78, test);
 	}
@@ -123,8 +123,8 @@ public class FieldSerializerTest extends KryoTestCase {
 		serializer.removeField("y");
 		kryo.register(IsGeneric.class, serializer);
 
-		IsGeneric<IsGeneric<DefaultTypes>> test = new IsGeneric<IsGeneric<DefaultTypes>>();
-		test.item = new IsGeneric<DefaultTypes>();
+		IsGeneric<IsGeneric<DefaultTypes>> test = new IsGeneric();
+		test.item = new IsGeneric();
 
 		try {
 			roundTrip(5, test);
@@ -168,6 +168,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
 
 		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
 		roundTrip(140, test);
 
 		C c = new C();
@@ -193,6 +194,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d.e.f.a = c.a;
 
 		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
 		roundTrip(63, c);
 		C c2 = (C)object2;
 		assertTrue(c2.a == c2.d.e.f.a);
@@ -203,7 +205,6 @@ public class FieldSerializerTest extends KryoTestCase {
 		assertTrue(c2.a == c2.d.e.f.a);
 
 		kryo = new Kryo();
-		kryo.setRegistrationRequired(true);
 		kryo.register(A.class);
 		kryo.register(B.class);
 		kryo.register(C.class);
@@ -246,7 +247,6 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		Kryo kryoWithoutF = new Kryo();
 		kryoWithoutF.setReferences(false);
-		kryoWithoutF.setRegistrationRequired(true);
 		kryoWithoutF.register(A.class);
 		kryoWithoutF.register(B.class);
 		kryoWithoutF.register(C.class);
@@ -266,7 +266,6 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(D.class);
 		kryo.register(E.class);
 		kryo.register(F.class);
-		kryo.setRegistrationRequired(true);
 
 		output.clear();
 		kryo.writeClassAndObject(output, c);
@@ -302,7 +301,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(2, object1);
 
 		kryo.register(ComplexNoDefaultConstructor.class,
-			new FieldSerializer<ComplexNoDefaultConstructor, FieldSerializerConfig>(kryo, ComplexNoDefaultConstructor.class) {
+			new FieldSerializer<ComplexNoDefaultConstructor>(kryo, ComplexNoDefaultConstructor.class) {
 				public void write (Kryo kryo, Output output, ComplexNoDefaultConstructor object) {
 					output.writeString(object.name);
 					super.write(kryo, output, object);
@@ -332,20 +331,22 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	public void testDefaultSerializerAnnotation () {
 		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
 		roundTrip(82, new HasDefaultSerializerAnnotation(123));
 	}
 
 	public void testOptionalAnnotation () {
 		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
 		roundTrip(72, new HasOptionalAnnotation());
 		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
 		kryo.getContext().put("smurf", null);
 		roundTrip(73, new HasOptionalAnnotation());
 	}
 
 	public void testCyclicGrgaph () throws Exception {
 		kryo = new Kryo();
-		kryo.setRegistrationRequired(true);
 		kryo.register(DefaultTypes.class);
 		kryo.register(byte[].class);
 		DefaultTypes test = new DefaultTypes();
@@ -417,7 +418,6 @@ public class FieldSerializerTest extends KryoTestCase {
 		factory.getConfig().setOptimizedGenerics(optimizedGenerics);
 		kryo.setDefaultSerializer(factory);
 		kryo.setReferences(true);
-		kryo.setRegistrationRequired(true);
 		kryo.register(HasGenerics.class);
 		kryo.register(ArrayList.class);
 		kryo.register(ArrayList[].class);
@@ -428,7 +428,8 @@ public class FieldSerializerTest extends KryoTestCase {
 		// objects directly.
 		FieldSerializer fieldSerializer;
 		fieldSerializer = (FieldSerializer)kryo.getSerializer(HasGenerics.class);
-		fieldSerializer.setOptimizedGenerics(optimizedGenerics);
+		fieldSerializer.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
+		fieldSerializer.updateFields();
 
 		HasGenerics test = new HasGenerics();
 		test.list1 = new ArrayList();
@@ -482,14 +483,16 @@ public class FieldSerializerTest extends KryoTestCase {
 		objectWithTransients1.anotherField3 = "Field2";
 
 		FieldSerializer ser = (FieldSerializer)kryo.getSerializer(HasTransients.class);
-		ser.setCopyTransient(false);
+		ser.getFieldSerializerConfig().setCopyTransient(false);
+		ser.updateFields();
 
 		HasTransients objectWithTransients3 = kryo.copy(objectWithTransients1);
 		assertTrue("Objects should be different if copy does not include transient fields",
 			!objectWithTransients3.equals(objectWithTransients1));
 		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
 
-		ser.setCopyTransient(true);
+		ser.getFieldSerializerConfig().setCopyTransient(true);
+		ser.updateFields();
 		HasTransients objectWithTransients2 = kryo.copy(objectWithTransients1);
 		assertEquals("Objects should be equal if copy includes transient fields", objectWithTransients2, objectWithTransients1);
 	}
@@ -510,7 +513,8 @@ public class FieldSerializerTest extends KryoTestCase {
 			!objectWithTransients3.equals(objectWithTransients1));
 		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
 
-		ser.setCopyTransient(true);
+		ser.getFieldSerializerConfig().setCopyTransient(true);
+		ser.updateFields();
 		HasTransients objectWithTransients2 = kryo.copy(objectWithTransients1);
 		assertEquals("Objects should be equal if copy includes transient fields", objectWithTransients2, objectWithTransients1);
 	}
@@ -527,8 +531,9 @@ public class FieldSerializerTest extends KryoTestCase {
 		Input input;
 		byte[] outBytes;
 
-		FieldSerializer<HasTransients, ?> ser = (FieldSerializer)kryo.getSerializer(HasTransients.class);
-		ser.setSerializeTransient(false);
+		FieldSerializer<HasTransients> ser = (FieldSerializer)kryo.getSerializer(HasTransients.class);
+		ser.getFieldSerializerConfig().setSerializeTransient(false);
+		ser.updateFields();
 
 		outputStream = new ByteArrayOutputStream();
 		output = new Output(outputStream);
@@ -542,7 +547,8 @@ public class FieldSerializerTest extends KryoTestCase {
 			!objectWithTransients3.equals(objectWithTransients1));
 		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
 
-		ser.setSerializeTransient(true);
+		ser.getFieldSerializerConfig().setSerializeTransient(true);
+		ser.updateFields();
 
 		outputStream = new ByteArrayOutputStream();
 		output = new Output(outputStream);
@@ -571,7 +577,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		Input input;
 		byte[] outBytes;
 
-		FieldSerializer<HasTransients, ?> ser = (FieldSerializer)kryo.getSerializer(HasTransients.class);
+		FieldSerializer<HasTransients> ser = (FieldSerializer)kryo.getSerializer(HasTransients.class);
 		outputStream = new ByteArrayOutputStream();
 		output = new Output(outputStream);
 		ser.write(kryo, output, objectWithTransients1);
@@ -584,7 +590,8 @@ public class FieldSerializerTest extends KryoTestCase {
 			!objectWithTransients3.equals(objectWithTransients1));
 		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
 
-		ser.setSerializeTransient(true);
+		ser.getFieldSerializerConfig().setSerializeTransient(true);
+		ser.updateFields();
 
 		outputStream = new ByteArrayOutputStream();
 		output = new Output(outputStream);
@@ -605,12 +612,12 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(ArrayList.class);
 		kryo.register(AnnotatedFields.class);
 		AnnotatedFields obj1 = new AnnotatedFields();
-		obj1.map = new HashMap<String, int[]>();
+		obj1.map = new HashMap();
 		obj1.map.put("key1", new int[] {1, 2, 3});
 		obj1.map.put("key2", new int[] {3, 4, 5});
 		obj1.map.put("key3", null);
 
-		obj1.collection = new ArrayList<long[]>();
+		obj1.collection = new ArrayList();
 		obj1.collection.add(new long[] {1, 2, 3});
 
 		roundTrip(31, obj1);
@@ -883,8 +890,8 @@ public class FieldSerializerTest extends KryoTestCase {
 			final int prime = 31;
 			int result = 1;
 			result = prime * result + anotherField2;
-			result = prime * result + ((anotherField3 == null) ? 0 : anotherField3.hashCode());
-			result = prime * result + ((transientField1 == null) ? 0 : transientField1.hashCode());
+			result = prime * result + (anotherField3 == null ? 0 : anotherField3.hashCode());
+			result = prime * result + (transientField1 == null ? 0 : transientField1.hashCode());
 			return result;
 		}
 
@@ -917,8 +924,8 @@ public class FieldSerializerTest extends KryoTestCase {
 			final int prime = 31;
 			int result = 1;
 			result = prime * result + anotherField1;
-			result = prime * result + ((anotherField2 == null) ? 0 : anotherField2.hashCode());
-			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			result = prime * result + (anotherField2 == null ? 0 : anotherField2.hashCode());
+			result = prime * result + (name == null ? 0 : name.hashCode());
 			return result;
 		}
 
@@ -1043,9 +1050,9 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	static public class HasGenerics {
 		ArrayList<Integer> list1;
-		List<List<?>> list2 = new ArrayList<List<?>>();
-		List<?> list3 = new ArrayList();
-		ArrayList<?> list4 = new ArrayList();
+		List<List> list2 = new ArrayList();
+		List list3 = new ArrayList();
+		ArrayList list4 = new ArrayList();
 		ArrayList<String> list5;
 		HashMap<String, ArrayList<Integer>> map1;
 
@@ -1141,7 +1148,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		private int y;
 		private int z;
 
-		@Override
+		
 		public boolean equals (Object o) {
 			if (this == o) return true;
 			if (!(o instanceof IsGeneric)) return false;

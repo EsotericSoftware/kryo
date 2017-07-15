@@ -37,7 +37,7 @@ import junit.framework.TestCase;
 
 /** Convenience methods for round tripping objects.
  * 
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 abstract public class KryoTestCase extends TestCase {
 	protected Kryo kryo;
 	protected Output output;
@@ -62,8 +62,6 @@ abstract public class KryoTestCase extends TestCase {
 
 		kryo = new Kryo();
 		kryo.setReferences(false);
-		kryo.setRegistrationRequired(true);
-		// kryo.useAsmBackend(false);
 	}
 
 	public <T> T roundTrip (int length, T object1) {

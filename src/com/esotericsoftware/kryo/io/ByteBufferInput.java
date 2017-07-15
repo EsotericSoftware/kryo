@@ -40,8 +40,6 @@ import com.esotericsoftware.kryo.util.Util;
 public class ByteBufferInput extends Input {
 	protected ByteBuffer niobuffer;
 
-	protected boolean varIntsEnabled = true;
-
 	/* Default byte order is BIG_ENDIAN to be compatible to the base class */
 	ByteOrder byteOrder = ByteOrder.BIG_ENDIAN;
 
@@ -354,13 +352,6 @@ public class ByteBufferInput extends Input {
 	}
 
 	public int readInt (boolean optimizePositive) throws KryoException {
-		if (varIntsEnabled)
-			return readVarInt(optimizePositive);
-		else
-			return readInt();
-	}
-
-	public int readVarInt (boolean optimizePositive) throws KryoException {
 		niobuffer.position(position);
 		if (require(1) < 5) return readInt_slow(optimizePositive);
 		position++;
@@ -705,16 +696,7 @@ public class ByteBufferInput extends Input {
 		return niobuffer.getLong();
 	}
 
-	/** {@inheritDoc} */
 	public long readLong (boolean optimizePositive) throws KryoException {
-		if (varIntsEnabled)
-			return readVarLong(optimizePositive);
-		else
-			return readLong();
-	}
-
-	/** {@inheritDoc} */
-	public long readVarLong (boolean optimizePositive) throws KryoException {
 		niobuffer.position(position);
 		if (require(1) < 9) return readLong_slow(optimizePositive);
 		position++;
@@ -929,18 +911,5 @@ public class ByteBufferInput extends Input {
 
 	private boolean isNativeOrder () {
 		return byteOrder == nativeOrder;
-	}
-
-	/** Return current setting for variable length encoding of integers
-	 * @return current setting for variable length encoding of integers */
-	public boolean getVarIntsEnabled () {
-		return varIntsEnabled;
-	}
-
-	/** Controls if a variable length encoding for integer types should be used when serializers suggest it.
-	 * 
-	 * @param varIntsEnabled */
-	public void setVarIntsEnabled (boolean varIntsEnabled) {
-		this.varIntsEnabled = varIntsEnabled;
 	}
 }

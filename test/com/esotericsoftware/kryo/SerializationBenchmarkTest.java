@@ -89,31 +89,26 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 // }
 
 	public void testJavaSerialization () throws Exception {
-		// Warm-up phase: Perform 100000 iterations
 		runJavaSerialization(1, WARMUP_ITERATIONS, false);
 		runJavaSerialization(RUN_CNT, ITER_CNT, true);
 	}
 
 	public void testJavaSerializationWithoutTryCatch () throws Exception {
-		// Warm-up phase: Perform 100000 iterations
 		runJavaSerializationWithoutTryCatch(1, WARMUP_ITERATIONS, false);
 		runJavaSerializationWithoutTryCatch(RUN_CNT, ITER_CNT, true);
 	}
 
 	public void testKryoSerialization () throws Exception {
-		// Warm-up phase: Perform 100000 iterations
 		runKryoSerialization(1, WARMUP_ITERATIONS, false);
 		runKryoSerialization(RUN_CNT, ITER_CNT, true);
 	}
 
 	public void testKryoSerializationUnmodified () throws Exception {
-		// Warm-up phase: Perform 100000 iterations
 		runKryoSerializationUmodified(1, WARMUP_ITERATIONS, false);
 		runKryoSerializationUmodified(RUN_CNT, ITER_CNT, true);
 	}
 
 	public void testKryoSerializationWithoutTryCatch () throws Exception {
-		// Warm-up phase: Perform 100000 iterations
 		runKryoSerializationWithoutTryCatch(1, WARMUP_ITERATIONS, false);
 		runKryoSerializationWithoutTryCatch(RUN_CNT, ITER_CNT, true);
 	}
@@ -232,6 +227,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 
 	private void runKryoSerialization (final int RUN_CNT, final int ITER_CNT, boolean outputResults) throws Exception {
 		Kryo marsh = new Kryo();
+		marsh.setRegistrationRequired(false);
 		marsh.register(SampleObject.class, 40);
 
 		long avgDur = 0;
@@ -289,6 +285,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 
 	private void runKryoSerializationUmodified (final int RUN_CNT, final int ITER_CNT, boolean outputResults) throws Exception {
 		Kryo marsh = new Kryo();
+		marsh.setRegistrationRequired(false);
 
 		long avgDur = 0;
 		long bestTime = Long.MAX_VALUE;
@@ -299,7 +296,6 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 			long start = System.nanoTime();
 
 			for (int j = 0; j < ITER_CNT; j++) {
-
 				Output kryoOut = null;
 
 				try {
@@ -347,6 +343,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	private void runKryoSerializationWithoutTryCatch (final int RUN_CNT, final int ITER_CNT, boolean outputResults)
 		throws Exception {
 		Kryo marsh = new Kryo();
+		marsh.setRegistrationRequired(false);
 		marsh.register(SampleObject.class, 40);
 
 		long avgDur = 0;
@@ -425,7 +422,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 
 		/** {@inheritDoc} */
-		@Override
+
 		public boolean equals (Object other) {
 			if (this == other) return true;
 
@@ -441,7 +438,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 
 		// Required by Kryo serialization.
-		@Override
+
 		public void read (Kryo kryo, Input in) {
 			intVal = kryo.readObject(in, Integer.class);
 			floatVal = kryo.readObject(in, Float.class);
@@ -452,7 +449,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 
 		// Required by Java Externalizable.
-		@Override
+
 		public void readExternal (ObjectInput in) throws IOException, ClassNotFoundException {
 			intVal = in.readInt();
 			floatVal = in.readFloat();
@@ -463,7 +460,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 
 		// Required by Kryo serialization.
-		@Override
+
 		public void write (Kryo kryo, Output out) {
 			kryo.writeObject(out, intVal);
 			kryo.writeObject(out, floatVal);
@@ -474,7 +471,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 
 		// Required by Java Externalizable.
-		@Override
+
 		public void writeExternal (ObjectOutput out) throws IOException {
 			out.writeInt(intVal);
 			out.writeFloat(floatVal);

@@ -38,7 +38,7 @@ import com.esotericsoftware.kryo.util.ObjectMap;
  * @see Serializer
  * @see FieldSerializer
  * @see KryoSerializable
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class JavaSerializer extends Serializer {
 	public void write (Kryo kryo, Output output, Object object) {
 		try {
@@ -81,8 +81,7 @@ public class JavaSerializer extends Serializer {
 			this.loader = kryo.getClassLoader();
 		}
 
-		@Override
-		protected Class<?> resolveClass (ObjectStreamClass desc) {
+		protected Class resolveClass (ObjectStreamClass desc) {
 			try {
 				return Class.forName(desc.getName(), false, loader);
 			} catch (ClassNotFoundException e) {

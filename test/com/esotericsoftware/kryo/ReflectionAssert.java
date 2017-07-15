@@ -64,7 +64,7 @@ class ReflectionAssert {
 	 *           implementing class. If <code>false</code>, it's only checked if both objects are a {@link List}, {@link Set} or
 	 *           {@link Map}. */
 	static void assertReflectionEquals (final Object one, final Object another, final boolean requireMatchingCollectionClasses) {
-		assertReflectionEquals(one, another, requireMatchingCollectionClasses, new IdentityHashMap<Object, Object>(), "");
+		assertReflectionEquals(one, another, requireMatchingCollectionClasses, new IdentityHashMap(), "");
 	}
 
 	// CHECKSTYLE:OFF
@@ -124,8 +124,7 @@ class ReflectionAssert {
 		}
 
 		if (Collection.class.isAssignableFrom(one.getClass())) {
-			assertCollectionEquals((Collection<?>)one, (Collection<?>)another, requireMatchingCollectionClasses, alreadyChecked,
-				path);
+			assertCollectionEquals((Collection)one, (Collection)another, requireMatchingCollectionClasses, alreadyChecked, path);
 			return;
 		}
 
@@ -143,7 +142,7 @@ class ReflectionAssert {
 			return;
 		}
 
-		Class<?> clazz = one.getClass();
+		Class clazz = one.getClass();
 		while (clazz != null) {
 			assertEqualDeclaredFields(clazz, one, another, requireMatchingCollectionClasses, alreadyChecked, path);
 			clazz = clazz.getSuperclass();
@@ -151,13 +150,13 @@ class ReflectionAssert {
 
 	} // CHECKSTYLE:ON
 
-	static private boolean isOnlyOneAssignable (final Class<?> checkedClazz, final Object one, final Object another) {
+	static private boolean isOnlyOneAssignable (final Class checkedClazz, final Object one, final Object another) {
 		return checkedClazz.isAssignableFrom(one.getClass()) && !checkedClazz.isAssignableFrom(another.getClass())
 			|| checkedClazz.isAssignableFrom(another.getClass()) && !checkedClazz.isAssignableFrom(one.getClass());
 	}
 
-	static private boolean oneIsAssignable (final Object one, final Object another, final Class<?>... checkedClazzes) {
-		for (final Class<?> checkedClazz : checkedClazzes) {
+	static private boolean oneIsAssignable (final Object one, final Object another, final Class... checkedClazzes) {
+		for (final Class checkedClazz : checkedClazzes) {
 			if (checkedClazz.isAssignableFrom(one.getClass()) || checkedClazz.isAssignableFrom(another.getClass())) {
 				return true;
 			}
@@ -169,12 +168,12 @@ class ReflectionAssert {
 	 * TODO (MG): this assumes same iteration order, which must not be given for sets. There could be a specialized implementation
 	 * for sets.
 	 */
-	static private void assertCollectionEquals (final Collection<?> m1, final Collection<?> m2,
-		final boolean requireMatchingClasses, final Map<Object, Object> alreadyChecked, final String path) {
+	static private void assertCollectionEquals (final Collection m1, final Collection m2, final boolean requireMatchingClasses,
+		final Map<Object, Object> alreadyChecked, final String path) {
 		Assert.assertEquals("Collection size does not match for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ",
 			m1.size(), m2.size());
-		final Iterator<?> iter1 = m1.iterator();
-		final Iterator<?> iter2 = m2.iterator();
+		final Iterator iter1 = m1.iterator();
+		final Iterator iter2 = m2.iterator();
 		int i = 0;
 		while (iter1.hasNext()) {
 			assertReflectionEquals(iter1.next(), iter2.next(), requireMatchingClasses, alreadyChecked, path + "[" + i++ + "]");

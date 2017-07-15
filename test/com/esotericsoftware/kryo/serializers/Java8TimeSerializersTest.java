@@ -44,7 +44,7 @@ import com.esotericsoftware.kryo.KryoTestCase;
  * "Java8*Tests". */
 public class Java8TimeSerializersTest extends KryoTestCase {
 
-	@Override
+	
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();
@@ -145,7 +145,8 @@ public class Java8TimeSerializersTest extends KryoTestCase {
 	public void testZonedDateTime () {
 		roundTrip(11, ZonedDateTime.of(Year.MIN_VALUE, Month.JANUARY.getValue(), 1, 0, 0, 0, 0, ZoneOffset.UTC));
 		roundTrip(22, ZonedDateTime.of(Year.MIN_VALUE, Month.JANUARY.getValue(), 1, 0, 0, 0, 0, ZoneId.of("Europe/Berlin")));
-		roundTrip(29, ZonedDateTime.of(Year.MAX_VALUE, Month.DECEMBER.getValue(), 31, 23, 59, 59, 999999999, ZoneId.of("Europe/Berlin")));
+		roundTrip(29,
+			ZonedDateTime.of(Year.MAX_VALUE, Month.DECEMBER.getValue(), 31, 23, 59, 59, 999999999, ZoneId.of("Europe/Berlin")));
 	}
 
 	@Test

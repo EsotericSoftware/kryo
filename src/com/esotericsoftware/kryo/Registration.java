@@ -25,7 +25,7 @@ import static com.esotericsoftware.minlog.Log.*;
 import org.objenesis.instantiator.ObjectInstantiator;
 
 /** Describes the {@link Serializer} and class ID to use for a class.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class Registration {
 	private final Class type;
 	private final int id;

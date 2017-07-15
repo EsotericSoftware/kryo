@@ -34,7 +34,7 @@ import org.junit.runners.Parameterized.Parameters;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Output;
 
-/** @author Nathan Sweet <misc@n4te.com> */
+/** @author Nathan Sweet */
 @RunWith(Parameterized.class)
 public class GenericsTest extends KryoTestCase {
 	{
@@ -42,7 +42,7 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	@Parameters(name = "optimizedGenerics_{0}")
-	static public Iterable<?> optimizedGenerics () {
+	static public Iterable optimizedGenerics () {
 		return Arrays.asList(true, false);
 	}
 
@@ -52,7 +52,7 @@ public class GenericsTest extends KryoTestCase {
 		this.optimizedGenerics = optimizedGenerics;
 	}
 
-	@Override
+	
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();
@@ -69,7 +69,7 @@ public class GenericsTest extends KryoTestCase {
 
 		List list = Arrays.asList(new SerializableObjectFoo("one"), new SerializableObjectFoo("two"),
 			new SerializableObjectFoo("three"));
-		BaseGeneric<SerializableObjectFoo> bg1 = new BaseGeneric<SerializableObjectFoo>(list);
+		BaseGeneric<SerializableObjectFoo> bg1 = new BaseGeneric(list);
 
 		roundTrip(108, bg1);
 	}
@@ -153,7 +153,7 @@ public class GenericsTest extends KryoTestCase {
 			name = "Default";
 		}
 
-		@Override
+		
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -181,14 +181,14 @@ public class GenericsTest extends KryoTestCase {
 		protected BaseGeneric (final List<T> listPayload) {
 			super();
 			// Defensive copy, listPayload is mutable
-			this.listPayload = new ArrayList<T>(listPayload);
+			this.listPayload = new ArrayList(listPayload);
 		}
 
 		public final List<T> getPayload () {
 			return this.listPayload;
 		}
 
-		@Override
+		
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;

@@ -48,7 +48,6 @@ public class ExternalizableSerializer extends Serializer {
 	private KryoObjectInput objectInput = null;
 	private KryoObjectOutput objectOutput = null;
 
-	@Override
 	public void write (Kryo kryo, Output output, Object object) {
 		JavaSerializer serializer = getJavaSerializerIfRequired(object.getClass());
 		if (serializer == null) {
@@ -58,7 +57,6 @@ public class ExternalizableSerializer extends Serializer {
 		}
 	}
 
-	@Override
 	public Object read (Kryo kryo, Input input, Class type) {
 		JavaSerializer serializer = getJavaSerializerIfRequired(type);
 		if (serializer == null) {
@@ -124,7 +122,7 @@ public class ExternalizableSerializer extends Serializer {
 
 	private JavaSerializer getCachedSerializer (Class type) {
 		if (javaSerializerByType == null) {
-			javaSerializerByType = new ObjectMap<Class, JavaSerializer>();
+			javaSerializerByType = new ObjectMap();
 			return null;
 		}
 		return javaSerializerByType.get(type);
@@ -137,7 +135,7 @@ public class ExternalizableSerializer extends Serializer {
 	/* find out if there are any pesky serialization extras on this class */
 	static private boolean hasInheritableReplaceMethod (Class type, String methodName) {
 		Method method = null;
-		Class<?> current = type;
+		Class current = type;
 		while (current != null) {
 			try {
 				method = current.getDeclaredMethod(methodName);

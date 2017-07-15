@@ -23,7 +23,7 @@ import java.io.Serializable;
 
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
-/** @author Nathan Sweet <misc@n4te.com> */
+/** @author Nathan Sweet */
 public class JavaSerializerTest extends KryoTestCase {
 	public void testJavaSerializer () {
 		kryo.register(String.class, new JavaSerializer());

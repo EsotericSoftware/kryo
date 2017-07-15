@@ -35,7 +35,7 @@ import com.esotericsoftware.kryo.io.Output;
 /** Serializes objects that implement the {@link Map} interface.
  * <p>
  * With the default constructor, a map requires a 1-3 byte header and an extra 4 bytes is written for each key/value pair.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class MapSerializer extends Serializer<Map> {
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
@@ -191,11 +191,11 @@ public class MapSerializer extends Serializer<Map> {
 
 		/** Class used for keys
 		 * @return the class used for keys */
-		Class<?> keyClass() default Object.class;
+		Class keyClass() default Object.class;
 
 		/** Class used for values
 		 * @return the class used for values */
-		Class<?> valueClass() default Object.class;
+		Class valueClass() default Object.class;
 
 		/** Indicates if keys can be null
 		 * @return true, if keys can be null */

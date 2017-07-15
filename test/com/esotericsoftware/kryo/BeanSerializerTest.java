@@ -21,7 +21,7 @@ package com.esotericsoftware.kryo;
 
 import com.esotericsoftware.kryo.serializers.BeanSerializer;
 
-/** @author Nathan Sweet <misc@n4te.com> */
+/** @author Nathan Sweet */
 public class BeanSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;

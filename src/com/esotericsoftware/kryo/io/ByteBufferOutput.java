@@ -40,8 +40,6 @@ import com.esotericsoftware.kryo.util.Util;
 public class ByteBufferOutput extends Output {
 	protected ByteBuffer niobuffer;
 
-	protected boolean varIntsEnabled = true;
-
 	// Default byte order is BIG_ENDIAN to be compatible to the base class
 	ByteOrder byteOrder = ByteOrder.BIG_ENDIAN;
 
@@ -180,7 +178,7 @@ public class ByteBufferOutput extends Output {
 			if (capacity == 0) capacity = 1;
 			capacity = Math.min(capacity * 2, maxCapacity);
 			if (capacity < 0) capacity = maxCapacity;
-			ByteBuffer newBuffer = (niobuffer != null && !niobuffer.isDirect()) ? ByteBuffer.allocate(capacity)
+			ByteBuffer newBuffer = niobuffer != null && !niobuffer.isDirect() ? ByteBuffer.allocate(capacity)
 				: ByteBuffer.allocateDirect(capacity);
 			// Copy the whole buffer
 			niobuffer.position(0);
@@ -188,7 +186,7 @@ public class ByteBufferOutput extends Output {
 			newBuffer.put(niobuffer);
 			newBuffer.order(niobuffer.order());
 
-			// writeVarInt & writeVarLong mess with the byte order. need to keep track of the current byte order when growing
+			// writeInt & writeLong mess with the byte order, need to keep track of the current byte order when growing.
 			final ByteOrder currentByteOrder = byteOrder;
 			setBuffer(newBuffer, maxCapacity);
 			byteOrder = currentByteOrder;
@@ -287,15 +285,7 @@ public class ByteBufferOutput extends Output {
 		position += 4;
 	}
 
-	public int writeInt (int value, boolean optimizePositive) throws KryoException {
-		if (!varIntsEnabled) {
-			writeInt(value);
-			return 4;
-		} else
-			return writeVarInt(value, optimizePositive);
-	}
-
-	public int writeVarInt (int val, boolean optimizePositive) throws KryoException {
+	public int writeInt (int val, boolean optimizePositive) throws KryoException {
 		niobuffer.position(position);
 
 		int value = val;
@@ -539,7 +529,6 @@ public class ByteBufferOutput extends Output {
 			byte[] tmp = new byte[charCount];
 			value.getBytes(charIndex, charIndex + charsToWrite, tmp, 0);
 			buffer.put(tmp, 0, charsToWrite);
-// value.getBytes(charIndex, charIndex + charsToWrite, buffer, position);
 			charIndex += charsToWrite;
 			position += charsToWrite;
 			charsToWrite = Math.min(charCount - charIndex, capacity);
@@ -582,14 +571,6 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public int writeLong (long value, boolean optimizePositive) throws KryoException {
-		if (!varIntsEnabled) {
-			writeLong(value);
-			return 8;
-		} else
-			return writeVarLong(value, optimizePositive);
-	}
-
-	public int writeVarLong (long value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		int varInt = 0;
 
@@ -899,18 +880,5 @@ public class ByteBufferOutput extends Output {
 
 	private boolean isNativeOrder () {
 		return byteOrder == nativeOrder;
-	}
-
-	/** Return current setting for variable length encoding of integers
-	 * @return current setting for variable length encoding of integers */
-	public boolean getVarIntsEnabled () {
-		return varIntsEnabled;
-	}
-
-	/** Controls if a variable length encoding for integer types should be used when serializers suggest it.
-	 * 
-	 * @param varIntsEnabled */
-	public void setVarIntsEnabled (boolean varIntsEnabled) {
-		this.varIntsEnabled = varIntsEnabled;
 	}
 }

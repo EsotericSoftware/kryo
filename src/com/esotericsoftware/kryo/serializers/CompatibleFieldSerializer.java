@@ -27,6 +27,7 @@ import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
 import com.esotericsoftware.kryo.util.ObjectMap;
+import com.esotericsoftware.kryo.util.Util;
 
 /** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
  * added or removed without invalidating previously serialized bytes. Changing the type of a field is not supported. Like
@@ -40,8 +41,8 @@ import com.esotericsoftware.kryo.util.ObjectMap;
  * <p>
  * Note that the field data is identified by name. The situation where a super class has a field with the same name as a subclass
  * must be avoided.
- * @author Nathan Sweet <misc@n4te.com> */
-public class CompatibleFieldSerializer<T> extends FieldSerializer<T, FieldSerializerConfig> {
+ * @author Nathan Sweet */
+public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	/* For object with more than BINARY_SEARCH_THRESHOLD fields, use binary search instead of iterative search */
 	static private final int THRESHOLD_BINARY_SEARCH = 32;
 
@@ -59,13 +60,21 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T, FieldSerial
 		if (!context.containsKey(this)) {
 			context.put(this, null);
 			if (TRACE) trace("kryo", "Write " + fields.length + " field names.");
-			output.writeVarInt(fields.length, true);
+			output.writeInt(fields.length, true);
 			for (int i = 0, n = fields.length; i < n; i++)
-				output.writeString(getCachedFieldName(fields[i]));
+				output.writeString(fields[i].name);
 		}
 
 		OutputChunked outputChunked = new OutputChunked(output, 1024);
 		for (int i = 0, n = fields.length; i < n; i++) {
+			if (TRACE) try {
+				Object x = fields[i].getField().get(object);
+				trace("kryo", "Write value: " + Util.string(x));
+				if (x != null && x.toString().equals("1234120")) //
+					System.out.println();
+			} catch (IllegalArgumentException ex) {
+			} catch (IllegalAccessException ex) {
+			}
 			fields[i].write(outputChunked, object);
 			outputChunked.endChunks();
 		}
@@ -77,7 +86,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T, FieldSerial
 		ObjectMap context = kryo.getGraphContext();
 		CachedField[] fields = (CachedField[])context.get(this);
 		if (fields == null) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (TRACE) trace("kryo", "Read " + length + " field names.");
 			String[] names = new String[length];
 			for (int i = 0; i < length; i++)
@@ -91,7 +100,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T, FieldSerial
 				for (int i = 0; i < length; i++) {
 					String schemaName = names[i];
 					for (int ii = 0, nn = allFields.length; ii < nn; ii++) {
-						if (getCachedFieldName(allFields[ii]).equals(schemaName)) {
+						if (allFields[ii].name.equals(schemaName)) {
 							fields[i] = allFields[ii];
 							continue outer;
 						}
@@ -112,7 +121,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T, FieldSerial
 
 					while (low <= high) {
 						mid = (low + high) >>> 1;
-						String midVal = getCachedFieldName(allFields[mid]);
+						String midVal = allFields[mid].name;
 						compare = schemaName.compareTo(midVal);
 
 						if (compare < 0) {
@@ -139,7 +148,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T, FieldSerial
 				// Generic type used to instantiate this field could have
 				// been changed in the meantime. Therefore take the most
 				// up-to-date definition of a field
-				cachedField = getField(getCachedFieldName(cachedField));
+				cachedField = getField(cachedField.name);
 			}
 			if (cachedField == null) {
 				if (TRACE) trace("kryo", "Skip obsolete field.");

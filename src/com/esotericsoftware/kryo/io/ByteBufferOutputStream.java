@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 
 /** An OutputStream whose target is a {@link ByteBuffer}. If bytes would be written that would overflow the buffer,
  * {@link #flush()} is called. Subclasses can override flush to empty the buffer.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class ByteBufferOutputStream extends OutputStream {
 	private ByteBuffer byteBuffer;
 

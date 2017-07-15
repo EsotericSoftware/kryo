@@ -69,7 +69,7 @@ public interface KryoPool {
 	/** Builder for a {@link KryoPool} instance, constructs a {@link KryoPoolQueueImpl} instance. */
 	static public class Builder {
 		private final KryoFactory factory;
-		private Queue<Kryo> queue = new ConcurrentLinkedQueue<Kryo>();
+		private Queue<Kryo> queue = new ConcurrentLinkedQueue();
 		private boolean softReferences;
 
 		public Builder (KryoFactory factory) {
@@ -101,7 +101,6 @@ public interface KryoPool {
 			return new KryoPoolQueueImpl(factory, q);
 		}
 
-		@Override
 		public String toString () {
 			return getClass().getName() + "[queue.class=" + queue.getClass() + ", softReferences=" + softReferences + "]";
 		}

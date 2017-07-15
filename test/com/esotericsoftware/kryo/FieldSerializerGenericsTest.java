@@ -20,7 +20,7 @@ import com.esotericsoftware.kryo.io.Output;
 public class FieldSerializerGenericsTest {
 
 	@Parameters(name = "optimizedGenerics_{0}")
-	static public Iterable<?> optimizedGenerics () {
+	static public Iterable optimizedGenerics () {
 		return Arrays.asList(true, false);
 	}
 
@@ -33,13 +33,14 @@ public class FieldSerializerGenericsTest {
 	@Test
 	public void testNoStackOverflowForSimpleGenericsCase () {
 		FooRef fooRef = new FooRef();
-		GenericFoo<FooRef> genFoo1 = new GenericFoo<FooRef>(fooRef);
-		GenericFoo<FooRef> genFoo2 = new GenericFoo<FooRef>(fooRef);
-		List<GenericFoo<?>> foos = new ArrayList<GenericFoo<?>>();
+		GenericFoo<FooRef> genFoo1 = new GenericFoo(fooRef);
+		GenericFoo<FooRef> genFoo2 = new GenericFoo(fooRef);
+		List<GenericFoo<?>> foos = new ArrayList();
 		foos.add(genFoo2);
 		foos.add(genFoo1);
 		new FooContainer(foos);
 		Kryo kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
 		FieldSerializerFactory factory = new FieldSerializerFactory();
 		factory.getConfig().setOptimizedGenerics(optimizedGenerics);
 		kryo.setDefaultSerializer(factory);
@@ -51,13 +52,14 @@ public class FieldSerializerGenericsTest {
 	@Test
 	public void testNoStackOverflowForComplexGenericsCase () {
 		BarRef barRef = new BarRef();
-		GenericBar<BarRef> genBar1 = new GenericBar<BarRef>(barRef);
-		GenericBar<BarRef> genBar2 = new GenericBar<BarRef>(barRef);
-		List<GenericBar<?>> bars = new ArrayList<GenericBar<?>>();
+		GenericBar<BarRef> genBar1 = new GenericBar(barRef);
+		GenericBar<BarRef> genBar2 = new GenericBar(barRef);
+		List<GenericBar<?>> bars = new ArrayList();
 		bars.add(genBar2);
 		bars.add(genBar1);
 		new GenericBarContainer<GenericBar>(new BarContainer(bars));
 		Kryo kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
 		FieldSerializerFactory factory = new FieldSerializerFactory();
 		factory.getConfig().setOptimizedGenerics(optimizedGenerics);
 		kryo.setDefaultSerializer(factory);
@@ -108,7 +110,7 @@ public class FieldSerializerGenericsTest {
 	}
 
 	static class FooContainer {
-		List<GenericFoo<?>> foos = new ArrayList<GenericFoo<?>>();
+		List<GenericFoo<?>> foos = new ArrayList();
 
 		public FooContainer (List<GenericFoo<?>> foos) {
 			this.foos = foos;

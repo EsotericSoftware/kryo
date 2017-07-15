@@ -56,15 +56,10 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class DefaultSerializers {
-	static public class VoidSerializer extends Serializer {
-		{
-			setImmutable(true);
-		}
-
+	static public class VoidSerializer extends ImmutableSerializer {
 		public void write (Kryo kryo, Output output, Object object) {
-
 		}
 
 		public Object read (Kryo kryo, Input input, Class type) {
@@ -72,11 +67,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class BooleanSerializer extends Serializer<Boolean> {
-		{
-			setImmutable(true);
-		}
-
+	static public class BooleanSerializer extends ImmutableSerializer<Boolean> {
 		public void write (Kryo kryo, Output output, Boolean object) {
 			output.writeBoolean(object);
 		}
@@ -86,11 +77,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class ByteSerializer extends Serializer<Byte> {
-		{
-			setImmutable(true);
-		}
-
+	static public class ByteSerializer extends ImmutableSerializer<Byte> {
 		public void write (Kryo kryo, Output output, Byte object) {
 			output.writeByte(object);
 		}
@@ -100,11 +87,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class CharSerializer extends Serializer<Character> {
-		{
-			setImmutable(true);
-		}
-
+	static public class CharSerializer extends ImmutableSerializer<Character> {
 		public void write (Kryo kryo, Output output, Character object) {
 			output.writeChar(object);
 		}
@@ -114,11 +97,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class ShortSerializer extends Serializer<Short> {
-		{
-			setImmutable(true);
-		}
-
+	static public class ShortSerializer extends ImmutableSerializer<Short> {
 		public void write (Kryo kryo, Output output, Short object) {
 			output.writeShort(object);
 		}
@@ -128,11 +107,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class IntSerializer extends Serializer<Integer> {
-		{
-			setImmutable(true);
-		}
-
+	static public class IntSerializer extends ImmutableSerializer<Integer> {
 		public void write (Kryo kryo, Output output, Integer object) {
 			output.writeInt(object, false);
 		}
@@ -142,11 +117,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class LongSerializer extends Serializer<Long> {
-		{
-			setImmutable(true);
-		}
-
+	static public class LongSerializer extends ImmutableSerializer<Long> {
 		public void write (Kryo kryo, Output output, Long object) {
 			output.writeLong(object, false);
 		}
@@ -156,11 +127,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class FloatSerializer extends Serializer<Float> {
-		{
-			setImmutable(true);
-		}
-
+	static public class FloatSerializer extends ImmutableSerializer<Float> {
 		public void write (Kryo kryo, Output output, Float object) {
 			output.writeFloat(object);
 		}
@@ -170,11 +137,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class DoubleSerializer extends Serializer<Double> {
-		{
-			setImmutable(true);
-		}
-
+	static public class DoubleSerializer extends ImmutableSerializer<Double> {
 		public void write (Kryo kryo, Output output, Double object) {
 			output.writeDouble(object);
 		}
@@ -185,9 +148,8 @@ public class DefaultSerializers {
 	}
 
 	/** @see Output#writeString(String) */
-	static public class StringSerializer extends Serializer<String> {
+	static public class StringSerializer extends ImmutableSerializer<String> {
 		{
-			setImmutable(true);
 			setAcceptsNull(true);
 		}
 
@@ -202,32 +164,31 @@ public class DefaultSerializers {
 
 	/** Serializer for {@link BigInteger} and any subclass.
 	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
-	static public class BigIntegerSerializer extends Serializer<BigInteger> {
+	static public class BigIntegerSerializer extends ImmutableSerializer<BigInteger> {
 		{
-			setImmutable(true);
 			setAcceptsNull(true);
 		}
 
 		public void write (Kryo kryo, Output output, BigInteger object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
 			BigInteger value = (BigInteger)object;
 			// fast-path optimizations for BigInteger.ZERO constant
 			if (value == BigInteger.ZERO) {
-				output.writeVarInt(2, true);
+				output.writeInt(2, true);
 				output.writeByte(0);
 				return;
 			}
 			// default behaviour
 			byte[] bytes = value.toByteArray();
-			output.writeVarInt(bytes.length + 1, true);
+			output.writeInt(bytes.length + 1, true);
 			output.writeBytes(bytes);
 		}
 
 		public BigInteger read (Kryo kryo, Input input, Class<BigInteger> type) {
-			int length = input.readVarInt(true);
+			int length = input.readInt(true);
 			if (length == NULL) return null;
 			byte[] bytes = input.readBytes(length - 1);
 			if (type != BigInteger.class && type != null) {
@@ -262,17 +223,16 @@ public class DefaultSerializers {
 
 	/** Serializer for {@link BigDecimal} and any subclass.
 	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
-	static public class BigDecimalSerializer extends Serializer<BigDecimal> {
+	static public class BigDecimalSerializer extends ImmutableSerializer<BigDecimal> {
 		private final BigIntegerSerializer bigIntegerSerializer = new BigIntegerSerializer();
 
 		{
 			setAcceptsNull(true);
-			setImmutable(true);
 		}
 
 		public void write (Kryo kryo, Output output, BigDecimal object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
 			BigDecimal value = (BigDecimal)object;
@@ -315,15 +275,14 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class ClassSerializer extends Serializer<Class> {
+	static public class ClassSerializer extends ImmutableSerializer<Class> {
 		{
-			setImmutable(true);
 			setAcceptsNull(true);
 		}
 
 		public void write (Kryo kryo, Output output, Class object) {
 			kryo.writeClass(output, object);
-			output.writeByte((object != null && object.isPrimitive()) ? 1 : 0);
+			output.writeByte(object != null && object.isPrimitive() ? 1 : 0);
 		}
 
 		public Class read (Kryo kryo, Input input, Class<Class> type) {
@@ -331,7 +290,7 @@ public class DefaultSerializers {
 			int isPrimitive = input.read();
 			Class typ = registration != null ? registration.getType() : null;
 			if (typ == null || !typ.isPrimitive()) return typ;
-			return (isPrimitive == 1) ? typ : getWrapperClass(typ);
+			return isPrimitive == 1 ? typ : getWrapperClass(typ);
 		}
 	}
 
@@ -384,9 +343,8 @@ public class DefaultSerializers {
 		}
 	}
 
-	static public class EnumSerializer extends Serializer<Enum> {
+	static public class EnumSerializer extends ImmutableSerializer<Enum> {
 		{
-			setImmutable(true);
 			setAcceptsNull(true);
 		}
 
@@ -399,14 +357,14 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, Enum object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeVarInt(object.ordinal() + 1, true);
+			output.writeInt(object.ordinal() + 1, true);
 		}
 
 		public Enum read (Kryo kryo, Input input, Class<Enum> type) {
-			int ordinal = input.readVarInt(true);
+			int ordinal = input.readInt(true);
 			if (ordinal == NULL) return null;
 			ordinal--;
 			if (ordinal < 0 || ordinal > enumConstants.length - 1)
@@ -447,9 +405,8 @@ public class DefaultSerializers {
 	}
 
 	/** @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	static public class CurrencySerializer extends Serializer<Currency> {
+	static public class CurrencySerializer extends ImmutableSerializer<Currency> {
 		{
-			setImmutable(true);
 			setAcceptsNull(true);
 		}
 
@@ -520,11 +477,7 @@ public class DefaultSerializers {
 	/** Serializer for lists created via {@link Collections#emptyList()} or that were just assigned the
 	 * {@link Collections#EMPTY_LIST}.
 	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	static public class CollectionsEmptyListSerializer extends Serializer {
-		{
-			setImmutable(true);
-		}
-
+	static public class CollectionsEmptyListSerializer extends ImmutableSerializer {
 		public void write (Kryo kryo, Output output, Object object) {
 		}
 
@@ -536,11 +489,7 @@ public class DefaultSerializers {
 	/** Serializer for maps created via {@link Collections#emptyMap()} or that were just assigned the
 	 * {@link Collections#EMPTY_MAP}.
 	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	static public class CollectionsEmptyMapSerializer extends Serializer {
-		{
-			setImmutable(true);
-		}
-
+	static public class CollectionsEmptyMapSerializer extends ImmutableSerializer {
 		public void write (Kryo kryo, Output output, Object object) {
 		}
 
@@ -552,11 +501,7 @@ public class DefaultSerializers {
 	/** Serializer for sets created via {@link Collections#emptySet()} or that were just assigned the
 	 * {@link Collections#EMPTY_SET}.
 	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	static public class CollectionsEmptySetSerializer extends Serializer {
-		{
-			setImmutable(true);
-		}
-
+	static public class CollectionsEmptySetSerializer extends ImmutableSerializer {
 		public void write (Kryo kryo, Output output, Object object) {
 		}
 
@@ -567,11 +512,7 @@ public class DefaultSerializers {
 
 	/** Serializer for lists created via {@link Collections#singletonList(Object)}.
 	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	static public class CollectionsSingletonListSerializer extends Serializer<List> {
-		{
-			setImmutable(true);
-		}
-
+	static public class CollectionsSingletonListSerializer extends ImmutableSerializer<List> {
 		public void write (Kryo kryo, Output output, List object) {
 			kryo.writeClassAndObject(output, object.get(0));
 		}
@@ -583,11 +524,7 @@ public class DefaultSerializers {
 
 	/** Serializer for maps created via {@link Collections#singletonMap(Object, Object)}.
 	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	static public class CollectionsSingletonMapSerializer extends Serializer<Map> {
-		{
-			setImmutable(true);
-		}
-
+	static public class CollectionsSingletonMapSerializer extends ImmutableSerializer<Map> {
 		public void write (Kryo kryo, Output output, Map object) {
 			Entry entry = (Entry)object.entrySet().iterator().next();
 			kryo.writeClassAndObject(output, entry.getKey());
@@ -603,11 +540,7 @@ public class DefaultSerializers {
 
 	/** Serializer for sets created via {@link Collections#singleton(Object)}.
 	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	static public class CollectionsSingletonSetSerializer extends Serializer<Set> {
-		{
-			setImmutable(true);
-		}
-
+	static public class CollectionsSingletonSetSerializer extends ImmutableSerializer<Set> {
 		public void write (Kryo kryo, Output output, Set object) {
 			kryo.writeClassAndObject(output, object.iterator().next());
 		}
@@ -619,11 +552,7 @@ public class DefaultSerializers {
 
 	/** Serializer for {@link TimeZone}. Assumes the timezones are immutable.
 	 * @author Tumi <serverperformance@gmail.com> */
-	static public class TimeZoneSerializer extends Serializer<TimeZone> {
-		{
-			setImmutable(true);
-		}
-
+	static public class TimeZoneSerializer extends ImmutableSerializer<TimeZone> {
 		public void write (Kryo kryo, Output output, TimeZone object) {
 			output.writeString(object.getID());
 		}
@@ -746,14 +675,10 @@ public class DefaultSerializers {
 
 	/** Serializer for {@link Locale} (immutables).
 	 * @author Tumi <serverperformance@gmail.com> */
-	static public class LocaleSerializer extends Serializer<Locale> {
+	static public class LocaleSerializer extends ImmutableSerializer<Locale> {
 		// Missing constants in j.u.Locale for common locale
 		static public final Locale SPANISH = new Locale("es", "", "");
 		static public final Locale SPAIN = new Locale("es", "ES", "");
-
-		{
-			setImmutable(true);
-		}
 
 		protected Locale create (String language, String country, String variant) {
 			// Fast-path for default locale in this system (may not be in the Locale constants list)
@@ -813,11 +738,7 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for {@link Charset}. */
-	static public class CharsetSerializer extends Serializer<Charset> {
-		{
-			setImmutable(true);
-		}
-
+	static public class CharsetSerializer extends ImmutableSerializer<Charset> {
 		public void write (Kryo kryo, Output output, Charset object) {
 			output.writeString(object.name());
 		}
@@ -828,11 +749,7 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for {@link URL}. */
-	static public class URLSerializer extends Serializer<URL> {
-		{
-			setImmutable(true);
-		}
-
+	static public class URLSerializer extends ImmutableSerializer<URL> {
 		public void write (Kryo kryo, Output output, URL object) {
 			output.writeString(object.toExternalForm());
 		}

@@ -40,10 +40,10 @@ import com.esotericsoftware.kryo.io.Output;
  * overhead (a single additional varint) compared to FieldSerializer. Forward compatibility is not supported.
  * @see TaggedFieldSerializer
  * @author Tianyi HE <hty0807@gmail.com> */
-public class VersionFieldSerializer<T> extends FieldSerializer<T, FieldSerializerConfig> {
+public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	private int typeVersion = 0; // Version of current type.
 	private int[] fieldVersion; // Version of each field.
-	private boolean compatible = true; // Whether current type is compatible with serialized objects with different version.
+	private boolean compatible = true; // True if current type is compatible with serialized objects that have a different version.
 
 	public VersionFieldSerializer (Kryo kryo, Class type) {
 		super(kryo, type);
@@ -56,7 +56,6 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T, FieldSerialize
 		this.compatible = compatible;
 	}
 
-	@Override
 	protected void initializeCachedFields () {
 		CachedField[] fields = getFields();
 		fieldVersion = new int[fields.length];
@@ -71,40 +70,36 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T, FieldSerialize
 				fieldVersion[i] = 0;
 			}
 		}
-		this.removedFields.clear();
+		cachedFields.removedFields.clear();
 		if (DEBUG) debug("Version for type " + getType().getName() + " is " + typeVersion);
 	}
 
-	@Override
 	public void removeField (String fieldName) {
 		super.removeField(fieldName);
 		initializeCachedFields();
 	}
 
-	@Override
 	public void removeField (CachedField field) {
 		super.removeField(field);
 		initializeCachedFields();
 	}
 
-	@Override
 	public void write (Kryo kryo, Output output, T object) {
 		CachedField[] fields = getFields();
 		// Write type version.
-		output.writeVarInt(typeVersion, true);
+		output.writeInt(typeVersion, true);
 		// Write fields.
 		for (int i = 0, n = fields.length; i < n; i++) {
 			fields[i].write(output, object);
 		}
 	}
 
-	@Override
 	public T read (Kryo kryo, Input input, Class<T> type) {
 		T object = create(kryo, input, type);
 		kryo.reference(object);
 
 		// Read input version.
-		int version = input.readVarInt(true);
+		int version = input.readInt(true);
 		if (!compatible && version != typeVersion) {
 			// Reject to read
 			throw new KryoException("Version not compatible: " + version + " <-> " + typeVersion);

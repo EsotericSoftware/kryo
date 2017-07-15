@@ -23,21 +23,22 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import java.util.LinkedList;
 
-/** INTERNAL API
- *
- * Helper class that resolves a type name variable to a concrete class using the current class serialization stack
- *
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.FieldSerializerGenericsUtil.Generics;
+
+/** Resolves a type name variable to a concrete class using the current class serialization stack
  * @author Jeroen van Erp <jeroen@hierynomus.com> */
 public final class GenericsResolver {
-	private LinkedList<Generics> stack = new LinkedList<Generics>();
+	private LinkedList<Generics> stack = new LinkedList();
 
 	public GenericsResolver () {
 	}
 
 	Class getConcreteClass (String typeVar) {
 		for (Generics generics : stack) {
-			Class clazz = generics.getConcreteClass(typeVar);
-			if (clazz != null) return clazz;
+			Class concreteClass = generics.getConcreteClass(typeVar);
+			if (concreteClass != null) return concreteClass;
 		}
 		return null;
 	}
@@ -53,5 +54,19 @@ public final class GenericsResolver {
 
 	void popScope () {
 		stack.removeFirst();
+	}
+
+	static public class Test {
+		String a;
+		int b;
+	}
+
+	static public void main (String[] args) throws Exception {
+		Test test = new Test(); 
+		test.a = "moo";
+
+//		Kryo kryo = new Kryo();
+//		Output output = new Output();
+//		kryo.writeObjectOrNull(output, object, type);
 	}
 }

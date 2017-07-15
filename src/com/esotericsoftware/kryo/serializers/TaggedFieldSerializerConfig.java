@@ -25,13 +25,15 @@ import static com.esotericsoftware.minlog.Log.*;
 public class TaggedFieldSerializerConfig extends FieldSerializerConfig {
 	boolean skipUnknownTags;
 
+	public TaggedFieldSerializerConfig clone () {
+		return (TaggedFieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
+	}
+
 	/** Set whether associated TaggedFieldSerializers should attempt to skip reading the data of unknown tags, rather than throwing
 	 * a KryoException. Data can be skipped if it was tagged with {@link TaggedFieldSerializer.Tag#annexed()} set true. This
 	 * enables forward compatibility.
 	 * <p>
 	 * This setting is false by default.
-	 * </p>
-	 *
 	 * @param skipUnknownTags If true, unknown field tags will be skipped, with the assumption that they are future tagged values
 	 *           with {@link TaggedFieldSerializer.Tag#annexed()} set true. If false KryoException will be thrown whenever unknown
 	 *           tags are encountered. */
@@ -47,8 +49,4 @@ public class TaggedFieldSerializerConfig extends FieldSerializerConfig {
 		return skipUnknownTags;
 	}
 
-	@Override
-	public TaggedFieldSerializerConfig clone () {
-		return (TaggedFieldSerializerConfig)super.clone();
-	}
 }

@@ -28,15 +28,15 @@ import com.esotericsoftware.kryo.KryoException;
 
 /** An OutputStream that buffers data in a byte array and flushes to another OutputStream, writing the length before each flush.
  * The length allows the chunks to be skipped when reading.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class OutputChunked extends Output {
-	/** Creates an uninitialized OutputChunked with a maximum chunk size of 2048. The OutputStream must be set before it can be
+	/** Creates an uninitialized OutputChunked with a maximum chunk size of 2048, the OutputStream must be set before it can be
 	 * used. */
 	public OutputChunked () {
 		super(2048);
 	}
 
-	/** Creates an uninitialized OutputChunked. The OutputStream must be set before it can be used.
+	/** Creates an uninitialized OutputChunked, the OutputStream must be set before it can be used.
 	 * @param bufferSize The maximum size of a chunk. */
 	public OutputChunked (int bufferSize) {
 		super(bufferSize);

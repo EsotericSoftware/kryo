@@ -33,7 +33,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 /** Encrypts data using the blowfish cipher.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class BlowfishSerializer extends Serializer {
 	private final Serializer serializer;
 	static private SecretKeySpec keySpec;

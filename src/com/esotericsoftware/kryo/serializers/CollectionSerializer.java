@@ -36,7 +36,7 @@ import com.esotericsoftware.kryo.io.Output;
  * With the default constructor, a collection requires a 1-3 byte header and an extra 2-3 bytes is written for each element in the
  * collection. The alternate constructor can be used to improve efficiency to match that of using an array instead of a
  * collection.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class CollectionSerializer extends Serializer<Collection> {
 	private boolean elementsCanBeNull = true;
 	private Serializer serializer;
@@ -81,7 +81,7 @@ public class CollectionSerializer extends Serializer<Collection> {
 
 	public void write (Kryo kryo, Output output, Collection collection) {
 		int length = collection.size();
-		output.writeVarInt(length, true);
+		output.writeInt(length, true);
 		Serializer serializer = this.serializer;
 		if (genericType != null) {
 			if (serializer == null) serializer = kryo.getSerializer(genericType);
@@ -110,7 +110,7 @@ public class CollectionSerializer extends Serializer<Collection> {
 	public Collection read (Kryo kryo, Input input, Class<Collection> type) {
 		Collection collection = create(kryo, input, type);
 		kryo.reference(collection);
-		int length = input.readVarInt(true);
+		int length = input.readInt(true);
 		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
 		Class elementClass = this.elementClass;
 		Serializer serializer = this.serializer;
@@ -160,7 +160,7 @@ public class CollectionSerializer extends Serializer<Collection> {
 
 		/** Class used for elements
 		 * @return the class used for elements */
-		Class<?> elementClass() default Object.class;
+		Class elementClass() default Object.class;
 
 		/** Indicates if elements can be null
 		 * @return true, if elements can be null */

@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
 /** Sets the default serializer to use for the annotated class. The specified Serializer class must have a constructor taking a
  * Kryo instance and a class, a Kryo instance, a class, or no arguments.
  * @see Kryo#register(Class)
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface DefaultSerializer {

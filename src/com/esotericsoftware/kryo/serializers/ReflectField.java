@@ -28,21 +28,18 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
-import com.esotericsoftware.reflectasm.FieldAccess;
 
 /*** Defer generation of serializers until it is really required at run-time. By default, use reflection-based approach.
- * @author Nathan Sweet <misc@n4te.com>
+ * @author Nathan Sweet
  * @author Roman Levenstein <romixlev@gmail.com> */
-class ObjectField extends CachedField {
-	public Class[] generics;
-	final FieldSerializer fieldSerializer;
-	final Class type;
+class ReflectField extends CachedField {
 	final Kryo kryo;
+	final Class type;
+	public Class[] generics;
 
-	ObjectField (FieldSerializer fieldSerializer) {
-		this.fieldSerializer = fieldSerializer;
-		this.kryo = fieldSerializer.kryo;
-		this.type = fieldSerializer.type;
+	ReflectField (Kryo kryo, Class type) {
+		this.kryo = kryo;
+		this.type = type;
 	}
 
 	public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
@@ -55,11 +52,6 @@ class ObjectField extends CachedField {
 
 	public void write (Output output, Object object) {
 		try {
-			// if(typeVar2concreteClass != null) {
-			// // Push a new scope for generics
-			// kryo.pushGenericsScope(type, new Generics(typeVar2concreteClass));
-			// }
-
 			if (TRACE)
 				trace("kryo", "Write field: " + this + " (" + object.getClass().getName() + ")" + " pos=" + output.position());
 
@@ -74,17 +66,15 @@ class ObjectField extends CachedField {
 				}
 				Registration registration = kryo.writeClass(output, value.getClass());
 				if (serializer == null) serializer = registration.getSerializer();
-				// if (generics != null)
 				serializer.setGenerics(kryo, generics);
 				kryo.writeObject(output, value, serializer);
 			} else {
 				// The concrete type of the field is known, always use the same serializer.
 				if (serializer == null) this.serializer = serializer = kryo.getSerializer(valueClass);
-				// if (generics != null)
 				serializer.setGenerics(kryo, generics);
-				if (canBeNull) {
+				if (canBeNull)
 					kryo.writeObjectOrNull(output, value, serializer);
-				} else {
+				else {
 					if (value == null) {
 						throw new KryoException(
 							"Field value is null but canBeNull is false: " + this + " (" + object.getClass().getName() + ")");
@@ -101,9 +91,6 @@ class ObjectField extends CachedField {
 			KryoException ex = new KryoException(runtimeEx);
 			ex.addTrace(this + " (" + object.getClass().getName() + ")");
 			throw ex;
-		} finally {
-			// if(typeVar2concreteClass != null)
-			// kryo.popGenericsScope();
 		}
 	}
 
@@ -120,13 +107,11 @@ class ObjectField extends CachedField {
 					value = null;
 				else {
 					if (serializer == null) serializer = registration.getSerializer();
-					// if (generics != null)
 					serializer.setGenerics(kryo, generics);
 					value = kryo.readObject(input, registration.getType(), serializer);
 				}
 			} else {
 				if (serializer == null) this.serializer = serializer = kryo.getSerializer(valueClass);
-				// if (generics != null)
 				serializer.setGenerics(kryo, generics);
 				if (canBeNull)
 					value = kryo.readObjectOrNull(input, concreteType, serializer);
@@ -144,19 +129,12 @@ class ObjectField extends CachedField {
 			KryoException ex = new KryoException(runtimeEx);
 			ex.addTrace(this + " (" + type.getName() + ")");
 			throw ex;
-		} finally {
-			// if(typeVar2concreteClass != null)
-			// kryo.popGenericsScope();
 		}
 	}
 
 	public void copy (Object original, Object copy) {
 		try {
-			if (accessIndex != -1) {
-				FieldAccess access = (FieldAccess)fieldSerializer.access;
-				access.set(copy, accessIndex, kryo.copy(access.get(original, accessIndex)));
-			} else
-				setField(copy, kryo.copy(getField(original)));
+			setField(copy, kryo.copy(getField(original)));
 		} catch (IllegalAccessException ex) {
 			throw new KryoException("Error accessing field: " + this + " (" + type.getName() + ")", ex);
 		} catch (KryoException ex) {
@@ -169,9 +147,9 @@ class ObjectField extends CachedField {
 		}
 	}
 
-	final static class ObjectIntField extends ObjectField {
-		public ObjectIntField (FieldSerializer fieldSerializer) {
-			super(fieldSerializer);
+	final static class IntReflectField extends ReflectField {
+		public IntReflectField (Kryo kryo, Class type) {
+			super(kryo, type);
 		}
 
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
@@ -180,7 +158,7 @@ class ObjectField extends CachedField {
 
 		public void write (Output output, Object object) {
 			try {
-				if (varIntsEnabled)
+				if (varInt)
 					output.writeInt(field.getInt(object), false);
 				else
 					output.writeInt(field.getInt(object));
@@ -193,7 +171,7 @@ class ObjectField extends CachedField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (varIntsEnabled)
+				if (varInt)
 					field.setInt(object, input.readInt(false));
 				else
 					field.setInt(object, input.readInt());
@@ -215,9 +193,9 @@ class ObjectField extends CachedField {
 		}
 	}
 
-	final static class ObjectFloatField extends ObjectField {
-		public ObjectFloatField (FieldSerializer fieldSerializer) {
-			super(fieldSerializer);
+	final static class FloatReflectField extends ReflectField {
+		public FloatReflectField (Kryo kryo, Class type) {
+			super(kryo, type);
 		}
 
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
@@ -255,9 +233,9 @@ class ObjectField extends CachedField {
 		}
 	}
 
-	final static class ObjectShortField extends ObjectField {
-		public ObjectShortField (FieldSerializer fieldSerializer) {
-			super(fieldSerializer);
+	final static class ShortReflectField extends ReflectField {
+		public ShortReflectField (Kryo kryo, Class type) {
+			super(kryo, type);
 		}
 
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
@@ -295,9 +273,9 @@ class ObjectField extends CachedField {
 		}
 	}
 
-	final static class ObjectByteField extends ObjectField {
-		public ObjectByteField (FieldSerializer fieldSerializer) {
-			super(fieldSerializer);
+	final static class ByteReflectField extends ReflectField {
+		public ByteReflectField (Kryo kryo, Class type) {
+			super(kryo, type);
 		}
 
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
@@ -335,9 +313,9 @@ class ObjectField extends CachedField {
 		}
 	}
 
-	final static class ObjectBooleanField extends ObjectField {
-		public ObjectBooleanField (FieldSerializer fieldSerializer) {
-			super(fieldSerializer);
+	final static class BooleanReflectField extends ReflectField {
+		public BooleanReflectField (Kryo kryo, Class type) {
+			super(kryo, type);
 		}
 
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
@@ -375,9 +353,9 @@ class ObjectField extends CachedField {
 		}
 	}
 
-	final static class ObjectCharField extends ObjectField {
-		public ObjectCharField (FieldSerializer fieldSerializer) {
-			super(fieldSerializer);
+	final static class CharReflectField extends ReflectField {
+		public CharReflectField (Kryo kryo, Class type) {
+			super(kryo, type);
 		}
 
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
@@ -415,9 +393,9 @@ class ObjectField extends CachedField {
 		}
 	}
 
-	final static class ObjectLongField extends ObjectField {
-		public ObjectLongField (FieldSerializer fieldSerializer) {
-			super(fieldSerializer);
+	final static class LongReflectField extends ReflectField {
+		public LongReflectField (Kryo kryo, Class type) {
+			super(kryo, type);
 		}
 
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
@@ -426,7 +404,7 @@ class ObjectField extends CachedField {
 
 		public void write (Output output, Object object) {
 			try {
-				if (varIntsEnabled)
+				if (varInt)
 					output.writeLong(field.getLong(object), false);
 				else
 					output.writeLong(field.getLong(object));
@@ -439,7 +417,7 @@ class ObjectField extends CachedField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (varIntsEnabled)
+				if (varInt)
 					field.setLong(object, input.readLong(false));
 				else
 					field.setLong(object, input.readLong());
@@ -461,9 +439,9 @@ class ObjectField extends CachedField {
 		}
 	}
 
-	final static class ObjectDoubleField extends ObjectField {
-		public ObjectDoubleField (FieldSerializer fieldSerializer) {
-			super(fieldSerializer);
+	final static class DoubleReflectField extends ReflectField {
+		public DoubleReflectField (Kryo kryo, Class type) {
+			super(kryo, type);
 		}
 
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {

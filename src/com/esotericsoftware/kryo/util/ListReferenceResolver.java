@@ -28,7 +28,7 @@ import com.esotericsoftware.kryo.ReferenceResolver;
  * {@link MapReferenceResolver} for graphs with few objects, providing an approximate 15% increase in deserialization speed. This
  * should not be used for graphs with many objects because it uses a linear look up to find objects that have already been
  * written.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class ListReferenceResolver implements ReferenceResolver {
 	protected Kryo kryo;
 	protected final ArrayList seenObjects = new ArrayList();

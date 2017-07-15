@@ -37,8 +37,9 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 
-/** @author Nathan Sweet <misc@n4te.com> */
+/** @author Nathan Sweet */
 public class DefaultSerializersTest extends KryoTestCase {
 	{
 		supportsCopy = true;
@@ -134,7 +135,6 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 	public void testString () {
 		kryo = new Kryo();
-		kryo.setRegistrationRequired(true);
 		roundTrip(6, "meow");
 		roundTrip(70, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 
@@ -155,7 +155,6 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 	public void testNull () {
 		kryo = new Kryo();
-		kryo.setRegistrationRequired(true);
 		kryo.register(ArrayList.class);
 		roundTrip(1, null);
 		testNull(Long.class);
@@ -338,7 +337,6 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	public void testLocaleSerializer () {
-		kryo.setRegistrationRequired(true);
 		kryo.register(Locale.class);
 
 		roundTrip(5, Locale.ENGLISH);
@@ -369,8 +367,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	public void testURLSerializer () throws Exception {
-		kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
-		kryo.setRegistrationRequired(true);
+		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.register(URL.class);
 
 		roundTrip(41, new URL("https://github.com/EsotericSoftware/kryo"));

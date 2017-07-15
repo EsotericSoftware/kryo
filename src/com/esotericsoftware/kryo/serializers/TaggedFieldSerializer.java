@@ -38,8 +38,8 @@ import com.esotericsoftware.kryo.io.OutputChunked;
 
 /** Serializes objects using direct field assignment for fields that have a <code>@Tag(int)</code> annotation. This provides
  * backward compatibility so new fields can be added. TaggedFieldSerializer has two advantages over {@link VersionFieldSerializer}
- * : 1) fields can be renamed and 2) fields marked with the <code>@Deprecated</code> annotation will be ignored when reading old
- * bytes and won't be written to new bytes. Deprecation effectively removes the field from serialization, though the field and
+ * : 1) fields can be renamed and 2) fields marked with the <code>@Deprecated</code> annotation will be read when reading old
+ * bytes but won't be written to new bytes. Deprecation effectively removes the field from serialization, though the field and
  * <code>@Tag</code> annotation must remain in the class. Deprecated fields can optionally be made private and/or renamed so they
  * don't clutter the class (eg, <code>ignored</code>, <code>ignored2</code>). For these reasons, TaggedFieldSerializer generally
  * provides more flexibility for classes to evolve. The downside is that it has a small amount of additional overhead compared to
@@ -47,26 +47,33 @@ import com.esotericsoftware.kryo.io.OutputChunked;
  * <p>
  * Forward compatibility is optionally supported by enabling {@link TaggedFieldSerializerConfig#setSkipUnknownTags(boolean)},
  * which allows it to skip reading unknown tagged fields, which are presumably new fields added in future versions of an
- * application. The data is only forward compatible if the newly added fields are tagged with
- * {@link TaggedFieldSerializer.Tag#annexed()} set true, which comes with the cost of chunked encoding. When annexed fields are
- * encountered during the read or write process of an object, a buffer is allocated to perform the chunked encoding.
+ * application. The data is only forward compatible for fields that have {@link TaggedFieldSerializer.Tag#annexed()} set to true,
+ * which comes with the cost of chunked encoding: when annexed fields are encountered during the read or write process of an
+ * object, a buffer is allocated to perform the chunked encoding.
  * <p>
- * Tag values must be entirely unique, even among a class and its superclass(es). An IllegalArgumentException will be thrown by
- * {@link Kryo#register(Class)} (and its overloads) if duplicate Tag values are encountered.
+ * Tag values must be entirely unique, both within a class and all its superclasses. An IllegalArgumentException will be thrown by
+ * {@link Kryo#register(Class)} (and its overloads) if duplicate tag values are encountered.
  * @see VersionFieldSerializer
- * @author Nathan Sweet <misc@n4te.com> */
-public class TaggedFieldSerializer<T> extends FieldSerializer<T, TaggedFieldSerializerConfig> {
+ * @author Nathan Sweet */
+public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
+	static private final Comparator<CachedField> tagComparator = new Comparator<CachedField>() {
+		public int compare (CachedField o1, CachedField o2) {
+			return o1.getField().getAnnotation(Tag.class).value() - o2.getField().getAnnotation(Tag.class).value();
+		}
+	};
+
 	private int[] tags;
 	private int writeFieldCount;
-	private boolean[] deprecated;
-	private boolean[] annexed;
+	private boolean[] deprecated, annexed;
+	private final TaggedFieldSerializerConfig config;
 
 	public TaggedFieldSerializer (Kryo kryo, Class type) {
-		super(kryo, type, null, new TaggedFieldSerializerConfig());
+		this(kryo, type, new TaggedFieldSerializerConfig());
 	}
 
 	public TaggedFieldSerializer (Kryo kryo, Class type, TaggedFieldSerializerConfig config) {
 		super(kryo, type, null, config);
+		this.config = config;
 	}
 
 	protected void initializeCachedFields () {
@@ -86,7 +93,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T, TaggedFieldSeri
 		annexed = new boolean[fields.length];
 		writeFieldCount = fields.length;
 
-		Arrays.sort(fields, TAGGED_VALUE_COMPARATOR); // fields are sorted to easily check for reused tag values
+		Arrays.sort(fields, tagComparator); // fields are sorted to easily check for reused tag values
 		for (int i = 0, n = fields.length; i < n; i++) {
 			Field field = fields[i].getField();
 			tags[i] = field.getAnnotation(Tag.class).value();
@@ -100,7 +107,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T, TaggedFieldSeri
 			if (field.getAnnotation(Tag.class).annexed()) annexed[i] = true;
 		}
 
-		this.removedFields.clear();
+		cachedFields.removedFields.clear();
 	}
 
 	public void removeField (String fieldName) {
@@ -115,12 +122,12 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T, TaggedFieldSeri
 
 	public void write (Kryo kryo, Output output, T object) {
 		CachedField[] fields = getFields();
-		output.writeVarInt(writeFieldCount, true); // Can be used for null.
+		output.writeInt(writeFieldCount, true); // Can be used for null.
 
 		OutputChunked outputChunked = null; // only instantiate if needed
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (deprecated[i]) continue;
-			output.writeVarInt(tags[i], true);
+			output.writeInt(tags[i], true);
 			if (annexed[i]) {
 				if (outputChunked == null) outputChunked = new OutputChunked(output, 1024);
 				fields[i].write(outputChunked, object);
@@ -134,12 +141,12 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T, TaggedFieldSeri
 	public T read (Kryo kryo, Input input, Class<T> type) {
 		T object = create(kryo, input, type);
 		kryo.reference(object);
-		int fieldCount = input.readVarInt(true);
+		int fieldCount = input.readInt(true);
 		int[] tags = this.tags;
 		InputChunked inputChunked = null; // only instantiate if needed
 		CachedField[] fields = getFields();
 		for (int i = 0, n = fieldCount; i < n; i++) {
-			int tag = input.readVarInt(true);
+			int tag = input.readInt(true);
 
 			CachedField cachedField = null;
 			boolean isAnnexed = false;
@@ -169,11 +176,9 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T, TaggedFieldSeri
 		return object;
 	}
 
-	static private final Comparator<CachedField> TAGGED_VALUE_COMPARATOR = new Comparator<CachedField>() {
-		public int compare (CachedField o1, CachedField o2) {
-			return o1.getField().getAnnotation(Tag.class).value() - o2.getField().getAnnotation(Tag.class).value();
-		}
-	};
+	public TaggedFieldSerializerConfig getTaggedFieldSerializerConfig () {
+		return config;
+	}
 
 	/** Marks a field for serialization. */
 	@Retention(RetentionPolicy.RUNTIME)
@@ -181,8 +186,8 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T, TaggedFieldSeri
 	public @interface Tag {
 		int value();
 
-		/** If true, the field is serialized with chunked encoding and is forward compatible, meaning safe to read in iterations of
-		 * the class without it if {@link TaggedFieldSerializerConfig#getSkipUnknownTags()}. */
+		/** If true, the field is serialized with chunked encoding and is forward compatible, meaning safe to read in versions of
+		 * the class without the field if {@link TaggedFieldSerializerConfig#getSkipUnknownTags()} is true. */
 		boolean annexed() default false;
 	}
 }

@@ -22,7 +22,7 @@ package com.esotericsoftware.kryo.util;
 import static com.esotericsoftware.minlog.Log.*;
 
 /** A few utility methods, mostly for private use.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class Util {
 	static public final boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
 

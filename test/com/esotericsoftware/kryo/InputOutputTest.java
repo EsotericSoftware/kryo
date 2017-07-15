@@ -33,7 +33,7 @@ import com.esotericsoftware.kryo.io.ByteBufferOutputStream;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-/** @author Nathan Sweet <misc@n4te.com> */
+/** @author Nathan Sweet */
 public class InputOutputTest extends KryoTestCase {
 	public void testOutputStream () throws IOException {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -823,11 +823,11 @@ public class InputOutputTest extends KryoTestCase {
 		Output out2 = new ByteBufferOutput(4, -1);
 
 		for (int i = 0; i < 16; i++) {
-			out1.writeVarInt(92, false);
+			out1.writeInt(92, false);
 		}
 
 		for (int i = 0; i < 16; i++) {
-			out2.writeVarInt(92, false);
+			out2.writeInt(92, false);
 		}
 
 		assertEquals(out1.toBytes(), out2.toBytes());

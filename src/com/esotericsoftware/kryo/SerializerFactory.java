@@ -35,7 +35,7 @@ public interface SerializerFactory {
 	 * @param kryo The serializer instance requesting the new serializer.
 	 * @param type The type of the object that is to be serialized.
 	 * @return An implementation of a serializer that is able to serialize an object of type {@code type}. */
-	Serializer newSerializer (Kryo kryo, Class<?> type);
+	Serializer newSerializer (Kryo kryo, Class type);
 
 	/** This factory instantiates new serializers of a given class via reflection. The constructors of the given
 	 * {@code serializerClass} must either take an instance of {@link Kryo} and an instance of {@link Class} as its parameter, take
@@ -49,14 +49,13 @@ public interface SerializerFactory {
 			this.serializerClass = serializerClass;
 		}
 
-		@Override
-		public Serializer newSerializer (Kryo kryo, Class<?> type) {
+		public Serializer newSerializer (Kryo kryo, Class type) {
 			return newSerializer(kryo, serializerClass, type);
 		}
 
 		/** Creates a new instance of the specified serializer for serializing the specified class. Serializers must have a zero
 		 * argument constructor or one that takes (Kryo), (Class), or (Kryo, Class). */
-		static public Serializer newSerializer (Kryo kryo, Class<? extends Serializer> serializerClass, Class<?> type) {
+		static public Serializer newSerializer (Kryo kryo, Class<? extends Serializer> serializerClass, Class type) {
 			try {
 				try {
 					return serializerClass.getConstructor(Kryo.class, Class.class).newInstance(kryo, type);
@@ -83,14 +82,13 @@ public interface SerializerFactory {
 	 * different {@link Kryo} instances.
 	 * @author Rafael Winterhalter <rafael.wth@web.de> */
 	static public class SingletonSerializerFactory implements SerializerFactory {
-		private final Serializer<?> serializer;
+		private final Serializer serializer;
 
-		public SingletonSerializerFactory (Serializer<?> serializer) {
+		public SingletonSerializerFactory (Serializer serializer) {
 			this.serializer = serializer;
 		}
 
-		@Override
-		public Serializer newSerializer (Kryo kryo, Class<?> type) {
+		public Serializer newSerializer (Kryo kryo, Class type) {
 			return serializer;
 		}
 	}
@@ -112,7 +110,7 @@ public interface SerializerFactory {
 			return config;
 		}
 
-		public Serializer newSerializer (Kryo kryo, Class<?> type) {
+		public Serializer newSerializer (Kryo kryo, Class type) {
 			return new FieldSerializer(kryo, type, null, config.clone());
 		}
 	}
@@ -134,7 +132,7 @@ public interface SerializerFactory {
 			return config;
 		}
 
-		public Serializer newSerializer (Kryo kryo, Class<?> type) {
+		public Serializer newSerializer (Kryo kryo, Class type) {
 			return new TaggedFieldSerializer(kryo, type, config.clone());
 		}
 	}

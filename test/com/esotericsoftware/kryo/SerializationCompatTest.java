@@ -40,8 +40,7 @@ import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.minlog.Log;
 
 /** Test for serialization compatibility: data serialized with an older version (same major version) must be deserializable with
@@ -68,11 +67,11 @@ import com.esotericsoftware.minlog.Log;
  * version (e.g. for 3.1.4 this is 3.0.0) - to do this just save this test and the {@link SerializationCompatTest}, go back to the
  * related tag and run the test (there's nothing here to automate creation of test files for a different version). */
 public class SerializationCompatTest extends KryoTestCase {
-
 	static private final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
 	static private final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
-	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 35 : 53;
-	static private final List<TestDataDescription<?>> TEST_DATAS = new ArrayList<TestDataDescription<?>>();
+	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 35 : 53; // Also change
+																															// Kryo#defaultSerializers.
+	static private final List<TestDataDescription> TEST_DATAS = new ArrayList();
 
 	static {
 		TEST_DATAS.add(new TestDataDescription<TestData>("3.0.0", new TestData(), 1865, 1882));
@@ -84,7 +83,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		FieldSerializerFactory factory = new FieldSerializerFactory();
 		factory.getConfig().setOptimizedGenerics(optimizedGenerics);
 		kryo.setDefaultSerializer(factory);
-		kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
 		// we register EnumSet so that the EnumSet implementation class name is not written: EnumSet implementations
@@ -97,7 +96,7 @@ public class SerializationCompatTest extends KryoTestCase {
 	public void testDefaultSerializers () throws Exception {
 		Field defaultSerializersField = Kryo.class.getDeclaredField("defaultSerializers");
 		defaultSerializersField.setAccessible(true);
-		List<?> defaultSerializers = (List<?>)defaultSerializersField.get(kryo);
+		List defaultSerializers = (List)defaultSerializersField.get(kryo);
 		assertEquals("The registered default serializers changed.\n" + "Because serialization compatibility shall be checked"
 			+ " for default serializers, you must extend SerializationCompatTestData.TestData to have a field for the"
 			+ " type of the new default serializer.\n" + "After that's done, you must create new versions of 'test/resources/data*'"
@@ -183,13 +182,12 @@ public class SerializationCompatTest extends KryoTestCase {
 		}
 	}
 
-	private void runTestAndWrite (TestDataDescription<?> description, boolean optimizedGenerics, Output out)
+	private void runTestAndWrite (TestDataDescription description, boolean optimizedGenerics, Output out)
 		throws FileNotFoundException {
 		roundTrip(optimizedGenerics ? description.lengthOptGenerics : description.lengthNonOptGenerics, description.testData);
 		kryo.writeObject(out, description.testData);
 	}
 
-	@Override
 	protected void doAssertEquals (final Object one, final Object another) {
 		try {
 			assertReflectionEquals(one, another);

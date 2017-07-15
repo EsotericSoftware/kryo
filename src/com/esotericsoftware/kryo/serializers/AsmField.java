@@ -19,6 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -26,23 +27,46 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 /*** Implementations of ASM-based serializers for fields.
- * 
- * @author Nathan Sweet <misc@n4te.com> */
-class AsmCacheFields {
-
-	abstract static class AsmCachedField extends CachedField {
+ * @author Nathan Sweet */
+class AsmField extends ReflectField {
+	public AsmField (Kryo kryo, Class type) {
+		super(kryo, type);
 	}
 
-	final static class AsmIntField extends AsmCachedField {
+	public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+		if (accessIndex == -1) throw new KryoException("Unknown access index");
+		return access.get(object, accessIndex);
+	}
+
+	public void setField (Object object, Object value) throws IllegalArgumentException, IllegalAccessException {
+		if (accessIndex == -1) throw new KryoException("Unknown access index");
+		((FieldAccess)access).set(object, accessIndex, value);
+	}
+
+	public void copy (Object original, Object copy) {
+		try {
+			if (accessIndex == -1) throw new KryoException("Unknown access index");
+			access.set(copy, accessIndex, kryo.copy(access.get(original, accessIndex)));
+		} catch (KryoException ex) {
+			ex.addTrace(this + " (" + type.getName() + ")");
+			throw ex;
+		} catch (RuntimeException runtimeEx) {
+			KryoException ex = new KryoException(runtimeEx);
+			ex.addTrace(this + " (" + type.getName() + ")");
+			throw ex;
+		}
+	}
+
+	final static class IntAsmField extends CachedField {
 		public void write (Output output, Object object) {
-			if (varIntsEnabled)
+			if (varInt)
 				output.writeInt(access.getInt(object, accessIndex), false);
 			else
 				output.writeInt(access.getInt(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			if (varIntsEnabled)
+			if (varInt)
 				access.setInt(object, accessIndex, input.readInt(false));
 			else
 				access.setInt(object, accessIndex, input.readInt());
@@ -53,7 +77,7 @@ class AsmCacheFields {
 		}
 	}
 
-	final static class AsmFloatField extends AsmCachedField {
+	final static class FloatAsmField extends CachedField {
 		public void write (Output output, Object object) {
 			output.writeFloat(access.getFloat(object, accessIndex));
 		}
@@ -67,7 +91,7 @@ class AsmCacheFields {
 		}
 	}
 
-	final static class AsmShortField extends AsmCachedField {
+	final static class ShortAsmField extends CachedField {
 		public void write (Output output, Object object) {
 			output.writeShort(access.getShort(object, accessIndex));
 		}
@@ -81,7 +105,7 @@ class AsmCacheFields {
 		}
 	}
 
-	final static class AsmByteField extends AsmCachedField {
+	final static class ByteAsmField extends CachedField {
 		public void write (Output output, Object object) {
 			output.writeByte(access.getByte(object, accessIndex));
 		}
@@ -95,7 +119,7 @@ class AsmCacheFields {
 		}
 	}
 
-	final static class AsmBooleanField extends AsmCachedField {
+	final static class BooleanAsmField extends CachedField {
 		public void write (Output output, Object object) {
 			output.writeBoolean(access.getBoolean(object, accessIndex));
 		}
@@ -109,7 +133,7 @@ class AsmCacheFields {
 		}
 	}
 
-	final static class AsmCharField extends AsmCachedField {
+	final static class CharAsmField extends CachedField {
 		public void write (Output output, Object object) {
 			output.writeChar(access.getChar(object, accessIndex));
 		}
@@ -123,16 +147,16 @@ class AsmCacheFields {
 		}
 	}
 
-	final static class AsmLongField extends AsmCachedField {
+	final static class LongAsmField extends CachedField {
 		public void write (Output output, Object object) {
-			if (varIntsEnabled)
+			if (varInt)
 				output.writeLong(access.getLong(object, accessIndex), false);
 			else
 				output.writeLong(access.getLong(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			if (varIntsEnabled)
+			if (varInt)
 				access.setLong(object, accessIndex, input.readLong(false));
 			else
 				access.setLong(object, accessIndex, input.readLong());
@@ -143,7 +167,7 @@ class AsmCacheFields {
 		}
 	}
 
-	final static class AsmDoubleField extends AsmCachedField {
+	final static class DoubleAsmField extends CachedField {
 		public void write (Output output, Object object) {
 			output.writeDouble(access.getDouble(object, accessIndex));
 		}
@@ -157,7 +181,7 @@ class AsmCacheFields {
 		}
 	}
 
-	final static class AsmStringField extends AsmCachedField {
+	final static class StringAsmField extends CachedField {
 		public void write (Output output, Object object) {
 			output.writeString(access.getString(object, accessIndex));
 		}
@@ -168,41 +192,6 @@ class AsmCacheFields {
 
 		public void copy (Object original, Object copy) {
 			access.set(copy, accessIndex, access.getString(original, accessIndex));
-		}
-	}
-
-	final static class AsmObjectField extends ObjectField {
-
-		public AsmObjectField (FieldSerializer fieldSerializer) {
-			super(fieldSerializer);
-		}
-
-		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
-			if (accessIndex != -1) return ((FieldAccess)access).get(object, accessIndex);
-			throw new KryoException("Unknown acess index");
-		}
-
-		public void setField (Object object, Object value) throws IllegalArgumentException, IllegalAccessException {
-			if (accessIndex != -1)
-				((FieldAccess)access).set(object, accessIndex, value);
-			else
-				throw new KryoException("Unknown acess index");
-		}
-
-		public void copy (Object original, Object copy) {
-			try {
-				if (accessIndex != -1) {
-					access.set(copy, accessIndex, kryo.copy(access.get(original, accessIndex)));
-				} else
-					throw new KryoException("Unknown acess index");
-			} catch (KryoException ex) {
-				ex.addTrace(this + " (" + type.getName() + ")");
-				throw ex;
-			} catch (RuntimeException runtimeEx) {
-				KryoException ex = new KryoException(runtimeEx);
-				ex.addTrace(this + " (" + type.getName() + ")");
-				throw ex;
-			}
 		}
 	}
 }

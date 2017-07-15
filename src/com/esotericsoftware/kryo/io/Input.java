@@ -30,7 +30,7 @@ import com.esotericsoftware.kryo.util.Util;
  * <p>
  * The byte[] buffer may be modified and then returned to its original state during some read operations, so the same byte[]
  * should not be used concurrently in separate threads.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class Input extends InputStream {
 	protected byte[] buffer;
 	protected int position;
@@ -40,7 +40,7 @@ public class Input extends InputStream {
 	protected char[] chars = new char[32];
 	protected InputStream inputStream;
 
-	/** Creates an uninitialized Input. {@link #setBuffer(byte[])} must be called before the Input is used. */
+	/** Creates an uninitialized Input, {@link #setBuffer(byte[])} must be called before the Input is used. */
 	public Input () {
 	}
 
@@ -248,7 +248,7 @@ public class Input extends InputStream {
 	// InputStream
 
 	public int available () throws IOException {
-		return limit - position + ((null != inputStream) ? inputStream.available() : 0);
+		return limit - position + (inputStream != null ? inputStream.available() : 0);
 	}
 
 	/** Reads a single byte as an int from 0 to 255, or -1 if there are no more bytes are available. */
@@ -362,15 +362,8 @@ public class Input extends InputStream {
 			| buffer[position + 3] & 0xFF;
 	}
 
-	/** Reads a 1-5 byte int. This stream may consider such a variable length encoding request as a hint. It is not guaranteed that
-	 * a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
-	 * efficiency reasons. **/
+	/** Reads a 1-5 byte int. */
 	public int readInt (boolean optimizePositive) throws KryoException {
-		return readVarInt(optimizePositive);
-	}
-
-	/** Reads a 1-5 byte int. It is guaranteed that a varible length encoding will be used. */
-	public int readVarInt (boolean optimizePositive) throws KryoException {
 		if (require(1) < 5) return readInt_slow(optimizePositive);
 		int b = buffer[position++];
 		int result = b & 0x7F;
@@ -697,15 +690,8 @@ public class Input extends InputStream {
 
 	}
 
-	/** Reads a 1-9 byte long. This stream may consider such a variable length encoding request as a hint. It is not guaranteed
-	 * that a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
-	 * efficiency reasons. */
+	/** Reads a 1-9 byte long. */
 	public long readLong (boolean optimizePositive) throws KryoException {
-		return readVarLong(optimizePositive);
-	}
-
-	/** Reads a 1-9 byte long. It is guaranteed that a varible length encoding will be used. */
-	public long readVarLong (boolean optimizePositive) throws KryoException {
 		if (require(1) < 9) return readLong_slow(optimizePositive);
 		int b = buffer[position++];
 		long result = b & 0x7F;

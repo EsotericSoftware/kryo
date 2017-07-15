@@ -19,19 +19,15 @@
 
 package com.esotericsoftware.kryo;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 
-/** @author Nathan Sweet <misc@n4te.com> */
+import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
+import com.esotericsoftware.minlog.Log;
+
+/** @author Nathan Sweet */
 public class CompatibleFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
@@ -172,7 +168,6 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.yy = "yy";
 		object1.zz = "zzaa";
 
-
 		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
 		roundTrip(236, object1);
 
@@ -181,9 +176,9 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.register(ClassWithManyFields.class, serializer);
 		Object object2 = kryo.readClassAndObject(input);
 		assertTrue(object2 instanceof ClassWithManyFields);
-		assertNull("the bAdd field should be null", ((ClassWithManyFields) object2).bAdd);
+		assertNull("the bAdd field should be null", ((ClassWithManyFields)object2).bAdd);
 		// update the field in order to verify the remainder of the object was deserialized correctly
-		((ClassWithManyFields) object2).bAdd = object1.bAdd;
+		((ClassWithManyFields)object2).bAdd = object1.bAdd;
 		assertEquals(object1, object2);
 	}
 
@@ -192,8 +187,9 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 		// this test would fail with DEFAULT field name strategy
 		FieldSerializerConfig config = new FieldSerializerConfig();
-		config.setCachedFieldNameStrategy(FieldSerializer.CachedFieldNameStrategy.EXTENDED);
+		config.setExtendedFieldNames(true);
 
+		Log.TRACE();
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ExtendedTestClass.class, config);
 		kryo.register(ExtendedTestClass.class, serializer);
 		roundTrip(286, extendedObject);
@@ -301,49 +297,18 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		public String j0;
 		public String k0;
 
-		@Override
-		public boolean equals(Object obj) {
+		
+		public boolean equals (Object obj) {
 			if (obj instanceof ClassWithManyFields) {
-				ClassWithManyFields other = (ClassWithManyFields) obj;
-				return new EqualsBuilder()
-						.append(aa, other.aa)
-						.append(a0, other.a0)
-						.append(bb, other.bb)
-						.append(b0, other.b0)
-						.append(cc, other.cc)
-						.append(c0, other.c0)
-						.append(dd, other.dd)
-						.append(d0, other.d0)
-						.append(ee, other.ee)
-						.append(e0, other.e0)
-						.append(ff, other.ff)
-						.append(f0, other.f0)
-						.append(gg, other.gg)
-						.append(g0, other.g0)
-						.append(hh, other.hh)
-						.append(h0, other.h0)
-						.append(ii, other.ii)
-						.append(i0, other.i0)
-						.append(jj, other.jj)
-						.append(j0, other.j0)
-						.append(kk, other.kk)
-						.append(k0, other.k0)
-						.append(ll, other.ll)
-						.append(mm, other.mm)
-						.append(nn, other.nn)
-						.append(oo, other.oo)
-						.append(pp, other.pp)
-						.append(qq, other.qq)
-						.append(rr, other.rr)
-						.append(ss, other.ss)
-						.append(tt, other.tt)
-						.append(uu, other.uu)
-						.append(vv, other.vv)
-						.append(xx, other.xx)
-						.append(yy, other.yy)
-						.append(zz, other.zz)
-						.append(bAdd, other.bAdd)
-						.isEquals();
+				ClassWithManyFields other = (ClassWithManyFields)obj;
+				return new EqualsBuilder().append(aa, other.aa).append(a0, other.a0).append(bb, other.bb).append(b0, other.b0)
+					.append(cc, other.cc).append(c0, other.c0).append(dd, other.dd).append(d0, other.d0).append(ee, other.ee)
+					.append(e0, other.e0).append(ff, other.ff).append(f0, other.f0).append(gg, other.gg).append(g0, other.g0)
+					.append(hh, other.hh).append(h0, other.h0).append(ii, other.ii).append(i0, other.i0).append(jj, other.jj)
+					.append(j0, other.j0).append(kk, other.kk).append(k0, other.k0).append(ll, other.ll).append(mm, other.mm)
+					.append(nn, other.nn).append(oo, other.oo).append(pp, other.pp).append(qq, other.qq).append(rr, other.rr)
+					.append(ss, other.ss).append(tt, other.tt).append(uu, other.uu).append(vv, other.vv).append(xx, other.xx)
+					.append(yy, other.yy).append(zz, other.zz).append(bAdd, other.bAdd).isEquals();
 			}
 			return false;
 		}

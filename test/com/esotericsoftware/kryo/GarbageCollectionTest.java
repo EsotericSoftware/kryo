@@ -32,7 +32,7 @@ import junit.framework.TestCase;
 public class GarbageCollectionTest extends TestCase {
 	public void test () {
 		Kryo kryo = new Kryo(new DefaultClassResolver(), new MapReferenceResolver());
-		WeakReference<Kryo> kryoWeakRef = new WeakReference<Kryo>(kryo);
+		WeakReference<Kryo> kryoWeakRef = new WeakReference(kryo);
 		kryo = null; // remove strong ref, now kryo is only weak-reachable
 		reclaim(kryoWeakRef);
 	}

@@ -23,7 +23,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 /** Reads and writes objects to and from bytes.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public abstract class Serializer<T> {
 	private boolean acceptsNull, immutable;
 

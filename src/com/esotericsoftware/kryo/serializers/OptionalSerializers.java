@@ -35,31 +35,28 @@ import com.esotericsoftware.kryo.io.Output;
  * serializers for java >= 1.8. */
 public final class OptionalSerializers {
 	static public void addDefaultSerializers (Kryo kryo) {
-		if (isClassAvailable("java.util.Optional")) kryo.addDefaultSerializer(Optional.class, new OptionalSerializer());
-		if (isClassAvailable("java.util.OptionalInt")) kryo.addDefaultSerializer(OptionalInt.class, new OptionalIntSerializer());
-		if (isClassAvailable("java.util.OptionalLong")) kryo.addDefaultSerializer(OptionalLong.class, new OptionalLongSerializer());
+		if (isClassAvailable("java.util.Optional")) kryo.addDefaultSerializer(Optional.class, OptionalSerializer.class);
+		if (isClassAvailable("java.util.OptionalInt")) kryo.addDefaultSerializer(OptionalInt.class, OptionalIntSerializer.class);
+		if (isClassAvailable("java.util.OptionalLong")) kryo.addDefaultSerializer(OptionalLong.class, OptionalLongSerializer.class);
 		if (isClassAvailable("java.util.OptionalDouble"))
-			kryo.addDefaultSerializer(OptionalDouble.class, new OptionalDoubleSerializer());
+			kryo.addDefaultSerializer(OptionalDouble.class, OptionalDoubleSerializer.class);
 	}
 
-	static class OptionalSerializer extends Serializer<Optional> {
+	static public class OptionalSerializer extends Serializer<Optional> {
 		{
 			setAcceptsNull(false);
 		}
 
-		@Override
 		@SuppressWarnings("unchecked")
 		public void write (Kryo kryo, Output output, Optional object) {
 			Object nullable = object.isPresent() ? object.get() : null;
 			kryo.writeClassAndObject(output, nullable);
 		}
 
-		@Override
 		public Optional read (Kryo kryo, Input input, Class<Optional> type) {
 			return Optional.ofNullable(kryo.readClassAndObject(input));
 		}
 
-		@Override
 		public Optional copy (Kryo kryo, Optional original) {
 			if (original.isPresent()) {
 				return Optional.of(kryo.copy(original.get()));
@@ -68,11 +65,7 @@ public final class OptionalSerializers {
 		}
 	}
 
-	static class OptionalIntSerializer extends Serializer<OptionalInt> {
-		{
-			setImmutable(true);
-		}
-
+	static public class OptionalIntSerializer extends ImmutableSerializer<OptionalInt> {
 		public void write (Kryo kryo, Output output, OptionalInt object) {
 			output.writeBoolean(object.isPresent());
 			if (object.isPresent()) output.writeInt(object.getAsInt());
@@ -84,11 +77,7 @@ public final class OptionalSerializers {
 		}
 	}
 
-	static class OptionalLongSerializer extends Serializer<OptionalLong> {
-		{
-			setImmutable(true);
-		}
-
+	static public class OptionalLongSerializer extends ImmutableSerializer<OptionalLong> {
 		public void write (Kryo kryo, Output output, OptionalLong object) {
 			output.writeBoolean(object.isPresent());
 			if (object.isPresent()) output.writeLong(object.getAsLong());
@@ -100,11 +89,7 @@ public final class OptionalSerializers {
 		}
 	}
 
-	static class OptionalDoubleSerializer extends Serializer<OptionalDouble> {
-		{
-			setImmutable(true);
-		}
-
+	static public class OptionalDoubleSerializer extends ImmutableSerializer<OptionalDouble> {
 		public void write (Kryo kryo, Output output, OptionalDouble object) {
 			output.writeBoolean(object.isPresent());
 			if (object.isPresent()) output.writeDouble(object.getAsDouble());

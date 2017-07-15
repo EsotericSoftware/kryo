@@ -36,7 +36,7 @@ import com.esotericsoftware.kryo.serializers.MapSerializer;
 
 import junit.framework.Assert;
 
-/** @author Nathan Sweet <misc@n4te.com> */
+/** @author Nathan Sweet */
 public class MapSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
@@ -64,19 +64,19 @@ public class MapSerializerTest extends KryoTestCase {
 	}
 
 	public void testEmptyHashMap () {
-		execute(new HashMap<Object, Object>(), 0);
+		execute(new HashMap(), 0);
 	}
 
 	public void testNotEmptyHashMap () {
-		execute(new HashMap<Object, Object>(), 1000);
+		execute(new HashMap(), 1000);
 	}
 
 	public void testEmptyConcurrentHashMap () {
-		execute(new ConcurrentHashMap<Object, Object>(), 0);
+		execute(new ConcurrentHashMap(), 0);
 	}
 
 	public void testNotEmptyConcurrentHashMap () {
-		execute(new ConcurrentHashMap<Object, Object>(), 1000);
+		execute(new ConcurrentHashMap(), 1000);
 	}
 
 	public void testGenerics () {
@@ -135,7 +135,7 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(21, map);
 
 		kryo.register(TreeMapSubclass.class);
-		map = new TreeMapSubclass<String, Integer>();
+		map = new TreeMapSubclass();
 		map.put("1", 47);
 		map.put("2", 34);
 		map.put("3", 65);
@@ -163,7 +163,7 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(29, map);
 
 		kryo.register(TreeMapSubclass.class);
-		map = new TreeMapSubclass<String, Integer>();
+		map = new TreeMapSubclass();
 		map.put("1", 47);
 		map.put("2", 34);
 		map.put("3", 65);
@@ -173,6 +173,7 @@ public class MapSerializerTest extends KryoTestCase {
 
 	public void testSerializingMapAfterDeserializingMultipleReferencesToSameMap () throws Exception {
 		Kryo kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
 		FieldSerializerFactory factory = new FieldSerializerFactory();
 		factory.getConfig().setOptimizedGenerics(false);
 		kryo.setDefaultSerializer(factory);
@@ -182,8 +183,8 @@ public class MapSerializerTest extends KryoTestCase {
 		kryo.readClassAndObject(new Input(new ByteArrayInputStream(output.getBuffer())));
 		output.clear();
 
-		Map<Integer, List<String>> mapOfLists = new HashMap<Integer, List<String>>();
-		mapOfLists.put(1, new java.util.ArrayList<String>());
+		Map<Integer, List<String>> mapOfLists = new HashMap();
+		mapOfLists.put(1, new java.util.ArrayList());
 		kryo.writeClassAndObject(output, mapOfLists);
 
 		@SuppressWarnings("unchecked")
@@ -193,7 +194,7 @@ public class MapSerializerTest extends KryoTestCase {
 	}
 
 	static class HasMultipleReferenceToSameMap {
-		private Map<Integer, String> mapOne = new HashMap<Integer, String>();
+		private Map<Integer, String> mapOne = new HashMap();
 		private Map<Integer, String> mapTwo = this.mapOne;
 	}
 

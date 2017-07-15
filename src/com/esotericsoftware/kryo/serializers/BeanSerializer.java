@@ -46,7 +46,7 @@ import com.esotericsoftware.reflectasm.MethodAccess;
  * primitives are final) then an extra byte is written for that property.
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class BeanSerializer<T> extends Serializer<T> {
 	static final Object[] noArgs = {};
 	private CachedProperty[] properties;

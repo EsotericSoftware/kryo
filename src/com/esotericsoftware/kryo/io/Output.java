@@ -27,11 +27,7 @@ import com.esotericsoftware.kryo.util.Util;
 
 /** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
  * for efficiently writing primitive types and strings.
- * 
- * Encoding of integers: BIG_ENDIAN is used for storing fixed native size integer values LITTLE_ENDIAN is used for a variable
- * length encoding of integer values
- * 
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class Output extends OutputStream {
 	protected int maxCapacity;
 	protected long total;
@@ -40,7 +36,7 @@ public class Output extends OutputStream {
 	protected byte[] buffer;
 	protected OutputStream outputStream;
 
-	/** Creates an uninitialized Output. {@link #setBuffer(byte[], int)} must be called before the Output is used. */
+	/** Creates an uninitialized Output, {@link #setBuffer(byte[], int)} must be called before the Output is used. */
 	public Output () {
 	}
 
@@ -265,21 +261,10 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
-	/** Writes a 1-5 byte int. This stream may consider such a variable length encoding request as a hint. It is not guaranteed
-	 * that a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
-	 * efficiency reasons.
-	 * 
+	/** Writes a 1-5 byte int.
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
 	 *           inefficient (5 bytes). */
 	public int writeInt (int value, boolean optimizePositive) throws KryoException {
-		return writeVarInt(value, optimizePositive);
-	}
-
-	/** Writes a 1-5 byte int. It is guaranteed that a varible length encoding will be used.
-	 * 
-	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (5 bytes). */
-	public int writeVarInt (int value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
 		if (value >>> 7 == 0) {
 			require(1);
@@ -539,20 +524,10 @@ public class Output extends OutputStream {
 		buffer[position++] = (byte)value;
 	}
 
-	/** Writes a 1-9 byte long. This stream may consider such a variable length encoding request as a hint. It is not guaranteed
-	 * that a variable length encoding will be really used. The stream may decide to use native-sized integer representation for
-	 * efficiency reasons.
-	 * 
+	/** Writes a 1-9 byte long.
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
 	 *           inefficient (9 bytes). */
 	public int writeLong (long value, boolean optimizePositive) throws KryoException {
-		return writeVarLong(value, optimizePositive);
-	}
-
-	/** Writes a 1-9 byte long. It is guaranteed that a varible length encoding will be used.
-	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (9 bytes). */
-	public int writeVarLong (long value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		if (value >>> 7 == 0) {
 			require(1);
@@ -666,31 +641,7 @@ public class Output extends OutputStream {
 		return writeLong((long)(value * precision), optimizePositive);
 	}
 
-	/** Returns the number of bytes that would be written with {@link #writeInt(int, boolean)}. */
-	static public int intLength (int value, boolean optimizePositive) {
-		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
-		if (value >>> 7 == 0) return 1;
-		if (value >>> 14 == 0) return 2;
-		if (value >>> 21 == 0) return 3;
-		if (value >>> 28 == 0) return 4;
-		return 5;
-	}
-
-	/** Returns the number of bytes that would be written with {@link #writeLong(long, boolean)}. */
-	static public int longLength (long value, boolean optimizePositive) {
-		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
-		if (value >>> 7 == 0) return 1;
-		if (value >>> 14 == 0) return 2;
-		if (value >>> 21 == 0) return 3;
-		if (value >>> 28 == 0) return 4;
-		if (value >>> 35 == 0) return 5;
-		if (value >>> 42 == 0) return 6;
-		if (value >>> 49 == 0) return 7;
-		if (value >>> 56 == 0) return 8;
-		return 9;
-	}
-
-	// Methods implementing bulk operations on arrays of primitive types
+	// Methods implementing bulk operations on arrays of primitive types:
 
 	/** Bulk output of an int array. */
 	public void writeInts (int[] object, boolean optimizePositive) throws KryoException {
@@ -738,5 +689,29 @@ public class Output extends OutputStream {
 	public void writeDoubles (double[] object) throws KryoException {
 		for (int i = 0, n = object.length; i < n; i++)
 			writeDouble(object[i]);
+	}
+
+	/** Returns the number of bytes that would be written with {@link #writeInt(int, boolean)}. */
+	static public int intLength (int value, boolean optimizePositive) {
+		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
+		if (value >>> 7 == 0) return 1;
+		if (value >>> 14 == 0) return 2;
+		if (value >>> 21 == 0) return 3;
+		if (value >>> 28 == 0) return 4;
+		return 5;
+	}
+
+	/** Returns the number of bytes that would be written with {@link #writeLong(long, boolean)}. */
+	static public int longLength (long value, boolean optimizePositive) {
+		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
+		if (value >>> 7 == 0) return 1;
+		if (value >>> 14 == 0) return 2;
+		if (value >>> 21 == 0) return 3;
+		if (value >>> 28 == 0) return 4;
+		if (value >>> 35 == 0) return 5;
+		if (value >>> 42 == 0) return 6;
+		if (value >>> 49 == 0) return 7;
+		if (value >>> 56 == 0) return 8;
+		return 9;
 	}
 }

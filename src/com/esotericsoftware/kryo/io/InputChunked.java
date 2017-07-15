@@ -27,16 +27,16 @@ import java.io.InputStream;
 import com.esotericsoftware.kryo.KryoException;
 
 /** An InputStream that reads lengths and chunks of data from another OutputStream, allowing chunks to be skipped.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class InputChunked extends Input {
 	private int chunkSize = -1;
 
-	/** Creates an uninitialized InputChunked with a buffer size of 2048. The InputStream must be set before it can be used. */
+	/** Creates an uninitialized InputChunked with a buffer size of 2048, the InputStream must be set before it can be used. */
 	public InputChunked () {
 		super(2048);
 	}
 
-	/** Creates an uninitialized InputChunked. The InputStream must be set before it can be used. */
+	/** Creates an uninitialized InputChunked, the InputStream must be set before it can be used. */
 	public InputChunked (int bufferSize) {
 		super(bufferSize);
 	}

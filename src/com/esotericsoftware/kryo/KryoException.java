@@ -20,7 +20,7 @@
 package com.esotericsoftware.kryo;
 
 /** General Kryo RuntimeException.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class KryoException extends RuntimeException {
 	private StringBuffer trace;
 

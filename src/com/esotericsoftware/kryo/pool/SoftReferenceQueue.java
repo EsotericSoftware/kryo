@@ -32,7 +32,7 @@ import com.esotericsoftware.kryo.Kryo;
 class SoftReferenceQueue implements Queue<Kryo> {
 	private Queue<SoftReference<Kryo>> delegate;
 
-	public SoftReferenceQueue (Queue<?> delegate) {
+	public SoftReferenceQueue (Queue delegate) {
 		this.delegate = (Queue<SoftReference<Kryo>>)delegate;
 	}
 
@@ -79,7 +79,6 @@ class SoftReferenceQueue implements Queue<Kryo> {
 		return delegate.hashCode();
 	}
 
-	@Override
 	public String toString () {
 		return getClass().getSimpleName() + super.toString();
 	}
@@ -112,7 +111,7 @@ class SoftReferenceQueue implements Queue<Kryo> {
 		throw new UnsupportedOperationException();
 	}
 
-	public boolean containsAll (Collection<?> c) {
+	public boolean containsAll (Collection c) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -120,11 +119,11 @@ class SoftReferenceQueue implements Queue<Kryo> {
 		throw new UnsupportedOperationException();
 	}
 
-	public boolean removeAll (Collection<?> c) {
+	public boolean removeAll (Collection c) {
 		throw new UnsupportedOperationException();
 	}
 
-	public boolean retainAll (Collection<?> c) {
+	public boolean retainAll (Collection c) {
 		throw new UnsupportedOperationException();
 	}
 }

@@ -36,7 +36,7 @@ import com.esotericsoftware.kryo.Kryo;
 public class KryoPoolTest {
 
 	static private KryoFactory factory = new KryoFactory() {
-		@Override
+		
 		public Kryo create () {
 			Kryo kryo = new Kryo();
 			// configure kryo
@@ -96,7 +96,7 @@ public class KryoPoolTest {
 	@Test
 	public void runWithKryoShouldReturnResult () {
 		String value = pool.run(new KryoCallback<String>() {
-			@Override
+			
 			public String execute (Kryo kryo) {
 				return "foo";
 			}
@@ -108,7 +108,7 @@ public class KryoPoolTest {
 	public void runWithKryoShouldAddKryoToPool () {
 		assertEquals(0, size());
 		pool.run(new KryoCallback<String>() {
-			@Override
+			
 			public String execute (Kryo kryo) {
 				return null;
 			}
@@ -121,7 +121,7 @@ public class KryoPoolTest {
 		assertEquals(0, size());
 		try {
 			pool.run(new KryoCallback<String>() {
-				@Override
+				
 				public String execute (Kryo kryo) {
 					throw new RuntimeException();
 				}
@@ -136,7 +136,7 @@ public class KryoPoolTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void runWithKryoShouldRethrowException () {
 		String value = pool.run(new KryoCallback<String>() {
-			@Override
+			
 			public String execute (Kryo kryo) {
 				throw new IllegalArgumentException();
 			}
