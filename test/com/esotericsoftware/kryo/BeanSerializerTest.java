@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -35,9 +35,9 @@ public class BeanSerializerTest extends KryoTestCase {
 		test.setNullField("value");
 		test.setText("123");
 		test.setChild(new TestClass());
-		roundTrip(37, 43, test);
+		roundTrip(37, test);
 		test.setNullField(null);
-		roundTrip(33, 39, test);
+		roundTrip(33, test);
 	}
 
 	static public class TestClass {

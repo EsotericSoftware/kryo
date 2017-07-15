@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -20,16 +20,10 @@
 package com.esotericsoftware.kryo;
 
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.esotericsoftware.kryo.KryoTestCase.StreamFactory;
-import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.UnsafeMemoryInput;
-import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
 import com.esotericsoftware.minlog.Log;
 import com.esotericsoftware.minlog.Log.Logger;
 
@@ -106,29 +100,8 @@ public class WarnUnregisteredClassesTest extends TestCase {
 	}
 
 	public void write (Kryo kryo, Object object) {
-		StreamFactory sf = new StreamFactory() {
-			public Output createOutput (OutputStream os) {
-				return new UnsafeMemoryOutput(os);
-			}
-
-			public Output createOutput (OutputStream os, int size) {
-				return new UnsafeMemoryOutput(os, size);
-			}
-
-			public Output createOutput (int size, int limit) {
-				return new UnsafeMemoryOutput(size, limit);
-			}
-
-			public Input createInput (InputStream os, int size) {
-				return new UnsafeMemoryInput(os, size);
-			}
-
-			public Input createInput (byte[] buffer) {
-				return new UnsafeMemoryInput(buffer);
-			}
-		};
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		Output output = sf.createOutput(outStream, 4096);
+		Output output = new Output(outStream, 4096);
 		kryo.writeClassAndObject(output, object);
 		output.flush();
 	}

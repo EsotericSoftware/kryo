@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -26,7 +26,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -63,19 +62,19 @@ import com.esotericsoftware.reflectasm.FieldAccess;
  * @see CompatibleFieldSerializer
  * @author Nathan Sweet <misc@n4te.com>
  * @author Roman Levenstein <romixlev@gmail.com> */
-public class FieldSerializer<T> extends Serializer<T> implements Comparator<FieldSerializer.CachedField> {
+public class FieldSerializer<T, C extends FieldSerializerConfig> extends Serializer<T>
+	implements Comparator<FieldSerializer.CachedField> {
 
 	final Kryo kryo;
 	final Class type;
 	/** type variables declared for this type */
 	final TypeVariable[] typeParameters;
 	final Class componentType;
-	protected final FieldSerializerConfig config;
+	protected final C config;
 	private CachedField[] fields = new CachedField[0];
 	private CachedField[] transientFields = new CachedField[0];
 	protected HashSet<CachedField> removedFields = new HashSet();
 	Object access;
-	private FieldSerializerUnsafeUtil unsafeUtil;
 
 	private FieldSerializerGenericsUtil genericsUtil;
 
@@ -89,37 +88,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	/** If set, this serializer tries to use a variable length encoding for int and long fields */
 	private boolean varIntsEnabled;
 
-	/** If set, adjacent primitive fields are written in bulk This flag may only work with Oracle JVMs, because they layout
-	 * primitive fields in memory in such a way that primitive fields are grouped together. This option has effect only when used
-	 * with Unsafe-based FieldSerializer.
-	 * <p>
-	 * FIXME: Not all versions of Sun/Oracle JDK properly work with this option. Disable it for now. Later add dynamic checks to
-	 * see if this feature is supported by a current JDK version.
-	 * </p>
-	*/
-	private boolean useMemRegions = false;
-
 	private boolean hasObjectFields = false;
 
 	static CachedFieldFactory asmFieldFactory;
 	static CachedFieldFactory objectFieldFactory;
-	static CachedFieldFactory unsafeFieldFactory;
-
-	static boolean unsafeAvailable;
-	static Class<?> unsafeUtilClass;
-	static Method sortFieldsByOffsetMethod;
-
-	static {
-		try {
-			unsafeUtilClass = FieldSerializer.class.getClassLoader().loadClass("com.esotericsoftware.kryo.util.UnsafeUtil");
-			Method unsafeMethod = unsafeUtilClass.getMethod("unsafe");
-			sortFieldsByOffsetMethod = unsafeUtilClass.getMethod("sortFieldsByOffset", List.class);
-			Object unsafe = unsafeMethod.invoke(null);
-			if (unsafe != null) unsafeAvailable = true;
-		} catch (Throwable e) {
-			if (TRACE) trace("kryo", "sun.misc.Unsafe is unavailable.");
-		}
-	}
 
 	{
 		varIntsEnabled = true;
@@ -131,10 +103,11 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	}
 
 	public FieldSerializer (Kryo kryo, Class type, Class[] generics) {
-		this(kryo, type, generics, kryo.getFieldSerializerConfig().clone());
+		this(kryo, type, generics, (C)new FieldSerializerConfig());
 	}
 
-	protected FieldSerializer (Kryo kryo, Class type, Class[] generics, FieldSerializerConfig config) {
+	public FieldSerializer (Kryo kryo, Class type, Class[] generics, C config) {
+		if (config == null) throw new IllegalArgumentException("config cannot be null.");
 		this.config = config;
 		this.kryo = kryo;
 		this.type = type;
@@ -145,7 +118,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		else
 			this.componentType = null;
 		this.genericsUtil = new FieldSerializerGenericsUtil(this);
-		this.unsafeUtil = FieldSerializerUnsafeUtil.Factory.getInstance(this);
 		this.annotationsUtil = new FieldSerializerAnnotationsUtil(this);
 		rebuildCachedFields();
 	}
@@ -170,7 +142,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		hasObjectFields = false;
 
-		if (config.isOptimizedGenerics()) {
+		if (config.getOptimizedGenerics()) {
 			// For generic classes, generate a mapping from type variable names to the concrete types
 			// This mapping is the same for the whole class.
 			Generics genScope = genericsUtil.buildGenericsScope(type, generics);
@@ -201,16 +173,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 			ObjectMap context = kryo.getContext();
 
-			// Sort fields by their offsets
-			if (useMemRegions && !config.isUseAsm() && unsafeAvailable) {
-				try {
-					Field[] allFieldsArray = (Field[])sortFieldsByOffsetMethod.invoke(null, allFields);
-					allFields = Arrays.asList(allFieldsArray);
-				} catch (Exception e) {
-					throw new RuntimeException("Cannot invoke UnsafeUtil.sortFieldsByOffset()", e);
-				}
-			}
-
 			// TODO: useAsm is modified as a side effect, this should be pulled out of buildValidFields
 			// Build a list of valid non-transient fields
 			validFields = buildValidFields(false, allFields, context, useAsm);
@@ -218,7 +180,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			validTransientFields = buildValidFields(true, allFields, context, useAsm);
 
 			// Use ReflectASM for any public fields.
-			if (config.isUseAsm() && !Util.IS_ANDROID && Modifier.isPublic(type.getModifiers()) && useAsm.indexOf(1) != -1) {
+			if (!Util.isAndroid && Modifier.isPublic(type.getModifiers()) && useAsm.indexOf(1) != -1) {
 				try {
 					access = FieldAccess.get(type);
 				} catch (RuntimeException ignored) {
@@ -275,10 +237,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			int modifiers = field.getModifiers();
 			if (Modifier.isTransient(modifiers) != transientFields) continue;
 			if (Modifier.isStatic(modifiers)) continue;
-			if (field.isSynthetic() && config.isIgnoreSyntheticFields()) continue;
+			if (field.isSynthetic() && config.getIgnoreSyntheticFields()) continue;
 
 			if (!field.isAccessible()) {
-				if (!config.isSetFieldsAsAccessible()) continue;
+				if (!config.getSetFieldsAsAccessible()) continue;
 				try {
 					field.setAccessible(true);
 				} catch (AccessControlException ex) {
@@ -292,29 +254,24 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			result.add(field);
 
 			// BOZO - Must be public?
-			useAsm
-				.add(!Modifier.isFinal(modifiers) && Modifier.isPublic(modifiers) && Modifier.isPublic(field.getType().getModifiers())
-					? 1 : 0);
+			useAsm.add(
+				!Modifier.isFinal(modifiers) && Modifier.isPublic(modifiers) && Modifier.isPublic(field.getType().getModifiers()) ? 1
+					: 0);
 		}
 		return result;
 	}
 
 	private void createCachedFields (IntArray useAsm, List<Field> validFields, List<CachedField> cachedFields, int baseIndex) {
-
-		if (config.isUseAsm() || !useMemRegions) {
-			for (int i = 0, n = validFields.size(); i < n; i++) {
-				Field field = validFields.get(i);
-				int accessIndex = -1;
-				if (access != null && useAsm.get(baseIndex + i) == 1) accessIndex = ((FieldAccess)access).getIndex(field.getName());
-				cachedFields.add(newCachedField(field, cachedFields.size(), accessIndex));
-			}
-		} else {
-			unsafeUtil.createUnsafeCacheFieldsAndRegions(validFields, cachedFields, baseIndex, useAsm);
+		for (int i = 0, n = validFields.size(); i < n; i++) {
+			Field field = validFields.get(i);
+			int accessIndex = -1;
+			if (access != null && useAsm.get(baseIndex + i) == 1) accessIndex = ((FieldAccess)access).getIndex(field.getName());
+			cachedFields.add(newCachedField(field, cachedFields.size(), accessIndex));
 		}
 	}
 
 	public void setGenerics (Kryo kryo, Class[] generics) {
-		if (!config.isOptimizedGenerics()) return;
+		if (!config.getOptimizedGenerics()) return;
 		this.generics = generics;
 		if (typeParameters != null && typeParameters.length > 0) {
 			// There is no need to rebuild all cached fields from scratch.
@@ -336,10 +293,10 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 	CachedField newCachedField (Field field, int fieldIndex, int accessIndex) {
 		Class[] fieldClass = new Class[] {field.getType()};
-		Type fieldGenericType = (config.isOptimizedGenerics()) ? field.getGenericType() : null;
+		Type fieldGenericType = (config.getOptimizedGenerics()) ? field.getGenericType() : null;
 		CachedField cachedField;
 
-		if (!config.isOptimizedGenerics() || fieldGenericType == fieldClass[0]) {
+		if (!config.getOptimizedGenerics() || fieldGenericType == fieldClass[0]) {
 			// For optimized generics this is a field without generic type parameters
 			if (TRACE) trace("kryo", "Field " + field.getName() + ": " + fieldClass[0]);
 			cachedField = newMatchingCachedField(field, accessIndex, fieldClass[0], fieldGenericType, null);
@@ -353,18 +310,13 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		cachedField.field = field;
 		cachedField.varIntsEnabled = varIntsEnabled;
-
-		if (!config.isUseAsm()) {
-			cachedField.offset = unsafeUtil.getObjectFieldOffset(field);
-		}
-
 		cachedField.access = (FieldAccess)access;
 		cachedField.accessIndex = accessIndex;
-		cachedField.canBeNull = config.isFieldsCanBeNull() && !fieldClass[0].isPrimitive()
+		cachedField.canBeNull = config.getFieldsCanBeNull() && !fieldClass[0].isPrimitive()
 			&& !field.isAnnotationPresent(NotNull.class);
 
 		// Always use the same serializer for this field if the field's class is final.
-		if (kryo.isFinal(fieldClass[0]) || config.isFixedFieldTypes()) cachedField.valueClass = fieldClass[0];
+		if (kryo.isFinal(fieldClass[0]) || config.getFixedFieldTypes()) cachedField.valueClass = fieldClass[0];
 
 		return cachedField;
 	}
@@ -374,11 +326,9 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		CachedField cachedField;
 		if (accessIndex != -1) {
 			cachedField = getAsmFieldFactory().createCachedField(fieldClass, field, this);
-		} else if (!config.isUseAsm()) {
-			cachedField = getUnsafeFieldFactory().createCachedField(fieldClass, field, this);
 		} else {
 			cachedField = getObjectFieldFactory().createCachedField(fieldClass, field, this);
-			if (config.isOptimizedGenerics()) {
+			if (config.getOptimizedGenerics()) {
 				if (fieldGenerics != null)
 					((ObjectField)cachedField).generics = fieldGenerics;
 				else if (fieldGenericType != null) {
@@ -399,21 +349,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	private CachedFieldFactory getObjectFieldFactory () {
 		if (objectFieldFactory == null) objectFieldFactory = new ObjectCachedFieldFactory();
 		return objectFieldFactory;
-	}
-
-	private CachedFieldFactory getUnsafeFieldFactory () {
-		// Use reflection to load UnsafeFieldFactory, so that there is no explicit dependency
-		// on anything using Unsafe. This is required to make FieldSerializer work on those
-		// platforms that do not support sun.misc.Unsafe properly.
-		if (unsafeFieldFactory == null) {
-			try {
-				unsafeFieldFactory = (CachedFieldFactory)this.getClass().getClassLoader()
-					.loadClass("com.esotericsoftware.kryo.serializers.UnsafeCachedFieldFactory").newInstance();
-			} catch (Exception e) {
-				throw new RuntimeException("Cannot create UnsafeFieldFactory", e);
-			}
-		}
-		return unsafeFieldFactory;
 	}
 
 	public int compare (CachedField o1, CachedField o2) {
@@ -454,13 +389,6 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		rebuildCachedFields();
 	}
 
-	/** Controls whether ASM should be used. Calling this method resets the {@link #getFields() cached fields}.
-	 * @param setUseAsm If true, ASM will be used for fast serialization. If false, Unsafe will be used (default) */
-	public void setUseAsm (boolean setUseAsm) {
-		config.setUseAsm(setUseAsm);
-		rebuildCachedFields();
-	}
-
 	// Enable/disable copying of transient fields
 	public void setCopyTransient (boolean setCopyTransient) {
 		config.setCopyTransient(setCopyTransient);
@@ -491,7 +419,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	public void write (Kryo kryo, Output output, T object) {
 		if (TRACE) trace("kryo", "FieldSerializer.write fields of class: " + object.getClass().getName());
 
-		if (config.isOptimizedGenerics()) {
+		if (config.getOptimizedGenerics()) {
 			if (typeParameters != null && generics != null) {
 				// Rebuild fields info. It may result in rebuilding the genericScope
 				rebuildCachedFields();
@@ -508,12 +436,12 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			fields[i].write(output, object);
 
 		// Serialize transient fields
-		if (config.isSerializeTransient()) {
+		if (config.getSerializeTransient()) {
 			for (int i = 0, n = transientFields.length; i < n; i++)
 				transientFields[i].write(output, object);
 		}
 
-		if (config.isOptimizedGenerics() && genericsScope != null) {
+		if (config.getOptimizedGenerics() && genericsScope != null) {
 			// Pop the scope for generics
 			kryo.getGenericsResolver().popScope();
 		}
@@ -522,7 +450,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	public T read (Kryo kryo, Input input, Class<T> type) {
 		try {
 
-			if (config.isOptimizedGenerics()) {
+			if (config.getOptimizedGenerics()) {
 				if (typeParameters != null && generics != null) {
 					// Rebuild fields info. It may result in rebuilding the
 					// genericScope
@@ -543,13 +471,13 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				fields[i].read(input, object);
 
 			// De-serialize transient fields
-			if (config.isSerializeTransient()) {
+			if (config.getSerializeTransient()) {
 				for (int i = 0, n = transientFields.length; i < n; i++)
 					transientFields[i].read(input, object);
 			}
 			return object;
 		} finally {
-			if (config.isOptimizedGenerics() && genericsScope != null && kryo.getGenericsResolver() != null) {
+			if (config.getOptimizedGenerics() && genericsScope != null && kryo.getGenericsResolver() != null) {
 				// Pop the scope for generics
 				kryo.getGenericsResolver().popScope();
 			}
@@ -649,20 +577,12 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		return kryo;
 	}
 
-	public boolean getUseAsmEnabled () {
-		return config.isUseAsm();
-	}
-
-	public boolean getUseMemRegions () {
-		return useMemRegions;
-	}
-
 	public boolean getCopyTransient () {
-		return config.isCopyTransient();
+		return config.getCopyTransient();
 	}
 
 	public boolean getSerializeTransient () {
-		return config.isSerializeTransient();
+		return config.getSerializeTransient();
 	}
 
 	/** Used by {@link #copy(Kryo, Object)} to create the new object. This can be overridden to customize object creation, eg to
@@ -676,7 +596,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		kryo.reference(copy);
 
 		// Copy transient fields
-		if (config.isCopyTransient()) {
+		if (config.getCopyTransient()) {
 			for (int i = 0, n = transientFields.length; i < n; i++)
 				transientFields[i].copy(original, copy);
 		}
@@ -690,16 +610,19 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	final Generics getGenericsScope () {
 		return genericsScope;
 	}
+	
+	public C getConfig () {
+		return config;
+	}
 
 	/** Controls how a field will be serialized. */
-	public static abstract class CachedField<X> {
+	static public abstract class CachedField<X> {
 		Field field;
 		FieldAccess access;
 		Class valueClass;
 		Serializer serializer;
 		boolean canBeNull;
 		int accessIndex = -1;
-		long offset = -1;
 		boolean varIntsEnabled = true;
 
 		/** @param valueClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for
@@ -744,12 +667,11 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		abstract public void copy (Object original, Object copy);
 	}
 
-	public static interface CachedFieldFactory {
+	static public interface CachedFieldFactory {
 		public CachedField createCachedField (Class fieldClass, Field field, FieldSerializer ser);
 	}
 
 	public interface CachedFieldNameStrategy {
-
 		CachedFieldNameStrategy DEFAULT = new CachedFieldNameStrategy() {
 			@Override
 			public String getName (CachedField cachedField) {
@@ -782,12 +704,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface Bind {
-
 		/** Value.
-		 * 
 		 * @return the class<? extends serializer> used for this field */
-		@SuppressWarnings("rawtypes")
 		Class<? extends Serializer> value();
-
 	}
 }

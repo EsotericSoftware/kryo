@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -30,16 +30,8 @@ import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-//import org.gridgain.grid.marshaller.GridMarshaller;
-//import org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller;
-
-import com.esotericsoftware.kryo.io.FastInput;
-import com.esotericsoftware.kryo.io.FastOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.UnsafeInput;
-import com.esotericsoftware.kryo.io.UnsafeOutput;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.minlog.Log;
 
 /*** This test was originally taken from a GridGain blog. It is a compares the speed of serialization using Java serialization,
@@ -47,22 +39,22 @@ import com.esotericsoftware.minlog.Log;
  * 
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class SerializationBenchmarkTest extends KryoTestCase {
-	private static final int WARMUP_ITERATIONS = 1000;
+	static private final int WARMUP_ITERATIONS = 1000;
 
 	/** Number of runs. */
-	private static final int RUN_CNT = 1;
+	static private final int RUN_CNT = 1;
 
 	/** Number of iterations. Set it to something rather big for obtaining meaningful results */
-// private static final int ITER_CNT = 200000;
-	private static final int ITER_CNT = 100;
+// static private final int ITER_CNT = 200000;
+	static private final int ITER_CNT = 100;
 
-	private static final int SLEEP_BETWEEN_RUNS = 100;
+	static private final int SLEEP_BETWEEN_RUNS = 100;
 
-	private static final int OUTPUT_BUFFER_SIZE = 4096 * 10 * 4;
+	static private final int OUTPUT_BUFFER_SIZE = 4096 * 10 * 4;
 
 	SampleObject obj = createObject();
 
-	private static SampleObject createObject () {
+	static private SampleObject createObject () {
 		long[] longArr = new long[3000];
 
 		for (int i = 0; i < longArr.length; i++)
@@ -76,7 +68,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		return new SampleObject(123, 123.456f, (short)321, longArr, dblArr);
 	}
 
-// public static void main(String[] args) throws Exception {
+// static public void main(String[] args) throws Exception {
 // // Create sample object.
 // SampleObject obj = createObject();
 //
@@ -124,30 +116,6 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		// Warm-up phase: Perform 100000 iterations
 		runKryoSerializationWithoutTryCatch(1, WARMUP_ITERATIONS, false);
 		runKryoSerializationWithoutTryCatch(RUN_CNT, ITER_CNT, true);
-	}
-
-	public void testKryoSerializationWithoutTryCatchWithFastStreams () throws Exception {
-		// Warm-up phase: Perform 100000 iterations
-		runKryoSerializationWithoutTryCatchWithFastStreams(1, WARMUP_ITERATIONS, false);
-		runKryoSerializationWithoutTryCatchWithFastStreams(RUN_CNT, ITER_CNT, true);
-	}
-
-	public void testKryoUnsafeSerializationWithoutTryCatch () throws Exception {
-		// Warm-up phase: Perform 100000 iterations
-		runKryoUnsafeSerializationWithoutTryCatch(1, WARMUP_ITERATIONS, false);
-		runKryoUnsafeSerializationWithoutTryCatch(RUN_CNT, ITER_CNT, true);
-	}
-
-	public void testKryoUnsafeSerializationWithoutTryCatchWithoutAsm () throws Exception {
-		// Warm-up phase: Perform 100000 iterations
-		runKryoUnsafeSerializationWithoutTryCatchWithoutAsm(1, WARMUP_ITERATIONS, false);
-		runKryoUnsafeSerializationWithoutTryCatchWithoutAsm(RUN_CNT, ITER_CNT, true);
-	}
-
-	public void testKryoUnsafeSerializationWithoutTryCatchWithoutReferences () throws Exception {
-		// Warm-up phase: Perform 100000 iterations
-		runKryoUnsafeSerializationWithoutTryCatchWithoutReferences(1, WARMUP_ITERATIONS, false);
-		runKryoUnsafeSerializationWithoutTryCatchWithoutReferences(RUN_CNT, ITER_CNT, true);
 	}
 
 	private void runJavaSerialization (final int RUN_CNT, final int ITER_CNT, boolean outputResults) throws Exception {
@@ -430,300 +398,12 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 	}
 
-	private void runKryoSerializationWithoutTryCatchWithFastStreams (final int RUN_CNT, final int ITER_CNT, boolean outputResults)
-		throws Exception {
-		Kryo marsh = new Kryo();
-		marsh.register(SampleObject.class, 40);
-
-		long avgDur = 0;
-		long bestTime = Long.MAX_VALUE;
-
-		byte[] out = new byte[OUTPUT_BUFFER_SIZE];
-
-		for (int i = 0; i < RUN_CNT; i++) {
-			SampleObject newObj = null;
-
-			long start = System.nanoTime();
-
-			for (int j = 0; j < ITER_CNT; j++) {
-
-				Output kryoOut = null;
-
-				kryoOut = new FastOutput(out);
-
-				marsh.writeObject(kryoOut, obj);
-				kryoOut.close();
-				// U.close(kryoOut, null);
-
-				Input kryoIn = null;
-
-				kryoIn = new FastInput(kryoOut.getBuffer(), 0, kryoOut.position());
-
-				newObj = marsh.readObject(kryoIn, SampleObject.class);
-				kryoIn.close();
-				// U.close(kryoIn, null);
-			}
-
-			long dur = System.nanoTime() - start;
-			dur = TimeUnit.NANOSECONDS.toMillis(dur);
-			// Check that unmarshalled object is equal to original one (should
-			// never fail).
-			if (!obj.equals(newObj)) throw new RuntimeException("Unmarshalled object is not equal to original object.");
-			if (outputResults)
-				System.out.format(">>> Kryo serialization without try-catch with fast streams (run %d): %,d ms\n", i + 1, dur);
-
-			avgDur += dur;
-			bestTime = Math.min(bestTime, dur);
-			systemCleanupAfterRun();
-		}
-
-		avgDur /= RUN_CNT;
-
-		if (outputResults) {
-			System.out.format("\n>>> Kryo serialization without try-catch with fast streams (average): %,d ms\n\n", avgDur);
-			System.out.format("\n>>> Kryo serialization without try-catch with fast streams (best time): %,d ms\n\n", bestTime);
-		}
-	}
-
-	private void runKryoUnsafeSerializationWithoutTryCatch (final int RUN_CNT, final int ITER_CNT, boolean outputResults)
-		throws Exception {
-		Kryo marsh = new Kryo();
-		marsh.setRegistrationRequired(true);
-		marsh.register(double[].class, 30);
-		marsh.register(long[].class, 31);
-		// Explicitly tell to use Unsafe-based serializer
-		marsh.register(SampleObject.class, new FieldSerializer<SampleObject>(marsh, SampleObject.class), 40);
-
-		// Use fastest possible serialization of object fields
-		FieldSerializer<SampleObject> ser = (FieldSerializer<SampleObject>)marsh.getRegistration(SampleObject.class)
-			.getSerializer();
-		ser.setUseAsm(true);
-
-		long avgDur = 0;
-		long bestTime = Long.MAX_VALUE;
-
-		byte[] out = new byte[OUTPUT_BUFFER_SIZE];
-		for (int i = 0; i < RUN_CNT; i++) {
-			SampleObject newObj = null;
-
-			long start = System.nanoTime();
-
-			for (int j = 0; j < ITER_CNT; j++) {
-
-				Output kryoOut = null;
-
-				kryoOut = new UnsafeOutput(out);
-
-				marsh.writeObject(kryoOut, obj);
-				kryoOut.close();
-				// U.close(kryoOut, null);
-
-				Input kryoIn = null;
-
-				kryoIn = new UnsafeInput(kryoOut.getBuffer(), 0, kryoOut.position());
-
-				newObj = marsh.readObject(kryoIn, SampleObject.class);
-				kryoIn.close();
-				// U.close(kryoIn, null);
-			}
-
-			long dur = System.nanoTime() - start;
-			dur = TimeUnit.NANOSECONDS.toMillis(dur);
-			// Check that unmarshalled object is equal to original one (should
-			// never fail).
-			if (!obj.equals(newObj)) throw new RuntimeException("Unmarshalled object is not equal to original object.");
-
-			if (outputResults) System.out.format(">>> Kryo unsafe serialization without try-catch (run %d): %,d ms\n", i + 1, dur);
-
-			avgDur += dur;
-			bestTime = Math.min(bestTime, dur);
-			systemCleanupAfterRun();
-		}
-
-		avgDur /= RUN_CNT;
-
-		if (outputResults) {
-			System.out.format("\n>>> Kryo unsafe serialization without try-catch (average): %,d ms\n\n", avgDur);
-			System.out.format("\n>>> Kryo unsafe serialization without try-catch (best time): %,d ms\n\n", bestTime);
-		}
-	}
-
-	private void runKryoUnsafeSerializationWithoutTryCatchWithoutAsm (final int RUN_CNT, final int ITER_CNT, boolean outputResults)
-		throws Exception {
-		Kryo marsh = new Kryo();
-		marsh.setRegistrationRequired(true);
-		marsh.register(double[].class, 30);
-		marsh.register(long[].class, 31);
-		// Explicitly tell to use Unsafe-based serializer
-		marsh.register(SampleObject.class, new FieldSerializer<SampleObject>(marsh, SampleObject.class), 40);
-
-// // Use fastest possible serialization of object fields
-// FieldSerializer<SampleObject> ser = (FieldSerializer<SampleObject>) marsh.getRegistration(SampleObject.class).getSerializer();
-// ser.setUseAsm(false);
-
-		long avgDur = 0;
-		long bestTime = Long.MAX_VALUE;
-
-		byte[] out = new byte[OUTPUT_BUFFER_SIZE];
-		for (int i = 0; i < RUN_CNT; i++) {
-			SampleObject newObj = null;
-
-			long start = System.nanoTime();
-
-			for (int j = 0; j < ITER_CNT; j++) {
-
-				Output kryoOut = null;
-
-				kryoOut = new UnsafeOutput(out);
-
-				marsh.writeObject(kryoOut, obj);
-				kryoOut.close();
-				// U.close(kryoOut, null);
-
-				Input kryoIn = null;
-
-				kryoIn = new UnsafeInput(kryoOut.getBuffer(), 0, kryoOut.position());
-
-				newObj = marsh.readObject(kryoIn, SampleObject.class);
-				kryoIn.close();
-				// U.close(kryoIn, null);
-			}
-
-			long dur = System.nanoTime() - start;
-			dur = TimeUnit.NANOSECONDS.toMillis(dur);
-			// Check that unmarshalled object is equal to original one (should
-			// never fail).
-			if (!obj.equals(newObj)) throw new RuntimeException("Unmarshalled object is not equal to original object.");
-
-			if (outputResults)
-				System.out.format(">>> Kryo unsafe serialization without try-catch, without ASM (run %d): %,d ms\n", i + 1, dur);
-
-			avgDur += dur;
-			bestTime = Math.min(bestTime, dur);
-			systemCleanupAfterRun();
-		}
-
-		avgDur /= RUN_CNT;
-
-		if (outputResults) {
-			System.out.format("\n>>> Kryo unsafe serialization without try-catch, without ASM (average): %,d ms\n\n", avgDur);
-			System.out.format("\n>>> Kryo unsafe serialization without try-catch, without ASM (best time): %,d ms\n\n", bestTime);
-		}
-
-	}
-
-	private void runKryoUnsafeSerializationWithoutTryCatchWithoutReferences (final int RUN_CNT, final int ITER_CNT,
-		boolean outputResults) throws Exception {
-		Kryo marsh = new Kryo();
-		kryo.setReferences(false);
-		marsh.setRegistrationRequired(true);
-		marsh.register(double[].class, 30);
-		marsh.register(long[].class, 31);
-		// Explicitly tell to use Unsafe-based serializer
-		marsh.register(SampleObject.class, new FieldSerializer<SampleObject>(marsh, SampleObject.class), 40);
-
-		// Use fastest possible serialization of object fields
-		FieldSerializer<SampleObject> ser = (FieldSerializer<SampleObject>)marsh.getRegistration(SampleObject.class)
-			.getSerializer();
-		ser.setUseAsm(false);
-
-		long avgDur = 0;
-		long bestTime = Long.MAX_VALUE;
-
-		for (int i = 0; i < RUN_CNT; i++) {
-			SampleObject newObj = null;
-			byte[] out = new byte[OUTPUT_BUFFER_SIZE];
-
-			long start = System.nanoTime();
-
-			for (int j = 0; j < ITER_CNT; j++) {
-
-				Output kryoOut = null;
-
-				kryoOut = new UnsafeOutput(out);
-
-				marsh.writeObject(kryoOut, obj);
-				kryoOut.close();
-				// U.close(kryoOut, null);
-
-				Input kryoIn = null;
-
-				kryoIn = new UnsafeInput(kryoOut.getBuffer(), 0, kryoOut.position());
-
-				newObj = marsh.readObject(kryoIn, SampleObject.class);
-				kryoIn.close();
-				// U.close(kryoIn, null);
-			}
-
-			long dur = System.nanoTime() - start;
-			dur = TimeUnit.NANOSECONDS.toMillis(dur);
-			// Check that unmarshalled object is equal to original one (should
-			// never fail).
-			if (!obj.equals(newObj)) throw new RuntimeException("Unmarshalled object is not equal to original object.");
-
-			if (outputResults) System.out.format(
-				">>> Kryo unsafe serialization without try-catch, without ASM, without references (run %d): %,d ms\n", i + 1, dur);
-
-			avgDur += dur;
-			bestTime = Math.min(bestTime, dur);
-			systemCleanupAfterRun();
-		}
-
-		avgDur /= RUN_CNT;
-
-		if (outputResults) {
-			System.out.format(
-				"\n>>> Kryo unsafe serialization without try-catch, without ASM, without references (average): %,d ms\n\n", avgDur);
-			System.out.format(
-				"\n>>> Kryo unsafe serialization without try-catch, without ASM, without references (best time): %,d ms\n\n",
-				bestTime);
-		}
-
-	}
-
-// private static long gridGainSerialization()
-// throws Exception {
-// GridMarshaller marsh = new GridOptimizedMarshaller(false,
-// Arrays.asList(SampleObject.class.getName()), null);
-//
-// long avgDur = 0;
-//
-// for (int i = 0; i < RUN_CNT; i++) {
-// SampleObject newObj = null;
-//
-// long start = System.currentTimeMillis();
-//
-// for (int j = 0; j < ITER_CNT; j++)
-// newObj = marsh.unmarshal(marsh.marshal(obj), null);
-//
-// long dur = System.currentTimeMillis() - start;
-//
-// // Check that unmarshalled object is equal to original one (should
-// // never fail).
-// if (!obj.equals(newObj))
-// throw new RuntimeException(
-// "Unmarshalled object is not equal to original object.");
-//
-// System.out.format(">>> GridGain serialization (run %d): %,d ms\n",
-// i + 1, dur);
-//
-// avgDur += dur;
-// }
-//
-// avgDur /= RUN_CNT;
-//
-// System.out.format("\n>>> GridGain serialization (average): %,d ms\n\n",
-// avgDur);
-//
-// return avgDur;
-// }
-
 	protected void setUp () throws Exception {
 		super.setUp();
 		Log.WARN();
 	}
 
-	private static class SampleObject implements Externalizable, KryoSerializable {
+	static private class SampleObject implements Externalizable, KryoSerializable {
 		private int intVal;
 		private float floatVal;
 		private Short shortVal;

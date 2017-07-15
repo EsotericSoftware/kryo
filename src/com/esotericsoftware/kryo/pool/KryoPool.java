@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -52,12 +52,10 @@ import com.esotericsoftware.kryo.Kryo;
  *     return kryo.readObject(input, String.class);
  *   }
  * });
- *
  * </pre>
  * 
  * @author Martin Grotzke */
 public interface KryoPool {
-
 	/** Takes a {@link Kryo} instance from the pool or creates a new one (using the factory) if the pool is empty. */
 	Kryo borrow ();
 
@@ -69,8 +67,7 @@ public interface KryoPool {
 	<T> T run (KryoCallback<T> callback);
 
 	/** Builder for a {@link KryoPool} instance, constructs a {@link KryoPoolQueueImpl} instance. */
-	public static class Builder {
-
+	static public class Builder {
 		private final KryoFactory factory;
 		private Queue<Kryo> queue = new ConcurrentLinkedQueue<Kryo>();
 		private boolean softReferences;
@@ -109,5 +106,4 @@ public interface KryoPool {
 			return getClass().getName() + "[queue.class=" + queue.getClass() + ", softReferences=" + softReferences + "]";
 		}
 	}
-
 }

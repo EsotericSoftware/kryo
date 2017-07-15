@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -24,10 +24,8 @@ import java.util.Queue;
 import com.esotericsoftware.kryo.Kryo;
 
 /** A simple {@link Queue} based {@link KryoPool} implementation, should be built using the KryoPool.Builder.
- *
  * @author Martin Grotzke */
 class KryoPoolQueueImpl implements KryoPool {
-
 	private final Queue<Kryo> queue;
 	private final KryoFactory factory;
 
@@ -64,5 +62,4 @@ class KryoPoolQueueImpl implements KryoPool {
 	public void clear () {
 		queue.clear();
 	}
-
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -23,11 +23,11 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.minlog.Log;
 import org.junit.Assert;
 
+import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 
@@ -47,7 +47,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
 		kryo.register(TestClass.class);
 		kryo.register(AnotherClass.class);
-		TestClass object2 = roundTrip(57, 75, object1);
+		TestClass object2 = roundTrip(57, object1);
 		assertTrue(object2.ignored == 0);
 	}
 
@@ -61,16 +61,17 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
 		kryo.register(AnotherClass.class, new TaggedFieldSerializer(kryo, AnotherClass.class));
-		roundTrip(39, 55, object1);
+		roundTrip(39, object1);
 
 		kryo.register(TestClass.class, new TaggedFieldSerializer(kryo, TestClass.class));
 		Object object2 = kryo.readClassAndObject(input);
 		assertEquals(object1, object2);
 	}
 
-	/** Serializes an array with a Class with two tagged fields. Then deserializes it using a serializer that has removed some 
-	 * fields to simulate a past version of the compiled application. An array is used to ensure subsequent bytes in the stream 
-	 * are unaffected.*/
+	/** Serializes an array with a Class with two tagged fields. Then deserializes it using a serializer that has removed some
+	 * fields to simulate a past version of the compiled application. An array is used to ensure subsequent bytes in the stream are
+	 * unaffected. */
+	@SuppressWarnings("synthetic-access")
 	public void testForwardCompatibility () {
 		FutureClass futureObject = new FutureClass();
 		futureObject.value = 3;
@@ -89,15 +90,16 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		futureArray[0] = futureObject;
 		futureArray[1] = new TestClass();
 
-		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
-		kryo.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
+		TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
+		factory.getConfig().setSkipUnknownTags(true);
+		kryo.setDefaultSerializer(factory);
 		kryo.register(TestClass.class);
 		kryo.register(Object[].class);
-		TaggedFieldSerializer futureSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
-		futureSerializer.setSkipUnknownTags(true);
+		TaggedFieldSerializer<FutureClass> futureSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
+		futureSerializer.getConfig().setSkipUnknownTags(true);
 		kryo.register(FutureClass.class, futureSerializer);
 		TaggedFieldSerializer futureSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
-		futureSerializer2.setSkipUnknownTags(true);
+		futureSerializer.getConfig().setSkipUnknownTags(true);
 		kryo.register(FutureClass2.class, futureSerializer2);
 
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -106,19 +108,19 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		output.flush();
 		byte[] futureArrayData = outStream.toByteArray();
 
-		TaggedFieldSerializer presentSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
-		presentSerializer.setSkipUnknownTags(true);
+		TaggedFieldSerializer<FutureClass> presentSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
+		presentSerializer.getConfig().setSkipUnknownTags(true);
 		presentSerializer.removeField("futureString"); // simulate past version of application
 		kryo.register(FutureClass.class, presentSerializer);
-		TaggedFieldSerializer presentSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
-		presentSerializer2.setSkipUnknownTags(true);
+		TaggedFieldSerializer<FutureClass2> presentSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
+		presentSerializer2.getConfig().setSkipUnknownTags(true);
 		presentSerializer2.removeField("zzz"); // simulate past version of application
 		presentSerializer2.removeField("fc2"); // simulate past version of application
 		kryo.register(FutureClass2.class, presentSerializer2);
 
 		ByteArrayInputStream inStream = new ByteArrayInputStream(futureArrayData);
 		input = new Input(inStream);
-		Object[] presentArray = (Object[])kryo.readClassAndObject(input); 
+		Object[] presentArray = (Object[])kryo.readClassAndObject(input);
 		FutureClass presentObject = (FutureClass)presentArray[0];
 		Assert.assertNotEquals(futureObject, presentObject);
 		assertTrue(presentObject.pastEquals(futureObject));
@@ -130,13 +132,15 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 	public void testInvalidTagValue () {
 		Kryo newKryo = new Kryo();
 		newKryo.setReferences(true);
-		newKryo.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
+		TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
+		factory.getConfig().setSkipUnknownTags(true);
+		kryo.setDefaultSerializer(factory);
 		newKryo.setDefaultSerializer(TaggedFieldSerializer.class);
 
 		boolean receivedIAE = false;
 		try {
 			newKryo.register(IncompatibleClass.class);
-		} catch (IllegalArgumentException e){
+		} catch (IllegalArgumentException e) {
 			receivedIAE = true;
 		}
 		assertTrue(receivedIAE);
@@ -177,10 +181,10 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		@Tag(1) String value;
 	}
 
-	private static class FutureClass {
+	static private class FutureClass {
 		@Tag(0) public Integer value;
 		@Tag(1) public FutureClass2 futureClass2;
-		@Tag(value=2, annexed = true) public String futureString = "unchanged";
+		@Tag(value = 2, annexed = true) public String futureString = "unchanged";
 
 		@Override
 		public boolean equals (Object obj) {
@@ -201,7 +205,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		}
 
 		/** What equals(Object) would have been before the annexed fields were added to the class. */
-		public boolean pastEquals (Object obj){
+		public boolean pastEquals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
 			if (getClass() != obj.getClass()) return false;
@@ -215,13 +219,13 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 			return true;
 		}
 	}
-	
-	private static class FutureClass2 {
+
+	static private class FutureClass2 {
 		@Tag(0) public String text = "something";
 		@Tag(1) public int moo = 120;
 		@Tag(2) public long moo2 = 1234120;
-		@Tag(value=3, annexed=true) public int zzz = 123;
-		@Tag(value=4, annexed=true) public FutureClass2 fc2;
+		@Tag(value = 3, annexed = true) public int zzz = 123;
+		@Tag(value = 4, annexed = true) public FutureClass2 fc2;
 
 		@Override
 		public boolean equals (Object obj) {
@@ -242,7 +246,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		}
 
 		/** What equals(Object) would have been before the annexed fields were added to the class. */
-		public boolean pastEquals (Object obj){
+		public boolean pastEquals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
 			if (getClass() != obj.getClass()) return false;

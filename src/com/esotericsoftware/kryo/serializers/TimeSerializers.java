@@ -48,8 +48,7 @@ import com.esotericsoftware.kryo.io.Output;
  *
  * Implementation note: All serialization is inspired by oracles java.time.Ser. */
 public final class TimeSerializers {
-
-	public static void addDefaultSerializers (Kryo kryo) {
+	static public void addDefaultSerializers (Kryo kryo) {
 		if (isClassAvailable("java.time.Duration")) kryo.addDefaultSerializer(Duration.class, new DurationSerializer());
 		if (isClassAvailable("java.time.Instant")) kryo.addDefaultSerializer(Instant.class, new InstantSerializer());
 		if (isClassAvailable("java.time.LocalDate")) kryo.addDefaultSerializer(LocalDate.class, new LocalDateSerializer());
@@ -69,7 +68,7 @@ public final class TimeSerializers {
 		if (isClassAvailable("java.time.Period")) kryo.addDefaultSerializer(Period.class, new PeriodSerializer());
 	}
 
-	private static class DurationSerializer extends Serializer<Duration> {
+	static class DurationSerializer extends Serializer<Duration> {
 		{
 			setImmutable(true);
 		}
@@ -86,7 +85,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class InstantSerializer extends Serializer<Instant> {
+	static class InstantSerializer extends Serializer<Instant> {
 		{
 			setImmutable(true);
 		}
@@ -103,7 +102,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class LocalDateSerializer extends Serializer<LocalDate> {
+	static class LocalDateSerializer extends Serializer<LocalDate> {
 		{
 			setImmutable(true);
 		}
@@ -130,7 +129,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class LocalDateTimeSerializer extends Serializer<LocalDateTime> {
+	static class LocalDateTimeSerializer extends Serializer<LocalDateTime> {
 		{
 			setImmutable(true);
 		}
@@ -147,7 +146,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class LocalTimeSerializer extends Serializer<LocalTime> {
+	static class LocalTimeSerializer extends Serializer<LocalTime> {
 		{
 			setImmutable(true);
 		}
@@ -206,7 +205,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class ZoneOffsetSerializer extends Serializer<ZoneOffset> {
+	static class ZoneOffsetSerializer extends Serializer<ZoneOffset> {
 		{
 			setImmutable(true);
 		}
@@ -234,7 +233,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class ZoneIdSerializer extends Serializer<ZoneId> {
+	static class ZoneIdSerializer extends Serializer<ZoneId> {
 		{
 			setImmutable(true);
 		}
@@ -257,7 +256,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class OffsetTimeSerializer extends Serializer<OffsetTime> {
+	static class OffsetTimeSerializer extends Serializer<OffsetTime> {
 		{
 			setImmutable(true);
 		}
@@ -274,7 +273,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class OffsetDateTimeSerializer extends Serializer<OffsetDateTime> {
+	static class OffsetDateTimeSerializer extends Serializer<OffsetDateTime> {
 		{
 			setImmutable(true);
 		}
@@ -293,7 +292,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class ZonedDateTimeSerializer extends Serializer<ZonedDateTime> {
+	static class ZonedDateTimeSerializer extends Serializer<ZonedDateTime> {
 		{
 			setImmutable(true);
 		}
@@ -312,7 +311,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class YearSerializer extends Serializer<Year> {
+	static class YearSerializer extends Serializer<Year> {
 		{
 			setImmutable(true);
 		}
@@ -326,7 +325,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class YearMonthSerializer extends Serializer<YearMonth> {
+	static class YearMonthSerializer extends Serializer<YearMonth> {
 		{
 			setImmutable(true);
 		}
@@ -343,7 +342,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class MonthDaySerializer extends Serializer<MonthDay> {
+	static class MonthDaySerializer extends Serializer<MonthDay> {
 		{
 			setImmutable(true);
 		}
@@ -360,7 +359,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	private static class PeriodSerializer extends Serializer<Period> {
+	static class PeriodSerializer extends Serializer<Period> {
 		{
 			setImmutable(true);
 		}
@@ -378,5 +377,4 @@ public final class TimeSerializers {
 			return Period.of(years, months, days);
 		}
 	}
-
 }

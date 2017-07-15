@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -26,7 +26,7 @@ import com.esotericsoftware.kryo.serializers.DeflateSerializer;
 public class DeflateSerializerTest extends KryoTestCase {
 	public void testString () {
 		kryo.register(String.class, new DeflateSerializer(new StringSerializer()));
-		roundTrip(15, 15, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+		roundTrip(15, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 	}
 
 	public void testGraph () {
@@ -40,10 +40,10 @@ public class DeflateSerializerTest extends KryoTestCase {
 		message.type = MessageType.SERVER_UPDATE;
 		message.data = physicsUpdate;
 
-		roundTrip(8, 8, message);
+		roundTrip(8, message);
 	}
 
-	public static class ServerPhysicsUpdate {
+	static public class ServerPhysicsUpdate {
 		public int value;
 
 		public ServerPhysicsUpdate () {
@@ -66,11 +66,11 @@ public class DeflateSerializerTest extends KryoTestCase {
 		}
 	}
 
-	public static enum MessageType {
+	static public enum MessageType {
 		SERVER_UPDATE
 	}
 
-	public static class Message {
+	static public class Message {
 		public MessageType type;
 		public Object data;
 

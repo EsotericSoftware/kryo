@@ -68,7 +68,7 @@ class ReflectionAssert {
 	}
 
 	// CHECKSTYLE:OFF
-	private static void assertReflectionEquals (final Object one, final Object another,
+	static private void assertReflectionEquals (final Object one, final Object another,
 		final boolean requireMatchingCollectionClasses, final Map<Object, Object> alreadyChecked, final String path) {
 		if (one == another) {
 			return;
@@ -151,12 +151,12 @@ class ReflectionAssert {
 
 	} // CHECKSTYLE:ON
 
-	private static boolean isOnlyOneAssignable (final Class<?> checkedClazz, final Object one, final Object another) {
+	static private boolean isOnlyOneAssignable (final Class<?> checkedClazz, final Object one, final Object another) {
 		return checkedClazz.isAssignableFrom(one.getClass()) && !checkedClazz.isAssignableFrom(another.getClass())
 			|| checkedClazz.isAssignableFrom(another.getClass()) && !checkedClazz.isAssignableFrom(one.getClass());
 	}
 
-	private static boolean oneIsAssignable (final Object one, final Object another, final Class<?>... checkedClazzes) {
+	static private boolean oneIsAssignable (final Object one, final Object another, final Class<?>... checkedClazzes) {
 		for (final Class<?> checkedClazz : checkedClazzes) {
 			if (checkedClazz.isAssignableFrom(one.getClass()) || checkedClazz.isAssignableFrom(another.getClass())) {
 				return true;
@@ -169,7 +169,7 @@ class ReflectionAssert {
 	 * TODO (MG): this assumes same iteration order, which must not be given for sets. There could be a specialized implementation
 	 * for sets.
 	 */
-	private static void assertCollectionEquals (final Collection<?> m1, final Collection<?> m2,
+	static private void assertCollectionEquals (final Collection<?> m1, final Collection<?> m2,
 		final boolean requireMatchingClasses, final Map<Object, Object> alreadyChecked, final String path) {
 		Assert.assertEquals("Collection size does not match for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ",
 			m1.size(), m2.size());
@@ -181,7 +181,7 @@ class ReflectionAssert {
 		}
 	}
 
-	private static void assertMapEquals (final Map<?, ?> m1, final Map<?, ?> m2, final boolean requireMatchingClasses,
+	static private void assertMapEquals (final Map<?, ?> m1, final Map<?, ?> m2, final boolean requireMatchingClasses,
 		final Map<Object, Object> alreadyChecked, final String path) {
 		Assert.assertEquals("Map size does not match for path '" + (StringUtils.isEmpty(path) ? "." : path) + "', map contents:"
 			+ "\nmap1: " + m1 + "\nmap2: " + m2 + "\n", m1.size(), m2.size());
@@ -191,7 +191,7 @@ class ReflectionAssert {
 		}
 	}
 
-	private static void assertEqualDeclaredFields (final Class<? extends Object> clazz, final Object one, final Object another,
+	static private void assertEqualDeclaredFields (final Class<? extends Object> clazz, final Object one, final Object another,
 		final boolean requireMatchingClasses, final Map<Object, Object> alreadyChecked, final String path) {
 		for (final Field field : clazz.getDeclaredFields()) {
 			field.setAccessible(true);

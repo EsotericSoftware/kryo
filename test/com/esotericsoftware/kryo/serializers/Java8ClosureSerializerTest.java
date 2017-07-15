@@ -47,7 +47,7 @@ public class Java8ClosureSerializerTest extends KryoTestCase {
 
 	public void testSerializeSerializableLambdaWithKryo () throws Exception {
 		Callable<Boolean> doNothing = (Callable<Boolean> & java.io.Serializable)( () -> true);
-		roundTrip(222, 225, doNothing);
+		roundTrip(222, doNothing);
 	}
 
 	// we must override equals as lambdas have no equals check built in...

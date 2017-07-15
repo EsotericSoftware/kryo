@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -31,7 +31,7 @@ import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
 
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.util.UnsafeUtil;
+import com.esotericsoftware.kryo.util.Util;
 
 /** An InputStream that reads data from a byte array and optionally fills the byte array from another InputStream as needed.
  * Utility methods are provided for efficiently reading primitive types and strings.
@@ -112,37 +112,6 @@ public class ByteBufferInput extends Input {
 		byteOrder = buffer.order();
 		total = 0;
 		inputStream = null;
-	}
-
-	/** Releases a direct buffer. {@link #setBuffer(ByteBuffer)} must be called before any write operations can be performed. */
-	public void release () {
-		close();
-		UnsafeUtil.releaseBuffer(niobuffer);
-		niobuffer = null;
-	}
-
-	/** This constructor allows for creation of a direct ByteBuffer of a given size at a given address.
-	 * 
-	 * <p>
-	 * Typical usage could look like this snippet:
-	 * 
-	 * <pre>
-	 * // Explicitly allocate memory
-	 * long bufAddress = UnsafeUtil.unsafe().allocateMemory(4096);
-	 * // Create a ByteBufferInput using the allocated memory region
-	 * ByteBufferInput buffer = new ByteBufferInput(bufAddress, 4096);
-	 * 
-	 * // Do some operations on this buffer here
-	 * 
-	 * // Say that ByteBuffer won't be used anymore
-	 * buffer.release();
-	 * // Release the allocated region
-	 * UnsafeUtil.unsafe().freeMemory(bufAddress);
-	 * </pre>
-	 * 
-	 * @param address starting address of a memory region pre-allocated using Unsafe.allocateMemory() */
-	public ByteBufferInput (long address, int size) {
-		setBuffer(UnsafeUtil.getDirectBufferAt(address, size));
 	}
 
 	public ByteBuffer getByteBuffer () {
@@ -316,7 +285,7 @@ public class ByteBufferInput extends Input {
 	public long skip (long count) throws KryoException {
 		long remaining = count;
 		while (remaining > 0) {
-			int skip = (int)Math.min(Util.MAX_SAFE_ARRAY_SIZE, remaining);
+			int skip = (int)Math.min(Util.maxArraySize, remaining);
 			skip(skip);
 			remaining -= skip;
 		}

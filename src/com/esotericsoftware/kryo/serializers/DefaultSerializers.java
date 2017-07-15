@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -806,25 +806,14 @@ public class DefaultSerializers {
 			return create(language, country, variant);
 		}
 
-		// Removed as Locale is declares as immutable
-		// public Locale copy (Kryo kryo, Locale original) {
-		// return create(original.getLanguage(), original.getDisplayCountry(), original.getVariant());
-		// }
-
 		protected static boolean isSameLocale (Locale locale, String language, String country, String variant) {
-			try {
-				return (locale.getLanguage().equals(language) && locale.getCountry().equals(country)
-					&& locale.getVariant().equals(variant));
-			} catch (NullPointerException npe) {
-				// Shouldn't ever happen, no nulls
-				return false;
-			}
+			return (locale.getLanguage().equals(language) && locale.getCountry().equals(country)
+				&& locale.getVariant().equals(variant));
 		}
 	}
 
 	/** Serializer for {@link Charset}. */
-	public static class CharsetSerializer extends Serializer<Charset> {
-
+	static public class CharsetSerializer extends Serializer<Charset> {
 		{
 			setImmutable(true);
 		}
@@ -836,12 +825,10 @@ public class DefaultSerializers {
 		public Charset read (Kryo kryo, Input input, Class<Charset> type) {
 			return Charset.forName(input.readString());
 		}
-
 	}
 
 	/** Serializer for {@link URL}. */
-	public static class URLSerializer extends Serializer<URL> {
-
+	static public class URLSerializer extends Serializer<URL> {
 		{
 			setImmutable(true);
 		}
@@ -857,7 +844,5 @@ public class DefaultSerializers {
 				throw new KryoException(e);
 			}
 		}
-
 	}
-
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -35,7 +35,7 @@ import com.esotericsoftware.kryo.Kryo;
 @RunWith(Parameterized.class)
 public class KryoPoolTest {
 
-	private static KryoFactory factory = new KryoFactory() {
+	static private KryoFactory factory = new KryoFactory() {
 		@Override
 		public Kryo create () {
 			Kryo kryo = new Kryo();
@@ -45,7 +45,7 @@ public class KryoPoolTest {
 	};
 
 	@Parameters
-	public static Collection<Object[]> data () {
+	static public Collection<Object[]> data () {
 		return Arrays.asList(new Object[][] {{new KryoPool.Builder(factory)}, {new KryoPool.Builder(factory).softReferences()}});
 	}
 

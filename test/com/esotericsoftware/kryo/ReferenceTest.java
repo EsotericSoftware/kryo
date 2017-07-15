@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -95,7 +95,7 @@ public class ReferenceTest extends KryoTestCase {
 			kryo.register(subList.getClass(), new SubListSerializer());
 
 		}
-		roundTrip(26, 26, subList);
+		roundTrip(26, subList);
 	}
 
 	static public class SubListSerializer extends Serializer<List> {

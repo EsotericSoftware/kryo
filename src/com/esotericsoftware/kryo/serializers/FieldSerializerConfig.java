@@ -23,16 +23,11 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
 
-/** Configuration for FieldSerializer instances. To configure defaults for new FieldSerializer instances use
- * {@link Kryo#getFieldSerializerConfig()}, to configure a specific FieldSerializer instance use setters for configuration
- * settings on this specific FieldSerializer. */
+/** Configuration for FieldSerializer instances. */
 public class FieldSerializerConfig implements Cloneable {
-
 	private boolean fieldsCanBeNull = true, setFieldsAsAccessible = true;
 	private boolean ignoreSyntheticFields = true;
 	private boolean fixedFieldTypes;
-	/** If set, ASM-backend is used. Otherwise Unsafe-based backend or reflection is used */
-	private boolean useAsm;
 	/** If set, transient fields will be copied */
 	private boolean copyTransient = true;
 	/** If set, transient fields will be serialized */
@@ -42,13 +37,8 @@ public class FieldSerializerConfig implements Cloneable {
 
 	private FieldSerializer.CachedFieldNameStrategy cachedFieldNameStrategy = FieldSerializer.CachedFieldNameStrategy.DEFAULT;
 
-	{
-		useAsm = !FieldSerializer.unsafeAvailable;
-		if (TRACE) trace("kryo.FieldSerializerConfig", "useAsm: " + useAsm);
-	}
-
 	@Override
-	protected FieldSerializerConfig clone () {
+	public FieldSerializerConfig clone () {
 		// clone is ok here as we have only primitive fields
 		try {
 			return (FieldSerializerConfig)super.clone();
@@ -88,17 +78,6 @@ public class FieldSerializerConfig implements Cloneable {
 		if (TRACE) trace("kryo.FieldSerializerConfig", "setFixedFieldTypes: " + fixedFieldTypes);
 	}
 
-	/** Controls whether ASM should be used.
-	 * @param setUseAsm If true, ASM will be used for fast serialization. If false, Unsafe will be used (default) */
-	public void setUseAsm (boolean setUseAsm) {
-		useAsm = setUseAsm;
-		if (!useAsm && !FieldSerializer.unsafeAvailable) {
-			useAsm = true;
-			if (TRACE) trace("kryo.FieldSerializerConfig", "sun.misc.Unsafe is unavailable, using ASM.");
-		}
-		if (TRACE) trace("kryo.FieldSerializerConfig", "setUseAsm: " + setUseAsm);
-	}
-
 	/** Controls if the serialization of generics should be optimized for smaller size.
 	 * <p>
 	 * <strong>Important:</strong> This setting changes the serialized representation, so that data can be deserialized only with
@@ -123,35 +102,31 @@ public class FieldSerializerConfig implements Cloneable {
 		this.serializeTransient = serializeTransient;
 	}
 
-	public boolean isFieldsCanBeNull () {
+	public boolean getFieldsCanBeNull () {
 		return fieldsCanBeNull;
 	}
 
-	public boolean isSetFieldsAsAccessible () {
+	public boolean getSetFieldsAsAccessible () {
 		return setFieldsAsAccessible;
 	}
 
-	public boolean isIgnoreSyntheticFields () {
+	public boolean getIgnoreSyntheticFields () {
 		return ignoreSyntheticFields;
 	}
 
-	public boolean isFixedFieldTypes () {
+	public boolean getFixedFieldTypes () {
 		return fixedFieldTypes;
 	}
 
-	public boolean isUseAsm () {
-		return useAsm;
-	}
-
-	public boolean isOptimizedGenerics () {
+	public boolean getOptimizedGenerics () {
 		return optimizedGenerics;
 	}
 
-	public boolean isCopyTransient () {
+	public boolean getCopyTransient () {
 		return copyTransient;
 	}
 
-	public boolean isSerializeTransient () {
+	public boolean getSerializeTransient () {
 		return serializeTransient;
 	}
 

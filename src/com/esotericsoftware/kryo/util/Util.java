@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -21,33 +21,22 @@ package com.esotericsoftware.kryo.util;
 
 import static com.esotericsoftware.minlog.Log.*;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 /** A few utility methods, mostly for private use.
  * @author Nathan Sweet <misc@n4te.com> */
 public class Util {
+	static public final boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
 
-	static public final boolean IS_ANDROID = "Dalvik".equals(System.getProperty("java.vm.name"));
+	// Maximum reasonable array. See: https://stackoverflow.com/questions/3038392/do-java-arrays-have-a-maximum-size
+	static public final int maxArraySize = Integer.MAX_VALUE - 8;
 
-	/** @deprecated Use {@link #IS_ANDROID} instead. */
-	@Deprecated
-	static public boolean isAndroid = IS_ANDROID;
-
-	private static final ConcurrentHashMap<String, Boolean> classAvailabilities = new ConcurrentHashMap<String, Boolean>();
-
-	public static boolean isClassAvailable (String className) {
-		Boolean result = classAvailabilities.get(className);
-		if (result == null) {
-			try {
-				Class.forName(className);
-				result = true;
-			} catch (Exception e) {
-				debug("kryo", "Class not available: " + className);
-				result = false;
-			}
-			classAvailabilities.put(className, result);
+	static public boolean isClassAvailable (String className) {
+		try {
+			Class.forName(className);
+			return true;
+		} catch (Exception ex) {
+			debug("kryo", "Class not available: " + className);
+			return false;
 		}
-		return result;
 	}
 
 	/** Returns the primitive wrapper class for a primitive class.
@@ -166,17 +155,5 @@ public class Util {
 		while (elementClass.getComponentType() != null)
 			elementClass = elementClass.getComponentType();
 		return elementClass;
-	}
-
-	/** Converts an "int" value between endian systems. */
-	static public int swapInt (int i) {
-		return ((i & 0xFF) << 24) | ((i & 0xFF00) << 8) | ((i & 0xFF0000) >> 8) | ((i >> 24) & 0xFF);
-	}
-
-	/** Converts a "long" value between endian systems. */
-	static public long swapLong (long value) {
-		return (((value >> 0) & 0xff) << 56) | (((value >> 8) & 0xff) << 48) | (((value >> 16) & 0xff) << 40)
-			| (((value >> 24) & 0xff) << 32) | (((value >> 32) & 0xff) << 24) | (((value >> 40) & 0xff) << 16)
-			| (((value >> 48) & 0xff) << 8) | (((value >> 56) & 0xff) << 0);
 	}
 }

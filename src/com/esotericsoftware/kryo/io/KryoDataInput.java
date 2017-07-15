@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -97,9 +97,7 @@ public class KryoDataInput implements DataInput {
 		return input.readDouble();
 	}
 
-	/** This is not currently implemented. The method will currently throw an {@link java.lang.UnsupportedOperationException}
-	 * whenever it is called.
-	 *
+	/** Not implemented.
 	 * @throws UnsupportedOperationException when called.
 	 * @deprecated this method is not supported in this implementation. */
 	public String readLine () throws UnsupportedOperationException {
@@ -110,7 +108,6 @@ public class KryoDataInput implements DataInput {
 	 * {@link KryoDataOutput#writeUTF(String)}, {@link com.esotericsoftware.kryo.io.Output#writeString(String)},
 	 * {@link com.esotericsoftware.kryo.io.Output#writeString(CharSequence)}, and
 	 * {@link com.esotericsoftware.kryo.io.Output#writeAscii(String)}.
-	 *
 	 * @return May be null. */
 	public String readUTF () throws IOException {
 		return input.readString();

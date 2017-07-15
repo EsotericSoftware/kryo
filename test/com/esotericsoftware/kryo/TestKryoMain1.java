@@ -12,7 +12,7 @@ import com.esotericsoftware.minlog.Log;
 
 public class TestKryoMain1 {
 
-	public static void main (String[] args) throws IOException {
+	static public void main (String[] args) throws IOException {
 		Log.TRACE();
 
 		Kryo kryo = new Kryo();

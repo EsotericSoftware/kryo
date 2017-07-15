@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.Util;
 
 /** An InputStream that reads data from a byte array and optionally fills the byte array from another InputStream as needed.
  * Utility methods are provided for efficiently reading primitive types and strings.
@@ -289,7 +290,7 @@ public class Input extends InputStream {
 	public long skip (long count) throws KryoException {
 		long remaining = count;
 		while (remaining > 0) {
-			int skip = (int)Math.min(Util.MAX_SAFE_ARRAY_SIZE, remaining);
+			int skip = (int)Math.min(Util.maxArraySize, remaining);
 			skip(skip);
 			remaining -= skip;
 		}

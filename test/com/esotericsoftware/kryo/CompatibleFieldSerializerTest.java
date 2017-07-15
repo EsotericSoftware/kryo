@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -27,6 +27,8 @@ import java.io.InputStream;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
+
 import org.apache.commons.lang.builder.EqualsBuilder;
 
 /** @author Nathan Sweet <misc@n4te.com> */
@@ -43,7 +45,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
 		kryo.register(TestClass.class);
 		kryo.register(AnotherClass.class);
-		roundTrip(107, 107, object1);
+		roundTrip(107, object1);
 	}
 
 	public void testAddedField () throws FileNotFoundException {
@@ -56,7 +58,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
 		kryo.register(AnotherClass.class, new CompatibleFieldSerializer(kryo, AnotherClass.class));
-		roundTrip(80, 80, object1);
+		roundTrip(80, object1);
 
 		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
 		Object object2 = kryo.readClassAndObject(input);
@@ -107,7 +109,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bAdd");
 		kryo.register(ClassWithManyFields.class, serializer);
-		roundTrip(226, 226, object1);
+		roundTrip(226, object1);
 
 		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
 		Object object2 = kryo.readClassAndObject(input);
@@ -119,7 +121,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.child = new TestClass();
 
 		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
-		roundTrip(94, 94, object1);
+		roundTrip(94, object1);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
 		serializer.removeField("text");
@@ -172,7 +174,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 
 		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
-		roundTrip(236, 236, object1);
+		roundTrip(236, object1);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bAdd");
@@ -189,11 +191,12 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		ExtendedTestClass extendedObject = new ExtendedTestClass();
 
 		// this test would fail with DEFAULT field name strategy
-		kryo.getFieldSerializerConfig().setCachedFieldNameStrategy(FieldSerializer.CachedFieldNameStrategy.EXTENDED);
+		FieldSerializerConfig config = new FieldSerializerConfig();
+		config.setCachedFieldNameStrategy(FieldSerializer.CachedFieldNameStrategy.EXTENDED);
 
-		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ExtendedTestClass.class);
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ExtendedTestClass.class, config);
 		kryo.register(ExtendedTestClass.class, serializer);
-		roundTrip(286, 286, extendedObject);
+		roundTrip(286, extendedObject);
 
 		ExtendedTestClass object2 = (ExtendedTestClass)kryo.readClassAndObject(input);
 		assertEquals(extendedObject, object2);

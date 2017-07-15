@@ -34,8 +34,7 @@ import com.esotericsoftware.kryo.io.Output;
 /** Serializers for {@link Optional}, {@link OptionalInt}, {@link OptionalLong} and {@link OptionalDouble}. Are added as default
  * serializers for java >= 1.8. */
 public final class OptionalSerializers {
-
-	public static void addDefaultSerializers (Kryo kryo) {
+	static public void addDefaultSerializers (Kryo kryo) {
 		if (isClassAvailable("java.util.Optional")) kryo.addDefaultSerializer(Optional.class, new OptionalSerializer());
 		if (isClassAvailable("java.util.OptionalInt")) kryo.addDefaultSerializer(OptionalInt.class, new OptionalIntSerializer());
 		if (isClassAvailable("java.util.OptionalLong")) kryo.addDefaultSerializer(OptionalLong.class, new OptionalLongSerializer());
@@ -43,8 +42,7 @@ public final class OptionalSerializers {
 			kryo.addDefaultSerializer(OptionalDouble.class, new OptionalDoubleSerializer());
 	}
 
-	private static class OptionalSerializer extends Serializer<Optional> {
-
+	static class OptionalSerializer extends Serializer<Optional> {
 		{
 			setAcceptsNull(false);
 		}
@@ -70,7 +68,7 @@ public final class OptionalSerializers {
 		}
 	}
 
-	private static class OptionalIntSerializer extends Serializer<OptionalInt> {
+	static class OptionalIntSerializer extends Serializer<OptionalInt> {
 		{
 			setImmutable(true);
 		}
@@ -86,7 +84,7 @@ public final class OptionalSerializers {
 		}
 	}
 
-	private static class OptionalLongSerializer extends Serializer<OptionalLong> {
+	static class OptionalLongSerializer extends Serializer<OptionalLong> {
 		{
 			setImmutable(true);
 		}
@@ -102,7 +100,7 @@ public final class OptionalSerializers {
 		}
 	}
 
-	private static class OptionalDoubleSerializer extends Serializer<OptionalDouble> {
+	static class OptionalDoubleSerializer extends Serializer<OptionalDouble> {
 		{
 			setImmutable(true);
 		}
@@ -117,5 +115,4 @@ public final class OptionalSerializers {
 			return present ? OptionalDouble.of(input.readDouble()) : OptionalDouble.empty();
 		}
 	}
-
 }

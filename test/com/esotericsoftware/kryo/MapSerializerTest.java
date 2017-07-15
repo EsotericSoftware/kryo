@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -29,6 +29,7 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
@@ -47,9 +48,9 @@ public class MapSerializerTest extends KryoTestCase {
 		HashMap map = new HashMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(18, 21, map);
-		roundTrip(2, 5, new LinkedHashMap());
-		roundTrip(18, 21, new LinkedHashMap(map));
+		roundTrip(18, map);
+		roundTrip(2, new LinkedHashMap());
+		roundTrip(18, new LinkedHashMap(map));
 
 		MapSerializer serializer = new MapSerializer();
 		kryo.register(HashMap.class, serializer);
@@ -57,9 +58,9 @@ public class MapSerializerTest extends KryoTestCase {
 		serializer.setKeyClass(String.class, kryo.getSerializer(String.class));
 		serializer.setKeysCanBeNull(false);
 		serializer.setValueClass(String.class, kryo.getSerializer(String.class));
-		roundTrip(14, 17, map);
+		roundTrip(14, map);
 		serializer.setValuesCanBeNull(false);
-		roundTrip(14, 17, map);
+		roundTrip(14, map);
 	}
 
 	public void testEmptyHashMap () {
@@ -120,7 +121,7 @@ public class MapSerializerTest extends KryoTestCase {
 		TreeMap map = new TreeMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(19, 22, map);
+		roundTrip(19, map);
 
 		kryo.register(KeyThatIsntComparable.class);
 		kryo.register(KeyComparator.class);
@@ -131,7 +132,7 @@ public class MapSerializerTest extends KryoTestCase {
 		map.put(key1, "456");
 		key2.value = "1234";
 		map.put(key2, "4567");
-		roundTrip(21, 24, map);
+		roundTrip(21, map);
 
 		kryo.register(TreeMapSubclass.class);
 		map = new TreeMapSubclass<String, Integer>();
@@ -139,7 +140,7 @@ public class MapSerializerTest extends KryoTestCase {
 		map.put("2", 34);
 		map.put("3", 65);
 		map.put("4", 44);
-		roundTrip(24, 38, map);
+		roundTrip(24, map);
 	}
 
 	public void testTreeMapWithReferences () {
@@ -148,7 +149,7 @@ public class MapSerializerTest extends KryoTestCase {
 		TreeMap map = new TreeMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(24, 27, map);
+		roundTrip(24, map);
 
 		kryo.register(KeyThatIsntComparable.class);
 		kryo.register(KeyComparator.class);
@@ -159,7 +160,7 @@ public class MapSerializerTest extends KryoTestCase {
 		map.put(key1, "456");
 		key2.value = "1234";
 		map.put(key2, "4567");
-		roundTrip(29, 32, map);
+		roundTrip(29, map);
 
 		kryo.register(TreeMapSubclass.class);
 		map = new TreeMapSubclass<String, Integer>();
@@ -167,12 +168,14 @@ public class MapSerializerTest extends KryoTestCase {
 		map.put("2", 34);
 		map.put("3", 65);
 		map.put("4", 44);
-		roundTrip(29, 43, map);
+		roundTrip(29, map);
 	}
 
 	public void testSerializingMapAfterDeserializingMultipleReferencesToSameMap () throws Exception {
 		Kryo kryo = new Kryo();
-		kryo.getFieldSerializerConfig().setOptimizedGenerics(false);
+		FieldSerializerFactory factory = new FieldSerializerFactory();
+		factory.getConfig().setOptimizedGenerics(false);
+		kryo.setDefaultSerializer(factory);
 		Output output = new Output(4096);
 
 		kryo.writeClassAndObject(output, new HasMultipleReferenceToSameMap());

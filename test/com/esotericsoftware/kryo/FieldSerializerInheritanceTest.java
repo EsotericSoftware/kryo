@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo;
 
 import org.junit.Assert;
 
+import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
 /** Created by phamrak on 8.6.2016. */
@@ -31,7 +32,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		kryo.setDefaultSerializer(FieldSerializer.class);
 		kryo.register(TestDefault.class);
 
-		roundTrip(17, 17, testDefault);
+		roundTrip(17, testDefault);
 
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestDefault.class);
 		assertNotNull(serializer.getField("a"));
@@ -46,7 +47,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		kryo.setDefaultSerializer(FieldSerializer.class);
 		kryo.register(TestExtended.class);
 
-		roundTrip(34, 34, testExtended);
+		roundTrip(34, testExtended);
 
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestExtended.class);
 
@@ -63,11 +64,12 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		TestExtended testExtended = new TestExtended();
 		((TestDefault)testExtended).a = "someDefaultValue";
 		testExtended.a = "someExtendedValue";
-		kryo.getFieldSerializerConfig().setCachedFieldNameStrategy(FieldSerializer.CachedFieldNameStrategy.EXTENDED);
-		kryo.setDefaultSerializer(FieldSerializer.class);
+		FieldSerializerFactory factory = new FieldSerializerFactory();
+		factory.getConfig().setCachedFieldNameStrategy(FieldSerializer.CachedFieldNameStrategy.EXTENDED);
+		kryo.setDefaultSerializer(factory);
 		kryo.register(TestExtended.class);
 
-		roundTrip(34, 34, testExtended);
+		roundTrip(34, testExtended);
 
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestExtended.class);
 
@@ -90,7 +92,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 	}
 
 	static public class TestDefault {
-		private String a;
+		String a;
 
 		public String getA () {
 			return a;
@@ -118,7 +120,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 	}
 
 	static public class TestExtended extends TestDefault {
-		private String a;
+		String a;
 
 		public String getA () {
 			return a;

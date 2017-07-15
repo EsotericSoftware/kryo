@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -22,8 +22,6 @@ package com.esotericsoftware.kryo;
 import java.lang.ref.WeakReference;
 
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
-import com.esotericsoftware.kryo.util.DefaultStreamFactory;
-import com.esotericsoftware.kryo.util.FastestStreamFactory;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
 import junit.framework.TestCase;
@@ -32,18 +30,8 @@ import junit.framework.TestCase;
  * 
  * @author Tumi <serverperformance@gmail.com> */
 public class GarbageCollectionTest extends TestCase {
-
-	public void testDefaultStreamFactory () {
-		final DefaultStreamFactory strongRefToStreamFactory = new DefaultStreamFactory();
-		Kryo kryo = new Kryo(new DefaultClassResolver(), new MapReferenceResolver(), strongRefToStreamFactory);
-		WeakReference<Kryo> kryoWeakRef = new WeakReference<Kryo>(kryo);
-		kryo = null; // remove strong ref, now kryo is only weak-reachable
-		reclaim(kryoWeakRef);
-	}
-
-	public void testFastestStreamFactory () {
-		final FastestStreamFactory strongRefToStreamFactory = new FastestStreamFactory();
-		Kryo kryo = new Kryo(new DefaultClassResolver(), new MapReferenceResolver(), strongRefToStreamFactory);
+	public void test () {
+		Kryo kryo = new Kryo(new DefaultClassResolver(), new MapReferenceResolver());
 		WeakReference<Kryo> kryoWeakRef = new WeakReference<Kryo>(kryo);
 		kryo = null; // remove strong ref, now kryo is only weak-reachable
 		reclaim(kryoWeakRef);

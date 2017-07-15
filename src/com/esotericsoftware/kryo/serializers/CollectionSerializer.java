@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -155,18 +155,14 @@ public class CollectionSerializer extends Serializer<Collection> {
 	@Target(ElementType.FIELD)
 	public @interface BindCollection {
 		/** Serializer to be used for values
-		 * 
 		 * @return the class<? extends Serializer> used for values serialization */
-		@SuppressWarnings("rawtypes")
 		Class<? extends Serializer> elementSerializer() default Serializer.class;
 
 		/** Class used for elements
-		 * 
 		 * @return the class used for elements */
 		Class<?> elementClass() default Object.class;
 
 		/** Indicates if elements can be null
-		 * 
 		 * @return true, if elements can be null */
 		boolean elementsCanBeNull() default true;
 	}

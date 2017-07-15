@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -20,7 +20,6 @@
 package com.esotericsoftware.kryo.serializers;
 
 import java.io.Externalizable;
-import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Method;
@@ -44,7 +43,6 @@ import com.esotericsoftware.kryo.util.ObjectMap;
  *
  * @author Robert DiFalco <robert.difalco@gmail.com> */
 public class ExternalizableSerializer extends Serializer {
-
 	private ObjectMap<Class, JavaSerializer> javaSerializerByType;
 
 	private KryoObjectInput objectInput = null;
@@ -73,9 +71,7 @@ public class ExternalizableSerializer extends Serializer {
 	private void writeExternal (Kryo kryo, Output output, Object object) {
 		try {
 			((Externalizable)object).writeExternal(getObjectOutput(kryo, output));
-		} catch (ClassCastException e) {
-			throw new KryoException(e);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			throw new KryoException(e);
 		}
 	}
@@ -85,11 +81,7 @@ public class ExternalizableSerializer extends Serializer {
 			Externalizable object = (Externalizable)kryo.newInstance(type);
 			object.readExternal(getObjectInput(kryo, input));
 			return object;
-		} catch (ClassCastException e) {
-			throw new KryoException(e);
-		} catch (ClassNotFoundException e) {
-			throw new KryoException(e);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			throw new KryoException(e);
 		}
 	}
@@ -135,7 +127,6 @@ public class ExternalizableSerializer extends Serializer {
 			javaSerializerByType = new ObjectMap<Class, JavaSerializer>();
 			return null;
 		}
-
 		return javaSerializerByType.get(type);
 	}
 
@@ -144,7 +135,7 @@ public class ExternalizableSerializer extends Serializer {
 	}
 
 	/* find out if there are any pesky serialization extras on this class */
-	private static boolean hasInheritableReplaceMethod (Class type, String methodName) {
+	static private boolean hasInheritableReplaceMethod (Class type, String methodName) {
 		Method method = null;
 		Class<?> current = type;
 		while (current != null) {
@@ -155,7 +146,6 @@ public class ExternalizableSerializer extends Serializer {
 				current = current.getSuperclass();
 			}
 		}
-
 		return ((method != null) && (method.getReturnType() == Object.class));
 	}
 }

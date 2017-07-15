@@ -17,18 +17,18 @@ public class EnumNameSerializerTest extends KryoTestCase {
 
 		// 1 byte for identifying class name,
 		// rest bytes for enum's name
-		roundTrip(6, 6, TestNameEnum.HELLO);
-		roundTrip(5, 5, TestNameEnum.KRYO);
+		roundTrip(6, TestNameEnum.HELLO);
+		roundTrip(5, TestNameEnum.KRYO);
 
-		roundTrip(7, 7, TestAnotherNameEnum.SUNDAY);
-		roundTrip(8, 8, TestAnotherNameEnum.TUESDAY);
+		roundTrip(7, TestAnotherNameEnum.SUNDAY);
+		roundTrip(8, TestAnotherNameEnum.TUESDAY);
 
 		kryo = new Kryo();
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.setRegistrationRequired(false);
 
-		roundTrip(84, 84, TestNameEnum.WORLD);
-		roundTrip(92, 92, TestAnotherNameEnum.MONDAY);
+		roundTrip(84, TestNameEnum.WORLD);
+		roundTrip(92, TestAnotherNameEnum.MONDAY);
 	}
 
 	public void testEnumSetSerializerWithEnumNameSerializer () throws Exception {
@@ -50,22 +50,22 @@ public class EnumNameSerializerTest extends KryoTestCase {
 		assertFalse(enumSet.contains(TestNameEnum.KRYO));
 
 		// empty EnumSet
-		roundTrip(3, 6, EnumSet.noneOf(TestNameEnum.class));
+		roundTrip(3, EnumSet.noneOf(TestNameEnum.class));
 	}
 
 	public void testEnumNameSerializerWithMethods () {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 
 		kryo.register(TestNameEnumWithMethods.class);
-		roundTrip(6, 6, TestNameEnumWithMethods.ALPHA);
-		roundTrip(5, 5, TestNameEnumWithMethods.BETA);
+		roundTrip(6, TestNameEnumWithMethods.ALPHA);
+		roundTrip(5, TestNameEnumWithMethods.BETA);
 
 		kryo = new Kryo();
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.setRegistrationRequired(false);
 
-		roundTrip(97, 97, TestNameEnumWithMethods.ALPHA);
-		roundTrip(96, 96, TestNameEnumWithMethods.BETA);
+		roundTrip(97, TestNameEnumWithMethods.ALPHA);
+		roundTrip(96, TestNameEnumWithMethods.BETA);
 	}
 
 	public enum TestNameEnum {

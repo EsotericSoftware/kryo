@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -31,7 +31,7 @@ import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
 
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.util.UnsafeUtil;
+import com.esotericsoftware.kryo.util.Util;
 
 /** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
  * for efficiently writing primitive types and strings.
@@ -64,7 +64,7 @@ public class ByteBufferOutput extends Output {
 	public ByteBufferOutput (int bufferSize, int maxBufferSize) {
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.capacity = bufferSize;
-		this.maxCapacity = maxBufferSize == -1 ? Util.MAX_SAFE_ARRAY_SIZE : maxBufferSize;
+		this.maxCapacity = maxBufferSize == -1 ? Util.maxArraySize : maxBufferSize;
 		niobuffer = ByteBuffer.allocateDirect(bufferSize);
 		niobuffer.order(byteOrder);
 	}
@@ -92,41 +92,6 @@ public class ByteBufferOutput extends Output {
 	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxCapacity and an exception is thrown. */
 	public ByteBufferOutput (ByteBuffer buffer, int maxBufferSize) {
 		setBuffer(buffer, maxBufferSize);
-	}
-
-	/** Creates a direct ByteBuffer of a given size at a given address.
-	 * <p>
-	 * Typical usage could look like this snippet:
-	 * 
-	 * <pre>
-	 * // Explicitly allocate memory
-	 * long bufAddress = UnsafeUtil.unsafe().allocateMemory(4096);
-	 * // Create a ByteBufferOutput using the allocated memory region
-	 * ByteBufferOutput buffer = new ByteBufferOutput(bufAddress, 4096);
-	 * 
-	 * // Do some operations on this buffer here
-	 * 
-	 * // Say that ByteBuffer won't be used anymore
-	 * buffer.release();
-	 * // Release the allocated region
-	 * UnsafeUtil.unsafe().freeMemory(bufAddress);
-	 * </pre>
-	 * 
-	 * @param address starting address of a memory region pre-allocated using Unsafe.allocateMemory()
-	 * @param maxBufferSize */
-	public ByteBufferOutput (long address, int maxBufferSize) {
-		niobuffer = UnsafeUtil.getDirectBufferAt(address, maxBufferSize);
-		setBuffer(niobuffer, maxBufferSize);
-	}
-
-	/** Release a direct buffer. {@link #setBuffer(ByteBuffer, int)} should be called before next write operations can be called.
-	 * 
-	 * NOTE: If Cleaner is not accessible due to SecurityManager restrictions, reflection could be used to obtain the "clean"
-	 * method and then invoke it. */
-	public void release () {
-		clear();
-		UnsafeUtil.releaseBuffer(niobuffer);
-		niobuffer = null;
 	}
 
 	public ByteOrder order () {
@@ -163,7 +128,7 @@ public class ByteBufferOutput extends Output {
 		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.niobuffer = buffer;
-		this.maxCapacity = maxBufferSize == -1 ? Util.MAX_SAFE_ARRAY_SIZE : maxBufferSize;
+		this.maxCapacity = maxBufferSize == -1 ? Util.maxArraySize : maxBufferSize;
 		byteOrder = buffer.order();
 		capacity = buffer.capacity();
 		position = buffer.position();

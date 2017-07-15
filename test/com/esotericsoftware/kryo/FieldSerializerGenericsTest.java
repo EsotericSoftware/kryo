@@ -13,13 +13,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.esotericsoftware.kryo.io.FastOutput;
+import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
+import com.esotericsoftware.kryo.io.Output;
 
 @RunWith(Parameterized.class)
 public class FieldSerializerGenericsTest {
 
 	@Parameters(name = "optimizedGenerics_{0}")
-	public static Iterable<?> optimizedGenerics () {
+	static public Iterable<?> optimizedGenerics () {
 		return Arrays.asList(true, false);
 	}
 
@@ -39,10 +40,12 @@ public class FieldSerializerGenericsTest {
 		foos.add(genFoo1);
 		new FooContainer(foos);
 		Kryo kryo = new Kryo();
-		kryo.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
+		FieldSerializerFactory factory = new FieldSerializerFactory();
+		factory.getConfig().setOptimizedGenerics(optimizedGenerics);
+		kryo.setDefaultSerializer(factory);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-		kryo.writeObject(new FastOutput(outputStream), genFoo1);
+		kryo.writeObject(new Output(outputStream), genFoo1);
 	}
 
 	@Test
@@ -55,10 +58,12 @@ public class FieldSerializerGenericsTest {
 		bars.add(genBar1);
 		new GenericBarContainer<GenericBar>(new BarContainer(bars));
 		Kryo kryo = new Kryo();
-		kryo.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
+		FieldSerializerFactory factory = new FieldSerializerFactory();
+		factory.getConfig().setOptimizedGenerics(optimizedGenerics);
+		kryo.setDefaultSerializer(factory);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-		kryo.writeObject(new FastOutput(outputStream), genBar1);
+		kryo.writeObject(new Output(outputStream), genBar1);
 	}
 
 	static class GenericBarContainer<T extends Bar> {

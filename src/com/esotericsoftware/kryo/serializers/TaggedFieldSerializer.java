@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -43,50 +43,30 @@ import com.esotericsoftware.kryo.io.OutputChunked;
  * <code>@Tag</code> annotation must remain in the class. Deprecated fields can optionally be made private and/or renamed so they
  * don't clutter the class (eg, <code>ignored</code>, <code>ignored2</code>). For these reasons, TaggedFieldSerializer generally
  * provides more flexibility for classes to evolve. The downside is that it has a small amount of additional overhead compared to
- * VersionFieldSerializer (an additional varint per field). 
+ * VersionFieldSerializer (an additional varint per field).
  * <p>
- * Forward compatibility is optionally supported by enabling {@link #setSkipUnknownTags(boolean)}, which allows it to
- * skip reading unknown tagged fields, which are presumably new fields added in future versions of an application. The
- * data is only forward compatible if the newly added fields are tagged with {@link TaggedFieldSerializer.Tag#annexed()}
- * set true, which comes with the cost of chunked encoding. When annexed fields are encountered during the read or write
- * process of an object, a buffer is allocated to perform the chunked encoding.
+ * Forward compatibility is optionally supported by enabling {@link TaggedFieldSerializerConfig#setSkipUnknownTags(boolean)},
+ * which allows it to skip reading unknown tagged fields, which are presumably new fields added in future versions of an
+ * application. The data is only forward compatible if the newly added fields are tagged with
+ * {@link TaggedFieldSerializer.Tag#annexed()} set true, which comes with the cost of chunked encoding. When annexed fields are
+ * encountered during the read or write process of an object, a buffer is allocated to perform the chunked encoding.
  * <p>
- * Tag values must be entirely unique, even among a class and its superclass(es). An IllegalArgumentException will be
- * thrown by {@link Kryo#register(Class)} (and its overloads) if duplicate Tag values are encountered.
+ * Tag values must be entirely unique, even among a class and its superclass(es). An IllegalArgumentException will be thrown by
+ * {@link Kryo#register(Class)} (and its overloads) if duplicate Tag values are encountered.
  * @see VersionFieldSerializer
  * @author Nathan Sweet <misc@n4te.com> */
-public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
+public class TaggedFieldSerializer<T> extends FieldSerializer<T, TaggedFieldSerializerConfig> {
 	private int[] tags;
 	private int writeFieldCount;
 	private boolean[] deprecated;
 	private boolean[] annexed;
 
 	public TaggedFieldSerializer (Kryo kryo, Class type) {
-		super(kryo, type, null, kryo.getTaggedFieldSerializerConfig().clone());
+		super(kryo, type, null, new TaggedFieldSerializerConfig());
 	}
 
-	/** Set whether TaggedFieldSerializer should attempt to skip reading the data of unknown tags, rather than throwing a
-	 * KryoException. Data can be skipped if it is tagged with {@link Tag#annexed()} set true. This enables forward
-	 * compatibility.
-	 * <p>
-	 * By default, this setting matches the value of {@link TaggedFieldSerializerConfig#isSkipUnknownTags()} in
-	 * {@link Kryo#getTaggedFieldSerializerConfig()}, which is false by default.
-	 * </p>
-	 *
-	 * @param skipUnknownTags If true, unknown field tags will be skipped, with the assumption that they are future
-	 *                          tagged values with {@link Tag#annexed()} set true. If false KryoException will be thrown
-	 *                          whenever unknown tags are encountered. */
-	public void setSkipUnknownTags (boolean skipUnknownTags) {
-		((TaggedFieldSerializerConfig)config).setSkipUnknownTags(skipUnknownTags);
-		rebuildCachedFields();
-	}
-
-	/**
-	 * @return Whether the TaggedFieldSerializers should attempt to skip reading the data of unknown tags, rather than
-	 * throwing a KryoException. See {@link #setSkipUnknownTags(boolean)}.
-	 */
-	public boolean isSkipUnknownTags() {
-		return ((TaggedFieldSerializerConfig)config).isSkipUnknownTags();
+	public TaggedFieldSerializer (Kryo kryo, Class type, TaggedFieldSerializerConfig config) {
+		super(kryo, type, null, config);
 	}
 
 	protected void initializeCachedFields () {
@@ -110,14 +90,14 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		for (int i = 0, n = fields.length; i < n; i++) {
 			Field field = fields[i].getField();
 			tags[i] = field.getAnnotation(Tag.class).value();
-			if (i > 0 && tags[i] == tags[i-1]) // This check relies on fields having been sorted
-				throw new KryoException(String.format("The fields [%s] and [%s] both have a Tag value of %d.", field, fields[i-1].getField(), tags[i]));
+			if (i > 0 && tags[i] == tags[i - 1]) // This check relies on fields having been sorted
+				throw new KryoException(
+					String.format("The fields [%s] and [%s] both have a Tag value of %d.", field, fields[i - 1].getField(), tags[i]));
 			if (field.getAnnotation(Deprecated.class) != null) {
 				deprecated[i] = true;
 				writeFieldCount--;
 			}
-			if (field.getAnnotation(Tag.class).annexed())
-				annexed[i] = true;
+			if (field.getAnnotation(Tag.class).annexed()) annexed[i] = true;
 		}
 
 		this.removedFields.clear();
@@ -141,9 +121,8 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (deprecated[i]) continue;
 			output.writeVarInt(tags[i], true);
-			if (annexed[i]){
-				if (outputChunked == null)
-					outputChunked = new OutputChunked(output, 1024);
+			if (annexed[i]) {
+				if (outputChunked == null) outputChunked = new OutputChunked(output, 1024);
 				fields[i].write(outputChunked, object);
 				outputChunked.endChunks();
 			} else {
@@ -172,14 +151,14 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				}
 			}
 			if (cachedField == null) {
-				if (isSkipUnknownTags()) {
+				if (config.skipUnknownTags) {
 					if (inputChunked == null) inputChunked = new InputChunked(input, 1024);
 					inputChunked.nextChunks(); // assume future annexed field and skip
-					if (TRACE) trace(String.format("Unknown field tag: %d (%s) encountered. Assuming a future annexed " +
-									"tag with chunked encoding and skipping.", tag, getType().getName()));
+					if (TRACE) trace(String.format("Unknown field tag: %d (%s) encountered. Assuming a future annexed "
+						+ "tag with chunked encoding and skipping.", tag, getType().getName()));
 				} else
 					throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
-			} else if (isAnnexed){
+			} else if (isAnnexed) {
 				if (inputChunked == null) inputChunked = new InputChunked(input, 1024);
 				cachedField.read(inputChunked, object);
 				inputChunked.nextChunks();
@@ -190,7 +169,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		return object;
 	}
 
-	private static final Comparator<CachedField> TAGGED_VALUE_COMPARATOR = new Comparator<CachedField>() {
+	static private final Comparator<CachedField> TAGGED_VALUE_COMPARATOR = new Comparator<CachedField>() {
 		public int compare (CachedField o1, CachedField o2) {
 			return o1.getField().getAnnotation(Tag.class).value() - o2.getField().getAnnotation(Tag.class).value();
 		}
@@ -201,26 +180,9 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	@Target(ElementType.FIELD)
 	public @interface Tag {
 		int value();
-		/** If true, the field is serialized with chunked encoding and is forward compatible, meaning safe to read in
-		 * iterations of the class without it if {@link #isSkipUnknownTags()}. */
+
+		/** If true, the field is serialized with chunked encoding and is forward compatible, meaning safe to read in iterations of
+		 * the class without it if {@link TaggedFieldSerializerConfig#getSkipUnknownTags()}. */
 		boolean annexed() default false;
-	}
-
-	/**
-	 * @deprecated The {@code ignoreUnknownTags} feature is deprecated and the functionality is disabled, as it is an
-	 * invalid means of preserving forward compatibility. See {@link #setSkipUnknownTags(boolean)} for an alternate means.
-	 * @param ignoreUnknownTags This setting is now ignored.
-	 */
-	@Deprecated
-	public void setIgnoreUnknownTags (boolean ignoreUnknownTags){
-	}
-
-	/**
-	 * @deprecated See {@link #setIgnoreUnknownTags(boolean)} for information.
-	 * @return Always returns false, as this feature has been disabled.
-	 */
-	@Deprecated
-	public boolean isIgnoreUnkownTags() {
-		return false;
 	}
 }

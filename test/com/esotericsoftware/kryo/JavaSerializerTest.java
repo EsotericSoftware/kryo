@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -27,16 +27,16 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 public class JavaSerializerTest extends KryoTestCase {
 	public void testJavaSerializer () {
 		kryo.register(String.class, new JavaSerializer());
-		roundTrip(50, 50, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
-		roundTrip(12, 12, "meow");
+		roundTrip(50, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+		roundTrip(12, "meow");
 
 		kryo.register(TestClass.class, new JavaSerializer());
 		TestClass test = new TestClass();
 		test.stringField = "fubar";
 		test.intField = 54321;
-		roundTrip(134, 134, test);
-		roundTrip(134, 134, test);
-		roundTrip(134, 134, test);
+		roundTrip(134, test);
+		roundTrip(134, test);
+		roundTrip(134, test);
 	}
 
 	static public class TestClass implements Serializable {

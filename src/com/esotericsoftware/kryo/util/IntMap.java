@@ -30,10 +30,10 @@ import java.util.NoSuchElementException;
  * @author Nathan Sweet */
 public class IntMap<V> {
 	// primes for hash functions 2, 3, and 4
-	private static final int PRIME2 = 0xbe1f14b1;
-	private static final int PRIME3 = 0xb4b82e39;
-	private static final int PRIME4 = 0xced1c241;
-	private static final int EMPTY = 0;
+	static private final int PRIME2 = 0xbe1f14b1;
+	static private final int PRIME3 = 0xb4b82e39;
+	static private final int PRIME4 = 0xced1c241;
+	static private final int EMPTY = 0;
 
 	public int size;
 
@@ -47,7 +47,7 @@ public class IntMap<V> {
 	private int hashShift, mask, threshold;
 	private int stashCapacity;
 	private int pushIterations;
-	private boolean isBigTable;
+	private boolean bigTable;
 
 	/** Creates a new map with an initial capacity of 32 and a load factor of 0.8. This map will hold 25 items before growing the
 	 * backing table. */
@@ -72,7 +72,7 @@ public class IntMap<V> {
 		this.loadFactor = loadFactor;
 
 		// big table is when capacity >= 2^16
-		isBigTable = (capacity >>> 16) != 0 ? true : false;
+		bigTable = (capacity >>> 16) != 0 ? true : false;
 
 		threshold = (int)(capacity * loadFactor);
 		mask = capacity - 1;
@@ -109,7 +109,6 @@ public class IntMap<V> {
 		// avoid getfield opcode
 		int[] keyTable = this.keyTable;
 		int mask = this.mask;
-		boolean isBigTable = this.isBigTable;
 
 		// Check for existing keys.
 		int index1 = key & mask;
@@ -138,7 +137,7 @@ public class IntMap<V> {
 
 		int index4 = -1;
 		int key4 = -1;
-		if (isBigTable) {
+		if (bigTable) {
 			index4 = hash4(key);
 			key4 = keyTable[index4];
 			if (key4 == key) {
@@ -179,7 +178,7 @@ public class IntMap<V> {
 			return null;
 		}
 
-		if (isBigTable && key4 == EMPTY) {
+		if (bigTable && key4 == EMPTY) {
 			keyTable[index4] = key;
 			valueTable[index4] = value;
 			if (size++ >= threshold) resize(capacity << 1);
@@ -234,7 +233,7 @@ public class IntMap<V> {
 
 		int index4 = -1;
 		int key4 = -1;
-		if (isBigTable) {
+		if (bigTable) {
 			index4 = hash4(key);
 			key4 = keyTable[index4];
 			if (key4 == EMPTY) {
@@ -254,13 +253,13 @@ public class IntMap<V> {
 		int[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
 		int mask = this.mask;
-		boolean isBigTable = this.isBigTable;
+		boolean bigTable = this.bigTable;
 
 		// Push keys until an empty bucket is found.
 		int evictedKey;
 		V evictedValue;
 		int i = 0, pushIterations = this.pushIterations;
-		int n = isBigTable ? 4 : 3;
+		int n = bigTable ? 4 : 3;
 		do {
 			// Replace the key and value for one of the hashes.
 			switch (ObjectMap.random.nextInt(n)) {
@@ -318,7 +317,7 @@ public class IntMap<V> {
 				return;
 			}
 
-			if (isBigTable) {
+			if (bigTable) {
 				index4 = hash4(evictedKey);
 				key4 = keyTable[index4];
 				if (key4 == EMPTY) {
@@ -364,7 +363,7 @@ public class IntMap<V> {
 			if (keyTable[index] != key) {
 				index = hash3(key);
 				if (keyTable[index] != key) {
-					if (isBigTable) {
+					if (bigTable) {
 						index = hash4(key);
 						if (keyTable[index] != key) return getStash(key, null);
 					} else {
@@ -387,7 +386,7 @@ public class IntMap<V> {
 			if (keyTable[index] != key) {
 				index = hash3(key);
 				if (keyTable[index] != key) {
-					if (isBigTable) {
+					if (bigTable) {
 						index = hash4(key);
 						if (keyTable[index] != key) return getStash(key, defaultValue);
 					} else {
@@ -443,7 +442,7 @@ public class IntMap<V> {
 			return oldValue;
 		}
 
-		if (isBigTable) {
+		if (bigTable) {
 			index = hash4(key);
 			if (keyTable[index] == key) {
 				keyTable[index] = EMPTY;
@@ -548,7 +547,7 @@ public class IntMap<V> {
 			if (keyTable[index] != key) {
 				index = hash3(key);
 				if (keyTable[index] != key) {
-					if (isBigTable) {
+					if (bigTable) {
 						index = hash4(key);
 						if (keyTable[index] != key) return containsKeyStash(key);
 					} else {
@@ -608,7 +607,7 @@ public class IntMap<V> {
 		pushIterations = Math.max(Math.min(newSize, 8), (int)Math.sqrt(newSize) / 8);
 
 		// big table is when capacity >= 2^16
-		isBigTable = (capacity >>> 16) != 0 ? true : false;
+		bigTable = (capacity >>> 16) != 0 ? true : false;
 
 		int[] oldKeyTable = keyTable;
 		V[] oldValueTable = valueTable;

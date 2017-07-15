@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.Util;
 
 /** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
  * for efficiently writing primitive types and strings.
@@ -58,7 +59,7 @@ public class Output extends OutputStream {
 			"bufferSize: " + bufferSize + " cannot be greater than maxBufferSize: " + maxBufferSize);
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.capacity = bufferSize;
-		this.maxCapacity = maxBufferSize == -1 ? Util.MAX_SAFE_ARRAY_SIZE : maxBufferSize;
+		this.maxCapacity = maxBufferSize == -1 ? Util.maxArraySize : maxBufferSize;
 		buffer = new byte[bufferSize];
 	}
 
@@ -116,7 +117,7 @@ public class Output extends OutputStream {
 			"buffer has length: " + buffer.length + " cannot be greater than maxBufferSize: " + maxBufferSize);
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.buffer = buffer;
-		this.maxCapacity = maxBufferSize == -1 ? Util.MAX_SAFE_ARRAY_SIZE : maxBufferSize;
+		this.maxCapacity = maxBufferSize == -1 ? Util.maxArraySize : maxBufferSize;
 		capacity = buffer.length;
 		position = 0;
 		total = 0;
@@ -482,8 +483,7 @@ public class Output extends OutputStream {
 	}
 
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
-		if (charCount == 0)
-			return;
+		if (charCount == 0) return;
 		// It should be possible to write at least one character.
 		if (capacity == 0) {
 			require(1);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -37,11 +37,11 @@ public class ClosureSerializer extends Serializer {
 	/** Marker class to bind ClosureSerializer to. See also {@link Kryo#isClosure(Class)} and
 	 * {@link Kryo#getRegistration(Class)} */
 	@SuppressWarnings("javadoc")
-	public static class Closure {
+	static public class Closure {
 	}
 
-	private static Method readResolve;
-	private static Class serializedLambda = java.lang.invoke.SerializedLambda.class;
+	static private Method readResolve;
+	static private Class serializedLambda = java.lang.invoke.SerializedLambda.class;
 	static {
 		try {
 			readResolve = serializedLambda.getDeclaredMethod("readResolve");

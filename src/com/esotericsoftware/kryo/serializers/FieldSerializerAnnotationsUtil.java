@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
 /** A few utility methods for processing field annotations.
@@ -47,7 +47,7 @@ final class FieldSerializerAnnotationsUtil {
 			// Set a specific serializer for a particular field
 			if (field.isAnnotationPresent(FieldSerializer.Bind.class)) {
 				Class<? extends Serializer> serializerClass = field.getAnnotation(FieldSerializer.Bind.class).value();
-				Serializer s = ReflectionSerializerFactory.makeSerializer(fieldSerializer.getKryo(), serializerClass,
+				Serializer s = ReflectionSerializerFactory.newSerializer(fieldSerializer.getKryo(), serializerClass,
 					field.getClass());
 				fields[i].setSerializer(s);
 			}
@@ -66,7 +66,7 @@ final class FieldSerializerAnnotationsUtil {
 					Class<? extends Serializer> elementSerializerClass = annotation.elementSerializer();
 					if (elementSerializerClass == Serializer.class) elementSerializerClass = null;
 					Serializer elementSerializer = (elementSerializerClass == null) ? null
-						: ReflectionSerializerFactory.makeSerializer(fieldSerializer.getKryo(), elementSerializerClass,
+						: ReflectionSerializerFactory.newSerializer(fieldSerializer.getKryo(), elementSerializerClass,
 							field.getClass());
 					boolean elementsCanBeNull = annotation.elementsCanBeNull();
 					Class<?> elementClass = annotation.elementClass();
@@ -97,9 +97,9 @@ final class FieldSerializerAnnotationsUtil {
 					if (keySerializerClass == Serializer.class) keySerializerClass = null;
 
 					Serializer valueSerializer = (valueSerializerClass == null) ? null
-						: ReflectionSerializerFactory.makeSerializer(fieldSerializer.getKryo(), valueSerializerClass, field.getClass());
+						: ReflectionSerializerFactory.newSerializer(fieldSerializer.getKryo(), valueSerializerClass, field.getClass());
 					Serializer keySerializer = (keySerializerClass == null) ? null
-						: ReflectionSerializerFactory.makeSerializer(fieldSerializer.getKryo(), keySerializerClass, field.getClass());
+						: ReflectionSerializerFactory.newSerializer(fieldSerializer.getKryo(), keySerializerClass, field.getClass());
 					boolean valuesCanBeNull = annotation.valuesCanBeNull();
 					boolean keysCanBeNull = annotation.keysCanBeNull();
 					Class<?> keyClass = annotation.keyClass();

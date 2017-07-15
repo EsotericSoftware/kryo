@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -41,12 +41,16 @@ import com.esotericsoftware.kryo.util.ObjectMap;
  * Note that the field data is identified by name. The situation where a super class has a field with the same name as a subclass
  * must be avoided.
  * @author Nathan Sweet <misc@n4te.com> */
-public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
+public class CompatibleFieldSerializer<T> extends FieldSerializer<T, FieldSerializerConfig> {
 	/* For object with more than BINARY_SEARCH_THRESHOLD fields, use binary search instead of iterative search */
-	private static final int THRESHOLD_BINARY_SEARCH = 32;
+	static private final int THRESHOLD_BINARY_SEARCH = 32;
 
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
-		super(kryo, type);
+		super(kryo, type, null, new FieldSerializerConfig());
+	}
+
+	public CompatibleFieldSerializer (Kryo kryo, Class type, FieldSerializerConfig config) {
+		super(kryo, type, null, config);
 	}
 
 	public void write (Kryo kryo, Output output, T object) {

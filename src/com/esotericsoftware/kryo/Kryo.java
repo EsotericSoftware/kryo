@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -49,9 +49,8 @@ import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.strategy.SerializingInstantiatorStrategy;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
-import com.esotericsoftware.kryo.factories.PseudoSerializerFactory;
-import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
-import com.esotericsoftware.kryo.factories.SerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.SingletonSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ClosureSerializer;
@@ -100,14 +99,11 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeSetSerialize
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.URLSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.VoidSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.GenericsResolver;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.serializers.OptionalSerializers;
-import com.esotericsoftware.kryo.serializers.TaggedFieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
-import com.esotericsoftware.kryo.util.DefaultStreamFactory;
 import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
@@ -151,36 +147,23 @@ public class Kryo {
 	private Object needsCopyReference;
 	private GenericsResolver genericsResolver = new GenericsResolver();
 
-	private FieldSerializerConfig fieldSerializerConfig = new FieldSerializerConfig();
-	private TaggedFieldSerializerConfig taggedFieldSerializerConfig = new TaggedFieldSerializerConfig();
-
-	private StreamFactory streamFactory;
-
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and a {@link MapReferenceResolver}. */
 	public Kryo () {
-		this(new DefaultClassResolver(), new MapReferenceResolver(), new DefaultStreamFactory());
+		this(new DefaultClassResolver(), new MapReferenceResolver());
 	}
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver}.
 	 * @param referenceResolver May be null to disable references. */
 	public Kryo (ReferenceResolver referenceResolver) {
-		this(new DefaultClassResolver(), referenceResolver, new DefaultStreamFactory());
+		this(new DefaultClassResolver(), referenceResolver);
 	}
 
 	/** @param referenceResolver May be null to disable references. */
 	public Kryo (ClassResolver classResolver, ReferenceResolver referenceResolver) {
-		this(classResolver, referenceResolver, new DefaultStreamFactory());
-	}
-
-	/** @param referenceResolver May be null to disable references. */
-	public Kryo (ClassResolver classResolver, ReferenceResolver referenceResolver, StreamFactory streamFactory) {
 		if (classResolver == null) throw new IllegalArgumentException("classResolver cannot be null.");
 
 		this.classResolver = classResolver;
 		classResolver.setKryo(this);
-
-		this.streamFactory = streamFactory;
-		streamFactory.setKryo(this);
 
 		this.referenceResolver = referenceResolver;
 		if (referenceResolver != null) {
@@ -263,7 +246,7 @@ public class Kryo {
 	public void addDefaultSerializer (Class type, Serializer serializer) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		DefaultSerializerEntry entry = new DefaultSerializerEntry(type, new PseudoSerializerFactory(serializer));
+		DefaultSerializerEntry entry = new DefaultSerializerEntry(type, new SingletonSerializerFactory(serializer));
 		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
 	}
 
@@ -279,7 +262,7 @@ public class Kryo {
 
 	/** Instances of the specified class will use the specified serializer when {@link #register(Class)} or
 	 * {@link #register(Class, int)} are called. Serializer instances are created as needed via
-	 * {@link ReflectionSerializerFactory#makeSerializer(Kryo, Class, Class)}. By default, the following classes have a default
+	 * {@link ReflectionSerializerFactory#newSerializer(Kryo, Class, Class)}. By default, the following classes have a default
 	 * serializer set:
 	 * <p>
 	 * <table>
@@ -372,7 +355,7 @@ public class Kryo {
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
 			if (entry.type.isAssignableFrom(type)) {
-				Serializer defaultSerializer = entry.serializerFactory.makeSerializer(this, type);
+				Serializer defaultSerializer = entry.serializerFactory.newSerializer(this, type);
 				return defaultSerializer;
 			}
 		}
@@ -383,17 +366,16 @@ public class Kryo {
 	protected Serializer getDefaultSerializerForAnnotatedType (Class type) {
 		if (type.isAnnotationPresent(DefaultSerializer.class)) {
 			DefaultSerializer defaultSerializerAnnotation = (DefaultSerializer)type.getAnnotation(DefaultSerializer.class);
-			return ReflectionSerializerFactory.makeSerializer(this, defaultSerializerAnnotation.value(), type);
+			return ReflectionSerializerFactory.newSerializer(this, defaultSerializerAnnotation.value(), type);
 		}
-
 		return null;
 	}
 
 	/** Called by {@link #getDefaultSerializer(Class)} when no default serializers matched the type. Subclasses can override this
-	 * method to customize behavior. The default implementation calls {@link SerializerFactory#makeSerializer(Kryo, Class)} using
+	 * method to customize behavior. The default implementation calls {@link SerializerFactory#newSerializer(Kryo, Class)} using
 	 * the {@link #setDefaultSerializer(Class) default serializer}. */
 	protected Serializer newDefaultSerializer (Class type) {
-		return defaultSerializer.makeSerializer(this, type);
+		return defaultSerializer.newSerializer(this, type);
 	}
 
 	// --- Registration ---
@@ -442,8 +424,8 @@ public class Kryo {
 	 * cause the old entry to be overwritten. Registering a primitive also affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
-	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-9 are used by default for primitive types
-	 *           and their wrappers, String, and void, but these IDs can be repurposed. */
+	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-9 are used by default for primitive types and
+	 *           their wrappers, String, and void, but these IDs can be repurposed. */
 	public Registration register (Class type, Serializer serializer, int id) {
 		if (id < 0) throw new IllegalArgumentException("id must be >= 0: " + id);
 		return register(new Registration(type, serializer, id));
@@ -1052,9 +1034,7 @@ public class Kryo {
 
 	/** If true, kryo writes a warn log telling about the classes unregistered. Default is false.
 	 * <p>
-	 * If false, no log are written when unregistered classes are encountered.
-	 * </p>
-	*/
+	 * If false, no log are written when unregistered classes are encountered. */
 	public void setWarnUnregisteredClasses (boolean warnUnregisteredClasses) {
 		this.warnUnregisteredClasses = warnUnregisteredClasses;
 		if (TRACE) trace("kryo", "Warn unregistered classes: " + warnUnregisteredClasses);
@@ -1082,17 +1062,6 @@ public class Kryo {
 	 * object graph is copied that contains a circular reference. Default is true. */
 	public void setCopyReferences (boolean copyReferences) {
 		this.copyReferences = copyReferences;
-	}
-
-	/** The default configuration for {@link FieldSerializer} instances. Already existing serializer instances (e.g. implicitely
-	 * created for already registered classes) are not affected by this configuration. You can override the configuration for a
-	 * single {@link FieldSerializer}. */
-	public FieldSerializerConfig getFieldSerializerConfig () {
-		return fieldSerializerConfig;
-	}
-
-	public TaggedFieldSerializerConfig getTaggedFieldSerializerConfig () {
-		return taggedFieldSerializerConfig;
 	}
 
 	/** Sets the reference resolver and enables references. */
@@ -1123,7 +1092,6 @@ public class Kryo {
 	 * uses reflection if the class has a zero argument constructor, an exception is thrown. If a
 	 * {@link #setInstantiatorStrategy(InstantiatorStrategy) strategy} is set, it will be used instead of throwing an exception. */
 	protected ObjectInstantiator newInstantiator (final Class type) {
-		// InstantiatorStrategy.
 		return strategy.newInstantiatorOf(type);
 	}
 
@@ -1212,36 +1180,6 @@ public class Kryo {
 		return genericsResolver;
 	}
 
-	public StreamFactory getStreamFactory () {
-		return streamFactory;
-	}
-
-	public void setStreamFactory (StreamFactory streamFactory) {
-		this.streamFactory = streamFactory;
-	}
-
-	/** Tells Kryo, if ASM-based backend should be used by new serializer instances created using this Kryo instance. Already
-	 * existing serializer instances are not affected by this setting.
-	 * 
-	 * <p>
-	 * By default, Kryo uses ASM-based backend.
-	 * </p>
-	 * 
-	 * @param flag if true, ASM-based backend will be used. Otherwise Unsafe-based backend could be used by some serializers, e.g.
-	 *           FieldSerializer
-	 *
-	 * @deprecated Use {@link #getFieldSerializerConfig()} to change the default {@link FieldSerializer} configuration. */
-	@Deprecated
-	public void setAsmEnabled (boolean flag) {
-		fieldSerializerConfig.setUseAsm(flag);
-	}
-
-	/** @deprecated Use {@link #getFieldSerializerConfig()} to change the default {@link FieldSerializer} configuration. */
-	@Deprecated
-	public boolean getAsmEnabled () {
-		return fieldSerializerConfig.isUseAsm();
-	}
-
 	static public class DefaultInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
 		private InstantiatorStrategy fallbackStrategy;
 
@@ -1261,7 +1199,7 @@ public class Kryo {
 		}
 
 		public ObjectInstantiator newInstantiatorOf (final Class type) {
-			if (!Util.IS_ANDROID) {
+			if (!Util.isAndroid) {
 				// Use ReflectASM if the class is not a non-static member class.
 				Class enclosingType = type.getEnclosingClass();
 				boolean isNonStaticMemberClass = enclosingType != null && type.isMemberClass()
@@ -1307,13 +1245,17 @@ public class Kryo {
 				if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()))
 					throw new KryoException("Class cannot be created (non-static member class): " + className(type));
 				else {
-					StringBuilder errorMessageSb = new StringBuilder("Class cannot be created (missing no-arg constructor): " + className(type));
+					StringBuilder errorMessageSb = new StringBuilder(
+						"Class cannot be created (missing no-arg constructor): " + className(type));
 					if (type.getSimpleName().equals("")) {
-						errorMessageSb.append("\n\tThis is an anonymous class, which is not serializable by default in Kryo. Possible solutions: ")
+						errorMessageSb
+							.append("\n\tThis is an anonymous class, which is not serializable by default in Kryo. Possible solutions: ")
 							.append("1. Remove uses of anonymous classes, including double brace initialization, from the containing ")
-							.append("class. This is the safest solution, as anonymous classes don't have predictable names for serialization.")
+							.append(
+								"class. This is the safest solution, as anonymous classes don't have predictable names for serialization.")
 							.append("\n\t2. Register a FieldSerializer for the containing class and call ")
-							.append( "FieldSerializer#setIgnoreSyntheticFields(false) on it. This is not safe but may be sufficient temporarily. ")
+							.append(
+								"FieldSerializer#setIgnoreSyntheticFields(false) on it. This is not safe but may be sufficient temporarily. ")
 							.append("Use at your own risk.");
 					}
 					throw new KryoException(errorMessageSb.toString());

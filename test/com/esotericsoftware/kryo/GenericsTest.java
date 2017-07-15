@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -31,6 +31,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Output;
 
 /** @author Nathan Sweet <misc@n4te.com> */
@@ -41,7 +42,7 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	@Parameters(name = "optimizedGenerics_{0}")
-	public static Iterable<?> optimizedGenerics () {
+	static public Iterable<?> optimizedGenerics () {
 		return Arrays.asList(true, false);
 	}
 
@@ -61,22 +62,22 @@ public class GenericsTest extends KryoTestCase {
 	public void testGenericClassWithGenericFields () throws Exception {
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
-		kryo.setAsmEnabled(true);
-		kryo.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
+		FieldSerializerFactory factory = new FieldSerializerFactory();
+		factory.getConfig().setOptimizedGenerics(optimizedGenerics);
+		kryo.setDefaultSerializer(factory);
 		kryo.register(BaseGeneric.class);
 
 		List list = Arrays.asList(new SerializableObjectFoo("one"), new SerializableObjectFoo("two"),
 			new SerializableObjectFoo("three"));
 		BaseGeneric<SerializableObjectFoo> bg1 = new BaseGeneric<SerializableObjectFoo>(list);
 
-		roundTrip(108, 108, bg1);
+		roundTrip(108, bg1);
 	}
 
 	@Test
 	public void testNonGenericClassWithGenericSuperclass () throws Exception {
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
-		kryo.setAsmEnabled(true);
 		kryo.register(BaseGeneric.class);
 		kryo.register(ConcreteClass.class);
 
@@ -84,7 +85,7 @@ public class GenericsTest extends KryoTestCase {
 			new SerializableObjectFoo("three"));
 		ConcreteClass cc1 = new ConcreteClass(list);
 
-		roundTrip(108, 108, cc1);
+		roundTrip(108, cc1);
 	}
 
 	// Test for/from https://github.com/EsotericSoftware/kryo/issues/377
@@ -98,7 +99,9 @@ public class GenericsTest extends KryoTestCase {
 		LongListHolder o2 = new LongListHolder(Arrays.asList(1L));
 
 		kryo.setRegistrationRequired(false);
-		kryo.getFieldSerializerConfig().setOptimizedGenerics(false);
+		FieldSerializerFactory factory = new FieldSerializerFactory();
+		factory.getConfig().setOptimizedGenerics(false);
+		kryo.setDefaultSerializer(factory);
 		Output buffer = new Output(512, 4048);
 		kryo.writeClassAndObject(buffer, o1);
 		kryo.writeClassAndObject(buffer, o2);
@@ -108,7 +111,7 @@ public class GenericsTest extends KryoTestCase {
 		V getValue ();
 	}
 
-	private static abstract class AbstractValueHolder<V> implements Holder<V> {
+	static private abstract class AbstractValueHolder<V> implements Holder<V> {
 		private final V value;
 
 		AbstractValueHolder (V value) {
@@ -120,26 +123,26 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	private static abstract class AbstractValueListHolder<V> extends AbstractValueHolder<List<V>> {
+	static private abstract class AbstractValueListHolder<V> extends AbstractValueHolder<List<V>> {
 		AbstractValueListHolder (List<V> value) {
 			super(value);
 		}
 	}
 
-	private static class LongHolder extends AbstractValueHolder<Long> {
+	static private class LongHolder extends AbstractValueHolder<Long> {
 		LongHolder (Long value) {
 			super(value);
 		}
 	}
 
-	private static class LongListHolder extends AbstractValueListHolder<Long> {
+	static private class LongListHolder extends AbstractValueListHolder<Long> {
 		LongListHolder (java.util.List<Long> value) {
 			super(value);
 		}
 	}
 
 	// A simple serializable class.
-	private static class SerializableObjectFoo implements Serializable {
+	static private class SerializableObjectFoo implements Serializable {
 		String name;
 
 		SerializableObjectFoo (String name) {
@@ -163,7 +166,7 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	private static class BaseGeneric<T extends Serializable> {
+	static private class BaseGeneric<T extends Serializable> {
 
 		// The type of this field cannot be derived from the context.
 		// Therefore, Kryo should consider it to be Object.
@@ -200,7 +203,7 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	// This is a non-generic class with a generic superclass.
-	private static class ConcreteClass2 extends BaseGeneric<SerializableObjectFoo> {
+	static private class ConcreteClass2 extends BaseGeneric<SerializableObjectFoo> {
 		/** Kryo Constructor */
 		ConcreteClass2 () {
 			super();
@@ -211,7 +214,7 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	private static class ConcreteClass1 extends ConcreteClass2 {
+	static private class ConcreteClass1 extends ConcreteClass2 {
 		/** Kryo Constructor */
 		ConcreteClass1 () {
 			super();
@@ -222,7 +225,7 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	private static class ConcreteClass extends ConcreteClass1 {
+	static private class ConcreteClass extends ConcreteClass1 {
 		/** Kryo Constructor */
 		ConcreteClass () {
 			super();

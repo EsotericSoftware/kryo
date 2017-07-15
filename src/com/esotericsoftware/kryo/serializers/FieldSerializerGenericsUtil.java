@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -251,7 +251,7 @@ final class FieldSerializerGenericsUtil {
 
 	/** Returns the first level of classes or interfaces for a generic type.
 	 * @return null if the specified type is not generic or its generic types are not classes. */
-	public static Class[] getGenerics (Type genericType, Kryo kryo) {
+	static public Class[] getGenerics (Type genericType, Kryo kryo) {
 		if (genericType instanceof GenericArrayType) {
 			Type componentType = ((GenericArrayType)genericType).getGenericComponentType();
 			if (componentType instanceof Class)

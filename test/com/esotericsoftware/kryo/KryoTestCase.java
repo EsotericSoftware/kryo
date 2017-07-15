@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -30,14 +30,8 @@ import org.junit.Assert;
 
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
-import com.esotericsoftware.kryo.io.FastInput;
-import com.esotericsoftware.kryo.io.FastOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.UnsafeInput;
-import com.esotericsoftware.kryo.io.UnsafeMemoryInput;
-import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
-import com.esotericsoftware.kryo.io.UnsafeOutput;
 
 import junit.framework.TestCase;
 
@@ -72,52 +66,7 @@ abstract public class KryoTestCase extends TestCase {
 		// kryo.useAsmBackend(false);
 	}
 
-	public <T> T roundTrip (int length, int unsafeLength, T object1) {
-
-		roundTripWithStreamFactory(unsafeLength, object1, new StreamFactory() {
-			public Output createOutput (OutputStream os) {
-				return new UnsafeMemoryOutput(os);
-			}
-
-			public Output createOutput (OutputStream os, int size) {
-				return new UnsafeMemoryOutput(os, size);
-			}
-
-			public Output createOutput (int size, int limit) {
-				return new UnsafeMemoryOutput(size, limit);
-			}
-
-			public Input createInput (InputStream os, int size) {
-				return new UnsafeMemoryInput(os, size);
-			}
-
-			public Input createInput (byte[] buffer) {
-				return new UnsafeMemoryInput(buffer);
-			}
-		});
-
-		roundTripWithStreamFactory(unsafeLength, object1, new StreamFactory() {
-			public Output createOutput (OutputStream os) {
-				return new UnsafeOutput(os);
-			}
-
-			public Output createOutput (OutputStream os, int size) {
-				return new UnsafeOutput(os, size);
-			}
-
-			public Output createOutput (int size, int limit) {
-				return new UnsafeOutput(size, limit);
-			}
-
-			public Input createInput (InputStream os, int size) {
-				return new UnsafeInput(os, size);
-			}
-
-			public Input createInput (byte[] buffer) {
-				return new UnsafeInput(buffer);
-			}
-		});
-
+	public <T> T roundTrip (int length, T object1) {
 		roundTripWithStreamFactory(length, object1, new StreamFactory() {
 			public Output createOutput (OutputStream os) {
 				return new ByteBufferOutput(os);
@@ -137,28 +86,6 @@ abstract public class KryoTestCase extends TestCase {
 
 			public Input createInput (byte[] buffer) {
 				return new ByteBufferInput(buffer);
-			}
-		});
-
-		roundTripWithStreamFactory(unsafeLength, object1, new StreamFactory() {
-			public Output createOutput (OutputStream os) {
-				return new FastOutput(os);
-			}
-
-			public Output createOutput (OutputStream os, int size) {
-				return new FastOutput(os, size);
-			}
-
-			public Output createOutput (int size, int limit) {
-				return new FastOutput(size, limit);
-			}
-
-			public Input createInput (InputStream os, int size) {
-				return new FastInput(os, size);
-			}
-
-			public Input createInput (byte[] buffer) {
-				return new FastInput(buffer);
 			}
 		});
 

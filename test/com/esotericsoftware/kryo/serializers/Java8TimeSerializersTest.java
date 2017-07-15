@@ -67,48 +67,48 @@ public class Java8TimeSerializersTest extends KryoTestCase {
 
 	@Test
 	public void testDuration () {
-		roundTrip(14, 13, Duration.ofSeconds(-42, -23));
-		roundTrip(10, 13, Duration.ofSeconds(42, 23));
-		roundTrip(10, 13, Duration.ofSeconds(60 * 60 * 24 * 1000, -999999999));
-		roundTrip(10, 13, Duration.ofSeconds(60 * 60 * 24 * 1000, 1000000001));
+		roundTrip(14, Duration.ofSeconds(-42, -23));
+		roundTrip(10, Duration.ofSeconds(42, 23));
+		roundTrip(10, Duration.ofSeconds(60 * 60 * 24 * 1000, -999999999));
+		roundTrip(10, Duration.ofSeconds(60 * 60 * 24 * 1000, 1000000001));
 	}
 
 	@Test
 	public void testInstant () {
-		roundTrip(7, 13, Instant.ofEpochSecond(42, -23));
-		roundTrip(3, 13, Instant.ofEpochSecond(42, 23));
-		roundTrip(7, 13, Instant.ofEpochSecond(1456662120, -999999999));
-		roundTrip(7, 13, Instant.ofEpochSecond(1456662120, 1000000001));
+		roundTrip(7, Instant.ofEpochSecond(42, -23));
+		roundTrip(3, Instant.ofEpochSecond(42, 23));
+		roundTrip(7, Instant.ofEpochSecond(1456662120, -999999999));
+		roundTrip(7, Instant.ofEpochSecond(1456662120, 1000000001));
 	}
 
 	@Test
 	public void testLocalDate () {
-		roundTrip(8, 7, LocalDate.of(Year.MIN_VALUE, Month.JANUARY, 1));
-		roundTrip(5, 7, LocalDate.of(2015, 12, 31));
-		roundTrip(8, 7, LocalDate.of(Year.MAX_VALUE, Month.DECEMBER, 31));
+		roundTrip(8, LocalDate.of(Year.MIN_VALUE, Month.JANUARY, 1));
+		roundTrip(5, LocalDate.of(2015, 12, 31));
+		roundTrip(8, LocalDate.of(Year.MAX_VALUE, Month.DECEMBER, 31));
 	}
 
 	@Test
 	public void testLocalTime () {
-		roundTrip(2, 2, LocalTime.of(0, 0, 0, 0));
-		roundTrip(2, 2, LocalTime.of(1, 0, 0, 0));
-		roundTrip(3, 3, LocalTime.of(1, 1, 0, 0));
-		roundTrip(4, 4, LocalTime.of(1, 1, 1, 0));
-		roundTrip(5, 8, LocalTime.of(1, 1, 1, 1));
-		roundTrip(9, 8, LocalTime.of(23, 59, 59, 999999999));
+		roundTrip(2, LocalTime.of(0, 0, 0, 0));
+		roundTrip(2, LocalTime.of(1, 0, 0, 0));
+		roundTrip(3, LocalTime.of(1, 1, 0, 0));
+		roundTrip(4, LocalTime.of(1, 1, 1, 0));
+		roundTrip(5, LocalTime.of(1, 1, 1, 1));
+		roundTrip(9, LocalTime.of(23, 59, 59, 999999999));
 	}
 
 	@Test
 	public void testLocalDateTime () {
-		roundTrip(9, 8, LocalDateTime.of(Year.MIN_VALUE, Month.JANUARY, 1, 0, 0, 0, 0));
-		roundTrip(16, 14, LocalDateTime.of(Year.MAX_VALUE, Month.DECEMBER, 31, 23, 59, 59, 999999999));
+		roundTrip(9, LocalDateTime.of(Year.MIN_VALUE, Month.JANUARY, 1, 0, 0, 0, 0));
+		roundTrip(16, LocalDateTime.of(Year.MAX_VALUE, Month.DECEMBER, 31, 23, 59, 59, 999999999));
 	}
 
 	@Test
 	public void testZoneOffset () {
-		roundTrip(2, 2, ZoneOffset.UTC);
-		roundTrip(2, 2, ZoneOffset.MIN);
-		roundTrip(2, 2, ZoneOffset.MAX);
+		roundTrip(2, ZoneOffset.UTC);
+		roundTrip(2, ZoneOffset.MIN);
+		roundTrip(2, ZoneOffset.MAX);
 	}
 
 	@Test
@@ -118,62 +118,61 @@ public class Java8TimeSerializersTest extends KryoTestCase {
 
 		// Type 2, offset-style IDs with some form of prefix, such as 'GMT+2' or 'UTC+01:00'.
 		// The recognised prefixes are 'UTC', 'GMT' and 'UT'.
-		roundTrip(10, 10, ZoneId.of("UTC+01:00"));
+		roundTrip(10, ZoneId.of("UTC+01:00"));
 
 		// Type 3, region-based IDs. A region-based ID must be of two or more characters, and not start with
 		// 'UTC', 'GMT', 'UT' '+' or '-'.
-		roundTrip(14, 14, ZoneId.of("Europe/Berlin"));
+		roundTrip(14, ZoneId.of("Europe/Berlin"));
 	}
 
 	@Test
 	public void testOffsetTime () {
-		roundTrip(3, 3, OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC));
-		roundTrip(3, 3, OffsetTime.of(1, 0, 0, 0, ZoneOffset.UTC));
-		roundTrip(4, 4, OffsetTime.of(1, 1, 0, 0, ZoneOffset.UTC));
-		roundTrip(5, 5, OffsetTime.of(1, 1, 1, 0, ZoneOffset.UTC));
-		roundTrip(6, 9, OffsetTime.of(1, 1, 1, 1, ZoneOffset.UTC));
-		roundTrip(10, 9, OffsetTime.of(23, 59, 59, 999999999, ZoneOffset.UTC));
+		roundTrip(3, OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC));
+		roundTrip(3, OffsetTime.of(1, 0, 0, 0, ZoneOffset.UTC));
+		roundTrip(4, OffsetTime.of(1, 1, 0, 0, ZoneOffset.UTC));
+		roundTrip(5, OffsetTime.of(1, 1, 1, 0, ZoneOffset.UTC));
+		roundTrip(6, OffsetTime.of(1, 1, 1, 1, ZoneOffset.UTC));
+		roundTrip(10, OffsetTime.of(23, 59, 59, 999999999, ZoneOffset.UTC));
 	}
 
 	@Test
 	public void testOffsetDateTime () {
-		roundTrip(10, 9, OffsetDateTime.of(Year.MIN_VALUE, Month.JANUARY.getValue(), 1, 0, 0, 0, 0, ZoneOffset.UTC));
-		roundTrip(17, 15, OffsetDateTime.of(Year.MAX_VALUE, Month.DECEMBER.getValue(), 31, 23, 59, 59, 999999999, ZoneOffset.UTC));
+		roundTrip(10, OffsetDateTime.of(Year.MIN_VALUE, Month.JANUARY.getValue(), 1, 0, 0, 0, 0, ZoneOffset.UTC));
+		roundTrip(17, OffsetDateTime.of(Year.MAX_VALUE, Month.DECEMBER.getValue(), 31, 23, 59, 59, 999999999, ZoneOffset.UTC));
 	}
 
 	@Test
 	public void testZonedDateTime () {
-		roundTrip(11, 10, ZonedDateTime.of(Year.MIN_VALUE, Month.JANUARY.getValue(), 1, 0, 0, 0, 0, ZoneOffset.UTC));
-		roundTrip(22, 21, ZonedDateTime.of(Year.MIN_VALUE, Month.JANUARY.getValue(), 1, 0, 0, 0, 0, ZoneId.of("Europe/Berlin")));
-		roundTrip(29, 27,
-			ZonedDateTime.of(Year.MAX_VALUE, Month.DECEMBER.getValue(), 31, 23, 59, 59, 999999999, ZoneId.of("Europe/Berlin")));
+		roundTrip(11, ZonedDateTime.of(Year.MIN_VALUE, Month.JANUARY.getValue(), 1, 0, 0, 0, 0, ZoneOffset.UTC));
+		roundTrip(22, ZonedDateTime.of(Year.MIN_VALUE, Month.JANUARY.getValue(), 1, 0, 0, 0, 0, ZoneId.of("Europe/Berlin")));
+		roundTrip(29, ZonedDateTime.of(Year.MAX_VALUE, Month.DECEMBER.getValue(), 31, 23, 59, 59, 999999999, ZoneId.of("Europe/Berlin")));
 	}
 
 	@Test
 	public void testYear () {
-		roundTrip(6, 5, Year.of(Year.MIN_VALUE));
-		roundTrip(6, 5, Year.of(Year.MAX_VALUE));
-		roundTrip(3, 5, Year.of(2016));
+		roundTrip(6, Year.of(Year.MIN_VALUE));
+		roundTrip(6, Year.of(Year.MAX_VALUE));
+		roundTrip(3, Year.of(2016));
 	}
 
 	@Test
 	public void testYearMonth () {
-		roundTrip(7, 6, YearMonth.of(Year.MIN_VALUE, Month.JANUARY));
-		roundTrip(7, 6, YearMonth.of(Year.MAX_VALUE, Month.DECEMBER));
-		roundTrip(4, 6, YearMonth.of(2016, Month.FEBRUARY));
+		roundTrip(7, YearMonth.of(Year.MIN_VALUE, Month.JANUARY));
+		roundTrip(7, YearMonth.of(Year.MAX_VALUE, Month.DECEMBER));
+		roundTrip(4, YearMonth.of(2016, Month.FEBRUARY));
 	}
 
 	@Test
 	public void testMonthDay () {
-		roundTrip(3, 3, MonthDay.of(Month.JANUARY, 1));
-		roundTrip(3, 3, MonthDay.of(Month.DECEMBER, 31));
+		roundTrip(3, MonthDay.of(Month.JANUARY, 1));
+		roundTrip(3, MonthDay.of(Month.DECEMBER, 31));
 	}
 
 	@Test
 	public void testPeriod () {
-		roundTrip(4, 13, Period.ZERO);
-		roundTrip(16, 13, Period.of(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE));
-		roundTrip(16, 13, Period.of(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE));
+		roundTrip(4, Period.ZERO);
+		roundTrip(16, Period.of(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE));
+		roundTrip(16, Period.of(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE));
 	}
 
 }

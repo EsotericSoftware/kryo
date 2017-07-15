@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2017, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -29,15 +29,15 @@ import com.esotericsoftware.kryo.Kryo;
 
 public class KryoPoolBenchmarkTest {
 
-	private static final int WARMUP_ITERATIONS = 10000;
+	static private final int WARMUP_ITERATIONS = 10000;
 
 	/** Number of runs. */
-	private static final int RUN_CNT = 10;
+	static private final int RUN_CNT = 10;
 
 	/** Number of iterations. Set it to something rather big for obtaining meaningful results */
-// private static final int ITER_CNT = 200000;
-	private static final int ITER_CNT = 10000;
-	private static final int SLEEP_BETWEEN_RUNS = 100;
+// static private final int ITER_CNT = 200000;
+	static private final int ITER_CNT = 10000;
+	static private final int SLEEP_BETWEEN_RUNS = 100;
 
 	// not private to prevent the synthetic accessor method
 	static KryoFactory factory = new KryoFactory() {
@@ -130,7 +130,7 @@ public class KryoPoolBenchmarkTest {
 		System.gc();
 	}
 
-	private static class SampleObject {
+	static private class SampleObject {
 		private int intVal;
 		private float floatVal;
 		private Short shortVal;
