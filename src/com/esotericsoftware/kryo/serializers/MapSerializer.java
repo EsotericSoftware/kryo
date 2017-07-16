@@ -36,7 +36,7 @@ import com.esotericsoftware.kryo.io.Output;
  * <p>
  * With the default constructor, a map requires a 1-3 byte header and an extra 4 bytes is written for each key/value pair.
  * @author Nathan Sweet */
-public class MapSerializer extends Serializer<Map> {
+public class MapSerializer<T extends Map> extends Serializer<T> {
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
 	private boolean keysCanBeNull = true, valuesCanBeNull = true;
@@ -80,7 +80,7 @@ public class MapSerializer extends Serializer<Map> {
 		}
 	}
 
-	public void write (Kryo kryo, Output output, Map map) {
+	public void write (Kryo kryo, Output output, T map) {
 		int length = map.size();
 		output.writeInt(length, true);
 
@@ -116,12 +116,12 @@ public class MapSerializer extends Serializer<Map> {
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
-	protected Map create (Kryo kryo, Input input, Class<Map> type) {
+	protected T create (Kryo kryo, Input input, Class<? extends T> type) {
 		return kryo.newInstance(type);
 	}
 
-	public Map read (Kryo kryo, Input input, Class<Map> type) {
-		Map map = create(kryo, input, type);
+	public T read (Kryo kryo, Input input, Class<? extends T> type) {
+		T map = create(kryo, input, type);
 		int length = input.readInt(true);
 
 		Class keyClass = this.keyClass;
@@ -164,12 +164,12 @@ public class MapSerializer extends Serializer<Map> {
 		return map;
 	}
 
-	protected Map createCopy (Kryo kryo, Map original) {
-		return kryo.newInstance(original.getClass());
+	protected T createCopy (Kryo kryo, T original) {
+		return (T)kryo.newInstance(original.getClass());
 	}
 
-	public Map copy (Kryo kryo, Map original) {
-		Map copy = createCopy(kryo, original);
+	public T copy (Kryo kryo, T original) {
+		T copy = createCopy(kryo, original);
 		for (Iterator iter = original.entrySet().iterator(); iter.hasNext();) {
 			Entry entry = (Entry)iter.next();
 			copy.put(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));

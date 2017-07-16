@@ -58,7 +58,7 @@ public abstract class Serializer<T> {
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} read methods that accept a
 	 * serialier.
 	 * @return May be null if {@link #getAcceptsNull()} is true. */
-	abstract public T read (Kryo kryo, Input input, Class<T> type);
+	abstract public T read (Kryo kryo, Input input, Class<? extends T> type);
 
 	public boolean getAcceptsNull () {
 		return acceptsNull;

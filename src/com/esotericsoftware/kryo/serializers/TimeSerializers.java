@@ -74,7 +74,7 @@ public final class TimeSerializers {
 			out.writeInt(duration.getNano(), true);
 		}
 
-		public Duration read (Kryo kryo, Input in, Class<Duration> type) {
+		public Duration read (Kryo kryo, Input in, Class type) {
 			long seconds = in.readLong();
 			int nanos = in.readInt(true);
 			return Duration.ofSeconds(seconds, nanos);
@@ -87,7 +87,7 @@ public final class TimeSerializers {
 			out.writeInt(instant.getNano(), true);
 		}
 
-		public Instant read (Kryo kryo, Input in, Class<Instant> type) {
+		public Instant read (Kryo kryo, Input in, Class type) {
 			long seconds = in.readLong(true);
 			int nanos = in.readInt(true);
 			return Instant.ofEpochSecond(seconds, nanos);
@@ -105,7 +105,7 @@ public final class TimeSerializers {
 			out.writeByte(date.getDayOfMonth());
 		}
 
-		public LocalDate read (Kryo kryo, Input in, Class<LocalDate> type) {
+		public LocalDate read (Kryo kryo, Input in, Class type) {
 			return read(in);
 		}
 
@@ -123,7 +123,7 @@ public final class TimeSerializers {
 			LocalTimeSerializer.write(out, dateTime.toLocalTime());
 		}
 
-		public LocalDateTime read (Kryo kryo, Input in, Class<LocalDateTime> type) {
+		public LocalDateTime read (Kryo kryo, Input in, Class type) {
 			LocalDate date = LocalDateSerializer.read(in);
 			LocalTime time = LocalTimeSerializer.read(in);
 			return LocalDateTime.of(date, time);
@@ -157,7 +157,7 @@ public final class TimeSerializers {
 			}
 		}
 
-		public LocalTime read (Kryo kryo, Input in, Class<LocalTime> type) {
+		public LocalTime read (Kryo kryo, Input in, Class type) {
 			return read(in);
 		}
 
@@ -199,7 +199,7 @@ public final class TimeSerializers {
 			}
 		}
 
-		public ZoneOffset read (Kryo kryo, Input in, Class<ZoneOffset> type) {
+		public ZoneOffset read (Kryo kryo, Input in, Class type) {
 			return read(in);
 		}
 
@@ -218,7 +218,7 @@ public final class TimeSerializers {
 			out.writeString(obj.getId());
 		}
 
-		public ZoneId read (Kryo kryo, Input in, Class<ZoneId> type) {
+		public ZoneId read (Kryo kryo, Input in, Class type) {
 			return read(in);
 		}
 
@@ -234,7 +234,7 @@ public final class TimeSerializers {
 			ZoneOffsetSerializer.write(out, obj.getOffset());
 		}
 
-		public OffsetTime read (Kryo kryo, Input in, Class<OffsetTime> type) {
+		public OffsetTime read (Kryo kryo, Input in, Class type) {
 			LocalTime time = LocalTimeSerializer.read(in);
 			ZoneOffset offset = ZoneOffsetSerializer.read(in);
 			return OffsetTime.of(time, offset);
@@ -248,7 +248,7 @@ public final class TimeSerializers {
 			ZoneOffsetSerializer.write(out, obj.getOffset());
 		}
 
-		public OffsetDateTime read (Kryo kryo, Input in, Class<OffsetDateTime> type) {
+		public OffsetDateTime read (Kryo kryo, Input in, Class type) {
 			LocalDate date = LocalDateSerializer.read(in);
 			LocalTime time = LocalTimeSerializer.read(in);
 			ZoneOffset offset = ZoneOffsetSerializer.read(in);
@@ -263,7 +263,7 @@ public final class TimeSerializers {
 			ZoneIdSerializer.write(out, obj.getZone());
 		}
 
-		public ZonedDateTime read (Kryo kryo, Input in, Class<ZonedDateTime> type) {
+		public ZonedDateTime read (Kryo kryo, Input in, Class type) {
 			LocalDate date = LocalDateSerializer.read(in);
 			LocalTime time = LocalTimeSerializer.read(in);
 			ZoneId zone = ZoneIdSerializer.read(in);
@@ -276,7 +276,7 @@ public final class TimeSerializers {
 			out.writeInt(obj.getValue(), true);
 		}
 
-		public Year read (Kryo kryo, Input in, Class<Year> type) {
+		public Year read (Kryo kryo, Input in, Class type) {
 			return Year.of(in.readInt(true));
 		}
 	}
@@ -287,7 +287,7 @@ public final class TimeSerializers {
 			out.writeByte(obj.getMonthValue());
 		}
 
-		public YearMonth read (Kryo kryo, Input in, Class<YearMonth> type) {
+		public YearMonth read (Kryo kryo, Input in, Class type) {
 			int year = in.readInt(true);
 			byte month = in.readByte();
 			return YearMonth.of(year, month);
@@ -300,7 +300,7 @@ public final class TimeSerializers {
 			out.writeByte(obj.getDayOfMonth());
 		}
 
-		public MonthDay read (Kryo kryo, Input in, Class<MonthDay> type) {
+		public MonthDay read (Kryo kryo, Input in, Class type) {
 			byte month = in.readByte();
 			byte day = in.readByte();
 			return MonthDay.of(month, day);
@@ -314,7 +314,7 @@ public final class TimeSerializers {
 			out.writeInt(obj.getDays(), true);
 		}
 
-		public Period read (Kryo kryo, Input in, Class<Period> type) {
+		public Period read (Kryo kryo, Input in, Class type) {
 			int years = in.readInt(true);
 			int months = in.readInt(true);
 			int days = in.readInt(true);

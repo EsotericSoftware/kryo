@@ -49,7 +49,7 @@ public class DefaultArraySerializers {
 			output.writeBytes(object);
 		}
 
-		public byte[] read (Kryo kryo, Input input, Class<byte[]> type) {
+		public byte[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readBytes(length - 1);
@@ -76,7 +76,7 @@ public class DefaultArraySerializers {
 			output.writeInts(object, false);
 		}
 
-		public int[] read (Kryo kryo, Input input, Class<int[]> type) {
+		public int[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readInts(length - 1, false);
@@ -103,7 +103,7 @@ public class DefaultArraySerializers {
 			output.writeFloats(object);
 		}
 
-		public float[] read (Kryo kryo, Input input, Class<float[]> type) {
+		public float[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readFloats(length - 1);
@@ -130,7 +130,7 @@ public class DefaultArraySerializers {
 			output.writeLongs(object, false);
 		}
 
-		public long[] read (Kryo kryo, Input input, Class<long[]> type) {
+		public long[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readLongs(length - 1, false);
@@ -157,7 +157,7 @@ public class DefaultArraySerializers {
 			output.writeShorts(object);
 		}
 
-		public short[] read (Kryo kryo, Input input, Class<short[]> type) {
+		public short[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readShorts(length - 1);
@@ -184,7 +184,7 @@ public class DefaultArraySerializers {
 			output.writeChars(object);
 		}
 
-		public char[] read (Kryo kryo, Input input, Class<char[]> type) {
+		public char[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readChars(length - 1);
@@ -211,7 +211,7 @@ public class DefaultArraySerializers {
 			output.writeDoubles(object);
 		}
 
-		public double[] read (Kryo kryo, Input input, Class<double[]> type) {
+		public double[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			return input.readDoubles(length - 1);
@@ -239,7 +239,7 @@ public class DefaultArraySerializers {
 				output.writeBoolean(object[i]);
 		}
 
-		public boolean[] read (Kryo kryo, Input input, Class<boolean[]> type) {
+		public boolean[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			boolean[] array = new boolean[--length];
@@ -276,7 +276,7 @@ public class DefaultArraySerializers {
 			}
 		}
 
-		public String[] read (Kryo kryo, Input input, Class<String[]> type) {
+		public String[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			String[] array = new String[--length];
@@ -343,7 +343,7 @@ public class DefaultArraySerializers {
 			}
 		}
 
-		public Object[] read (Kryo kryo, Input input, Class<Object[]> type) {
+		public Object[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readInt(true);
 			if (length == NULL) return null;
 			Object[] object = (Object[])Array.newInstance(type.getComponentType(), length - 1);

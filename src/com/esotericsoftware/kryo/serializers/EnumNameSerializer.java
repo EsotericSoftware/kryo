@@ -22,7 +22,7 @@ public class EnumNameSerializer extends ImmutableSerializer<Enum> {
 		kryo.writeObject(output, object.name(), stringSerializer);
 	}
 
-	public Enum read (Kryo kryo, Input input, Class<Enum> type) {
+	public Enum read (Kryo kryo, Input input, Class type) {
 		String name = kryo.readObject(input, String.class, stringSerializer);
 		try {
 			return Enum.valueOf(enumType, name);

@@ -47,13 +47,13 @@ public final class OptionalSerializers {
 			setAcceptsNull(false);
 		}
 
-		@SuppressWarnings("unchecked")
+		
 		public void write (Kryo kryo, Output output, Optional object) {
 			Object nullable = object.isPresent() ? object.get() : null;
 			kryo.writeClassAndObject(output, nullable);
 		}
 
-		public Optional read (Kryo kryo, Input input, Class<Optional> type) {
+		public Optional read (Kryo kryo, Input input, Class type) {
 			return Optional.ofNullable(kryo.readClassAndObject(input));
 		}
 
@@ -71,7 +71,7 @@ public final class OptionalSerializers {
 			if (object.isPresent()) output.writeInt(object.getAsInt());
 		}
 
-		public OptionalInt read (Kryo kryo, Input input, Class<OptionalInt> type) {
+		public OptionalInt read (Kryo kryo, Input input, Class type) {
 			boolean present = input.readBoolean();
 			return present ? OptionalInt.of(input.readInt()) : OptionalInt.empty();
 		}
@@ -83,7 +83,7 @@ public final class OptionalSerializers {
 			if (object.isPresent()) output.writeLong(object.getAsLong());
 		}
 
-		public OptionalLong read (Kryo kryo, Input input, Class<OptionalLong> type) {
+		public OptionalLong read (Kryo kryo, Input input, Class type) {
 			boolean present = input.readBoolean();
 			return present ? OptionalLong.of(input.readLong()) : OptionalLong.empty();
 		}
@@ -95,7 +95,7 @@ public final class OptionalSerializers {
 			if (object.isPresent()) output.writeDouble(object.getAsDouble());
 		}
 
-		public OptionalDouble read (Kryo kryo, Input input, Class<OptionalDouble> type) {
+		public OptionalDouble read (Kryo kryo, Input input, Class type) {
 			boolean present = input.readBoolean();
 			return present ? OptionalDouble.of(input.readDouble()) : OptionalDouble.empty();
 		}

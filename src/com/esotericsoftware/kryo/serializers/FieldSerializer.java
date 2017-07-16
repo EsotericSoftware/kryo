@@ -133,7 +133,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		if (config.optimizedGenerics && cachedFields.genericsScope != null) kryo.getGenericsResolver().popScope();
 	}
 
-	public T read (Kryo kryo, Input input, Class<T> type) {
+	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		if (config.optimizedGenerics) {
 			// Rebuild cached fields, may result in rebuilding the genericScope.
 			if (typeParameters != null && cachedFields.generics != null) cachedFields.update(false);
@@ -160,7 +160,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
-	protected T create (Kryo kryo, Input input, Class<T> type) {
+	protected T create (Kryo kryo, Input input, Class<? extends T> type) {
 		return kryo.newInstance(type);
 	}
 

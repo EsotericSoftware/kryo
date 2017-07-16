@@ -94,7 +94,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		}
 	}
 
-	public T read (Kryo kryo, Input input, Class<T> type) {
+	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		T object = create(kryo, input, type);
 		kryo.reference(object);
 

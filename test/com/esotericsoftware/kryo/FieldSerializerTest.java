@@ -285,7 +285,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	public void testNoDefaultConstructor () {
 		kryo.register(SimpleNoDefaultConstructor.class, new Serializer<SimpleNoDefaultConstructor>() {
-			public SimpleNoDefaultConstructor read (Kryo kryo, Input input, Class<SimpleNoDefaultConstructor> type) {
+			public SimpleNoDefaultConstructor read (Kryo kryo, Input input, Class<? extends SimpleNoDefaultConstructor> type) {
 				return new SimpleNoDefaultConstructor(input.readInt(true));
 			}
 
@@ -1011,7 +1011,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			output.writeLong(object.time, true);
 		}
 
-		public HasDefaultSerializerAnnotation read (Kryo kryo, Input input, Class type) {
+		public HasDefaultSerializerAnnotation read (Kryo kryo, Input input, Class<? extends HasDefaultSerializerAnnotation> type) {
 			return new HasDefaultSerializerAnnotation(input.readLong(true));
 		}
 
@@ -1148,7 +1148,6 @@ public class FieldSerializerTest extends KryoTestCase {
 		private int y;
 		private int z;
 
-		
 		public boolean equals (Object o) {
 			if (this == o) return true;
 			if (!(o instanceof IsGeneric)) return false;

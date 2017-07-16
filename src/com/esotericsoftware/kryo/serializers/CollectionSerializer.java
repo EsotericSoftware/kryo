@@ -37,7 +37,7 @@ import com.esotericsoftware.kryo.io.Output;
  * collection. The alternate constructor can be used to improve efficiency to match that of using an array instead of a
  * collection.
  * @author Nathan Sweet */
-public class CollectionSerializer extends Serializer<Collection> {
+public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	private boolean elementsCanBeNull = true;
 	private Serializer serializer;
 	private Class elementClass;
@@ -79,7 +79,7 @@ public class CollectionSerializer extends Serializer<Collection> {
 		}
 	}
 
-	public void write (Kryo kryo, Output output, Collection collection) {
+	public void write (Kryo kryo, Output output, T collection) {
 		int length = collection.size();
 		output.writeInt(length, true);
 		Serializer serializer = this.serializer;
@@ -103,12 +103,12 @@ public class CollectionSerializer extends Serializer<Collection> {
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
-	protected Collection create (Kryo kryo, Input input, Class<Collection> type) {
+	protected T create (Kryo kryo, Input input, Class<? extends T> type) {
 		return kryo.newInstance(type);
 	}
 
-	public Collection read (Kryo kryo, Input input, Class<Collection> type) {
-		Collection collection = create(kryo, input, type);
+	public T read (Kryo kryo, Input input, Class<? extends T> type) {
+		T collection = create(kryo, input, type);
 		kryo.reference(collection);
 		int length = input.readInt(true);
 		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
@@ -138,12 +138,12 @@ public class CollectionSerializer extends Serializer<Collection> {
 
 	/** Used by {@link #copy(Kryo, Collection)} to create the new object. This can be overridden to customize object creation, eg
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
-	protected Collection createCopy (Kryo kryo, Collection original) {
-		return kryo.newInstance(original.getClass());
+	protected T createCopy (Kryo kryo, T original) {
+		return (T)kryo.newInstance(original.getClass());
 	}
 
-	public Collection copy (Kryo kryo, Collection original) {
-		Collection copy = createCopy(kryo, original);
+	public T copy (Kryo kryo, T original) {
+		T copy = createCopy(kryo, original);
 		kryo.reference(copy);
 		for (Object element : original)
 			copy.add(kryo.copy(element));

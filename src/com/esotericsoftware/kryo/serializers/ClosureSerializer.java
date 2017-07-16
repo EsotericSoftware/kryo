@@ -19,6 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Method;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -33,7 +34,6 @@ import com.esotericsoftware.kryo.io.Output;
  * kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());</code>
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class ClosureSerializer extends Serializer {
-
 	/** Marker class to bind ClosureSerializer to. See also {@link Kryo#isClosure(Class)} and
 	 * {@link Kryo#getRegistration(Class)} */
 	@SuppressWarnings("javadoc")
@@ -79,14 +79,14 @@ public class ClosureSerializer extends Serializer {
 		}
 	}
 
-	public Object copy (Kryo kryo, Object original) {
+	public SerializedLambda copy (Kryo kryo, SerializedLambda original) {
 		try {
 			Class type = original.getClass();
 			Method writeReplace = type.getDeclaredMethod("writeReplace");
 			writeReplace.setAccessible(true);
 			Object replacement = writeReplace.invoke(original);
 			if (serializedLambda.isInstance(replacement)) {
-				return readResolve.invoke(replacement);
+				return (SerializedLambda)readResolve.invoke(replacement);
 			} else
 				throw new RuntimeException("Could not serialize lambda");
 		} catch (Exception e) {

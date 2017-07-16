@@ -44,7 +44,6 @@ import com.esotericsoftware.kryo.util.ObjectMap;
  * @author Robert DiFalco <robert.difalco@gmail.com> */
 public class ExternalizableSerializer extends Serializer {
 	private ObjectMap<Class, JavaSerializer> javaSerializerByType;
-
 	private KryoObjectInput objectInput = null;
 	private KryoObjectOutput objectOutput = null;
 
@@ -59,11 +58,8 @@ public class ExternalizableSerializer extends Serializer {
 
 	public Object read (Kryo kryo, Input input, Class type) {
 		JavaSerializer serializer = getJavaSerializerIfRequired(type);
-		if (serializer == null) {
-			return readExternal(kryo, input, type);
-		} else {
-			return serializer.read(kryo, input, type);
-		}
+		if (serializer == null) return readExternal(kryo, input, type);
+		return serializer.read(kryo, input, type);
 	}
 
 	private void writeExternal (Kryo kryo, Output output, Object object) {
@@ -84,7 +80,6 @@ public class ExternalizableSerializer extends Serializer {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private ObjectOutput getObjectOutput (Kryo kryo, Output output) {
 		if (objectOutput == null) {
 			objectOutput = new KryoObjectOutput(kryo, output);
@@ -95,7 +90,6 @@ public class ExternalizableSerializer extends Serializer {
 		return objectOutput;
 	}
 
-	@SuppressWarnings("unchecked")
 	private ObjectInput getObjectInput (Kryo kryo, Input input) {
 		if (objectInput == null) {
 			objectInput = new KryoObjectInput(kryo, input);
