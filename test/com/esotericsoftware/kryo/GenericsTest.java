@@ -52,7 +52,6 @@ public class GenericsTest extends KryoTestCase {
 		this.optimizedGenerics = optimizedGenerics;
 	}
 
-	
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();
@@ -153,7 +152,6 @@ public class GenericsTest extends KryoTestCase {
 			name = "Default";
 		}
 
-		
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -188,7 +186,6 @@ public class GenericsTest extends KryoTestCase {
 			return this.listPayload;
 		}
 
-		
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;

@@ -19,8 +19,6 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.minlog.Log.*;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
@@ -52,9 +50,6 @@ class ReflectField extends CachedField {
 
 	public void write (Output output, Object object) {
 		try {
-			if (TRACE)
-				trace("kryo", "Write field: " + this + " (" + object.getClass().getName() + ")" + " pos=" + output.position());
-
 			Object value = getField(object);
 
 			Serializer serializer = this.serializer;
@@ -96,7 +91,6 @@ class ReflectField extends CachedField {
 
 	public void read (Input input, Object object) {
 		try {
-			if (TRACE) trace("kryo", "Read field: " + this + " (" + type.getName() + ")" + " pos=" + input.position());
 			Object value;
 
 			Class concreteType = valueClass;
@@ -147,11 +141,7 @@ class ReflectField extends CachedField {
 		}
 	}
 
-	final static class IntReflectField extends ReflectField {
-		public IntReflectField (Kryo kryo, Class type) {
-			super(kryo, type);
-		}
-
+	final static class IntReflectField extends CachedField {
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getInt(object);
 		}
@@ -164,7 +154,7 @@ class ReflectField extends CachedField {
 					output.writeInt(field.getInt(object));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (int)");
 				throw ex;
 			}
 		}
@@ -177,7 +167,7 @@ class ReflectField extends CachedField {
 					field.setInt(object, input.readInt());
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (int)");
 				throw ex;
 			}
 		}
@@ -187,17 +177,13 @@ class ReflectField extends CachedField {
 				field.setInt(copy, field.getInt(original));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (int)");
 				throw ex;
 			}
 		}
 	}
 
-	final static class FloatReflectField extends ReflectField {
-		public FloatReflectField (Kryo kryo, Class type) {
-			super(kryo, type);
-		}
-
+	final static class FloatReflectField extends CachedField {
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getFloat(object);
 		}
@@ -207,7 +193,7 @@ class ReflectField extends CachedField {
 				output.writeFloat(field.getFloat(object));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (float)");
 				throw ex;
 			}
 		}
@@ -217,7 +203,7 @@ class ReflectField extends CachedField {
 				field.setFloat(object, input.readFloat());
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (float)");
 				throw ex;
 			}
 		}
@@ -227,17 +213,13 @@ class ReflectField extends CachedField {
 				field.setFloat(copy, field.getFloat(original));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (float)");
 				throw ex;
 			}
 		}
 	}
 
-	final static class ShortReflectField extends ReflectField {
-		public ShortReflectField (Kryo kryo, Class type) {
-			super(kryo, type);
-		}
-
+	final static class ShortReflectField extends CachedField {
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getShort(object);
 		}
@@ -247,7 +229,7 @@ class ReflectField extends CachedField {
 				output.writeShort(field.getShort(object));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (short)");
 				throw ex;
 			}
 		}
@@ -257,7 +239,7 @@ class ReflectField extends CachedField {
 				field.setShort(object, input.readShort());
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (short)");
 				throw ex;
 			}
 		}
@@ -267,17 +249,13 @@ class ReflectField extends CachedField {
 				field.setShort(copy, field.getShort(original));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (short)");
 				throw ex;
 			}
 		}
 	}
 
-	final static class ByteReflectField extends ReflectField {
-		public ByteReflectField (Kryo kryo, Class type) {
-			super(kryo, type);
-		}
-
+	final static class ByteReflectField extends CachedField {
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getByte(object);
 		}
@@ -287,7 +265,7 @@ class ReflectField extends CachedField {
 				output.writeByte(field.getByte(object));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (byte)");
 				throw ex;
 			}
 		}
@@ -297,7 +275,7 @@ class ReflectField extends CachedField {
 				field.setByte(object, input.readByte());
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (byte)");
 				throw ex;
 			}
 		}
@@ -307,17 +285,13 @@ class ReflectField extends CachedField {
 				field.setByte(copy, field.getByte(original));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (byte)");
 				throw ex;
 			}
 		}
 	}
 
-	final static class BooleanReflectField extends ReflectField {
-		public BooleanReflectField (Kryo kryo, Class type) {
-			super(kryo, type);
-		}
-
+	final static class BooleanReflectField extends CachedField {
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getBoolean(object);
 		}
@@ -327,7 +301,7 @@ class ReflectField extends CachedField {
 				output.writeBoolean(field.getBoolean(object));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (boolean)");
 				throw ex;
 			}
 		}
@@ -337,7 +311,7 @@ class ReflectField extends CachedField {
 				field.setBoolean(object, input.readBoolean());
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (boolean)");
 				throw ex;
 			}
 		}
@@ -347,17 +321,13 @@ class ReflectField extends CachedField {
 				field.setBoolean(copy, field.getBoolean(original));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (boolean)");
 				throw ex;
 			}
 		}
 	}
 
-	final static class CharReflectField extends ReflectField {
-		public CharReflectField (Kryo kryo, Class type) {
-			super(kryo, type);
-		}
-
+	final static class CharReflectField extends CachedField {
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getChar(object);
 		}
@@ -367,7 +337,7 @@ class ReflectField extends CachedField {
 				output.writeChar(field.getChar(object));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (char)");
 				throw ex;
 			}
 		}
@@ -377,7 +347,7 @@ class ReflectField extends CachedField {
 				field.setChar(object, input.readChar());
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (char)");
 				throw ex;
 			}
 		}
@@ -387,17 +357,13 @@ class ReflectField extends CachedField {
 				field.setChar(copy, field.getChar(original));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (char)");
 				throw ex;
 			}
 		}
 	}
 
-	final static class LongReflectField extends ReflectField {
-		public LongReflectField (Kryo kryo, Class type) {
-			super(kryo, type);
-		}
-
+	final static class LongReflectField extends CachedField {
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getLong(object);
 		}
@@ -410,7 +376,7 @@ class ReflectField extends CachedField {
 					output.writeLong(field.getLong(object));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (long)");
 				throw ex;
 			}
 		}
@@ -423,7 +389,7 @@ class ReflectField extends CachedField {
 					field.setLong(object, input.readLong());
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (long)");
 				throw ex;
 			}
 		}
@@ -433,17 +399,13 @@ class ReflectField extends CachedField {
 				field.setLong(copy, field.getLong(original));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (long)");
 				throw ex;
 			}
 		}
 	}
 
-	final static class DoubleReflectField extends ReflectField {
-		public DoubleReflectField (Kryo kryo, Class type) {
-			super(kryo, type);
-		}
-
+	final static class DoubleReflectField extends CachedField {
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
 			return field.getDouble(object);
 		}
@@ -453,7 +415,7 @@ class ReflectField extends CachedField {
 				output.writeDouble(field.getDouble(object));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (double)");
 				throw ex;
 			}
 		}
@@ -463,7 +425,7 @@ class ReflectField extends CachedField {
 				field.setDouble(object, input.readDouble());
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (double)");
 				throw ex;
 			}
 		}
@@ -473,7 +435,7 @@ class ReflectField extends CachedField {
 				field.setDouble(copy, field.getDouble(original));
 			} catch (Exception e) {
 				KryoException ex = new KryoException(e);
-				ex.addTrace(this + " (" + type.getName() + ")");
+				ex.addTrace(this + " (double)");
 				throw ex;
 			}
 		}

@@ -34,7 +34,6 @@ public class WarnUnregisteredClassesTest extends TestCase {
 
 	LoggerStub log;
 
-	
 	protected void setUp () throws Exception {
 		super.setUp();
 		log = new LoggerStub();
@@ -111,7 +110,6 @@ public class WarnUnregisteredClassesTest extends TestCase {
 		public List<Integer> levels = new ArrayList();
 		public List<String> messages = new ArrayList();
 
-		
 		public void log (int level, String category, String message, Throwable ex) {
 			levels.add(level);
 			messages.add(message);

@@ -56,7 +56,7 @@ public class DeflateSerializer extends Serializer {
 		} finally {
 			deflater.end();
 		}
-		outputChunked.endChunks();
+		outputChunked.endChunk();
 	}
 
 	public Object read (Kryo kryo, Input input, Class type) {

@@ -85,11 +85,12 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
-		CachedField[] fields = getFields();
+		CachedField[] fields = getFields(); // BOZO - Doesn't include transient fields.
 		// Write type version.
 		output.writeInt(typeVersion, true);
 		// Write fields.
 		for (int i = 0, n = fields.length; i < n; i++) {
+			if (TRACE) log("Write", fields[i], output.position());
 			fields[i].write(output, object);
 		}
 	}
@@ -111,6 +112,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 				if (DEBUG) debug("Skip field " + fields[i].getField().getName());
 				continue;
 			}
+			if (TRACE) log("Read", fields[i], input.position());
 			fields[i].read(input, object);
 		}
 		return object;

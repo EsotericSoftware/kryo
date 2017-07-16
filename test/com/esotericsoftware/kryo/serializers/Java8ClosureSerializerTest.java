@@ -50,7 +50,7 @@ public class Java8ClosureSerializerTest extends KryoTestCase {
 	}
 
 	// we must override equals as lambdas have no equals check built in...
-	
+
 	protected void doAssertEquals (Object object1, Object object2) {
 		try {
 			Assert.assertEquals(((Callable)object1).call(), ((Callable)object2).call());

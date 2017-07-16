@@ -68,7 +68,7 @@ public class InputChunked extends Input {
 	protected int fill (byte[] buffer, int offset, int count) throws KryoException {
 		if (chunkSize == -1) // No current chunk, expect a new chunk.
 			readChunkSize();
-		else if (chunkSize == 0) // End of chunks.
+		else if (chunkSize == 0) // End of chunk.
 			return -1;
 		int actual = super.fill(buffer, offset, Math.min(chunkSize, count));
 		chunkSize -= actual;
@@ -85,7 +85,7 @@ public class InputChunked extends Input {
 				result |= (b & 0x7F) << offset;
 				if ((b & 0x80) == 0) {
 					chunkSize = result;
-					if (TRACE) trace("kryo", "Read chunk: " + chunkSize);
+					if (TRACE && chunkSize > 0) trace("kryo", "Read chunk: " + chunkSize);
 					return;
 				}
 			}
@@ -95,13 +95,12 @@ public class InputChunked extends Input {
 		throw new KryoException("Malformed integer.");
 	}
 
-	/** Advances the stream to the next set of chunks. InputChunked will appear to hit the end of the data until this method is
-	 * called. */
-	public void nextChunks () {
+	/** Advances the stream to the next chunk. InputChunked will appear to hit the end of the data until this method is called. */
+	public void nextChunk () {
 		if (chunkSize == -1) readChunkSize(); // No current chunk, expect a new chunk.
 		while (chunkSize > 0)
 			skip(chunkSize);
 		chunkSize = -1;
-		if (TRACE) trace("kryo", "Next chunks.");
+		if (TRACE) trace("kryo", "Next chunk.");
 	}
 }

@@ -71,7 +71,6 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 	/** Serializes an array with a Class with two tagged fields. Then deserializes it using a serializer that has removed some
 	 * fields to simulate a past version of the compiled application. An array is used to ensure subsequent bytes in the stream are
 	 * unaffected. */
-	@SuppressWarnings("synthetic-access")
 	public void testForwardCompatibility () {
 		FutureClass futureObject = new FutureClass();
 		futureObject.value = 3;
@@ -97,11 +96,11 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		kryo.register(Object[].class);
 		TaggedFieldSerializer<FutureClass> futureSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
 		futureSerializer.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
-		futureSerializer.updateFields();
+		futureSerializer.updateConfig();
 		kryo.register(FutureClass.class, futureSerializer);
 		TaggedFieldSerializer<FutureClass2> futureSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
 		futureSerializer2.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
-		futureSerializer2.updateFields();
+		futureSerializer2.updateConfig();
 		kryo.register(FutureClass2.class, futureSerializer2);
 
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -112,12 +111,12 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 
 		TaggedFieldSerializer<FutureClass> presentSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
 		presentSerializer.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
-		presentSerializer.updateFields();
+		presentSerializer.updateConfig();
 		presentSerializer.removeField("futureString"); // simulate past version of application
 		kryo.register(FutureClass.class, presentSerializer);
 		TaggedFieldSerializer<FutureClass2> presentSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
 		presentSerializer2.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
-		presentSerializer2.updateFields();
+		presentSerializer2.updateConfig();
 		presentSerializer2.removeField("zzz"); // simulate past version of application
 		presentSerializer2.removeField("fc2"); // simulate past version of application
 		kryo.register(FutureClass2.class, presentSerializer2);
@@ -190,7 +189,6 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		@Tag(1) public FutureClass2 futureClass2;
 		@Tag(value = 2, annexed = true) public String futureString = "unchanged";
 
-		
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -231,7 +229,6 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		@Tag(value = 3, annexed = true) public int zzz = 123;
 		@Tag(value = 4, annexed = true) public FutureClass2 fc2;
 
-		
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;

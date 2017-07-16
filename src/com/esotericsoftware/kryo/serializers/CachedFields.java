@@ -1,6 +1,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Field;
@@ -36,7 +37,6 @@ import com.esotericsoftware.kryo.serializers.ReflectField.FloatReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.IntReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.LongReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.ShortReflectField;
-import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 class CachedFields implements Comparator<FieldSerializer.CachedField> {
@@ -66,49 +66,54 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		genericsUtil = new FieldSerializerGenericsUtil(serializer);
 	}
 
+	public void updateGenerics () {
+		if (TRACE && generics != null) trace("kryo", "Generic type parameters: " + Arrays.toString(generics));
+
+		if (config.optimizedGenerics) {
+			// For generic classes, generate a mapping from type variable names to the concrete types.
+			genericsScope = genericsUtil.buildGenericsScope(type, generics);
+			if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
+		}
+
+		for (CachedField cachedField : fields)
+			if (cachedField instanceof ReflectField) genericsUtil.updateGenericCachedField((ReflectField)cachedField);
+		for (CachedField cachedField : transientFields)
+			if (cachedField instanceof ReflectField) genericsUtil.updateGenericCachedField((ReflectField)cachedField);
+
+		if (genericsScope != null) kryo.getGenericsResolver().popScope();
+	}
+
 	/** Called when the list of cached fields must be rebuilt. This is done any time settings are changed that affect which fields
 	 * will be used. It is called from the constructor for FieldSerializer. Subclasses may need to call this from their
-	 * constructor.
-	 * @param genericsOnly When true, the generic types from the current scope are used to set the field types. */
-	public void update (boolean genericsOnly) {
+	 * constructor. */
+	public void rebuild () {
 		if (type.isInterface()) {
 			fields = emptyCachedFields; // No fields to serialize.
 			return;
 		}
 
-		if (TRACE && generics != null) trace("kryo", "Generic type parameters: " + Arrays.toString(generics));
 		if (config.optimizedGenerics) {
-			// For generic classes, generate a mapping from type variable names to the concrete types
-			// This mapping is the same for the whole class.
+			// For generic classes, generate a mapping from type variable names to the concrete types.
 			genericsScope = genericsUtil.buildGenericsScope(type, generics);
-
-			// Push proper scopes at serializer construction time
 			if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
 		}
 
-		if (genericsOnly) {
-			for (CachedField cachedField : fields)
-				genericsUtil.updateGenericCachedField(cachedField);
-			for (CachedField cachedField : transientFields)
-				genericsUtil.updateGenericCachedField(cachedField);
-		} else {
-			ArrayList<CachedField> newFields = new ArrayList(), newTransientFields = new ArrayList();
-			boolean asm = !Util.isAndroid && Modifier.isPublic(type.getModifiers());
-			Class nextClass = type;
-			while (nextClass != Object.class) {
-				for (Field field : nextClass.getDeclaredFields())
-					addField(field, asm, newFields, newTransientFields);
-				nextClass = nextClass.getSuperclass();
-			}
-
-			if (fields.length != newFields.size()) fields = new CachedField[newFields.size()];
-			newFields.toArray(fields);
-			Arrays.sort(this.fields, this);
-
-			if (transientFields.length != newTransientFields.size()) transientFields = new CachedField[newTransientFields.size()];
-			newTransientFields.toArray(transientFields);
-			Arrays.sort(transientFields, this);
+		ArrayList<CachedField> newFields = new ArrayList(), newTransientFields = new ArrayList();
+		boolean asm = !isAndroid && Modifier.isPublic(type.getModifiers());
+		Class nextClass = type;
+		while (nextClass != Object.class) {
+			for (Field field : nextClass.getDeclaredFields())
+				addField(field, asm, newFields, newTransientFields);
+			nextClass = nextClass.getSuperclass();
 		}
+
+		if (fields.length != newFields.size()) fields = new CachedField[newFields.size()];
+		newFields.toArray(fields);
+		Arrays.sort(this.fields, this);
+
+		if (transientFields.length != newTransientFields.size()) transientFields = new CachedField[newTransientFields.size()];
+		newTransientFields.toArray(transientFields);
+		Arrays.sort(transientFields, this);
 
 		serializer.initializeCachedFields();
 
@@ -141,19 +146,17 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			&& !Modifier.isFinal(modifiers) //
 			&& Modifier.isPublic(modifiers) //
 			&& Modifier.isPublic(fieldClass.getModifiers())) {
-			if (access == null) {
-				try {
-					access = FieldAccess.get(type);
-				} catch (RuntimeException ignored) {
-					asm = false;
-				}
+			try {
+				if (access == null) access = FieldAccess.get(type);
+				accessIndex = ((FieldAccess)access).getIndex(field);
+			} catch (RuntimeException ex) {
+				if (DEBUG) debug("kryo", "Unable to use ReflectASM.", ex);
+				asm = false;
 			}
-			if (asm) accessIndex = ((FieldAccess)access).getIndex(field);
 		}
 
 		CachedField cachedField = createCachedField(fieldClass, accessIndex != -1);
 		cachedField.field = field;
-		cachedField.name = field.getName();
 		cachedField.varInt = config.varInts;
 		cachedField.access = (FieldAccess)access;
 		cachedField.accessIndex = accessIndex;
@@ -162,15 +165,20 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		else
 			cachedField.name = field.getName();
 
-		if (!config.optimizedGenerics) {
-			if (TRACE) trace("kryo", "Field " + field.getName() + ": " + fieldClass);
-		} else
-			fieldClass = genericsUtil.updateGenericCachedField(cachedField);
+		if (!(cachedField instanceof ReflectField)) { // Must be a primitive or String.
+			cachedField.canBeNull = fieldClass == String.class && config.fieldsCanBeNull;
+			cachedField.valueClass = fieldClass;
+		} else if (config.optimizedGenerics)
+			genericsUtil.updateGenericCachedField((ReflectField)cachedField);
+		else {
+// if (cachedField instanceof ReflectField) ((ReflectField)cachedField).generics = new Generics();
 
-		cachedField.canBeNull = config.fieldsCanBeNull && !fieldClass.isPrimitive() && !field.isAnnotationPresent(NotNull.class);
+			cachedField.canBeNull = config.fieldsCanBeNull && !field.isAnnotationPresent(NotNull.class);
+			if (kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
 
-		// Always use the same serializer for this field if the field's class is final.
-		if (kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
+			if (TRACE) trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " ("
+				+ className(field.getDeclaringClass()) + ")");
+		}
 
 		applyAnnotations(cachedField);
 
@@ -197,14 +205,14 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			return new AsmField(kryo, type);
 		}
 		if (fieldClass.isPrimitive()) {
-			if (fieldClass == boolean.class) return new BooleanReflectField(kryo, type);
-			if (fieldClass == byte.class) return new ByteReflectField(kryo, type);
-			if (fieldClass == char.class) return new CharReflectField(kryo, type);
-			if (fieldClass == short.class) return new ShortReflectField(kryo, type);
-			if (fieldClass == int.class) return new IntReflectField(kryo, type);
-			if (fieldClass == long.class) return new LongReflectField(kryo, type);
-			if (fieldClass == float.class) return new FloatReflectField(kryo, type);
-			if (fieldClass == double.class) return new DoubleReflectField(kryo, type);
+			if (fieldClass == boolean.class) return new BooleanReflectField();
+			if (fieldClass == byte.class) return new ByteReflectField();
+			if (fieldClass == char.class) return new CharReflectField();
+			if (fieldClass == short.class) return new ShortReflectField();
+			if (fieldClass == int.class) return new IntReflectField();
+			if (fieldClass == long.class) return new LongReflectField();
+			if (fieldClass == float.class) return new FloatReflectField();
+			if (fieldClass == double.class) return new DoubleReflectField();
 		}
 		return new ReflectField(kryo, type);
 	}

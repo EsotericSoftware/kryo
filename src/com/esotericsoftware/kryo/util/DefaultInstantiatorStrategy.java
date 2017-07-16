@@ -81,7 +81,9 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 			else {
 				StringBuilder message = new StringBuilder("Class cannot be created (missing no-arg constructor): " + className(type));
 				if (type.getSimpleName().equals("")) {
-					message.append("\nThis is an anonymous class, which is not serializable by default in Kryo. Possible solutions:\n")
+					message
+						.append(
+							"\nNote: This is an anonymous class, which is not serializable by default in Kryo. Possible solutions:\n")
 						.append("1. Remove uses of anonymous classes, including double brace initialization, from the containing\n")
 						.append(
 							"class. This is the safest solution, as anonymous classes don't have predictable names for serialization.\n")

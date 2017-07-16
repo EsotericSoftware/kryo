@@ -44,7 +44,6 @@ import com.esotericsoftware.kryo.KryoTestCase;
  * "Java8*Tests". */
 public class Java8TimeSerializersTest extends KryoTestCase {
 
-	
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();

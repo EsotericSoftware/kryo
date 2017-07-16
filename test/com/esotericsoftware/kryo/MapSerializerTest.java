@@ -187,7 +187,6 @@ public class MapSerializerTest extends KryoTestCase {
 		mapOfLists.put(1, new java.util.ArrayList());
 		kryo.writeClassAndObject(output, mapOfLists);
 
-		
 		Map<Integer, List<String>> deserializedMap = (Map<Integer, List<String>>)kryo
 			.readClassAndObject(new Input(new ByteArrayInputStream(output.getBuffer())));
 		assertEquals(1, deserializedMap.size());

@@ -21,6 +21,8 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import java.util.Arrays;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
@@ -55,42 +57,41 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
+		if (TRACE) trace("kryo", "Writing fields for class: " + type.getName());
+
 		CachedField[] fields = getFields();
 		ObjectMap context = kryo.getGraphContext();
 		if (!context.containsKey(this)) {
 			context.put(this, null);
-			if (TRACE) trace("kryo", "Write " + fields.length + " field names.");
 			output.writeInt(fields.length, true);
-			for (int i = 0, n = fields.length; i < n; i++)
+			for (int i = 0, n = fields.length; i < n; i++) {
+				if (TRACE) trace("kryo", "Write field name: " + fields[i].name);
 				output.writeString(fields[i].name);
+			}
 		}
 
 		OutputChunked outputChunked = new OutputChunked(output, 1024);
 		for (int i = 0, n = fields.length; i < n; i++) {
-			if (TRACE) try {
-				Object x = fields[i].getField().get(object);
-				trace("kryo", "Write value: " + Util.string(x));
-				if (x != null && x.toString().equals("1234120")) //
-					System.out.println();
-			} catch (IllegalArgumentException ex) {
-			} catch (IllegalAccessException ex) {
-			}
+			if (TRACE) log("Write", fields[i], output.position());
 			fields[i].write(outputChunked, object);
-			outputChunked.endChunks();
+			outputChunked.endChunk();
 		}
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
+		if (TRACE) trace("kryo", "Reading fields for class: " + type.getName());
+
 		T object = create(kryo, input, type);
 		kryo.reference(object);
 		ObjectMap context = kryo.getGraphContext();
 		CachedField[] fields = (CachedField[])context.get(this);
 		if (fields == null) {
 			int length = input.readInt(true);
-			if (TRACE) trace("kryo", "Read " + length + " field names.");
 			String[] names = new String[length];
-			for (int i = 0; i < length; i++)
+			for (int i = 0; i < length; i++) {
 				names[i] = input.readString();
+				if (TRACE) trace("kryo", "Read field name: " + names[i]);
+			}
 
 			fields = new CachedField[length];
 			CachedField[] allFields = getFields();
@@ -152,11 +153,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 			if (cachedField == null) {
 				if (TRACE) trace("kryo", "Skip obsolete field.");
-				inputChunked.nextChunks();
+				inputChunked.nextChunk();
 				continue;
 			}
+			if (TRACE) log("Read", fields[i], input.position());
 			cachedField.read(inputChunked, object);
-			inputChunked.nextChunks();
+			inputChunked.nextChunk();
 		}
 		return object;
 	}

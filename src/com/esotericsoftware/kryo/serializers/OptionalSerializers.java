@@ -47,7 +47,6 @@ public final class OptionalSerializers {
 			setAcceptsNull(false);
 		}
 
-		
 		public void write (Kryo kryo, Output output, Optional object) {
 			Object nullable = object.isPresent() ? object.get() : null;
 			kryo.writeClassAndObject(output, nullable);

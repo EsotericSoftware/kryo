@@ -95,8 +95,7 @@ public class Util {
 			return;
 		}
 		Class type = object.getClass();
-		if (type.isPrimitive() || type == Boolean.class || type == Byte.class || type == Character.class || type == Short.class
-			|| type == Integer.class || type == Long.class || type == Float.class || type == Double.class || type == String.class) {
+		if (type.isPrimitive() || isWrapperClass(type) || type == String.class) {
 			if (TRACE) trace("kryo", message + ": " + string(object));
 		} else {
 			debug("kryo", message + ": " + string(object));
@@ -109,15 +108,15 @@ public class Util {
 		if (object == null) return "null";
 		Class type = object.getClass();
 		if (type.isArray()) return className(type);
+		String className = TRACE ? className(type) : type.getSimpleName();
 		try {
-			if (type.getMethod("toString", new Class[0]).getDeclaringClass() == Object.class)
-				return TRACE ? className(type) : type.getSimpleName();
+			if (type.getMethod("toString", new Class[0]).getDeclaringClass() == Object.class) return className;
 		} catch (Exception ignored) {
 		}
 		try {
-			return String.valueOf(object);
-		} catch (Throwable e) {
-			return (TRACE ? className(type) : type.getSimpleName()) + "(Exception " + e + " in toString)";
+			return String.valueOf(object) + " (" + className + ")";
+		} catch (Throwable ex) {
+			return className + " (toString exception: " + ex + ")";
 		}
 	}
 

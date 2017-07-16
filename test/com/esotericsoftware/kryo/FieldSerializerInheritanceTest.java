@@ -102,7 +102,6 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 			this.a = a;
 		}
 
-		
 		public boolean equals (Object o) {
 			if (this == o) return true;
 			if (o == null || getClass() != o.getClass()) return false;
@@ -113,7 +112,6 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 
 		}
 
-		
 		public int hashCode () {
 			return a != null ? a.hashCode() : 0;
 		}
@@ -130,7 +128,6 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 			this.a = a;
 		}
 
-		
 		public boolean equals (Object o) {
 			if (this == o) return true;
 			if (o == null || getClass() != o.getClass()) return false;
@@ -141,7 +138,6 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 			return a != null ? a.equals(that.a) : that.a == null;
 		}
 
-		
 		public int hashCode () {
 			return a != null ? a.hashCode() : 0;
 		}

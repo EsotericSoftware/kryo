@@ -268,19 +268,16 @@ class SerializationCompatTestData {
 			_personArray[1].addFriend(_personArray[0]);
 
 			_generic = new Generic("foo");
-			_genericList = new GenericList(
-				new ArrayList(Arrays.asList(new Generic("foo"), new Generic("bar"))));
+			_genericList = new GenericList(new ArrayList(Arrays.asList(new Generic("foo"), new Generic("bar"))));
 			_genericArray = new GenericArray(new Generic("foo"), new Generic("bar"));
 			_public = new PublicClass(new PrivateClass("foo"));
 
 		}
 
-		
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -294,17 +291,14 @@ class SerializationCompatTestData {
 			this.item = item;
 		}
 
-		
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
 
-		
 		public String toString () {
 			return "Generic [item=" + item + "]";
 		}
@@ -317,12 +311,10 @@ class SerializationCompatTestData {
 			this.generics = holders;
 		}
 
-		
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -335,12 +327,10 @@ class SerializationCompatTestData {
 			this.holders = holders;
 		}
 
-		
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -416,7 +406,6 @@ class SerializationCompatTestData {
 			return c1 == c2 || c1 != null && c2 != null && c1.size() == c2.size();
 		}
 
-		
 		public int hashCode () {
 			final int prime = 31;
 			int result = 1;
@@ -428,7 +417,6 @@ class SerializationCompatTestData {
 			return result;
 		}
 
-		
 		public boolean equals (final Object obj) {
 			if (this == obj) {
 				return true;
@@ -478,7 +466,6 @@ class SerializationCompatTestData {
 			return true;
 		}
 
-		
 		public String toString () {
 			return "Person [_age=" + _age + ", _friends.size=" + _friends.size() + ", _gender=" + _gender + ", _name=" + _name
 				+ ", _props=" + _props + "]";
@@ -518,7 +505,6 @@ class SerializationCompatTestData {
 			_email = email;
 		}
 
-		
 		public int hashCode () {
 			final int prime = 31;
 			int result = 1;
@@ -527,7 +513,6 @@ class SerializationCompatTestData {
 			return result;
 		}
 
-		
 		public boolean equals (final Object obj) {
 			if (this == obj) {
 				return true;
@@ -556,7 +541,6 @@ class SerializationCompatTestData {
 			return true;
 		}
 
-		
 		public String toString () {
 			return "Email [_email=" + _email + ", _name=" + _name + "]";
 		}
@@ -573,12 +557,10 @@ class SerializationCompatTestData {
 			this.privateClass = protectedClass;
 		}
 
-		
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -591,12 +573,10 @@ class SerializationCompatTestData {
 			this.foo = foo;
 		}
 
-		
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}

@@ -121,18 +121,22 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
-		CachedField[] fields = getFields();
 		output.writeInt(writeFieldCount, true); // Can be used for null.
 
-		OutputChunked outputChunked = null; // only instantiate if needed
+		CachedField[] fields = getFields();
+		OutputChunked outputChunked = null; // Only instantiate if needed.
+		int[] tags = this.tags;
+		boolean[] annexed = this.annexed, deprecated = this.deprecated;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (deprecated[i]) continue;
 			output.writeInt(tags[i], true);
 			if (annexed[i]) {
+				if (TRACE) log("Write annexed", fields[i], output.position());
 				if (outputChunked == null) outputChunked = new OutputChunked(output, 1024);
 				fields[i].write(outputChunked, object);
-				outputChunked.endChunks();
+				outputChunked.endChunk();
 			} else {
+				if (TRACE) log("Write", fields[i], output.position());
 				fields[i].write(output, object);
 			}
 		}
@@ -142,12 +146,13 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		T object = create(kryo, input, type);
 		kryo.reference(object);
 		int fieldCount = input.readInt(true);
+
+		CachedField[] fields = getFields(); // BOZO - Doesn't include transient.
+		InputChunked inputChunked = null; // Only instantiate if needed.
 		int[] tags = this.tags;
-		InputChunked inputChunked = null; // only instantiate if needed
-		CachedField[] fields = getFields();
+		boolean[] annexed = this.annexed;
 		for (int i = 0, n = fieldCount; i < n; i++) {
 			int tag = input.readInt(true);
-
 			CachedField cachedField = null;
 			boolean isAnnexed = false;
 			for (int ii = 0, nn = tags.length; ii < nn; ii++) {
@@ -160,16 +165,21 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			if (cachedField == null) {
 				if (config.skipUnknownTags) {
 					if (inputChunked == null) inputChunked = new InputChunked(input, 1024);
-					inputChunked.nextChunks(); // assume future annexed field and skip
+					inputChunked.nextChunk(); // Assume future annexed field and skip.
 					if (TRACE) trace(String.format("Unknown field tag: %d (%s) encountered. Assuming a future annexed "
 						+ "tag with chunked encoding and skipping.", tag, getType().getName()));
+					continue;
 				} else
 					throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
-			} else if (isAnnexed) {
+			}
+
+			if (isAnnexed) {
+				if (TRACE) log("Read annexed", fields[i], input.position());
 				if (inputChunked == null) inputChunked = new InputChunked(input, 1024);
 				cachedField.read(inputChunked, object);
-				inputChunked.nextChunks();
+				inputChunked.nextChunk();
 			} else {
+				if (TRACE) log("Read", fields[i], input.position());
 				cachedField.read(input, object);
 			}
 		}

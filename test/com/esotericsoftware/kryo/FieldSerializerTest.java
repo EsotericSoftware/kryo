@@ -79,7 +79,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		serializer.getField("hasStringField").setCanBeNull(false);
 		roundTrip(79, test);
 		serializer.getFieldSerializerConfig().setFixedFieldTypes(true);
-		serializer.updateFields();
+		serializer.updateConfig();
 		serializer.getField("hasStringField").setCanBeNull(false);
 		roundTrip(78, test);
 	}
@@ -354,7 +354,6 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(35, test);
 	}
 
-	@SuppressWarnings("synthetic-access")
 	public void testInstantiatorStrategy () {
 		kryo.register(HasArgumentConstructor.class);
 		kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
@@ -367,7 +366,6 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	/** This test uses StdInstantiatorStrategy and therefore requires a no-arg constructor. **/
-	@SuppressWarnings("synthetic-access")
 	public void testDefaultInstantiatorStrategy () {
 		kryo.register(HasArgumentConstructor.class);
 		HasArgumentConstructor test = new HasPrivateConstructor();
@@ -379,7 +377,6 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	/** This test uses StdInstantiatorStrategy and should bypass invocation of no-arg constructor, even if it is provided. **/
-	@SuppressWarnings("synthetic-access")
 	public void testStdInstantiatorStrategy () {
 		kryo.register(HasArgumentConstructor.class);
 		kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
@@ -429,7 +426,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		FieldSerializer fieldSerializer;
 		fieldSerializer = (FieldSerializer)kryo.getSerializer(HasGenerics.class);
 		fieldSerializer.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
-		fieldSerializer.updateFields();
+		fieldSerializer.updateConfig();
 
 		HasGenerics test = new HasGenerics();
 		test.list1 = new ArrayList();
@@ -484,7 +481,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		FieldSerializer ser = (FieldSerializer)kryo.getSerializer(HasTransients.class);
 		ser.getFieldSerializerConfig().setCopyTransient(false);
-		ser.updateFields();
+		ser.updateConfig();
 
 		HasTransients objectWithTransients3 = kryo.copy(objectWithTransients1);
 		assertTrue("Objects should be different if copy does not include transient fields",
@@ -492,7 +489,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
 
 		ser.getFieldSerializerConfig().setCopyTransient(true);
-		ser.updateFields();
+		ser.updateConfig();
 		HasTransients objectWithTransients2 = kryo.copy(objectWithTransients1);
 		assertEquals("Objects should be equal if copy includes transient fields", objectWithTransients2, objectWithTransients1);
 	}
@@ -514,7 +511,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
 
 		ser.getFieldSerializerConfig().setCopyTransient(true);
-		ser.updateFields();
+		ser.updateConfig();
 		HasTransients objectWithTransients2 = kryo.copy(objectWithTransients1);
 		assertEquals("Objects should be equal if copy includes transient fields", objectWithTransients2, objectWithTransients1);
 	}
@@ -533,7 +530,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		FieldSerializer<HasTransients> ser = (FieldSerializer)kryo.getSerializer(HasTransients.class);
 		ser.getFieldSerializerConfig().setSerializeTransient(false);
-		ser.updateFields();
+		ser.updateConfig();
 
 		outputStream = new ByteArrayOutputStream();
 		output = new Output(outputStream);
@@ -548,7 +545,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
 
 		ser.getFieldSerializerConfig().setSerializeTransient(true);
-		ser.updateFields();
+		ser.updateConfig();
 
 		outputStream = new ByteArrayOutputStream();
 		output = new Output(outputStream);
@@ -591,7 +588,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
 
 		ser.getFieldSerializerConfig().setSerializeTransient(true);
-		ser.updateFields();
+		ser.updateConfig();
 
 		outputStream = new ByteArrayOutputStream();
 		output = new Output(outputStream);

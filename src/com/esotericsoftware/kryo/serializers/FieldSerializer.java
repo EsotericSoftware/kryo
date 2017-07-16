@@ -32,6 +32,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import static com.esotericsoftware.kryo.util.Util.*;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 // BOZO - Make primitive serialization with ReflectASM configurable?
@@ -72,29 +73,23 @@ public class FieldSerializer<T> extends Serializer<T> {
 		this.config = config;
 
 		typeParameters = type.getTypeParameters();
-		if (typeParameters == null || typeParameters.length == 0)
+		if (typeParameters.length == 0)
 			componentType = type.getComponentType();
 		else
 			componentType = null;
 
 		cachedFields = new CachedFields(this, generics);
-		cachedFields.update(false);
+		cachedFields.rebuild();
 	}
 
-	public void updateFields () {
-		cachedFields.update(false);
+	public void updateConfig () {
+		if (TRACE) trace("kryo", "Update FieldSerializerConfig: " + className(type));
+		cachedFields.rebuild();
 	}
 
 	public void setGenerics (Kryo kryo, Class[] generics) {
 		if (!config.optimizedGenerics) return;
 		cachedFields.generics = generics;
-		if (typeParameters != null && typeParameters.length > 0) {
-			// There is no need to rebuild all cached fields from scratch.
-			// Generic parameter types do not affect the set of fields, offsets of fields,
-			// transient and non-transient properties. They only affect the type of
-			// fields and serializers selected for each field.
-			cachedFields.update(true);
-		}
 	}
 
 	/** Get generic type parameters of the class controlled by this serializer.
@@ -108,35 +103,39 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** This method can be called for different fields having the same type. Even though the raw type is the same, if the type is
 	 * generic, it could happen that different concrete classes are used to instantiate it. Therefore, in case of different
-	 * instantiation parameters, the fields analysis should be repeated.
-	 * 
-	 * TODO: Cache serializer instances generated for a given set of generic parameters. Reuse it later instead of recomputing
-	 * every time. */
+	 * instantiation parameters, the fields analysis should be repeated. */
 	public void write (Kryo kryo, Output output, T object) {
-		if (TRACE) trace("kryo", "FieldSerializer.write fields of class: " + object.getClass().getName());
+		if (TRACE) trace("kryo", "Writing fields for class: " + type.getName());
 
 		if (config.optimizedGenerics) {
 			// Rebuild cached fields, may result in rebuilding the genericScope.
-			if (typeParameters != null && cachedFields.generics != null) cachedFields.update(false);
+			if (typeParameters.length > 0 && cachedFields.generics != null) cachedFields.updateGenerics();
 			if (cachedFields.genericsScope != null) kryo.getGenericsResolver().pushScope(type, cachedFields.genericsScope);
 		}
 
 		CachedField[] fields = cachedFields.fields;
-		for (int i = 0, n = fields.length; i < n; i++)
+		for (int i = 0, n = fields.length; i < n; i++) {
+			if (TRACE) log("Write", fields[i], output.position());
 			fields[i].write(output, object);
+		}
 
 		if (config.serializeTransient) {
-			for (int i = 0, n = cachedFields.transientFields.length; i < n; i++)
-				cachedFields.transientFields[i].write(output, object);
+			fields = cachedFields.transientFields;
+			for (int i = 0, n = fields.length; i < n; i++) {
+				if (TRACE) log("Write", fields[i], output.position());
+				fields[i].write(output, object);
+			}
 		}
 
 		if (config.optimizedGenerics && cachedFields.genericsScope != null) kryo.getGenericsResolver().popScope();
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
+		if (TRACE) trace("kryo", "Reading fields for class: " + type.getName());
+
 		if (config.optimizedGenerics) {
 			// Rebuild cached fields, may result in rebuilding the genericScope.
-			if (typeParameters != null && cachedFields.generics != null) cachedFields.update(false);
+			if (typeParameters.length > 0 && cachedFields.generics != null) cachedFields.updateGenerics();
 			if (cachedFields.genericsScope != null) kryo.getGenericsResolver().pushScope(type, cachedFields.genericsScope);
 		}
 
@@ -144,12 +143,17 @@ public class FieldSerializer<T> extends Serializer<T> {
 		kryo.reference(object);
 
 		CachedField[] fields = cachedFields.fields;
-		for (int i = 0, n = fields.length; i < n; i++)
+		for (int i = 0, n = fields.length; i < n; i++) {
+			if (TRACE) log("Read", fields[i], input.position());
 			fields[i].read(input, object);
+		}
 
 		if (config.serializeTransient) {
-			for (int i = 0, n = cachedFields.transientFields.length; i < n; i++)
-				cachedFields.transientFields[i].read(input, object);
+			fields = cachedFields.transientFields;
+			for (int i = 0, n = fields.length; i < n; i++) {
+				if (TRACE) log("Read", fields[i], input.position());
+				fields[i].read(input, object);
+			}
 		}
 
 		if (config.optimizedGenerics && cachedFields.genericsScope != null && kryo.getGenericsResolver() != null)
@@ -162,6 +166,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
 	protected T create (Kryo kryo, Input input, Class<? extends T> type) {
 		return kryo.newInstance(type);
+	}
+
+	protected void log (String prefix, CachedField cachedField, int position) {
+		trace("kryo", prefix + " " + cachedField.field.getType().getSimpleName() + " field: " + cachedField + " ("
+			+ className(cachedField.field.getDeclaringClass()) + ")" + " pos=" + position);
 	}
 
 	/** Allows specific fields to be optimized. */

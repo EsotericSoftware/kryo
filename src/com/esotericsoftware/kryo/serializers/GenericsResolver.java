@@ -21,11 +21,15 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializerGenericsUtil.Generics;
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
+import com.esotericsoftware.minlog.Log;
 
 /** Resolves a type name variable to a concrete class using the current class serialization stack
  * @author Jeroen van Erp <jeroen@hierynomus.com> */
@@ -48,7 +52,7 @@ public final class GenericsResolver {
 	}
 
 	void pushScope (Class type, Generics scope) {
-		if (TRACE) trace("generics", "Settting a new generics scope for class " + type.getName() + ": " + scope);
+		if (TRACE) trace("kryo", "New generics scope for class " + type.getName() + ": " + scope);
 		stack.addFirst(scope);
 	}
 
@@ -57,16 +61,60 @@ public final class GenericsResolver {
 	}
 
 	static public class Test {
-		String a;
-		int b;
+		ArrayList<String> a;
 	}
 
 	static public void main (String[] args) throws Exception {
-		Test test = new Test(); 
-		test.a = "moo";
+		Log.TRACE();
+		Log.setLogger(new Logger() {
+			public void log (int level, String category, String message, Throwable ex) {
+				System.out.println(message);
+				if (ex != null) ex.printStackTrace();
+			}
+		});
 
-//		Kryo kryo = new Kryo();
-//		Output output = new Output();
-//		kryo.writeObjectOrNull(output, object, type);
+		Test test1 = new Test();
+		test1.a = new ArrayList();
+		test1.a.add("one");
+		test1.a.add("two");
+
+		Kryo kryo = new Kryo();
+		FieldSerializer serializer = new FieldSerializer(kryo, Test.class);
+// serializer.getFieldSerializerConfig().setOptimizedGenerics(true);
+		serializer.updateConfig();
+		kryo.register(Test.class, serializer);
+		kryo.register(ArrayList.class);
+		kryo.setReferences(false);
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, test1);
+		output.flush();
+
+		Input input = new Input(output.getBuffer(), 0, output.position());
+		Test test2 = kryo.readObject(input, Test.class);
+
+		System.out.println("Size: " + output.position());
+		System.out.println(test1.a);
+		System.out.println(test2.a);
+
+// Log.TRACE();
+//
+// Test<String> test1 = new Test();
+// test1.a = "moo";
+//
+// Kryo kryo = new Kryo();
+// kryo.register(Test.class);
+// kryo.setReferences(false);
+//
+// Output output = new Output(1024);
+// kryo.writeObject(output, test1);
+// output.flush();
+//
+// Input input = new Input(output.getBuffer(), 0, output.position());
+// Test test2 = kryo.readObject(input, Test.class);
+//
+// System.out.println("Size: " + output.position());
+// System.out.println(test1.a);
+// System.out.println(test2.a);
 	}
 }

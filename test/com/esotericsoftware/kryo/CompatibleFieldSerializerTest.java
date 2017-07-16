@@ -189,7 +189,6 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		FieldSerializerConfig config = new FieldSerializerConfig();
 		config.setExtendedFieldNames(true);
 
-		Log.TRACE();
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ExtendedTestClass.class, config);
 		kryo.register(ExtendedTestClass.class, serializer);
 		roundTrip(286, extendedObject);
@@ -297,7 +296,6 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		public String j0;
 		public String k0;
 
-		
 		public boolean equals (Object obj) {
 			if (obj instanceof ClassWithManyFields) {
 				ClassWithManyFields other = (ClassWithManyFields)obj;
