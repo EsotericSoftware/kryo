@@ -33,7 +33,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 class ReflectField extends CachedField {
 	final Kryo kryo;
 	final Class type;
-	public Class[] generics;
+	public Class[] genericTypes;
 
 	ReflectField (Kryo kryo, Class type) {
 		this.kryo = kryo;
@@ -61,13 +61,13 @@ class ReflectField extends CachedField {
 				}
 				Registration registration = kryo.writeClass(output, value.getClass());
 				if (serializer == null) serializer = registration.getSerializer();
-				serializer.setGenerics(kryo, generics);
+				serializer.setGenerics(kryo, genericTypes);
 				kryo.writeObject(output, value, serializer);
 				serializer.setGenerics(kryo, null);
 			} else {
 				// The concrete type of the field is known, always use the same serializer.
 				if (serializer == null) this.serializer = serializer = kryo.getSerializer(valueClass);
-				serializer.setGenerics(kryo, generics);
+				serializer.setGenerics(kryo, genericTypes);
 				if (canBeNull)
 					kryo.writeObjectOrNull(output, value, serializer);
 				else {
@@ -103,13 +103,13 @@ class ReflectField extends CachedField {
 					value = null;
 				else {
 					if (serializer == null) serializer = registration.getSerializer();
-					serializer.setGenerics(kryo, generics);
+					serializer.setGenerics(kryo, genericTypes);
 					value = kryo.readObject(input, registration.getType(), serializer);
 					serializer.setGenerics(kryo, null);
 				}
 			} else {
 				if (serializer == null) this.serializer = serializer = kryo.getSerializer(valueClass);
-				serializer.setGenerics(kryo, generics);
+				serializer.setGenerics(kryo, genericTypes);
 				if (canBeNull)
 					value = kryo.readObjectOrNull(input, concreteType, serializer);
 				else

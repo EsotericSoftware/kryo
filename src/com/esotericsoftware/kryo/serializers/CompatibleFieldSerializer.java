@@ -21,15 +21,12 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.minlog.Log.*;
 
-import java.util.Arrays;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
 import com.esotericsoftware.kryo.util.ObjectMap;
-import com.esotericsoftware.kryo.util.Util;
 
 /** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
  * added or removed without invalidating previously serialized bytes. Changing the type of a field is not supported. Like
@@ -49,11 +46,11 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	static private final int THRESHOLD_BINARY_SEARCH = 32;
 
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
-		super(kryo, type, null, new FieldSerializerConfig());
+		super(kryo, type, new FieldSerializerConfig());
 	}
 
 	public CompatibleFieldSerializer (Kryo kryo, Class type, FieldSerializerConfig config) {
-		super(kryo, type, null, config);
+		super(kryo, type, config);
 	}
 
 	public void write (Kryo kryo, Output output, T object) {

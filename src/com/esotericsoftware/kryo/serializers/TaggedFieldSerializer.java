@@ -72,7 +72,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public TaggedFieldSerializer (Kryo kryo, Class type, TaggedFieldSerializerConfig config) {
-		super(kryo, type, null, config);
+		super(kryo, type, config);
 		this.config = config;
 	}
 

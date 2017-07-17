@@ -4,12 +4,8 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +28,7 @@ import com.esotericsoftware.kryo.serializers.AsmField.ShortAsmField;
 import com.esotericsoftware.kryo.serializers.AsmField.StringAsmField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
-import com.esotericsoftware.kryo.serializers.FieldSerializerGenericsUtil.Generics;
+import com.esotericsoftware.kryo.serializers.GenericsResolver.GenericsScope;
 import com.esotericsoftware.kryo.serializers.ReflectField.BooleanReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.ByteReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.CharReflectField;
@@ -56,33 +52,30 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 	protected final ArrayList<Field> removedFields = new ArrayList();
 	Object access;
 
-	private final FieldSerializerGenericsUtil genericsUtil;
-	Class[] generics;
-	Generics genericsScope;
+	private final FieldSerializerGenerics generics;
+	Class[] genericTypes;
+	GenericsScope genericsScope;
 
-	public CachedFields (FieldSerializer serializer, Class[] generics) {
+	public CachedFields (FieldSerializer serializer) {
 		this.serializer = serializer;
 		kryo = serializer.kryo;
 		type = serializer.type;
 		config = serializer.config;
-		this.generics = generics;
 
-		genericsUtil = new FieldSerializerGenericsUtil(serializer);
+		generics = new FieldSerializerGenerics(serializer);
 	}
 
 	public void updateGenerics () {
-		if (TRACE && generics != null) trace("kryo", "Generic type parameters: " + Arrays.toString(generics));
+		if (TRACE && genericTypes != null) trace("kryo", "Generic type parameters: " + Arrays.toString(genericTypes));
 
-		if (config.optimizedGenerics) {
-			// For generic classes, generate a mapping from type variable names to the concrete types.
-			genericsScope = genericsUtil.buildGenericsScope(type, generics);
-			if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
-		}
+		// Generate a mapping from type variable names to concrete types.
+		genericsScope = generics.newGenericsScope(type, genericTypes);
+		if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
 
 		for (CachedField cachedField : fields)
-			if (cachedField instanceof ReflectField) genericsUtil.updateGenericCachedField((ReflectField)cachedField);
+			if (cachedField instanceof ReflectField) generics.updateGenericCachedField((ReflectField)cachedField);
 		for (CachedField cachedField : transientFields)
-			if (cachedField instanceof ReflectField) genericsUtil.updateGenericCachedField((ReflectField)cachedField);
+			if (cachedField instanceof ReflectField) generics.updateGenericCachedField((ReflectField)cachedField);
 
 		if (genericsScope != null) kryo.getGenericsResolver().popScope();
 	}
@@ -147,7 +140,6 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 				accessIndex = ((FieldAccess)access).getIndex(field);
 			} catch (RuntimeException ex) {
 				if (DEBUG) debug("kryo", "Unable to use ReflectASM.", ex);
-				asm = false;
 			}
 		}
 
@@ -165,13 +157,13 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			cachedField.canBeNull = config.fieldsCanBeNull && !field.isAnnotationPresent(NotNull.class);
 			if (kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
 
-			Class[] generics = genericsUtil.getGenericsWithoutScope(field);
-			((ReflectField)cachedField).generics = generics;
+			((ReflectField)cachedField).genericTypes = generics.getGenericsWithoutScope(field);
 
 			if (TRACE) {
-				if (generics != null) {
-					trace("kryo", "Cached " + fieldClass.getSimpleName() + "<" + simpleNames(generics) + "> field: " + field.getName()
-						+ " (" + className(field.getDeclaringClass()) + ")");
+				Class[] genericTypes = ((ReflectField)cachedField).genericTypes;
+				if (genericTypes != null) {
+					trace("kryo", "Cached " + fieldClass.getSimpleName() + "<" + simpleNames(genericTypes) + "> field: "
+						+ field.getName() + " (" + className(field.getDeclaringClass()) + ")");
 				} else {
 					trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " ("
 						+ className(field.getDeclaringClass()) + ")");

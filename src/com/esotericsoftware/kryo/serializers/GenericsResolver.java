@@ -19,44 +19,59 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.FieldSerializerGenericsUtil.Generics;
-import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
-import com.esotericsoftware.minlog.Log;
 
 /** Resolves a type name variable to a concrete class using the current class serialization stack
  * @author Jeroen van Erp <jeroen@hierynomus.com> */
 public final class GenericsResolver {
-	private LinkedList<Generics> stack = new LinkedList();
-
-	public GenericsResolver () {
-	}
+	private final ArrayList<GenericsScope> stack = new ArrayList();
 
 	Class getConcreteClass (String typeVar) {
-		for (Generics generics : stack) {
-			Class concreteClass = generics.getConcreteClass(typeVar);
+		for (int i = 0, n = stack.size(); i < n; i++) {
+			Class concreteClass = stack.get(i).getConcreteClass(typeVar);
 			if (concreteClass != null) return concreteClass;
 		}
 		return null;
 	}
 
-	boolean isSet () {
-		return !stack.isEmpty();
-	}
-
-	void pushScope (Class type, Generics scope) {
+	void pushScope (Class type, GenericsScope scope) {
 		if (TRACE) trace("kryo", "New generics scope for class " + type.getName() + ": " + scope);
-		stack.addFirst(scope);
+		stack.add(scope);
 	}
 
 	void popScope () {
-		stack.removeFirst();
+		stack.remove(stack.size() - 1);
+	}
+
+	/** Maps type name variables to concrete classes that are used during instantiation.
+	 * @author Roman Levenstein <romixlev@gmail.com> */
+	static final class GenericsScope {
+		private final ArrayList entries = new ArrayList(4);
+
+		public void add (String typeVar, Class concreteClass) {
+			entries.add(typeVar);
+			entries.add(concreteClass);
+		}
+
+		/** @return May be null. */
+		public Class getConcreteClass (String typeVar) {
+			for (int i = 0, n = entries.size(); i < n; i += 2)
+				if (typeVar.equals(entries.get(i))) return (Class)entries.get(i + 1);
+			return null;
+		}
+
+		public String toString () {
+			StringBuilder buffer = new StringBuilder();
+			for (int i = 0, n = entries.size(); i < n; i += 2) {
+				if (i > 0) buffer.append(", ");
+				buffer.append(entries.get(i));
+				buffer.append("=");
+				buffer.append(className((Class)entries.get(i + 1)));
+			}
+			return buffer.toString();
+		}
 	}
 }

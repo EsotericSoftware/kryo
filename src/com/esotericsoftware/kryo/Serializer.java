@@ -86,9 +86,8 @@ public abstract class Serializer<T> {
 	/** Sets the generic types of the field or method this serializer will be used for on the next call to read or write.
 	 * Subsequent calls to read and write must not use this generic type information. The default implementation does nothing.
 	 * Subclasses may use the information provided to this method for more efficient serialization, eg to use the same type for all
-	 * items in a list.
-	 * @param generics Some (but never all) elements may be null if there is no generic type information at that index. */
-	public void setGenerics (Kryo kryo, Class[] generics) {
+	 * items in a list. */
+	public void setGenerics (Kryo kryo, Class[] genericTypes) {
 	}
 
 	/** Returns a copy of the specified object. The default implementation returns the original if {@link #isImmutable()} is true,

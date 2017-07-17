@@ -19,6 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.annotation.ElementType;
@@ -32,10 +33,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import static com.esotericsoftware.kryo.util.Util.*;
 import com.esotericsoftware.reflectasm.FieldAccess;
-
-// BOZO - Make primitive serialization with ReflectASM configurable?
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
  * configuration. It is efficient and writes only the field data, without any extra information. It does not support adding,
@@ -59,14 +57,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 	final TypeVariable[] typeParameters;
 
 	public FieldSerializer (Kryo kryo, Class type) {
-		this(kryo, type, null);
+		this(kryo, type, new FieldSerializerConfig());
 	}
 
-	public FieldSerializer (Kryo kryo, Class type, Class[] generics) {
-		this(kryo, type, generics, new FieldSerializerConfig());
-	}
-
-	public FieldSerializer (Kryo kryo, Class type, Class[] generics, FieldSerializerConfig config) {
+	public FieldSerializer (Kryo kryo, Class type, FieldSerializerConfig config) {
 		if (config == null) throw new IllegalArgumentException("config cannot be null.");
 		this.kryo = kryo;
 		this.type = type;
@@ -78,7 +72,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		else
 			componentType = null;
 
-		cachedFields = new CachedFields(this, generics);
+		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
 	}
 
@@ -87,15 +81,15 @@ public class FieldSerializer<T> extends Serializer<T> {
 		cachedFields.rebuild();
 	}
 
-	public void setGenerics (Kryo kryo, Class[] generics) {
+	public void setGenerics (Kryo kryo, Class[] genericTypes) {
 		if (!config.optimizedGenerics) return;
-		cachedFields.generics = generics;
+		cachedFields.genericTypes = genericTypes;
 	}
 
 	/** Get generic type parameters of the class controlled by this serializer.
 	 * @return generic type parameters or null, if there are none or {@link FieldSerializerConfig#optimizedGenerics} is false. */
 	public Class[] getGenerics () {
-		return cachedFields.generics;
+		return cachedFields.genericTypes;
 	}
 
 	protected void initializeCachedFields () {
@@ -105,11 +99,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 	 * generic, it could happen that different concrete classes are used to instantiate it. Therefore, in case of different
 	 * instantiation parameters, the fields analysis should be repeated. */
 	public void write (Kryo kryo, Output output, T object) {
-//		if (TRACE) trace("kryo", "Writing fields for class: " + type.getName());
-
 		if (config.optimizedGenerics) {
-			// Rebuild cached fields, may result in rebuilding the genericScope.
-			if (typeParameters.length > 0 && cachedFields.generics != null) cachedFields.updateGenerics();
+			if (typeParameters.length > 0 && cachedFields.genericTypes != null) cachedFields.updateGenerics();
 			if (cachedFields.genericsScope != null) kryo.getGenericsResolver().pushScope(type, cachedFields.genericsScope);
 		}
 
@@ -131,11 +122,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-//		if (TRACE) trace("kryo", "Reading fields for class: " + type.getName());
-
 		if (config.optimizedGenerics) {
-			// Rebuild cached fields, may result in rebuilding the genericScope.
-			if (typeParameters.length > 0 && cachedFields.generics != null) cachedFields.updateGenerics();
+			if (typeParameters.length > 0 && cachedFields.genericTypes != null) cachedFields.updateGenerics();
 			if (cachedFields.genericsScope != null) kryo.getGenericsResolver().pushScope(type, cachedFields.genericsScope);
 		}
 

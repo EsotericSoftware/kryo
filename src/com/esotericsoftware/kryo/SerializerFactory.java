@@ -111,7 +111,7 @@ public interface SerializerFactory {
 		}
 
 		public Serializer newSerializer (Kryo kryo, Class type) {
-			return new FieldSerializer(kryo, type, null, config.clone());
+			return new FieldSerializer(kryo, type, config.clone());
 		}
 	}
 
