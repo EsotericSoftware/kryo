@@ -38,7 +38,9 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [Chunked encoding](#chunked-encoding)
 - [Compatibility](#compatibility)
 - [Interoperability](#interoperability)
-- [Stack size](#stack-size)
+- [Very large object graphs](#very-large-object-graphs)
+  - [Stack size](#stack-size)
+  - [Reference limits](#reference-limits)
 - [Threading](#threading)
 - [Pooling Kryo instances](#pooling-kryo-instances)
 - [Logging](#logging)
@@ -596,9 +598,21 @@ Additional serializers can easily be developed for forward and backward compatib
 
 The Kryo serializers provided by default assume that Java will be used for deserialization, so they do not explicitly define the format that is written. Serializers could be written using a standardized format that is more easily read by another language, but this is not provided by default.
 
-## Stack size
+## Very large object graphs
+
+### Stack size
 
 The serializers Kryo provides use the call stack when serializing nested objects. Kryo does minimize stack calls, but for extremely deep object graphs, a stack overflow can occur. This is a common issue for most serialization libraries, including the built-in Java serialization. The stack size can be increased using `-Xss`, but note that this is for all threads. Large stack sizes in a JVM with many threads may use a large amount of memory.
+
+### Reference limits
+
+Kryo stores references in a map that is based on an int array. Since Java array indices are limited to `Integer.MAX_VALUE`, serializing large (> 1 billion) objects may result in a `java.lang.NegativeArraySizeException`. 
+
+A workaround for this issue is disabling Kryo's reference tracking as indicated below:
+```java
+    Kryo kryo = new Kryo();
+    kryo.setReferences(false);
+```
 
 ## Threading
 
