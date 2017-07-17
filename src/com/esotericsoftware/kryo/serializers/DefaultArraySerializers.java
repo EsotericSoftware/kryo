@@ -332,13 +332,16 @@ public class DefaultArraySerializers {
 					else
 						kryo.writeObject(output, object[i], elementSerializer);
 				}
+				elementSerializer.setGenerics(kryo, null);
 			} else {
 				for (int i = 0, n = object.length; i < n; i++) {
 					if (object[i] != null) {
 						Serializer serializer = kryo.getSerializer(object[i].getClass());
 						serializer.setGenerics(kryo, generics);
-					}
-					kryo.writeClassAndObject(output, object[i]);
+						kryo.writeClassAndObject(output, object[i]);
+						serializer.setGenerics(kryo, null);
+					} else
+						kryo.writeClassAndObject(output, object[i]);
 				}
 			}
 		}
@@ -358,15 +361,15 @@ public class DefaultArraySerializers {
 					else
 						object[i] = kryo.readObject(input, elementClass, elementSerializer);
 				}
+				elementSerializer.setGenerics(kryo, null);
 			} else {
 				for (int i = 0, n = object.length; i < n; i++) {
 					Registration registration = kryo.readClass(input);
 					if (registration != null) {
 						registration.getSerializer().setGenerics(kryo, generics);
 						object[i] = kryo.readObject(input, registration.getType(), registration.getSerializer());
-					} else {
-						object[i] = null;
-					}
+						registration.getSerializer().setGenerics(kryo, null);
+					} // Else leave array entry null.
 				}
 			}
 			return object;

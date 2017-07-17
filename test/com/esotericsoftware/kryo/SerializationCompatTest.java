@@ -74,8 +74,8 @@ public class SerializationCompatTest extends KryoTestCase {
 	static private final List<TestDataDescription> TEST_DATAS = new ArrayList();
 
 	static {
-		TEST_DATAS.add(new TestDataDescription<TestData>("3.0.0", new TestData(), 1865, 1882));
-		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("3.1.0", new TestDataJava8(), 2025, 2042));
+		TEST_DATAS.add(new TestDataDescription<TestData>("5.0.0", new TestData(), 1865, 1870));
+		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("5.0.0", new TestDataJava8(), 2025, 2030));
 	};
 
 	private void setUp (boolean optimizedGenerics) throws Exception {
@@ -151,7 +151,13 @@ public class SerializationCompatTest extends KryoTestCase {
 			Log.info("Reading and testing " + description.classSimpleName() + " with mode '" + variant + "' from file "
 				+ file.getAbsolutePath());
 			Input in = inputFactory.apply(file);
+// try {
 			readAndRunTest(description, optimizedGenerics, in);
+// } catch (Throwable e) {
+// System.out.println("Failed: " + file.getAbsolutePath());
+// in.close();
+// file.delete();
+// }
 			in.close();
 		} else {
 			Log.info("Testing and writing " + description.classSimpleName() + " with mode '" + variant + "' to file "

@@ -105,7 +105,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	 * generic, it could happen that different concrete classes are used to instantiate it. Therefore, in case of different
 	 * instantiation parameters, the fields analysis should be repeated. */
 	public void write (Kryo kryo, Output output, T object) {
-		if (TRACE) trace("kryo", "Writing fields for class: " + type.getName());
+//		if (TRACE) trace("kryo", "Writing fields for class: " + type.getName());
 
 		if (config.optimizedGenerics) {
 			// Rebuild cached fields, may result in rebuilding the genericScope.
@@ -131,7 +131,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-		if (TRACE) trace("kryo", "Reading fields for class: " + type.getName());
+//		if (TRACE) trace("kryo", "Reading fields for class: " + type.getName());
 
 		if (config.optimizedGenerics) {
 			// Rebuild cached fields, may result in rebuilding the genericScope.

@@ -34,10 +34,10 @@ import java.util.Map;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
 /** Utility methods used by FieldSerializer for generic type parameters.
- * @author Roman Levenstein <romixlev@gmail.com> */
+ * @author Roman Levenstein <romixlev@gmail.com>
+ * @author Nathan Sweet */
 final class FieldSerializerGenericsUtil {
 	private Kryo kryo;
 	private FieldSerializer serializer;
@@ -45,6 +45,28 @@ final class FieldSerializerGenericsUtil {
 	public FieldSerializerGenericsUtil (FieldSerializer serializer) {
 		this.serializer = serializer;
 		this.kryo = serializer.getKryo();
+	}
+
+	/** Returns the parameterized types for a field that are known at compile time, or null if the field is not parameterized. */
+	Class[] getGenericsWithoutScope (Field field) {
+		Type genericType = field.getGenericType();
+		if (!(genericType instanceof ParameterizedType)) return null;
+		Type[] actualTypes = ((ParameterizedType)genericType).getActualTypeArguments();
+		int n = actualTypes.length;
+		Class[] generics = new Class[n];
+		for (int i = 0; i < n; i++) {
+			Type actualType = actualTypes[i];
+			if (actualType instanceof Class)
+				generics[i] = (Class)actualType;
+			else if (actualType instanceof ParameterizedType)
+				generics[i] = (Class)((ParameterizedType)actualType).getRawType();
+			else if (actualType instanceof GenericArrayType) {
+				Type componentType = ((GenericArrayType)actualType).getGenericComponentType();
+				if (componentType instanceof Class) generics[i] = Array.newInstance((Class)componentType, 0).getClass();
+			} else
+				generics[i] = Object.class;
+		}
+		return generics;
 	}
 
 	/*** Create a mapping from type variable names (which are declared as type parameters of a generic class) to the concrete
@@ -185,7 +207,7 @@ final class FieldSerializerGenericsUtil {
 	}
 
 	/** Special processing for fields of generic types. */
-	void updateGenericCachedField (ReflectField reflectField) {
+	Class updateGenericCachedField (ReflectField reflectField) {
 		// This is a field with generic type parameters.
 		Field field = reflectField.field;
 		Type fieldGenericType = field.getGenericType();
@@ -214,7 +236,7 @@ final class FieldSerializerGenericsUtil {
 
 		Class[] c = {fieldClass}; // BOZO - Using an array is nasty!
 		Class[] fieldGenerics = computeFieldGenerics(fieldGenericType, field, c);
-		fieldClass = c[0];
+		if (fieldClass != c[0]) fieldClass = c[0];
 
 		if (fieldGenerics != null)
 			reflectField.generics = fieldGenerics;
@@ -223,19 +245,20 @@ final class FieldSerializerGenericsUtil {
 			if (TRACE) trace("kryo", "Field generics: " + Arrays.toString(cachedFieldGenerics));
 		}
 
-		if (fieldGenerics != null) {
-			if (fieldGenerics.length > 0 && fieldGenerics[0] != null) {
-				// If any information about concrete types for generic arguments of current field's type was derived, remember it.
-				reflectField.generics = fieldGenerics;
-				if (TRACE) trace("kryo", "Field generics: " + Arrays.toString(fieldGenerics));
-			}
-		}
+		if (fieldGenerics != null && fieldGenerics.length > 0 && fieldGenerics[0] != null) {
+			// If any information about concrete types for generic arguments of current field's type was derived, remember it.
+			reflectField.generics = fieldGenerics;
+			if (TRACE) trace("kryo", "Field generics: " + Arrays.toString(fieldGenerics));
+		} else
+			reflectField.generics = null;
 
 		reflectField.canBeNull = serializer.config.fieldsCanBeNull && !fieldClass.isPrimitive()
 			&& !field.isAnnotationPresent(NotNull.class);
 
 		// Always use the same serializer for this field if the field's class is final.
 		reflectField.valueClass = kryo.isFinal(fieldClass) || serializer.config.fixedFieldTypes ? fieldClass : null;
+
+		return fieldClass;
 	}
 
 	/** Returns the first level of classes or interfaces for a generic type.

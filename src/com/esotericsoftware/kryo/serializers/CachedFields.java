@@ -4,8 +4,12 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -92,12 +96,6 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			return;
 		}
 
-		if (config.optimizedGenerics) {
-			// For generic classes, generate a mapping from type variable names to the concrete types.
-			genericsScope = genericsUtil.buildGenericsScope(type, generics);
-			if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
-		}
-
 		ArrayList<CachedField> newFields = new ArrayList(), newTransientFields = new ArrayList();
 		boolean asm = !isAndroid && Modifier.isPublic(type.getModifiers());
 		Class nextClass = type;
@@ -116,8 +114,6 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		Arrays.sort(transientFields, this);
 
 		serializer.initializeCachedFields();
-
-		if (genericsScope != null) kryo.getGenericsResolver().popScope();
 	}
 
 	private void addField (Field field, boolean asm, ArrayList<CachedField> fields, ArrayList<CachedField> transientFields) {
@@ -165,16 +161,25 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		else
 			cachedField.name = field.getName();
 
-		if (!(cachedField instanceof ReflectField)) { // Must be a primitive or String.
-			cachedField.canBeNull = fieldClass == String.class && config.fieldsCanBeNull;
-			cachedField.valueClass = fieldClass;
-		} else if (config.optimizedGenerics)
-			genericsUtil.updateGenericCachedField((ReflectField)cachedField);
-		else {
-// if (cachedField instanceof ReflectField) ((ReflectField)cachedField).generics = new Generics();
-
+		if (cachedField instanceof ReflectField) {
 			cachedField.canBeNull = config.fieldsCanBeNull && !field.isAnnotationPresent(NotNull.class);
 			if (kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
+
+			Class[] generics = genericsUtil.getGenericsWithoutScope(field);
+			((ReflectField)cachedField).generics = generics;
+
+			if (TRACE) {
+				if (generics != null) {
+					trace("kryo", "Cached " + fieldClass.getSimpleName() + "<" + simpleNames(generics) + "> field: " + field.getName()
+						+ " (" + className(field.getDeclaringClass()) + ")");
+				} else {
+					trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " ("
+						+ className(field.getDeclaringClass()) + ")");
+				}
+			}
+		} else { // Must be a primitive or String.
+			cachedField.canBeNull = fieldClass == String.class && config.fieldsCanBeNull;
+			cachedField.valueClass = fieldClass;
 
 			if (TRACE) trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " ("
 				+ className(field.getDeclaringClass()) + ")");

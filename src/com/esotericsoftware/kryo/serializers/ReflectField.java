@@ -63,6 +63,7 @@ class ReflectField extends CachedField {
 				if (serializer == null) serializer = registration.getSerializer();
 				serializer.setGenerics(kryo, generics);
 				kryo.writeObject(output, value, serializer);
+				serializer.setGenerics(kryo, null);
 			} else {
 				// The concrete type of the field is known, always use the same serializer.
 				if (serializer == null) this.serializer = serializer = kryo.getSerializer(valueClass);
@@ -76,6 +77,7 @@ class ReflectField extends CachedField {
 					}
 					kryo.writeObject(output, value, serializer);
 				}
+				serializer.setGenerics(kryo, null);
 			}
 		} catch (IllegalAccessException ex) {
 			throw new KryoException("Error accessing field: " + this + " (" + object.getClass().getName() + ")", ex);
@@ -103,6 +105,7 @@ class ReflectField extends CachedField {
 					if (serializer == null) serializer = registration.getSerializer();
 					serializer.setGenerics(kryo, generics);
 					value = kryo.readObject(input, registration.getType(), serializer);
+					serializer.setGenerics(kryo, null);
 				}
 			} else {
 				if (serializer == null) this.serializer = serializer = kryo.getSerializer(valueClass);
@@ -111,6 +114,7 @@ class ReflectField extends CachedField {
 					value = kryo.readObjectOrNull(input, concreteType, serializer);
 				else
 					value = kryo.readObject(input, concreteType, serializer);
+				serializer.setGenerics(kryo, null);
 			}
 
 			setField(object, value);

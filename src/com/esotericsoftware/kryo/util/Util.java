@@ -114,7 +114,8 @@ public class Util {
 		} catch (Exception ignored) {
 		}
 		try {
-			return String.valueOf(object) + " (" + className + ")";
+			String value = String.valueOf(object) + " (" + className + ")";
+			return value.length() > 97 ? value.substring(0, 97) + "..." : value;
 		} catch (Throwable ex) {
 			return className + " (toString exception: " + ex + ")";
 		}
@@ -135,6 +136,16 @@ public class Util {
 			return type.getSimpleName();
 		}
 		return type.getName();
+	}
+
+	/** Returns the class formatted as a string. The format varies depending on the type. */
+	static public String simpleNames (Class[] types) {
+		StringBuilder buffer = new StringBuilder(32);
+		for (int i = 0, n = types.length; i < n; i++) {
+			if (i > 0) buffer.append(", ");
+			buffer.append(types[i].getSimpleName());
+		}
+		return buffer.toString();
 	}
 
 	/** Returns the number of dimensions of an array. */
