@@ -85,7 +85,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
-		CachedField[] fields = getFields(); // BOZO - Doesn't include transient fields.
+		CachedField[] fields = getFields();
 		// Write type version.
 		output.writeInt(typeVersion, true);
 		// Write fields.

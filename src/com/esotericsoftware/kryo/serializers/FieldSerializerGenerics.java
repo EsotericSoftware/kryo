@@ -38,12 +38,10 @@ import com.esotericsoftware.kryo.serializers.GenericsResolver.GenericsScope;
  * @author Roman Levenstein <romixlev@gmail.com>
  * @author Nathan Sweet */
 final class FieldSerializerGenerics {
-	private Kryo kryo;
 	private FieldSerializer serializer;
 
 	public FieldSerializerGenerics (FieldSerializer serializer) {
 		this.serializer = serializer;
-		this.kryo = serializer.getKryo();
 	}
 
 	/** Returns the parameterized types for a field that are known at compile time, or null if the field is not parameterized. */
@@ -129,7 +127,7 @@ final class FieldSerializerGenerics {
 		}
 		// Otherwise try to derive the information from the current GenericScope
 		if (TRACE) trace("kryo", "Trying to use kryo.genericsResolver");
-		return kryo.getGenericsResolver().getConcreteClass(typeVarName);
+		return serializer.getKryo().getGenericsResolver().getConcreteClass(typeVarName);
 	}
 
 	Class[] computeFieldGenerics (Type fieldGenericType, Field field, Class[] fieldClass) {
@@ -209,7 +207,7 @@ final class FieldSerializerGenerics {
 			trace("kryo", "Field " + field.getName() + ": " + fieldClass + " <" + fieldGenericType.getClass().getName() + ">");
 
 		// Get list of field specific concrete classes passed as generic parameters
-		Class[] cachedFieldGenerics = getGenerics(fieldGenericType, kryo);
+		Class[] cachedFieldGenerics = getGenerics(fieldGenericType, serializer.getKryo());
 
 		GenericsScope scope = newGenericsScope(fieldClass, cachedFieldGenerics);
 
@@ -249,7 +247,7 @@ final class FieldSerializerGenerics {
 			&& !field.isAnnotationPresent(NotNull.class);
 
 		// Always use the same serializer for this field if the field's class is final.
-		reflectField.valueClass = kryo.isFinal(fieldClass) || serializer.config.fixedFieldTypes ? fieldClass : null;
+		reflectField.valueClass = serializer.getKryo().isFinal(fieldClass) || serializer.config.fixedFieldTypes ? fieldClass : null;
 	}
 
 	/** Returns the first level of classes or interfaces for a generic type.

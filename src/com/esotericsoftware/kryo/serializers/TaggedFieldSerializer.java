@@ -147,7 +147,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		kryo.reference(object);
 		int fieldCount = input.readInt(true);
 
-		CachedField[] fields = getFields(); // BOZO - Doesn't include transient.
+		CachedField[] fields = getFields();
 		InputChunked inputChunked = null; // Only instantiate if needed.
 		int[] tags = this.tags;
 		boolean[] annexed = this.annexed;

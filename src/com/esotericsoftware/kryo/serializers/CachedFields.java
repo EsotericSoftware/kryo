@@ -48,7 +48,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 	private final FieldSerializerConfig config;
 
 	CachedField[] fields = new CachedField[0];
-	CachedField[] transientFields = new CachedField[0];
+	CachedField[] copyFields = new CachedField[0];
 	protected final ArrayList<Field> removedFields = new ArrayList();
 	Object access;
 
@@ -74,27 +74,23 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 
 		for (CachedField cachedField : fields)
 			if (cachedField instanceof ReflectField) generics.updateGenericCachedField((ReflectField)cachedField);
-		for (CachedField cachedField : transientFields)
-			if (cachedField instanceof ReflectField) generics.updateGenericCachedField((ReflectField)cachedField);
 
 		if (genericsScope != null) kryo.getGenericsResolver().popScope();
 	}
 
-	/** Called when the list of cached fields must be rebuilt. This is done any time settings are changed that affect which fields
-	 * will be used. It is called from the constructor for FieldSerializer. Subclasses may need to call this from their
-	 * constructor. */
 	public void rebuild () {
-		if (type.isInterface()) {
-			fields = emptyCachedFields; // No fields to serialize.
+		if (type.isInterface()) { // No fields to serialize.
+			fields = emptyCachedFields;
+			copyFields = emptyCachedFields;
 			return;
 		}
 
-		ArrayList<CachedField> newFields = new ArrayList(), newTransientFields = new ArrayList();
+		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
 		boolean asm = !isAndroid && Modifier.isPublic(type.getModifiers());
 		Class nextClass = type;
 		while (nextClass != Object.class) {
 			for (Field field : nextClass.getDeclaredFields())
-				addField(field, asm, newFields, newTransientFields);
+				addField(field, asm, newFields, newCopyFields);
 			nextClass = nextClass.getSuperclass();
 		}
 
@@ -102,14 +98,14 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		newFields.toArray(fields);
 		Arrays.sort(this.fields, this);
 
-		if (transientFields.length != newTransientFields.size()) transientFields = new CachedField[newTransientFields.size()];
-		newTransientFields.toArray(transientFields);
-		Arrays.sort(transientFields, this);
+		if (copyFields.length != newCopyFields.size()) copyFields = new CachedField[newCopyFields.size()];
+		newCopyFields.toArray(copyFields);
+		Arrays.sort(copyFields, this);
 
 		serializer.initializeCachedFields();
 	}
 
-	private void addField (Field field, boolean asm, ArrayList<CachedField> fields, ArrayList<CachedField> transientFields) {
+	private void addField (Field field, boolean asm, ArrayList<CachedField> fields, ArrayList<CachedField> copyFields) {
 		int modifiers = field.getModifiers();
 		if (Modifier.isStatic(modifiers)) return;
 		if (field.isSynthetic() && config.ignoreSyntheticFields) return;
@@ -128,6 +124,9 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		if (optional != null && !kryo.getContext().containsKey(optional.value())) return;
 
 		if (removedFields.contains(field)) return;
+
+		boolean isTransient = Modifier.isTransient(modifiers);
+		if (isTransient && !config.serializeTransient && !config.copyTransient) return;
 
 		Class fieldClass = field.getType();
 		int accessIndex = -1;
@@ -179,10 +178,13 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 
 		applyAnnotations(cachedField);
 
-		if (Modifier.isTransient(modifiers))
-			transientFields.add(cachedField);
-		else
+		if (isTransient) {
+			if (config.serializeTransient) fields.add(cachedField);
+			if (config.copyTransient) copyFields.add(cachedField);
+		} else {
 			fields.add(cachedField);
+			copyFields.add(cachedField);
+		}
 	}
 
 	private CachedField createCachedField (Class fieldClass, boolean asm) {
@@ -221,6 +223,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 
 	/** Removes a field so that it won't be serialized. */
 	public void removeField (String fieldName) {
+		boolean found = false;
 		for (int i = 0; i < fields.length; i++) {
 			CachedField cachedField = fields[i];
 			if (cachedField.name.equals(fieldName)) {
@@ -229,22 +232,25 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
 				fields = newFields;
 				removedFields.add(cachedField.field);
-				return;
+				found = true;
+				break;
 			}
 		}
 
-		for (int i = 0; i < transientFields.length; i++) {
-			CachedField cachedField = transientFields[i];
+		for (int i = 0; i < copyFields.length; i++) {
+			CachedField cachedField = copyFields[i];
 			if (cachedField.name.equals(fieldName)) {
-				CachedField[] newFields = new CachedField[transientFields.length - 1];
-				System.arraycopy(transientFields, 0, newFields, 0, i);
-				System.arraycopy(transientFields, i + 1, newFields, i, newFields.length - i);
-				transientFields = newFields;
+				CachedField[] newFields = new CachedField[copyFields.length - 1];
+				System.arraycopy(copyFields, 0, newFields, 0, i);
+				System.arraycopy(copyFields, i + 1, newFields, i, newFields.length - i);
+				copyFields = newFields;
 				removedFields.add(cachedField.field);
-				return;
+				found = true;
+				break;
 			}
 		}
-		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
+
+		if (!found) throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
 	}
 
 	/** Removes a field so that it won't be serialized. */
@@ -257,19 +263,19 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
 				fields = newFields;
 				removedFields.add(cachedField.field);
-				return;
+				break;
 			}
 		}
 
-		for (int i = 0; i < transientFields.length; i++) {
-			CachedField cachedField = transientFields[i];
+		for (int i = 0; i < copyFields.length; i++) {
+			CachedField cachedField = copyFields[i];
 			if (cachedField == removeField) {
-				CachedField[] newFields = new CachedField[transientFields.length - 1];
-				System.arraycopy(transientFields, 0, newFields, 0, i);
-				System.arraycopy(transientFields, i + 1, newFields, i, newFields.length - i);
-				transientFields = newFields;
+				CachedField[] newFields = new CachedField[copyFields.length - 1];
+				System.arraycopy(copyFields, 0, newFields, 0, i);
+				System.arraycopy(copyFields, i + 1, newFields, i, newFields.length - i);
+				copyFields = newFields;
 				removedFields.add(cachedField.field);
-				return;
+				break;
 			}
 		}
 		throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + type.getName());

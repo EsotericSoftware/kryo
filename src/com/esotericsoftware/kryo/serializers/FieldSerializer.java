@@ -76,6 +76,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		cachedFields.rebuild();
 	}
 
+	/** Must be called after config settings are changed. */
 	public void updateConfig () {
 		if (TRACE) trace("kryo", "Update FieldSerializerConfig: " + className(type));
 		cachedFields.rebuild();
@@ -110,14 +111,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 			fields[i].write(output, object);
 		}
 
-		if (config.serializeTransient) {
-			fields = cachedFields.transientFields;
-			for (int i = 0, n = fields.length; i < n; i++) {
-				if (TRACE) log("Write", fields[i], output.position());
-				fields[i].write(output, object);
-			}
-		}
-
 		if (config.optimizedGenerics && cachedFields.genericsScope != null) kryo.getGenericsResolver().popScope();
 	}
 
@@ -134,14 +127,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Read", fields[i], input.position());
 			fields[i].read(input, object);
-		}
-
-		if (config.serializeTransient) {
-			fields = cachedFields.transientFields;
-			for (int i = 0, n = fields.length; i < n; i++) {
-				if (TRACE) log("Read", fields[i], input.position());
-				fields[i].read(input, object);
-			}
 		}
 
 		if (config.optimizedGenerics && cachedFields.genericsScope != null && kryo.getGenericsResolver() != null)
@@ -176,16 +161,14 @@ public class FieldSerializer<T> extends Serializer<T> {
 		cachedFields.removeField(field);
 	}
 
-	/** Get all fields controlled by this FieldSerializer
-	 * @return all fields controlled by this FieldSerializer */
+	/** Returns the fields used for serialization. */
 	public CachedField[] getFields () {
 		return cachedFields.fields;
 	}
 
-	/** Get all transient fields controlled by this FieldSerializer
-	 * @return all transient fields controlled by this FieldSerializer */
-	public CachedField[] getTransientFields () {
-		return cachedFields.transientFields;
+	/** Returns the fields used for copying. */
+	public CachedField[] getCopyFields () {
+		return cachedFields.copyFields;
 	}
 
 	public Class getType () {
@@ -206,13 +189,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		T copy = createCopy(kryo, original);
 		kryo.reference(copy);
 
-		if (config.copyTransient) {
-			for (int i = 0, n = cachedFields.transientFields.length; i < n; i++)
-				cachedFields.transientFields[i].copy(original, copy);
-		}
-
-		for (int i = 0, n = cachedFields.fields.length; i < n; i++)
-			cachedFields.fields[i].copy(original, copy);
+		for (int i = 0, n = cachedFields.copyFields.length; i < n; i++)
+			cachedFields.copyFields[i].copy(original, copy);
 
 		return copy;
 	}
