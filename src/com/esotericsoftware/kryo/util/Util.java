@@ -91,15 +91,18 @@ public class Util {
 	/** Logs a message about an object. The log level and the string format of the object depend on the object type. */
 	static public void log (String message, Object object, int position) {
 		if (object == null) {
-			if (TRACE) trace("kryo", message + ": null");
+			if (TRACE) trace("kryo", message + ": null" + pos(position));
 			return;
 		}
 		Class type = object.getClass();
 		if (type.isPrimitive() || isWrapperClass(type) || type == String.class) {
-			if (TRACE) trace("kryo", message + ": " + string(object) + (position == -1 ? "" : " pos=" + position));
-		} else {
-			debug("kryo", message + ": " + string(object) + (position == -1 ? "" : " pos=" + position));
-		}
+			if (TRACE) trace("kryo", message + ": " + string(object) + pos(position));
+		} else
+			debug("kryo", message + ": " + string(object) + pos(position));
+	}
+
+	static public String pos (int position) {
+		return position == -1 ? "" : " [" + position + "]";
 	}
 
 	/** Returns the object formatted as a string. The format depends on the object's type and whether {@link Object#toString()} has

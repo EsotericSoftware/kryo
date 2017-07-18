@@ -141,11 +141,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 	protected void log (String prefix, CachedField cachedField, int position) {
 		Class[] generics = cachedField instanceof ReflectField ? ((ReflectField)cachedField).generics : null;
 		if (generics != null) {
-			trace("kryo", prefix + " " + cachedField.field.getType().getSimpleName() + "<" + classNames(generics) + "> field: "
-				+ cachedField + " (" + className(cachedField.field.getDeclaringClass()) + ") pos=" + position);
+			trace("kryo", prefix + " field " + cachedField.field.getType().getSimpleName() + "<" + classNames(generics) + ">: "
+				+ cachedField + " (" + className(cachedField.field.getDeclaringClass()) + ")" + pos(position));
 		} else {
-			trace("kryo", prefix + " " + cachedField.field.getType().getSimpleName() + " field: " + cachedField + " ("
-				+ className(cachedField.field.getDeclaringClass()) + ") pos=" + position);
+			trace("kryo", prefix + " field " + cachedField.field.getType().getSimpleName() + ": " + cachedField + " ("
+				+ className(cachedField.field.getDeclaringClass()) + ")" + pos(position));
 		}
 	}
 

@@ -646,7 +646,7 @@ public class Kryo {
 
 		// If not the first time encountered, only write reference ID.
 		if (id != -1) {
-			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object) + " pos=" + output.position());
+			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object) + pos(output.position()));
 			output.writeInt(id + 2, true); // + 2 because 0 and 1 are used for NULL and NOT_NULL.
 			return true;
 		}
@@ -654,7 +654,7 @@ public class Kryo {
 		// Otherwise write NOT_NULL and then the object bytes.
 		id = referenceResolver.addWrittenObject(object);
 		output.writeInt(NOT_NULL, true);
-		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object) + " pos=" + output.position());
+		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object) + pos(output.position()));
 		return false;
 	}
 
@@ -828,14 +828,14 @@ public class Kryo {
 		if (id == NOT_NULL) {
 			// First time object has been encountered.
 			id = referenceResolver.nextReadId(type);
-			if (TRACE) trace("kryo", "Read initial object reference " + id + ": " + className(type));
+			if (TRACE) trace("kryo", "Read initial object reference " + id + ": " + className(type) + pos(input.position()));
 			readReferenceIds.add(id);
 			return readReferenceIds.size;
 		}
 		// The id is an object reference.
 		id -= 2; // - 2 because 0 and 1 are used for NULL and NOT_NULL.
 		readObject = referenceResolver.getReadObject(type, id);
-		if (DEBUG) debug("kryo", "Read object reference " + id + ": " + string(readObject));
+		if (DEBUG) debug("kryo", "Read object reference " + id + ": " + string(readObject) + pos(input.position()));
 		return REF;
 	}
 

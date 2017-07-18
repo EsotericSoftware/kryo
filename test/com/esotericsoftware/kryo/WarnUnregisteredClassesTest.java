@@ -38,6 +38,7 @@ public class WarnUnregisteredClassesTest extends TestCase {
 		super.setUp();
 		log = new LoggerStub();
 		Log.setLogger(log);
+		Log.INFO();
 	}
 
 	public void testLogOnlyOneTimePerClass () {

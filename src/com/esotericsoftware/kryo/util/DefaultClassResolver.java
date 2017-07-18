@@ -98,7 +98,7 @@ public class DefaultClassResolver implements ClassResolver {
 		if (registration.getId() == NAME)
 			writeName(output, type, registration);
 		else {
-			if (TRACE) trace("kryo", "Write class " + registration.getId() + ": " + className(type) + " pos=" + output.position());
+			if (TRACE) trace("kryo", "Write class " + registration.getId() + ": " + className(type) + pos(output.position()));
 			output.writeInt(registration.getId() + 2, true);
 		}
 		return registration;
@@ -109,13 +109,13 @@ public class DefaultClassResolver implements ClassResolver {
 		if (classToNameId != null) {
 			int nameId = classToNameId.get(type, -1);
 			if (nameId != -1) {
-				if (TRACE) trace("kryo", "Write class name reference " + nameId + ": " + className(type) + " pos=" + output.position());
+				if (TRACE) trace("kryo", "Write class name reference " + nameId + ": " + className(type) + pos(output.position()));
 				output.writeInt(nameId, true);
 				return;
 			}
 		}
 		// Only write the class name the first time encountered in object graph.
-		if (TRACE) trace("kryo", "Write class name: " + className(type));
+		if (TRACE) trace("kryo", "Write class name: " + className(type) + pos(output.position()));
 		int nameId = nextNameId++;
 		if (classToNameId == null) classToNameId = new IdentityObjectIntMap();
 		classToNameId.put(type, nameId);
@@ -135,8 +135,7 @@ public class DefaultClassResolver implements ClassResolver {
 		if (classID == memoizedClassId) return memoizedClassIdValue;
 		Registration registration = idToRegistration.get(classID - 2);
 		if (registration == null) throw new KryoException("Encountered unregistered class ID: " + (classID - 2));
-		if (TRACE)
-			trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()) + " pos=" + input.position());
+		if (TRACE) trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()) + pos(input.position()));
 		memoizedClassId = classID;
 		memoizedClassIdValue = registration;
 		return registration;
@@ -154,9 +153,9 @@ public class DefaultClassResolver implements ClassResolver {
 				try {
 					type = Class.forName(className, false, kryo.getClassLoader());
 				} catch (ClassNotFoundException ex) {
-					if (WARN) warn("kryo", "Unable to load class " + className + " with kryo's ClassLoader. Retrying with current..");
+					// Fallback to Kryo's class loader.
 					try {
-						type = Class.forName(className);
+						type = Class.forName(className, false, Kryo.class.getClassLoader());
 					} catch (ClassNotFoundException e) {
 						throw new KryoException("Unable to find class: " + className, ex);
 					}
@@ -165,9 +164,9 @@ public class DefaultClassResolver implements ClassResolver {
 				nameToClass.put(className, type);
 			}
 			nameIdToClass.put(nameId, type);
-			if (TRACE) trace("kryo", "Read class name: " + className);
+			if (TRACE) trace("kryo", "Read class name: " + className + pos(input.position()));
 		} else {
-			if (TRACE) trace("kryo", "Read class name reference " + nameId + ": " + className(type));
+			if (TRACE) trace("kryo", "Read class name reference " + nameId + ": " + className(type) + pos(input.position()));
 		}
 		return kryo.getRegistration(type);
 	}
