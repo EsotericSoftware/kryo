@@ -215,21 +215,6 @@ final class FieldSerializerGenerics {
 		// Get list of field specific concrete classes passed as generic parameters
 		Class[] cachedFieldGenerics = getGenerics(fieldGenericType);
 
-		GenericsScope scope = newGenericsScope(fieldClass, cachedFieldGenerics);
-
-		// Is it a field of a generic parameter type, i.e. "T field"?
-		if (fieldClass == Object.class && fieldGenericType instanceof TypeVariable && serializer.genericsScope != null) {
-			TypeVariable typeVar = (TypeVariable)fieldGenericType;
-			// Obtain information about a concrete type of a given variable from the environment
-			Class concreteClass = serializer.genericsScope.getConcreteClass(typeVar.getName());
-			if (concreteClass != null) {
-				scope = new GenericsScope();
-				scope.add(typeVar.getName(), concreteClass);
-			}
-		}
-
-		if (TRACE) trace("kryo", "Generics scope of field '" + reflectField + "' of class " + fieldGenericType + " is " + scope);
-
 		Class[] c = {fieldClass}; // BOZO - Using an array is nasty!
 		Class[] fieldGenerics = computeFieldGenerics(fieldGenericType, field, c);
 		if (fieldClass != c[0]) fieldClass = c[0];
