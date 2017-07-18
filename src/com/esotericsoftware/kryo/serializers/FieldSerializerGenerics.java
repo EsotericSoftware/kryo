@@ -53,7 +53,7 @@ final class FieldSerializerGenerics {
 		Type genericType = field.getGenericType();
 		if (!(genericType instanceof ParameterizedType)) return null;
 		Type[] actualTypes = ((ParameterizedType)genericType).getActualTypeArguments();
-		int n = actualTypes.length;
+		int n = actualTypes.length, objectTypes = 0;
 		Class[] genericTypes = new Class[n];
 		for (int i = 0; i < n; i++) {
 			Type actualType = actualTypes[i];
@@ -64,10 +64,12 @@ final class FieldSerializerGenerics {
 			else if (actualType instanceof GenericArrayType) {
 				Type componentType = ((GenericArrayType)actualType).getGenericComponentType();
 				if (componentType instanceof Class) genericTypes[i] = Array.newInstance((Class)componentType, 0).getClass();
-			} else
+			} else {
 				genericTypes[i] = Object.class;
+				objectTypes++;
+			}
 		}
-		return genericTypes;
+		return n == objectTypes ? null : genericTypes;
 	}
 
 	/*** Create a mapping from type variable names (which are declared as type parameters of a generic class) to the concrete
