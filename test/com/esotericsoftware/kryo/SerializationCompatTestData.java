@@ -69,7 +69,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import com.esotericsoftware.kryo.SerializationCompatTestData.Person.Gender;
 
 /** Testdata for serialization compatibility check. */
-class SerializationCompatTestData {
+public class SerializationCompatTestData {
 
 	static class TestDataJava8 extends TestData {
 		private Optional<String> optionalString;

@@ -31,7 +31,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
@@ -46,7 +45,6 @@ import com.esotericsoftware.kryo.serializers.AsmField.ShortAsmField;
 import com.esotericsoftware.kryo.serializers.AsmField.StringAsmField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
-import com.esotericsoftware.kryo.serializers.GenericsResolver.GenericsScope;
 import com.esotericsoftware.kryo.serializers.ReflectField.BooleanReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.ByteReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.CharReflectField;
@@ -79,6 +77,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		if (type.isInterface()) { // No fields to serialize.
 			fields = emptyCachedFields;
 			copyFields = emptyCachedFields;
+			serializer.initializeCachedFields();
 			return;
 		}
 
@@ -153,13 +152,13 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			cachedField.canBeNull = config.fieldsCanBeNull && !field.isAnnotationPresent(NotNull.class);
 			if (serializer.kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
 
-			((ReflectField)cachedField).genericTypes = serializer.generics.getGenericsWithoutScope(field);
+			((ReflectField)cachedField).generics = serializer.fieldSerializerGenerics.getGenerics(field);
 
 			if (TRACE) {
-				Class[] genericTypes = ((ReflectField)cachedField).genericTypes;
-				if (genericTypes != null) {
-					trace("kryo", "Cached " + fieldClass.getSimpleName() + "<" + simpleNames(genericTypes) + "> field: "
-						+ field.getName() + " (" + className(field.getDeclaringClass()) + ")");
+				Class[] generics = ((ReflectField)cachedField).generics;
+				if (generics != null) {
+					trace("kryo", "Cached " + fieldClass.getSimpleName() + "<" + simpleNames(generics) + "> field: " + field.getName()
+						+ " (" + className(field.getDeclaringClass()) + ")");
 				} else {
 					trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " ("
 						+ className(field.getDeclaringClass()) + ")");

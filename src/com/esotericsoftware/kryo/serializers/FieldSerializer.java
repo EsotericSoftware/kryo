@@ -27,7 +27,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
-import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -55,10 +54,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 	final Class type;
 	final FieldSerializerConfig config;
 	final CachedFields cachedFields;
-
-	final FieldSerializerGenerics generics;
-	Class[] genericTypes;
-	GenericsScope genericsScope;
+	final FieldSerializerGenerics fieldSerializerGenerics;
+	Class[] generics;
 
 	public FieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new FieldSerializerConfig());
@@ -70,7 +67,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		this.type = type;
 		this.config = config;
 
-		generics = new FieldSerializerGenerics(this, type);
+		fieldSerializerGenerics = new FieldSerializerGenerics(this);
 
 		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
@@ -79,7 +76,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Must be called after config settings are changed. */
 	public void updateConfig () {
 		if (TRACE) trace("kryo", "Update FieldSerializerConfig: " + className(type));
-		genericsScope = null;
 		cachedFields.rebuild();
 	}
 
@@ -90,10 +86,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	 * generic, it could happen that different concrete classes are used to instantiate it. Therefore, in case of different
 	 * instantiation parameters, the fields analysis should be repeated. */
 	public void write (Kryo kryo, Output output, T object) {
-		if (config.optimizedGenerics) {
-			if (generics.typeParameters.length > 0 && genericTypes != null) updateGenerics();
-			if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
-		}
+		boolean popScope = config.optimizedGenerics ? updateFieldGenerics() : false;
 
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
@@ -101,14 +94,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 			fields[i].write(output, object);
 		}
 
-		if (config.optimizedGenerics && genericsScope != null) kryo.getGenericsResolver().popScope();
+		if (popScope) kryo.getGenericsResolver().popScope();
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-		if (config.optimizedGenerics) {
-			if (generics.typeParameters.length > 0 && genericTypes != null) updateGenerics();
-			if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
-		}
+		boolean popScope = config.optimizedGenerics ? updateFieldGenerics() : false;
 
 		T object = create(kryo, input, type);
 		kryo.reference(object);
@@ -119,9 +109,28 @@ public class FieldSerializer<T> extends Serializer<T> {
 			fields[i].read(input, object);
 		}
 
-		if (config.optimizedGenerics && genericsScope != null) kryo.getGenericsResolver().popScope();
-
+		if (popScope) kryo.getGenericsResolver().popScope();
 		return object;
+	}
+
+	private boolean updateFieldGenerics () {
+		if (generics == null) return false;
+		Class[] generics = this.generics;
+		this.generics = null;
+
+		if (fieldSerializerGenerics.typeParameters.length == 0) return false;
+
+		if (TRACE && generics != null) trace("kryo", "Generic type parameters: " + Arrays.toString(generics));
+
+		// Generate a mapping from type variable names to concrete types.
+		GenericsScope scope = fieldSerializerGenerics.newGenericsScope(type, generics);
+		if (scope != null) kryo.getGenericsResolver().pushScope(type, scope);
+
+		for (CachedField cachedField : cachedFields.fields)
+			if (cachedField instanceof ReflectField)
+				fieldSerializerGenerics.updateGenericCachedField((ReflectField)cachedField, scope);
+
+		return scope != null;
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
@@ -135,21 +144,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 			+ className(cachedField.field.getDeclaringClass()) + ")" + " pos=" + position);
 	}
 
-	public void setGenerics (Kryo kryo, Class[] genericTypes) {
-		this.genericTypes = genericTypes;
-	}
-
-	private void updateGenerics () {
-		if (TRACE && genericTypes != null) trace("kryo", "Generic type parameters: " + Arrays.toString(genericTypes));
-
-		// Generate a mapping from type variable names to concrete types.
-		genericsScope = generics.newGenericsScope(type, genericTypes);
-		if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
-
-		for (CachedField cachedField : cachedFields.fields)
-			if (cachedField instanceof ReflectField) generics.updateGenericCachedField((ReflectField)cachedField);
-
-		if (genericsScope != null) kryo.getGenericsResolver().popScope();
+	public void setGenerics (Kryo kryo, Class[] generics) {
+		this.generics = generics;
 	}
 
 	/** Allows specific fields to be optimized. */

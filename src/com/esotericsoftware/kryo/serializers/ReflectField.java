@@ -33,7 +33,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 class ReflectField extends CachedField {
 	final Kryo kryo;
 	final Class type;
-	public Class[] genericTypes;
+	public Class[] generics;
 
 	ReflectField (Kryo kryo, Class type) {
 		this.kryo = kryo;
@@ -61,21 +61,21 @@ class ReflectField extends CachedField {
 				}
 				Registration registration = kryo.writeClass(output, value.getClass());
 				if (serializer == null) serializer = registration.getSerializer();
-				serializer.setGenerics(kryo, genericTypes);
+				serializer.setGenerics(kryo, generics);
 				kryo.writeObject(output, value, serializer);
 			} else {
 				// The concrete type of the field is known, always use the same serializer.
 				// BOZO - Why set this.serializer?
 				if (serializer == null) this.serializer = serializer = kryo.getSerializer(valueClass);
 				if (canBeNull) {
-					serializer.setGenerics(kryo, genericTypes);
+					serializer.setGenerics(kryo, generics);
 					kryo.writeObjectOrNull(output, value, serializer);
 				} else {
 					if (value == null) {
 						throw new KryoException(
 							"Field value cannot be null when canBeNull is false: " + this + " (" + object.getClass().getName() + ")");
 					}
-					serializer.setGenerics(kryo, genericTypes);
+					serializer.setGenerics(kryo, generics);
 					kryo.writeObject(output, value, serializer);
 				}
 			}
@@ -104,14 +104,14 @@ class ReflectField extends CachedField {
 					value = null;
 				else {
 					if (serializer == null) serializer = registration.getSerializer();
-					serializer.setGenerics(kryo, genericTypes);
+					serializer.setGenerics(kryo, generics);
 					value = kryo.readObject(input, registration.getType(), serializer);
 				}
 			} else {
 				// The concrete type of the field is known, always use the same serializer.
 				// BOZO - Why set this.serializer?
 				if (serializer == null) this.serializer = serializer = kryo.getSerializer(valueClass);
-				serializer.setGenerics(kryo, genericTypes);
+				serializer.setGenerics(kryo, generics);
 				if (canBeNull)
 					value = kryo.readObjectOrNull(input, concreteType, serializer);
 				else

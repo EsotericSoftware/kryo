@@ -41,7 +41,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	private boolean elementsCanBeNull = true;
 	private Serializer serializer;
 	private Class elementClass;
-	private Class genericType;
+	private Class generics;
 
 	public CollectionSerializer () {
 	}
@@ -72,20 +72,20 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		this.serializer = serializer;
 	}
 
-	public void setGenerics (Kryo kryo, Class[] genericTypes) {
-		if (genericTypes != null && kryo.isFinal(genericTypes[0]))
-			genericType = genericTypes[0];
+	public void setGenerics (Kryo kryo, Class[] generics) {
+		if (generics != null && kryo.isFinal(generics[0]))
+			this.generics = generics[0];
 		else
-			genericType = null;
+			this.generics = null;
 	}
 
 	public void write (Kryo kryo, Output output, T collection) {
 		int length = collection.size();
 		output.writeInt(length, true);
 		Serializer serializer = this.serializer;
-		if (genericType != null) {
-			if (serializer == null) serializer = kryo.getSerializer(genericType);
-			genericType = null;
+		if (generics != null) {
+			if (serializer == null) serializer = kryo.getSerializer(generics);
+			generics = null;
 		}
 		if (serializer != null) {
 			if (elementsCanBeNull) {
@@ -114,12 +114,12 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
 		Class elementClass = this.elementClass;
 		Serializer serializer = this.serializer;
-		if (genericType != null) {
+		if (generics != null) {
 			if (serializer == null) {
-				elementClass = genericType;
-				serializer = kryo.getSerializer(genericType);
+				elementClass = generics;
+				serializer = kryo.getSerializer(generics);
 			}
-			genericType = null;
+			generics = null;
 		}
 		if (serializer != null) {
 			if (elementsCanBeNull) {
