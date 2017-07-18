@@ -291,7 +291,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	 * @author Nathan Sweet */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
-	static public @interface Optional {
+	public @interface Optional {
 		public String value();
 	}
 
