@@ -89,16 +89,16 @@ public class Util {
 	}
 
 	/** Logs a message about an object. The log level and the string format of the object depend on the object type. */
-	static public void log (String message, Object object) {
+	static public void log (String message, Object object, int position) {
 		if (object == null) {
 			if (TRACE) trace("kryo", message + ": null");
 			return;
 		}
 		Class type = object.getClass();
 		if (type.isPrimitive() || isWrapperClass(type) || type == String.class) {
-			if (TRACE) trace("kryo", message + ": " + string(object));
+			if (TRACE) trace("kryo", message + ": " + string(object) + (position == -1 ? "" : " pos=" + position));
 		} else {
-			debug("kryo", message + ": " + string(object));
+			debug("kryo", message + ": " + string(object) + (position == -1 ? "" : " pos=" + position));
 		}
 	}
 
@@ -138,12 +138,12 @@ public class Util {
 		return type.getName();
 	}
 
-	/** Returns the class formatted as a string. The format varies depending on the type. */
-	static public String simpleNames (Class[] types) {
+	/** Returns the classes formatted as a string. The format varies depending on the type. */
+	static public String classNames (Class[] types) {
 		StringBuilder buffer = new StringBuilder(32);
 		for (int i = 0, n = types.length; i < n; i++) {
 			if (i > 0) buffer.append(", ");
-			buffer.append(types[i].getSimpleName());
+			buffer.append(className(types[i]));
 		}
 		return buffer.toString();
 	}

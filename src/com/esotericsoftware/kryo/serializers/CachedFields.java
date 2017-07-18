@@ -155,14 +155,10 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			((ReflectField)cachedField).generics = serializer.fieldSerializerGenerics.getGenerics(field);
 
 			if (TRACE) {
+				trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " ("
+					+ className(field.getDeclaringClass()) + ")");
 				Class[] generics = ((ReflectField)cachedField).generics;
-				if (generics != null) {
-					trace("kryo", "Cached " + fieldClass.getSimpleName() + "<" + simpleNames(generics) + "> field: " + field.getName()
-						+ " (" + className(field.getDeclaringClass()) + ")");
-				} else {
-					trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " ("
-						+ className(field.getDeclaringClass()) + ")");
-				}
+				if (generics != null) trace("kryo", "Generics: " + classNames(generics));
 			}
 		} else { // Must be a primitive or String.
 			cachedField.canBeNull = fieldClass == String.class && config.fieldsCanBeNull;

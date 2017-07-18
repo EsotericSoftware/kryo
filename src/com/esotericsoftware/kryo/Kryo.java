@@ -532,7 +532,7 @@ public class Kryo {
 		beginObject();
 		try {
 			if (references && writeReferenceOrNull(output, object, false)) return;
-			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			getRegistration(object.getClass()).getSerializer().write(this, output, object);
 		} finally {
 			if (--depth == 0 && autoReset) reset();
@@ -550,7 +550,7 @@ public class Kryo {
 				serializer.setGenerics(this, null); // Write is not invoked, clear generics.
 				return;
 			}
-			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			serializer.write(this, output, object);
 		} finally {
 			if (--depth == 0 && autoReset) reset();
@@ -568,13 +568,13 @@ public class Kryo {
 				if (writeReferenceOrNull(output, object, true)) return;
 			} else if (!serializer.getAcceptsNull()) {
 				if (object == null) {
-					if (TRACE || (DEBUG && depth == 1)) log("Write", object);
+					if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 					output.writeByte(NULL);
 					return;
 				}
 				output.writeByte(NOT_NULL);
 			}
-			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			serializer.write(this, output, object);
 		} finally {
 			if (--depth == 0 && autoReset) reset();
@@ -595,14 +595,14 @@ public class Kryo {
 				}
 			} else if (!serializer.getAcceptsNull()) {
 				if (object == null) {
-					if (TRACE || (DEBUG && depth == 1)) log("Write", null);
+					if (TRACE || (DEBUG && depth == 1)) log("Write", null, output.position());
 					output.writeByte(NULL);
 					serializer.setGenerics(this, null); // Write is not invoked, clear generics.
 					return;
 				}
 				output.writeByte(NOT_NULL);
 			}
-			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			serializer.write(this, output, object);
 		} finally {
 			if (--depth == 0 && autoReset) reset();
@@ -621,7 +621,7 @@ public class Kryo {
 			}
 			Registration registration = writeClass(output, object.getClass());
 			if (references && writeReferenceOrNull(output, object, false)) return;
-			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			registration.getSerializer().write(this, output, object);
 		} finally {
 			if (--depth == 0 && autoReset) reset();
@@ -632,7 +632,7 @@ public class Kryo {
 	 * @return true if no bytes need to be written for the object. */
 	boolean writeReferenceOrNull (Output output, Object object, boolean mayBeNull) {
 		if (object == null) {
-			if (TRACE || (DEBUG && depth == 1)) log("Write", null);
+			if (TRACE || (DEBUG && depth == 1)) log("Write", null, output.position());
 			output.writeInt(Kryo.NULL, true);
 			return true;
 		}
@@ -646,7 +646,7 @@ public class Kryo {
 
 		// If not the first time encountered, only write reference ID.
 		if (id != -1) {
-			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object));
+			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object) + " pos=" + output.position());
 			output.writeInt(id + 2, true); // + 2 because 0 and 1 are used for NULL and NOT_NULL.
 			return true;
 		}
@@ -654,7 +654,7 @@ public class Kryo {
 		// Otherwise write NOT_NULL and then the object bytes.
 		id = referenceResolver.addWrittenObject(object);
 		output.writeInt(NOT_NULL, true);
-		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object));
+		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object) + " pos=" + output.position());
 		return false;
 	}
 
@@ -684,7 +684,7 @@ public class Kryo {
 				if (stackSize == readReferenceIds.size) reference(object);
 			} else
 				object = (T)getRegistration(type).getSerializer().read(this, input, type);
-			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
 			if (--depth == 0 && autoReset) reset();
@@ -709,7 +709,7 @@ public class Kryo {
 				if (stackSize == readReferenceIds.size) reference(object);
 			} else
 				object = (T)serializer.read(this, input, type);
-			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
 			if (--depth == 0 && autoReset) reset();
@@ -732,12 +732,12 @@ public class Kryo {
 			} else {
 				Serializer serializer = getRegistration(type).getSerializer();
 				if (!serializer.getAcceptsNull() && input.readByte() == NULL) {
-					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
+					if (TRACE || (DEBUG && depth == 1)) log("Read", null, input.position());
 					return null;
 				}
 				object = (T)serializer.read(this, input, type);
 			}
-			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
 			if (--depth == 0 && autoReset) reset();
@@ -763,13 +763,13 @@ public class Kryo {
 				if (stackSize == readReferenceIds.size) reference(object);
 			} else {
 				if (!serializer.getAcceptsNull() && input.readByte() == NULL) {
-					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
+					if (TRACE || (DEBUG && depth == 1)) log("Read", null, input.position());
 					serializer.setGenerics(this, null); // Read is not invoked, clear generics.
 					return null;
 				}
 				object = (T)serializer.read(this, input, type);
 			}
-			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
 			if (--depth == 0 && autoReset) reset();
@@ -794,7 +794,7 @@ public class Kryo {
 				if (stackSize == readReferenceIds.size) reference(object);
 			} else
 				object = registration.getSerializer().read(this, input, type);
-			if (TRACE || (DEBUG && depth == 1)) log("Read", object);
+			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
 			if (--depth == 0 && autoReset) reset();
@@ -810,7 +810,7 @@ public class Kryo {
 		if (mayBeNull) {
 			id = input.readInt(true);
 			if (id == Kryo.NULL) {
-				if (TRACE || (DEBUG && depth == 1)) log("Read", null);
+				if (TRACE || (DEBUG && depth == 1)) log("Read", null, input.position());
 				readObject = null;
 				return REF;
 			}
@@ -893,7 +893,7 @@ public class Kryo {
 			else
 				copy = getSerializer(object.getClass()).copy(this, object);
 			if (needsCopyReference != null) reference(copy);
-			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy);
+			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy, -1);
 			return (T)copy;
 		} finally {
 			if (--copyDepth == 0) reset();
@@ -919,7 +919,7 @@ public class Kryo {
 			else
 				copy = serializer.copy(this, object);
 			if (needsCopyReference != null) reference(copy);
-			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy);
+			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy, -1);
 			return (T)copy;
 		} finally {
 			if (--copyDepth == 0) reset();
@@ -945,7 +945,7 @@ public class Kryo {
 			else
 				copy = getSerializer(object.getClass()).copy(this, object);
 			if (needsCopyReference != null) reference(copy);
-			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy);
+			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy, -1);
 			return (T)copy;
 		} finally {
 			copyShallow = false;
@@ -972,7 +972,7 @@ public class Kryo {
 			else
 				copy = serializer.copy(this, object);
 			if (needsCopyReference != null) reference(copy);
-			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy);
+			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy, -1);
 			return (T)copy;
 		} finally {
 			copyShallow = false;

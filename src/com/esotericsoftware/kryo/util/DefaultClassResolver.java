@@ -90,7 +90,7 @@ public class DefaultClassResolver implements ClassResolver {
 
 	public Registration writeClass (Output output, Class type) {
 		if (type == null) {
-			if (TRACE || (DEBUG && kryo.getDepth() == 1)) log("Write", null);
+			if (TRACE || (DEBUG && kryo.getDepth() == 1)) log("Write", null, output.position());
 			output.writeInt(Kryo.NULL, true);
 			return null;
 		}
@@ -98,7 +98,7 @@ public class DefaultClassResolver implements ClassResolver {
 		if (registration.getId() == NAME)
 			writeName(output, type, registration);
 		else {
-			if (TRACE) trace("kryo", "Write class " + registration.getId() + ": " + className(type));
+			if (TRACE) trace("kryo", "Write class " + registration.getId() + ": " + className(type) + " pos=" + output.position());
 			output.writeInt(registration.getId() + 2, true);
 		}
 		return registration;
@@ -109,7 +109,7 @@ public class DefaultClassResolver implements ClassResolver {
 		if (classToNameId != null) {
 			int nameId = classToNameId.get(type, -1);
 			if (nameId != -1) {
-				if (TRACE) trace("kryo", "Write class name reference " + nameId + ": " + className(type));
+				if (TRACE) trace("kryo", "Write class name reference " + nameId + ": " + className(type) + " pos=" + output.position());
 				output.writeInt(nameId, true);
 				return;
 			}
@@ -127,7 +127,7 @@ public class DefaultClassResolver implements ClassResolver {
 		int classID = input.readInt(true);
 		switch (classID) {
 		case Kryo.NULL:
-			if (TRACE || (DEBUG && kryo.getDepth() == 1)) log("Read", null);
+			if (TRACE || (DEBUG && kryo.getDepth() == 1)) log("Read", null, input.position());
 			return null;
 		case NAME + 2: // Offset for NAME and NULL.
 			return readName(input);
@@ -135,7 +135,8 @@ public class DefaultClassResolver implements ClassResolver {
 		if (classID == memoizedClassId) return memoizedClassIdValue;
 		Registration registration = idToRegistration.get(classID - 2);
 		if (registration == null) throw new KryoException("Encountered unregistered class ID: " + (classID - 2));
-		if (TRACE) trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()));
+		if (TRACE)
+			trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()) + " pos=" + input.position());
 		memoizedClassId = classID;
 		memoizedClassIdValue = registration;
 		return registration;

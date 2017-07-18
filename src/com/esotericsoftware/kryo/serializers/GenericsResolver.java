@@ -22,7 +22,11 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
+
+import com.esotericsoftware.kryo.serializers.GenericsResolver.GenericsScope;
 
 /** Resolves a type name variable to a concrete class using the current class serialization stack
  * @author Jeroen van Erp <jeroen@hierynomus.com> */
@@ -38,7 +42,6 @@ public final class GenericsResolver {
 	}
 
 	void pushScope (Class type, GenericsScope scope) {
-		if (TRACE) trace("kryo", "New generics scope for class " + type.getName() + ": " + scope);
 		stack.add(scope);
 	}
 

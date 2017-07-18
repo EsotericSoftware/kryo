@@ -61,7 +61,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			context.put(this, null);
 			output.writeInt(fields.length, true);
 			for (int i = 0, n = fields.length; i < n; i++) {
-				if (TRACE) trace("kryo", "Write field name: " + fields[i].name);
+				if (TRACE) trace("kryo", "Write field name: " + fields[i].name + " pos=" + output.position());
 				output.writeString(fields[i].name);
 			}
 		}

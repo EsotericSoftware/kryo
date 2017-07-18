@@ -66,7 +66,7 @@ public class OutputChunked extends Output {
 
 	private void writeChunkSize () throws IOException {
 		int size = position();
-		if (TRACE) trace("kryo", "Write chunk: " + size);
+		if (TRACE) trace("kryo", "Write chunk: " + size + " pos=" + size);
 		OutputStream outputStream = getOutputStream();
 		if ((size & ~0x7F) == 0) {
 			outputStream.write(size);

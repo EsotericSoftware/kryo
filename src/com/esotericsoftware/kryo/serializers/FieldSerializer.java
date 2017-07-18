@@ -30,6 +30,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -120,8 +121,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		if (fieldSerializerGenerics.typeParameters.length == 0) return false;
 
-		if (TRACE && generics != null) trace("kryo", "Generic type parameters: " + Arrays.toString(generics));
-
 		// Generate a mapping from type variable names to concrete types.
 		GenericsScope scope = fieldSerializerGenerics.newGenericsScope(type, generics);
 		if (scope != null) kryo.getGenericsResolver().pushScope(type, scope);
@@ -140,8 +139,14 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	protected void log (String prefix, CachedField cachedField, int position) {
-		trace("kryo", prefix + " " + cachedField.field.getType().getSimpleName() + " field: " + cachedField + " ("
-			+ className(cachedField.field.getDeclaringClass()) + ")" + " pos=" + position);
+		Class[] generics = cachedField instanceof ReflectField ? ((ReflectField)cachedField).generics : null;
+		if (generics != null) {
+			trace("kryo", prefix + " " + cachedField.field.getType().getSimpleName() + "<" + classNames(generics) + "> field: "
+				+ cachedField + " (" + className(cachedField.field.getDeclaringClass()) + ") pos=" + position);
+		} else {
+			trace("kryo", prefix + " " + cachedField.field.getType().getSimpleName() + " field: " + cachedField + " ("
+				+ className(cachedField.field.getDeclaringClass()) + ") pos=" + position);
+		}
 	}
 
 	public void setGenerics (Kryo kryo, Class[] generics) {
@@ -211,21 +216,26 @@ public class FieldSerializer<T> extends Serializer<T> {
 		boolean canBeNull, varInt = true, optimizePositive;
 		int accessIndex = -1;
 
-		/** @param valueClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for
-		 *           the specified class will be used. Only set to a non-null value if the field type in the class definition is
-		 *           final or the values for this field will not vary. */
+		/** The concrete class of the values for this field, or null if it is not known. This saves 1-2 bytes. Only set to a
+		 * non-null value if the field type in the class definition is final or the values for this field are known to be of the
+		 * specified type. Default is true if the field type is final or {@link FieldSerializerConfig#setFixedFieldTypes(boolean)}
+		 * is true.
+		 * <p>
+		 * If {@link FieldSerializerConfig#setOptimizedGenerics(boolean)} is true and the field has generic types, the default value
+		 * is used. */
 		public void setClass (Class valueClass) {
 			this.valueClass = valueClass;
 			this.serializer = null;
 		}
 
-		/** @param valueClass The concrete class of the values for this field. This saves 1-2 bytes. Only set to a non-null value if
-		 *           the field type in the class definition is final or the values for this field will not vary. */
+		/** Sets both {@link #setClass(Class)} and {@link #setSerializer(Serializer)}. */
 		public void setClass (Class valueClass, Serializer serializer) {
 			this.valueClass = valueClass;
 			this.serializer = serializer;
 		}
 
+		/** The serializer to be used for this field when {@link #setClass(Class)} is not null, or null to use the serializer
+		 * registered with {@link Kryo} for the type. Default is null. */
 		public void setSerializer (Serializer serializer) {
 			this.serializer = serializer;
 		}
@@ -234,6 +244,12 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return this.serializer;
 		}
 
+		/** When false, it is assumed the field value can never be null. This saves 0-1 bytes. Default is false for primitives,
+		 * otherwise {@link FieldSerializerConfig#setFieldsCanBeNull(boolean)} is used unless the field has the {@link NotNull}
+		 * annotation.
+		 * <p>
+		 * If {@link FieldSerializerConfig#setOptimizedGenerics(boolean)} is true and the field has generic types, the default value
+		 * is used. */
 		public void setCanBeNull (boolean canBeNull) {
 			this.canBeNull = canBeNull;
 		}
@@ -251,8 +267,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return varInt;
 		}
 
-		/** When true, variable length int and long values are written with fewer bytes when the values are positive. Default is
-		 * false. */
+		/** When true, variable length int and long values are written with fewer bytes for positive values and more bytes for
+		 * negative values. Default is false. */
 		public void setOptimizePositive (boolean optimizePositive) {
 			this.optimizePositive = optimizePositive;
 		}

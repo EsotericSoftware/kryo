@@ -19,6 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Array;
@@ -27,7 +28,6 @@ import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 
 import com.esotericsoftware.kryo.NotNull;
@@ -49,15 +49,14 @@ final class FieldSerializerGenerics {
 
 	/*** Create a mapping from type variable names (which are declared as type parameters of a generic class) to the concrete
 	 * classes used for type instantiation.
-	 * @param type class with generic type arguments
-	 * @param generics concrete types used to instantiate the class
+	 * @param generics May be null.
 	 * @return May be null. */
 	public GenericsScope newGenericsScope (Class type, Class[] generics) {
-		TypeVariable[] typeParams = null;
+		TypeVariable[] typeParameters = null;
 		outer:
 		while (type != null) {
-			typeParams = type == serializer.type ? typeParameters : type.getTypeParameters();
-			if (typeParams.length > 0) break;
+			typeParameters = type == serializer.type ? this.typeParameters : type.getTypeParameters();
+			if (typeParameters.length > 0) break;
 			if (type != serializer.type)
 				type = type.getComponentType();
 			else {
@@ -71,7 +70,8 @@ final class FieldSerializerGenerics {
 					type = type.getSuperclass();
 					if (superClass == null) break outer;
 				} while (!(superClass instanceof ParameterizedType));
-				typeParams = type.getTypeParameters();
+				typeParameters = type.getTypeParameters();
+				if (typeParameters.length == 0) return null;
 				Type[] actualTypes = ((ParameterizedType)superClass).getActualTypeArguments();
 				int n = actualTypes.length;
 				generics = new Class[n];
@@ -80,61 +80,37 @@ final class FieldSerializerGenerics {
 				break;
 			}
 		}
-		if (typeParams.length == 0) return null;
 
 		GenericsScope scope = new GenericsScope();
-		for (int i = 0, n = typeParams.length; i < n; i++) {
-			TypeVariable typeVar = typeParams[i];
-			String typeVarName = typeVar.getName();
-			if (TRACE) trace("kryo",
-				"Type parameter variable: name=" + typeVarName + " type bounds=" + Arrays.toString(typeVar.getBounds()));
-
+		for (int i = 0, n = typeParameters.length; i < n; i++) {
 			Class concreteClass = null;
 			if (generics != null && generics.length > i)
-				concreteClass = generics[i]; // Concrete classes are known.
+				concreteClass = generics[i];
 			else
-				concreteClass = serializer.kryo.getGenericsResolver().getConcreteClass(typeVarName); // Look in scope.
-			if (concreteClass != null) {
-				scope.add(typeVarName, concreteClass);
-				if (TRACE) trace("kryo", "Concrete type used for " + typeVarName + " is: " + concreteClass.getName());
-			}
+				concreteClass = serializer.kryo.getGenericsResolver().getConcreteClass(typeParameters[i].getName());
+			if (concreteClass != null) scope.add(typeParameters[i].getName(), concreteClass);
 		}
 		return scope;
 	}
 
-	/** Special processing for fields of generic types.
-	 * @param scope */
+	/** Special processing for fields of generic types. */
 	public void updateGenericCachedField (ReflectField reflectField, GenericsScope scope) {
-		// This is a field with generic type parameters.
 		Field field = reflectField.field;
-		Type fieldGenericType = field.getGenericType();
+
+		// Try to determine the field class from the generics scope.
 		Class fieldClass = field.getType();
-		if (TRACE)
-			trace("kryo", "Field " + field.getName() + ": " + fieldClass + " <" + fieldGenericType.getClass().getName() + ">");
-
-		Class[] c = {fieldClass}; // BOZO - Using an array is nasty!
-		Class[] fieldGenerics = getGenericsWithScope(field, c, fieldGenericType, scope);
-		if (fieldClass != c[0]) fieldClass = c[0];
-
-		if (fieldGenerics != null)
-			reflectField.generics = fieldGenerics;
-		else if (fieldGenericType != null) {
-			reflectField.generics = getGenericsWithGlobalScope(fieldGenericType);
-			if (TRACE && reflectField.generics != null) trace("kryo", "Field generics: " + Arrays.toString(reflectField.generics));
+		Type fieldGenericType = field.getGenericType();
+		if (fieldGenericType instanceof TypeVariable) {
+			Class c = scope.getConcreteClass(((TypeVariable)fieldGenericType).getName());
+			if (c != null) fieldClass = c;
 		}
 
-		if (fieldGenerics != null && fieldGenerics.length > 0 && fieldGenerics[0] != null) {
-			// If any information about concrete types for generic arguments of current field's type was derived, remember it.
-			reflectField.generics = fieldGenerics;
-			if (TRACE) trace("kryo", "Field generics: " + Arrays.toString(fieldGenerics));
-		} else
-			reflectField.generics = null;
-
+		// Reset settings which are based on the field class to their default.
 		reflectField.canBeNull = serializer.config.fieldsCanBeNull && !fieldClass.isPrimitive()
 			&& !field.isAnnotationPresent(NotNull.class);
-
-		// Always use the same serializer for this field if the field's class is final.
 		reflectField.valueClass = serializer.kryo.isFinal(fieldClass) || serializer.config.fixedFieldTypes ? fieldClass : null;
+
+		reflectField.generics = getGenericsWithGlobalScope(fieldGenericType);
 	}
 
 	/** Returns the parameterized types for a field that are known after compilation.
@@ -163,61 +139,6 @@ final class FieldSerializerGenerics {
 	}
 
 	/** @return May be null. */
-	private Class[] getGenericsWithScope (Field field, Class[] fieldClass, Type fieldGenericType, GenericsScope scope) {
-		Class[] generics = null;
-		if (fieldGenericType instanceof TypeVariable && scope != null) {
-			TypeVariable typeVar = (TypeVariable)fieldGenericType;
-			Class concreteClass = scope.getConcreteClass(typeVar.getName());
-			if (concreteClass != null) {
-				fieldClass[0] = concreteClass;
-				generics = new Class[] {fieldClass[0]};
-				if (TRACE) trace("kryo", "Determined concrete class of '" + field.getName() + "' to be " + fieldClass[0].getName());
-			}
-		} else if (fieldGenericType instanceof ParameterizedType) {
-			Type[] actualTypes = ((ParameterizedType)fieldGenericType).getActualTypeArguments();
-			int n = actualTypes.length;
-			generics = new Class[n];
-			for (int i = 0; i < n; ++i) {
-				Type type = actualTypes[i];
-				if (type instanceof Class)
-					generics[i] = (Class)type;
-				else if (type instanceof ParameterizedType)
-					generics[i] = (Class)((ParameterizedType)type).getRawType();
-				else if (type instanceof TypeVariable && scope != null) {
-					generics[i] = scope.getConcreteClass(((TypeVariable)type).getName());
-					if (generics[i] == null) generics[i] = Object.class;
-				} else if (type instanceof WildcardType)
-					generics[i] = Object.class;
-				else if (type instanceof GenericArrayType) {
-					Type componentType = ((GenericArrayType)type).getGenericComponentType();
-					if (componentType instanceof Class)
-						generics[i] = Array.newInstance((Class)componentType, 0).getClass();
-					else if (componentType instanceof TypeVariable && scope != null) {
-						Class c = scope.getConcreteClass(((TypeVariable)componentType).getName());
-						if (c != null) generics[i] = Array.newInstance(c, 0).getClass();
-					}
-				} else
-					generics[i] = null;
-			}
-			if (TRACE && generics != null) {
-				trace("kryo", "Determined concrete class of parametrized '" + field.getName() + "' to be " + fieldGenericType
-					+ " where type parameters are " + Arrays.toString(generics));
-			}
-		} else if (fieldGenericType instanceof GenericArrayType) {
-			GenericArrayType arrayType = (GenericArrayType)fieldGenericType;
-			Type genericComponentType = arrayType.getGenericComponentType();
-			Class[] tmpFieldClass = new Class[] {fieldClass[0]};
-			generics = getGenericsWithScope(field, tmpFieldClass, genericComponentType, scope);
-			// Kryo.getGenerics(fieldGenericType);
-			if (TRACE && generics != null) {
-				trace("kryo", "Determined concrete class of a generic array '" + field.getName() + "' to be " + fieldGenericType
-					+ " where type parameters are " + Arrays.toString(generics));
-			} else if (TRACE) trace("kryo", "Determined concrete class of '" + field.getName() + "' to be " + fieldGenericType);
-		}
-		return generics;
-	}
-
-	/** @return May be null. */
 	private Class[] getGenericsWithGlobalScope (Type genericType) {
 		if (genericType instanceof GenericArrayType) {
 			Type componentType = ((GenericArrayType)genericType).getGenericComponentType();
@@ -238,8 +159,7 @@ final class FieldSerializerGenerics {
 				genericClass = (Class)((ParameterizedType)type).getRawType();
 
 			else if (type instanceof TypeVariable) {
-				GenericsResolver resolver = serializer.kryo.getGenericsResolver();
-				Class c = resolver.getConcreteClass(((TypeVariable)type).getName());
+				Class c = serializer.kryo.getGenericsResolver().getConcreteClass(((TypeVariable)type).getName());
 				if (c != null) genericClass = c;
 
 			} else if (type instanceof GenericArrayType) {
@@ -247,8 +167,7 @@ final class FieldSerializerGenerics {
 				if (componentType instanceof Class)
 					genericClass = Array.newInstance((Class)componentType, 0).getClass();
 				else if (componentType instanceof TypeVariable) {
-					GenericsResolver resolver = serializer.kryo.getGenericsResolver();
-					Class c = resolver.getConcreteClass(((TypeVariable)componentType).getName());
+					Class c = serializer.kryo.getGenericsResolver().getConcreteClass(((TypeVariable)componentType).getName());
 					if (c != null) genericClass = Array.newInstance(c, 0).getClass();
 				} else {
 					Class[] componentGenerics = getGenericsWithGlobalScope(componentType);
