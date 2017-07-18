@@ -34,18 +34,15 @@ class AsmField extends ReflectField {
 	}
 
 	public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
-		if (accessIndex == -1) throw new KryoException("Unknown access index");
 		return access.get(object, accessIndex);
 	}
 
 	public void setField (Object object, Object value) throws IllegalArgumentException, IllegalAccessException {
-		if (accessIndex == -1) throw new KryoException("Unknown access index");
 		((FieldAccess)access).set(object, accessIndex, value);
 	}
 
 	public void copy (Object original, Object copy) {
 		try {
-			if (accessIndex == -1) throw new KryoException("Unknown access index");
 			access.set(copy, accessIndex, kryo.copy(access.get(original, accessIndex)));
 		} catch (KryoException ex) {
 			ex.addTrace(this + " (" + type.getName() + ")");

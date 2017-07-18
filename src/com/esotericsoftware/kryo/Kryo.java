@@ -144,7 +144,7 @@ public class Kryo {
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
-	private GenericsResolver genericsResolver = new GenericsResolver();
+	private final GenericsResolver genericsResolver = new GenericsResolver();
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and a {@link MapReferenceResolver}. */
 	public Kryo () {
@@ -546,7 +546,10 @@ public class Kryo {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		beginObject();
 		try {
-			if (references && writeReferenceOrNull(output, object, false)) return;
+			if (references && writeReferenceOrNull(output, object, false)) {
+				serializer.setGenerics(this, null); // Write is not invoked, clear generics.
+				return;
+			}
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object);
 			serializer.write(this, output, object);
 		} finally {
@@ -586,11 +589,15 @@ public class Kryo {
 		beginObject();
 		try {
 			if (references) {
-				if (writeReferenceOrNull(output, object, true)) return;
+				if (writeReferenceOrNull(output, object, true)) {
+					serializer.setGenerics(this, null); // Write is not invoked, clear generics.
+					return;
+				}
 			} else if (!serializer.getAcceptsNull()) {
 				if (object == null) {
 					if (TRACE || (DEBUG && depth == 1)) log("Write", null);
 					output.writeByte(NULL);
+					serializer.setGenerics(this, null); // Write is not invoked, clear generics.
 					return;
 				}
 				output.writeByte(NOT_NULL);
@@ -694,7 +701,10 @@ public class Kryo {
 			T object;
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, false);
-				if (stackSize == REF) return (T)readObject;
+				if (stackSize == REF) {
+					serializer.setGenerics(this, null); // Read is not invoked, clear generics.
+					return (T)readObject;
+				}
 				object = (T)serializer.read(this, input, type);
 				if (stackSize == readReferenceIds.size) reference(object);
 			} else
@@ -745,12 +755,16 @@ public class Kryo {
 			T object;
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, true);
-				if (stackSize == REF) return (T)readObject;
+				if (stackSize == REF) {
+					serializer.setGenerics(this, null); // Read is not invoked, clear generics.
+					return (T)readObject;
+				}
 				object = (T)serializer.read(this, input, type);
 				if (stackSize == readReferenceIds.size) reference(object);
 			} else {
 				if (!serializer.getAcceptsNull() && input.readByte() == NULL) {
 					if (TRACE || (DEBUG && depth == 1)) log("Read", null);
+					serializer.setGenerics(this, null); // Read is not invoked, clear generics.
 					return null;
 				}
 				object = (T)serializer.read(this, input, type);

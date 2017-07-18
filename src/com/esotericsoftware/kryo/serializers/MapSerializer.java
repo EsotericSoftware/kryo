@@ -73,7 +73,6 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	public void setGenerics (Kryo kryo, Class[] genericTypes) {
 		keyGenericType = null;
 		valueGenericType = null;
-
 		if (genericTypes != null) {
 			if (kryo.isFinal(genericTypes[0])) keyGenericType = genericTypes[0];
 			if (genericTypes.length > 1 && kryo.isFinal(genericTypes[1])) valueGenericType = genericTypes[1];

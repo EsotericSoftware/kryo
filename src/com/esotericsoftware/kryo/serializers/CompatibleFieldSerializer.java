@@ -42,8 +42,7 @@ import com.esotericsoftware.kryo.util.ObjectMap;
  * must be avoided.
  * @author Nathan Sweet */
 public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
-	/* For object with more than BINARY_SEARCH_THRESHOLD fields, use binary search instead of iterative search */
-	static private final int THRESHOLD_BINARY_SEARCH = 32;
+	static private final int binarySearchThreshold = 32;
 
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
 		super(kryo, type, new FieldSerializerConfig());
@@ -80,74 +79,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 		T object = create(kryo, input, type);
 		kryo.reference(object);
-		ObjectMap context = kryo.getGraphContext();
-		CachedField[] fields = (CachedField[])context.get(this);
-		if (fields == null) {
-			int length = input.readInt(true);
-			String[] names = new String[length];
-			for (int i = 0; i < length; i++) {
-				names[i] = input.readString();
-				if (TRACE) trace("kryo", "Read field name: " + names[i]);
-			}
-
-			fields = new CachedField[length];
-			CachedField[] allFields = getFields();
-
-			if (length < THRESHOLD_BINARY_SEARCH) {
-				outer:
-				for (int i = 0; i < length; i++) {
-					String schemaName = names[i];
-					for (int ii = 0, nn = allFields.length; ii < nn; ii++) {
-						if (allFields[ii].name.equals(schemaName)) {
-							fields[i] = allFields[ii];
-							continue outer;
-						}
-					}
-					if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
-				}
-			} else {
-				// binary search for schemaName
-				int low, mid, high;
-				int compare;
-				int maxFieldLength = allFields.length > length ? allFields.length : length;
-				outerBinarySearch:
-				for (int i = 0; i < length; i++) {
-					String schemaName = names[i];
-
-					low = 0;
-					high = maxFieldLength - 1;
-
-					while (low <= high) {
-						mid = (low + high) >>> 1;
-						String midVal = allFields[mid].name;
-						compare = schemaName.compareTo(midVal);
-
-						if (compare < 0) {
-							high = mid - 1;
-						} else if (compare > 0) {
-							low = mid + 1;
-						} else {
-							fields[i] = allFields[mid];
-							continue outerBinarySearch;
-						}
-					}
-					if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
-				}
-			}
-
-			context.put(this, fields);
-		}
+		CachedField[] fields = (CachedField[])kryo.getGraphContext().get(this);
+		if (fields == null) fields = readFields(kryo, input);
 
 		InputChunked inputChunked = new InputChunked(input, 1024);
-		boolean hasGenerics = getGenerics() != null;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
-			if (cachedField != null && hasGenerics) {
-				// Generic type used to instantiate this field could have
-				// been changed in the meantime. Therefore take the most
-				// up-to-date definition of a field
-				cachedField = getField(cachedField.name);
-			}
 			if (cachedField == null) {
 				if (TRACE) trace("kryo", "Skip obsolete field.");
 				inputChunked.nextChunk();
@@ -158,5 +95,55 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			inputChunked.nextChunk();
 		}
 		return object;
+	}
+
+	private CachedField[] readFields (Kryo kryo, Input input) {
+		int length = input.readInt(true);
+		String[] names = new String[length];
+		for (int i = 0; i < length; i++) {
+			names[i] = input.readString();
+			if (TRACE) trace("kryo", "Read field name: " + names[i]);
+		}
+
+		CachedField[] fields = new CachedField[length];
+		CachedField[] allFields = getFields();
+		if (length < binarySearchThreshold) {
+			outer:
+			for (int i = 0; i < length; i++) {
+				String schemaName = names[i];
+				for (int ii = 0, nn = allFields.length; ii < nn; ii++) {
+					if (allFields[ii].name.equals(schemaName)) {
+						fields[i] = allFields[ii];
+						continue outer;
+					}
+				}
+				if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
+			}
+		} else {
+			int low, mid, high, compare;
+			int lastFieldIndex = (allFields.length > length ? allFields.length : length) - 1;
+			outer:
+			for (int i = 0; i < length; i++) {
+				String schemaName = names[i];
+				low = 0;
+				high = lastFieldIndex;
+				while (low <= high) {
+					mid = (low + high) >>> 1;
+					compare = schemaName.compareTo(allFields[mid].name);
+					if (compare < 0)
+						high = mid - 1;
+					else if (compare > 0)
+						low = mid + 1;
+					else {
+						fields[i] = allFields[mid];
+						continue outer;
+					}
+				}
+				if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
+			}
+		}
+
+		kryo.getGraphContext().put(this, fields);
+		return fields;
 	}
 }

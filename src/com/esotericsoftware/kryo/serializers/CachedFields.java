@@ -1,3 +1,21 @@
+/* Copyright (c) 2008-2017, Nathan Sweet
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
+ * conditions are met:
+ * 
+ * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+ * disclaimer in the documentation and/or other materials provided with the distribution.
+ * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
+ * from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+ * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 package com.esotericsoftware.kryo.serializers;
 
@@ -43,39 +61,18 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
 
 	private final FieldSerializer serializer;
-	private final Kryo kryo;
 	private final Class type;
 	private final FieldSerializerConfig config;
 
 	CachedField[] fields = new CachedField[0];
 	CachedField[] copyFields = new CachedField[0];
-	protected final ArrayList<Field> removedFields = new ArrayList();
-	Object access;
-
-	private final FieldSerializerGenerics generics;
-	Class[] genericTypes;
-	GenericsScope genericsScope;
+	private final ArrayList<Field> removedFields = new ArrayList();
+	private Object access;
 
 	public CachedFields (FieldSerializer serializer) {
 		this.serializer = serializer;
-		kryo = serializer.kryo;
 		type = serializer.type;
 		config = serializer.config;
-
-		generics = new FieldSerializerGenerics(serializer);
-	}
-
-	public void updateGenerics () {
-		if (TRACE && genericTypes != null) trace("kryo", "Generic type parameters: " + Arrays.toString(genericTypes));
-
-		// Generate a mapping from type variable names to concrete types.
-		genericsScope = generics.newGenericsScope(type, genericTypes);
-		if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
-
-		for (CachedField cachedField : fields)
-			if (cachedField instanceof ReflectField) generics.updateGenericCachedField((ReflectField)cachedField);
-
-		if (genericsScope != null) kryo.getGenericsResolver().popScope();
 	}
 
 	public void rebuild () {
@@ -121,7 +118,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		}
 
 		Optional optional = field.getAnnotation(Optional.class);
-		if (optional != null && !kryo.getContext().containsKey(optional.value())) return;
+		if (optional != null && !serializer.kryo.getContext().containsKey(optional.value())) return;
 
 		if (removedFields.contains(field)) return;
 
@@ -154,9 +151,9 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 
 		if (cachedField instanceof ReflectField) {
 			cachedField.canBeNull = config.fieldsCanBeNull && !field.isAnnotationPresent(NotNull.class);
-			if (kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
+			if (serializer.kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
 
-			((ReflectField)cachedField).genericTypes = generics.getGenericsWithoutScope(field);
+			((ReflectField)cachedField).genericTypes = serializer.generics.getGenericsWithoutScope(field);
 
 			if (TRACE) {
 				Class[] genericTypes = ((ReflectField)cachedField).genericTypes;
@@ -199,9 +196,10 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 				if (fieldClass == float.class) return new FloatAsmField();
 				if (fieldClass == double.class) return new DoubleAsmField();
 			}
-			if (fieldClass == String.class && (!kryo.getReferences() || !kryo.getReferenceResolver().useReferences(String.class)))
+			if (fieldClass == String.class
+				&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
 				return new StringAsmField();
-			return new AsmField(kryo, type);
+			return new AsmField(serializer.kryo, type);
 		}
 		if (fieldClass.isPrimitive()) {
 			if (fieldClass == boolean.class) return new BooleanReflectField();
@@ -213,7 +211,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			if (fieldClass == float.class) return new FloatReflectField();
 			if (fieldClass == double.class) return new DoubleReflectField();
 		}
-		return new ReflectField(kryo, type);
+		return new ReflectField(serializer.kryo, type);
 	}
 
 	public int compare (CachedField o1, CachedField o2) {
@@ -291,7 +289,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		// Set a specific serializer for a particular field.
 		if (field.isAnnotationPresent(FieldSerializer.Bind.class)) {
 			Class serializerClass = field.getAnnotation(FieldSerializer.Bind.class).value();
-			cachedField.setSerializer(ReflectionSerializerFactory.newSerializer(kryo, serializerClass, field.getClass()));
+			cachedField.setSerializer(ReflectionSerializerFactory.newSerializer(serializer.kryo, serializerClass, field.getClass()));
 		}
 
 		// Set a specific collection serializer for a particular field
@@ -345,6 +343,6 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 
 	private Serializer newSerializer (Class serializerClass, Field field) {
 		if (serializerClass == Serializer.class) return null;
-		return ReflectionSerializerFactory.newSerializer(kryo, serializerClass, field.getClass());
+		return ReflectionSerializerFactory.newSerializer(serializer.kryo, serializerClass, field.getClass());
 	}
 }

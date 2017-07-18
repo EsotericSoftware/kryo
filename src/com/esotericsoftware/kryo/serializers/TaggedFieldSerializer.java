@@ -86,28 +86,26 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				super.removeField(fields[i]);
 			}
 		}
-		// Cache tag values.
-		fields = getFields();
-		tags = new int[fields.length];
-		deprecated = new boolean[fields.length];
-		annexed = new boolean[fields.length];
-		writeFieldCount = fields.length;
-
+		fields = getFields(); // removeField changes cached field array.
 		Arrays.sort(fields, tagComparator); // fields are sorted to easily check for reused tag values
-		for (int i = 0, n = fields.length; i < n; i++) {
+
+		// Cache tag values.
+		int n = fields.length;
+		writeFieldCount = n;
+		tags = new int[n];
+		deprecated = new boolean[n];
+		annexed = new boolean[n];
+		for (int i = 0; i < n; i++) {
 			Field field = fields[i].getField();
 			tags[i] = field.getAnnotation(Tag.class).value();
-			if (i > 0 && tags[i] == tags[i - 1]) // This check relies on fields having been sorted
-				throw new KryoException(
-					String.format("The fields [%s] and [%s] both have a Tag value of %d.", field, fields[i - 1].getField(), tags[i]));
+			if (i > 0 && tags[i] == tags[i - 1]) // Relies on fields having been sorted.
+				throw new KryoException("Duplicate tag " + tags[i] + " on fields: " + field + " and " + fields[i - 1].getField());
 			if (field.getAnnotation(Deprecated.class) != null) {
 				deprecated[i] = true;
 				writeFieldCount--;
 			}
 			if (field.getAnnotation(Tag.class).annexed()) annexed[i] = true;
 		}
-
-		cachedFields.removedFields.clear();
 	}
 
 	public void removeField (String fieldName) {

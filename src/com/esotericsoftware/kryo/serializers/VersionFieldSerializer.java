@@ -70,7 +70,6 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 				fieldVersion[i] = 0;
 			}
 		}
-		cachedFields.removedFields.clear();
 		if (DEBUG) debug("Version for type " + getType().getName() + " is " + typeVersion);
 	}
 

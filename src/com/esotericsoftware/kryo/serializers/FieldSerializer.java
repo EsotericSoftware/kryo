@@ -28,11 +28,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.TypeVariable;
+import java.util.Arrays;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.GenericsResolver.GenericsScope;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
@@ -51,10 +53,12 @@ import com.esotericsoftware.reflectasm.FieldAccess;
 public class FieldSerializer<T> extends Serializer<T> {
 	final Kryo kryo;
 	final Class type;
-	final Class componentType;
 	final FieldSerializerConfig config;
 	final CachedFields cachedFields;
-	final TypeVariable[] typeParameters;
+
+	final FieldSerializerGenerics generics;
+	Class[] genericTypes;
+	GenericsScope genericsScope;
 
 	public FieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new FieldSerializerConfig());
@@ -66,11 +70,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		this.type = type;
 		this.config = config;
 
-		typeParameters = type.getTypeParameters();
-		if (typeParameters.length == 0)
-			componentType = type.getComponentType();
-		else
-			componentType = null;
+		generics = new FieldSerializerGenerics(this, type);
 
 		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
@@ -79,18 +79,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Must be called after config settings are changed. */
 	public void updateConfig () {
 		if (TRACE) trace("kryo", "Update FieldSerializerConfig: " + className(type));
+		genericsScope = null;
 		cachedFields.rebuild();
-	}
-
-	public void setGenerics (Kryo kryo, Class[] genericTypes) {
-		if (!config.optimizedGenerics) return;
-		cachedFields.genericTypes = genericTypes;
-	}
-
-	/** Get generic type parameters of the class controlled by this serializer.
-	 * @return generic type parameters or null, if there are none or {@link FieldSerializerConfig#optimizedGenerics} is false. */
-	public Class[] getGenerics () {
-		return cachedFields.genericTypes;
 	}
 
 	protected void initializeCachedFields () {
@@ -101,8 +91,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 	 * instantiation parameters, the fields analysis should be repeated. */
 	public void write (Kryo kryo, Output output, T object) {
 		if (config.optimizedGenerics) {
-			if (typeParameters.length > 0 && cachedFields.genericTypes != null) cachedFields.updateGenerics();
-			if (cachedFields.genericsScope != null) kryo.getGenericsResolver().pushScope(type, cachedFields.genericsScope);
+			if (generics.typeParameters.length > 0 && genericTypes != null) updateGenerics();
+			if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
 		}
 
 		CachedField[] fields = cachedFields.fields;
@@ -111,13 +101,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 			fields[i].write(output, object);
 		}
 
-		if (config.optimizedGenerics && cachedFields.genericsScope != null) kryo.getGenericsResolver().popScope();
+		if (config.optimizedGenerics && genericsScope != null) kryo.getGenericsResolver().popScope();
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		if (config.optimizedGenerics) {
-			if (typeParameters.length > 0 && cachedFields.genericTypes != null) cachedFields.updateGenerics();
-			if (cachedFields.genericsScope != null) kryo.getGenericsResolver().pushScope(type, cachedFields.genericsScope);
+			if (generics.typeParameters.length > 0 && genericTypes != null) updateGenerics();
+			if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
 		}
 
 		T object = create(kryo, input, type);
@@ -129,8 +119,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			fields[i].read(input, object);
 		}
 
-		if (config.optimizedGenerics && cachedFields.genericsScope != null && kryo.getGenericsResolver() != null)
-			kryo.getGenericsResolver().popScope();
+		if (config.optimizedGenerics && genericsScope != null) kryo.getGenericsResolver().popScope();
 
 		return object;
 	}
@@ -144,6 +133,23 @@ public class FieldSerializer<T> extends Serializer<T> {
 	protected void log (String prefix, CachedField cachedField, int position) {
 		trace("kryo", prefix + " " + cachedField.field.getType().getSimpleName() + " field: " + cachedField + " ("
 			+ className(cachedField.field.getDeclaringClass()) + ")" + " pos=" + position);
+	}
+
+	public void setGenerics (Kryo kryo, Class[] genericTypes) {
+		this.genericTypes = genericTypes;
+	}
+
+	private void updateGenerics () {
+		if (TRACE && genericTypes != null) trace("kryo", "Generic type parameters: " + Arrays.toString(genericTypes));
+
+		// Generate a mapping from type variable names to concrete types.
+		genericsScope = generics.newGenericsScope(type, genericTypes);
+		if (genericsScope != null) kryo.getGenericsResolver().pushScope(type, genericsScope);
+
+		for (CachedField cachedField : cachedFields.fields)
+			if (cachedField instanceof ReflectField) generics.updateGenericCachedField((ReflectField)cachedField);
+
+		if (genericsScope != null) kryo.getGenericsResolver().popScope();
 	}
 
 	/** Allows specific fields to be optimized. */
@@ -179,8 +185,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return kryo;
 	}
 
-	/** Used by {@link #copy(Kryo, Object)} to create the new object. This can be overridden to customize object creation, eg to
-	 * call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
+	/** Used by {@link #copy(Kryo, Object)} to create a new object. This can be overridden to customize object creation, eg to call
+	 * a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
 	protected T createCopy (Kryo kryo, T original) {
 		return (T)kryo.newInstance(original.getClass());
 	}
@@ -199,16 +205,15 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return config;
 	}
 
-	/** Controls how a field will be serialized. */
+	/** Settings for serializing a field. */
 	static public abstract class CachedField {
 		Field field;
 		FieldAccess access;
 		String name;
 		Class valueClass;
 		Serializer serializer;
-		boolean canBeNull;
+		boolean canBeNull, varInt = true, optimizePositive;
 		int accessIndex = -1;
-		boolean varInt = true, optimizePositive;
 
 		/** @param valueClass The concrete class of the values for this field. This saves 1-2 bytes. The serializer registered for
 		 *           the specified class will be used. Only set to a non-null value if the field type in the class definition is
