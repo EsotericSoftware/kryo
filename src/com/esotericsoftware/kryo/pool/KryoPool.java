@@ -69,7 +69,7 @@ public interface KryoPool {
 	/** Builder for a {@link KryoPool} instance, constructs a {@link KryoPoolQueueImpl} instance. */
 	static public class Builder {
 		private final KryoFactory factory;
-		private Queue<Kryo> queue = new ConcurrentLinkedQueue();
+		private Queue queue = new ConcurrentLinkedQueue();
 		private boolean softReferences;
 
 		public Builder (KryoFactory factory) {
@@ -79,8 +79,9 @@ public interface KryoPool {
 			this.factory = factory;
 		}
 
-		/** Use the given queue for pooling kryo instances (by default a {@link ConcurrentLinkedQueue} is used). */
-		public Builder queue (Queue<Kryo> queue) {
+		/** Use the given queue for pooling Kryo or SoftReference<Kryo> instances (by default a {@link ConcurrentLinkedQueue} is
+		 * used). */
+		public Builder queue (Queue<? super Object> queue) {
 			if (queue == null) {
 				throw new IllegalArgumentException("queue must not be null");
 			}

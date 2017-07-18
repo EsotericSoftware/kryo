@@ -30,21 +30,19 @@ import com.esotericsoftware.kryo.Kryo;
  * behavior so that GC'ed Kryo instances are skipped. Most other methods are unsupported.
  * @author Martin Grotzke */
 class SoftReferenceQueue implements Queue<Kryo> {
-	private Queue<SoftReference<Kryo>> delegate;
+	private Queue delegate;
 
 	public SoftReferenceQueue (Queue delegate) {
-		this.delegate = (Queue<SoftReference<Kryo>>)delegate;
+		this.delegate = delegate;
 	}
 
 	public Kryo poll () {
-		Kryo res;
-		SoftReference<Kryo> ref;
-		while ((ref = delegate.poll()) != null) {
-			if ((res = ref.get()) != null) {
-				return res;
-			}
+		while (true) {
+			SoftReference<Kryo> ref = (SoftReference<Kryo>)delegate.poll();
+			if (ref == null) return null;
+			Kryo res = ref.get();
+			if (res != null) return res;
 		}
-		return null;
 	}
 
 	public boolean offer (Kryo e) {
