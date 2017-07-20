@@ -22,7 +22,6 @@ package com.esotericsoftware.kryo.serializers;
 import javax.crypto.KeyGenerator;
 
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.serializers.BlowfishSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 
 /** @author Nathan Sweet */

@@ -24,9 +24,6 @@ import java.io.FileNotFoundException;
 import org.apache.commons.lang.builder.EqualsBuilder;
 
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
-import com.esotericsoftware.minlog.Log;
 
 /** @author Nathan Sweet */
 public class CompatibleFieldSerializerTest extends KryoTestCase {

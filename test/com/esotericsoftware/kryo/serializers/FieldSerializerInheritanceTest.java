@@ -22,9 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import org.junit.Assert;
 
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
 /** Created by phamrak on 8.6.2016. */
 public class FieldSerializerInheritanceTest extends KryoTestCase {

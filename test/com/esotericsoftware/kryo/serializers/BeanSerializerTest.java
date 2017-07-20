@@ -20,7 +20,6 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.serializers.BeanSerializer;
 
 /** @author Nathan Sweet */
 public class BeanSerializerTest extends KryoTestCase {

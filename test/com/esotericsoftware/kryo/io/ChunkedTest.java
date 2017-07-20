@@ -20,10 +20,6 @@
 package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.InputChunked;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.OutputChunked;
 
 /** @author Nathan Sweet */
 public class ChunkedTest extends KryoTestCase {

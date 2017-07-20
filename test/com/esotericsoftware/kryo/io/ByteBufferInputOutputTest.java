@@ -24,8 +24,6 @@ import java.nio.ByteOrder;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.ByteBufferOutput;
 
 public class ByteBufferInputOutputTest extends KryoTestCase {
 

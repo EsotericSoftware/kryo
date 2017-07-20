@@ -19,14 +19,13 @@
 
 package com.esotericsoftware.kryo.io;
 
+import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.util.Util;
-import static com.esotericsoftware.kryo.util.Util.*;
 
 /** An OutputStream that buffers data in a byte array and flushes to another OutputStream, writing the length before each flush.
  * The length allows the chunks to be skipped when reading.

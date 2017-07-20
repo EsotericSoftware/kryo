@@ -19,9 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.serializers.DeflateSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 
 /** @author Nathan Sweet */
 public class DeflateSerializerTest extends KryoTestCase {

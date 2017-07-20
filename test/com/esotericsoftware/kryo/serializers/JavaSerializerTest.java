@@ -22,7 +22,6 @@ package com.esotericsoftware.kryo.serializers;
 import java.io.Serializable;
 
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
 /** @author Nathan Sweet */
 public class JavaSerializerTest extends KryoTestCase {
