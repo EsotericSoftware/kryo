@@ -31,7 +31,6 @@ import junit.framework.TestCase;
 
 /** @author Tiago Albineli Motta <timotta@gmail.com> */
 public class WarnUnregisteredClassesTest extends TestCase {
-
 	LoggerStub log;
 
 	protected void setUp () throws Exception {
@@ -107,7 +106,6 @@ public class WarnUnregisteredClassesTest extends TestCase {
 	}
 
 	class LoggerStub extends Logger {
-
 		public List<Integer> levels = new ArrayList();
 		public List<String> messages = new ArrayList();
 
@@ -116,19 +114,19 @@ public class WarnUnregisteredClassesTest extends TestCase {
 			messages.add(message);
 		}
 	}
-}
 
-class UnregisteredClass {
-	public UnregisteredClass () {
+	static class UnregisteredClass {
+		public UnregisteredClass () {
+		}
 	}
-}
 
-class UnregisteredClass2 {
-	public UnregisteredClass2 () {
+	static class UnregisteredClass2 {
+		public UnregisteredClass2 () {
+		}
 	}
-}
 
-class RegisteredClass {
-	public RegisteredClass () {
+	static class RegisteredClass {
+		public RegisteredClass () {
+		}
 	}
 }
