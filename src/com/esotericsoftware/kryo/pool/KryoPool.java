@@ -25,9 +25,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.esotericsoftware.kryo.Kryo;
 
-/** A simple pool interface for {@link Kryo} instances. Use the {@link KryoPool.Builder} to construct a pool instance.
- * 
- * Usage:
+/** A simple pool interface for {@link Kryo} instances. Use the {@link KryoPool.Builder} to construct a pool instance. Usage:
  * 
  * <pre>
  * import com.esotericsoftware.kryo.Kryo;
@@ -53,7 +51,6 @@ import com.esotericsoftware.kryo.Kryo;
  *   }
  * });
  * </pre>
- * 
  * @author Martin Grotzke */
 public interface KryoPool {
 	/** Takes a {@link Kryo} instance from the pool or creates a new one (using the factory) if the pool is empty. */

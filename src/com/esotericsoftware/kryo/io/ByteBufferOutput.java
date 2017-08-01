@@ -35,7 +35,6 @@ import com.esotericsoftware.kryo.util.Util;
 
 /** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
  * for efficiently writing primitive types and strings.
- * 
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class ByteBufferOutput extends Output {
 	protected ByteBuffer niobuffer;

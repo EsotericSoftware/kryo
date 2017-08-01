@@ -24,6 +24,8 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +33,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
@@ -53,15 +56,14 @@ import com.esotericsoftware.kryo.serializers.ReflectField.FloatReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.IntReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.LongReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.ShortReflectField;
+import com.esotericsoftware.kryo.util.GenericsScope;
+import com.esotericsoftware.kryo.util.GenericsUtil;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 class CachedFields implements Comparator<FieldSerializer.CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
 
 	private final FieldSerializer serializer;
-	private final Class type;
-	private final FieldSerializerConfig config;
-
 	CachedField[] fields = new CachedField[0];
 	CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
@@ -69,12 +71,10 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 
 	public CachedFields (FieldSerializer serializer) {
 		this.serializer = serializer;
-		type = serializer.type;
-		config = serializer.config;
 	}
 
 	public void rebuild () {
-		if (type.isInterface()) { // No fields to serialize.
+		if (serializer.type.isInterface()) { // No fields to serialize.
 			fields = emptyCachedFields;
 			copyFields = emptyCachedFields;
 			serializer.initializeCachedFields();
@@ -82,8 +82,8 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		}
 
 		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
-		boolean asm = !isAndroid && Modifier.isPublic(type.getModifiers());
-		Class nextClass = type;
+		boolean asm = !isAndroid && Modifier.isPublic(serializer.type.getModifiers());
+		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
 			for (Field field : nextClass.getDeclaredFields())
 				addField(field, asm, newFields, newCopyFields);
@@ -104,6 +104,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 	private void addField (Field field, boolean asm, ArrayList<CachedField> fields, ArrayList<CachedField> copyFields) {
 		int modifiers = field.getModifiers();
 		if (Modifier.isStatic(modifiers)) return;
+		FieldSerializerConfig config = serializer.config;
 		if (field.isSynthetic() && config.ignoreSyntheticFields) return;
 
 		if (!field.isAccessible()) {
@@ -124,6 +125,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		boolean isTransient = Modifier.isTransient(modifiers);
 		if (isTransient && !config.serializeTransient && !config.copyTransient) return;
 
+		Class declaringClass = field.getDeclaringClass();
 		Class fieldClass = field.getType();
 		int accessIndex = -1;
 		if (asm //
@@ -131,7 +133,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			&& Modifier.isPublic(modifiers) //
 			&& Modifier.isPublic(fieldClass.getModifiers())) {
 			try {
-				if (access == null) access = FieldAccess.get(type);
+				if (access == null) access = FieldAccess.get(serializer.type);
 				accessIndex = ((FieldAccess)access).getIndex(field);
 			} catch (RuntimeException ex) {
 				if (DEBUG) debug("kryo", "Unable to use ReflectASM.", ex);
@@ -144,7 +146,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 		cachedField.access = (FieldAccess)access;
 		cachedField.accessIndex = accessIndex;
 		if (config.extendedFieldNames)
-			cachedField.name = cachedField.field.getDeclaringClass().getSimpleName() + "." + field.getName();
+			cachedField.name = declaringClass.getSimpleName() + "." + field.getName();
 		else
 			cachedField.name = field.getName();
 
@@ -152,20 +154,20 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			cachedField.canBeNull = config.fieldsCanBeNull && !field.isAnnotationPresent(NotNull.class);
 			if (serializer.kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
 
-			((ReflectField)cachedField).generics = serializer.fieldSerializerGenerics.getGenerics(field);
+			((ReflectField)cachedField).generics = Generics.create(declaringClass, serializer.type, field.getGenericType());
 
 			if (TRACE) {
-				trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " ("
-					+ className(field.getDeclaringClass()) + ")");
-				Class[] generics = ((ReflectField)cachedField).generics;
-				if (generics != null) trace("kryo", "Generics: " + classNames(generics));
+				trace("kryo",
+					"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
+				Generics generics = ((ReflectField)cachedField).generics;
+				if (generics != null) trace("kryo", "Generics: " + generics);
 			}
 		} else { // Must be a primitive or String.
 			cachedField.canBeNull = fieldClass == String.class && config.fieldsCanBeNull;
 			cachedField.valueClass = fieldClass;
 
-			if (TRACE) trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " ("
-				+ className(field.getDeclaringClass()) + ")");
+			if (TRACE) trace("kryo",
+				"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
 		}
 
 		applyAnnotations(cachedField);
@@ -194,7 +196,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			if (fieldClass == String.class
 				&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
 				return new StringAsmField();
-			return new AsmField(serializer.kryo, type);
+			return new AsmField(serializer);
 		}
 		if (fieldClass.isPrimitive()) {
 			if (fieldClass == boolean.class) return new BooleanReflectField();
@@ -206,7 +208,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			if (fieldClass == float.class) return new FloatReflectField();
 			if (fieldClass == double.class) return new DoubleReflectField();
 		}
-		return new ReflectField(serializer.kryo, type);
+		return new ReflectField(serializer);
 	}
 
 	public int compare (CachedField o1, CachedField o2) {
@@ -241,7 +243,8 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 				break;
 			}
 		}
-		if (!found) throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
+		if (!found)
+			throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + serializer.type.getName());
 	}
 
 	/** Removes a field so that it won't be serialized. */
@@ -271,7 +274,8 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 				break;
 			}
 		}
-		if (!found) throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + type.getName());
+		if (!found)
+			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
 	}
 
 	/** Sets serializers using annotations.
@@ -339,5 +343,52 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 	private Serializer newSerializer (Class serializerClass, Field field) {
 		if (serializerClass == Serializer.class) return null;
 		return ReflectionSerializerFactory.newSerializer(serializer.kryo, serializerClass, field.getClass());
+	}
+
+	/** Stores the partially resolved generic types for a field. */
+	static class Generics {
+		final Type[] types; // Entries are either Class or TypeVariable.
+		final Class[] resolved;
+
+		private Generics (Type[] types) {
+			this.types = types;
+			resolved = new Class[types.length];
+		}
+
+		/** Use the scope to resolve type variables.
+		 * @return May be null or contain null. */
+		public Class[] resolve (GenericsScope scope) {
+			if (scope.isEmpty()) {
+				for (int i = 0, n = types.length; i < n; i++) {
+					Type type = types[i];
+					if (type instanceof Class) resolved[i] = (Class)type;
+				}
+			} else {
+				for (int i = 0, n = types.length; i < n; i++) {
+					Type type = types[i];
+					if (type instanceof TypeVariable)
+						resolved[i] = scope.resolveTypeVariable((TypeVariable)type);
+					else
+						resolved[i] = (Class)type;
+				}
+			}
+			for (int i = 0, n = resolved.length; i < n; i++)
+				if (resolved[i] != null) return resolved;
+			return null;
+		}
+
+		public void setGenerics (Kryo kryo, Serializer serializer) {
+			Class[] resolved = resolve(kryo.getGenericsScope());
+			if (resolved != null) serializer.setGenerics(kryo, resolved);
+		}
+
+		/** @return May be null if the type has no type parameters. */
+		static public Generics create (Class fromClass, Class toClass, Type type) {
+			Type[] types = GenericsUtil.resolveTypeParameters(fromClass, toClass, type);
+			if (types == null) return null;
+			for (int i = 0, n = types.length; i < n; i++)
+				if (types[i] != Object.class) return new Generics(types);
+			return null;
+		}
 	}
 }

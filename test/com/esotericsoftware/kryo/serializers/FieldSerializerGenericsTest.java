@@ -32,12 +32,12 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Output;
 
 @RunWith(Parameterized.class)
-public class FieldSerializerGenericsTest {
-
+public class FieldSerializerGenericsTest extends KryoTestCase {
 	@Parameters(name = "optimizedGenerics_{0}")
 	static public Iterable optimizedGenerics () {
 		return Arrays.asList(true, false);
@@ -86,6 +86,59 @@ public class FieldSerializerGenericsTest {
 
 		kryo.writeObject(new Output(outputStream), genBar1);
 	}
+
+	@Test
+	public void testMultipleValuesWithDifferentParameters () {
+		// MultipleValues has fields with different parameterized types for Value.
+		MultipleValues values = new MultipleValues();
+		values.integer = new Value(123);
+		values.string = new Value("abc");
+
+		FieldSerializerConfig config = new FieldSerializerConfig();
+		config.setOptimizedGenerics(optimizedGenerics);
+		kryo.setDefaultSerializer(new FieldSerializerFactory(config));
+
+		CollectionSerializer collectionSerializer = new CollectionSerializer();
+		collectionSerializer.setElementsCanBeNull(false); // Increase optimizedGenerics savings so difference is more easily seen.
+
+		kryo.register(MultipleValues.class);
+		kryo.register(Value.class);
+		kryo.register(ArrayList.class, collectionSerializer);
+
+		roundTrip(optimizedGenerics ? 28 : 35, values);
+	}
+
+	@Test
+	public void testParameterPassedToSuper () {
+		SuperTest superTest = new SuperTest();
+		superTest.integer = new PassArgToSupers();
+		superTest.integer.list = new ArrayList();
+		superTest.integer.list.add(1);
+		superTest.integer.list.add(2);
+		superTest.integer.list.add(3);
+		superTest.integer.value = 512;
+		superTest.string = new PassArgToSupers();
+		superTest.string.list = new ArrayList();
+		superTest.string.list.add("list1");
+		superTest.string.list.add("list2");
+		superTest.string.list.add("list3");
+		superTest.string.value = "value";
+
+		FieldSerializerConfig config = new FieldSerializerConfig();
+		config.setOptimizedGenerics(optimizedGenerics);
+		kryo.setDefaultSerializer(new FieldSerializerFactory(config));
+
+		CollectionSerializer collectionSerializer = new CollectionSerializer();
+		collectionSerializer.setElementsCanBeNull(false); // Increase optimizedGenerics savings so difference is more easily seen.
+
+		kryo.register(SuperTest.class);
+		kryo.register(PassArgToSupers.class);
+		kryo.register(ArrayList.class, collectionSerializer);
+
+		roundTrip(optimizedGenerics ? 33 : 40, superTest);
+	}
+
+	// ---
 
 	static class GenericBarContainer<T extends Bar> {
 		BarContainer barContainer;
@@ -146,6 +199,100 @@ public class FieldSerializerGenericsTest {
 
 		public GenericFoo (B foo) {
 			this.foo = foo;
+		}
+	}
+
+	// ---
+
+	static public final class Value<T> {
+		public T value;
+		public ArrayList<T> list;
+
+		public Value () {
+		}
+
+		public Value (T value) {
+			this.value = value;
+			list = new ArrayList();
+			list.add(value);
+			list.add(value);
+			list.add(value);
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			Value other = (Value)obj;
+			if (value == null) {
+				if (other.value != null) return false;
+			} else if (!value.equals(other.value)) return false;
+			if (list == null) {
+				if (other.list != null) return false;
+			} else if (!list.equals(other.list)) return false;
+			return true;
+		}
+	}
+
+	static public final class MultipleValues {
+		public Value<String> string;
+		public Value<Integer> integer;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			MultipleValues other = (MultipleValues)obj;
+			if (integer == null) {
+				if (other.integer != null) return false;
+			} else if (!integer.equals(other.integer)) return false;
+			if (string == null) {
+				if (other.string != null) return false;
+			} else if (!string.equals(other.string)) return false;
+			return true;
+		}
+	}
+
+	// ---
+
+	static public class Super<X> {
+		public ArrayList<X> list;
+		public X value;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			Super other = (Super)obj;
+			if (list == null) {
+				if (other.list != null) return false;
+			} else if (!list.equals(other.list)) return false;
+			return true;
+		}
+	}
+
+	static public class PassArgToSuper<T> extends Super<T> {
+	}
+
+	static public final class PassArgToSupers<T> extends PassArgToSuper<T> {
+	}
+
+	static public final class SuperTest {
+		public PassArgToSupers<Integer> integer;
+		public PassArgToSupers<String> string;
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			SuperTest other = (SuperTest)obj;
+			if (integer == null) {
+				if (other.integer != null) return false;
+			} else if (!integer.equals(other.integer)) return false;
+			if (string == null) {
+				if (other.string != null) return false;
+			} else if (!string.equals(other.string)) return false;
+			return true;
 		}
 	}
 }

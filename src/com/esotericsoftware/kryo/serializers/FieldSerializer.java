@@ -33,7 +33,7 @@ import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.GenericsResolver.GenericsScope;
+import com.esotericsoftware.kryo.util.GenericsScope.GenericsHierarchy;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
@@ -54,8 +54,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 	final Class type;
 	final FieldSerializerConfig config;
 	final CachedFields cachedFields;
-	final FieldSerializerGenerics fieldSerializerGenerics;
-	Class[] generics;
+	private Class[] generics;
+	private final GenericsHierarchy genericsHierarchy;
 
 	public FieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new FieldSerializerConfig());
@@ -67,7 +67,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		this.type = type;
 		this.config = config;
 
-		fieldSerializerGenerics = new FieldSerializerGenerics(this);
+		genericsHierarchy = new GenericsHierarchy(type);
 
 		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
@@ -82,11 +82,15 @@ public class FieldSerializer<T> extends Serializer<T> {
 	protected void initializeCachedFields () {
 	}
 
+	public void setGenerics (Kryo kryo, Class[] generics) {
+		this.generics = generics;
+	}
+
 	/** This method can be called for different fields having the same type. Even though the raw type is the same, if the type is
 	 * generic, it could happen that different concrete classes are used to instantiate it. Therefore, in case of different
 	 * instantiation parameters, the fields analysis should be repeated. */
 	public void write (Kryo kryo, Output output, T object) {
-		boolean popScope = config.optimizedGenerics ? updateFieldGenerics() : false;
+		int pop = config.optimizedGenerics ? pushGenericsScope() : 0;
 
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
@@ -94,11 +98,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 			fields[i].write(output, object);
 		}
 
-		if (popScope) kryo.getGenericsResolver().popScope();
+		if (pop > 0) kryo.getGenericsScope().pop(pop);
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-		boolean popScope = config.optimizedGenerics ? updateFieldGenerics() : false;
+		int pop = config.optimizedGenerics ? pushGenericsScope() : 0;
 
 		T object = create(kryo, input, type);
 		kryo.reference(object);
@@ -109,26 +113,18 @@ public class FieldSerializer<T> extends Serializer<T> {
 			fields[i].read(input, object);
 		}
 
-		if (popScope) kryo.getGenericsResolver().popScope();
+		if (pop > 0) kryo.getGenericsScope().pop(pop);
 		return object;
 	}
 
-	private boolean updateFieldGenerics () {
-		if (generics == null) return false;
+	private int pushGenericsScope () {
 		Class[] generics = this.generics;
+		if (generics == null) return 0;
 		this.generics = null;
 
-		if (fieldSerializerGenerics.typeParameters.length == 0) return false;
-
-		// Generate a mapping from type variable names to concrete types.
-		GenericsScope scope = fieldSerializerGenerics.newGenericsScope(type, generics);
-		if (scope != null) kryo.getGenericsResolver().pushScope(type, scope);
-
-		for (CachedField cachedField : cachedFields.fields)
-			if (cachedField instanceof ReflectField)
-				fieldSerializerGenerics.updateGenericCachedField((ReflectField)cachedField, scope);
-
-		return scope != null;
+		int pop = kryo.getGenericsScope().push(genericsHierarchy, generics);
+		if (TRACE && pop > 0) trace("kryo", "Generics scope: " + kryo.getGenericsScope());
+		return pop;
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
@@ -138,18 +134,38 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	protected void log (String prefix, CachedField cachedField, int position) {
-		Class[] generics = cachedField instanceof ReflectField ? ((ReflectField)cachedField).generics : null;
-		if (generics != null) {
-			trace("kryo", prefix + " field " + cachedField.field.getType().getSimpleName() + "<" + classNames(generics) + ">: "
-				+ cachedField + " (" + className(cachedField.field.getDeclaringClass()) + ")" + pos(position));
+		StringBuilder buffer = new StringBuilder();
+		buffer.append(prefix);
+		buffer.append(" field ");
+		if (cachedField instanceof ReflectField) {
+			ReflectField reflectField = (ReflectField)cachedField;
+			Class fieldClass = reflectField.resolveFieldClass();
+			buffer.append((fieldClass != null ? fieldClass : cachedField.field.getType()).getSimpleName());
+			if (reflectField.generics != null) {
+				Class[] resolved = reflectField.generics.resolve(kryo.getGenericsScope());
+				if (resolved != null) {
+					buffer.append('<');
+					for (int i = 0, n = resolved.length; i < n; i++) {
+						if (i != 0) buffer.append(", ");
+						buffer.append(resolved[i].getSimpleName());
+					}
+					buffer.append('>');
+				}
+			}
 		} else {
-			trace("kryo", prefix + " field " + cachedField.field.getType().getSimpleName() + ": " + cachedField + " ("
-				+ className(cachedField.field.getDeclaringClass()) + ")" + pos(position));
+			if (cachedField.valueClass != null)
+				buffer.append(cachedField.valueClass.getSimpleName());
+			else
+				buffer.append(cachedField.field.getType().getSimpleName());
 		}
-	}
 
-	public void setGenerics (Kryo kryo, Class[] generics) {
-		this.generics = generics;
+		buffer.append(": ");
+		buffer.append(cachedField.name);
+		buffer.append(" (");
+		buffer.append(className(cachedField.field.getDeclaringClass()));
+		buffer.append(')');
+		buffer.append(pos(position));
+		trace("kryo", buffer.toString());
 	}
 
 	/** Allows specific fields to be optimized. */

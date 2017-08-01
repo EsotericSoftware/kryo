@@ -19,37 +19,36 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
-/*** Implementations of ASM-based serializers for fields.
+/*** Read and write a non-primitive field using ReflectASM.
  * @author Nathan Sweet */
 class AsmField extends ReflectField {
-	public AsmField (Kryo kryo, Class type) {
-		super(kryo, type);
+	public AsmField (FieldSerializer serializer) {
+		super(serializer);
 	}
 
-	public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+	public Object get (Object object) throws IllegalAccessException {
 		return access.get(object, accessIndex);
 	}
 
-	public void setField (Object object, Object value) throws IllegalArgumentException, IllegalAccessException {
+	public void set (Object object, Object value) throws IllegalAccessException {
 		((FieldAccess)access).set(object, accessIndex, value);
 	}
 
 	public void copy (Object original, Object copy) {
 		try {
-			access.set(copy, accessIndex, kryo.copy(access.get(original, accessIndex)));
+			access.set(copy, accessIndex, fieldSerializer.kryo.copy(access.get(original, accessIndex)));
 		} catch (KryoException ex) {
-			ex.addTrace(this + " (" + type.getName() + ")");
+			ex.addTrace(this + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
 		} catch (RuntimeException runtimeEx) {
 			KryoException ex = new KryoException(runtimeEx);
-			ex.addTrace(this + " (" + type.getName() + ")");
+			ex.addTrace(this + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
 		}
 	}

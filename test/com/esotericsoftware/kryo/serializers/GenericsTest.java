@@ -35,7 +35,6 @@ import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Output;
 
-/** @author Nathan Sweet */
 @RunWith(Parameterized.class)
 public class GenericsTest extends KryoTestCase {
 	{

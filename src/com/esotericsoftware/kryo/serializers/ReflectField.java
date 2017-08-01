@@ -19,41 +19,45 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.CachedFields.Generics;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
-/*** Defer generation of serializers until it is really required at run-time. By default, use reflection-based approach.
+/*** Read and write a non-primitive field using reflection.
  * @author Nathan Sweet
  * @author Roman Levenstein <romixlev@gmail.com> */
 class ReflectField extends CachedField {
-	final Kryo kryo;
-	final Class type;
-	public Class[] generics;
+	final FieldSerializer fieldSerializer;
+	Generics generics;
 
-	ReflectField (Kryo kryo, Class type) {
-		this.kryo = kryo;
-		this.type = type;
+	ReflectField (FieldSerializer fieldSerializer) {
+		this.fieldSerializer = fieldSerializer;
 	}
 
-	public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+	public Object get (Object object) throws IllegalAccessException {
 		return field.get(object);
 	}
 
-	public void setField (Object object, Object value) throws IllegalArgumentException, IllegalAccessException {
+	public void set (Object object, Object value) throws IllegalAccessException {
 		field.set(object, value);
 	}
 
 	public void write (Output output, Object object) {
+		Kryo kryo = fieldSerializer.kryo;
 		try {
-			Object value = getField(object);
+			Object value = get(object);
 
 			Serializer serializer = this.serializer;
-			if (valueClass == null) {
+			Class fieldClass = resolveFieldClass();
+			if (fieldClass == null) {
 				// The concrete type of the field is unknown, write the class first.
 				if (value == null) {
 					kryo.writeClass(output, null);
@@ -61,21 +65,19 @@ class ReflectField extends CachedField {
 				}
 				Registration registration = kryo.writeClass(output, value.getClass());
 				if (serializer == null) serializer = registration.getSerializer();
-				serializer.setGenerics(kryo, generics);
+				if (generics != null) generics.setGenerics(kryo, serializer);
 				kryo.writeObject(output, value, serializer);
 			} else {
 				// The concrete type of the field is known, always use the same serializer.
-				// BOZO - Why set this.serializer?
-				if (serializer == null) this.serializer = serializer = kryo.getSerializer(valueClass);
+				if (serializer == null) serializer = kryo.getSerializer(fieldClass);
+				if (generics != null) generics.setGenerics(kryo, serializer);
 				if (canBeNull) {
-					serializer.setGenerics(kryo, generics);
 					kryo.writeObjectOrNull(output, value, serializer);
 				} else {
 					if (value == null) {
 						throw new KryoException(
 							"Field value cannot be null when canBeNull is false: " + this + " (" + object.getClass().getName() + ")");
 					}
-					serializer.setGenerics(kryo, generics);
 					kryo.writeObject(output, value, serializer);
 				}
 			}
@@ -92,10 +94,11 @@ class ReflectField extends CachedField {
 	}
 
 	public void read (Input input, Object object) {
+		Kryo kryo = fieldSerializer.kryo;
 		try {
 			Object value;
 
-			Class concreteType = valueClass;
+			Class concreteType = resolveFieldClass();
 			Serializer serializer = this.serializer;
 			if (concreteType == null) {
 				// The concrete type of the field is unknown, read the class first.
@@ -104,50 +107,60 @@ class ReflectField extends CachedField {
 					value = null;
 				else {
 					if (serializer == null) serializer = registration.getSerializer();
-					serializer.setGenerics(kryo, generics);
+					if (generics != null) generics.setGenerics(kryo, serializer);
 					value = kryo.readObject(input, registration.getType(), serializer);
 				}
 			} else {
 				// The concrete type of the field is known, always use the same serializer.
-				// BOZO - Why set this.serializer?
-				if (serializer == null) this.serializer = serializer = kryo.getSerializer(valueClass);
-				serializer.setGenerics(kryo, generics);
+				if (serializer == null) serializer = kryo.getSerializer(concreteType);
+				if (generics != null) generics.setGenerics(kryo, serializer);
 				if (canBeNull)
 					value = kryo.readObjectOrNull(input, concreteType, serializer);
 				else
 					value = kryo.readObject(input, concreteType, serializer);
 			}
 
-			setField(object, value);
+			set(object, value);
 		} catch (IllegalAccessException ex) {
-			throw new KryoException("Error accessing field: " + this + " (" + type.getName() + ")", ex);
+			throw new KryoException("Error accessing field: " + this + " (" + fieldSerializer.type.getName() + ")", ex);
 		} catch (KryoException ex) {
-			ex.addTrace(this + " (" + type.getName() + ")");
+			ex.addTrace(this + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
 		} catch (RuntimeException runtimeEx) {
 			KryoException ex = new KryoException(runtimeEx);
-			ex.addTrace(this + " (" + type.getName() + ")");
+			ex.addTrace(this + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
 		}
 	}
 
+	Class resolveFieldClass () {
+		if (fieldSerializer.config.optimizedGenerics && valueClass == null) {
+			Type genericType = field.getGenericType();
+			if (genericType instanceof TypeVariable) {
+				Class resolved = fieldSerializer.kryo.getGenericsScope().resolveTypeVariable((TypeVariable)genericType);
+				if (resolved != null && fieldSerializer.kryo.isFinal(resolved)) return resolved;
+			}
+		}
+		return valueClass;
+	}
+
 	public void copy (Object original, Object copy) {
 		try {
-			setField(copy, kryo.copy(getField(original)));
+			set(copy, fieldSerializer.kryo.copy(get(original)));
 		} catch (IllegalAccessException ex) {
-			throw new KryoException("Error accessing field: " + this + " (" + type.getName() + ")", ex);
+			throw new KryoException("Error accessing field: " + this + " (" + fieldSerializer.type.getName() + ")", ex);
 		} catch (KryoException ex) {
-			ex.addTrace(this + " (" + type.getName() + ")");
+			ex.addTrace(this + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
 		} catch (RuntimeException runtimeEx) {
 			KryoException ex = new KryoException(runtimeEx);
-			ex.addTrace(this + " (" + type.getName() + ")");
+			ex.addTrace(this + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
 		}
 	}
 
 	final static class IntReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+		public Object getField (Object object) throws IllegalAccessException {
 			return field.getInt(object);
 		}
 
@@ -189,7 +202,7 @@ class ReflectField extends CachedField {
 	}
 
 	final static class FloatReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+		public Object getField (Object object) throws IllegalAccessException {
 			return field.getFloat(object);
 		}
 
@@ -225,7 +238,7 @@ class ReflectField extends CachedField {
 	}
 
 	final static class ShortReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+		public Object getField (Object object) throws IllegalAccessException {
 			return field.getShort(object);
 		}
 
@@ -261,7 +274,7 @@ class ReflectField extends CachedField {
 	}
 
 	final static class ByteReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+		public Object getField (Object object) throws IllegalAccessException {
 			return field.getByte(object);
 		}
 
@@ -297,7 +310,7 @@ class ReflectField extends CachedField {
 	}
 
 	final static class BooleanReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+		public Object getField (Object object) throws IllegalAccessException {
 			return field.getBoolean(object);
 		}
 
@@ -333,7 +346,7 @@ class ReflectField extends CachedField {
 	}
 
 	final static class CharReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+		public Object getField (Object object) throws IllegalAccessException {
 			return field.getChar(object);
 		}
 
@@ -369,7 +382,7 @@ class ReflectField extends CachedField {
 	}
 
 	final static class LongReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+		public Object getField (Object object) throws IllegalAccessException {
 			return field.getLong(object);
 		}
 
@@ -411,7 +424,7 @@ class ReflectField extends CachedField {
 	}
 
 	final static class DoubleReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
+		public Object getField (Object object) throws IllegalAccessException {
 			return field.getDouble(object);
 		}
 

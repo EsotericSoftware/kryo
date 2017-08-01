@@ -36,7 +36,6 @@ import com.esotericsoftware.minlog.Log;
 
 /*** This test was originally taken from a GridGain blog. It is a compares the speed of serialization using Java serialization,
  * Kryo, Kryo with Unsafe patches and GridGain's serialization.
- * 
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class SerializationBenchmarkTest extends KryoTestCase {
 	static private final int WARMUP_ITERATIONS = 1000;
@@ -395,7 +394,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 	}
 
-	protected void setUp () throws Exception {
+	public void setUp () throws Exception {
 		super.setUp();
 		Log.WARN();
 	}

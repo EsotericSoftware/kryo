@@ -35,7 +35,6 @@ import com.esotericsoftware.kryo.util.Util;
 
 /** An InputStream that reads data from a byte array and optionally fills the byte array from another InputStream as needed.
  * Utility methods are provided for efficiently reading primitive types and strings.
- * 
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class ByteBufferInput extends Input {
 	protected ByteBuffer niobuffer;

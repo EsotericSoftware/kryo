@@ -27,6 +27,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 import org.junit.Assert;
+import org.junit.Before;
 
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
@@ -36,7 +37,6 @@ import com.esotericsoftware.kryo.io.Output;
 import junit.framework.TestCase;
 
 /** Convenience methods for round tripping objects.
- * 
  * @author Nathan Sweet */
 abstract public class KryoTestCase extends TestCase {
 	protected Kryo kryo;
@@ -57,7 +57,8 @@ abstract public class KryoTestCase extends TestCase {
 		public Input createInput (byte[] buffer);
 	}
 
-	protected void setUp () throws Exception {
+	@Before
+	public void setUp () throws Exception {
 		// Log.TRACE();
 
 		kryo = new Kryo();

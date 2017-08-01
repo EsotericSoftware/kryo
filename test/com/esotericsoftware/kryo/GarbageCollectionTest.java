@@ -27,7 +27,6 @@ import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import junit.framework.TestCase;
 
 /** Tests for detecting PermGen memory leaks.
- * 
  * @author Tumi <serverperformance@gmail.com> */
 public class GarbageCollectionTest extends TestCase {
 	public void test () {

@@ -132,7 +132,11 @@ public class DefaultClassResolver implements ClassResolver {
 		case NAME + 2: // Offset for NAME and NULL.
 			return readName(input);
 		}
-		if (classID == memoizedClassId) return memoizedClassIdValue;
+		if (classID == memoizedClassId) {
+			if (TRACE) trace("kryo",
+				"Read class " + (classID - 2) + ": " + className(memoizedClassIdValue.getType()) + pos(input.position()));
+			return memoizedClassIdValue;
+		}
 		Registration registration = idToRegistration.get(classID - 2);
 		if (registration == null) throw new KryoException("Encountered unregistered class ID: " + (classID - 2));
 		if (TRACE) trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()) + pos(input.position()));
