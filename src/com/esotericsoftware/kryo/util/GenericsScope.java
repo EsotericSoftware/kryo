@@ -24,17 +24,19 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 
-/** Stores type variables and their actual types for the current location in the object graph. */
+/** Stores type variables and their actual types for the current location in the object graph.
+ * @author Nathan Sweet */
 public class GenericsScope {
-	private Type[] arguments = new Type[16];
 	private int size;
+	private Type[] arguments = new Type[16];
 
 	/** Stores the specified type argument classes for the type parameters of the specified hierarchy.
 	 * @param args May contain null for type arguments that aren't known.
 	 * @return The number of entries that need to be popped. */
 	public int push (GenericsHierarchy hierarchy, Class[] args) {
-		int size = this.size;
+		int startSize = this.size;
 
+		ensureCapacity(hierarchy.total);
 		int[] counts = hierarchy.counts;
 		TypeVariable[] params = hierarchy.params;
 		for (int i = 0, p = 0, n = args.length; i < n; i++) {
@@ -43,25 +45,23 @@ public class GenericsScope {
 			if (arg == null)
 				p += count;
 			else {
-				for (int nn = p + count; p < nn; p++)
-					add(params[p], arg);
+				for (int nn = p + count; p < nn; p++) {
+					arguments[size] = params[p];
+					arguments[size + 1] = arg;
+					size += 2;
+				}
 			}
 		}
 
-		return this.size - size;
+		return size - startSize;
 	}
 
-	private void add (TypeVariable typeVariable, Class argument) {
-		if (argument == null) throw new IllegalArgumentException("argument cannot be null.");
-		int size = this.size;
-		if (size == arguments.length) {
-			Type[] newArray = new Type[arguments.length << 1];
-			System.arraycopy(arguments, 0, newArray, 0, size);
-			arguments = newArray;
-		}
-		arguments[size] = typeVariable;
-		arguments[size + 1] = argument;
-		this.size += 2;
+	private void ensureCapacity (int additionalCapacity) {
+		int sizeNeeded = size + additionalCapacity;
+		if (sizeNeeded <= arguments.length) return;
+		Type[] newArray = new Type[Math.max(sizeNeeded, arguments.length << 1)];
+		System.arraycopy(arguments, 0, newArray, 0, size);
+		arguments = newArray;
 	}
 
 	/** Removes the number of entries that were pushed.
@@ -99,6 +99,7 @@ public class GenericsScope {
 
 	/** Stores the type parameters for a class and, for parameters passed to a super class, the super class type parameters. */
 	static public class GenericsHierarchy {
+		final int total;
 		final int[] counts;
 		final TypeVariable[] params;
 
@@ -107,6 +108,7 @@ public class GenericsScope {
 
 			TypeVariable[] params = type.getTypeParameters();
 			counts = new int[params.length];
+			int total = 0;
 			for (int i = 0, n = params.length; i < n; i++) {
 				TypeVariable param = params[i];
 				temp.add(param);
@@ -129,8 +131,11 @@ public class GenericsScope {
 						}
 					}
 				}
+
+				total += counts[i];
 			}
 
+			this.total = total;
 			this.params = temp.toArray(new TypeVariable[temp.size()]);
 		}
 	}
