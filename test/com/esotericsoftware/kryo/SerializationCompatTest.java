@@ -67,6 +67,9 @@ import com.esotericsoftware.minlog.Log;
  * version (e.g. for 3.1.4 this is 3.0.0) - to do this just save this test and the {@link SerializationCompatTest}, go back to the
  * related tag and run the test (there's nothing here to automate creation of test files for a different version). */
 public class SerializationCompatTest extends KryoTestCase {
+	// Set to true to delete failed test files, then run the test again to generate new files.
+	static private final boolean DELETE_FAIELD_TEST_FILES = false;
+
 	static private final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
 	static private final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
 	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 35 : 53; // Also change
@@ -151,13 +154,16 @@ public class SerializationCompatTest extends KryoTestCase {
 			Log.info("Reading and testing " + description.classSimpleName() + " with mode '" + variant + "' from file "
 				+ file.getAbsolutePath());
 			Input in = inputFactory.apply(file);
-// try {
-			readAndRunTest(description, optimizedGenerics, in);
-// } catch (Throwable e) {
-// System.out.println("Failed: " + file.getAbsolutePath());
-// in.close();
-// file.delete();
-// }
+			try {
+				readAndRunTest(description, optimizedGenerics, in);
+			} catch (Throwable ex) {
+				if (DELETE_FAIELD_TEST_FILES) {
+					System.out.println("Failed: " + file.getAbsolutePath());
+					in.close();
+					file.delete();
+				} else
+					throw ex;
+			}
 			in.close();
 		} else {
 			Log.info("Testing and writing " + description.classSimpleName() + " with mode '" + variant + "' to file "
