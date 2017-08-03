@@ -361,15 +361,12 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			if (scope.isEmpty()) {
 				for (int i = 0, n = types.length; i < n; i++) {
 					Type type = types[i];
-					if (type instanceof Class) resolved[i] = (Class)type;
+					resolved[i] = type instanceof Class ? (Class)type : null;
 				}
 			} else {
 				for (int i = 0, n = types.length; i < n; i++) {
 					Type type = types[i];
-					if (type instanceof TypeVariable)
-						resolved[i] = scope.resolveTypeVariable((TypeVariable)type);
-					else
-						resolved[i] = (Class)type;
+					resolved[i] = type instanceof Class ? (Class)type : scope.resolveTypeVariable((TypeVariable)type);
 				}
 			}
 			for (int i = 0, n = resolved.length; i < n; i++)
