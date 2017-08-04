@@ -90,7 +90,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	 * generic, it could happen that different concrete classes are used to instantiate it. Therefore, in case of different
 	 * instantiation parameters, the fields analysis should be repeated. */
 	public void write (Kryo kryo, Output output, T object) {
-		int pop = config.optimizedGenerics ? pushGenericsScope() : 0;
+		int pop = pushGenericsScope();
 
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
@@ -102,7 +102,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-		int pop = config.optimizedGenerics ? pushGenericsScope() : 0;
+		int pop = pushGenericsScope();
 
 		T object = create(kryo, input, type);
 		kryo.reference(object);
@@ -134,38 +134,34 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	protected void log (String prefix, CachedField cachedField, int position) {
-		StringBuilder buffer = new StringBuilder();
-		buffer.append(prefix);
-		buffer.append(" field ");
+		String fieldClassName;
 		if (cachedField instanceof ReflectField) {
 			ReflectField reflectField = (ReflectField)cachedField;
 			Class fieldClass = reflectField.resolveFieldClass();
-			buffer.append((fieldClass != null ? fieldClass : cachedField.field.getType()).getSimpleName());
+			if (fieldClass == null) fieldClass = cachedField.field.getType();
+			fieldClassName = fieldClass.getSimpleName();
 			if (reflectField.generics != null) {
 				Class[] resolved = reflectField.generics.resolve(kryo.getGenericsScope());
 				if (resolved != null) {
-					buffer.append('<');
+					StringBuilder buffer = new StringBuilder();
 					for (int i = 0, n = resolved.length; i < n; i++) {
 						if (i != 0) buffer.append(", ");
-						buffer.append(resolved[i].getSimpleName());
+						if (resolved[i] == null)
+							buffer.append(reflectField.generics.getTypes()[i].getTypeName());
+						else
+							buffer.append(resolved[i].getSimpleName());
 					}
-					buffer.append('>');
+					fieldClassName = simpleName(fieldClass, buffer.toString());
 				}
 			}
 		} else {
 			if (cachedField.valueClass != null)
-				buffer.append(cachedField.valueClass.getSimpleName());
+				fieldClassName = cachedField.valueClass.getSimpleName();
 			else
-				buffer.append(cachedField.field.getType().getSimpleName());
+				fieldClassName = cachedField.field.getType().getSimpleName();
 		}
-
-		buffer.append(": ");
-		buffer.append(cachedField.name);
-		buffer.append(" (");
-		buffer.append(className(cachedField.field.getDeclaringClass()));
-		buffer.append(')');
-		buffer.append(pos(position));
-		trace("kryo", buffer.toString());
+		trace("kryo", prefix + " field " + fieldClassName + ": " + cachedField.name + " ("
+			+ className(cachedField.field.getDeclaringClass()) + ')' + pos(position));
 	}
 
 	/** Allows specific fields to be optimized. */
@@ -236,8 +232,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		 * specified type. Default is true if the field type is final or {@link FieldSerializerConfig#setFixedFieldTypes(boolean)}
 		 * is true.
 		 * <p>
-		 * If {@link FieldSerializerConfig#setOptimizedGenerics(boolean)} is true and the field has generic types, the default value
-		 * is used. */
+		 * If the field type is a type variable, the default value is used. */
 		public void setClass (Class valueClass) {
 			this.valueClass = valueClass;
 			this.serializer = null;
@@ -263,8 +258,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		 * otherwise {@link FieldSerializerConfig#setFieldsCanBeNull(boolean)} is used unless the field has the {@link NotNull}
 		 * annotation.
 		 * <p>
-		 * If {@link FieldSerializerConfig#setOptimizedGenerics(boolean)} is true and the field has generic types, the default value
-		 * is used. */
+		 * If the field type is a type variable, the default value is used. */
 		public void setCanBeNull (boolean canBeNull) {
 			this.canBeNull = canBeNull;
 		}

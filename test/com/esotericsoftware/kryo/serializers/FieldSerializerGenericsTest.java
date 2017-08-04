@@ -26,29 +26,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import com.esotericsoftware.minlog.Log;
 
-@RunWith(Parameterized.class)
 public class FieldSerializerGenericsTest extends KryoTestCase {
-	@Parameters(name = "optimizedGenerics_{0}")
-	static public Iterable optimizedGenerics () {
-		return Arrays.asList(true, false);
-	}
-
-	private boolean optimizedGenerics;
-
-	public FieldSerializerGenericsTest (boolean optimizedGenerics) {
-		this.optimizedGenerics = optimizedGenerics;
-	}
-
 	@Test
 	public void testNoStackOverflowForSimpleGenericsCase () {
 		FooRef fooRef = new FooRef();
@@ -60,9 +48,6 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		new FooContainer(foos);
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		FieldSerializerFactory factory = new FieldSerializerFactory();
-		factory.getConfig().setOptimizedGenerics(optimizedGenerics);
-		kryo.setDefaultSerializer(factory);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
 		kryo.writeObject(new Output(outputStream), genFoo1);
@@ -79,9 +64,6 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		new GenericBarContainer<GenericBar>(new BarContainer(bars));
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		FieldSerializerFactory factory = new FieldSerializerFactory();
-		factory.getConfig().setOptimizedGenerics(optimizedGenerics);
-		kryo.setDefaultSerializer(factory);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
 		kryo.writeObject(new Output(outputStream), genBar1);
@@ -94,18 +76,14 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		values.integer = new Value(123);
 		values.string = new Value("abc");
 
-		FieldSerializerConfig config = new FieldSerializerConfig();
-		config.setOptimizedGenerics(optimizedGenerics);
-		kryo.setDefaultSerializer(new FieldSerializerFactory(config));
-
 		CollectionSerializer collectionSerializer = new CollectionSerializer();
-		collectionSerializer.setElementsCanBeNull(false); // Increase optimizedGenerics savings so difference is more easily seen.
+		collectionSerializer.setElementsCanBeNull(false); // Increase generics savings so difference is more easily seen.
 
 		kryo.register(MultipleValues.class);
 		kryo.register(Value.class);
 		kryo.register(ArrayList.class, collectionSerializer);
 
-		roundTrip(optimizedGenerics ? 28 : 35, values);
+		roundTrip(28, values);
 	}
 
 	@Test
@@ -124,18 +102,30 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		superTest.string.list.add("list3");
 		superTest.string.value = "value";
 
-		FieldSerializerConfig config = new FieldSerializerConfig();
-		config.setOptimizedGenerics(optimizedGenerics);
-		kryo.setDefaultSerializer(new FieldSerializerFactory(config));
-
 		CollectionSerializer collectionSerializer = new CollectionSerializer();
-		collectionSerializer.setElementsCanBeNull(false); // Increase optimizedGenerics savings so difference is more easily seen.
+		collectionSerializer.setElementsCanBeNull(false); // Increase generics savings so difference is more easily seen.
 
 		kryo.register(SuperTest.class);
 		kryo.register(PassArgToSupers.class);
 		kryo.register(ArrayList.class, collectionSerializer);
 
-		roundTrip(optimizedGenerics ? 33 : 40, superTest);
+		roundTrip(33, superTest);
+	}
+
+	@Test
+	public void testNestedLists () {
+		Log.TRACE();
+
+		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+
+		kryo.register(ArrayList.class);
+		kryo.register(NestedLists.class);
+		kryo.register(NestedListValue.class);
+
+		// Unfortunately Kryo only supports the first level of generics.
+		NestedLists nestedLists = new NestedLists();
+		nestedLists.lists = new ArrayList(Arrays.asList(new NestedListValue(123), new NestedListValue(456)));
+		roundTrip(11, nestedLists);
 	}
 
 	// ---
@@ -220,17 +210,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		}
 
 		public boolean equals (Object obj) {
-			if (this == obj) return true;
-			if (obj == null) return false;
-			if (getClass() != obj.getClass()) return false;
-			Value other = (Value)obj;
-			if (value == null) {
-				if (other.value != null) return false;
-			} else if (!value.equals(other.value)) return false;
-			if (list == null) {
-				if (other.list != null) return false;
-			} else if (!list.equals(other.list)) return false;
-			return true;
+			return EqualsBuilder.reflectionEquals(this, obj);
 		}
 	}
 
@@ -239,17 +219,29 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		public Value<Integer> integer;
 
 		public boolean equals (Object obj) {
-			if (this == obj) return true;
-			if (obj == null) return false;
-			if (getClass() != obj.getClass()) return false;
-			MultipleValues other = (MultipleValues)obj;
-			if (integer == null) {
-				if (other.integer != null) return false;
-			} else if (!integer.equals(other.integer)) return false;
-			if (string == null) {
-				if (other.string != null) return false;
-			} else if (!string.equals(other.string)) return false;
-			return true;
+			return EqualsBuilder.reflectionEquals(this, obj);
+		}
+	}
+
+	// ---
+
+	static public class NestedLists {
+		public ArrayList<NestedListValue<Integer>> lists;
+
+		public boolean equals (Object obj) {
+			return EqualsBuilder.reflectionEquals(this, obj);
+		}
+	}
+
+	static public final class NestedListValue<T> {
+		public T value;
+
+		public NestedListValue (T value) {
+			this.value = value;
+		}
+
+		public boolean equals (Object obj) {
+			return EqualsBuilder.reflectionEquals(this, obj);
 		}
 	}
 
@@ -260,14 +252,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		public X value;
 
 		public boolean equals (Object obj) {
-			if (this == obj) return true;
-			if (obj == null) return false;
-			if (getClass() != obj.getClass()) return false;
-			Super other = (Super)obj;
-			if (list == null) {
-				if (other.list != null) return false;
-			} else if (!list.equals(other.list)) return false;
-			return true;
+			return EqualsBuilder.reflectionEquals(this, obj);
 		}
 	}
 
@@ -282,17 +267,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		public PassArgToSupers<String> string;
 
 		public boolean equals (Object obj) {
-			if (this == obj) return true;
-			if (obj == null) return false;
-			if (getClass() != obj.getClass()) return false;
-			SuperTest other = (SuperTest)obj;
-			if (integer == null) {
-				if (other.integer != null) return false;
-			} else if (!integer.equals(other.integer)) return false;
-			if (string == null) {
-				if (other.string != null) return false;
-			} else if (!string.equals(other.string)) return false;
-			return true;
+			return EqualsBuilder.reflectionEquals(this, obj);
 		}
 	}
 }

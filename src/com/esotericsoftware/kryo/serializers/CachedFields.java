@@ -24,8 +24,6 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,7 +31,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 
-import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
@@ -56,8 +53,7 @@ import com.esotericsoftware.kryo.serializers.ReflectField.FloatReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.IntReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.LongReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.ShortReflectField;
-import com.esotericsoftware.kryo.util.GenericsScope;
-import com.esotericsoftware.kryo.util.GenericsUtil;
+import com.esotericsoftware.kryo.util.GenericsScope.Generics;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 class CachedFields implements Comparator<FieldSerializer.CachedField> {
@@ -159,8 +155,6 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 			if (TRACE) {
 				trace("kryo",
 					"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
-				Generics generics = ((ReflectField)cachedField).generics;
-				if (generics != null) trace("kryo", "Generics: " + generics);
 			}
 		} else { // Must be a primitive or String.
 			cachedField.canBeNull = fieldClass == String.class && config.fieldsCanBeNull;
@@ -343,49 +337,5 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 	private Serializer newSerializer (Class serializerClass, Field field) {
 		if (serializerClass == Serializer.class) return null;
 		return ReflectionSerializerFactory.newSerializer(serializer.kryo, serializerClass, field.getClass());
-	}
-
-	/** Stores the partially resolved generic types for a field. */
-	static class Generics {
-		final Type[] types; // Entries are either Class or TypeVariable.
-		final Class[] resolved;
-
-		private Generics (Type[] types) {
-			this.types = types;
-			resolved = new Class[types.length];
-		}
-
-		/** Use the scope to resolve type variables.
-		 * @return May be null or contain null. */
-		public Class[] resolve (GenericsScope scope) {
-			if (scope.isEmpty()) {
-				for (int i = 0, n = types.length; i < n; i++) {
-					Type type = types[i];
-					resolved[i] = type instanceof Class ? (Class)type : null;
-				}
-			} else {
-				for (int i = 0, n = types.length; i < n; i++) {
-					Type type = types[i];
-					resolved[i] = type instanceof Class ? (Class)type : scope.resolveTypeVariable((TypeVariable)type);
-				}
-			}
-			for (int i = 0, n = resolved.length; i < n; i++)
-				if (resolved[i] != null) return resolved;
-			return null;
-		}
-
-		public void setGenerics (Kryo kryo, Serializer serializer) {
-			Class[] resolved = resolve(kryo.getGenericsScope());
-			if (resolved != null) serializer.setGenerics(kryo, resolved);
-		}
-
-		/** @return May be null if the type has no type parameters. */
-		static public Generics create (Class fromClass, Class toClass, Type type) {
-			Type[] types = GenericsUtil.resolveTypeParameters(fromClass, toClass, type);
-			if (types == null) return null;
-			for (int i = 0, n = types.length; i < n; i++)
-				if (types[i] != Object.class) return new Generics(types);
-			return null;
-		}
 	}
 }

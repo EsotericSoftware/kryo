@@ -32,7 +32,6 @@ public class FieldSerializerConfig implements Cloneable {
 	boolean fixedFieldTypes;
 	boolean copyTransient = true;
 	boolean serializeTransient;
-	boolean optimizedGenerics;
 	boolean varInts = true;
 	boolean extendedFieldNames;
 
@@ -89,16 +88,6 @@ public class FieldSerializerConfig implements Cloneable {
 
 	public boolean getFixedFieldTypes () {
 		return fixedFieldTypes;
-	}
-
-	/** If true, serialization of generic types are optimized for smaller size. Default is false. */
-	public void setOptimizedGenerics (boolean optimizedGenerics) {
-		this.optimizedGenerics = optimizedGenerics;
-		if (TRACE) trace("kryo", "FieldSerializerConfig optimizedGenerics: " + optimizedGenerics);
-	}
-
-	public boolean getOptimizedGenerics () {
-		return optimizedGenerics;
 	}
 
 	/** If false, when {@link Kryo#copy(Object)} is called all transient fields that are accessible will be ignored from being

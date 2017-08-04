@@ -151,6 +151,17 @@ public class Util {
 		return buffer.toString();
 	}
 
+	static public String simpleName (Class type, String generics) {
+		if (type.isArray()) {
+			Class elementClass = getElementClass(type);
+			StringBuilder buffer = new StringBuilder(16);
+			for (int i = 0, n = getDimensionCount(type); i < n; i++)
+				buffer.append("[]");
+			return elementClass.getSimpleName() + '<' + generics + '>' + buffer;
+		}
+		return type.getSimpleName() + '<' + generics + '>';
+	}
+
 	/** Returns the number of dimensions of an array. */
 	static public int getDimensionCount (Class arrayClass) {
 		int depth = 0;

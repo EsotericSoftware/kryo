@@ -175,9 +175,6 @@ public class MapSerializerTest extends KryoTestCase {
 	public void testSerializingMapAfterDeserializingMultipleReferencesToSameMap () throws Exception {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		FieldSerializerFactory factory = new FieldSerializerFactory();
-		factory.getConfig().setOptimizedGenerics(false);
-		kryo.setDefaultSerializer(factory);
 		Output output = new Output(4096);
 
 		kryo.writeClassAndObject(output, new HasMultipleReferenceToSameMap());

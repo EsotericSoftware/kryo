@@ -394,43 +394,13 @@ public class FieldSerializerTest extends KryoTestCase {
 			HasPrivateConstructor.invocations);
 	}
 
-	public void testGenericTypesOptimized () {
-		testGenericTypes(true);
-	}
-
-	public void testGenericTypesNonOptimized () {
-		testGenericTypes(false);
-	}
-
-	/** Check that it is OK to change the optimizedGenerics setting on the same Kryo instance multiple times. */
-	public void testGenericTypesOptimizedAndNonOptimized () {
-		Kryo kryoInstance = kryo;
-		testGenericTypes(true);
-		assertEquals("The same instance of Kryo should be used", kryoInstance, kryo);
-		testGenericTypes(false);
-		assertEquals("The same instance of Kryo should be used", kryoInstance, kryo);
-		testGenericTypes(true);
-		assertEquals("The same instance of Kryo should be used", kryoInstance, kryo);
-// testGenericTypes(false);
-// assertEquals("The same instance of Kryo should be used", kryoInstance, kryo);
-	}
-
-	private void testGenericTypes (boolean optimizedGenerics) {
+	public void testGenericTypes () {
 		kryo.setReferences(true);
 		kryo.register(HasGenerics.class);
 		kryo.register(ListContainer.class);
 		kryo.register(ArrayList.class);
 		kryo.register(ArrayList[].class);
 		kryo.register(HashMap.class);
-
-		// This method is called multiple times with the same Kryo, so change the FieldSerializers directly.
-		FieldSerializer fieldSerializer = (FieldSerializer)kryo.getSerializer(HasGenerics.class);
-		fieldSerializer.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
-		fieldSerializer.updateConfig();
-
-		fieldSerializer = (FieldSerializer)kryo.getSerializer(ListContainer.class);
-		fieldSerializer.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
-		fieldSerializer.updateConfig();
 
 		HasGenerics<Integer> test = new HasGenerics();
 		test.list1 = new ArrayList();
@@ -457,7 +427,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.container.list.add("three");
 		test.container.list.add("four");
 		test.container.list.add("five");
-		roundTrip(optimizedGenerics ? 71 : 76, test);
+		roundTrip(71, test);
 
 		ArrayList[] al = new ArrayList[1];
 		al[0] = new ArrayList(Arrays.asList(new String[] {"A", "B", "S"}));

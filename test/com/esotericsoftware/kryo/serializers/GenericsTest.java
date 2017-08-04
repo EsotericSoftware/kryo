@@ -35,21 +35,9 @@ import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Output;
 
-@RunWith(Parameterized.class)
 public class GenericsTest extends KryoTestCase {
 	{
 		supportsCopy = true;
-	}
-
-	@Parameters(name = "optimizedGenerics_{0}")
-	static public Iterable optimizedGenerics () {
-		return Arrays.asList(true, false);
-	}
-
-	private boolean optimizedGenerics;
-
-	public GenericsTest (boolean optimizedGenerics) {
-		this.optimizedGenerics = optimizedGenerics;
 	}
 
 	@Before
@@ -61,9 +49,6 @@ public class GenericsTest extends KryoTestCase {
 	public void testGenericClassWithGenericFields () throws Exception {
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
-		FieldSerializerFactory factory = new FieldSerializerFactory();
-		factory.getConfig().setOptimizedGenerics(optimizedGenerics);
-		kryo.setDefaultSerializer(factory);
 		kryo.register(BaseGeneric.class);
 
 		List list = Arrays.asList(new SerializableObjectFoo("one"), new SerializableObjectFoo("two"),
@@ -89,18 +74,11 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for/from https://github.com/EsotericSoftware/kryo/issues/377
 	@Test
-	public void testDifferentTypeArgumentsNonOptimizedOnly () throws Exception {
-
-		// no other way to opt-out from parameterization? (would be possible with testng)
-		Assume.assumeFalse(optimizedGenerics); // will mark the test as skipped for 'true'
-
+	public void testDifferentTypeArguments () throws Exception {
 		LongHolder o1 = new LongHolder(1L);
 		LongListHolder o2 = new LongListHolder(Arrays.asList(1L));
 
 		kryo.setRegistrationRequired(false);
-		FieldSerializerFactory factory = new FieldSerializerFactory();
-		factory.getConfig().setOptimizedGenerics(false);
-		kryo.setDefaultSerializer(factory);
 		Output buffer = new Output(512, 4048);
 		kryo.writeClassAndObject(buffer, o1);
 		kryo.writeClassAndObject(buffer, o2);

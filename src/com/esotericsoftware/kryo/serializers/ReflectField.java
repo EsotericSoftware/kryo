@@ -28,8 +28,8 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.CachedFields.Generics;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
+import com.esotericsoftware.kryo.util.GenericsScope.Generics;
 
 /*** Read and write a non-primitive field using reflection.
  * @author Nathan Sweet
@@ -134,7 +134,7 @@ class ReflectField extends CachedField {
 	}
 
 	Class resolveFieldClass () {
-		if (fieldSerializer.config.optimizedGenerics && valueClass == null) {
+		if (valueClass == null) {
 			Type genericType = field.getGenericType();
 			if (genericType instanceof TypeVariable) {
 				Class resolved = fieldSerializer.kryo.getGenericsScope().resolveTypeVariable((TypeVariable)genericType);

@@ -24,15 +24,18 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+
 /** Stores type variables and their actual types for the current location in the object graph.
  * @author Nathan Sweet */
 public class GenericsScope {
 	private int size;
 	private Type[] arguments = new Type[16];
 
-	/** Stores the specified type argument classes for the type parameters of the specified hierarchy.
+	/** Stores the actual classes for the specified type parameters.
 	 * @param args May contain null for type arguments that aren't known.
-	 * @return The number of entries that need to be popped. */
+	 * @return The number of entries that were pushed. */
 	public int push (GenericsHierarchy hierarchy, Class[] args) {
 		int startSize = this.size;
 
@@ -88,16 +91,17 @@ public class GenericsScope {
 
 	public String toString () {
 		StringBuilder buffer = new StringBuilder();
-		for (int i = size - 2; i >= 0; i -= 2) {
+		for (int i = 0; i < size; i += 2) {
+			if (i != 0) buffer.append(", ");
 			buffer.append(((TypeVariable)arguments[i]).getName());
 			buffer.append("=");
 			buffer.append(((Class)arguments[i + 1]).getSimpleName());
-			if (i != 0) buffer.append(", ");
 		}
 		return buffer.toString();
 	}
 
-	/** Stores the type parameters for a class and, for parameters passed to a super class, the super class type parameters. */
+	/** Stores the type parameters for a class and, for parameters passed to super classes, the corresponding super class type
+	 * parameters. */
 	static public class GenericsHierarchy {
 		final int total;
 		final int[] counts;
@@ -114,7 +118,7 @@ public class GenericsScope {
 				temp.add(param);
 				counts[i] = 1;
 
-				// If the parameter is passed to a super class, also store the super class type variable.
+				// If the parameter is passed to a super class, also store the super class type variable, recursively.
 				Class current = type;
 				while (true) {
 					Type genericSuper = current.getGenericSuperclass();
@@ -137,6 +141,68 @@ public class GenericsScope {
 
 			this.total = total;
 			this.params = temp.toArray(new TypeVariable[temp.size()]);
+		}
+	}
+
+	/** Stores the partially resolved generic types for a field. */
+	static public class Generics {
+		final Type[] types; // Entries are either Class or TypeVariable.
+		final Class[] resolved;
+
+		private Generics (Type[] types) {
+			this.types = types;
+			resolved = new Class[types.length];
+		}
+
+		/** Use the scope to resolve type variables.
+		 * @return May be null or contain null. */
+		public Class[] resolve (GenericsScope scope) {
+			if (scope.isEmpty()) {
+				for (int i = 0, n = types.length; i < n; i++) {
+					Type type = types[i];
+					resolved[i] = type instanceof Class ? (Class)type : null;
+				}
+			} else {
+				for (int i = 0, n = types.length; i < n; i++) {
+					Type type = types[i];
+					resolved[i] = type instanceof Class ? (Class)type : scope.resolveTypeVariable((TypeVariable)type);
+				}
+			}
+			for (int i = 0, n = resolved.length; i < n; i++)
+				if (resolved[i] != null) return resolved;
+			return null;
+		}
+
+		public void setGenerics (Kryo kryo, Serializer serializer) {
+			Class[] resolved = resolve(kryo.getGenericsScope());
+			if (resolved != null) serializer.setGenerics(kryo, resolved);
+		}
+
+		public Type[] getTypes () {
+			return types;
+		}
+
+		public String toString () {
+			StringBuilder buffer = new StringBuilder();
+			for (int i = 0, n = types.length; i < n; i++) {
+				if (i != 0) buffer.append(", ");
+				Type type = types[i];
+				if (type instanceof Class)
+					buffer.append(((Class)type).getSimpleName());
+				else
+					buffer.append(types[i].getTypeName());
+			}
+			return buffer.toString();
+		}
+
+		/** @return May be null if the type has no type parameters. */
+		static public Generics create (Class fromClass, Class toClass, Type type) {
+			// BOZO - What about List<Generic<T>> where T is known? Generic<T> is a parameterized type with T as actual arg.
+			Type[] types = GenericsUtil.resolveTypeParameters(fromClass, toClass, type);
+			if (types == null) return null;
+			for (int i = 0, n = types.length; i < n; i++)
+				if (types[i] != Object.class) return new Generics(types);
+			return null;
 		}
 	}
 }
