@@ -114,7 +114,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 
 	@Test
 	public void testNestedLists () {
-		Log.TRACE();
+		// Log.TRACE();
 
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 

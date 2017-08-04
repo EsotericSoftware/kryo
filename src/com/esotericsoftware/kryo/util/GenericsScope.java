@@ -197,7 +197,6 @@ public class GenericsScope {
 
 		/** @return May be null if the type has no type parameters. */
 		static public Generics create (Class fromClass, Class toClass, Type type) {
-			// BOZO - What about List<Generic<T>> where T is known? Generic<T> is a parameterized type with T as actual arg.
 			Type[] types = GenericsUtil.resolveTypeParameters(fromClass, toClass, type);
 			if (types == null) return null;
 			for (int i = 0, n = types.length; i < n; i++)
