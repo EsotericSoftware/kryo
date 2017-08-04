@@ -218,7 +218,5 @@ public class SerializationCompatTest extends KryoTestCase {
 		String classSimpleName () {
 			return testData.getClass().getSimpleName();
 		}
-
 	}
-
 }
