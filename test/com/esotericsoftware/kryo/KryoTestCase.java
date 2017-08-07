@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo;
 
+import static com.esotericsoftware.minlog.Log.*;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -39,13 +41,16 @@ import junit.framework.TestCase;
 /** Convenience methods for round tripping objects.
  * @author Nathan Sweet */
 abstract public class KryoTestCase extends TestCase {
+	// When true, roundTrip will only do a single write/read to make debugging easier (breaks some tests).
+	static private final boolean debug = false;
+
 	protected Kryo kryo;
 	protected Output output;
 	protected Input input;
 	protected Object object1, object2;
 	protected boolean supportsCopy;
 
-	static interface StreamFactory {
+	static interface BufferFactory {
 		public Output createOutput (OutputStream os);
 
 		public Output createOutput (OutputStream os, int size);
@@ -61,12 +66,38 @@ abstract public class KryoTestCase extends TestCase {
 	public void setUp () throws Exception {
 		// Log.TRACE();
 
+		if (debug && WARN) warn("*** DEBUG TEST ***");
+
 		kryo = new Kryo();
 		kryo.setReferences(false);
 	}
 
 	public <T> T roundTrip (int length, T object1) {
-		roundTripWithStreamFactory(length, object1, new StreamFactory() {
+		T object2 = roundTripWithBufferFactory(length, object1, new BufferFactory() {
+			public Output createOutput (OutputStream os) {
+				return new Output(os);
+			}
+
+			public Output createOutput (OutputStream os, int size) {
+				return new Output(os, size);
+			}
+
+			public Output createOutput (int size, int limit) {
+				return new Output(size, limit);
+			}
+
+			public Input createInput (InputStream os, int size) {
+				return new Input(os, size);
+			}
+
+			public Input createInput (byte[] buffer) {
+				return new Input(buffer);
+			}
+		});
+
+		if (debug) return (T)object2;
+
+		roundTripWithBufferFactory(length, object1, new BufferFactory() {
 			public Output createOutput (OutputStream os) {
 				return new ByteBufferOutput(os);
 			}
@@ -88,30 +119,10 @@ abstract public class KryoTestCase extends TestCase {
 			}
 		});
 
-		return roundTripWithStreamFactory(length, object1, new StreamFactory() {
-			public Output createOutput (OutputStream os) {
-				return new Output(os);
-			}
-
-			public Output createOutput (OutputStream os, int size) {
-				return new Output(os, size);
-			}
-
-			public Output createOutput (int size, int limit) {
-				return new Output(size, limit);
-			}
-
-			public Input createInput (InputStream os, int size) {
-				return new Input(os, size);
-			}
-
-			public Input createInput (byte[] buffer) {
-				return new Input(buffer);
-			}
-		});
+		return object2;
 	}
 
-	public <T> T roundTripWithStreamFactory (int length, T object1, StreamFactory sf) {
+	public <T> T roundTripWithBufferFactory (int length, T object1, BufferFactory sf) {
 		this.object1 = object1;
 
 		// Test output to stream, large buffer.
@@ -120,6 +131,8 @@ abstract public class KryoTestCase extends TestCase {
 		kryo.writeClassAndObject(output, object1);
 		output.flush();
 
+		if (debug) System.out.println();
+
 		// Test input from stream, large buffer.
 		byte[] out = outStream.toByteArray();
 		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 4096);
@@ -127,6 +140,8 @@ abstract public class KryoTestCase extends TestCase {
 		assertEquals("Incorrect number of bytes read.", length, input.total());
 		assertEquals("Incorrect number of bytes written.", length, output.total());
 		doAssertEquals(object1, object2);
+
+		if (debug) return (T)object2;
 
 		// Test output to stream, small buffer.
 		outStream = new ByteArrayOutputStream();

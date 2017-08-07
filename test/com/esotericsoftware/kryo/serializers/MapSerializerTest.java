@@ -20,6 +20,8 @@
 package com.esotericsoftware.kryo.serializers;
 
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -29,13 +31,13 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.junit.Assert;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-
-import junit.framework.Assert;
 
 /** @author Nathan Sweet */
 public class MapSerializerTest extends KryoTestCase {
@@ -188,6 +190,29 @@ public class MapSerializerTest extends KryoTestCase {
 		Map<Integer, List<String>> deserializedMap = (Map<Integer, List<String>>)kryo
 			.readClassAndObject(new Input(new ByteArrayInputStream(output.getBuffer())));
 		assertEquals(1, deserializedMap.size());
+	}
+
+	public void testArrayListKeys () {
+		// Log.TRACE();
+		CollectionSerializer collectionSerializer = new CollectionSerializer();
+		collectionSerializer.setElementsCanBeNull(false); // Increase generics savings so difference is more easily seen.
+
+		kryo.register(ArrayListKeys.class);
+		kryo.register(HashMap.class);
+		kryo.register(ArrayList.class, collectionSerializer);
+
+		ArrayListKeys object = new ArrayListKeys();
+		object.map = new HashMap();
+		object.map.put(new ArrayList(Arrays.asList(1, 2, 3)), new ArrayList(Arrays.asList("a", "b", "c")));
+		roundTrip(16, object);
+	}
+
+	static class ArrayListKeys {
+		private HashMap<ArrayList<Integer>, ArrayList<String>> map = new HashMap();
+
+		public boolean equals (Object obj) {
+			return EqualsBuilder.reflectionEquals(this, obj);
+		}
 	}
 
 	static class HasMultipleReferenceToSameMap {

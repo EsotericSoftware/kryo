@@ -33,7 +33,8 @@ import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.util.GenericsScope.GenericsHierarchy;
+import com.esotericsoftware.kryo.util.Generics.GenericType;
+import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
@@ -54,7 +55,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 	final Class type;
 	final FieldSerializerConfig config;
 	final CachedFields cachedFields;
-	private Class[] generics;
 	private final GenericsHierarchy genericsHierarchy;
 
 	public FieldSerializer (Kryo kryo, Class type) {
@@ -82,15 +82,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 	protected void initializeCachedFields () {
 	}
 
-	public void setGenerics (Kryo kryo, Class[] generics) {
-		this.generics = generics;
-	}
-
 	/** This method can be called for different fields having the same type. Even though the raw type is the same, if the type is
 	 * generic, it could happen that different concrete classes are used to instantiate it. Therefore, in case of different
 	 * instantiation parameters, the fields analysis should be repeated. */
 	public void write (Kryo kryo, Output output, T object) {
-		int pop = pushGenericsScope();
+		int pop = pushTypeVariables();
 
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
@@ -98,11 +94,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 			fields[i].write(output, object);
 		}
 
-		if (pop > 0) kryo.getGenericsScope().pop(pop);
+		if (pop > 0) popTypeVariables(pop);
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-		int pop = pushGenericsScope();
+		int pop = pushTypeVariables();
 
 		T object = create(kryo, input, type);
 		kryo.reference(object);
@@ -113,18 +109,22 @@ public class FieldSerializer<T> extends Serializer<T> {
 			fields[i].read(input, object);
 		}
 
-		if (pop > 0) kryo.getGenericsScope().pop(pop);
+		if (pop > 0) popTypeVariables(pop);
 		return object;
 	}
 
-	private int pushGenericsScope () {
-		Class[] generics = this.generics;
-		if (generics == null) return 0;
-		this.generics = null;
+	private int pushTypeVariables () {
+		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
+		if (genericTypes == null) return 0;
 
-		int pop = kryo.getGenericsScope().push(genericsHierarchy, generics);
-		if (TRACE && pop > 0) trace("kryo", "Generics scope: " + kryo.getGenericsScope());
+		int pop = kryo.getGenerics().pushTypeVariables(genericsHierarchy, genericTypes);
+		if (TRACE && pop > 0) trace("kryo", "Generics: " + kryo.getGenerics());
 		return pop;
+	}
+
+	private void popTypeVariables (int pop) {
+		kryo.getGenerics().popTypeVariables(pop);
+		kryo.getGenerics().popGenericType();
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
@@ -139,21 +139,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			ReflectField reflectField = (ReflectField)cachedField;
 			Class fieldClass = reflectField.resolveFieldClass();
 			if (fieldClass == null) fieldClass = cachedField.field.getType();
-			fieldClassName = fieldClass.getSimpleName();
-			if (reflectField.generics != null) {
-				Class[] resolved = reflectField.generics.resolve(kryo.getGenericsScope());
-				if (resolved != null) {
-					StringBuilder buffer = new StringBuilder();
-					for (int i = 0, n = resolved.length; i < n; i++) {
-						if (i != 0) buffer.append(", ");
-						if (resolved[i] == null)
-							buffer.append(reflectField.generics.getTypes()[i].getTypeName());
-						else
-							buffer.append(resolved[i].getSimpleName());
-					}
-					fieldClassName = simpleName(fieldClass, buffer.toString());
-				}
-			}
+			fieldClassName = simpleName(fieldClass, reflectField.genericType);
 		} else {
 			if (cachedField.valueClass != null)
 				fieldClassName = cachedField.valueClass.getSimpleName();

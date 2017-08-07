@@ -41,7 +41,6 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	private boolean elementsCanBeNull = true;
 	private Serializer serializer;
 	private Class elementClass;
-	private Class generics;
 
 	public CollectionSerializer () {
 	}
@@ -68,24 +67,20 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	 *           known or varies per element (default).
 	 * @param serializer The serializer to use for each element. */
 	public void setElementClass (Class elementClass, Serializer serializer) {
+		if (elementClass == null) throw new IllegalArgumentException("elementClass cannot be null.");
+		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		this.elementClass = elementClass;
 		this.serializer = serializer;
-	}
-
-	public void setGenerics (Kryo kryo, Class[] generics) {
-		if (generics != null && kryo.isFinal(generics[0]))
-			this.generics = generics[0];
-		else
-			this.generics = null;
 	}
 
 	public void write (Kryo kryo, Output output, T collection) {
 		int length = collection.size();
 		output.writeInt(length, true);
+
 		Serializer serializer = this.serializer;
-		if (generics != null) {
-			if (serializer == null) serializer = kryo.getSerializer(generics);
-			generics = null;
+		if (serializer == null) {
+			Class genericClass = kryo.getGenerics().nextGenericClass();
+			if (genericClass != null && kryo.isFinal(genericClass)) serializer = kryo.getSerializer(genericClass);
 		}
 		if (serializer != null) {
 			if (elementsCanBeNull) {
@@ -99,6 +94,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 			for (Object element : collection)
 				kryo.writeClassAndObject(output, element);
 		}
+		kryo.getGenerics().popGenericType();
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
@@ -110,16 +106,18 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		T collection = create(kryo, input, type);
 		kryo.reference(collection);
+
 		int length = input.readInt(true);
 		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
+
 		Class elementClass = this.elementClass;
 		Serializer serializer = this.serializer;
-		if (generics != null) {
-			if (serializer == null) {
-				elementClass = generics;
-				serializer = kryo.getSerializer(generics);
+		if (serializer == null) {
+			Class genericClass = kryo.getGenerics().nextGenericClass();
+			if (genericClass != null && kryo.isFinal(genericClass)) {
+				serializer = kryo.getSerializer(genericClass);
+				elementClass = genericClass;
 			}
-			generics = null;
 		}
 		if (serializer != null) {
 			if (elementsCanBeNull) {
@@ -133,6 +131,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 			for (int i = 0; i < length; i++)
 				collection.add(kryo.readClassAndObject(input));
 		}
+		kryo.getGenerics().popGenericType();
 		return collection;
 	}
 

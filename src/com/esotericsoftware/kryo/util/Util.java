@@ -21,6 +21,10 @@ package com.esotericsoftware.kryo.util;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import java.lang.reflect.Type;
+
+import com.esotericsoftware.kryo.util.Generics.GenericType;
+
 /** A few utility methods, mostly for private use.
  * @author Nathan Sweet */
 public class Util {
@@ -151,15 +155,27 @@ public class Util {
 		return buffer.toString();
 	}
 
-	static public String simpleName (Class type, String generics) {
+	static public String simpleName (Type type) {
+		if (type instanceof Class) return ((Class)type).getSimpleName();
+		return type.getTypeName();
+	}
+
+	static public String simpleName (Class type, GenericType genericType) {
+		StringBuilder buffer = new StringBuilder(32);
+		buffer.append((type.isArray() ? getElementClass(type) : type).getSimpleName());
+		if (genericType.arguments != null) {
+			buffer.append('<');
+			for (int i = 0, n = genericType.arguments.length; i < n; i++) {
+				if (i > 0) buffer.append(", ");
+				buffer.append(genericType.arguments[i].toString());
+			}
+			buffer.append('>');
+		}
 		if (type.isArray()) {
-			Class elementClass = getElementClass(type);
-			StringBuilder buffer = new StringBuilder(16);
 			for (int i = 0, n = getDimensionCount(type); i < n; i++)
 				buffer.append("[]");
-			return elementClass.getSimpleName() + '<' + generics + '>' + buffer;
 		}
-		return type.getSimpleName() + '<' + generics + '>';
+		return buffer.toString();
 	}
 
 	/** Returns the number of dimensions of an array. */

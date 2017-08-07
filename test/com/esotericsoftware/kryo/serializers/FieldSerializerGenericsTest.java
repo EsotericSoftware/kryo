@@ -34,7 +34,6 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-import com.esotericsoftware.minlog.Log;
 
 public class FieldSerializerGenericsTest extends KryoTestCase {
 	@Test
@@ -114,18 +113,23 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 
 	@Test
 	public void testNestedLists () {
-		// Log.TRACE();
-
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 
-		kryo.register(ArrayList.class);
-		kryo.register(NestedLists.class);
-		kryo.register(NestedListValue.class);
+		// Increase generics savings so difference is more easily seen.
+		FieldSerializerConfig config = new FieldSerializerConfig();
+		FieldSerializer nestedListValueSerializer = new FieldSerializer(kryo, NestedListValue.class, config);
+		nestedListValueSerializer.getField("value").setCanBeNull(false);
 
-		// Unfortunately Kryo only supports the first level of generics.
+		CollectionSerializer collectionSerializer = new CollectionSerializer();
+		collectionSerializer.setElementsCanBeNull(false);
+
+		kryo.register(ArrayList.class, collectionSerializer);
+		kryo.register(NestedLists.class);
+		kryo.register(NestedListValue.class, nestedListValueSerializer);
+
 		NestedLists nestedLists = new NestedLists();
 		nestedLists.lists = new ArrayList(Arrays.asList(new NestedListValue(123), new NestedListValue(456)));
-		roundTrip(11, nestedLists);
+		roundTrip(7, nestedLists);
 	}
 
 	// ---

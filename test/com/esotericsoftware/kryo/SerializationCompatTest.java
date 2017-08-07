@@ -82,7 +82,6 @@ public class SerializationCompatTest extends KryoTestCase {
 
 	public void setUp () throws Exception {
 		super.setUp();
-		// Log.TRACE();
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);

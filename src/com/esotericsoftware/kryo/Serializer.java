@@ -83,16 +83,6 @@ public abstract class Serializer<T> {
 		this.immutable = immutable;
 	}
 
-	/** Sets the generic type arguments to use for the next call to read or write. Once used, the generic type information must be
-	 * discarded so it does not affect subsequent calls to read or write. Subclasses may use the information provided to this
-	 * method for more efficient serialization, eg to use the same type for all items in a list. The default implementation does
-	 * nothing.
-	 * @param generics May be null to discard the last set generic type arguments without calling read or write. May contain null
-	 *           if some type arguments are unknown. Will never have a length of 0 (avoid calling if there are no type arguments or
-	 *           none are known). */
-	public void setGenerics (Kryo kryo, Class[] generics) {
-	}
-
 	/** Returns a copy of the specified object. The default implementation returns the original if {@link #isImmutable()} is true,
 	 * else throws {@link KryoException}. Subclasses should override this method if needed to support {@link Kryo#copy(Object)}.
 	 * <p>

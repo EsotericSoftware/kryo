@@ -103,7 +103,7 @@ import com.esotericsoftware.kryo.serializers.OptionalSerializers;
 import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-import com.esotericsoftware.kryo.util.GenericsScope;
+import com.esotericsoftware.kryo.util.Generics;
 import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
@@ -144,7 +144,7 @@ public class Kryo {
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
-	private final GenericsScope genericsScope = new GenericsScope();
+	private final Generics generics = new Generics(this);
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and a {@link MapReferenceResolver}. */
 	public Kryo () {
@@ -542,10 +542,7 @@ public class Kryo {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
 		beginObject();
 		try {
-			if (references && writeReferenceOrNull(output, object, false)) {
-				serializer.setGenerics(this, null); // Write is not invoked, clear generics.
-				return;
-			}
+			if (references && writeReferenceOrNull(output, object, false)) return;
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			serializer.write(this, output, object);
 		} finally {
@@ -586,15 +583,11 @@ public class Kryo {
 		beginObject();
 		try {
 			if (references) {
-				if (writeReferenceOrNull(output, object, true)) {
-					serializer.setGenerics(this, null); // Write is not invoked, clear generics.
-					return;
-				}
+				if (writeReferenceOrNull(output, object, true)) return;
 			} else if (!serializer.getAcceptsNull()) {
 				if (object == null) {
 					if (TRACE || (DEBUG && depth == 1)) log("Write", null, output.position());
 					output.writeByte(NULL);
-					serializer.setGenerics(this, null); // Write is not invoked, clear generics.
 					return;
 				}
 				if (TRACE) trace("kryo", "Write: <not null>" + pos(output.position()));
@@ -703,10 +696,7 @@ public class Kryo {
 			T object;
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, false);
-				if (stackSize == REF) {
-					serializer.setGenerics(this, null); // Read is not invoked, clear generics.
-					return (T)readObject;
-				}
+				if (stackSize == REF) return (T)readObject;
 				object = (T)serializer.read(this, input, type);
 				if (stackSize == readReferenceIds.size) reference(object);
 			} else
@@ -757,16 +747,12 @@ public class Kryo {
 			T object;
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, true);
-				if (stackSize == REF) {
-					serializer.setGenerics(this, null); // Read is not invoked, clear generics.
-					return (T)readObject;
-				}
+				if (stackSize == REF) return (T)readObject;
 				object = (T)serializer.read(this, input, type);
 				if (stackSize == readReferenceIds.size) reference(object);
 			} else {
 				if (!serializer.getAcceptsNull() && input.readByte() == NULL) {
 					if (TRACE || (DEBUG && depth == 1)) log("Read", null, input.position());
-					serializer.setGenerics(this, null); // Read is not invoked, clear generics.
 					return null;
 				}
 				object = (T)serializer.read(this, input, type);
@@ -1169,8 +1155,8 @@ public class Kryo {
 		return type.getName().indexOf('/') >= 0;
 	}
 
-	public GenericsScope getGenericsScope () {
-		return genericsScope;
+	public Generics getGenerics () {
+		return generics;
 	}
 
 	static final class DefaultSerializerEntry {

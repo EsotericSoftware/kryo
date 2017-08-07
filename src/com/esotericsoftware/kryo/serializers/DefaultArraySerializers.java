@@ -25,7 +25,6 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -301,7 +300,6 @@ public class DefaultArraySerializers {
 	static public class ObjectArraySerializer extends Serializer<Object[]> {
 		private boolean elementsAreSameType;
 		private boolean elementsCanBeNull = true;
-		private Class[] generics;
 		private final Class type;
 
 		{
@@ -320,61 +318,51 @@ public class DefaultArraySerializers {
 				output.writeInt(NULL, true);
 				return;
 			}
-			output.writeInt(object.length + 1, true);
+			int n = object.length;
+			output.writeInt(n + 1, true);
 			Class elementClass = object.getClass().getComponentType();
-			if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers())) {
+			if (elementsAreSameType || kryo.isFinal(elementClass)) {
 				Serializer elementSerializer = kryo.getSerializer(elementClass);
-				for (int i = 0, n = object.length; i < n; i++) {
-					elementSerializer.setGenerics(kryo, generics);
-					if (elementsCanBeNull)
+				if (elementsCanBeNull) {
+					for (int i = 0; i < n; i++)
 						kryo.writeObjectOrNull(output, object[i], elementSerializer);
-					else
+				} else {
+					for (int i = 0; i < n; i++)
 						kryo.writeObject(output, object[i], elementSerializer);
 				}
 			} else {
-				for (int i = 0, n = object.length; i < n; i++) {
-					Object entry = object[i];
-					if (entry != null) {
-						Registration registration = kryo.writeClass(output, entry.getClass());
-						Serializer serializer = registration.getSerializer();
-						serializer.setGenerics(kryo, generics);
-						kryo.writeObject(output, entry, serializer);
-					} else
-						kryo.writeClass(output, null);
-				}
+				for (int i = 0; i < n; i++)
+					kryo.writeClassAndObject(output, object[i]);
 			}
 		}
 
 		public Object[] read (Kryo kryo, Input input, Class type) {
-			int length = input.readInt(true);
-			if (length == NULL) return null;
-			Object[] object = (Object[])Array.newInstance(type.getComponentType(), length - 1);
+			int n = input.readInt(true);
+			if (n == NULL) return null;
+			n--;
+			Object[] object = (Object[])Array.newInstance(type.getComponentType(), n);
 			kryo.reference(object);
-			Class elementClass = object.getClass().getComponentType();
-			if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers())) {
+			Class elementClass = type.getComponentType();
+			if (elementsAreSameType || kryo.isFinal(elementClass)) {
 				Serializer elementSerializer = kryo.getSerializer(elementClass);
-				for (int i = 0, n = object.length; i < n; i++) {
-					elementSerializer.setGenerics(kryo, generics);
-					if (elementsCanBeNull)
+				if (elementsCanBeNull) {
+					for (int i = 0; i < n; i++)
 						object[i] = kryo.readObjectOrNull(input, elementClass, elementSerializer);
-					else
+				} else {
+					for (int i = 0; i < n; i++)
 						object[i] = kryo.readObject(input, elementClass, elementSerializer);
 				}
 			} else {
-				for (int i = 0, n = object.length; i < n; i++) {
-					Registration registration = kryo.readClass(input);
-					if (registration != null) {
-						registration.getSerializer().setGenerics(kryo, generics);
-						object[i] = kryo.readObject(input, registration.getType(), registration.getSerializer());
-					} // Else leave array entry null.
-				}
+				for (int i = 0; i < n; i++)
+					object[i] = kryo.readClassAndObject(input);
 			}
 			return object;
 		}
 
 		public Object[] copy (Kryo kryo, Object[] original) {
-			Object[] copy = (Object[])Array.newInstance(original.getClass().getComponentType(), original.length);
-			for (int i = 0, n = original.length; i < n; i++)
+			int n = original.length;
+			Object[] copy = (Object[])Array.newInstance(original.getClass().getComponentType(), n);
+			for (int i = 0; i < n; i++)
 				copy[i] = kryo.copy(original[i]);
 			return copy;
 		}
@@ -386,14 +374,10 @@ public class DefaultArraySerializers {
 		}
 
 		/** @param elementsAreSameType True if all elements are the same type as the array (ie they don't extend the array type).
-		 *           This saves 1 byte per element if the array type is not final. Set to false if the array type is final or
-		 *           elements extend the array type (default). */
+		 *           This saves 1 byte per element. If the element type is final this saves 0 bytes per element. Set to false if the
+		 *           elements may extend the array type (default). */
 		public void setElementsAreSameType (boolean elementsAreSameType) {
 			this.elementsAreSameType = elementsAreSameType;
-		}
-
-		public void setGenerics (Kryo kryo, Class[] generics) {
-			this.generics = generics;
 		}
 	}
 }

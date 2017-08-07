@@ -114,7 +114,6 @@ public class SerializationCompatTestData {
 	}
 
 	static public class TestData implements Serializable {
-
 		private boolean _boolean;
 		private char _char;
 		private byte _byte;
@@ -183,7 +182,6 @@ public class SerializationCompatTestData {
 		private PublicClass _public;
 
 		public TestData () {
-
 			_boolean = true;
 			_char = 'c';
 			_byte = "b".getBytes()[0];

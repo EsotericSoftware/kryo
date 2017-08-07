@@ -51,6 +51,7 @@ import com.esotericsoftware.kryo.Kryo;
  *   }
  * });
  * </pre>
+ * 
  * @author Martin Grotzke */
 public interface KryoPool {
 	/** Takes a {@link Kryo} instance from the pool or creates a new one (using the factory) if the pool is empty. */

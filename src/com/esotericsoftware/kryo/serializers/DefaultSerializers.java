@@ -198,7 +198,7 @@ public class DefaultSerializers {
 					if (!constructor.isAccessible()) {
 						try {
 							constructor.setAccessible(true);
-						} catch (SecurityException se) {
+						} catch (SecurityException ignored) {
 						}
 					}
 					return constructor.newInstance(bytes);
@@ -258,7 +258,7 @@ public class DefaultSerializers {
 					if (!constructor.isAccessible()) {
 						try {
 							constructor.setAccessible(true);
-						} catch (SecurityException se) {
+						} catch (SecurityException ignored) {
 						}
 					}
 					return constructor.newInstance(unscaledValue, scale);
@@ -318,7 +318,7 @@ public class DefaultSerializers {
 				if (!constructor.isAccessible()) {
 					try {
 						constructor.setAccessible(true);
-					} catch (SecurityException se) {
+					} catch (SecurityException ignored) {
 					}
 				}
 				return constructor.newInstance(time);
@@ -623,7 +623,7 @@ public class DefaultSerializers {
 				if (!constructor.isAccessible()) {
 					try {
 						constructor.setAccessible(true);
-					} catch (SecurityException se) {
+					} catch (SecurityException ignored) {
 					}
 				}
 				return (TreeMap)constructor.newInstance(comparator);
@@ -657,7 +657,7 @@ public class DefaultSerializers {
 				if (!constructor.isAccessible()) {
 					try {
 						constructor.setAccessible(true);
-					} catch (SecurityException se) {
+					} catch (SecurityException ignored) {
 					}
 				}
 				return (TreeSet)constructor.newInstance(comparator);

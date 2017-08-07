@@ -141,4 +141,5 @@ public class GenericsUtil {
 
 		return null; // No type parameters (is a class or type variable).
 	}
+
 }

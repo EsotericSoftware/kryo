@@ -31,6 +31,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 /** Serializes objects that implement the {@link Map} interface.
  * <p>
@@ -40,7 +41,6 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
 	private boolean keysCanBeNull = true, valuesCanBeNull = true;
-	private Class keyGenericType, valueGenericType;
 
 	/** @param keysCanBeNull False if all keys are not null. This saves 1 byte per key if keyClass is set. True if it is not known
 	 *           (default). */
@@ -70,32 +70,27 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
 
-	public void setGenerics (Kryo kryo, Class[] generics) {
-		keyGenericType = null;
-		valueGenericType = null;
-		if (generics != null) {
-			if (kryo.isFinal(generics[0])) keyGenericType = generics[0];
-			if (generics.length > 1 && kryo.isFinal(generics[1])) valueGenericType = generics[1];
-		}
-	}
-
 	public void write (Kryo kryo, Output output, T map) {
 		int length = map.size();
 		output.writeInt(length, true);
 
-		Serializer keySerializer = this.keySerializer;
-		if (keyGenericType != null) {
-			if (keySerializer == null) keySerializer = kryo.getSerializer(keyGenericType);
-			keyGenericType = null;
-		}
-		Serializer valueSerializer = this.valueSerializer;
-		if (valueGenericType != null) {
-			if (valueSerializer == null) valueSerializer = kryo.getSerializer(valueGenericType);
-			valueGenericType = null;
+		Serializer keySerializer = this.keySerializer, valueSerializer = this.valueSerializer;
+
+		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
+		if (genericTypes != null) {
+			if (keySerializer == null) {
+				Class keyType = genericTypes[0].resolve(kryo.getGenerics());
+				if (keyType != null && kryo.isFinal(keyType)) keySerializer = kryo.getSerializer(keyType);
+			}
+			if (valueSerializer == null) {
+				Class valueType = genericTypes[1].resolve(kryo.getGenerics());
+				if (valueType != null && kryo.isFinal(valueType)) valueSerializer = kryo.getSerializer(valueType);
+			}
 		}
 
 		for (Iterator iter = map.entrySet().iterator(); iter.hasNext();) {
 			Entry entry = (Entry)iter.next();
+			if (genericTypes != null) kryo.getGenerics().pushGenericType(genericTypes[0]);
 			if (keySerializer != null) {
 				if (keysCanBeNull)
 					kryo.writeObjectOrNull(output, entry.getKey(), keySerializer);
@@ -103,6 +98,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 					kryo.writeObject(output, entry.getKey(), keySerializer);
 			} else
 				kryo.writeClassAndObject(output, entry.getKey());
+			if (genericTypes != null) kryo.getGenerics().popGenericType();
 			if (valueSerializer != null) {
 				if (valuesCanBeNull)
 					kryo.writeObjectOrNull(output, entry.getValue(), valueSerializer);
@@ -111,6 +107,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 			} else
 				kryo.writeClassAndObject(output, entry.getValue());
 		}
+		kryo.getGenerics().popGenericType();
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
@@ -125,24 +122,31 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 
 		Class keyClass = this.keyClass;
 		Class valueClass = this.valueClass;
+		Serializer keySerializer = this.keySerializer, valueSerializer = this.valueSerializer;
 
-		Serializer keySerializer = this.keySerializer;
-		if (keyGenericType != null) {
-			keyClass = keyGenericType;
-			if (keySerializer == null) keySerializer = kryo.getSerializer(keyClass);
-			keyGenericType = null;
-		}
-		Serializer valueSerializer = this.valueSerializer;
-		if (valueGenericType != null) {
-			valueClass = valueGenericType;
-			if (valueSerializer == null) valueSerializer = kryo.getSerializer(valueClass);
-			valueGenericType = null;
+		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
+		if (genericTypes != null) {
+			if (keySerializer == null) {
+				Class genericClass = genericTypes[0].resolve(kryo.getGenerics());
+				if (genericClass != null && kryo.isFinal(genericClass)) {
+					keySerializer = kryo.getSerializer(genericClass);
+					keyClass = genericClass;
+				}
+			}
+			if (valueSerializer == null) {
+				Class genericClass = genericTypes[1].resolve(kryo.getGenerics());
+				if (genericClass != null && kryo.isFinal(genericClass)) {
+					valueSerializer = kryo.getSerializer(genericClass);
+					valueClass = genericClass;
+				}
+			}
 		}
 
 		kryo.reference(map);
 
 		for (int i = 0; i < length; i++) {
 			Object key;
+			if (genericTypes != null) kryo.getGenerics().pushGenericType(genericTypes[0]);
 			if (keySerializer != null) {
 				if (keysCanBeNull)
 					key = kryo.readObjectOrNull(input, keyClass, keySerializer);
@@ -150,6 +154,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 					key = kryo.readObject(input, keyClass, keySerializer);
 			} else
 				key = kryo.readClassAndObject(input);
+			if (genericTypes != null) kryo.getGenerics().popGenericType();
 			Object value;
 			if (valueSerializer != null) {
 				if (valuesCanBeNull)
@@ -160,6 +165,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 				value = kryo.readClassAndObject(input);
 			map.put(key, value);
 		}
+		kryo.getGenerics().popGenericType();
 		return map;
 	}
 

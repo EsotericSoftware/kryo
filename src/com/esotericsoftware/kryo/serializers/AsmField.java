@@ -23,13 +23,14 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
+import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 /*** Read and write a non-primitive field using ReflectASM.
  * @author Nathan Sweet */
 class AsmField extends ReflectField {
-	public AsmField (FieldSerializer serializer) {
-		super(serializer);
+	public AsmField (FieldSerializer serializer, GenericType genericType) {
+		super(serializer, genericType);
 	}
 
 	public Object get (Object object) throws IllegalAccessException {
