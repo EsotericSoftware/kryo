@@ -39,6 +39,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<versions.reflectasm>1.11.3</versions.reflectasm>
 		<test.exclude>**/Java8*Test.java</test.exclude>
+		<javaTarget>1.5</javaTarget>
 	</properties>
 	
 	<modules>
@@ -99,8 +100,8 @@
 					<artifactId>maven-compiler-plugin</artifactId>
 					<inherited>true</inherited>
 					<configuration>
-						<source>1.7</source>
-						<target>1.7</target>
+						<source>${javaTarget}</source>
+						<target>${javaTarget}</target>
 						<encoding>utf-8</encoding>
 						<testExcludes>
 							<testExclude>${test.exclude}</testExclude>
