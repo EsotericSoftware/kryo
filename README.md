@@ -658,7 +658,7 @@ String value = pool.run(new KryoCallback() {
 
 ## Logging
 
-Kryo makes use of the low overhead, lightweight [MinLog logging library](http://code.google.com/p/minlog/). The logging level can be set by one of the following methods:
+Kryo makes use of the low overhead, lightweight [MinLog logging library](https://github.com/EsotericSoftware/minlog). The logging level can be set by one of the following methods:
 
 ```java
     Log.ERROR();
