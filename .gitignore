@@ -1,9 +1,22 @@
-# Temporary Files
-*~
-.*.swp
-.DS_STORE
-*.iml
-
 bin/
 target/
+
+# Mac specific files
+.DS_Store
+
+# Vim
+.*.sw[0-9a-zA-Z]
+
+# Other temp files
+*~
+
+# IntelliJ
 .idea/
+*.iml
+*.ipr
+*.iws
+
+# Eclipse
+.settings/
+.classpath
+.project
