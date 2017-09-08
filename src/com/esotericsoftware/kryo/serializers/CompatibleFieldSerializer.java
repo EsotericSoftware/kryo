@@ -98,7 +98,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				// binary search for schemaName
 				int low, mid, high;
 				int compare;
-				int maxFieldLength = allFields.length > length ? allFields.length : length;
+				int maxFieldLength = allFields.length;
 				outerBinarySearch:
 				for (int i = 0; i < length; i++) {
 					String schemaName = names[i];

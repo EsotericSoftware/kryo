@@ -176,12 +176,15 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bAdd");
+		serializer.removeField("zz");
 		kryo.register(ClassWithManyFields.class, serializer);
 		Object object2 = kryo.readClassAndObject(input);
 		assertTrue(object2 instanceof ClassWithManyFields);
 		assertNull("the bAdd field should be null", ((ClassWithManyFields) object2).bAdd);
+		assertNull("the zz field should be null", ((ClassWithManyFields) object2).zz);
 		// update the field in order to verify the remainder of the object was deserialized correctly
 		((ClassWithManyFields) object2).bAdd = object1.bAdd;
+		((ClassWithManyFields) object2).zz = object1.zz;
 		assertEquals(object1, object2);
 	}
 
