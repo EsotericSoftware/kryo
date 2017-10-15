@@ -129,6 +129,10 @@ If you use Kryo without Maven, be aware that Kryo jar file has a couple of exter
 Jumping ahead to show how the library is used:
 
 ```java
+    import com.esotericsoftware.kryo.Kryo;
+    import com.esotericsoftware.kryo.io.Output;
+    import com.esotericsoftware.kryo.io.Input;
+    // ...
     Kryo kryo = new Kryo();
     // ...
     Output output = new Output(new FileOutputStream("file.bin"));
