@@ -36,8 +36,8 @@ public class DefaultClassResolver implements ClassResolver {
 
 	protected Kryo kryo;
 
-	protected final IntMap<Registration> idToRegistration = new IntMap();
-	protected final ObjectMap<Class, Registration> classToRegistration = new ObjectMap();
+	protected final IntMap<Registration> idToRegistration = new IntMap<>();
+	protected final ObjectMap<Class, Registration> classToRegistration = new ObjectMap<>();
 
 	protected IdentityObjectIntMap<Class> classToNameId;
 	protected IntMap<Class> nameIdToClass;
@@ -117,7 +117,7 @@ public class DefaultClassResolver implements ClassResolver {
 		// Only write the class name the first time encountered in object graph.
 		if (TRACE) trace("kryo", "Write class name: " + className(type));
 		int nameId = nextNameId++;
-		if (classToNameId == null) classToNameId = new IdentityObjectIntMap();
+		if (classToNameId == null) classToNameId = new IdentityObjectIntMap<>();
 		classToNameId.put(type, nameId);
 		output.writeVarInt(nameId, true);
 		output.writeString(type.getName());
@@ -143,7 +143,7 @@ public class DefaultClassResolver implements ClassResolver {
 
 	protected Registration readName (Input input) {
 		int nameId = input.readVarInt(true);
-		if (nameIdToClass == null) nameIdToClass = new IntMap();
+		if (nameIdToClass == null) nameIdToClass = new IntMap<>();
 		Class type = nameIdToClass.get(nameId);
 		if (type == null) {
 			// Only read the class name the first time encountered in object graph.
@@ -155,12 +155,12 @@ public class DefaultClassResolver implements ClassResolver {
 				} catch (ClassNotFoundException ex) {
 					if (WARN) warn("kryo", "Unable to load class " + className + " with kryo's ClassLoader. Retrying with current..");
 					try {
-						type = Class.forName(className);
+						type = Class.forName(className, false, Thread.currentThread().getContextClassLoader());
 					} catch (ClassNotFoundException e) {
 						throw new KryoException("Unable to find class: " + className, ex);
 					}
 				}
-				if (nameToClass == null) nameToClass = new ObjectMap();
+				if (nameToClass == null) nameToClass = new ObjectMap<>();
 				nameToClass.put(className, type);
 			}
 			nameIdToClass.put(nameId, type);
