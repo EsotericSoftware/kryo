@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 public class ByteBufferInputStream extends InputStream {
 	private ByteBuffer byteBuffer;
 
+	/** Creates an uninitialized stream that cannot be used until {@link #setByteBuffer(ByteBuffer)} is called. */
 	public ByteBufferInputStream () {
 	}
 
@@ -37,7 +38,6 @@ public class ByteBufferInputStream extends InputStream {
 		byteBuffer.flip();
 	}
 
-	/** Creates an uninitialized stream that cannot be used until {@link #setByteBuffer(ByteBuffer)} is called. */
 	public ByteBufferInputStream (ByteBuffer byteBuffer) {
 		this.byteBuffer = byteBuffer;
 	}

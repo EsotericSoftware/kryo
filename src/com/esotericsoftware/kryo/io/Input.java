@@ -25,8 +25,8 @@ import java.io.InputStream;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.util.Util;
 
-/** An InputStream that reads data from a byte array and optionally fills the byte array from another InputStream as needed.
- * Utility methods are provided for efficiently reading primitive types and strings.
+/** An InputStream that reads data from a byte[] and optionally fills the byte[] from another InputStream as needed. Utility
+ * methods are provided for efficiently reading primitive types and strings.
  * <p>
  * The byte[] buffer may be modified and then returned to its original state during some read operations, so the same byte[]
  * should not be used concurrently in separate threads.
@@ -44,21 +44,24 @@ public class Input extends InputStream {
 	public Input () {
 	}
 
-	/** Creates a new Input for reading from a byte array.
-	 * @param bufferSize The size of the buffer. An exception is thrown if more bytes than this are read. */
+	/** Creates a new Input for reading from a byte[] buffer.
+	 * @param bufferSize The size of the buffer. An exception is thrown if more bytes than this are read and
+	 *           {@link #fill(byte[], int, int)} does not supply more bytes. */
 	public Input (int bufferSize) {
 		this.capacity = bufferSize;
 		buffer = new byte[bufferSize];
 	}
 
-	/** Creates a new Input for reading from a byte array.
-	 * @param buffer An exception is thrown if more bytes than this are read. */
+	/** Creates a new Input for reading from a byte[] buffer.
+	 * @param buffer An exception is thrown if more bytes than this are read and {@link #fill(byte[], int, int)} does not supply
+	 *           more bytes. */
 	public Input (byte[] buffer) {
 		setBuffer(buffer, 0, buffer.length);
 	}
 
-	/** Creates a new Input for reading from a byte array.
-	 * @param buffer An exception is thrown if more bytes than this are read. */
+	/** Creates a new Input for reading from a byte[] buffer.
+	 * @param buffer An exception is thrown if more bytes than this are read and {@link #fill(byte[], int, int)} does not supply
+	 *           more bytes. */
 	public Input (byte[] buffer, int offset, int count) {
 		setBuffer(buffer, offset, count);
 	}
@@ -70,19 +73,21 @@ public class Input extends InputStream {
 		this.inputStream = inputStream;
 	}
 
-	/** Creates a new Input for reading from an InputStream. */
+	/** Creates a new Input for reading from an InputStream with the specified buffer size. */
 	public Input (InputStream inputStream, int bufferSize) {
 		this(bufferSize);
 		if (inputStream == null) throw new IllegalArgumentException("inputStream cannot be null.");
 		this.inputStream = inputStream;
 	}
 
-	/** Sets a new buffer. The position and total are reset, discarding any buffered bytes. */
+	/** Sets a new buffer. The offset is 0 and the count is the buffer's length.
+	 * @see #setBuffer(byte[], int, int) */
 	public void setBuffer (byte[] bytes) {
 		setBuffer(bytes, 0, bytes.length);
 	}
 
-	/** Sets a new buffer. The position and total are reset, discarding any buffered bytes. */
+	/** Sets a new buffer to read from. The bytes are not copied, the old buffer is discarded and the new buffer used in its place.
+	 * The position and total are reset. The {@link #setInputStream(InputStream) InputStream} is set to null. */
 	public void setBuffer (byte[] bytes, int offset, int count) {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		buffer = bytes;
@@ -93,6 +98,7 @@ public class Input extends InputStream {
 		inputStream = null;
 	}
 
+	/** Returns the buffer. The bytes between 0 and {@link #position()} are the data that can be read. */
 	public byte[] getBuffer () {
 		return buffer;
 	}
@@ -101,7 +107,8 @@ public class Input extends InputStream {
 		return inputStream;
 	}
 
-	/** Sets a new InputStream. The position and total are reset, discarding any buffered bytes.
+	/** Sets an InputStream to read from when data in the buffer is exhausted. The position, limit, and total are reset, discarding
+	 * any buffered bytes.
 	 * @param inputStream May be null. */
 	public void setInputStream (InputStream inputStream) {
 		this.inputStream = inputStream;
@@ -109,12 +116,12 @@ public class Input extends InputStream {
 		rewind();
 	}
 
-	/** Returns the number of bytes read. */
+	/** Returns the total number of bytes read. */
 	public long total () {
 		return total + position;
 	}
 
-	/** Sets the number of bytes read. */
+	/** Sets the total number of bytes read. */
 	public void setTotal (long total) {
 		this.total = total;
 	}
@@ -124,7 +131,7 @@ public class Input extends InputStream {
 		return position;
 	}
 
-	/** Sets the current position in the buffer. */
+	/** Sets the current position in the buffer where the next byte will be read. */
 	public void setPosition (int position) {
 		this.position = position;
 	}
@@ -134,7 +141,7 @@ public class Input extends InputStream {
 		return limit;
 	}
 
-	/** Sets the limit in the buffer. */
+	/** Sets the limit in the buffer which marks the end of the data that can be read. */
 	public void setLimit (int limit) {
 		this.limit = limit;
 	}
@@ -157,7 +164,8 @@ public class Input extends InputStream {
 		}
 	}
 
-	/** Fills the buffer with more bytes. Can be overridden to fill the bytes from a source other than the InputStream.
+	/** Fills the buffer with more bytes. The default implementation reads from the {@link #getInputStream() InputStream}, if set.
+	 * Can be overridden to fill the bytes from another source.
 	 * @return -1 if there are no more bytes. */
 	protected int fill (byte[] buffer, int offset, int count) throws KryoException {
 		if (inputStream == null) return -1;
@@ -168,9 +176,10 @@ public class Input extends InputStream {
 		}
 	}
 
-	/** @param required Must be > 0. The buffer is filled until it has at least this many bytes.
-	 * @return the number of bytes remaining.
-	 * @throws KryoException if EOS is reached before required bytes are read (buffer underflow). */
+	/** Fills the buffer with at least the number of bytes specified.
+	 * @param required Must be > 0.
+	 * @return The number of bytes remaining in the buffer.
+	 * @throws KryoException if {@link #fill(byte[], int, int)} is unable to provide more bytes (buffer underflow). */
 	protected int require (int required) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= required) return remaining;
@@ -207,8 +216,10 @@ public class Input extends InputStream {
 		return remaining;
 	}
 
-	/** @param optional Try to fill the buffer with this many bytes.
-	 * @return the number of bytes remaining, but not more than optional, or -1 if the EOS was reached and the buffer is empty. */
+	/** Fills the buffer with at least the number of bytes specified, if possible.
+	 * @param optional Must be > 0.
+	 * @return the number of bytes remaining, but not more than optional, or -1 if {@link #fill(byte[], int, int)} is unable to
+	 *         provide more bytes. */
 	private int optional (int optional) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= optional) return optional;
@@ -241,7 +252,9 @@ public class Input extends InputStream {
 		return remaining == 0 ? -1 : Math.min(remaining, optional);
 	}
 
-	public boolean eof () {
+	/** Returns true if the {@link #limit()} has been reached and {@link #fill(byte[], int, int)} is unable to provide more
+	 * bytes. */
+	public boolean end () {
 		return optional(1) <= 0;
 	}
 
@@ -624,8 +637,9 @@ public class Input extends InputStream {
 		return new String(chars, 0, charCount);
 	}
 
-	/** Reads the length and string of UTF8 characters, or null. This can read strings written by
-	 * {@link Output#writeString(String)} , {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
+	/** Reads the length and string of UTF8 characters, or null. This method avoids a copy for non-ASCII values by reading directly
+	 * to the StringBuilder versus reading a string. This can read strings written by {@link Output#writeString(String)} ,
+	 * {@link Output#writeString(CharSequence)}, and {@link Output#writeAscii(String)}.
 	 * @return May be null. */
 	public StringBuilder readStringBuilder () {
 		int available = require(1);
@@ -799,7 +813,7 @@ public class Input extends InputStream {
 
 	// double
 
-	/** Reads an 8 bytes double. */
+	/** Reads an 8 byte double. */
 	public double readDouble () throws KryoException {
 		return Double.longBitsToDouble(readLong());
 	}
@@ -809,9 +823,9 @@ public class Input extends InputStream {
 		return readLong(optimizePositive) / (double)precision;
 	}
 
-	// Methods implementing bulk operations on arrays of primitive types
+	// Primitive arrays
 
-	/** Bulk input of an int array. */
+	/** Reads an int array using variable length encoding. */
 	public int[] readInts (int length, boolean optimizePositive) throws KryoException {
 		int[] array = new int[length];
 		for (int i = 0; i < length; i++)
@@ -819,7 +833,7 @@ public class Input extends InputStream {
 		return array;
 	}
 
-	/** Bulk input of a long array. */
+	/** Reads a long array using variable length encoding. */
 	public long[] readLongs (int length, boolean optimizePositive) throws KryoException {
 		long[] array = new long[length];
 		for (int i = 0; i < length; i++)
@@ -827,7 +841,7 @@ public class Input extends InputStream {
 		return array;
 	}
 
-	/** Bulk input of an int array. */
+	/** Reads an int array. */
 	public int[] readInts (int length) throws KryoException {
 		int[] array = new int[length];
 		for (int i = 0; i < length; i++)
@@ -835,7 +849,7 @@ public class Input extends InputStream {
 		return array;
 	}
 
-	/** Bulk input of a long array. */
+	/** Reads a long array. */
 	public long[] readLongs (int length) throws KryoException {
 		long[] array = new long[length];
 		for (int i = 0; i < length; i++)
@@ -843,7 +857,7 @@ public class Input extends InputStream {
 		return array;
 	}
 
-	/** Bulk input of a float array. */
+	/** Reads a float array. */
 	public float[] readFloats (int length) throws KryoException {
 		float[] array = new float[length];
 		for (int i = 0; i < length; i++)
@@ -851,7 +865,7 @@ public class Input extends InputStream {
 		return array;
 	}
 
-	/** Bulk input of a short array. */
+	/** Reads a short array. */
 	public short[] readShorts (int length) throws KryoException {
 		short[] array = new short[length];
 		for (int i = 0; i < length; i++)
@@ -859,7 +873,7 @@ public class Input extends InputStream {
 		return array;
 	}
 
-	/** Bulk input of a char array. */
+	/** Reads a char array. */
 	public char[] readChars (int length) throws KryoException {
 		char[] array = new char[length];
 		for (int i = 0; i < length; i++)
@@ -867,7 +881,7 @@ public class Input extends InputStream {
 		return array;
 	}
 
-	/** Bulk input of a double array. */
+	/** Reads a double array. */
 	public double[] readDoubles (int length) throws KryoException {
 		double[] array = new double[length];
 		for (int i = 0; i < length; i++)

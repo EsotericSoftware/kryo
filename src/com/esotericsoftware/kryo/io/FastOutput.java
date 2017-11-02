@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017, Nathan Sweet
+/* Copyright (c) 2008, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,49 +19,55 @@
 
 package com.esotericsoftware.kryo.io;
 
-import java.io.IOException;
-import java.io.ObjectInput;
+import java.io.OutputStream;
 
-import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 
-/** An {@link ObjectInput} which reads data from an {@link Input}.
- * <p>
- * Note this is not an implementation of {@link java.io.ObjectInputStream} which has special handling for Java serialization, such
- * as support for readResolve.
- * @author Robert DiFalco <robert.difalco@gmail.com> */
-public class KryoObjectInput extends KryoDataInput implements ObjectInput {
-	private final Kryo kryo;
-
-	public KryoObjectInput (Kryo kryo, Input input) {
-		super(input);
-		this.kryo = kryo;
+/** An {@link Output} that does not use variable length encoding for int or long, which can be faster for some data at the cost of
+ * a larger serialized size.
+ * @author Roman Levenstein <romxilev@gmail.com> */
+public final class FastOutput extends Output {
+	/** @see Output#Output() */
+	public FastOutput () {
 	}
 
-	public Object readObject () throws ClassNotFoundException, IOException {
-		return kryo.readClassAndObject(input);
+	/** @see Output#Output(int) */
+	public FastOutput (int bufferSize) {
+		this(bufferSize, bufferSize);
 	}
 
-	public int read () throws IOException {
-		return input.read();
+	/** @see Output#Output(int, int) */
+	public FastOutput (int bufferSize, int maxBufferSize) {
+		super(bufferSize, maxBufferSize);
 	}
 
-	public int read (byte[] b) throws IOException {
-		return input.read(b);
+	/** @see Output#Output(byte[]) */
+	public FastOutput (byte[] buffer) {
+		this(buffer, buffer.length);
 	}
 
-	public int read (byte[] b, int off, int len) throws IOException {
-		return input.read(b, off, len);
+	/** @see Output#Output(byte[], int) */
+	public FastOutput (byte[] buffer, int maxBufferSize) {
+		super(buffer, maxBufferSize);
 	}
 
-	public long skip (long n) throws IOException {
-		return input.skip(n);
+	/** @see Output#Output(OutputStream) */
+	public FastOutput (OutputStream outputStream) {
+		super(outputStream);
 	}
 
-	public int available () throws IOException {
-		return 0;
+	/** @see Output#Output(OutputStream, int) */
+	public FastOutput (OutputStream outputStream, int bufferSize) {
+		super(outputStream, bufferSize);
 	}
 
-	public void close () throws IOException {
-		input.close();
+	public int writeInt (int value, boolean optimizePositive) throws KryoException {
+		writeInt(value);
+		return 4;
+	}
+
+	public int writeLong (long value, boolean optimizePositive) throws KryoException {
+		writeLong(value);
+		return 8;
 	}
 }

@@ -33,37 +33,38 @@ import java.nio.ShortBuffer;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.util.Util;
 
-/** An OutputStream that buffers data in a byte array and optionally flushes to another OutputStream. Utility methods are provided
- * for efficiently writing primitive types and strings.
+/** An {@link Output} that uses a ByteBuffer rather than a byte[].
+ * <p>
+ * Note that the byte[] {@link #getBuffer() buffer} is not used. Code taking an Output and expecting the byte[] to be used may not
+ * work correctly.
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class ByteBufferOutput extends Output {
-	protected ByteBuffer niobuffer;
+	static private final ByteOrder nativeOrder = ByteOrder.nativeOrder();
 
-	// Default byte order is BIG_ENDIAN to be compatible to the base class
-	ByteOrder byteOrder = ByteOrder.BIG_ENDIAN;
+	protected ByteBuffer byteBuffer;
+	ByteOrder byteOrder = ByteOrder.BIG_ENDIAN; // Compatible with Output by default.
 
-	protected final static ByteOrder nativeOrder = ByteOrder.nativeOrder();
-
-	/** Creates an uninitialized Output. A buffer must be set before the Output is used.
-	 * @see #setBuffer(ByteBuffer, int) */
+	/** Creates an uninitialized Output, {@link #setBuffer(ByteBuffer)} must be called before the Output is used. */
 	public ByteBufferOutput () {
 	}
 
-	/** Creates a new Output for writing to a direct ByteBuffer.
-	 * @param bufferSize The initial and maximum size of the buffer. An exception is thrown if this size is exceeded. */
+	/** Creates a new Output for writing to a direct {@link ByteBuffer}.
+	 * @param bufferSize The size of the buffer. An exception is thrown if more bytes than this are written and {@link #flush()}
+	 *           does not empty the buffer. */
 	public ByteBufferOutput (int bufferSize) {
 		this(bufferSize, bufferSize);
 	}
 
 	/** Creates a new Output for writing to a direct ByteBuffer.
 	 * @param bufferSize The initial size of the buffer.
-	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxBufferSize and an exception is thrown. */
+	 * @param maxBufferSize If {@link #flush()} does not empty the buffer, the buffer is doubled as needed until it exceeds
+	 *           maxBufferSize and an exception is thrown. Can be -1 for no maximum. */
 	public ByteBufferOutput (int bufferSize, int maxBufferSize) {
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
 		this.capacity = bufferSize;
 		this.maxCapacity = maxBufferSize == -1 ? Util.maxArraySize : maxBufferSize;
-		niobuffer = ByteBuffer.allocateDirect(bufferSize);
-		niobuffer.order(byteOrder);
+		byteBuffer = ByteBuffer.allocateDirect(bufferSize);
+		byteBuffer.order(byteOrder);
 	}
 
 	/** Creates a new Output for writing to an OutputStream. A buffer size of 4096 is used. */
@@ -73,7 +74,7 @@ public class ByteBufferOutput extends Output {
 		this.outputStream = outputStream;
 	}
 
-	/** Creates a new Output for writing to an OutputStream. */
+	/** Creates a new Output for writing to an OutputStream with the specified buffer size. */
 	public ByteBufferOutput (OutputStream outputStream, int bufferSize) {
 		this(bufferSize, bufferSize);
 		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
@@ -86,7 +87,8 @@ public class ByteBufferOutput extends Output {
 	}
 
 	/** Creates a new Output for writing to a ByteBuffer.
-	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxCapacity and an exception is thrown. */
+	 * @param maxBufferSize If {@link #flush()} does not empty the buffer, the buffer is doubled as needed until it exceeds
+	 *           maxBufferSize and an exception is thrown. Can be -1 for no maximum. */
 	public ByteBufferOutput (ByteBuffer buffer, int maxBufferSize) {
 		setBuffer(buffer, maxBufferSize);
 	}
@@ -95,9 +97,10 @@ public class ByteBufferOutput extends Output {
 		return byteOrder;
 	}
 
+	/** Sets the byte order. Default is big endian. */
 	public void order (ByteOrder byteOrder) {
 		this.byteOrder = byteOrder;
-		this.niobuffer.order(byteOrder);
+		this.byteBuffer.order(byteOrder);
 	}
 
 	public OutputStream getOutputStream () {
@@ -112,19 +115,21 @@ public class ByteBufferOutput extends Output {
 		total = 0;
 	}
 
-	/** Sets the buffer that will be written to. maxCapacity is set to the specified buffer's capacity.
+	/** Sets a new buffer to write to. The max size is the buffer's length.
 	 * @see #setBuffer(ByteBuffer, int) */
 	public void setBuffer (ByteBuffer buffer) {
 		setBuffer(buffer, buffer.capacity());
 	}
 
-	/** Sets the buffer that will be written to. The byte order, position and capacity are set to match the specified buffer. The
-	 * total is set to 0. The {@link #setOutputStream(OutputStream) OutputStream} is set to null.
-	 * @param maxBufferSize The buffer is doubled as needed until it exceeds maxCapacity and an exception is thrown. */
+	/** Sets a new buffer to write to. The bytes are not copied, the old buffer is discarded and the new buffer used in its place.
+	 * The byte order, position and capacity are set to match the specified buffer. The total is reset. The
+	 * {@link #setOutputStream(OutputStream) OutputStream} is set to null.
+	 * @param maxBufferSize If {@link #flush()} does not empty the buffer, the buffer is doubled as needed until it exceeds
+	 *           maxBufferSize and an exception is thrown. Can be -1 for no maximum. */
 	public void setBuffer (ByteBuffer buffer, int maxBufferSize) {
 		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
 		if (maxBufferSize < -1) throw new IllegalArgumentException("maxBufferSize cannot be < -1: " + maxBufferSize);
-		this.niobuffer = buffer;
+		this.byteBuffer = buffer;
 		this.maxCapacity = maxBufferSize == -1 ? Util.maxArraySize : maxBufferSize;
 		byteOrder = buffer.order();
 		capacity = buffer.capacity();
@@ -135,55 +140,49 @@ public class ByteBufferOutput extends Output {
 
 	/** Returns the buffer. The bytes between zero and {@link #position()} are the data that has been written. */
 	public ByteBuffer getByteBuffer () {
-		niobuffer.position(position);
-		return niobuffer;
+		return byteBuffer;
 	}
 
-	/** Returns a new byte array containing the bytes currently in the buffer between zero and {@link #position()}. */
 	public byte[] toBytes () {
 		byte[] newBuffer = new byte[position];
-		niobuffer.position(0);
-		niobuffer.get(newBuffer, 0, position);
+		byteBuffer.position(0);
+		byteBuffer.get(newBuffer, 0, position);
 		return newBuffer;
 	}
 
-	/** Sets the current position in the buffer. */
 	public void setPosition (int position) {
 		this.position = position;
-		this.niobuffer.position(position);
+		this.byteBuffer.position(position);
 	}
 
-	/** Sets the position and total to zero. */
 	public void clear () {
-		niobuffer.clear();
+		byteBuffer.clear();
 		position = 0;
 		total = 0;
 	}
 
-	/** @return true if the buffer has been resized. */
 	protected boolean require (int required) throws KryoException {
 		if (capacity - position >= required) return false;
 		if (required > maxCapacity) {
-			niobuffer.order(byteOrder);
+			byteBuffer.order(byteOrder);
 			throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
 		}
 		flush();
 		while (capacity - position < required) {
 			if (capacity == maxCapacity) {
-				niobuffer.order(byteOrder);
+				byteBuffer.order(byteOrder);
 				throw new KryoException("Buffer overflow. Available: " + (capacity - position) + ", required: " + required);
 			}
 			// Grow buffer.
 			if (capacity == 0) capacity = 1;
 			capacity = Math.min(capacity * 2, maxCapacity);
 			if (capacity < 0) capacity = maxCapacity;
-			ByteBuffer newBuffer = niobuffer != null && !niobuffer.isDirect() ? ByteBuffer.allocate(capacity)
-				: ByteBuffer.allocateDirect(capacity);
+			ByteBuffer newBuffer = !byteBuffer.isDirect() ? ByteBuffer.allocate(capacity) : ByteBuffer.allocateDirect(capacity);
 			// Copy the whole buffer
-			niobuffer.position(0);
-			niobuffer.limit(position);
-			newBuffer.put(niobuffer);
-			newBuffer.order(niobuffer.order());
+			byteBuffer.position(0);
+			byteBuffer.limit(position);
+			newBuffer.put(byteBuffer);
+			newBuffer.order(byteBuffer.order());
 
 			// writeInt & writeLong mess with the byte order, need to keep track of the current byte order when growing.
 			final ByteOrder currentByteOrder = byteOrder;
@@ -195,14 +194,13 @@ public class ByteBufferOutput extends Output {
 
 	// OutputStream
 
-	/** Writes the buffered bytes to the underlying OutputStream, if any. */
 	public void flush () throws KryoException {
 		if (outputStream == null) return;
 		try {
 			byte[] tmp = new byte[position];
-			niobuffer.position(0);
-			niobuffer.get(tmp);
-			niobuffer.position(0);
+			byteBuffer.position(0);
+			byteBuffer.get(tmp);
+			byteBuffer.position(0);
 			outputStream.write(tmp, 0, position);
 		} catch (IOException ex) {
 			throw new KryoException(ex);
@@ -211,7 +209,6 @@ public class ByteBufferOutput extends Output {
 		position = 0;
 	}
 
-	/** Flushes any buffered bytes and closes the underlying OutputStream, if any. */
 	public void close () throws KryoException {
 		flush();
 		if (outputStream != null) {
@@ -222,20 +219,17 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
-	/** Writes a byte. */
 	public void write (int value) throws KryoException {
 		if (position == capacity) require(1);
-		niobuffer.put((byte)value);
+		byteBuffer.put((byte)value);
 		position++;
 	}
 
-	/** Writes the bytes. Note the byte[] length is not written. */
 	public void write (byte[] bytes) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		writeBytes(bytes, 0, bytes.length);
 	}
 
-	/** Writes the bytes. Note the byte[] length is not written. */
 	public void write (byte[] bytes, int offset, int length) throws KryoException {
 		writeBytes(bytes, offset, length);
 	}
@@ -244,28 +238,26 @@ public class ByteBufferOutput extends Output {
 
 	public void writeByte (byte value) throws KryoException {
 		if (position == capacity) require(1);
-		niobuffer.put(value);
+		byteBuffer.put(value);
 		position++;
 	}
 
 	public void writeByte (int value) throws KryoException {
 		if (position == capacity) require(1);
-		niobuffer.put((byte)value);
+		byteBuffer.put((byte)value);
 		position++;
 	}
 
-	/** Writes the bytes. Note the byte[] length is not written. */
 	public void writeBytes (byte[] bytes) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		writeBytes(bytes, 0, bytes.length);
 	}
 
-	/** Writes the bytes. Note the byte[] length is not written. */
 	public void writeBytes (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int copyCount = Math.min(capacity - position, count);
 		while (true) {
-			niobuffer.put(bytes, offset, copyCount);
+			byteBuffer.put(bytes, offset, copyCount);
 			position += copyCount;
 			count -= copyCount;
 			if (count == 0) return;
@@ -277,15 +269,14 @@ public class ByteBufferOutput extends Output {
 
 	// int
 
-	/** Writes a 4 byte int. */
 	public void writeInt (int value) throws KryoException {
 		require(4);
-		niobuffer.putInt(value);
+		byteBuffer.putInt(value);
 		position += 4;
 	}
 
 	public int writeInt (int val, boolean optimizePositive) throws KryoException {
-		niobuffer.position(position);
+		byteBuffer.position(position);
 
 		int value = val;
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
@@ -306,11 +297,11 @@ public class ByteBufferOutput extends Output {
 		value >>>= 7;
 
 		if (value == 0) {
-			niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+			byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 			writeInt(varInt);
-			niobuffer.order(byteOrder);
+			byteBuffer.order(byteOrder);
 			position -= 2;
-			niobuffer.position(position);
+			byteBuffer.position(position);
 			return 2;
 		}
 
@@ -320,11 +311,11 @@ public class ByteBufferOutput extends Output {
 		value >>>= 7;
 
 		if (value == 0) {
-			niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+			byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 			writeInt(varInt);
-			niobuffer.order(byteOrder);
+			byteBuffer.order(byteOrder);
 			position -= 1;
-			niobuffer.position(position);
+			byteBuffer.position(position);
 			return 3;
 		}
 
@@ -334,9 +325,9 @@ public class ByteBufferOutput extends Output {
 		value >>>= 7;
 
 		if (value == 0) {
-			niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+			byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 			writeInt(varInt);
-			niobuffer.order(byteOrder);
+			byteBuffer.order(byteOrder);
 			position -= 0;
 			return 4;
 		}
@@ -344,23 +335,19 @@ public class ByteBufferOutput extends Output {
 		varInt |= (0x80 << 24);
 		long varLong = (varInt & 0xFFFFFFFFL) | (((long)value) << 32);
 
-		niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 		writeLong(varLong);
-		niobuffer.order(byteOrder);
+		byteBuffer.order(byteOrder);
 
 		position -= 3;
-		niobuffer.position(position);
+		byteBuffer.position(position);
 		return 5;
 	}
 
 	// string
 
-	/** Writes the length and string, or null. Short strings are checked and if ASCII they are written more efficiently, else they
-	 * are written as UTF8. If a string is known to be ASCII, {@link #writeAscii(String)} may be used. The string can be read using
-	 * {@link Input#readString()} or {@link Input#readStringBuilder()}.
-	 * @param value May be null. */
 	public void writeString (String value) throws KryoException {
-		niobuffer.position(position);
+		byteBuffer.position(position);
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
 			return;
@@ -387,10 +374,10 @@ public class ByteBufferOutput extends Output {
 				writeAscii_slow(value, charCount);
 			else {
 				byte[] tmp = value.getBytes();
-				niobuffer.put(tmp, 0, tmp.length);
+				byteBuffer.put(tmp, 0, tmp.length);
 				position += charCount;
 			}
-			niobuffer.put(position - 1, (byte)(niobuffer.get(position - 1) | 0x80));
+			byteBuffer.put(position - 1, (byte)(byteBuffer.get(position - 1) | 0x80));
 		} else {
 			writeUtf8Length(charCount + 1);
 			int charIndex = 0;
@@ -400,19 +387,16 @@ public class ByteBufferOutput extends Output {
 				for (; charIndex < charCount; charIndex++) {
 					int c = value.charAt(charIndex);
 					if (c > 127) break;
-					niobuffer.put(position++, (byte)c);
+					byteBuffer.put(position++, (byte)c);
 				}
 				this.position = position;
-				niobuffer.position(position);
+				byteBuffer.position(position);
 			}
 			if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
-			niobuffer.position(position);
+			byteBuffer.position(position);
 		}
 	}
 
-	/** Writes the length and CharSequence as UTF8, or null. The string can be read using {@link Input#readString()} or
-	 * {@link Input#readStringBuilder()}.
-	 * @param value May be null. */
 	public void writeString (CharSequence value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
@@ -431,20 +415,15 @@ public class ByteBufferOutput extends Output {
 			for (; charIndex < charCount; charIndex++) {
 				int c = value.charAt(charIndex);
 				if (c > 127) break;
-				niobuffer.put(position++, (byte)c);
+				byteBuffer.put(position++, (byte)c);
 			}
 			this.position = position;
-			niobuffer.position(position);
+			byteBuffer.position(position);
 		}
 		if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
-		niobuffer.position(position);
+		byteBuffer.position(position);
 	}
 
-	/** Writes a string that is known to contain only ASCII characters. Non-ASCII strings passed to this method will be corrupted.
-	 * Each byte is a 7 bit character with the remaining byte denoting if another character is available. This is slightly more
-	 * efficient than {@link #writeString(String)}. The string can be read using {@link Input#readString()} or
-	 * {@link Input#readStringBuilder()}.
-	 * @param value May be null. */
 	public void writeAscii (String value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
@@ -459,10 +438,10 @@ public class ByteBufferOutput extends Output {
 			writeAscii_slow(value, charCount);
 		else {
 			byte[] tmp = value.getBytes();
-			niobuffer.put(tmp, 0, tmp.length);
+			byteBuffer.put(tmp, 0, tmp.length);
 			position += charCount;
 		}
-		niobuffer.put(position - 1, (byte)(niobuffer.get(position - 1) | 0x80)); // Bit 8 means end of ASCII.
+		byteBuffer.put(position - 1, (byte)(byteBuffer.get(position - 1) | 0x80)); // Bit 8 means end of ASCII.
 	}
 
 	/** Writes the length of a string, which is a variable length encoded int except the first byte uses bit 8 to denote UTF8 and
@@ -470,33 +449,33 @@ public class ByteBufferOutput extends Output {
 	private void writeUtf8Length (int value) {
 		if (value >>> 6 == 0) {
 			require(1);
-			niobuffer.put((byte)(value | 0x80)); // Set bit 8.
+			byteBuffer.put((byte)(value | 0x80)); // Set bit 8.
 			position += 1;
 		} else if (value >>> 13 == 0) {
 			require(2);
-			niobuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
-			niobuffer.put((byte)(value >>> 6));
+			byteBuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
+			byteBuffer.put((byte)(value >>> 6));
 			position += 2;
 		} else if (value >>> 20 == 0) {
 			require(3);
-			niobuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
-			niobuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
-			niobuffer.put((byte)(value >>> 13));
+			byteBuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
+			byteBuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
+			byteBuffer.put((byte)(value >>> 13));
 			position += 3;
 		} else if (value >>> 27 == 0) {
 			require(4);
-			niobuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
-			niobuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
-			niobuffer.put((byte)((value >>> 13) | 0x80)); // Set bit 8.
-			niobuffer.put((byte)(value >>> 20));
+			byteBuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
+			byteBuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
+			byteBuffer.put((byte)((value >>> 13) | 0x80)); // Set bit 8.
+			byteBuffer.put((byte)(value >>> 20));
 			position += 4;
 		} else {
 			require(5);
-			niobuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
-			niobuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
-			niobuffer.put((byte)((value >>> 13) | 0x80)); // Set bit 8.
-			niobuffer.put((byte)((value >>> 20) | 0x80)); // Set bit 8.
-			niobuffer.put((byte)(value >>> 27));
+			byteBuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
+			byteBuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
+			byteBuffer.put((byte)((value >>> 13) | 0x80)); // Set bit 8.
+			byteBuffer.put((byte)((value >>> 20) | 0x80)); // Set bit 8.
+			byteBuffer.put((byte)(value >>> 27));
 			position += 5;
 		}
 	}
@@ -506,22 +485,22 @@ public class ByteBufferOutput extends Output {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
 			int c = value.charAt(charIndex);
 			if (c <= 0x007F) {
-				niobuffer.put(position++, (byte)c);
+				byteBuffer.put(position++, (byte)c);
 			} else if (c > 0x07FF) {
-				niobuffer.put(position++, (byte)(0xE0 | c >> 12 & 0x0F));
+				byteBuffer.put(position++, (byte)(0xE0 | c >> 12 & 0x0F));
 				require(2);
-				niobuffer.put(position++, (byte)(0x80 | c >> 6 & 0x3F));
-				niobuffer.put(position++, (byte)(0x80 | c & 0x3F));
+				byteBuffer.put(position++, (byte)(0x80 | c >> 6 & 0x3F));
+				byteBuffer.put(position++, (byte)(0x80 | c & 0x3F));
 			} else {
-				niobuffer.put(position++, (byte)(0xC0 | c >> 6 & 0x1F));
+				byteBuffer.put(position++, (byte)(0xC0 | c >> 6 & 0x1F));
 				require(1);
-				niobuffer.put(position++, (byte)(0x80 | c & 0x3F));
+				byteBuffer.put(position++, (byte)(0x80 | c & 0x3F));
 			}
 		}
 	}
 
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
-		ByteBuffer buffer = this.niobuffer;
+		ByteBuffer buffer = this.byteBuffer;
 		int charIndex = 0;
 		int charsToWrite = Math.min(charCount, capacity - position);
 		while (charIndex < charCount) {
@@ -531,41 +510,35 @@ public class ByteBufferOutput extends Output {
 			charIndex += charsToWrite;
 			position += charsToWrite;
 			charsToWrite = Math.min(charCount - charIndex, capacity);
-			if (require(charsToWrite)) buffer = this.niobuffer;
+			if (require(charsToWrite)) buffer = this.byteBuffer;
 		}
 	}
 
 	// float
 
-	/** Writes a 4 byte float. */
 	public void writeFloat (float value) throws KryoException {
 		require(4);
-		niobuffer.putFloat(value);
+		byteBuffer.putFloat(value);
 		position += 4;
 	}
 
-	/** Writes a 1-5 byte float with reduced precision.
-	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (5 bytes). */
 	public int writeFloat (float value, float precision, boolean optimizePositive) throws KryoException {
 		return writeInt((int)(value * precision), optimizePositive);
 	}
 
 	// short
 
-	/** Writes a 2 byte short. */
 	public void writeShort (int value) throws KryoException {
 		require(2);
-		niobuffer.putShort((short)value);
+		byteBuffer.putShort((short)value);
 		position += 2;
 	}
 
 	// long
 
-	/** Writes an 8 byte long. */
 	public void writeLong (long value) throws KryoException {
 		require(8);
-		niobuffer.putLong(value);
+		byteBuffer.putLong(value);
 		position += 8;
 	}
 
@@ -588,11 +561,11 @@ public class ByteBufferOutput extends Output {
 		value >>>= 7;
 
 		if (value == 0) {
-			niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+			byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 			writeInt(varInt);
-			niobuffer.order(byteOrder);
+			byteBuffer.order(byteOrder);
 			position -= 2;
-			niobuffer.position(position);
+			byteBuffer.position(position);
 			return 2;
 		}
 
@@ -602,11 +575,11 @@ public class ByteBufferOutput extends Output {
 		value >>>= 7;
 
 		if (value == 0) {
-			niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+			byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 			writeInt(varInt);
-			niobuffer.order(byteOrder);
+			byteBuffer.order(byteOrder);
 			position -= 1;
-			niobuffer.position(position);
+			byteBuffer.position(position);
 			return 3;
 		}
 
@@ -616,9 +589,9 @@ public class ByteBufferOutput extends Output {
 		value >>>= 7;
 
 		if (value == 0) {
-			niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+			byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 			writeInt(varInt);
-			niobuffer.order(byteOrder);
+			byteBuffer.order(byteOrder);
 			position -= 0;
 			return 4;
 		}
@@ -630,11 +603,11 @@ public class ByteBufferOutput extends Output {
 		value >>>= 7;
 
 		if (value == 0) {
-			niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+			byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 			writeLong(varLong);
-			niobuffer.order(byteOrder);
+			byteBuffer.order(byteOrder);
 			position -= 3;
-			niobuffer.position(position);
+			byteBuffer.position(position);
 			return 5;
 		}
 
@@ -644,11 +617,11 @@ public class ByteBufferOutput extends Output {
 		value >>>= 7;
 
 		if (value == 0) {
-			niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+			byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 			writeLong(varLong);
-			niobuffer.order(byteOrder);
+			byteBuffer.order(byteOrder);
 			position -= 2;
-			niobuffer.position(position);
+			byteBuffer.position(position);
 			return 6;
 		}
 
@@ -658,11 +631,11 @@ public class ByteBufferOutput extends Output {
 		value >>>= 7;
 
 		if (value == 0) {
-			niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+			byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 			writeLong(varLong);
-			niobuffer.order(byteOrder);
+			byteBuffer.order(byteOrder);
 			position -= 1;
-			niobuffer.position(position);
+			byteBuffer.position(position);
 			return 7;
 		}
 
@@ -672,212 +645,101 @@ public class ByteBufferOutput extends Output {
 		value >>>= 7;
 
 		if (value == 0) {
-			niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+			byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 			writeLong(varLong);
-			niobuffer.order(byteOrder);
+			byteBuffer.order(byteOrder);
 			return 8;
 		}
 
 		varLong |= (0x80L << 56);
-		niobuffer.order(ByteOrder.LITTLE_ENDIAN);
+		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 		writeLong(varLong);
-		niobuffer.order(byteOrder);
+		byteBuffer.order(byteOrder);
 		write((byte)(value));
-		return 9;
-	}
-
-	/** Writes a 1-9 byte long.
-	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (9 bytes). */
-	public int writeLongS (long value, boolean optimizePositive) throws KryoException {
-		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
-		if (value >>> 7 == 0) {
-			require(1);
-			niobuffer.put((byte)value);
-			position += 1;
-			return 1;
-		}
-		if (value >>> 14 == 0) {
-			require(2);
-			niobuffer.put((byte)((value & 0x7F) | 0x80));
-			niobuffer.put((byte)(value >>> 7));
-			position += 2;
-			return 2;
-		}
-		if (value >>> 21 == 0) {
-			require(3);
-			niobuffer.put((byte)((value & 0x7F) | 0x80));
-			niobuffer.put((byte)(value >>> 7 | 0x80));
-			niobuffer.put((byte)(value >>> 14));
-			position += 3;
-			return 3;
-		}
-		if (value >>> 28 == 0) {
-			require(4);
-			niobuffer.put((byte)((value & 0x7F) | 0x80));
-			niobuffer.put((byte)(value >>> 7 | 0x80));
-			niobuffer.put((byte)(value >>> 14 | 0x80));
-			niobuffer.put((byte)(value >>> 21));
-			position += 4;
-			return 4;
-		}
-		if (value >>> 35 == 0) {
-			require(5);
-			niobuffer.put((byte)((value & 0x7F) | 0x80));
-			niobuffer.put((byte)(value >>> 7 | 0x80));
-			niobuffer.put((byte)(value >>> 14 | 0x80));
-			niobuffer.put((byte)(value >>> 21 | 0x80));
-			niobuffer.put((byte)(value >>> 28));
-			position += 5;
-			return 5;
-		}
-		if (value >>> 42 == 0) {
-			require(6);
-			niobuffer.put((byte)((value & 0x7F) | 0x80));
-			niobuffer.put((byte)(value >>> 7 | 0x80));
-			niobuffer.put((byte)(value >>> 14 | 0x80));
-			niobuffer.put((byte)(value >>> 21 | 0x80));
-			niobuffer.put((byte)(value >>> 28 | 0x80));
-			niobuffer.put((byte)(value >>> 35));
-			position += 6;
-			return 6;
-		}
-		if (value >>> 49 == 0) {
-			require(7);
-			niobuffer.put((byte)((value & 0x7F) | 0x80));
-			niobuffer.put((byte)(value >>> 7 | 0x80));
-			niobuffer.put((byte)(value >>> 14 | 0x80));
-			niobuffer.put((byte)(value >>> 21 | 0x80));
-			niobuffer.put((byte)(value >>> 28 | 0x80));
-			niobuffer.put((byte)(value >>> 35 | 0x80));
-			niobuffer.put((byte)(value >>> 42));
-			position += 7;
-			return 7;
-		}
-		if (value >>> 56 == 0) {
-			require(8);
-			niobuffer.put((byte)((value & 0x7F) | 0x80));
-			niobuffer.put((byte)(value >>> 7 | 0x80));
-			niobuffer.put((byte)(value >>> 14 | 0x80));
-			niobuffer.put((byte)(value >>> 21 | 0x80));
-			niobuffer.put((byte)(value >>> 28 | 0x80));
-			niobuffer.put((byte)(value >>> 35 | 0x80));
-			niobuffer.put((byte)(value >>> 42 | 0x80));
-			niobuffer.put((byte)(value >>> 49));
-			position += 8;
-			return 8;
-		}
-		require(9);
-		niobuffer.put((byte)((value & 0x7F) | 0x80));
-		niobuffer.put((byte)(value >>> 7 | 0x80));
-		niobuffer.put((byte)(value >>> 14 | 0x80));
-		niobuffer.put((byte)(value >>> 21 | 0x80));
-		niobuffer.put((byte)(value >>> 28 | 0x80));
-		niobuffer.put((byte)(value >>> 35 | 0x80));
-		niobuffer.put((byte)(value >>> 42 | 0x80));
-		niobuffer.put((byte)(value >>> 49 | 0x80));
-		niobuffer.put((byte)(value >>> 56));
-		position += 9;
 		return 9;
 	}
 
 	// boolean
 
-	/** Writes a 1 byte boolean. */
 	public void writeBoolean (boolean value) throws KryoException {
 		require(1);
-		niobuffer.put((byte)(value ? 1 : 0));
+		byteBuffer.put((byte)(value ? 1 : 0));
 		position++;
 	}
 
 	// char
 
-	/** Writes a 2 byte char. */
 	public void writeChar (char value) throws KryoException {
 		require(2);
-		niobuffer.putChar(value);
+		byteBuffer.putChar(value);
 		position += 2;
 	}
 
 	// double
 
-	/** Writes an 8 byte double. */
 	public void writeDouble (double value) throws KryoException {
 		require(8);
-		niobuffer.putDouble(value);
+		byteBuffer.putDouble(value);
 		position += 8;
 	}
 
-	/** Writes a 1-9 byte double with reduced precision.
-	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (9 bytes). */
 	public int writeDouble (double value, double precision, boolean optimizePositive) throws KryoException {
 		return writeLong((long)(value * precision), optimizePositive);
 	}
 
 	// Methods implementing bulk operations on arrays of primitive types
 
-	/** Bulk output of an int array. */
 	public void writeInts (int[] object) throws KryoException {
-		if (capacity - position >= object.length * 4 && isNativeOrder()) {
-			IntBuffer buf = niobuffer.asIntBuffer();
+		if (capacity - position >= object.length * 4 && byteOrder == nativeOrder) {
+			IntBuffer buf = byteBuffer.asIntBuffer();
 			buf.put(object);
 			position += object.length * 4;
 		} else
 			super.writeInts(object);
 	}
 
-	/** Bulk output of an long array. */
 	public void writeLongs (long[] object) throws KryoException {
-		if (capacity - position >= object.length * 8 && isNativeOrder()) {
-			LongBuffer buf = niobuffer.asLongBuffer();
+		if (capacity - position >= object.length * 8 && byteOrder == nativeOrder) {
+			LongBuffer buf = byteBuffer.asLongBuffer();
 			buf.put(object);
 			position += object.length * 8;
 		} else
 			super.writeLongs(object);
 	}
 
-	/** Bulk output of a float array. */
 	public void writeFloats (float[] object) throws KryoException {
-		if (capacity - position >= object.length * 4 && isNativeOrder()) {
-			FloatBuffer buf = niobuffer.asFloatBuffer();
+		if (capacity - position >= object.length * 4 && byteOrder == nativeOrder) {
+			FloatBuffer buf = byteBuffer.asFloatBuffer();
 			buf.put(object);
 			position += object.length * 4;
 		} else
 			super.writeFloats(object);
 	}
 
-	/** Bulk output of a short array. */
 	public void writeShorts (short[] object) throws KryoException {
-		if (capacity - position >= object.length * 2 && isNativeOrder()) {
-			ShortBuffer buf = niobuffer.asShortBuffer();
+		if (capacity - position >= object.length * 2 && byteOrder == nativeOrder) {
+			ShortBuffer buf = byteBuffer.asShortBuffer();
 			buf.put(object);
 			position += object.length * 2;
 		} else
 			super.writeShorts(object);
 	}
 
-	/** Bulk output of a char array. */
 	public void writeChars (char[] object) throws KryoException {
-		if (capacity - position >= object.length * 2 && isNativeOrder()) {
-			CharBuffer buf = niobuffer.asCharBuffer();
+		if (capacity - position >= object.length * 2 && byteOrder == nativeOrder) {
+			CharBuffer buf = byteBuffer.asCharBuffer();
 			buf.put(object);
 			position += object.length * 2;
 		} else
 			super.writeChars(object);
 	}
 
-	/** Bulk output of a double array. */
 	public void writeDoubles (double[] object) throws KryoException {
-		if (capacity - position >= object.length * 8 && isNativeOrder()) {
-			DoubleBuffer buf = niobuffer.asDoubleBuffer();
+		if (capacity - position >= object.length * 8 && byteOrder == nativeOrder) {
+			DoubleBuffer buf = byteBuffer.asDoubleBuffer();
 			buf.put(object);
 			position += object.length * 8;
 		} else
 			super.writeDoubles(object);
-	}
-
-	private boolean isNativeOrder () {
-		return byteOrder == nativeOrder;
 	}
 }

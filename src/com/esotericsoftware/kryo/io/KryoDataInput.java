@@ -25,16 +25,14 @@ import java.io.IOException;
 
 import com.esotericsoftware.kryo.KryoException;
 
-/** Best attempt adapter for {@link DataInput}. Currently only {@link #readLine()} is unsupported. Other methods behave slightly
- * differently. For example, {@link #readUTF()} may return a null string.
- *
+/** A {@link DataInput} which reads from an {@link Input}. {@link #readLine()} is unsupported. Other methods behave slightly
+ * differently, eg {@link #readUTF()} may return a null string.
  * @author Robert DiFalco <robert.difalco@gmail.com> */
 public class KryoDataInput implements DataInput {
-
 	protected Input input;
 
 	public KryoDataInput (Input input) {
-		setInput(input);
+		this.input = input;
 	}
 
 	public void setInput (Input input) {

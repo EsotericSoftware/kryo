@@ -24,14 +24,13 @@ import java.io.ObjectOutput;
 
 import com.esotericsoftware.kryo.Kryo;
 
-/** A kryo adapter for the {@link java.io.ObjectOutput} class. Note that this is not a Kryo implementation of
- * {@link java.io.ObjectOutputStream} which has special handling for default serialization and serialization extras like
- * writeReplace. By default it will simply delegate to the appropriate kryo method. Also, using it will currently add one extra
- * byte for each time {@link #writeObject(Object)} is invoked since we need to allow unknown null objects.
- *
+/** An {@link java.io.ObjectOutput} which writes data to an {@link Output}.
+ * <p>
+ * Note this is not an implementation of {@link java.io.ObjectOutputStream} which has special handling for Java serialization and
+ * serialization extras like writeReplace. By default it will simply delegate to the appropriate Kryo method. Also, using it will
+ * currently add one extra byte for each time {@link #writeObject(Object)} is invoked since we need to allow unknown null objects.
  * @author Robert DiFalco <robert.difalco@gmail.com> */
 public class KryoObjectOutput extends KryoDataOutput implements ObjectOutput {
-
 	private final Kryo kryo;
 
 	public KryoObjectOutput (Kryo kryo, Output output) {
@@ -39,8 +38,8 @@ public class KryoObjectOutput extends KryoDataOutput implements ObjectOutput {
 		this.kryo = kryo;
 	}
 
-	public void writeObject (Object obj) throws IOException {
-		kryo.writeClassAndObject(output, obj);
+	public void writeObject (Object object) throws IOException {
+		kryo.writeClassAndObject(output, object);
 	}
 
 	public void flush () throws IOException {

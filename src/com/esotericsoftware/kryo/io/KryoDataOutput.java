@@ -22,15 +22,13 @@ package com.esotericsoftware.kryo.io;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/** A kryo implementation of {@link java.io.DataOutput}.
- *
+/** A {@link DataOutput} which writes data to an {@link Output}.
  * @author Robert DiFalco <robert.difalco@gmail.com> */
 public class KryoDataOutput implements DataOutput {
-
 	protected Output output;
 
 	public KryoDataOutput (Output output) {
-		setOutput(output);
+		this.output = output;
 	}
 
 	public void setOutput (Output output) {

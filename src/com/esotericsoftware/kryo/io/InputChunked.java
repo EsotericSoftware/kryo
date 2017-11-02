@@ -26,7 +26,7 @@ import java.io.InputStream;
 
 import com.esotericsoftware.kryo.KryoException;
 
-/** An InputStream that reads lengths and chunks of data from another OutputStream, allowing chunks to be skipped.
+/** An {@link Input} that reads lengths and chunks of data from another OutputStream, allowing chunks to be skipped.
  * @author Nathan Sweet */
 public class InputChunked extends Input {
 	private int chunkSize = -1;

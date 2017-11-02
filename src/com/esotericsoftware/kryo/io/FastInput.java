@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017, Nathan Sweet
+/* Copyright (c) 2008, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,49 +19,47 @@
 
 package com.esotericsoftware.kryo.io;
 
-import java.io.IOException;
-import java.io.ObjectInput;
+import java.io.InputStream;
 
-import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 
-/** An {@link ObjectInput} which reads data from an {@link Input}.
- * <p>
- * Note this is not an implementation of {@link java.io.ObjectInputStream} which has special handling for Java serialization, such
- * as support for readResolve.
- * @author Robert DiFalco <robert.difalco@gmail.com> */
-public class KryoObjectInput extends KryoDataInput implements ObjectInput {
-	private final Kryo kryo;
-
-	public KryoObjectInput (Kryo kryo, Input input) {
-		super(input);
-		this.kryo = kryo;
+/** An {@link Input} that does not use variable length encoding for int or long, which can be faster for some data.
+ * @author Roman Levenstein <romxilev@gmail.com> */
+public final class FastInput extends Input {
+	/** @see Input#Input() */
+	public FastInput () {
 	}
 
-	public Object readObject () throws ClassNotFoundException, IOException {
-		return kryo.readClassAndObject(input);
+	/** @see Input#Input(int) */
+	public FastInput (int bufferSize) {
+		super(bufferSize);
 	}
 
-	public int read () throws IOException {
-		return input.read();
+	/** @see Input#Input(byte[]) */
+	public FastInput (byte[] buffer) {
+		super(buffer);
 	}
 
-	public int read (byte[] b) throws IOException {
-		return input.read(b);
+	/** @see Input#Input(byte[], int, int) */
+	public FastInput (byte[] buffer, int offset, int count) {
+		super(buffer, offset, count);
 	}
 
-	public int read (byte[] b, int off, int len) throws IOException {
-		return input.read(b, off, len);
+	/** @see Input#Input(InputStream) */
+	public FastInput (InputStream outputStream) {
+		super(outputStream);
 	}
 
-	public long skip (long n) throws IOException {
-		return input.skip(n);
+	/** @see Input#Input(InputStream, int) */
+	public FastInput (InputStream outputStream, int bufferSize) {
+		super(outputStream, bufferSize);
 	}
 
-	public int available () throws IOException {
-		return 0;
+	public int readInt (boolean optimizePositive) throws KryoException {
+		return readInt();
 	}
 
-	public void close () throws IOException {
-		input.close();
+	public long readLong (boolean optimizePositive) throws KryoException {
+		return readLong();
 	}
 }

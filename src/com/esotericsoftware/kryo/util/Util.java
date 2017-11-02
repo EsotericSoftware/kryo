@@ -30,7 +30,7 @@ import com.esotericsoftware.kryo.util.Generics.GenericType;
 public class Util {
 	static public final boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
 
-	// Maximum reasonable array. See: https://stackoverflow.com/questions/3038392/do-java-arrays-have-a-maximum-size
+	// Maximum reasonable array length. See: https://stackoverflow.com/questions/3038392/do-java-arrays-have-a-maximum-size
 	static public final int maxArraySize = Integer.MAX_VALUE - 8;
 
 	static public boolean isClassAvailable (String className) {
