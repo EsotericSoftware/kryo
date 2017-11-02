@@ -33,6 +33,7 @@ import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Generics;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
 import com.esotericsoftware.reflectasm.FieldAccess;
@@ -123,8 +124,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	private void popTypeVariables (int pop) {
-		kryo.getGenerics().popTypeVariables(pop);
-		kryo.getGenerics().popGenericType();
+		Generics generics = kryo.getGenerics();
+		generics.popTypeVariables(pop);
+		generics.popGenericType();
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg

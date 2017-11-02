@@ -56,7 +56,7 @@ import com.esotericsoftware.kryo.serializers.ReflectField.ShortReflectField;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
-class CachedFields implements Comparator<FieldSerializer.CachedField> {
+class CachedFields implements Comparator<CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
 
 	private final FieldSerializer serializer;
@@ -88,7 +88,7 @@ class CachedFields implements Comparator<FieldSerializer.CachedField> {
 
 		if (fields.length != newFields.size()) fields = new CachedField[newFields.size()];
 		newFields.toArray(fields);
-		Arrays.sort(this.fields, this);
+		Arrays.sort(fields, this);
 
 		if (copyFields.length != newCopyFields.size()) copyFields = new CachedField[newCopyFields.size()];
 		newCopyFields.toArray(copyFields);
