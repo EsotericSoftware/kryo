@@ -30,7 +30,7 @@ import java.util.ArrayList;
 
 import com.esotericsoftware.kryo.Kryo;
 
-/** Stores the generic type arguments and actual classes for type variables the current location in the object graph.
+/** Stores the generic type arguments and actual classes for type variables in the current location in the object graph.
  * @author Nathan Sweet */
 public class Generics {
 	private final Kryo kryo;
@@ -46,7 +46,7 @@ public class Generics {
 		this.kryo = kryo;
 	}
 
-	/** Sets the type that is currently being serialized. Must be followed by {@link #popGenericType()}. Between those calls, the
+	/** Sets the type that is currently being serialized. Must be balanced by {@link #popGenericType()}. Between those calls, the
 	 * {@link GenericType#getTypeParameters() type parameters} are returned by {@link #nextGenericTypes()} and
 	 * {@link #nextGenericClass()}. */
 	public void pushGenericType (GenericType fieldType) {
@@ -75,9 +75,9 @@ public class Generics {
 		genericTypesSize = size;
 	}
 
-	/** Returns the current type parameters and advances to the next level of type parameters for subsquent calls. Must be followed
-	 * by {@link #popGenericType()} (optional if null is returned). If multiple type parameters are returned, the last is used to
-	 * advance to the next level of type parameters.
+	/** Returns the current type parameters and {@link #pushGenericType(GenericType) pushes} the next level of type parameters for
+	 * subsquent calls. Must be balanced by {@link #popGenericType()} (optional if null is returned). If multiple type parameters
+	 * are returned, the last is used to advance to the next level of type parameters.
 	 * <p>
 	 * {@link #nextGenericClass()} is easier to use when a class has a single type parameter. When a class has multiple type
 	 * parameters, {@link #pushGenericType(GenericType)} must be used for all except the last parameter.
@@ -97,7 +97,7 @@ public class Generics {
 	}
 
 	/** Resolves the first type parameter and returns the class, or null if it could not be resolved or there are no type
-	 * parameters. Uses {@link #nextGenericTypes()}, so must be followed by {@link #popGenericType()} (optional if null is
+	 * parameters. Uses {@link #nextGenericTypes()}, so must be balanced by {@link #popGenericType()} (optional if null is
 	 * returned).
 	 * <p>
 	 * This method is intended for ease of use when a class has a single type parameter.
@@ -108,7 +108,7 @@ public class Generics {
 		return arguments[0].resolve(this);
 	}
 
-	/** Stores the types of the type parameters for the specified class hierarchy. Must be followed by
+	/** Stores the types of the type parameters for the specified class hierarchy. Must be balanced by
 	 * {@link #popTypeVariables(int)}.
 	 * @param args May contain null for type arguments that aren't known.
 	 * @return The number of entries that were pushed. */
