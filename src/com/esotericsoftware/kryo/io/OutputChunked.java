@@ -23,6 +23,7 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 import com.esotericsoftware.kryo.KryoException;
@@ -30,24 +31,22 @@ import com.esotericsoftware.kryo.KryoException;
 /** An {@link Output} that writes the length before each flush. The length allows the chunks to be skipped when reading.
  * @author Nathan Sweet */
 public class OutputChunked extends Output {
-	/** Creates an uninitialized OutputChunked with a maximum chunk size of 2048, the OutputStream must be set before it can be
-	 * used. */
+	/** @see Output#Output() */
 	public OutputChunked () {
-		super(2048);
+		super();
 	}
 
-	/** Creates an uninitialized OutputChunked, the OutputStream must be set before it can be used.
-	 * @param bufferSize The maximum size of a chunk. */
+	/** @see Output#Output(int) */
 	public OutputChunked (int bufferSize) {
 		super(bufferSize);
 	}
 
-	/** Creates an OutputChunked with a maximum chunk size of 2048. */
+	/** @see Output#Output(OutputStream) */
 	public OutputChunked (OutputStream outputStream) {
-		super(outputStream, 2048);
+		super(outputStream);
 	}
 
-	/** @param bufferSize The maximum size of a chunk. */
+	/** @see Output#Output(OutputStream, int) */
 	public OutputChunked (OutputStream outputStream, int bufferSize) {
 		super(outputStream, bufferSize);
 	}

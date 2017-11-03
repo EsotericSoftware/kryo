@@ -31,21 +31,22 @@ import com.esotericsoftware.kryo.KryoException;
 public class InputChunked extends Input {
 	private int chunkSize = -1;
 
-	/** Creates an uninitialized InputChunked with a buffer size of 2048, the InputStream must be set before it can be used. */
+	/** @see Input#Input() */
 	public InputChunked () {
-		super(2048);
+		super();
 	}
 
-	/** Creates an uninitialized InputChunked, the InputStream must be set before it can be used. */
+	/** @see Input#Input(int) */
 	public InputChunked (int bufferSize) {
 		super(bufferSize);
 	}
 
-	/** Creates an InputChunked with a buffer size of 2048. */
+	/** @see Input#Input(InputStream) */
 	public InputChunked (InputStream inputStream) {
-		super(inputStream, 2048);
+		super(inputStream);
 	}
 
+	/** @see Input#Input(InputStream, int) */
 	public InputChunked (InputStream inputStream, int bufferSize) {
 		super(inputStream, bufferSize);
 	}

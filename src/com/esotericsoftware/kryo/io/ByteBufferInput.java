@@ -67,14 +67,14 @@ public class ByteBufferInput extends Input {
 		setBuffer(buffer);
 	}
 
-	/** Creates a new Input for reading from an InputStream with a buffer size of 4096. */
+	/** @see Input#Input(InputStream) */
 	public ByteBufferInput (InputStream inputStream) {
 		this(4096);
 		if (inputStream == null) throw new IllegalArgumentException("inputStream cannot be null.");
 		this.inputStream = inputStream;
 	}
 
-	/** Creates a new Input for reading from an InputStream with the specified buffer size. */
+	/** @see Input#Input(InputStream, int) */
 	public ByteBufferInput (InputStream inputStream, int bufferSize) {
 		this(bufferSize);
 		if (inputStream == null) throw new IllegalArgumentException("inputStream cannot be null.");
@@ -152,7 +152,7 @@ public class ByteBufferInput extends Input {
 		}
 	}
 
-	final protected int require (int required) throws KryoException {
+	protected int require (int required) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= required) return remaining;
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);

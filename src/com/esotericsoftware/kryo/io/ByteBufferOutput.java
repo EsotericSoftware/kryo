@@ -67,20 +67,6 @@ public class ByteBufferOutput extends Output {
 		byteBuffer.order(byteOrder);
 	}
 
-	/** Creates a new Output for writing to an OutputStream. A buffer size of 4096 is used. */
-	public ByteBufferOutput (OutputStream outputStream) {
-		this(4096, 4096);
-		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
-		this.outputStream = outputStream;
-	}
-
-	/** Creates a new Output for writing to an OutputStream with the specified buffer size. */
-	public ByteBufferOutput (OutputStream outputStream, int bufferSize) {
-		this(bufferSize, bufferSize);
-		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
-		this.outputStream = outputStream;
-	}
-
 	/** Creates a new Output for writing to a ByteBuffer. */
 	public ByteBufferOutput (ByteBuffer buffer) {
 		setBuffer(buffer);
@@ -91,6 +77,20 @@ public class ByteBufferOutput extends Output {
 	 *           maxBufferSize and an exception is thrown. Can be -1 for no maximum. */
 	public ByteBufferOutput (ByteBuffer buffer, int maxBufferSize) {
 		setBuffer(buffer, maxBufferSize);
+	}
+
+	/** @see Output#Output(OutputStream) */
+	public ByteBufferOutput (OutputStream outputStream) {
+		this(4096, 4096);
+		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
+		this.outputStream = outputStream;
+	}
+
+	/** @see Output#Output(OutputStream, int) */
+	public ByteBufferOutput (OutputStream outputStream, int bufferSize) {
+		this(bufferSize, bufferSize);
+		if (outputStream == null) throw new IllegalArgumentException("outputStream cannot be null.");
+		this.outputStream = outputStream;
 	}
 
 	public ByteOrder order () {
@@ -185,7 +185,7 @@ public class ByteBufferOutput extends Output {
 			newBuffer.order(byteBuffer.order());
 
 			// writeInt & writeLong mess with the byte order, need to keep track of the current byte order when growing.
-			final ByteOrder currentByteOrder = byteOrder;
+			ByteOrder currentByteOrder = byteOrder;
 			setBuffer(newBuffer, maxCapacity);
 			byteOrder = currentByteOrder;
 		}
