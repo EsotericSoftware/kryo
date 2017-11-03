@@ -144,7 +144,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		boolean receivedIAE = false;
 		try {
 			newKryo.register(IncompatibleClass.class);
-		} catch (IllegalArgumentException e) {
+		} catch (IllegalArgumentException ex) {
 			receivedIAE = true;
 		}
 		assertTrue(receivedIAE);

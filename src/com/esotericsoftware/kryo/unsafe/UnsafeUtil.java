@@ -1,0 +1,124 @@
+/* Copyright (c) 2008, Nathan Sweet
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
+ * conditions are met:
+ * 
+ * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+ * disclaimer in the documentation and/or other materials provided with the distribution.
+ * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
+ * from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+ * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+
+package com.esotericsoftware.kryo.unsafe;
+
+import static com.esotericsoftware.minlog.Log.*;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+
+import com.esotericsoftware.kryo.util.Util;
+
+import sun.misc.Cleaner;
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
+
+/** Utility methods for using {@link sun.misc.Unsafe}, mostly for private use. Not available on Android.
+ * @author Roman Levenstein <romixlev@gmail.com> */
+public class UnsafeUtil {
+	static final Unsafe unsafe;
+	static public final long byteArrayBaseOffset;
+	static public final long floatArrayBaseOffset;
+	static public final long doubleArrayBaseOffset;
+	static public final long intArrayBaseOffset;
+	static public final long longArrayBaseOffset;
+	static public final long shortArrayBaseOffset;
+	static public final long charArrayBaseOffset;
+
+	static {
+		Unsafe tempUnsafe = null;
+		long tempByteArrayBaseOffset = 0;
+		long tempFloatArrayBaseOffset = 0;
+		long tempDoubleArrayBaseOffset = 0;
+		long tempIntArrayBaseOffset = 0;
+		long tempLongArrayBaseOffset = 0;
+		long tempShortArrayBaseOffset = 0;
+		long tempCharArrayBaseOffset = 0;
+
+		try {
+			if (!Util.isAndroid) {
+				Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+				field.setAccessible(true);
+				tempUnsafe = (sun.misc.Unsafe)field.get(null);
+				tempByteArrayBaseOffset = tempUnsafe.arrayBaseOffset(byte[].class);
+				tempCharArrayBaseOffset = tempUnsafe.arrayBaseOffset(char[].class);
+				tempShortArrayBaseOffset = tempUnsafe.arrayBaseOffset(short[].class);
+				tempIntArrayBaseOffset = tempUnsafe.arrayBaseOffset(int[].class);
+				tempFloatArrayBaseOffset = tempUnsafe.arrayBaseOffset(float[].class);
+				tempLongArrayBaseOffset = tempUnsafe.arrayBaseOffset(long[].class);
+				tempDoubleArrayBaseOffset = tempUnsafe.arrayBaseOffset(double[].class);
+			} else {
+				if (DEBUG) debug("kryo", "Unsafe is not available on Android.");
+			}
+		} catch (Exception ex) {
+			if (DEBUG) debug("kryo", "Unsafe is not available.", ex);
+		}
+
+		byteArrayBaseOffset = tempByteArrayBaseOffset;
+		charArrayBaseOffset = tempCharArrayBaseOffset;
+		shortArrayBaseOffset = tempShortArrayBaseOffset;
+		intArrayBaseOffset = tempIntArrayBaseOffset;
+		floatArrayBaseOffset = tempFloatArrayBaseOffset;
+		longArrayBaseOffset = tempLongArrayBaseOffset;
+		doubleArrayBaseOffset = tempDoubleArrayBaseOffset;
+		unsafe = tempUnsafe;
+	}
+
+	// Constructor to be used for creation of ByteBuffers that use preallocated memory regions
+	static Constructor<? extends ByteBuffer> directByteBufferConstructor;
+
+	static {
+		ByteBuffer buffer = ByteBuffer.allocateDirect(1);
+		try {
+			directByteBufferConstructor = buffer.getClass().getDeclaredConstructor(long.class, int.class, Object.class);
+			directByteBufferConstructor.setAccessible(true);
+		} catch (Exception ex) {
+			if (DEBUG) debug("kryo", "No direct ByteBuffer constructor available.", ex);
+			directByteBufferConstructor = null;
+		}
+	}
+
+	/** Returns the sun.misc.Unsafe instance. If null is returned, unsafe is disabled and no further UnsafeUtil methods should be
+	 * used. */
+	static public Unsafe unsafe () {
+		return unsafe;
+	}
+
+	/** Create a ByteBuffer that uses the specified off-heap memory address instead of allocating a new one.
+	 * @param address Address of the memory region to be used for a ByteBuffer.
+	 * @param size Size in bytes of the memory region.
+	 * @return null if creating a ByteBuffer this way is not available. */
+	static public ByteBuffer newDirectBuffer (long address, int size) {
+		if (directByteBufferConstructor == null) return null;
+		try {
+			return directByteBufferConstructor.newInstance(address, size, null);
+		} catch (Exception ex) {
+			throw new RuntimeException("Error creating a ByteBuffer at address: " + address, ex);
+		}
+	}
+
+	/** Release a direct buffer immediately rather than waiting for GC. */
+	static public void releaseBuffer (ByteBuffer buffer) {
+		if (!buffer.isDirect()) return;
+		Object cleaner = ((DirectBuffer)buffer).cleaner();
+		if (cleaner != null) ((Cleaner)cleaner).clean();
+	}
+}

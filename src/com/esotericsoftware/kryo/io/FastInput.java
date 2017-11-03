@@ -59,7 +59,15 @@ public final class FastInput extends Input {
 		return readInt();
 	}
 
+	public boolean canReadInt () throws KryoException {
+		return limit - position >= 4;
+	}
+
 	public long readLong (boolean optimizePositive) throws KryoException {
 		return readLong();
+	}
+
+	public boolean canReadLong () throws KryoException {
+		return limit - position >= 8;
 	}
 }

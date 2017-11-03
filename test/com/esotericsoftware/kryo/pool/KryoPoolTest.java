@@ -127,8 +127,7 @@ public class KryoPoolTest {
 				}
 			});
 			fail("Exception should be rethrown.");
-		} catch (RuntimeException e) {
-			// expected
+		} catch (RuntimeException expected) {
 		}
 		assertEquals(1, size());
 	}

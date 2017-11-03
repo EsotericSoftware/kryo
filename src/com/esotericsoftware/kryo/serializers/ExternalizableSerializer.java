@@ -65,8 +65,8 @@ public class ExternalizableSerializer extends Serializer {
 	private void writeExternal (Kryo kryo, Output output, Object object) {
 		try {
 			((Externalizable)object).writeExternal(getObjectOutput(kryo, output));
-		} catch (Exception e) {
-			throw new KryoException(e);
+		} catch (Exception ex) {
+			throw new KryoException(ex);
 		}
 	}
 
@@ -75,8 +75,8 @@ public class ExternalizableSerializer extends Serializer {
 			Externalizable object = (Externalizable)kryo.newInstance(type);
 			object.readExternal(getObjectInput(kryo, input));
 			return object;
-		} catch (Exception e) {
-			throw new KryoException(e);
+		} catch (Exception ex) {
+			throw new KryoException(ex);
 		}
 	}
 

@@ -54,8 +54,8 @@ public class Java8ClosureSerializerTest extends KryoTestCase {
 	protected void doAssertEquals (Object object1, Object object2) {
 		try {
 			Assert.assertEquals(((Callable)object1).call(), ((Callable)object2).call());
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage());
+		} catch (Exception ex) {
+			throw new RuntimeException(ex.getMessage());
 		}
 	}
 }

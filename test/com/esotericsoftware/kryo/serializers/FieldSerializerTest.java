@@ -133,8 +133,8 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		try {
 			roundTrip(5, test);
-		} catch (KryoException e) {
-			e.printStackTrace();
+		} catch (KryoException ex) {
+			ex.printStackTrace();
 			fail("Couldn't serialize generic with a removed field.");
 		}
 	}
@@ -604,8 +604,8 @@ public class FieldSerializerTest extends KryoTestCase {
 			kryo.register(WronglyAnnotatedCollectionFields.class);
 			WronglyAnnotatedCollectionFields obj1 = new WronglyAnnotatedCollectionFields();
 			roundTrip(31, obj1);
-		} catch (RuntimeException e) {
-			Throwable cause = e.getCause().getCause();
+		} catch (RuntimeException ex) {
+			Throwable cause = ex.getCause().getCause();
 			assertTrue("Exception should complain about a field not implementing java.util.Collection",
 				cause.getMessage().contains("be used only with fields implementing java.util.Collection"));
 			return;
@@ -619,8 +619,8 @@ public class FieldSerializerTest extends KryoTestCase {
 			kryo.register(WronglyAnnotatedMapFields.class);
 			WronglyAnnotatedMapFields obj1 = new WronglyAnnotatedMapFields();
 			roundTrip(31, obj1);
-		} catch (RuntimeException e) {
-			Throwable cause = e.getCause().getCause();
+		} catch (RuntimeException ex) {
+			Throwable cause = ex.getCause().getCause();
 			assertTrue("Exception should complain about a field not implementing java.util.Map ",
 				cause.getMessage().contains("be used only with fields implementing java.util.Map"));
 			return;
@@ -634,8 +634,8 @@ public class FieldSerializerTest extends KryoTestCase {
 			kryo.register(MultipleTimesAnnotatedCollectionFields.class);
 			MultipleTimesAnnotatedCollectionFields obj1 = new MultipleTimesAnnotatedCollectionFields();
 			roundTrip(31, obj1);
-		} catch (RuntimeException e) {
-			Throwable cause = e.getCause().getCause();
+		} catch (RuntimeException ex) {
+			Throwable cause = ex.getCause().getCause();
 			assertTrue("Exception should complain about a field that has a serializer already",
 				cause.getMessage().contains("already"));
 			return;

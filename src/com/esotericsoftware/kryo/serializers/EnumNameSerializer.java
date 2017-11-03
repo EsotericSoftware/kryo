@@ -44,8 +44,8 @@ public class EnumNameSerializer extends ImmutableSerializer<Enum> {
 		String name = kryo.readObject(input, String.class, stringSerializer);
 		try {
 			return Enum.valueOf(enumType, name);
-		} catch (IllegalArgumentException e) {
-			throw new KryoException("Invalid name for enum \"" + enumType.getName() + "\": " + name, e);
+		} catch (IllegalArgumentException ex) {
+			throw new KryoException("Invalid name for enum \"" + enumType.getName() + "\": " + name, ex);
 		}
 	}
 }

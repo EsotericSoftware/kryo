@@ -46,8 +46,8 @@ public class KryoDataInput implements DataInput {
 	public void readFully (byte[] b, int off, int len) throws IOException {
 		try {
 			input.readBytes(b, off, len);
-		} catch (KryoException e) {
-			throw new EOFException(e.getMessage());
+		} catch (KryoException ex) {
+			throw new EOFException(ex.getMessage());
 		}
 	}
 

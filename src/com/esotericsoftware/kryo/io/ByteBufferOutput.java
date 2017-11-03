@@ -100,7 +100,7 @@ public class ByteBufferOutput extends Output {
 	/** Sets the byte order. Default is big endian. */
 	public void order (ByteOrder byteOrder) {
 		this.byteOrder = byteOrder;
-		this.byteBuffer.order(byteOrder);
+		byteBuffer.order(byteOrder);
 	}
 
 	public OutputStream getOutputStream () {

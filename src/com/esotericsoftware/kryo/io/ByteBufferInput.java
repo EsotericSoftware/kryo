@@ -258,17 +258,17 @@ public class ByteBufferInput extends Input {
 
 	public void setPosition (int position) {
 		this.position = position;
-		this.byteBuffer.position(position);
+		byteBuffer.position(position);
 	}
 
 	public void setLimit (int limit) {
 		this.limit = limit;
-		this.byteBuffer.limit(limit);
+		byteBuffer.limit(limit);
 	}
 
 	public void skip (int count) throws KryoException {
 		super.skip(count);
-		byteBuffer.position(this.position());
+		byteBuffer.position(position());
 	}
 
 	public long skip (long count) throws KryoException {
@@ -790,8 +790,6 @@ public class ByteBufferInput extends Input {
 	public double readDouble (double precision, boolean optimizePositive) throws KryoException {
 		return readLong(optimizePositive) / (double)precision;
 	}
-
-	// Primitive arrays
 
 	public int[] readInts (int length) throws KryoException {
 		if (capacity - position >= length * 4 && byteOrder == nativeOrder) {

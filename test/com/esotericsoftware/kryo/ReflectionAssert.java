@@ -198,10 +198,8 @@ class ReflectionAssert {
 				try {
 					assertReflectionEquals(field.get(one), field.get(another), requireMatchingClasses, alreadyChecked,
 						path + "." + field.getName());
-				} catch (final IllegalArgumentException e) {
-					throw new RuntimeException(e);
-				} catch (final IllegalAccessException e) {
-					throw new RuntimeException(e);
+				} catch (final Exception ex) {
+					throw new RuntimeException(ex);
 				}
 			}
 		}

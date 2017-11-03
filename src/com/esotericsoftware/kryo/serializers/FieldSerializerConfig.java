@@ -38,8 +38,8 @@ public class FieldSerializerConfig implements Cloneable {
 	public FieldSerializerConfig clone () {
 		try {
 			return (FieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
-		} catch (CloneNotSupportedException e) {
-			throw new RuntimeException(e);
+		} catch (CloneNotSupportedException ex) {
+			throw new RuntimeException(ex);
 		}
 	}
 

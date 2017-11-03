@@ -751,8 +751,8 @@ public class DefaultSerializers {
 		public URL read (Kryo kryo, Input input, Class<? extends URL> type) {
 			try {
 				return new java.net.URL(input.readString());
-			} catch (MalformedURLException e) {
-				throw new KryoException(e);
+			} catch (MalformedURLException ex) {
+				throw new KryoException(ex);
 			}
 		}
 	}

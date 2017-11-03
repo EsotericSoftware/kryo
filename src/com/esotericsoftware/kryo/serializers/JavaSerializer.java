@@ -84,8 +84,8 @@ public class JavaSerializer extends Serializer {
 		protected Class resolveClass (ObjectStreamClass desc) {
 			try {
 				return Class.forName(desc.getName(), false, loader);
-			} catch (ClassNotFoundException e) {
-				throw new RuntimeException("Class not found: " + desc.getName(), e);
+			} catch (ClassNotFoundException ex) {
+				throw new RuntimeException("Class not found: " + desc.getName(), ex);
 			}
 		}
 	}

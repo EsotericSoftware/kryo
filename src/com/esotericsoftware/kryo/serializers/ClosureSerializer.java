@@ -46,8 +46,8 @@ public class ClosureSerializer extends Serializer {
 		try {
 			readResolve = serializedLambda.getDeclaredMethod("readResolve");
 			readResolve.setAccessible(true);
-		} catch (Exception e) {
-			throw new RuntimeException("Could not obtain SerializedLambda or its methods via reflection", e);
+		} catch (Exception ex) {
+			throw new RuntimeException("Could not obtain SerializedLambda or its methods via reflection", ex);
 		}
 	}
 
@@ -65,8 +65,8 @@ public class ClosureSerializer extends Serializer {
 				kryo.writeObject(output, replacement);
 			} else
 				throw new RuntimeException("Could not serialize lambda");
-		} catch (Exception e) {
-			throw new RuntimeException("Could not serialize lambda", e);
+		} catch (Exception ex) {
+			throw new RuntimeException("Could not serialize lambda", ex);
 		}
 	}
 
@@ -74,8 +74,8 @@ public class ClosureSerializer extends Serializer {
 		try {
 			Object object = kryo.readObject(input, serializedLambda);
 			return readResolve.invoke(object);
-		} catch (Exception e) {
-			throw new RuntimeException("Could not serialize lambda", e);
+		} catch (Exception ex) {
+			throw new RuntimeException("Could not serialize lambda", ex);
 		}
 	}
 
@@ -89,8 +89,8 @@ public class ClosureSerializer extends Serializer {
 				return (SerializedLambda)readResolve.invoke(replacement);
 			} else
 				throw new RuntimeException("Could not serialize lambda");
-		} catch (Exception e) {
-			throw new RuntimeException("Could not serialize lambda", e);
+		} catch (Exception ex) {
+			throw new RuntimeException("Could not serialize lambda", ex);
 		}
 	}
 }
