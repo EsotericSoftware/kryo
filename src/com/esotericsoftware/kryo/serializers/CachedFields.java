@@ -278,6 +278,10 @@ class CachedFields implements Comparator<CachedField> {
 	private void applyAnnotations (CachedField cachedField) {
 		Field field = cachedField.field;
 
+		// Set a specific class for a particular field.
+		if (field.isAnnotationPresent(FieldSerializer.BindClass.class))
+			cachedField.setClass(field.getAnnotation(FieldSerializer.BindClass.class).value());
+
 		// Set a specific serializer for a particular field.
 		if (field.isAnnotationPresent(FieldSerializer.Bind.class)) {
 			Class serializerClass = field.getAnnotation(FieldSerializer.Bind.class).value();

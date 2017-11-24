@@ -304,11 +304,21 @@ public class FieldSerializer<T> extends Serializer<T> {
 		public String value();
 	}
 
-	/** Used to annotate fields with a specific Kryo serializer. */
+	/** Used to annotate fields with a specific Kryo serializer.
+	 * @see CachedField#setSerializer(Serializer) */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface Bind {
 		/** The serializer class to use for this field. */
 		Class<? extends Serializer> value();
+	}
+
+	/** Used to annotate that a field uses a specific class.
+	 * @see CachedField#setClass(Class) */
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.FIELD)
+	public @interface BindClass {
+		/** The concrete class to use for all values of this field. */
+		Class value();
 	}
 }
