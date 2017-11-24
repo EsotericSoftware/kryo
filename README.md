@@ -14,7 +14,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 
 ## Contents
 
-- [New in release 4.0.0](#new-in-release-400)
+- [New in release 4.0.1](#new-in-release-401)
 - [Versioning Semantics, Upgrading](#versioning-semantics-upgrading)
 - [Installation](#installation)
  - [Integration with Maven](#integration-with-maven)
@@ -38,7 +38,9 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [Chunked encoding](#chunked-encoding)
 - [Compatibility](#compatibility)
 - [Interoperability](#interoperability)
-- [Stack size](#stack-size)
+- [Very large object graphs](#very-large-object-graphs)
+  - [Stack size](#stack-size)
+  - [Reference limits](#reference-limits)
 - [Threading](#threading)
 - [Pooling Kryo instances](#pooling-kryo-instances)
 - [Logging](#logging)
@@ -48,23 +50,9 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [Projects using Kryo](#projects-using-kryo)
 - [Contact / Mailing list](#contact--mailing-list)
 
-## New in release 4.0.0
+## New in release 4.0.1
 
-The 4.0.0 release brings several new features and improvements for stability and performance. Here are some highlights and things you definitely should be aware of (left aside
-that studying the change log and testing the upgrade carefully is a must anyways).
-
-* *BREAKING (data):* Generics handling is more robust now, the former optimization for smaller size (but increased serialization time) is now optional and disabled by default.<br/>
-  **Important:** This change breaks the serialization format of the `FieldSerializer` for generic fields, therefore generic classes serialized with Kryo 3
-  and `FieldSerializer` cannot be deserialized with Kryo 4 by default. To deserialize such Kryo 3 serialized generic classes you have to set
-  `kryo.getFieldSerializerConfig().setOptimizedGenerics(true);`! In any case, test that (de)serialization works with the upgrade.
-* *BREAKING (source/binary):* `protected Kryo.isClousre` is renamed to `Kryo.isClosure`, `Generics` is moved to a different package and no longer part of the public api.
-* Since Kryo 4 the public api is reduced. Since java does not allow fine grained settings for visibility, some classes that are `public` but not considered to
-  be part of the public api are now marked with "INTERNAL API".
-* Kryo 4 adds serializers for Java 8 `java.time.*` and `Optional*`.
-* Now we test serialization compatibility for the different binary formats and default serializers for every change.
-* Many more improvements and fixes thanks to many contributors!
-
-For details check out the [Release Notes](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.0).
+The 4.0.1 release brings several fixes and improvements, for details check out the [release notes](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.1).
 
 ## Versioning Semantics, Upgrading
 
@@ -101,7 +89,7 @@ To use the official release of Kryo, please use the following snippet in your po
     <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo</artifactId>
-        <version>4.0.0</version>
+        <version>4.0.1</version>
     </dependency>
 ```
 
@@ -111,7 +99,7 @@ If you experience issues because you already have a different version of asm in 
     <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo-shaded</artifactId>
-        <version>4.0.0</version>
+        <version>4.0.1</version>
     </dependency>
 ```
 
@@ -596,9 +584,21 @@ Additional serializers can easily be developed for forward and backward compatib
 
 The Kryo serializers provided by default assume that Java will be used for deserialization, so they do not explicitly define the format that is written. Serializers could be written using a standardized format that is more easily read by another language, but this is not provided by default.
 
-## Stack size
+## Very large object graphs
+
+### Stack size
 
 The serializers Kryo provides use the call stack when serializing nested objects. Kryo does minimize stack calls, but for extremely deep object graphs, a stack overflow can occur. This is a common issue for most serialization libraries, including the built-in Java serialization. The stack size can be increased using `-Xss`, but note that this is for all threads. Large stack sizes in a JVM with many threads may use a large amount of memory.
+
+### Reference limits
+
+Kryo stores references in a map that is based on an int array. Since Java array indices are limited to `Integer.MAX_VALUE`, serializing large (> 1 billion) objects may result in a `java.lang.NegativeArraySizeException`. 
+
+A workaround for this issue is disabling Kryo's reference tracking as indicated below:
+```java
+    Kryo kryo = new Kryo();
+    kryo.setReferences(false);
+```
 
 ## Threading
 
@@ -658,7 +658,7 @@ String value = pool.run(new KryoCallback() {
 
 ## Logging
 
-Kryo makes use of the low overhead, lightweight [MinLog logging library](http://code.google.com/p/minlog/). The logging level can be set by one of the following methods:
+Kryo makes use of the low overhead, lightweight [MinLog logging library](https://github.com/EsotericSoftware/minlog). The logging level can be set by one of the following methods:
 
 ```java
     Log.ERROR();

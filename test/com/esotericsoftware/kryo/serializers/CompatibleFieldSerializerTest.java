@@ -180,6 +180,56 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals(object1, object2);
 	}
 
+	public void testRemovedMultipleFieldsFromClassWithManyFields () throws FileNotFoundException {
+		// class must have more than CompatibleFieldSerializer#THRESHOLD_BINARY_SEARCH number of fields
+		ClassWithManyFields object1 = new ClassWithManyFields();
+		object1.aa = "aa";
+		object1.bb = "bb";
+		object1.cc = "cc";
+		object1.dd = "dd";
+		object1.ee = "ee";
+		object1.ff = "ff";
+		object1.gg = "gg";
+		object1.hh = "hh";
+		object1.ii = "ii";
+		object1.jj = "jj";
+		object1.kk = "kk";
+		object1.ll = "ll";
+		object1.mm = "mm";
+		object1.nn = "nn";
+		object1.oo = "oo";
+		object1.pp = "pp";
+		object1.qq = "qq";
+		object1.rr = "rr";
+		object1.ss = "ss";
+		object1.tt = "tt";
+		object1.uu = "uu";
+		object1.vv = "vv";
+		object1.ww = "ww";
+		object1.xx = "xx";
+		object1.yy = "yy";
+		object1.zz = "zz";
+
+		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
+		roundTrip(220, object1);
+
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
+		serializer.removeField("bb");
+		serializer.removeField("cc");
+		serializer.removeField("dd");
+
+		kryo.register(ClassWithManyFields.class, serializer);
+		ClassWithManyFields object2 = (ClassWithManyFields)kryo.readClassAndObject(input);
+		assertNull("bb should be null", object2.bb);
+		assertNull("cc should be null", object2.cc);
+		assertNull("dd should be null", object2.dd);
+		// update the fields to verify the remainder of the object was deserialized correctly
+		object2.bb = object1.bb;
+		object2.cc = object1.cc;
+		object2.dd = object1.dd;
+		assertEquals(object1, object2);
+	}
+
 	public void testExtendedClass () throws FileNotFoundException {
 		ExtendedTestClass extendedObject = new ExtendedTestClass();
 

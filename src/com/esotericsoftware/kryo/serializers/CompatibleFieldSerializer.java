@@ -122,7 +122,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 		} else {
 			int low, mid, high, compare;
-			int lastFieldIndex = (allFields.length > length ? allFields.length : length) - 1;
+			int lastFieldIndex = allFields.length;
 			outer:
 			for (int i = 0; i < length; i++) {
 				String schemaName = names[i];

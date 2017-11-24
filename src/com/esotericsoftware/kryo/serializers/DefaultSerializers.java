@@ -352,7 +352,13 @@ public class DefaultSerializers {
 
 		public EnumSerializer (Class<? extends Enum> type) {
 			enumConstants = type.getEnumConstants();
-			if (enumConstants == null) throw new IllegalArgumentException("The type must be an enum: " + type);
+			// We allow the serialization of the (abstract!) Enum.class (instead of an actual "user" enum),
+			// which also creates an EnumSerializer instance during Kryo.writeClass with the following trace:
+			// ClassSerializer.write -> Kryo.writeClass -> DefaultClassResolver.writeClass
+			// -> Kryo.getDefaultSerializer -> ReflectionSerializerFactory.makeSerializer(kryo, EnumSerializer, Enum.class)
+			// This EnumSerializer instance is expected to be never called for write/read.
+			if (enumConstants == null && !Enum.class.equals(type))
+				throw new IllegalArgumentException("The type must be an enum: " + type);
 		}
 
 		public void write (Kryo kryo, Output output, Enum object) {
