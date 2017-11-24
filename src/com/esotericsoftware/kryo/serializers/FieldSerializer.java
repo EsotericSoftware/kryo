@@ -223,7 +223,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 		 * If the field type is a type variable, the default value is used. */
 		public void setClass (Class valueClass) {
 			this.valueClass = valueClass;
-			this.serializer = null;
 		}
 
 		/** Sets both {@link #setClass(Class)} and {@link #setSerializer(Serializer)}. */
