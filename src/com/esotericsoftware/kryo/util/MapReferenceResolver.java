@@ -62,7 +62,7 @@ public class MapReferenceResolver implements ReferenceResolver {
 
 	public void reset () {
 		readObjects.clear();
-		writtenObjects.clear();
+		writtenObjects.clear(2048);
 	}
 
 	/** Returns false for all primitive wrappers. */
