@@ -37,7 +37,7 @@ public class MapReferenceResolver implements ReferenceResolver {
 	}
 
 	public int addWrittenObject (Object object) {
-		int id = writtenObjects.size;
+		int id = writtenObjects.size();
 		writtenObjects.put(object, id);
 		return id;
 	}
@@ -62,7 +62,7 @@ public class MapReferenceResolver implements ReferenceResolver {
 
 	public void reset () {
 		readObjects.clear();
-		writtenObjects.clear(2048);
+		writtenObjects.clearAndResize();
 	}
 
 	/** Returns false for all primitive wrappers. */
