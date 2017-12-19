@@ -124,8 +124,6 @@ public class Kryo {
 	static private final int REF = -1;
 	static private final int NO_REF = -2;
 
-	private static final int DEFAULT_IOIM_CLEAR_MAX_SIZE = 2048;
-
 	private SerializerFactory defaultSerializer = new ReflectionSerializerFactory(FieldSerializer.class);
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(33);
 	private final int lowPriorityDefaultSerializerCount;
@@ -157,8 +155,6 @@ public class Kryo {
 	private TaggedFieldSerializerConfig taggedFieldSerializerConfig = new TaggedFieldSerializerConfig();
 
 	private StreamFactory streamFactory;
-
-	private int ioimClearSize = DEFAULT_IOIM_CLEAR_MAX_SIZE;
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and a {@link MapReferenceResolver}. */
 	public Kryo () {
@@ -1088,15 +1084,6 @@ public class Kryo {
 		this.copyReferences = copyReferences;
 	}
 
-	/**
-	 * This method sets the the size of resolver maps when they are reset/cleared.
-	 *
-	 * @param ioimClearSize
-	 */
-	public void setIdenityObjectIntMapClearSize(int ioimClearSize) {
-		this.ioimClearSize = ioimClearSize;
-	}
-
 	/** The default configuration for {@link FieldSerializer} instances. Already existing serializer instances (e.g. implicitely
 	 * created for already registered classes) are not affected by this configuration. You can override the configuration for a
 	 * single {@link FieldSerializer}. */
@@ -1168,11 +1155,6 @@ public class Kryo {
 	/** Returns the number of child objects away from the object graph root. */
 	public int getDepth () {
 		return depth;
-	}
-
-	/** Returns the size to resize to when clearing a resolver map if the map. */
-	public int getIdenityObjectIntMapClearSize() {
-		return this.ioimClearSize;
 	}
 
 	/** Returns the internal map of original to copy objects when a copy method is used. This can be used after a copy to map old

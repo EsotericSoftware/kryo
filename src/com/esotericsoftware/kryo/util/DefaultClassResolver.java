@@ -177,7 +177,7 @@ public class DefaultClassResolver implements ClassResolver {
 
 	public void reset () {
 		if (!kryo.isRegistrationRequired()) {
-			if (classToNameId != null) classToNameId.clear(kryo.getIdenityObjectIntMapClearSize());
+			if (classToNameId != null) classToNameId.clearAndResize();
 			if (nameIdToClass != null) nameIdToClass.clear();
 			nextNameId = 0;
 		}

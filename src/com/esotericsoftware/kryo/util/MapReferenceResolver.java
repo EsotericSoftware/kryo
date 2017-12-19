@@ -62,7 +62,7 @@ public class MapReferenceResolver implements ReferenceResolver {
 
 	public void reset () {
 		readObjects.clear();
-		writtenObjects.clear(kryo.getIdenityObjectIntMapClearSize());
+		writtenObjects.clearAndResize();
 	}
 
 	/** Returns false for all primitive wrappers. */

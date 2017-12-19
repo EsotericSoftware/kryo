@@ -34,6 +34,8 @@ public class IdentityObjectIntMap<K> {
 	private static final int PRIME3 = 0xb4b82e39;
 	private static final int PRIME4 = 0xced1c241;
 
+	private static final int CLEAR_SIZE = 2048;
+
 	private int size;
 
 	private K[] keyTable;
@@ -452,13 +454,13 @@ public class IdentityObjectIntMap<K> {
 	}
 
 	/** Clears the map and reduces the size of the backing arrays to be the specified capacity if they are larger. */
-	public void clear (int maximumCapacity) {
-		if (capacity <= maximumCapacity) {
+	public void clearAndResize () {
+		if (capacity <= CLEAR_SIZE) {
 			clear();
 			return;
 		}
 		size = 0;
-		resize(maximumCapacity);
+		resize(CLEAR_SIZE);
 	}
 
 	public void clear () {
@@ -523,12 +525,8 @@ public class IdentityObjectIntMap<K> {
 		if (sizeNeeded >= threshold) resize(ObjectMap.nextPowerOfTwo((int)(sizeNeeded / loadFactor)));
 	}
 
-	/**
-	 * This method returns the current size of the map.
-	 *
-	 * @return The size of the map.
-	 */
-	public int size() {
+	/** This method returns the current size of the map. */
+	public int size () {
 		return this.size();
 	}
 
