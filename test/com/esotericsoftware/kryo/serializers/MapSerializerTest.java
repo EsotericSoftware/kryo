@@ -40,6 +40,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 /** @author Nathan Sweet */
+@SuppressWarnings("synthetic-access")
 public class MapSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;

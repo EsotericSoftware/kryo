@@ -32,6 +32,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 
+@SuppressWarnings("synthetic-access")
 public class TaggedFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;

@@ -49,6 +49,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
 
 /** @author Nathan Sweet */
+@SuppressWarnings("synthetic-access")
 public class FieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;

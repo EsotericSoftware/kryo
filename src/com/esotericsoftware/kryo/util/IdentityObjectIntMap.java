@@ -36,9 +36,9 @@ public class IdentityObjectIntMap<K> {
 
 	public int size;
 
-	K[] keyTable;
-	int[] valueTable;
-	int capacity, stashSize;
+	private K[] keyTable;
+	private int[] valueTable;
+	private int capacity, stashSize;
 
 	private float loadFactor;
 	private int hashShift, mask, threshold;
