@@ -100,7 +100,7 @@ public abstract class Serializer<T> {
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} copy methods that accept a
 	 * serialier. */
 	public T copy (Kryo kryo, T original) {
-		if (immutable) return original;
+		if (isImmutable()) return original;
 		throw new KryoException("Serializer does not support copy: " + getClass().getName());
 	}
 }
