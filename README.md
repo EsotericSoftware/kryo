@@ -74,8 +74,7 @@ When upgrading kryo check the included changes and test thoroughly the new versi
 We try to make it as safe and easy as possible:
 * at development time we test serialization compatibility for the different binary formats and default serializers
 * at development time we track binary and source compatibility with [clirr](http://www.mojohaus.org/clirr-maven-plugin/)
-* for each release we provide a [ChangeLog](https://github.com/EsotericSoftware/kryo/blob/master/CHANGES.md) that additionally contains
-a section reporting the serialization, binary and source compatibilities (for reporting binary and source compatibility we use [japi-compliance-checker](https://github.com/lvc/japi-compliance-checker/))
+* for each release we provide a [changelog](https://github.com/EsotericSoftware/kryo/releases) that additionally contains a section reporting the serialization, binary and source compatibilities (for reporting binary and source compatibility we use [japi-compliance-checker](https://github.com/lvc/japi-compliance-checker/))
 
 ## Installation
 
