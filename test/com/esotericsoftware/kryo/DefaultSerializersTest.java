@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.junit.Assert;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.io.Input;
@@ -278,6 +279,14 @@ public class DefaultSerializersTest extends KryoTestCase {
 		test.add(Collections.singletonMap("moo", 1234));
 		test.add(Collections.singleton(12.34));
 		roundTrip(249, 251, test);
+	}
+	
+	public void testDeepCollectionCloning() {
+		kryo.setRegistrationRequired(false);
+		Object contents = new Object();
+		Assert.assertNotEquals(kryo.copy(Collections.singleton(contents)).iterator().next(), contents);
+		Assert.assertNotEquals(kryo.copy(Collections.singletonList(contents)).iterator().next(), contents);
+		Assert.assertNotEquals(kryo.copy(Collections.singletonMap(contents, contents)).values().iterator().next(), contents);
 	}
 
 	public void testCalendar () {
