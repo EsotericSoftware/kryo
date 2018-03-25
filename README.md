@@ -560,13 +560,21 @@ kryo.setDefaultSerializer(TaggedFieldSerializer.class);
 
 BeanSerializer is very similar to FieldSerializer, except it uses bean getter and setter methods rather than direct field access. This slightly slower, but may be safer because it uses the public API to configure the object.
 
+#### VersionFieldSerializer
+
 VersionFieldSerializer extends FieldSerializer and allows fields to have a `@Since(int)` annotation to indicate the version they were added. For a particular field, the value in `@Since` should never change once created. This is less flexible than FieldSerializer, which can handle most classes without needing annotations, but it provides backward compatibility. This means that new fields can be added, but removing, renaming or changing the type of any field will invalidate previous serialized bytes. VersionFieldSerializer has very little overhead (a single additional varint) compared to FieldSerializer.
+
+#### TaggedFieldSerializer
 
 TaggedFieldSerializer extends FieldSerializer to only serialize fields that have a `@Tag(int)` annotation, providing backward compatibility so new fields can be added. TaggedFieldSerializer has two advantages over VersionFieldSerializer: 1) fields can be renamed and 2) fields marked with the `@Deprecated` annotation will be ignored when reading old bytes and won't be written to new bytes. Deprecation effectively removes the field from serialization, though the field and `@Tag` annotation must remain in the class. Deprecated fields can optionally be made private and/or renamed so they don't clutter the class (eg, `ignored`, `ignored2`). For these reasons, TaggedFieldSerializer generally provides more flexibility for classes to evolve. The downside is that it has a small amount of additional overhead compared to VersionFieldSerializer (an additional varint per field).
 
 TaggedFieldSerializer also provides optional forward compatibility by the use of `setSkipUnknownTags(true)`, which causes the data of unknown field tags to be skipped. Forward compatibility only works if the newly added fields are tagged with the `annexed` property set true (`@Tag(value=1, annexed=true)`), which causes the associated fields to be written with chunked encoding so they can be skipped.
 
-CompatibleFieldSerializer extends FieldSerializer to provide both forward and backward compatibility, meaning fields can be added or removed without invalidating previously serialized bytes. Changing the type of a field is not supported. Like FieldSerializer, it can serialize most classes without needing annotations. The forward and backward compatibility comes at a cost: the first time the class is encountered in the serialized bytes, a simple schema is written containing the field name strings. Also, during serialization and deserialization buffers are allocated to perform chunked encoding. This is what enables CompatibleFieldSerializer to skip bytes for fields it does not know about. When Kryo is configured to use references, there can be a [problem](https://github.com/EsotericSoftware/kryo/issues/286#issuecomment-74870545) with CompatibleFieldSerializer if a field is removed. In case your class inheritance hierarchy contains same named fields, use the `CachedFieldNameStrategy.EXTENDED` strategy.
+#### CompatibleFieldSerializer
+
+CompatibleFieldSerializer extends FieldSerializer to provide both forward and backward compatibility, meaning fields can be added or removed without invalidating previously serialized bytes. Changing the type of a field is not supported. Like FieldSerializer, it can serialize most classes without needing annotations. The forward and backward compatibility comes at a cost: the first time the class is encountered in the serialized bytes, a simple schema is written containing the field name strings. Also, during serialization and deserialization buffers are allocated to perform chunked encoding. This is what enables CompatibleFieldSerializer to skip bytes for fields it does not know about.<br/>
+**Note:** When Kryo is configured to use references, there can be a [problem](https://github.com/EsotericSoftware/kryo/issues/286#issuecomment-74870545) with CompatibleFieldSerializer if a field is removed! I.e. with CompatibleFieldSerializer you should seriously consider to disable references (`kryo.setReferences(false);`)!<br/>
+In case your class inheritance hierarchy contains same named fields, use the `CachedFieldNameStrategy.EXTENDED` strategy:
 
 ```java
 class A {
@@ -580,6 +588,7 @@ class B extends A {
 // use `EXTENDED` name strategy, otherwise serialized object can't be deserialized correctly. Attention, `EXTENDED` strategy increases the serialized footprint.
 kryo.getFieldSerializerConfig().setCachedFieldNameStrategy(FieldSerializer.CachedFieldNameStrategy.EXTENDED);
 ```
+
 
 Additional serializers can easily be developed for forward and backward compatibility, such as a serializer that uses an external, hand written schema.
 

@@ -43,6 +43,7 @@ public class ReferenceTest extends KryoTestCase {
 	}
 
 	public void testChildObjectBeforeReference () {
+		kryo.setReferences(false);
 		Ordering ordering = new Ordering();
 		ordering.order = "assbackwards";
 		Stuff stuff = new Stuff(ordering);
