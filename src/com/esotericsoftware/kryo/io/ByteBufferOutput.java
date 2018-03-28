@@ -432,8 +432,8 @@ public class ByteBufferOutput extends Output {
 			if (capacity - position < charCount)
 				writeAscii_slow(value, charCount);
 			else {
-				byte[] tmp = value.getBytes();
-				niobuffer.put(tmp, 0, tmp.length);
+				for (int i = 0; i < value.length(); ++i)
+					niobuffer.put((byte)value.charAt(i));
 				position += charCount;
 			}
 			niobuffer.put(position - 1, (byte)(niobuffer.get(position - 1) | 0x80));
@@ -504,8 +504,8 @@ public class ByteBufferOutput extends Output {
 		if (capacity - position < charCount)
 			writeAscii_slow(value, charCount);
 		else {
-			byte[] tmp = value.getBytes();
-			niobuffer.put(tmp, 0, tmp.length);
+			for (int i = 0; i < value.length(); ++i)
+				niobuffer.put((byte)value.charAt(i));
 			position += charCount;
 		}
 		niobuffer.put(position - 1, (byte)(niobuffer.get(position - 1) | 0x80)); // Bit 8 means end of ASCII.
