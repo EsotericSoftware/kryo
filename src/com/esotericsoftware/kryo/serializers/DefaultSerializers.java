@@ -518,7 +518,7 @@ public class DefaultSerializers {
 
 	/** Serializer for lists created via {@link Collections#singletonList(Object)}.
 	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	static public class CollectionsSingletonListSerializer extends ImmutableSerializer<List> {
+	static public class CollectionsSingletonListSerializer extends Serializer<List> {
 		public void write (Kryo kryo, Output output, List object) {
 			kryo.writeClassAndObject(output, object.get(0));
 		}
@@ -526,11 +526,15 @@ public class DefaultSerializers {
 		public List read (Kryo kryo, Input input, Class<? extends List> type) {
 			return Collections.singletonList(kryo.readClassAndObject(input));
 		}
+
+		public List copy (Kryo kryo, List original) {
+			return Collections.singletonList(kryo.copy(original.get(0)));
+		}
 	}
 
 	/** Serializer for maps created via {@link Collections#singletonMap(Object, Object)}.
 	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	static public class CollectionsSingletonMapSerializer extends ImmutableSerializer<Map> {
+	static public class CollectionsSingletonMapSerializer extends Serializer<Map> {
 		public void write (Kryo kryo, Output output, Map object) {
 			Entry entry = (Entry)object.entrySet().iterator().next();
 			kryo.writeClassAndObject(output, entry.getKey());
@@ -542,17 +546,26 @@ public class DefaultSerializers {
 			Object value = kryo.readClassAndObject(input);
 			return Collections.singletonMap(key, value);
 		}
+
+		public Map copy (Kryo kryo, Map original) {
+			Entry entry = (Entry)original.entrySet().iterator().next();
+			return Collections.singletonMap(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));
+		}
 	}
 
 	/** Serializer for sets created via {@link Collections#singleton(Object)}.
 	 * @author <a href="mailto:martin.grotzke@javakaffee.de">Martin Grotzke</a> */
-	static public class CollectionsSingletonSetSerializer extends ImmutableSerializer<Set> {
+	static public class CollectionsSingletonSetSerializer extends Serializer<Set> {
 		public void write (Kryo kryo, Output output, Set object) {
 			kryo.writeClassAndObject(output, object.iterator().next());
 		}
 
 		public Set read (Kryo kryo, Input input, Class<? extends Set> type) {
 			return Collections.singleton(kryo.readClassAndObject(input));
+		}
+
+		public Set copy (Kryo kryo, Set original) {
+			return Collections.singleton(kryo.copy(original.iterator().next()));
 		}
 	}
 
