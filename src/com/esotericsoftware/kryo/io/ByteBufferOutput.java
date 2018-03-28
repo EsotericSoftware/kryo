@@ -432,7 +432,7 @@ public class ByteBufferOutput extends Output {
 			if (capacity - position < charCount)
 				writeAscii_slow(value, charCount);
 			else {
-				for (int i = 0; i < value.length(); ++i)
+				for (int i = 0, n = value.length(); i < n; ++i)
 					niobuffer.put((byte)value.charAt(i));
 				position += charCount;
 			}
@@ -504,7 +504,7 @@ public class ByteBufferOutput extends Output {
 		if (capacity - position < charCount)
 			writeAscii_slow(value, charCount);
 		else {
-			for (int i = 0; i < value.length(); ++i)
+			for (int i = 0, n = value.length(); i < n; ++i)
 				niobuffer.put((byte)value.charAt(i));
 			position += charCount;
 		}
