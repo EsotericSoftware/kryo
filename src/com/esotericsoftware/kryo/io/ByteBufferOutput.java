@@ -373,8 +373,8 @@ public class ByteBufferOutput extends Output {
 			if (capacity - position < charCount)
 				writeAscii_slow(value, charCount);
 			else {
-				byte[] tmp = value.getBytes();
-				byteBuffer.put(tmp, 0, tmp.length);
+				for (int i = 0, n = value.length(); i < n; ++i)
+					byteBuffer.put((byte)value.charAt(i));
 				position += charCount;
 			}
 			byteBuffer.put(position - 1, (byte)(byteBuffer.get(position - 1) | 0x80));
@@ -437,8 +437,8 @@ public class ByteBufferOutput extends Output {
 		if (capacity - position < charCount)
 			writeAscii_slow(value, charCount);
 		else {
-			byte[] tmp = value.getBytes();
-			byteBuffer.put(tmp, 0, tmp.length);
+			for (int i = 0, n = value.length(); i < n; ++i)
+				byteBuffer.put((byte)value.charAt(i));
 			position += charCount;
 		}
 		byteBuffer.put(position - 1, (byte)(byteBuffer.get(position - 1) | 0x80)); // Bit 8 means end of ASCII.
