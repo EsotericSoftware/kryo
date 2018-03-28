@@ -225,7 +225,8 @@ public class ByteBufferInput extends Input {
 
 	/** @param optional Try to fill the buffer with this many bytes.
 	 * @return the number of bytes remaining, but not more than optional, or -1 if the EOS was reached and the buffer is empty. */
-	private int optional (int optional) throws KryoException {
+	@Override
+	protected int optional (int optional) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= optional) return optional;
 		optional = Math.min(optional, capacity);
