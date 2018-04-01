@@ -37,7 +37,8 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<versions.reflectasm>1.11.3</versions.reflectasm>
+		<reflectasm.version>1.11.3</reflectasm.version>
+		<jmh.version>1.19</jmh.version>
 		<test.exclude>**/Java8*Test.java</test.exclude>
 	</properties>
 	
@@ -51,13 +52,13 @@
 			<dependency>
 				<groupId>com.esotericsoftware</groupId>
 				<artifactId>reflectasm</artifactId>
-				<version>${versions.reflectasm}</version>
+				<version>${reflectasm.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.esotericsoftware</groupId>
 				<artifactId>reflectasm</artifactId>
 				<classifier>shaded</classifier>
-				<version>${versions.reflectasm}</version>
+				<version>${reflectasm.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -83,6 +84,18 @@
 			<groupId>commons-lang</groupId>
 			<artifactId>commons-lang</artifactId>
 			<version>2.6</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openjdk.jmh</groupId>
+			<artifactId>jmh-core</artifactId>
+			<version>${jmh.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openjdk.jmh</groupId>
+			<artifactId>jmh-generator-annprocess</artifactId>
+			<version>${jmh.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -115,6 +128,23 @@
 			</plugins>
 		</pluginManagement>
 		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-test-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>pref</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<!-- Disable resources (project has none) -->
 			<plugin>
 				<artifactId>maven-resources-plugin</artifactId>

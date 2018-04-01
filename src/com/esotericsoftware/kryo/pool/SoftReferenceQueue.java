@@ -24,23 +24,21 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
 
-import com.esotericsoftware.kryo.Kryo;
-
-/** Internally uses {@link SoftReference}s for queued Kryo instances, most importantly adjusts the {@link Queue#poll() poll}
- * behavior so that gc'ed Kryo instances are skipped. Most other methods are unsupported.
+/** Internally uses {@link SoftReference}s for queued objects, most importantly adjusts the {@link Queue#poll() poll}
+ * behavior so that gc'ed objects are skipped. Most other methods are unsupported.
  *
  * @author Martin Grotzke */
-class SoftReferenceQueue implements Queue<Kryo> {
+class SoftReferenceQueue<T> implements Queue<T> {
 
-	private Queue<SoftReference<Kryo>> delegate;
+	private final Queue<SoftReference<T>> delegate;
 
-	public SoftReferenceQueue (Queue<?> delegate) {
-		this.delegate = (Queue<SoftReference<Kryo>>)delegate;
+	public SoftReferenceQueue (Queue<T> delegate) {
+		this.delegate = (Queue<SoftReference<T>>)delegate;
 	}
 
-	public Kryo poll () {
-		Kryo res;
-		SoftReference<Kryo> ref;
+	public T poll () {
+		T res;
+		SoftReference<T> ref;
 		while ((ref = delegate.poll()) != null) {
 			if ((res = ref.get()) != null) {
 				return res;
@@ -49,12 +47,12 @@ class SoftReferenceQueue implements Queue<Kryo> {
 		return null;
 	}
 
-	public boolean offer (Kryo e) {
-		return delegate.offer(new SoftReference(e));
+	public boolean offer (T e) {
+		return delegate.offer(new SoftReference<T>(e));
 	}
 
-	public boolean add (Kryo e) {
-		return delegate.add(new SoftReference(e));
+	public boolean add (T e) {
+		return delegate.add(new SoftReference<T>(e));
 	}
 
 	public int size () {
@@ -86,11 +84,11 @@ class SoftReferenceQueue implements Queue<Kryo> {
 		return getClass().getSimpleName() + super.toString();
 	}
 
-	public Iterator<Kryo> iterator () {
+	public Iterator<T> iterator () {
 		throw new UnsupportedOperationException();
 	}
 
-	public Kryo remove () {
+	public T remove () {
 		throw new UnsupportedOperationException();
 	}
 
@@ -98,11 +96,11 @@ class SoftReferenceQueue implements Queue<Kryo> {
 		throw new UnsupportedOperationException();
 	}
 
-	public Kryo element () {
+	public T element () {
 		throw new UnsupportedOperationException();
 	}
 
-	public Kryo peek () {
+	public T peek () {
 		throw new UnsupportedOperationException();
 	}
 
@@ -118,7 +116,7 @@ class SoftReferenceQueue implements Queue<Kryo> {
 		throw new UnsupportedOperationException();
 	}
 
-	public boolean addAll (Collection<? extends Kryo> c) {
+	public boolean addAll (Collection<? extends T> c) {
 		throw new UnsupportedOperationException();
 	}
 

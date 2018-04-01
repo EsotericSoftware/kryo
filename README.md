@@ -43,6 +43,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
   - [Reference limits](#reference-limits)
 - [Threading](#threading)
 - [Pooling Kryo instances](#pooling-kryo-instances)
+- [Pooling Kryo IO instances](#pooling-kryo-io-instances)
 - [Logging](#logging)
 - [Scala](#scala)
 - [Objective-C](#objective-c)
@@ -666,6 +667,43 @@ String value = pool.run(new KryoCallback() {
     return kryo.readObject(input, String.class);
   }
 });
+```
+## Pooling Kryo IO instances
+
+Because the creation/initialization of `Input` and `Output` instances is rather expensive, they should be pooled using `KryoInputPool` and `KryoOutputPool` to avoid excessive GC and CPU consumption.
+
+`KryoInputPool` and `KryoOutputPool` may be configured to use `SoftReference`s so that the pooled `Input` and `Output` objects can be GC'ed when the JVM starts to run out of memory.
+
+To avoid retaining large objects in memory the pool may discard large `Input` and `Output` objects, the size may be set using `maxPooledBufferSize(size)`.
+
+```java
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.pool.*;
+
+KryoFactory factory = new KryoFactory() {
+  public Kryo create () {
+    Kryo kryo = new Kryo();
+    // configure kryo instance, customize settings
+    return kryo;
+  }
+};
+
+KryoPool kryoPool = new KryoPool.Builder(factory).softReferences().build();
+KryoInputPool inputPool = new KryoInputPool.Builder().softReferences().build();
+KryoOutputPool outputPool = new KryoOutputPool.Builder().softReferences().maxPooledBufferSize(512 * 1024).maxBufferSize(768 * 1024).build();
+
+public byte[] serialize(final Object obj, final int bufferSize) {
+    return outputPool.run(new KryoIOCallback<Output, byte[]>() {
+        public byte[] apply(final Output output) {
+            return kryoPool.run(new KryoCallback<byte[]>() {
+                public byte[] execute(Kryo kryo) {
+                    kryo.writeClassAndObject(output, obj);
+                    return output.toBytes();
+                }
+            });
+        }
+    }, bufferSize);
+}
 ```
 
 ## Logging
