@@ -69,6 +69,6 @@ public class ListReferenceResolver implements ReferenceResolver {
 
 	/** Returns false for all primitive wrappers. */
 	public boolean useReferences (Class type) {
-		return !Util.isWrapperClass(type);
+		return !Util.isWrapperClass(type) && !type.isEnum();
 	}
 }
