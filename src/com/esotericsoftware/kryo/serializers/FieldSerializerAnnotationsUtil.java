@@ -65,7 +65,7 @@ final class FieldSerializerAnnotationsUtil {
 				if (Collection.class.isAssignableFrom(fields[i].field.getType())) {
 					Class<?> elementClass = annotation.elementClass();
 					// Those serializers that use elementClass will throw NPE, but it's better than silently using the default
-          // and silently producing wrong results.
+					// and silently producing wrong results.
 					if (elementClass == Object.class) elementClass = null;
 					Class<? extends Serializer> elementSerializerClass = annotation.elementSerializer();
 					if (elementSerializerClass == Serializer.class) elementSerializerClass = null;
