@@ -1,6 +1,6 @@
 ![KryoNet](https://raw.github.com/wiki/EsotericSoftware/kryo/images/logo.jpg)
 
-[![Build Status](https://jenkins.inoio.de/buildStatus/icon?job=kryo&foo=bar)](https://jenkins.inoio.de/job/kryo/)
+[![Build Status](https://travis-ci.org/EsotericSoftware/kryo.png?branch=master)](https://travis-ci.org/EsotericSoftware/kryo)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.esotericsoftware/kryo/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.esotericsoftware%22%20AND%20a%3Akryo)
 [![Join the chat at https://gitter.im/EsotericSoftware/kryo](https://badges.gitter.im/EsotericSoftware/kryo.svg)](https://gitter.im/EsotericSoftware/kryo)
 
