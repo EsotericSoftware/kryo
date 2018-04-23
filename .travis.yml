@@ -3,7 +3,7 @@ language: java
 env:
   global:
     - SONATYPE_USERNAME=martin.grotzke
-    - secure: "IYbrSnn752JOqst10hQ/8DdLvP5vOr+xmM8fgkz8jwUqWhjdz47Hrw+X/uzNx+U4FfaDQeWKBHzb/ysxBDXf0X1NBzRN8vWXUCe6vo/mp+lCXLCzpDk0tBCJFauw9lMpIWqSdAA9X9MMvAUyb9Iux4Rgj+ZCobzdomSkSI0HVFs="
+    - secure: kCOLgEveEDprSL3fOBeCc1/nmHVYEcNh/lRRWiJywFehOzKBTBF40pAWX7JtsWUPG8aPKGYFEE4sjYd+DF2DRknbuB2ZfAEgs9Xp9h5Mx1KztJYNiCfEnLciBBRDXA7t1M3TLKyT3ptA+Kk307cH2QHv9sUUnhnf0IofJyQhQvA=
   
 jdk:
   #- openjdk7
@@ -20,12 +20,11 @@ script:
   # test java 7
   - jdk_switcher use openjdk7
   - mvn -B -f pom-main.xml surefire:test
-
-after_success:
   # install and publish snapshot with java 8
+  # not via `after_success` but directly in `script`, since a failure would be silently ignored in `after_success`
   - jdk_switcher use oraclejdk8
-  - test $TRAVIS_BRANCH = "master" && test $TRAVIS_PULL_REQUEST = "false" && mvn -B -P requireSnapshot -DskipTests=true deploy --settings .settings.xml
-  #- mvn -B -P requireSnapshot -DskipTests=true deploy --settings .settings.xml
+  #- test $TRAVIS_BRANCH = "master" && test $TRAVIS_PULL_REQUEST = "false" && mvn -B -P requireSnapshot -DskipTests=true deploy --settings .settings.xml
+  - mvn -B -P requireSnapshot -DskipTests=true deploy --settings .settings.xml
 
 cache:
   directories:
