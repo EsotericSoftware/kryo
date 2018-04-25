@@ -304,7 +304,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Used to annotate fields with a specific Kryo serializer.
-	 * @see CachedField#setSerializer(Serializer) */
+	 * @see com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField#setSerializer(Serializer) */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface Bind {
@@ -313,7 +313,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Used to annotate that a field uses a specific class.
-	 * @see CachedField#setClass(Class) */
+	 * @see com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField#setClass(Class) */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindClass {
