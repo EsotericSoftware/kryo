@@ -294,7 +294,7 @@ class UnsafeCacheFields {
 		}
 
 		public Object getField (Object object) throws IllegalArgumentException, IllegalAccessException {
-			if (offset >= 0) {
+			if (offset != -1) {
 				return unsafe().getObject(object, offset);
 			} else
 				throw new KryoException("Unknown offset");
