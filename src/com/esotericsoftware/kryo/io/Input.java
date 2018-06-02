@@ -378,25 +378,27 @@ public class Input extends InputStream {
 	/** Reads a 1-5 byte int. */
 	public int readInt (boolean optimizePositive) throws KryoException {
 		if (require(1) < 5) return readInt_slow(optimizePositive);
-		int b = buffer[position++];
+		int p = position;
+		int b = buffer[p++];
 		int result = b & 0x7F;
 		if ((b & 0x80) != 0) {
 			byte[] buffer = this.buffer;
-			b = buffer[position++];
+			b = buffer[p++];
 			result |= (b & 0x7F) << 7;
 			if ((b & 0x80) != 0) {
-				b = buffer[position++];
+				b = buffer[p++];
 				result |= (b & 0x7F) << 14;
 				if ((b & 0x80) != 0) {
-					b = buffer[position++];
+					b = buffer[p++];
 					result |= (b & 0x7F) << 21;
 					if ((b & 0x80) != 0) {
-						b = buffer[position++];
+						b = buffer[p++];
 						result |= (b & 0x7F) << 28;
 					}
 				}
 			}
 		}
+		position = p;
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
@@ -495,20 +497,22 @@ public class Input extends InputStream {
 		int result = b & 0x3F; // Mask all but first 6 bits.
 		if ((b & 0x40) != 0) { // Bit 7 means another byte, bit 8 means UTF8.
 			byte[] buffer = this.buffer;
-			b = buffer[position++];
+			int p = position;
+			b = buffer[p++];
 			result |= (b & 0x7F) << 6;
 			if ((b & 0x80) != 0) {
-				b = buffer[position++];
+				b = buffer[p++];
 				result |= (b & 0x7F) << 13;
 				if ((b & 0x80) != 0) {
-					b = buffer[position++];
+					b = buffer[p++];
 					result |= (b & 0x7F) << 20;
 					if ((b & 0x80) != 0) {
-						b = buffer[position++];
+						b = buffer[p++];
 						result |= (b & 0x7F) << 27;
 					}
 				}
 			}
+			position = p;
 		}
 		return result;
 	}
@@ -545,17 +549,16 @@ public class Input extends InputStream {
 		// Try to read 7 bit ASCII chars.
 		int charIndex = 0;
 		int count = Math.min(require(1), charCount);
-		int position = this.position;
-		int b;
+		int p = position, b;
 		while (charIndex < count) {
-			b = buffer[position++];
+			b = buffer[p++];
 			if (b < 0) {
-				position--;
+				p--;
 				break;
 			}
 			chars[charIndex++] = (char)b;
 		}
-		this.position = position;
+		this.position = p;
 		// If buffer didn't hold all chars or any were not ASCII, use slow path for remainder.
 		if (charIndex < charCount) readUtf8_slow(charCount, charIndex);
 	}
@@ -584,7 +587,9 @@ public class Input extends InputStream {
 				break;
 			case 14:
 				require(2);
-				chars[charIndex] = (char)((b & 0x0F) << 12 | (buffer[position++] & 0x3F) << 6 | buffer[position++] & 0x3F);
+				int p = position;
+				position = p + 2;
+				chars[charIndex] = (char)((b & 0x0F) << 12 | (buffer[p] & 0x3F) << 6 | buffer[p + 1] & 0x3F);
 				break;
 			}
 			charIndex++;
@@ -678,13 +683,17 @@ public class Input extends InputStream {
 	/** Reads a 2 byte short. */
 	public short readShort () throws KryoException {
 		require(2);
-		return (short)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF));
+		int p = position;
+		position = p + 2;
+		return (short)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
 	}
 
 	/** Reads a 2 byte short as an int from 0 to 65535. */
 	public int readShortUnsigned () throws KryoException {
 		require(2);
-		return ((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF);
+		int p = position;
+		position = p + 2;
+		return ((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF);
 	}
 
 	// long
@@ -693,46 +702,48 @@ public class Input extends InputStream {
 	public long readLong () throws KryoException {
 		require(8);
 		byte[] buffer = this.buffer;
-		return (long)buffer[position++] << 56 //
-			| (long)(buffer[position++] & 0xFF) << 48 //
-			| (long)(buffer[position++] & 0xFF) << 40 //
-			| (long)(buffer[position++] & 0xFF) << 32 //
-			| (long)(buffer[position++] & 0xFF) << 24 //
-			| (buffer[position++] & 0xFF) << 16 //
-			| (buffer[position++] & 0xFF) << 8 //
-			| buffer[position++] & 0xFF;
-
+		int p = position;
+		position = p + 8;
+		return (long)buffer[p] << 56 //
+			| (long)(buffer[p + 1] & 0xFF) << 48 //
+			| (long)(buffer[p + 2] & 0xFF) << 40 //
+			| (long)(buffer[p + 3] & 0xFF) << 32 //
+			| (long)(buffer[p + 4] & 0xFF) << 24 //
+			| (buffer[p + 5] & 0xFF) << 16 //
+			| (buffer[p + 6] & 0xFF) << 8 //
+			| buffer[p + 7] & 0xFF;
 	}
 
 	/** Reads a 1-9 byte long. */
 	public long readLong (boolean optimizePositive) throws KryoException {
 		if (require(1) < 9) return readLong_slow(optimizePositive);
-		int b = buffer[position++];
+		int p = position;
+		int b = buffer[p++];
 		long result = b & 0x7F;
 		if ((b & 0x80) != 0) {
 			byte[] buffer = this.buffer;
-			b = buffer[position++];
+			b = buffer[p++];
 			result |= (b & 0x7F) << 7;
 			if ((b & 0x80) != 0) {
-				b = buffer[position++];
+				b = buffer[p++];
 				result |= (b & 0x7F) << 14;
 				if ((b & 0x80) != 0) {
-					b = buffer[position++];
+					b = buffer[p++];
 					result |= (b & 0x7F) << 21;
 					if ((b & 0x80) != 0) {
-						b = buffer[position++];
+						b = buffer[p++];
 						result |= (long)(b & 0x7F) << 28;
 						if ((b & 0x80) != 0) {
-							b = buffer[position++];
+							b = buffer[p++];
 							result |= (long)(b & 0x7F) << 35;
 							if ((b & 0x80) != 0) {
-								b = buffer[position++];
+								b = buffer[p++];
 								result |= (long)(b & 0x7F) << 42;
 								if ((b & 0x80) != 0) {
-									b = buffer[position++];
+									b = buffer[p++];
 									result |= (long)(b & 0x7F) << 49;
 									if ((b & 0x80) != 0) {
-										b = buffer[position++];
+										b = buffer[p++];
 										result |= (long)b << 56;
 									}
 								}
@@ -742,6 +753,7 @@ public class Input extends InputStream {
 				}
 			}
 		}
+		position = p;
 		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
 		return result;
 	}
@@ -808,7 +820,9 @@ public class Input extends InputStream {
 	/** Reads a 2 byte char. */
 	public char readChar () throws KryoException {
 		require(2);
-		return (char)(((buffer[position++] & 0xFF) << 8) | (buffer[position++] & 0xFF));
+		int p = position;
+		position = p + 2;
+		return (char)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
 	}
 
 	// double

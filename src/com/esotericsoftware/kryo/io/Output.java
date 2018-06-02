@@ -260,10 +260,12 @@ public class Output extends OutputStream {
 	public void writeInt (int value) throws KryoException {
 		require(4);
 		byte[] buffer = this.buffer;
-		buffer[position++] = (byte)(value >> 24);
-		buffer[position++] = (byte)(value >> 16);
-		buffer[position++] = (byte)(value >> 8);
-		buffer[position++] = (byte)value;
+		int p = position;
+		position = p + 4;
+		buffer[p] = (byte)(value >> 24);
+		buffer[p + 1] = (byte)(value >> 16);
+		buffer[p + 2] = (byte)(value >> 8);
+		buffer[p + 3] = (byte)value;
 	}
 
 	/** Writes a 1-5 byte int.
@@ -278,31 +280,39 @@ public class Output extends OutputStream {
 		}
 		if (value >>> 14 == 0) {
 			require(2);
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			buffer[position++] = (byte)(value >>> 7);
+			int p = position;
+			position = p + 2;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7);
 			return 2;
 		}
 		if (value >>> 21 == 0) {
 			require(3);
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			buffer[position++] = (byte)(value >>> 7 | 0x80);
-			buffer[position++] = (byte)(value >>> 14);
+			int p = position;
+			position = p + 3;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14);
 			return 3;
 		}
 		if (value >>> 28 == 0) {
 			require(4);
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			buffer[position++] = (byte)(value >>> 7 | 0x80);
-			buffer[position++] = (byte)(value >>> 14 | 0x80);
-			buffer[position++] = (byte)(value >>> 21);
+			int p = position;
+			position = p + 4;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+			buffer[p + 3] = (byte)(value >>> 21);
 			return 4;
 		}
 		require(5);
-		buffer[position++] = (byte)((value & 0x7F) | 0x80);
-		buffer[position++] = (byte)(value >>> 7 | 0x80);
-		buffer[position++] = (byte)(value >>> 14 | 0x80);
-		buffer[position++] = (byte)(value >>> 21 | 0x80);
-		buffer[position++] = (byte)(value >>> 28);
+		int p = position;
+		position = p + 5;
+		buffer[p] = (byte)((value & 0x7F) | 0x80);
+		buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+		buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+		buffer[p + 3] = (byte)(value >>> 21 | 0x80);
+		buffer[p + 4] = (byte)(value >>> 28);
 		return 5;
 	}
 
@@ -323,18 +333,10 @@ public class Output extends OutputStream {
 			return;
 		}
 		// Detect ASCII.
-		boolean ascii = false;
+		outer:
 		if (charCount > 1 && charCount < 64) {
-			ascii = true;
-			for (int i = 0; i < charCount; i++) {
-				int c = value.charAt(i);
-				if (c > 127) {
-					ascii = false;
-					break;
-				}
-			}
-		}
-		if (ascii) {
+			for (int i = 0; i < charCount; i++)
+				if (value.charAt(i) > 127) break outer;
 			if (capacity - position < charCount)
 				writeAscii_slow(value, charCount);
 			else {
@@ -342,22 +344,22 @@ public class Output extends OutputStream {
 				position += charCount;
 			}
 			buffer[position - 1] |= 0x80;
-		} else {
-			writeUtf8Length(charCount + 1);
-			int charIndex = 0;
-			if (capacity - position >= charCount) {
-				// Try to write 8 bit chars.
-				byte[] buffer = this.buffer;
-				int position = this.position;
-				for (; charIndex < charCount; charIndex++) {
-					int c = value.charAt(charIndex);
-					if (c > 127) break;
-					buffer[position++] = (byte)c;
-				}
-				this.position = position;
-			}
-			if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
+			return;
 		}
+		writeUtf8Length(charCount + 1);
+		int charIndex = 0;
+		if (capacity - position >= charCount) {
+			// Try to write 7 bit chars.
+			byte[] buffer = this.buffer;
+			int p = position;
+			for (; charIndex < charCount; charIndex++) {
+				int c = value.charAt(charIndex);
+				if (c > 127) break;
+				buffer[p++] = (byte)c;
+			}
+			position = p;
+		}
+		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
 
 	/** Writes the length and CharSequence as UTF8, or null. The string can be read using {@link Input#readString()} or
@@ -376,17 +378,17 @@ public class Output extends OutputStream {
 		writeUtf8Length(charCount + 1);
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
-			// Try to write 8 bit chars.
+			// Try to write 7 bit chars.
 			byte[] buffer = this.buffer;
-			int position = this.position;
+			int p = position;
 			for (; charIndex < charCount; charIndex++) {
 				int c = value.charAt(charIndex);
 				if (c > 127) break;
-				buffer[position++] = (byte)c;
+				buffer[p++] = (byte)c;
 			}
-			this.position = position;
+			position = p;
 		}
-		if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
+		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
 
 	/** Writes a string that is known to contain only ASCII characters. Non-ASCII strings passed to this method will be corrupted.
@@ -426,34 +428,41 @@ public class Output extends OutputStream {
 			buffer[position++] = (byte)(value | 0x80); // Set bit 8.
 		} else if (value >>> 13 == 0) {
 			require(2);
-			byte[] buffer = this.buffer;
-			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
-			buffer[position++] = (byte)(value >>> 6);
+			int p = position;
+			position = p + 2;
+			buffer[p] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
+			buffer[p + 1] = (byte)(value >>> 6);
 		} else if (value >>> 20 == 0) {
 			require(3);
 			byte[] buffer = this.buffer;
-			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
-			buffer[position++] = (byte)((value >>> 6) | 0x80); // Set bit 8.
-			buffer[position++] = (byte)(value >>> 13);
+			int p = position;
+			position = p + 3;
+			buffer[p] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
+			buffer[p + 1] = (byte)((value >>> 6) | 0x80); // Set bit 8.
+			buffer[p + 2] = (byte)(value >>> 13);
 		} else if (value >>> 27 == 0) {
 			require(4);
 			byte[] buffer = this.buffer;
-			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
-			buffer[position++] = (byte)((value >>> 6) | 0x80); // Set bit 8.
-			buffer[position++] = (byte)((value >>> 13) | 0x80); // Set bit 8.
-			buffer[position++] = (byte)(value >>> 20);
+			int p = position;
+			position = p + 4;
+			buffer[p] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
+			buffer[p + 1] = (byte)((value >>> 6) | 0x80); // Set bit 8.
+			buffer[p + 2] = (byte)((value >>> 13) | 0x80); // Set bit 8.
+			buffer[p + 3] = (byte)(value >>> 20);
 		} else {
 			require(5);
 			byte[] buffer = this.buffer;
-			buffer[position++] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
-			buffer[position++] = (byte)((value >>> 6) | 0x80); // Set bit 8.
-			buffer[position++] = (byte)((value >>> 13) | 0x80); // Set bit 8.
-			buffer[position++] = (byte)((value >>> 20) | 0x80); // Set bit 8.
-			buffer[position++] = (byte)(value >>> 27);
+			int p = position;
+			position = p + 5;
+			buffer[p] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
+			buffer[p + 1] = (byte)((value >>> 6) | 0x80); // Set bit 8.
+			buffer[p + 2] = (byte)((value >>> 13) | 0x80); // Set bit 8.
+			buffer[p + 3] = (byte)((value >>> 20) | 0x80); // Set bit 8.
+			buffer[p + 4] = (byte)(value >>> 27);
 		}
 	}
 
-	private void writeString_slow (CharSequence value, int charCount, int charIndex) {
+	private void writeUtf8_slow (CharSequence value, int charCount, int charIndex) {
 		for (; charIndex < charCount; charIndex++) {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
 			int c = value.charAt(charIndex);
@@ -474,10 +483,7 @@ public class Output extends OutputStream {
 
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
 		if (charCount == 0) return;
-		// It should be possible to write at least one character.
-		if (capacity == 0) {
-			require(1);
-		}
+		if (capacity == 0) require(1); // Must be able to write at least one character.
 		int charIndex = 0;
 		byte[] buffer = this.buffer;
 		int charsToWrite = Math.min(charCount, capacity - position);
@@ -509,8 +515,10 @@ public class Output extends OutputStream {
 	/** Writes a 2 byte short. */
 	public void writeShort (int value) throws KryoException {
 		require(2);
-		buffer[position++] = (byte)(value >>> 8);
-		buffer[position++] = (byte)value;
+		int p = position;
+		position = p + 2;
+		buffer[p] = (byte)(value >>> 8);
+		buffer[p + 1] = (byte)value;
 	}
 
 	// long
@@ -519,14 +527,16 @@ public class Output extends OutputStream {
 	public void writeLong (long value) throws KryoException {
 		require(8);
 		byte[] buffer = this.buffer;
-		buffer[position++] = (byte)(value >>> 56);
-		buffer[position++] = (byte)(value >>> 48);
-		buffer[position++] = (byte)(value >>> 40);
-		buffer[position++] = (byte)(value >>> 32);
-		buffer[position++] = (byte)(value >>> 24);
-		buffer[position++] = (byte)(value >>> 16);
-		buffer[position++] = (byte)(value >>> 8);
-		buffer[position++] = (byte)value;
+		int p = position;
+		position = p + 8;
+		buffer[p] = (byte)(value >>> 56);
+		buffer[p + 1] = (byte)(value >>> 48);
+		buffer[p + 2] = (byte)(value >>> 40);
+		buffer[p + 3] = (byte)(value >>> 32);
+		buffer[p + 4] = (byte)(value >>> 24);
+		buffer[p + 5] = (byte)(value >>> 16);
+		buffer[p + 6] = (byte)(value >>> 8);
+		buffer[p + 7] = (byte)value;
 	}
 
 	/** Writes a 1-9 byte long.
@@ -541,77 +551,93 @@ public class Output extends OutputStream {
 		}
 		if (value >>> 14 == 0) {
 			require(2);
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			buffer[position++] = (byte)(value >>> 7);
+			int p = position;
+			position = p + 2;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7);
 			return 2;
 		}
 		if (value >>> 21 == 0) {
 			require(3);
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			buffer[position++] = (byte)(value >>> 7 | 0x80);
-			buffer[position++] = (byte)(value >>> 14);
+			int p = position;
+			position = p + 3;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14);
 			return 3;
 		}
 		if (value >>> 28 == 0) {
 			require(4);
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			buffer[position++] = (byte)(value >>> 7 | 0x80);
-			buffer[position++] = (byte)(value >>> 14 | 0x80);
-			buffer[position++] = (byte)(value >>> 21);
+			int p = position;
+			position = p + 4;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+			buffer[p + 3] = (byte)(value >>> 21);
 			return 4;
 		}
 		if (value >>> 35 == 0) {
 			require(5);
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			buffer[position++] = (byte)(value >>> 7 | 0x80);
-			buffer[position++] = (byte)(value >>> 14 | 0x80);
-			buffer[position++] = (byte)(value >>> 21 | 0x80);
-			buffer[position++] = (byte)(value >>> 28);
+			int p = position;
+			position = p + 5;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
+			buffer[p + 4] = (byte)(value >>> 28);
 			return 5;
 		}
 		if (value >>> 42 == 0) {
 			require(6);
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			buffer[position++] = (byte)(value >>> 7 | 0x80);
-			buffer[position++] = (byte)(value >>> 14 | 0x80);
-			buffer[position++] = (byte)(value >>> 21 | 0x80);
-			buffer[position++] = (byte)(value >>> 28 | 0x80);
-			buffer[position++] = (byte)(value >>> 35);
+			int p = position;
+			position = p + 6;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
+			buffer[p + 4] = (byte)(value >>> 28 | 0x80);
+			buffer[p + 5] = (byte)(value >>> 35);
 			return 6;
 		}
 		if (value >>> 49 == 0) {
 			require(7);
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			buffer[position++] = (byte)(value >>> 7 | 0x80);
-			buffer[position++] = (byte)(value >>> 14 | 0x80);
-			buffer[position++] = (byte)(value >>> 21 | 0x80);
-			buffer[position++] = (byte)(value >>> 28 | 0x80);
-			buffer[position++] = (byte)(value >>> 35 | 0x80);
-			buffer[position++] = (byte)(value >>> 42);
+			int p = position;
+			position = p + 7;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
+			buffer[p + 4] = (byte)(value >>> 28 | 0x80);
+			buffer[p + 5] = (byte)(value >>> 35 | 0x80);
+			buffer[p + 6] = (byte)(value >>> 42);
 			return 7;
 		}
 		if (value >>> 56 == 0) {
 			require(8);
-			buffer[position++] = (byte)((value & 0x7F) | 0x80);
-			buffer[position++] = (byte)(value >>> 7 | 0x80);
-			buffer[position++] = (byte)(value >>> 14 | 0x80);
-			buffer[position++] = (byte)(value >>> 21 | 0x80);
-			buffer[position++] = (byte)(value >>> 28 | 0x80);
-			buffer[position++] = (byte)(value >>> 35 | 0x80);
-			buffer[position++] = (byte)(value >>> 42 | 0x80);
-			buffer[position++] = (byte)(value >>> 49);
+			int p = position;
+			position = p + 8;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
+			buffer[p + 4] = (byte)(value >>> 28 | 0x80);
+			buffer[p + 5] = (byte)(value >>> 35 | 0x80);
+			buffer[p + 6] = (byte)(value >>> 42 | 0x80);
+			buffer[p + 7] = (byte)(value >>> 49);
 			return 8;
 		}
 		require(9);
-		buffer[position++] = (byte)((value & 0x7F) | 0x80);
-		buffer[position++] = (byte)(value >>> 7 | 0x80);
-		buffer[position++] = (byte)(value >>> 14 | 0x80);
-		buffer[position++] = (byte)(value >>> 21 | 0x80);
-		buffer[position++] = (byte)(value >>> 28 | 0x80);
-		buffer[position++] = (byte)(value >>> 35 | 0x80);
-		buffer[position++] = (byte)(value >>> 42 | 0x80);
-		buffer[position++] = (byte)(value >>> 49 | 0x80);
-		buffer[position++] = (byte)(value >>> 56);
+		int p = position;
+		position = p + 9;
+		buffer[p] = (byte)((value & 0x7F) | 0x80);
+		buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+		buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+		buffer[p + 3] = (byte)(value >>> 21 | 0x80);
+		buffer[p + 4] = (byte)(value >>> 28 | 0x80);
+		buffer[p + 5] = (byte)(value >>> 35 | 0x80);
+		buffer[p + 6] = (byte)(value >>> 42 | 0x80);
+		buffer[p + 7] = (byte)(value >>> 49 | 0x80);
+		buffer[p + 8] = (byte)(value >>> 56);
 		return 9;
 	}
 
@@ -628,8 +654,10 @@ public class Output extends OutputStream {
 	/** Writes a 2 byte char. */
 	public void writeChar (char value) throws KryoException {
 		require(2);
-		buffer[position++] = (byte)(value >>> 8);
-		buffer[position++] = (byte)value;
+		int p = position;
+		position = p + 2;
+		buffer[p] = (byte)(value >>> 8);
+		buffer[p + 1] = (byte)value;
 	}
 
 	// double
