@@ -383,16 +383,16 @@ public class ByteBufferOutput extends Output {
 			int charIndex = 0;
 			if (capacity - position >= charCount) {
 				// Try to write 8 bit chars.
-				int position = this.position;
+				int p = position;
 				for (; charIndex < charCount; charIndex++) {
 					int c = value.charAt(charIndex);
 					if (c > 127) break;
-					byteBuffer.put(position++, (byte)c);
+					byteBuffer.put(p++, (byte)c);
 				}
-				this.position = position;
-				byteBuffer.position(position);
+				position = p;
+				byteBuffer.position(p);
 			}
-			if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
+			if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 			byteBuffer.position(position);
 		}
 	}
@@ -411,16 +411,16 @@ public class ByteBufferOutput extends Output {
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
 			// Try to write 8 bit chars.
-			int position = this.position;
+			int p = position;
 			for (; charIndex < charCount; charIndex++) {
 				int c = value.charAt(charIndex);
 				if (c > 127) break;
-				byteBuffer.put(position++, (byte)c);
+				byteBuffer.put(p++, (byte)c);
 			}
-			this.position = position;
-			byteBuffer.position(position);
+			position = p;
+			byteBuffer.position(p);
 		}
-		if (charIndex < charCount) writeString_slow(value, charCount, charIndex);
+		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 		byteBuffer.position(position);
 	}
 
@@ -480,7 +480,7 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
-	private void writeString_slow (CharSequence value, int charCount, int charIndex) {
+	private void writeUtf8_slow (CharSequence value, int charCount, int charIndex) {
 		for (; charIndex < charCount; charIndex++) {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
 			int c = value.charAt(charIndex);

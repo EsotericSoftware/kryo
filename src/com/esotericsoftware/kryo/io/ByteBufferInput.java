@@ -336,29 +336,30 @@ public class ByteBufferInput extends Input {
 
 	public int readInt (boolean optimizePositive) throws KryoException {
 		if (require(1) < 5) return readInt_slow(optimizePositive);
-		position++;
+		int p = position + 1;
 		int b = byteBuffer.get();
 		int result = b & 0x7F;
 		if ((b & 0x80) != 0) {
-			position++;
+			p++;
 			b = byteBuffer.get();
 			result |= (b & 0x7F) << 7;
 			if ((b & 0x80) != 0) {
-				position++;
+				p++;
 				b = byteBuffer.get();
 				result |= (b & 0x7F) << 14;
 				if ((b & 0x80) != 0) {
-					position++;
+					p++;
 					b = byteBuffer.get();
 					result |= (b & 0x7F) << 21;
 					if ((b & 0x80) != 0) {
-						position++;
+						p++;
 						b = byteBuffer.get();
 						result |= (b & 0x7F) << 28;
 					}
 				}
 			}
 		}
+		position = p;
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
@@ -454,24 +455,25 @@ public class ByteBufferInput extends Input {
 	private int readUtf8Length (int b) {
 		int result = b & 0x3F; // Mask all but first 6 bits.
 		if ((b & 0x40) != 0) { // Bit 7 means another byte, bit 8 means UTF8.
-			position++;
+			int p = position + 1;
 			b = byteBuffer.get();
 			result |= (b & 0x7F) << 6;
 			if ((b & 0x80) != 0) {
-				position++;
+				p++;
 				b = byteBuffer.get();
 				result |= (b & 0x7F) << 13;
 				if ((b & 0x80) != 0) {
-					position++;
+					p++;
 					b = byteBuffer.get();
 					result |= (b & 0x7F) << 20;
 					if ((b & 0x80) != 0) {
-						position++;
+						p++;
 						b = byteBuffer.get();
 						result |= (b & 0x7F) << 27;
 					}
 				}
 			}
+			position = p;
 		}
 		return result;
 	}
@@ -510,21 +512,20 @@ public class ByteBufferInput extends Input {
 		// Try to read 7 bit ASCII chars.
 		int charIndex = 0;
 		int count = Math.min(require(1), charCount);
-		int position = this.position;
-		int b;
+		int p = this.position, b;
 		while (charIndex < count) {
-			position++;
+			p++;
 			b = byteBuffer.get();
 			if (b < 0) {
-				position--;
+				p--;
 				break;
 			}
 			chars[charIndex++] = (char)b;
 		}
-		this.position = position;
+		this.position = p;
 		// If buffer didn't hold all chars or any were not ASCII, use slow path for remainder.
 		if (charIndex < charCount) {
-			byteBuffer.position(position);
+			byteBuffer.position(p);
 			readUtf8_slow(charCount, charIndex);
 		}
 	}
@@ -665,39 +666,39 @@ public class ByteBufferInput extends Input {
 
 	public long readLong (boolean optimizePositive) throws KryoException {
 		if (require(1) < 9) return readLong_slow(optimizePositive);
-		position++;
+		int p = position + 1;
 		int b = byteBuffer.get();
 		long result = b & 0x7F;
 		if ((b & 0x80) != 0) {
-			position++;
+			p++;
 			b = byteBuffer.get();
 			result |= (b & 0x7F) << 7;
 			if ((b & 0x80) != 0) {
-				position++;
+				p++;
 				b = byteBuffer.get();
 				result |= (b & 0x7F) << 14;
 				if ((b & 0x80) != 0) {
-					position++;
+					p++;
 					b = byteBuffer.get();
 					result |= (b & 0x7F) << 21;
 					if ((b & 0x80) != 0) {
-						position++;
+						p++;
 						b = byteBuffer.get();
 						result |= (long)(b & 0x7F) << 28;
 						if ((b & 0x80) != 0) {
-							position++;
+							p++;
 							b = byteBuffer.get();
 							result |= (long)(b & 0x7F) << 35;
 							if ((b & 0x80) != 0) {
-								position++;
+								p++;
 								b = byteBuffer.get();
 								result |= (long)(b & 0x7F) << 42;
 								if ((b & 0x80) != 0) {
-									position++;
+									p++;
 									b = byteBuffer.get();
 									result |= (long)(b & 0x7F) << 49;
 									if ((b & 0x80) != 0) {
-										position++;
+										p++;
 										b = byteBuffer.get();
 										result |= (long)b << 56;
 									}
@@ -708,6 +709,7 @@ public class ByteBufferInput extends Input {
 				}
 			}
 		}
+		position = p;
 		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
 		return result;
 	}
