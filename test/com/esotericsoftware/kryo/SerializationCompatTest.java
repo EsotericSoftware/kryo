@@ -67,7 +67,7 @@ import com.esotericsoftware.minlog.Log;
  * related tag and run the test (there's nothing here to automate creation of test files for a different version). */
 public class SerializationCompatTest extends KryoTestCase {
 	// Set to true to delete failed test files, then set back to false, set expected bytes, and run again to generate new files.
-	static private final boolean DELETE_FAIELD_TEST_FILES = false;
+	static private final boolean DELETE_FAILED_TEST_FILES = false;
 
 	static private final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
 	static private final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
@@ -76,8 +76,8 @@ public class SerializationCompatTest extends KryoTestCase {
 	static private final List<TestDataDescription> TEST_DATAS = new ArrayList();
 
 	static {
-		TEST_DATAS.add(new TestDataDescription<TestData>("5.0.0", new TestData(), 1867));
-		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("5.0.0", new TestDataJava8(), 2027));
+		TEST_DATAS.add(new TestDataDescription<TestData>("5.0.0", new TestData(), 1868));
+		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("5.0.0", new TestDataJava8(), 2028));
 	};
 
 	public void setUp () throws Exception {
@@ -146,7 +146,7 @@ public class SerializationCompatTest extends KryoTestCase {
 			try {
 				readAndRunTest(description, in);
 			} catch (Throwable ex) {
-				if (DELETE_FAIELD_TEST_FILES) {
+				if (DELETE_FAILED_TEST_FILES) {
 					System.out.println("Failed: " + file.getAbsolutePath());
 					in.close();
 					file.delete();

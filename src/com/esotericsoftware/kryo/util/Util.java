@@ -92,6 +92,11 @@ public class Util {
 			|| type == Character.class || type == Short.class || type == Double.class;
 	}
 
+	static public boolean isEnum (Class type) {
+		// Use this rather than type.isEnum() to return true for an enum value that is an inner class, eg: enum A {b{}}
+		return Enum.class.isAssignableFrom(type) && type != Enum.class;
+	}
+
 	/** Logs a message about an object. The log level and the string format of the object depend on the object type. */
 	static public void log (String message, Object object, int position) {
 		if (object == null) {
