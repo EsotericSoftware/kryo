@@ -28,6 +28,7 @@ import org.objenesis.instantiator.ObjectInstantiator;
  * @author Nathan Sweet */
 public class Registration {
 	private final Class type;
+	private final boolean typeNameAscii;
 	private final int id;
 	private Serializer serializer;
 	private ObjectInstantiator instantiator;
@@ -38,10 +39,15 @@ public class Registration {
 		this.type = type;
 		this.serializer = serializer;
 		this.id = id;
+		typeNameAscii = isAscii(type.getName());
 	}
 
 	public Class getType () {
 		return type;
+	}
+
+	public boolean isTypeNameAscii () {
+		return typeNameAscii;
 	}
 
 	/** Returns the registered class ID.

@@ -359,7 +359,7 @@ public class ByteBufferOutput extends Output {
 		}
 		// Detect ASCII.
 		boolean ascii = false;
-		if (charCount > 1 && charCount < 64) {
+		if (charCount > 1 && charCount <= 32) {
 			ascii = true;
 			for (int i = 0; i < charCount; i++) {
 				int c = value.charAt(i);
@@ -397,7 +397,7 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
-	public void writeString (CharSequence value) throws KryoException {
+	public void writeUtf8 (CharSequence value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
 			return;

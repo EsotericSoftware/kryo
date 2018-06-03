@@ -334,7 +334,7 @@ public class Output extends OutputStream {
 		}
 		// Detect ASCII.
 		outer:
-		if (charCount > 1 && charCount < 64) {
+		if (charCount > 1 && charCount <= 32) {
 			for (int i = 0; i < charCount; i++)
 				if (value.charAt(i) > 127) break outer;
 			if (capacity - position < charCount)
@@ -365,7 +365,7 @@ public class Output extends OutputStream {
 	/** Writes the length and CharSequence as UTF8, or null. The string can be read using {@link Input#readString()} or
 	 * {@link Input#readStringBuilder()}.
 	 * @param value May be null. */
-	public void writeString (CharSequence value) throws KryoException {
+	public void writeUtf8 (CharSequence value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
 			return;

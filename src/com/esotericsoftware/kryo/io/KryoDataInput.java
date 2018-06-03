@@ -104,7 +104,7 @@ public class KryoDataInput implements DataInput {
 
 	/** Reads the length and string of UTF8 characters, or null. This can read strings written by
 	 * {@link KryoDataOutput#writeUTF(String)}, {@link com.esotericsoftware.kryo.io.Output#writeString(String)},
-	 * {@link com.esotericsoftware.kryo.io.Output#writeString(CharSequence)}, and
+	 * {@link com.esotericsoftware.kryo.io.Output#writeUtf8(CharSequence)}, and
 	 * {@link com.esotericsoftware.kryo.io.Output#writeAscii(String)}.
 	 * @return May be null. */
 	public String readUTF () throws IOException {

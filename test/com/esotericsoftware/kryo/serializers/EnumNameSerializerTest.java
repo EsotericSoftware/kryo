@@ -45,8 +45,8 @@ public class EnumNameSerializerTest extends KryoTestCase {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.setRegistrationRequired(false);
 
-		roundTrip(82, TestNameEnum.WORLD);
-		roundTrip(90, TestAnotherNameEnum.MONDAY);
+		roundTrip(80, TestNameEnum.WORLD);
+		roundTrip(88, TestAnotherNameEnum.MONDAY);
 	}
 
 	public void testEnumSetSerializerWithEnumNameSerializer () throws Exception {
@@ -82,8 +82,8 @@ public class EnumNameSerializerTest extends KryoTestCase {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.setRegistrationRequired(false);
 
-		roundTrip(95, TestNameEnumWithMethods.ALPHA);
-		roundTrip(94, TestNameEnumWithMethods.BETA);
+		roundTrip(93, TestNameEnumWithMethods.ALPHA);
+		roundTrip(92, TestNameEnumWithMethods.BETA);
 	}
 
 	public enum TestNameEnum {

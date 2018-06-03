@@ -120,7 +120,10 @@ public class DefaultClassResolver implements ClassResolver {
 		if (classToNameId == null) classToNameId = new IdentityObjectIntMap();
 		classToNameId.put(type, nameId);
 		output.writeInt(nameId, true);
-		output.writeString(type.getName());
+		if (registration.isTypeNameAscii())
+			output.writeAscii(type.getName());
+		else
+			output.writeUtf8(type.getName());
 	}
 
 	public Registration readClass (Input input) {

@@ -21,9 +21,9 @@ package com.esotericsoftware.kryo.util;
 
 import static com.esotericsoftware.minlog.Log.*;
 
-import java.lang.reflect.Type;
-
 import com.esotericsoftware.kryo.util.Generics.GenericType;
+
+import java.lang.reflect.Type;
 
 /** A few utility methods, mostly for private use.
  * @author Nathan Sweet */
@@ -200,5 +200,11 @@ public class Util {
 		while (elementClass.getComponentType() != null)
 			elementClass = elementClass.getComponentType();
 		return elementClass;
+	}
+
+	static public boolean isAscii (String value) {
+		for (int i = 0, n = value.length(); i < n; i++)
+			if (value.charAt(i) > 127) return false;
+		return true;
 	}
 }

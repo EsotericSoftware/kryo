@@ -135,8 +135,8 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(value, read.readStringBuilder().toString());
 
 		write.clear();
-		write.writeString(buffer);
-		write.writeString(buffer);
+		write.writeUtf8(buffer);
+		write.writeUtf8(buffer);
 		read = new Input(write.toBytes());
 		assertEquals(value, read.readStringBuilder().toString());
 		assertEquals(value, read.readString());

@@ -149,9 +149,9 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.hasStringField = new HasStringField();
 		test.child = new DefaultTypes();
 		test.child.hasStringField = new HasStringField();
-		roundTrip(223, test);
+		roundTrip(219, test);
 		test.hasStringField = null;
-		roundTrip(221, test);
+		roundTrip(217, test);
 
 		test = new DefaultTypes();
 		test.booleanField = true;
@@ -175,7 +175,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		roundTrip(154, test);
+		roundTrip(152, test);
 
 		C c = new C();
 		c.a = new A();
@@ -338,17 +338,17 @@ public class FieldSerializerTest extends KryoTestCase {
 	public void testDefaultSerializerAnnotation () {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		roundTrip(94, new HasDefaultSerializerAnnotation(123));
+		roundTrip(92, new HasDefaultSerializerAnnotation(123));
 	}
 
 	public void testOptionalAnnotation () {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		roundTrip(84, new HasOptionalAnnotation());
+		roundTrip(82, new HasOptionalAnnotation());
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.getContext().put("smurf", null);
-		roundTrip(85, new HasOptionalAnnotation());
+		roundTrip(83, new HasOptionalAnnotation());
 	}
 
 	public void testCyclicGrgaph () throws Exception {

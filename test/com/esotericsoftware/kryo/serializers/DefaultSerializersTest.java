@@ -235,7 +235,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		roundTrip(74, TestEnum.c);
+		roundTrip(72, TestEnum.c);
 	}
 
 	public void testEnumSetSerializer () {
@@ -250,7 +250,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		roundTrip(103, EnumSet.of(TestEnum.a, TestEnum.c));
+		roundTrip(101, EnumSet.of(TestEnum.a, TestEnum.c));
 	}
 
 	public void testEnumSerializerWithMethods () {
@@ -261,7 +261,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		roundTrip(87, TestEnumWithMethods.c);
+		roundTrip(85, TestEnumWithMethods.c);
 	}
 
 	public void testCollectionsMethods () {
@@ -378,7 +378,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.register(URL.class);
 
-		roundTrip(41, new URL("https://github.com/EsotericSoftware/kryo"));
+		roundTrip(42, new URL("https://github.com/EsotericSoftware/kryo"));
 		roundTrip(78, new URL("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
 	}
 
