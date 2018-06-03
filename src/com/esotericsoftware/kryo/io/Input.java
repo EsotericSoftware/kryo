@@ -27,9 +27,6 @@ import com.esotericsoftware.kryo.util.Util;
 
 /** An InputStream that reads data from a byte[] and optionally fills the byte[] from another InputStream as needed. Utility
  * methods are provided for efficiently reading primitive types and strings.
- * <p>
- * The byte[] buffer may be modified and then returned to its original state during some read operations, so the same byte[]
- * should not be used concurrently in separate threads.
  * @author Nathan Sweet */
 public class Input extends InputStream {
 	protected byte[] buffer;
@@ -597,33 +594,26 @@ public class Input extends InputStream {
 	}
 
 	private String readAscii () {
-		byte[] buffer = this.buffer;
-		int end = position;
-		int start = end - 1;
-		int limit = this.limit;
-		int b;
-		do {
-			if (end == limit) return readAscii_slow();
-			b = buffer[end++];
-		} while ((b & 0x80) == 0);
-		buffer[end - 1] &= 0x7F; // Mask end of ascii bit.
-		String value = new String(buffer, 0, start, end - start);
-		buffer[end - 1] |= 0x80;
-		position = end;
-		return value;
-	}
-
-	private String readAscii_slow () {
-		position--; // Re-read the first byte.
-		// Copy chars currently in buffer.
-		int charCount = limit - position;
-		if (charCount > chars.length) chars = new char[charCount * 2];
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
-		for (int i = position, ii = 0, n = limit; i < n; i++, ii++)
-			chars[ii] = (char)buffer[i];
-		position = limit;
-		// Copy additional chars one by one.
+		int p = position - 1; // Read first byte again.
+		int charCount = 0;
+		for (int n = Math.min(chars.length, limit - position); charCount < n; charCount++, p++) {
+			int b = buffer[p];
+			if ((b & 0x80) == 0x80) {
+				position = p + 1;
+				chars[charCount] = (char)(b & 0x7F);
+				return new String(chars, 0, charCount + 1);
+			}
+			chars[charCount] = (char)b;
+		}
+		position = p;
+		return readAscii_slow(charCount);
+	}
+
+	private String readAscii_slow (int charCount) {
+		char[] chars = this.chars;
+		byte[] buffer = this.buffer;
 		while (true) {
 			require(1);
 			int b = buffer[position++];
@@ -634,12 +624,11 @@ public class Input extends InputStream {
 				this.chars = newChars;
 			}
 			if ((b & 0x80) == 0x80) {
-				chars[charCount++] = (char)(b & 0x7F);
-				break;
+				chars[charCount] = (char)(b & 0x7F);
+				return new String(chars, 0, charCount + 1);
 			}
 			chars[charCount++] = (char)b;
 		}
-		return new String(chars, 0, charCount);
 	}
 
 	/** Reads the length and string of UTF8 characters, or null. For non-ASCII strings, this method avoids allocating a string by

@@ -566,36 +566,27 @@ public class ByteBufferInput extends Input {
 	}
 
 	private String readAscii () {
-		int end = position;
-		int start = end - 1;
-		int limit = this.limit;
-		int b;
-		do {
-			if (end == limit) return readAscii_slow();
-			end++;
-			b = byteBuffer.get();
-		} while ((b & 0x80) == 0);
-		byteBuffer.put(end - 1, (byte)(byteBuffer.get(end - 1) & 0x7F)); // Mask end of ascii bit.
-		byte[] tmp = new byte[end - start];
-		byteBuffer.position(start);
-		byteBuffer.get(tmp);
-		String value = new String(tmp, 0, 0, end - start);
-		byteBuffer.put(end - 1, (byte)(byteBuffer.get(end - 1) | 0x80));
-		position = end;
-		byteBuffer.position(position);
-		return value;
+		char[] chars = this.chars;
+		ByteBuffer byteBuffer = this.byteBuffer;
+		int p = position - 1; // Read first byte again.
+		byteBuffer.position(p);
+		int charCount = 0;
+		for (int n = Math.min(chars.length, limit - position); charCount < n; charCount++, p++) {
+			int b = byteBuffer.get();
+			if ((b & 0x80) == 0x80) {
+				position = p + 1;
+				chars[charCount] = (char)(b & 0x7F);
+				return new String(chars, 0, charCount + 1);
+			}
+			chars[charCount] = (char)b;
+		}
+		position = p;
+		return readAscii_slow(charCount);
 	}
 
-	private String readAscii_slow () {
-		position--; // Re-read the first byte.
-		// Copy chars currently in buffer.
-		int charCount = limit - position;
-		if (charCount > chars.length) chars = new char[charCount * 2];
+	private String readAscii_slow (int charCount) {
 		char[] chars = this.chars;
-		for (int i = position, ii = 0, n = limit; i < n; i++, ii++)
-			chars[ii] = (char)byteBuffer.get(i);
-		position = limit;
-		// Copy additional chars one by one.
+		ByteBuffer byteBuffer = this.byteBuffer;
 		while (true) {
 			require(1);
 			position++;
@@ -607,12 +598,11 @@ public class ByteBufferInput extends Input {
 				this.chars = newChars;
 			}
 			if ((b & 0x80) == 0x80) {
-				chars[charCount++] = (char)(b & 0x7F);
-				break;
+				chars[charCount] = (char)(b & 0x7F);
+				return new String(chars, 0, charCount + 1);
 			}
 			chars[charCount++] = (char)b;
 		}
-		return new String(chars, 0, charCount);
 	}
 
 	public StringBuilder readStringBuilder () {
