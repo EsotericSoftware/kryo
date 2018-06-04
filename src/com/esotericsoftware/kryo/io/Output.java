@@ -271,7 +271,7 @@ public class Output extends OutputStream {
 	/** Writes a 1-5 byte int.
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
 	 *           inefficient (5 bytes). */
-	public int writeInt (int value, boolean optimizePositive) throws KryoException {
+	public int writeVarInt (int value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
 		if (value >>> 7 == 0) {
 			if (position == capacity) require(1);
@@ -519,8 +519,8 @@ public class Output extends OutputStream {
 	/** Writes a 1-5 byte float with reduced precision.
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
 	 *           inefficient (5 bytes). */
-	public int writeFloat (float value, float precision, boolean optimizePositive) throws KryoException {
-		return writeInt((int)(value * precision), optimizePositive);
+	public int writeVarFloat (float value, float precision, boolean optimizePositive) throws KryoException {
+		return writeVarInt((int)(value * precision), optimizePositive);
 	}
 
 	// short
@@ -555,7 +555,7 @@ public class Output extends OutputStream {
 	/** Writes a 1-9 byte long.
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
 	 *           inefficient (9 bytes). */
-	public int writeLong (long value, boolean optimizePositive) throws KryoException {
+	public int writeVarLong (long value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		if (value >>> 7 == 0) {
 			if (position == capacity) require(1);
@@ -690,23 +690,11 @@ public class Output extends OutputStream {
 	/** Writes a 1-9 byte double with reduced precision.
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
 	 *           inefficient (9 bytes). */
-	public int writeDouble (double value, double precision, boolean optimizePositive) throws KryoException {
-		return writeLong((long)(value * precision), optimizePositive);
+	public int writeVarDouble (double value, double precision, boolean optimizePositive) throws KryoException {
+		return writeVarLong((long)(value * precision), optimizePositive);
 	}
 
 	// Primitive arrays
-
-	/** Writes an int array using variable length encoding. */
-	public void writeInts (int[] object, boolean optimizePositive) throws KryoException {
-		for (int i = 0, n = object.length; i < n; i++)
-			writeInt(object[i], optimizePositive);
-	}
-
-	/** Writes a long array using variable length encoding. */
-	public void writeLongs (long[] object, boolean optimizePositive) throws KryoException {
-		for (int i = 0, n = object.length; i < n; i++)
-			writeLong(object[i], optimizePositive);
-	}
 
 	/** Writes an int array. */
 	public void writeInts (int[] object) throws KryoException {
@@ -714,10 +702,22 @@ public class Output extends OutputStream {
 			writeInt(object[i]);
 	}
 
+	/** Writes an int array using variable length encoding. */
+	public void writeVarInts (int[] object, boolean optimizePositive) throws KryoException {
+		for (int i = 0, n = object.length; i < n; i++)
+			writeVarInt(object[i], optimizePositive);
+	}
+
 	/** Writes an long array. */
 	public void writeLongs (long[] object) throws KryoException {
 		for (int i = 0, n = object.length; i < n; i++)
 			writeLong(object[i]);
+	}
+
+	/** Writes a long array using variable length encoding. */
+	public void writeVarLongs (long[] object, boolean optimizePositive) throws KryoException {
+		for (int i = 0, n = object.length; i < n; i++)
+			writeVarLong(object[i], optimizePositive);
 	}
 
 	/** Writes a float array. */
@@ -746,8 +746,8 @@ public class Output extends OutputStream {
 
 	//
 
-	/** Returns the number of bytes that would be written with {@link #writeInt(int, boolean)}. */
-	static public int intLength (int value, boolean optimizePositive) {
+	/** Returns the number of bytes that would be written with {@link #writeVarInt(int, boolean)}. */
+	static public int varIntLength (int value, boolean optimizePositive) {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
 		if (value >>> 7 == 0) return 1;
 		if (value >>> 14 == 0) return 2;
@@ -756,8 +756,8 @@ public class Output extends OutputStream {
 		return 5;
 	}
 
-	/** Returns the number of bytes that would be written with {@link #writeLong(long, boolean)}. */
-	static public int longLength (long value, boolean optimizePositive) {
+	/** Returns the number of bytes that would be written with {@link #writeVarLong(long, boolean)}. */
+	static public int varLongLength (long value, boolean optimizePositive) {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		if (value >>> 7 == 0) return 1;
 		if (value >>> 14 == 0) return 2;

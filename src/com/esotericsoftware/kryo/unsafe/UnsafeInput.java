@@ -73,11 +73,11 @@ public class UnsafeInput extends Input {
 		return result;
 	}
 
-	public int readInt (boolean optimizePositive) throws KryoException {
+	public int readVarInt (boolean optimizePositive) throws KryoException {
 		return readInt();
 	}
 
-	public boolean canReadInt () throws KryoException {
+	public boolean canReadVarInt () throws KryoException {
 		return limit - position >= 4;
 	}
 
@@ -102,11 +102,11 @@ public class UnsafeInput extends Input {
 		return result;
 	}
 
-	public long readLong (boolean optimizePositive) throws KryoException {
+	public long readVarLong (boolean optimizePositive) throws KryoException {
 		return readLong();
 	}
 
-	public boolean canReadLong () throws KryoException {
+	public boolean canReadVarLong () throws KryoException {
 		return limit - position >= 8;
 	}
 
@@ -124,13 +124,13 @@ public class UnsafeInput extends Input {
 		return result;
 	}
 
-	public int[] readInts (int length, boolean optimizePositive) throws KryoException {
+	public int[] readVarInts (int length, boolean optimizePositive) throws KryoException {
 		int[] array = new int[length];
 		readBytes(array, intArrayBaseOffset, 0, length << 2);
 		return array;
 	}
 
-	public long[] readLongs (int length, boolean optimizePositive) throws KryoException {
+	public long[] readVarLongs (int length, boolean optimizePositive) throws KryoException {
 		long[] array = new long[length];
 		readBytes(array, longArrayBaseOffset, 0, length << 3);
 		return array;

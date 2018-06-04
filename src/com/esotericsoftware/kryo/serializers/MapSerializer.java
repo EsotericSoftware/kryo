@@ -72,7 +72,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 
 	public void write (Kryo kryo, Output output, T map) {
 		int length = map.size();
-		output.writeInt(length, true);
+		output.writeVarInt(length, true);
 
 		Serializer keySerializer = this.keySerializer, valueSerializer = this.valueSerializer;
 
@@ -118,7 +118,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		T map = create(kryo, input, type);
-		int length = input.readInt(true);
+		int length = input.readVarInt(true);
 
 		Class keyClass = this.keyClass;
 		Class valueClass = this.valueClass;

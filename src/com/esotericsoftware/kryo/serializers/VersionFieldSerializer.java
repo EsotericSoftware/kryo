@@ -86,7 +86,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	public void write (Kryo kryo, Output output, T object) {
 		CachedField[] fields = getFields();
 		// Write type version.
-		output.writeInt(typeVersion, true);
+		output.writeVarInt(typeVersion, true);
 		// Write fields.
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Write", fields[i], output.position());
@@ -99,7 +99,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		kryo.reference(object);
 
 		// Read input version.
-		int version = input.readInt(true);
+		int version = input.readVarInt(true);
 		if (!compatible && version != typeVersion) {
 			// Reject to read
 			throw new KryoException("Version not compatible: " + version + " <-> " + typeVersion);

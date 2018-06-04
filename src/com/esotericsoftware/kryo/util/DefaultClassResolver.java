@@ -91,7 +91,7 @@ public class DefaultClassResolver implements ClassResolver {
 	public Registration writeClass (Output output, Class type) {
 		if (type == null) {
 			if (TRACE || (DEBUG && kryo.getDepth() == 1)) log("Write", null, output.position());
-			output.writeInt(Kryo.NULL, true);
+			output.writeVarInt(Kryo.NULL, true);
 			return null;
 		}
 		Registration registration = kryo.getRegistration(type);
@@ -99,18 +99,18 @@ public class DefaultClassResolver implements ClassResolver {
 			writeName(output, type, registration);
 		else {
 			if (TRACE) trace("kryo", "Write class " + registration.getId() + ": " + className(type) + pos(output.position()));
-			output.writeInt(registration.getId() + 2, true);
+			output.writeVarInt(registration.getId() + 2, true);
 		}
 		return registration;
 	}
 
 	protected void writeName (Output output, Class type, Registration registration) {
-		output.writeInt(NAME + 2, true);
+		output.writeVarInt(NAME + 2, true);
 		if (classToNameId != null) {
 			int nameId = classToNameId.get(type, -1);
 			if (nameId != -1) {
 				if (TRACE) trace("kryo", "Write class name reference " + nameId + ": " + className(type) + pos(output.position()));
-				output.writeInt(nameId, true);
+				output.writeVarInt(nameId, true);
 				return;
 			}
 		}
@@ -119,7 +119,7 @@ public class DefaultClassResolver implements ClassResolver {
 		int nameId = nextNameId++;
 		if (classToNameId == null) classToNameId = new IdentityObjectIntMap();
 		classToNameId.put(type, nameId);
-		output.writeInt(nameId, true);
+		output.writeVarInt(nameId, true);
 		if (registration.isTypeNameAscii())
 			output.writeAscii(type.getName());
 		else
@@ -127,7 +127,7 @@ public class DefaultClassResolver implements ClassResolver {
 	}
 
 	public Registration readClass (Input input) {
-		int classID = input.readInt(true);
+		int classID = input.readVarInt(true);
 		switch (classID) {
 		case Kryo.NULL:
 			if (TRACE || (DEBUG && kryo.getDepth() == 1)) log("Read", null, input.position());
@@ -149,7 +149,7 @@ public class DefaultClassResolver implements ClassResolver {
 	}
 
 	protected Registration readName (Input input) {
-		int nameId = input.readInt(true);
+		int nameId = input.readVarInt(true);
 		if (nameIdToClass == null) nameIdToClass = new IntMap();
 		Class type = nameIdToClass.get(nameId);
 		if (type == null) {

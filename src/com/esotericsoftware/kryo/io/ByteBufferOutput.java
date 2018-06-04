@@ -263,7 +263,7 @@ public class ByteBufferOutput extends Output {
 		byteBuffer.put((byte)value);
 	}
 
-	public int writeInt (int value, boolean optimizePositive) throws KryoException {
+	public int writeVarInt (int value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
 		if (value >>> 7 == 0) {
 			if (position == capacity) require(1);
@@ -410,7 +410,7 @@ public class ByteBufferOutput extends Output {
 	 * bit 7 to denote if another byte is present. */
 	private void writeUtf8Length (int value) {
 		if (value >>> 6 == 0) {
-			require(1);
+			if (position == capacity) require(1);
 			byteBuffer.put((byte)(value | 0x80)); // Set bit 8.
 			position++;
 		} else if (value >>> 13 == 0) {
@@ -460,7 +460,7 @@ public class ByteBufferOutput extends Output {
 				byteBuffer.put((byte)(0x80 | c & 0x3F));
 			} else {
 				byteBuffer.put((byte)(0xC0 | c >> 6 & 0x1F));
-				require(1);
+				if (position == capacity) require(1);
 				position++;
 				byteBuffer.put((byte)(0x80 | c & 0x3F));
 			}
@@ -507,7 +507,7 @@ public class ByteBufferOutput extends Output {
 		byteBuffer.put((byte)value);
 	}
 
-	public int writeLong (long value, boolean optimizePositive) throws KryoException {
+	public int writeVarLong (long value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		if (value >>> 7 == 0) {
 			if (position == capacity) require(1);
@@ -610,7 +610,7 @@ public class ByteBufferOutput extends Output {
 	// boolean
 
 	public void writeBoolean (boolean value) throws KryoException {
-		require(1);
+		if (position == capacity) require(1);
 		byteBuffer.put((byte)(value ? 1 : 0));
 		position++;
 	}

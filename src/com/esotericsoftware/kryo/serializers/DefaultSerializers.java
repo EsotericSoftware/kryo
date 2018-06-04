@@ -109,21 +109,21 @@ public class DefaultSerializers {
 
 	static public class IntSerializer extends ImmutableSerializer<Integer> {
 		public void write (Kryo kryo, Output output, Integer object) {
-			output.writeInt(object, false);
+			output.writeVarInt(object, false);
 		}
 
 		public Integer read (Kryo kryo, Input input, Class<? extends Integer> type) {
-			return input.readInt(false);
+			return input.readVarInt(false);
 		}
 	}
 
 	static public class LongSerializer extends ImmutableSerializer<Long> {
 		public void write (Kryo kryo, Output output, Long object) {
-			output.writeLong(object, false);
+			output.writeVarLong(object, false);
 		}
 
 		public Long read (Kryo kryo, Input input, Class<? extends Long> type) {
-			return input.readLong(false);
+			return input.readVarLong(false);
 		}
 	}
 
@@ -171,24 +171,24 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, BigInteger object) {
 			if (object == null) {
-				output.writeInt(NULL, true);
+				output.writeVarInt(NULL, true);
 				return;
 			}
 			BigInteger value = (BigInteger)object;
 			// fast-path optimizations for BigInteger.ZERO constant
 			if (value == BigInteger.ZERO) {
-				output.writeInt(2, true);
+				output.writeVarInt(2, true);
 				output.writeByte(0);
 				return;
 			}
 			// default behaviour
 			byte[] bytes = value.toByteArray();
-			output.writeInt(bytes.length + 1, true);
+			output.writeVarInt(bytes.length + 1, true);
 			output.writeBytes(bytes);
 		}
 
 		public BigInteger read (Kryo kryo, Input input, Class<? extends BigInteger> type) {
-			int length = input.readInt(true);
+			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			byte[] bytes = input.readBytes(length - 1);
 			if (type != BigInteger.class && type != null) {
@@ -232,25 +232,25 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, BigDecimal object) {
 			if (object == null) {
-				output.writeInt(NULL, true);
+				output.writeVarInt(NULL, true);
 				return;
 			}
 			BigDecimal value = (BigDecimal)object;
 			// fast-path optimizations for BigDecimal constants
 			if (value == BigDecimal.ZERO) {
 				bigIntegerSerializer.write(kryo, output, BigInteger.ZERO);
-				output.writeInt(0, false); // for backwards compatibility
+				output.writeVarInt(0, false); // for backwards compatibility
 				return;
 			}
 			// default behaviour
 			bigIntegerSerializer.write(kryo, output, value.unscaledValue());
-			output.writeInt(value.scale(), false);
+			output.writeVarInt(value.scale(), false);
 		}
 
 		public BigDecimal read (Kryo kryo, Input input, Class<? extends BigDecimal> type) {
 			BigInteger unscaledValue = bigIntegerSerializer.read(kryo, input, BigInteger.class);
 			if (unscaledValue == null) return null;
-			int scale = input.readInt(false);
+			int scale = input.readVarInt(false);
 			if (type != BigDecimal.class && type != null) {
 				// For subclasses, use reflection
 				try {
@@ -331,11 +331,11 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, Date object) {
-			output.writeLong(object.getTime(), true);
+			output.writeVarLong(object.getTime(), true);
 		}
 
 		public Date read (Kryo kryo, Input input, Class<? extends Date> type) {
-			return create(kryo, type, input.readLong(true));
+			return create(kryo, type, input.readVarLong(true));
 		}
 
 		public Date copy (Kryo kryo, Date original) {
@@ -363,14 +363,14 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, Enum object) {
 			if (object == null) {
-				output.writeInt(NULL, true);
+				output.writeVarInt(NULL, true);
 				return;
 			}
-			output.writeInt(object.ordinal() + 1, true);
+			output.writeVarInt(object.ordinal() + 1, true);
 		}
 
 		public Enum read (Kryo kryo, Input input, Class<? extends Enum> type) {
-			int ordinal = input.readInt(true);
+			int ordinal = input.readVarInt(true);
 			if (ordinal == NULL) return null;
 			ordinal--;
 			if (ordinal < 0 || ordinal > enumConstants.length - 1)
@@ -390,7 +390,7 @@ public class DefaultSerializers {
 			} else {
 				serializer = kryo.writeClass(output, object.iterator().next().getClass()).getSerializer();
 			}
-			output.writeInt(object.size(), true);
+			output.writeVarInt(object.size(), true);
 			for (Object element : object)
 				serializer.write(kryo, output, element);
 		}
@@ -399,7 +399,7 @@ public class DefaultSerializers {
 			Registration registration = kryo.readClass(input);
 			EnumSet object = EnumSet.noneOf(registration.getType());
 			Serializer serializer = registration.getSerializer();
-			int length = input.readInt(true);
+			int length = input.readVarInt(true);
 			for (int i = 0; i < length; i++)
 				object.add(serializer.read(kryo, input, null));
 			return object;
@@ -591,23 +591,23 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, Calendar object) {
 			timeZoneSerializer.write(kryo, output, object.getTimeZone()); // can't be null
-			output.writeLong(object.getTimeInMillis(), true);
+			output.writeVarLong(object.getTimeInMillis(), true);
 			output.writeBoolean(object.isLenient());
-			output.writeInt(object.getFirstDayOfWeek(), true);
-			output.writeInt(object.getMinimalDaysInFirstWeek(), true);
+			output.writeVarInt(object.getFirstDayOfWeek(), true);
+			output.writeVarInt(object.getMinimalDaysInFirstWeek(), true);
 			if (object instanceof GregorianCalendar)
-				output.writeLong(((GregorianCalendar)object).getGregorianChange().getTime(), false);
+				output.writeVarLong(((GregorianCalendar)object).getGregorianChange().getTime(), false);
 			else
-				output.writeLong(DEFAULT_GREGORIAN_CUTOVER, false);
+				output.writeVarLong(DEFAULT_GREGORIAN_CUTOVER, false);
 		}
 
 		public Calendar read (Kryo kryo, Input input, Class<? extends Calendar> type) {
 			Calendar result = Calendar.getInstance(timeZoneSerializer.read(kryo, input, TimeZone.class));
-			result.setTimeInMillis(input.readLong(true));
+			result.setTimeInMillis(input.readVarLong(true));
 			result.setLenient(input.readBoolean());
-			result.setFirstDayOfWeek(input.readInt(true));
-			result.setMinimalDaysInFirstWeek(input.readInt(true));
-			long gregorianChange = input.readLong(false);
+			result.setFirstDayOfWeek(input.readVarInt(true));
+			result.setMinimalDaysInFirstWeek(input.readVarInt(true));
+			long gregorianChange = input.readVarLong(false);
 			if (gregorianChange != DEFAULT_GREGORIAN_CUTOVER)
 				if (result instanceof GregorianCalendar) ((GregorianCalendar)result).setGregorianChange(new Date(gregorianChange));
 			return result;

@@ -57,14 +57,14 @@ class AsmField extends ReflectField {
 	final static class IntAsmField extends CachedField {
 		public void write (Output output, Object object) {
 			if (varInt)
-				output.writeInt(access.getInt(object, accessIndex), false);
+				output.writeVarInt(access.getInt(object, accessIndex), false);
 			else
 				output.writeInt(access.getInt(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
 			if (varInt)
-				access.setInt(object, accessIndex, input.readInt(false));
+				access.setInt(object, accessIndex, input.readVarInt(false));
 			else
 				access.setInt(object, accessIndex, input.readInt());
 		}
@@ -147,14 +147,14 @@ class AsmField extends ReflectField {
 	final static class LongAsmField extends CachedField {
 		public void write (Output output, Object object) {
 			if (varInt)
-				output.writeLong(access.getLong(object, accessIndex), false);
+				output.writeVarLong(access.getLong(object, accessIndex), false);
 			else
 				output.writeLong(access.getLong(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
 			if (varInt)
-				access.setLong(object, accessIndex, input.readLong(false));
+				access.setLong(object, accessIndex, input.readVarLong(false));
 			else
 				access.setLong(object, accessIndex, input.readLong());
 		}

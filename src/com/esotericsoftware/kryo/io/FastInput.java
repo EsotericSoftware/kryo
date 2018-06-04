@@ -55,19 +55,19 @@ public final class FastInput extends Input {
 		super(outputStream, bufferSize);
 	}
 
-	public int readInt (boolean optimizePositive) throws KryoException {
+	public int readVarInt (boolean optimizePositive) throws KryoException {
 		return readInt();
 	}
 
-	public boolean canReadInt () throws KryoException {
+	public boolean canReadVarInt () throws KryoException {
 		return limit - position >= 4;
 	}
 
-	public long readLong (boolean optimizePositive) throws KryoException {
+	public long readVarLong (boolean optimizePositive) throws KryoException {
 		return readLong();
 	}
 
-	public boolean canReadLong () throws KryoException {
+	public boolean canReadVarLong () throws KryoException {
 		return limit - position >= 8;
 	}
 }

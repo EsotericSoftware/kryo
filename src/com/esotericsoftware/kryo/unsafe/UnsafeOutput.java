@@ -60,7 +60,7 @@ public class UnsafeOutput extends Output {
 		position += 4;
 	}
 
-	public int writeInt (int value, boolean optimizePositive) throws KryoException {
+	public int writeVarInt (int value, boolean optimizePositive) throws KryoException {
 		writeInt(value);
 		return 4;
 	}
@@ -95,16 +95,16 @@ public class UnsafeOutput extends Output {
 		position += 2;
 	}
 
-	public int writeLong (long value, boolean optimizePositive) throws KryoException {
+	public int writeVarLong (long value, boolean optimizePositive) throws KryoException {
 		writeLong(value);
 		return 8;
 	}
 
-	public void writeInts (int[] object, boolean optimizePositive) throws KryoException {
+	public void writeVarInts (int[] object, boolean optimizePositive) throws KryoException {
 		writeBytes(object, intArrayBaseOffset, 0, object.length << 2);
 	}
 
-	public void writeLongs (long[] object, boolean optimizePositive) throws KryoException {
+	public void writeVarLongs (long[] object, boolean optimizePositive) throws KryoException {
 		writeBytes(object, longArrayBaseOffset, 0, object.length << 3);
 	}
 

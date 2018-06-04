@@ -624,14 +624,14 @@ public class Kryo {
 	boolean writeReferenceOrNull (Output output, Object object, boolean mayBeNull) {
 		if (object == null) {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", null, output.position());
-			output.writeInt(Kryo.NULL, true);
+			output.writeVarInt(Kryo.NULL, true);
 			return true;
 		}
 
 		if (!referenceResolver.useReferences(object.getClass())) {
 			if (mayBeNull) {
 				if (TRACE) trace("kryo", "Write: <not null>" + pos(output.position()));
-				output.writeInt(Kryo.NOT_NULL, true);
+				output.writeVarInt(Kryo.NOT_NULL, true);
 			}
 			return false;
 		}
@@ -642,14 +642,14 @@ public class Kryo {
 		// If not the first time encountered, only write reference ID.
 		if (id != -1) {
 			if (DEBUG) debug("kryo", "Write object reference " + id + ": " + string(object) + pos(output.position()));
-			output.writeInt(id + 2, true); // + 2 because 0 and 1 are used for NULL and NOT_NULL.
+			output.writeVarInt(id + 2, true); // + 2 because 0 and 1 are used for NULL and NOT_NULL.
 			return true;
 		}
 
 		// Otherwise write NOT_NULL and then the object bytes.
 		id = referenceResolver.addWrittenObject(object);
 		if (TRACE) trace("kryo", "Write: <not null>" + pos(output.position()));
-		output.writeInt(NOT_NULL, true);
+		output.writeVarInt(NOT_NULL, true);
 		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object) + pos(output.position()));
 		return false;
 	}
@@ -797,7 +797,7 @@ public class Kryo {
 		boolean referencesSupported = referenceResolver.useReferences(type);
 		int id;
 		if (mayBeNull) {
-			id = input.readInt(true);
+			id = input.readVarInt(true);
 			if (id == Kryo.NULL) {
 				if (TRACE || (DEBUG && depth == 1)) log("Read", null, input.position());
 				readObject = null;
@@ -812,7 +812,7 @@ public class Kryo {
 				readReferenceIds.add(NO_REF);
 				return readReferenceIds.size;
 			}
-			id = input.readInt(true);
+			id = input.readVarInt(true);
 		}
 		if (id == NOT_NULL) {
 			if (TRACE) trace("kryo", "Read: <not null>" + pos(input.position()));

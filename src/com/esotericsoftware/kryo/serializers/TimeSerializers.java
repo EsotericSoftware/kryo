@@ -70,25 +70,25 @@ public final class TimeSerializers {
 	static public class DurationSerializer extends ImmutableSerializer<Duration> {
 		public void write (Kryo kryo, Output out, Duration duration) {
 			out.writeLong(duration.getSeconds());
-			out.writeInt(duration.getNano(), true);
+			out.writeVarInt(duration.getNano(), true);
 		}
 
 		public Duration read (Kryo kryo, Input in, Class type) {
 			long seconds = in.readLong();
-			int nanos = in.readInt(true);
+			int nanos = in.readVarInt(true);
 			return Duration.ofSeconds(seconds, nanos);
 		}
 	}
 
 	static public class InstantSerializer extends ImmutableSerializer<Instant> {
 		public void write (Kryo kryo, Output out, Instant instant) {
-			out.writeLong(instant.getEpochSecond(), true);
-			out.writeInt(instant.getNano(), true);
+			out.writeVarLong(instant.getEpochSecond(), true);
+			out.writeVarInt(instant.getNano(), true);
 		}
 
 		public Instant read (Kryo kryo, Input in, Class type) {
-			long seconds = in.readLong(true);
-			int nanos = in.readInt(true);
+			long seconds = in.readVarLong(true);
+			int nanos = in.readVarInt(true);
 			return Instant.ofEpochSecond(seconds, nanos);
 		}
 	}
@@ -99,7 +99,7 @@ public final class TimeSerializers {
 		}
 
 		static void write (Output out, LocalDate date) {
-			out.writeInt(date.getYear(), true);
+			out.writeVarInt(date.getYear(), true);
 			out.writeByte(date.getMonthValue());
 			out.writeByte(date.getDayOfMonth());
 		}
@@ -109,7 +109,7 @@ public final class TimeSerializers {
 		}
 
 		static LocalDate read (Input in) {
-			int year = in.readInt(true);
+			int year = in.readVarInt(true);
 			int month = in.readByte();
 			int dayOfMonth = in.readByte();
 			return LocalDate.of(year, month, dayOfMonth);
@@ -152,7 +152,7 @@ public final class TimeSerializers {
 				out.writeByte(time.getHour());
 				out.writeByte(time.getMinute());
 				out.writeByte(time.getSecond());
-				out.writeInt(time.getNano(), true);
+				out.writeVarInt(time.getNano(), true);
 			}
 		}
 
@@ -176,7 +176,7 @@ public final class TimeSerializers {
 					if (second < 0) {
 						second = ~second;
 					} else {
-						nano = in.readInt(true);
+						nano = in.readVarInt(true);
 					}
 				}
 			}
@@ -272,22 +272,22 @@ public final class TimeSerializers {
 
 	static public class YearSerializer extends ImmutableSerializer<Year> {
 		public void write (Kryo kryo, Output out, Year obj) {
-			out.writeInt(obj.getValue(), true);
+			out.writeVarInt(obj.getValue(), true);
 		}
 
 		public Year read (Kryo kryo, Input in, Class type) {
-			return Year.of(in.readInt(true));
+			return Year.of(in.readVarInt(true));
 		}
 	}
 
 	static public class YearMonthSerializer extends ImmutableSerializer<YearMonth> {
 		public void write (Kryo kryo, Output out, YearMonth obj) {
-			out.writeInt(obj.getYear(), true);
+			out.writeVarInt(obj.getYear(), true);
 			out.writeByte(obj.getMonthValue());
 		}
 
 		public YearMonth read (Kryo kryo, Input in, Class type) {
-			int year = in.readInt(true);
+			int year = in.readVarInt(true);
 			byte month = in.readByte();
 			return YearMonth.of(year, month);
 		}
@@ -308,15 +308,15 @@ public final class TimeSerializers {
 
 	static public class PeriodSerializer extends ImmutableSerializer<Period> {
 		public void write (Kryo kryo, Output out, Period obj) {
-			out.writeInt(obj.getYears(), true);
-			out.writeInt(obj.getMonths(), true);
-			out.writeInt(obj.getDays(), true);
+			out.writeVarInt(obj.getYears(), true);
+			out.writeVarInt(obj.getMonths(), true);
+			out.writeVarInt(obj.getDays(), true);
 		}
 
 		public Period read (Kryo kryo, Input in, Class type) {
-			int years = in.readInt(true);
-			int months = in.readInt(true);
-			int days = in.readInt(true);
+			int years = in.readVarInt(true);
+			int months = in.readVarInt(true);
+			int days = in.readVarInt(true);
 			return Period.of(years, months, days);
 		}
 	}

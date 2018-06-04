@@ -119,7 +119,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
-		output.writeInt(writeFieldCount, true); // Can be used for null.
+		output.writeVarInt(writeFieldCount, true); // Can be used for null.
 
 		CachedField[] fields = getFields();
 		OutputChunked outputChunked = null; // Only instantiate if needed.
@@ -127,7 +127,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		boolean[] annexed = this.annexed, deprecated = this.deprecated;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (deprecated[i]) continue;
-			output.writeInt(tags[i], true);
+			output.writeVarInt(tags[i], true);
 			if (annexed[i]) {
 				if (TRACE) log("Write annexed", fields[i], output.position());
 				if (outputChunked == null) outputChunked = new OutputChunked(output, 1024);
@@ -143,14 +143,14 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		T object = create(kryo, input, type);
 		kryo.reference(object);
-		int fieldCount = input.readInt(true);
+		int fieldCount = input.readVarInt(true);
 
 		CachedField[] fields = getFields();
 		InputChunked inputChunked = null; // Only instantiate if needed.
 		int[] tags = this.tags;
 		boolean[] annexed = this.annexed;
 		for (int i = 0, n = fieldCount; i < n; i++) {
-			int tag = input.readInt(true);
+			int tag = input.readVarInt(true);
 			CachedField cachedField = null;
 			boolean isAnnexed = false;
 			for (int ii = 0, nn = tags.length; ii < nn; ii++) {
