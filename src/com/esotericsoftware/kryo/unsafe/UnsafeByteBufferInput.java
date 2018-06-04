@@ -11,57 +11,58 @@ import com.esotericsoftware.kryo.io.ByteBufferInput;
 
 import sun.nio.ch.DirectBuffer;
 
-/** An {@link ByteBufferInput} that reads data from direct ByteBuffer (off-heap memory) using sun.misc.Unsafe. Multi-byte
- * primitive types use native byte order, so the native byte order on different computers which read and write the data must be
- * the same. Variable length encoding is not used for int or long to maximize performance.
+/** A {@link ByteBufferInput} that reads data from direct ByteBuffer (off-heap memory) using sun.misc.Unsafe. Multi-byte primitive
+ * types use native byte order, so the native byte order on different computers which read and write the data must be the same.
+ * Variable length encoding is not used for int or long to maximize performance.
  * @author Roman Levenstein <romixlev@gmail.com> */
-public class UnsafeMemoryInput extends ByteBufferInput {
+public class UnsafeByteBufferInput extends ByteBufferInput {
 	/** Start address of the memory buffer. It must be non-movable, which normally means that is is allocated off-heap. */
 	private long bufferAddress;
 
 	/** Creates an uninitialized Input, {@link #setBuffer(ByteBuffer)} must be called before the Input is used. */
-	public UnsafeMemoryInput () {
+	public UnsafeByteBufferInput () {
 	}
 
 	/** Creates a new Input for reading from a direct {@link ByteBuffer}.
 	 * @param bufferSize The size of the buffer. An exception is thrown if more bytes than this are read and
 	 *           {@link #fill(ByteBuffer, int, int)} does not supply more bytes. */
-	public UnsafeMemoryInput (int bufferSize) {
+	public UnsafeByteBufferInput (int bufferSize) {
 		super(bufferSize);
 		updateBufferAddress();
 	}
 
 	/** Creates a new Input for reading from a {@link ByteBuffer} which is filled with the specified bytes. */
-	public UnsafeMemoryInput (byte[] buffer) {
+	public UnsafeByteBufferInput (byte[] buffer) {
 		super(buffer);
 		updateBufferAddress();
 	}
 
 	/** Creates a new Input for reading from a ByteBuffer. */
-	public UnsafeMemoryInput (ByteBuffer buffer) {
+	public UnsafeByteBufferInput (ByteBuffer buffer) {
 		super(buffer);
 		updateBufferAddress();
 	}
 
 	/** Creates a new Input for reading from a ByteBuffer representing the memory region at the specified address and size. */
-	public UnsafeMemoryInput (long address, int size) {
+	public UnsafeByteBufferInput (long address, int size) {
 		super(newDirectBuffer(address, size));
 		updateBufferAddress();
 	}
 
 	/** Creates a new Input for reading from an InputStream with a buffer size of 4096. */
-	public UnsafeMemoryInput (InputStream inputStream) {
+	public UnsafeByteBufferInput (InputStream inputStream) {
 		super(inputStream);
 		updateBufferAddress();
 	}
 
 	/** Creates a new Input for reading from an InputStream with the specified buffer size. */
-	public UnsafeMemoryInput (InputStream inputStream, int bufferSize) {
+	public UnsafeByteBufferInput (InputStream inputStream, int bufferSize) {
 		super(inputStream, bufferSize);
 		updateBufferAddress();
 	}
 
 	public void setBuffer (ByteBuffer buffer) {
+		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
 		super.setBuffer(buffer);
 		updateBufferAddress();
 	}
@@ -74,6 +75,7 @@ public class UnsafeMemoryInput extends ByteBufferInput {
 		require(4);
 		int result = unsafe.getInt(bufferAddress + position);
 		position += 4;
+		byteBuffer.position(position);
 		return result;
 	}
 
@@ -89,6 +91,7 @@ public class UnsafeMemoryInput extends ByteBufferInput {
 		require(4);
 		float result = unsafe.getFloat(bufferAddress + position);
 		position += 4;
+		byteBuffer.position(position);
 		return result;
 	}
 
@@ -96,6 +99,7 @@ public class UnsafeMemoryInput extends ByteBufferInput {
 		require(2);
 		short result = unsafe.getShort(bufferAddress + position);
 		position += 2;
+		byteBuffer.position(position);
 		return result;
 	}
 
@@ -103,6 +107,7 @@ public class UnsafeMemoryInput extends ByteBufferInput {
 		require(8);
 		long result = unsafe.getLong(bufferAddress + position);
 		position += 8;
+		byteBuffer.position(position);
 		return result;
 	}
 
@@ -114,20 +119,11 @@ public class UnsafeMemoryInput extends ByteBufferInput {
 		return limit - position >= 8;
 	}
 
-	public boolean readBoolean () throws KryoException {
-		byteBuffer.position(position);
-		return super.readBoolean();
-	}
-
-	public byte readByte () throws KryoException {
-		byteBuffer.position(position);
-		return super.readByte();
-	}
-
 	public char readChar () throws KryoException {
 		require(2);
 		char result = unsafe.getChar(bufferAddress + position);
 		position += 2;
+		byteBuffer.position(position);
 		return result;
 	}
 
@@ -135,6 +131,7 @@ public class UnsafeMemoryInput extends ByteBufferInput {
 		require(8);
 		double result = unsafe.getDouble(bufferAddress + position);
 		position += 8;
+		byteBuffer.position(position);
 		return result;
 	}
 

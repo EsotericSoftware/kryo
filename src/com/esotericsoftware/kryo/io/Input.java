@@ -474,8 +474,9 @@ public class Input extends InputStream {
 	 * @return May be null. */
 	public String readString () {
 		int available = require(1);
-		int b = buffer[position++];
+		int b = buffer[position];
 		if ((b & 0x80) == 0) return readAscii(); // ASCII.
+		position++;
 		// Null, empty, or UTF8.
 		int charCount = available >= 5 ? readUtf8Length(b) : readUtf8Length_slow(b);
 		switch (charCount) {
@@ -555,7 +556,7 @@ public class Input extends InputStream {
 			}
 			chars[charIndex++] = (char)b;
 		}
-		this.position = p;
+		position = p;
 		// If buffer didn't hold all chars or any were not ASCII, use slow path for remainder.
 		if (charIndex < charCount) readUtf8_slow(charCount, charIndex);
 	}
@@ -596,7 +597,7 @@ public class Input extends InputStream {
 	private String readAscii () {
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
-		int p = position - 1; // Read first byte again.
+		int p = position;
 		int charCount = 0;
 		for (int n = Math.min(chars.length, limit - position); charCount < n; charCount++, p++) {
 			int b = buffer[p];
@@ -637,8 +638,9 @@ public class Input extends InputStream {
 	 * @return May be null. */
 	public StringBuilder readStringBuilder () {
 		int available = require(1);
-		int b = buffer[position++];
+		int b = buffer[position];
 		if ((b & 0x80) == 0) return new StringBuilder(readAscii()); // ASCII.
+		position++;
 		// Null, empty, or UTF8.
 		int charCount = available >= 5 ? readUtf8Length(b) : readUtf8Length_slow(b);
 		switch (charCount) {

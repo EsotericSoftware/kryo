@@ -19,19 +19,13 @@
 
 package com.esotericsoftware.kryo.io;
 
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.Util;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.CharBuffer;
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
-import java.nio.ShortBuffer;
-
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.util.Util;
 
 /** An {@link Input} that uses a ByteBuffer rather than a byte[].
  * <p>
@@ -42,7 +36,6 @@ public class ByteBufferInput extends Input {
 	static private final ByteOrder nativeOrder = ByteOrder.nativeOrder();
 
 	protected ByteBuffer byteBuffer;
-	private ByteOrder byteOrder = ByteOrder.BIG_ENDIAN; // Compatible with Input by default.
 
 	/** Creates an uninitialized Input, {@link #setBuffer(ByteBuffer)} must be called before the Input is used. */
 	public ByteBufferInput () {
@@ -54,7 +47,6 @@ public class ByteBufferInput extends Input {
 	public ByteBufferInput (int bufferSize) {
 		this.capacity = bufferSize;
 		byteBuffer = ByteBuffer.allocateDirect(bufferSize);
-		byteBuffer.order(byteOrder);
 	}
 
 	/** Creates a new Input for reading from a {@link ByteBuffer} which is filled with the specified bytes. */
@@ -81,28 +73,18 @@ public class ByteBufferInput extends Input {
 		this.inputStream = inputStream;
 	}
 
-	public ByteOrder order () {
-		return byteOrder;
-	}
-
-	/** Sets the byte order. Default is big endian. */
-	public void order (ByteOrder byteOrder) {
-		this.byteOrder = byteOrder;
-	}
-
 	/** Allocates a new direct ByteBuffer with the specified bytes and sets it as the new buffer.
 	 * @see #setBuffer(ByteBuffer) */
-	public void setBuffer (byte[] bytes) {
-		ByteBuffer directBuffer = ByteBuffer.allocateDirect(bytes.length);
-		directBuffer.put(bytes);
-		directBuffer.position(0);
-		directBuffer.limit(bytes.length);
-		directBuffer.order(byteOrder);
-		setBuffer(directBuffer);
+	public void setBuffer (byte[] bytes, int offset, int count) {
+		ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
+		buffer.put(bytes, offset, count);
+		buffer.position(0);
+		buffer.limit(bytes.length);
+		setBuffer(buffer);
 	}
 
 	/** Sets a new buffer to read from. The bytes are not copied, the old buffer is discarded and the new buffer used in its place.
-	 * The byte order, position, limit, and capacity are set to match the specified buffer. The total is reset. The
+	 * The position, limit, and capacity are set to match the specified buffer. The total is reset. The
 	 * {@link #setInputStream(InputStream) InputStream} is set to null. */
 	public void setBuffer (ByteBuffer buffer) {
 		if (buffer == null) throw new IllegalArgumentException("buffer cannot be null.");
@@ -110,7 +92,6 @@ public class ByteBufferInput extends Input {
 		position = buffer.position();
 		limit = buffer.limit();
 		capacity = buffer.capacity();
-		byteOrder = buffer.order();
 		total = 0;
 		inputStream = null;
 	}
@@ -268,7 +249,7 @@ public class ByteBufferInput extends Input {
 
 	public void skip (int count) throws KryoException {
 		super.skip(count);
-		byteBuffer.position(position());
+		byteBuffer.position(position);
 	}
 
 	public long skip (long count) throws KryoException {
@@ -331,7 +312,10 @@ public class ByteBufferInput extends Input {
 	public int readInt () throws KryoException {
 		require(4);
 		position += 4;
-		return byteBuffer.getInt();
+		return (byteBuffer.get() & 0xFF) << 24 //
+			| (byteBuffer.get() & 0xFF) << 16 //
+			| (byteBuffer.get() & 0xFF) << 8 //
+			| byteBuffer.get() & 0xFF;
 	}
 
 	public int readInt (boolean optimizePositive) throws KryoException {
@@ -435,9 +419,12 @@ public class ByteBufferInput extends Input {
 
 	public String readString () {
 		int available = require(1);
-		position++;
 		int b = byteBuffer.get();
-		if ((b & 0x80) == 0) return readAscii(); // ASCII.
+		if ((b & 0x80) == 0) {
+			byteBuffer.position(position); // Move back 1 byte.
+			return readAscii(); // ASCII.
+		}
+		position++;
 		// Null, empty, or UTF8.
 		int charCount = available >= 5 ? readUtf8Length(b) : readUtf8Length_slow(b);
 		switch (charCount) {
@@ -512,20 +499,15 @@ public class ByteBufferInput extends Input {
 		// Try to read 7 bit ASCII chars.
 		int charIndex = 0;
 		int count = Math.min(require(1), charCount);
-		int p = this.position, b;
 		while (charIndex < count) {
-			p++;
-			b = byteBuffer.get();
-			if (b < 0) {
-				p--;
-				break;
-			}
+			int b = byteBuffer.get();
+			if (b < 0) break;
 			chars[charIndex++] = (char)b;
 		}
-		this.position = p;
+		position += charIndex;
 		// If buffer didn't hold all chars or any were not ASCII, use slow path for remainder.
 		if (charIndex < charCount) {
-			byteBuffer.position(p);
+			byteBuffer.position(position);
 			readUtf8_slow(charCount, charIndex);
 		}
 	}
@@ -568,19 +550,17 @@ public class ByteBufferInput extends Input {
 	private String readAscii () {
 		char[] chars = this.chars;
 		ByteBuffer byteBuffer = this.byteBuffer;
-		int p = position - 1; // Read first byte again.
-		byteBuffer.position(p);
 		int charCount = 0;
-		for (int n = Math.min(chars.length, limit - position); charCount < n; charCount++, p++) {
+		for (int n = Math.min(chars.length, limit - position); charCount < n; charCount++) {
 			int b = byteBuffer.get();
 			if ((b & 0x80) == 0x80) {
-				position = p + 1;
+				position = byteBuffer.position();
 				chars[charCount] = (char)(b & 0x7F);
 				return new String(chars, 0, charCount + 1);
 			}
 			chars[charCount] = (char)b;
 		}
-		position = p;
+		position = byteBuffer.position();
 		return readAscii_slow(charCount);
 	}
 
@@ -607,9 +587,12 @@ public class ByteBufferInput extends Input {
 
 	public StringBuilder readStringBuilder () {
 		int available = require(1);
-		position++;
 		int b = byteBuffer.get();
-		if ((b & 0x80) == 0) return new StringBuilder(readAscii()); // ASCII.
+		if ((b & 0x80) == 0) {
+			byteBuffer.position(position); // Move back 1 byte.
+			return new StringBuilder(readAscii()); // ASCII.
+		}
+		position++;
 		// Null, empty, or UTF8.
 		int charCount = available >= 5 ? readUtf8Length(b) : readUtf8Length_slow(b);
 		switch (charCount) {
@@ -626,32 +609,29 @@ public class ByteBufferInput extends Input {
 		return builder;
 	}
 
-	public float readFloat () throws KryoException {
-		require(4);
-		position += 4;
-		return byteBuffer.getFloat();
-	}
-
-	public float readFloat (float precision, boolean optimizePositive) throws KryoException {
-		return readInt(optimizePositive) / (float)precision;
-	}
-
 	public short readShort () throws KryoException {
 		require(2);
 		position += 2;
-		return byteBuffer.getShort();
+		return (short)(((byteBuffer.get() & 0xFF) << 8) | (byteBuffer.get() & 0xFF));
 	}
 
 	public int readShortUnsigned () throws KryoException {
 		require(2);
 		position += 2;
-		return byteBuffer.getShort();
+		return ((byteBuffer.get() & 0xFF) << 8) | (byteBuffer.get() & 0xFF);
 	}
 
 	public long readLong () throws KryoException {
 		require(8);
 		position += 8;
-		return byteBuffer.getLong();
+		return (long)byteBuffer.get() << 56 //
+			| (long)(byteBuffer.get() & 0xFF) << 48 //
+			| (long)(byteBuffer.get() & 0xFF) << 40 //
+			| (long)(byteBuffer.get() & 0xFF) << 32 //
+			| (long)(byteBuffer.get() & 0xFF) << 24 //
+			| (byteBuffer.get() & 0xFF) << 16 //
+			| (byteBuffer.get() & 0xFF) << 8 //
+			| byteBuffer.get() & 0xFF;
 	}
 
 	public long readLong (boolean optimizePositive) throws KryoException {
@@ -770,24 +750,13 @@ public class ByteBufferInput extends Input {
 	public char readChar () throws KryoException {
 		require(2);
 		position += 2;
-		return byteBuffer.getChar();
-	}
-
-	public double readDouble () throws KryoException {
-		require(8);
-		position += 8;
-		return byteBuffer.getDouble();
-	}
-
-	public double readDouble (double precision, boolean optimizePositive) throws KryoException {
-		return readLong(optimizePositive) / (double)precision;
+		return (char)(((byteBuffer.get() & 0xFF) << 8) | (byteBuffer.get() & 0xFF));
 	}
 
 	public int[] readInts (int length) throws KryoException {
-		if (capacity - position >= length * 4 && byteOrder == nativeOrder) {
+		if (byteBuffer.order() == nativeOrder && capacity - position >= length * 4) {
 			int[] array = new int[length];
-			IntBuffer buf = byteBuffer.asIntBuffer();
-			buf.get(array);
+			byteBuffer.asIntBuffer().get(array);
 			position += length * 4;
 			byteBuffer.position(position);
 			return array;
@@ -796,10 +765,9 @@ public class ByteBufferInput extends Input {
 	}
 
 	public long[] readLongs (int length) throws KryoException {
-		if (capacity - position >= length * 8 && byteOrder == nativeOrder) {
+		if (byteBuffer.order() == nativeOrder && capacity - position >= length * 8) {
 			long[] array = new long[length];
-			LongBuffer buf = byteBuffer.asLongBuffer();
-			buf.get(array);
+			byteBuffer.asLongBuffer().get(array);
 			position += length * 8;
 			byteBuffer.position(position);
 			return array;
@@ -808,10 +776,9 @@ public class ByteBufferInput extends Input {
 	}
 
 	public float[] readFloats (int length) throws KryoException {
-		if (capacity - position >= length * 4 && byteOrder == nativeOrder) {
+		if (byteBuffer.order() == nativeOrder && capacity - position >= length * 4) {
 			float[] array = new float[length];
-			FloatBuffer buf = byteBuffer.asFloatBuffer();
-			buf.get(array);
+			byteBuffer.asFloatBuffer().get(array);
 			position += length * 4;
 			byteBuffer.position(position);
 			return array;
@@ -820,10 +787,9 @@ public class ByteBufferInput extends Input {
 	}
 
 	public short[] readShorts (int length) throws KryoException {
-		if (capacity - position >= length * 2 && byteOrder == nativeOrder) {
+		if (byteBuffer.order() == nativeOrder && capacity - position >= length * 2) {
 			short[] array = new short[length];
-			ShortBuffer buf = byteBuffer.asShortBuffer();
-			buf.get(array);
+			byteBuffer.asShortBuffer().get(array);
 			position += length * 2;
 			byteBuffer.position(position);
 			return array;
@@ -832,10 +798,9 @@ public class ByteBufferInput extends Input {
 	}
 
 	public char[] readChars (int length) throws KryoException {
-		if (capacity - position >= length * 2 && byteOrder == nativeOrder) {
+		if (byteBuffer.order() == nativeOrder && capacity - position >= length * 2) {
 			char[] array = new char[length];
-			CharBuffer buf = byteBuffer.asCharBuffer();
-			buf.get(array);
+			byteBuffer.asCharBuffer().get(array);
 			position += length * 2;
 			byteBuffer.position(position);
 			return array;
@@ -844,10 +809,9 @@ public class ByteBufferInput extends Input {
 	}
 
 	public double[] readDoubles (int length) throws KryoException {
-		if (capacity - position >= length * 8 && byteOrder == nativeOrder) {
+		if (byteBuffer.order() == nativeOrder && capacity - position >= length * 8) {
 			double[] array = new double[length];
-			DoubleBuffer buf = byteBuffer.asDoubleBuffer();
-			buf.get(array);
+			byteBuffer.asDoubleBuffer().get(array);
 			position += length * 8;
 			byteBuffer.position(position);
 			return array;

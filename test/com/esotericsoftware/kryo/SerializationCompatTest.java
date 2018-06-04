@@ -172,7 +172,7 @@ public class SerializationCompatTest extends KryoTestCase {
 
 	private void readAndRunTest (TestDataDescription<?> description, Input in) throws FileNotFoundException {
 		TestData actual = kryo.readObject(in, description.testDataClass());
-		roundTrip(description.length, actual);
+		roundTrip(description.length, -1, actual);
 		try {
 			assertReflectionEquals(actual, description.testData);
 		} catch (AssertionError e) {
@@ -183,7 +183,7 @@ public class SerializationCompatTest extends KryoTestCase {
 	}
 
 	private void runTestAndWrite (TestDataDescription description, Output out) throws FileNotFoundException {
-		roundTrip(description.length, description.testData);
+		roundTrip(description.length, -1, description.testData);
 		kryo.writeObject(out, description.testData);
 	}
 

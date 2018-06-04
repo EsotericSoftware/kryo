@@ -21,6 +21,16 @@ package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import com.esotericsoftware.kryo.io.ByteBufferInput;
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
+import com.esotericsoftware.kryo.unsafe.UnsafeInput;
+import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
+import com.esotericsoftware.minlog.Log;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -30,11 +40,6 @@ import java.util.ArrayList;
 
 import org.junit.Assert;
 import org.junit.Before;
-
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.ByteBufferOutput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 
 import junit.framework.TestCase;
 
@@ -72,7 +77,7 @@ abstract public class KryoTestCase extends TestCase {
 		kryo.setReferences(false);
 	}
 
-	public <T> T roundTrip (int length, T object1) {
+	public <T> T roundTrip (int length, int unsafeLength, T object1) {
 		T object2 = roundTripWithBufferFactory(length, object1, new BufferFactory() {
 			public Output createOutput (OutputStream os) {
 				return new Output(os);
@@ -118,6 +123,50 @@ abstract public class KryoTestCase extends TestCase {
 				return new ByteBufferInput(buffer);
 			}
 		});
+//
+//		roundTripWithBufferFactory(unsafeLength, object1, new BufferFactory() {
+//			public Output createOutput (OutputStream os) {
+//				return new UnsafeOutput(os);
+//			}
+//
+//			public Output createOutput (OutputStream os, int size) {
+//				return new UnsafeOutput(os, size);
+//			}
+//
+//			public Output createOutput (int size, int limit) {
+//				return new UnsafeOutput(size, limit);
+//			}
+//
+//			public Input createInput (InputStream os, int size) {
+//				return new UnsafeInput(os, size);
+//			}
+//
+//			public Input createInput (byte[] buffer) {
+//				return new UnsafeInput(buffer);
+//			}
+//		});
+//Log.TRACE();
+//T object2=		roundTripWithBufferFactory(unsafeLength, object1, new BufferFactory() {
+//			public Output createOutput (OutputStream os) {
+//				return new UnsafeByteBufferOutput(os);
+//			}
+//
+//			public Output createOutput (OutputStream os, int size) {
+//				return new UnsafeByteBufferOutput(os, size);
+//			}
+//
+//			public Output createOutput (int size, int limit) {
+//				return new UnsafeByteBufferOutput(size, limit);
+//			}
+//
+//			public Input createInput (InputStream os, int size) {
+//				return new UnsafeByteBufferInput(os, size);
+//			}
+//
+//			public Input createInput (byte[] buffer) {
+//				return new UnsafeByteBufferInput(buffer);
+//			}
+//		});
 
 		return object2;
 	}

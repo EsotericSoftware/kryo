@@ -21,30 +21,30 @@ package com.esotericsoftware.kryo.unsafe;
 
 import static com.esotericsoftware.kryo.unsafe.UnsafeUtil.*;
 
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+
 import sun.nio.ch.DirectBuffer;
 
-/** An {@link ByteBufferOutput} that writes data to a direct ByteBuffer (off-heap memory) using sun.misc.Unsafe. Multi-byte
+/** A {@link ByteBufferOutput} that writes data to a direct ByteBuffer (off-heap memory) using sun.misc.Unsafe. Multi-byte
  * primitive types use native byte order, so the native byte order on different computers which read and write the data must be
  * the same. Variable length encoding is not used for int or long to maximize performance.
  * @author Roman Levenstein <romixlev@gmail.com> */
-public class UnsafeMemoryOutput extends ByteBufferOutput {
+public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	/** Start address of the memory buffer. It must be non-movable, which normally means that is is allocated off-heap. */
 	private long bufferAddress;
 
 	/** Creates an uninitialized Output, {@link #setBuffer(ByteBuffer)} must be called before the Output is used. */
-	public UnsafeMemoryOutput () {
+	public UnsafeByteBufferOutput () {
 	}
 
 	/** Creates a new Output for writing to a direct {@link ByteBuffer}.
 	 * @param bufferSize The size of the buffer. An exception is thrown if more bytes than this are written and {@link #flush()}
 	 *           does not empty the buffer. */
-	public UnsafeMemoryOutput (int bufferSize) {
+	public UnsafeByteBufferOutput (int bufferSize) {
 		super(bufferSize);
 		updateBufferAddress();
 	}
@@ -53,30 +53,31 @@ public class UnsafeMemoryOutput extends ByteBufferOutput {
 	 * @param bufferSize The initial size of the buffer.
 	 * @param maxBufferSize If {@link #flush()} does not empty the buffer, the buffer is doubled as needed until it exceeds
 	 *           maxBufferSize and an exception is thrown. Can be -1 for no maximum. */
-	public UnsafeMemoryOutput (int bufferSize, int maxBufferSize) {
+	public UnsafeByteBufferOutput (int bufferSize, int maxBufferSize) {
 		super(bufferSize, maxBufferSize);
 		updateBufferAddress();
 	}
 
 	/** Creates a new Output for writing to an OutputStream. A buffer size of 4096 is used. */
-	public UnsafeMemoryOutput (OutputStream outputStream) {
+	public UnsafeByteBufferOutput (OutputStream outputStream) {
 		super(outputStream);
 		updateBufferAddress();
 	}
 
 	/** Creates a new Output for writing to an OutputStream with the specified buffer size. */
-	public UnsafeMemoryOutput (OutputStream outputStream, int bufferSize) {
+	public UnsafeByteBufferOutput (OutputStream outputStream, int bufferSize) {
 		super(outputStream, bufferSize);
 		updateBufferAddress();
 	}
 
 	/** Creates a new Output for writing to a ByteBuffer representing the memory region at the specified address and size. */
-	public UnsafeMemoryOutput (long address, int size) {
+	public UnsafeByteBufferOutput (long address, int size) {
 		super(newDirectBuffer(address, size));
 		updateBufferAddress();
 	}
 
 	public void setBuffer (ByteBuffer buffer, int maxBufferSize) {
+		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
 		super.setBuffer(buffer, maxBufferSize);
 		updateBufferAddress();
 	}
@@ -89,6 +90,11 @@ public class UnsafeMemoryOutput extends ByteBufferOutput {
 		require(4);
 		unsafe.putInt(bufferAddress + position, value);
 		position += 4;
+	}
+
+	public int writeInt (int value, boolean optimizePositive) throws KryoException {
+		writeInt(value);
+		return 4;
 	}
 
 	public void writeFloat (float value) throws KryoException {
@@ -109,19 +115,9 @@ public class UnsafeMemoryOutput extends ByteBufferOutput {
 		position += 8;
 	}
 
-	public void writeByte (int value) throws KryoException {
-		byteBuffer.position(position);
-		super.writeByte(value);
-	}
-
-	public void writeByte (byte value) throws KryoException {
-		byteBuffer.position(position);
-		super.writeByte(value);
-	}
-
-	public void writeBoolean (boolean value) throws KryoException {
-		byteBuffer.position(position);
-		super.writeBoolean(value);
+	public int writeLong (long value, boolean optimizePositive) throws KryoException {
+		writeLong(value);
+		return 8;
 	}
 
 	public void writeChar (char value) throws KryoException {
@@ -134,16 +130,6 @@ public class UnsafeMemoryOutput extends ByteBufferOutput {
 		require(8);
 		unsafe.putDouble(bufferAddress + position, value);
 		position += 8;
-	}
-
-	public int writeInt (int value, boolean optimizePositive) throws KryoException {
-		writeInt(value);
-		return 4;
-	}
-
-	public int writeLong (long value, boolean optimizePositive) throws KryoException {
-		writeLong(value);
-		return 8;
 	}
 
 	public void writeInts (int[] object, boolean optimizePositive) throws KryoException {

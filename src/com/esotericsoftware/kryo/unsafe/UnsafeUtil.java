@@ -31,7 +31,7 @@ import sun.misc.Cleaner;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
-/** Utility methods for using {@link sun.misc.Unsafe}, mostly for private use. Not available on Android.
+/** Utility methods for using {@link sun.misc.Unsafe}, mostly for private use. Not available on all JVMs or Android.
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class UnsafeUtil {
 	static final Unsafe unsafe;
@@ -117,7 +117,7 @@ public class UnsafeUtil {
 
 	/** Release a direct buffer immediately rather than waiting for GC. */
 	static public void releaseBuffer (ByteBuffer buffer) {
-		if (!buffer.isDirect()) return;
+		if (!(buffer instanceof DirectBuffer)) return;
 		Object cleaner = ((DirectBuffer)buffer).cleaner();
 		if (cleaner != null) ((Cleaner)cleaner).clean();
 	}

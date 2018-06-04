@@ -274,7 +274,7 @@ public class Output extends OutputStream {
 	public int writeInt (int value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
 		if (value >>> 7 == 0) {
-			require(1);
+			if (position == capacity) require(1);
 			buffer[position++] = (byte)value;
 			return 1;
 		}
@@ -290,6 +290,7 @@ public class Output extends OutputStream {
 			require(3);
 			int p = position;
 			position = p + 3;
+			byte[] buffer = this.buffer;
 			buffer[p] = (byte)((value & 0x7F) | 0x80);
 			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
 			buffer[p + 2] = (byte)(value >>> 14);
@@ -299,6 +300,7 @@ public class Output extends OutputStream {
 			require(4);
 			int p = position;
 			position = p + 4;
+			byte[] buffer = this.buffer;
 			buffer[p] = (byte)((value & 0x7F) | 0x80);
 			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
 			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
@@ -308,6 +310,7 @@ public class Output extends OutputStream {
 		require(5);
 		int p = position;
 		position = p + 5;
+		byte[] buffer = this.buffer;
 		buffer[p] = (byte)((value & 0x7F) | 0x80);
 		buffer[p + 1] = (byte)(value >>> 7 | 0x80);
 		buffer[p + 2] = (byte)(value >>> 14 | 0x80);
@@ -352,10 +355,15 @@ public class Output extends OutputStream {
 			// Try to write 7 bit chars.
 			byte[] buffer = this.buffer;
 			int p = position;
-			for (; charIndex < charCount; charIndex++) {
+			while (true) {
 				int c = value.charAt(charIndex);
 				if (c > 127) break;
 				buffer[p++] = (byte)c;
+				charIndex++;
+				if (charIndex == charCount) {
+					position = p;
+					return;
+				}
 			}
 			position = p;
 		}
@@ -381,10 +389,15 @@ public class Output extends OutputStream {
 			// Try to write 7 bit chars.
 			byte[] buffer = this.buffer;
 			int p = position;
-			for (; charIndex < charCount; charIndex++) {
+			while (true) {
 				int c = value.charAt(charIndex);
 				if (c > 127) break;
 				buffer[p++] = (byte)c;
+				charIndex++;
+				if (charIndex == charCount) {
+					position = p;
+					return;
+				}
 			}
 			position = p;
 		}
@@ -424,7 +437,7 @@ public class Output extends OutputStream {
 	 * bit 7 to denote if another byte is present. */
 	private void writeUtf8Length (int value) {
 		if (value >>> 6 == 0) {
-			require(1);
+			if (position == capacity) require(1);
 			buffer[position++] = (byte)(value | 0x80); // Set bit 8.
 		} else if (value >>> 13 == 0) {
 			require(2);
@@ -466,16 +479,16 @@ public class Output extends OutputStream {
 		for (; charIndex < charCount; charIndex++) {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
 			int c = value.charAt(charIndex);
-			if (c <= 0x007F) {
+			if (c <= 0x007F)
 				buffer[position++] = (byte)c;
-			} else if (c > 0x07FF) {
+			else if (c > 0x07FF) {
 				buffer[position++] = (byte)(0xE0 | c >> 12 & 0x0F);
 				require(2);
 				buffer[position++] = (byte)(0x80 | c >> 6 & 0x3F);
 				buffer[position++] = (byte)(0x80 | c & 0x3F);
 			} else {
 				buffer[position++] = (byte)(0xC0 | c >> 6 & 0x1F);
-				require(1);
+				if (position == capacity) require(1);
 				buffer[position++] = (byte)(0x80 | c & 0x3F);
 			}
 		}
@@ -483,7 +496,7 @@ public class Output extends OutputStream {
 
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
 		if (charCount == 0) return;
-		if (capacity == 0) require(1); // Must be able to write at least one character.
+		if (position == capacity) require(1); // Must be able to write at least one character.
 		int charIndex = 0;
 		byte[] buffer = this.buffer;
 		int charsToWrite = Math.min(charCount, capacity - position);
@@ -545,7 +558,7 @@ public class Output extends OutputStream {
 	public int writeLong (long value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		if (value >>> 7 == 0) {
-			require(1);
+			if (position == capacity) require(1);
 			buffer[position++] = (byte)value;
 			return 1;
 		}
@@ -561,6 +574,7 @@ public class Output extends OutputStream {
 			require(3);
 			int p = position;
 			position = p + 3;
+			byte[] buffer = this.buffer;
 			buffer[p] = (byte)((value & 0x7F) | 0x80);
 			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
 			buffer[p + 2] = (byte)(value >>> 14);
@@ -570,6 +584,7 @@ public class Output extends OutputStream {
 			require(4);
 			int p = position;
 			position = p + 4;
+			byte[] buffer = this.buffer;
 			buffer[p] = (byte)((value & 0x7F) | 0x80);
 			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
 			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
@@ -580,6 +595,7 @@ public class Output extends OutputStream {
 			require(5);
 			int p = position;
 			position = p + 5;
+			byte[] buffer = this.buffer;
 			buffer[p] = (byte)((value & 0x7F) | 0x80);
 			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
 			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
@@ -591,6 +607,7 @@ public class Output extends OutputStream {
 			require(6);
 			int p = position;
 			position = p + 6;
+			byte[] buffer = this.buffer;
 			buffer[p] = (byte)((value & 0x7F) | 0x80);
 			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
 			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
@@ -603,6 +620,7 @@ public class Output extends OutputStream {
 			require(7);
 			int p = position;
 			position = p + 7;
+			byte[] buffer = this.buffer;
 			buffer[p] = (byte)((value & 0x7F) | 0x80);
 			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
 			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
@@ -616,6 +634,7 @@ public class Output extends OutputStream {
 			require(8);
 			int p = position;
 			position = p + 8;
+			byte[] buffer = this.buffer;
 			buffer[p] = (byte)((value & 0x7F) | 0x80);
 			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
 			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
@@ -629,6 +648,7 @@ public class Output extends OutputStream {
 		require(9);
 		int p = position;
 		position = p + 9;
+		byte[] buffer = this.buffer;
 		buffer[p] = (byte)((value & 0x7F) | 0x80);
 		buffer[p + 1] = (byte)(value >>> 7 | 0x80);
 		buffer[p + 2] = (byte)(value >>> 14 | 0x80);

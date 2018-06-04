@@ -50,30 +50,30 @@ public class Java8OptionalSerializersTest extends KryoTestCase {
 
 	@Test
 	public void testOptional () {
-		roundTrip(2, new TestClass(null));
-		roundTrip(3, new TestClass(Optional.<String> empty()));
-		roundTrip(6, new TestClass(Optional.of("foo")));
+		roundTrip(2, -1, new TestClass(null));
+		roundTrip(3, -1, new TestClass(Optional.<String> empty()));
+		roundTrip(6, -1, new TestClass(Optional.of("foo")));
 	}
 
 	@Test
 	public void testOptionalInt () {
-		roundTrip(2, OptionalInt.empty());
-		roundTrip(6, OptionalInt.of(Integer.MIN_VALUE));
-		roundTrip(6, OptionalInt.of(Integer.MAX_VALUE));
+		roundTrip(2, -1, OptionalInt.empty());
+		roundTrip(6, -1, OptionalInt.of(Integer.MIN_VALUE));
+		roundTrip(6, -1, OptionalInt.of(Integer.MAX_VALUE));
 	}
 
 	@Test
 	public void testOptionalLong () {
-		roundTrip(2, OptionalLong.empty());
-		roundTrip(10, OptionalLong.of(Long.MIN_VALUE));
-		roundTrip(10, OptionalLong.of(Long.MAX_VALUE));
+		roundTrip(2, -1, OptionalLong.empty());
+		roundTrip(10, -1, OptionalLong.of(Long.MIN_VALUE));
+		roundTrip(10, -1, OptionalLong.of(Long.MAX_VALUE));
 	}
 
 	@Test
 	public void testOptionalDouble () {
-		roundTrip(2, OptionalDouble.empty());
-		roundTrip(10, OptionalDouble.of(Double.MIN_VALUE));
-		roundTrip(10, OptionalDouble.of(Double.MAX_VALUE));
+		roundTrip(2, -1, OptionalDouble.empty());
+		roundTrip(10, -1, OptionalDouble.of(Double.MIN_VALUE));
+		roundTrip(10, -1, OptionalDouble.of(Double.MAX_VALUE));
 	}
 
 	static class TestClass {
