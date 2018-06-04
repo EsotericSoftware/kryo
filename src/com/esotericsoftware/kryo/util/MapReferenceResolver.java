@@ -65,7 +65,7 @@ public class MapReferenceResolver implements ReferenceResolver {
 		writtenObjects.clear(2048);
 	}
 
-	/** Returns false for all primitive wrappers. */
+	/** Returns false for all primitive wrappers and enums. */
 	public boolean useReferences (Class type) {
 		return !Util.isWrapperClass(type) && !Util.isEnum(type);
 	}

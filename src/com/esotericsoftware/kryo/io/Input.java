@@ -36,6 +36,7 @@ public class Input extends InputStream {
 	protected long total;
 	protected char[] chars = new char[32];
 	protected InputStream inputStream;
+	protected boolean varEncoding = true;
 
 	/** Creates an uninitialized Input, {@link #setBuffer(byte[])} must be called before the Input is used. */
 	public Input () {
@@ -111,6 +112,16 @@ public class Input extends InputStream {
 		this.inputStream = inputStream;
 		limit = 0;
 		rewind();
+	}
+
+	public boolean getVariableLengthEncoding () {
+		return varEncoding;
+	}
+
+	/** If false, {@link #readInt(boolean)}, {@link #readLong(boolean)}, {@link #readInts(int, boolean)}, and
+	 * {@link #readLongs(int, boolean)} will use fixed length encoding, which may be faster for some data. Default is true. */
+	public void setVariableLengthEncoding (boolean varEncoding) {
+		this.varEncoding = varEncoding;
 	}
 
 	/** Returns the total number of bytes read. */
@@ -255,7 +266,7 @@ public class Input extends InputStream {
 		return optional(1) <= 0;
 	}
 
-	// InputStream
+	// InputStream:
 
 	public int available () throws IOException {
 		return limit - position + (inputStream != null ? inputStream.available() : 0);
@@ -317,7 +328,7 @@ public class Input extends InputStream {
 		}
 	}
 
-	// byte
+	// byte:
 
 	/** Reads a single byte. */
 	public byte readByte () throws KryoException {
@@ -358,21 +369,31 @@ public class Input extends InputStream {
 		}
 	}
 
-	// int
+	// int:
 
 	/** Reads a 4 byte int. */
 	public int readInt () throws KryoException {
 		require(4);
 		byte[] buffer = this.buffer;
-		int position = this.position;
-		this.position = position + 4;
-		return (buffer[position] & 0xFF) << 24 //
-			| (buffer[position + 1] & 0xFF) << 16 //
-			| (buffer[position + 2] & 0xFF) << 8 //
-			| buffer[position + 3] & 0xFF;
+		int p = this.position;
+		this.position = p + 4;
+		return (buffer[p] & 0xFF) << 24 //
+			| (buffer[p + 1] & 0xFF) << 16 //
+			| (buffer[p + 2] & 0xFF) << 8 //
+			| buffer[p + 3] & 0xFF;
 	}
 
-	/** Reads a 1-5 byte int. */
+	/** Reads an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
+	 * {@link #readVarInt(boolean)} explicitly when reading values that should always use variable length encoding (eg values that
+	 * appear many times).
+	 * @see #canReadInt() */
+	public int readInt (boolean optimizePositive) throws KryoException {
+		if (varEncoding) return readVarInt(optimizePositive);
+		return readInt();
+	}
+
+	/** Reads a 1-5 byte int.
+	 * @see #canReadVarInt() */
 	public int readVarInt (boolean optimizePositive) throws KryoException {
 		if (require(1) < 5) return readVarInt_slow(optimizePositive);
 		int p = position;
@@ -427,11 +448,19 @@ public class Input extends InputStream {
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
+	/** Returns true if enough bytes are available to read an int with {@link #readInt(boolean)}. */
+	public boolean canReadInt () throws KryoException {
+		if (varEncoding) return canReadVarInt();
+		if (limit - position >= 4) return true;
+		return optional(4) == 4;
+	}
+
 	/** Returns true if enough bytes are available to read an int with {@link #readVarInt(boolean)}. */
 	public boolean canReadVarInt () throws KryoException {
 		if (limit - position >= 5) return true;
 		if (optional(5) <= 0) return false;
-		int p = position;
+		int p = position, limit = this.limit;
+		byte[] buffer = this.buffer;
 		if ((buffer[p++] & 0x80) == 0) return true;
 		if (p == limit) return false;
 		if ((buffer[p++] & 0x80) == 0) return true;
@@ -441,13 +470,142 @@ public class Input extends InputStream {
 		if ((buffer[p++] & 0x80) == 0) return true;
 		if (p == limit) return false;
 		return true;
+	}
+
+	// long:
+
+	/** Reads an 8 byte long. */
+	public long readLong () throws KryoException {
+		require(8);
+		byte[] buffer = this.buffer;
+		int p = position;
+		position = p + 8;
+		return (long)buffer[p] << 56 //
+			| (long)(buffer[p + 1] & 0xFF) << 48 //
+			| (long)(buffer[p + 2] & 0xFF) << 40 //
+			| (long)(buffer[p + 3] & 0xFF) << 32 //
+			| (long)(buffer[p + 4] & 0xFF) << 24 //
+			| (buffer[p + 5] & 0xFF) << 16 //
+			| (buffer[p + 6] & 0xFF) << 8 //
+			| buffer[p + 7] & 0xFF;
+	}
+
+	/** Reads a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
+	 * {@link #readVarLong(boolean)} explicitly when reading values that should always use variable length encoding (eg values that
+	 * appear many times).
+	 * @see #canReadLong() */
+	public long readLong (boolean optimizePositive) throws KryoException {
+		if (varEncoding) return readVarLong(optimizePositive);
+		return readLong();
+	}
+
+	/** Reads a 1-9 byte long.
+	 * @see #canReadLong() */
+	public long readVarLong (boolean optimizePositive) throws KryoException {
+		if (require(1) < 9) return readVarLong_slow(optimizePositive);
+		int p = position;
+		int b = buffer[p++];
+		long result = b & 0x7F;
+		if ((b & 0x80) != 0) {
+			byte[] buffer = this.buffer;
+			b = buffer[p++];
+			result |= (b & 0x7F) << 7;
+			if ((b & 0x80) != 0) {
+				b = buffer[p++];
+				result |= (b & 0x7F) << 14;
+				if ((b & 0x80) != 0) {
+					b = buffer[p++];
+					result |= (b & 0x7F) << 21;
+					if ((b & 0x80) != 0) {
+						b = buffer[p++];
+						result |= (long)(b & 0x7F) << 28;
+						if ((b & 0x80) != 0) {
+							b = buffer[p++];
+							result |= (long)(b & 0x7F) << 35;
+							if ((b & 0x80) != 0) {
+								b = buffer[p++];
+								result |= (long)(b & 0x7F) << 42;
+								if ((b & 0x80) != 0) {
+									b = buffer[p++];
+									result |= (long)(b & 0x7F) << 49;
+									if ((b & 0x80) != 0) {
+										b = buffer[p++];
+										result |= (long)b << 56;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		position = p;
+		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
+		return result;
+	}
+
+	private long readVarLong_slow (boolean optimizePositive) {
+		// The buffer is guaranteed to have at least 1 byte.
+		int b = buffer[position++];
+		long result = b & 0x7F;
+		if ((b & 0x80) != 0) {
+			if (position == limit) require(1);
+			byte[] buffer = this.buffer;
+			b = buffer[position++];
+			result |= (b & 0x7F) << 7;
+			if ((b & 0x80) != 0) {
+				if (position == limit) require(1);
+				b = buffer[position++];
+				result |= (b & 0x7F) << 14;
+				if ((b & 0x80) != 0) {
+					if (position == limit) require(1);
+					b = buffer[position++];
+					result |= (b & 0x7F) << 21;
+					if ((b & 0x80) != 0) {
+						if (position == limit) require(1);
+						b = buffer[position++];
+						result |= (long)(b & 0x7F) << 28;
+						if ((b & 0x80) != 0) {
+							if (position == limit) require(1);
+							b = buffer[position++];
+							result |= (long)(b & 0x7F) << 35;
+							if ((b & 0x80) != 0) {
+								if (position == limit) require(1);
+								b = buffer[position++];
+								result |= (long)(b & 0x7F) << 42;
+								if ((b & 0x80) != 0) {
+									if (position == limit) require(1);
+									b = buffer[position++];
+									result |= (long)(b & 0x7F) << 49;
+									if ((b & 0x80) != 0) {
+										if (position == limit) require(1);
+										b = buffer[position++];
+										result |= (long)b << 56;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
+		return result;
+	}
+
+	/** Returns true if enough bytes are available to read a long with {@link #readLong(boolean)}. */
+	public boolean canReadLong () throws KryoException {
+		if (varEncoding) return canReadVarLong();
+		if (limit - position >= 8) return true;
+		return optional(8) == 8;
 	}
 
 	/** Returns true if enough bytes are available to read a long with {@link #readVarLong(boolean)}. */
 	public boolean canReadVarLong () throws KryoException {
 		if (limit - position >= 9) return true;
 		if (optional(5) <= 0) return false;
-		int p = position;
+		int p = position, limit = this.limit;
+		byte[] buffer = this.buffer;
 		if ((buffer[p++] & 0x80) == 0) return true;
 		if (p == limit) return false;
 		if ((buffer[p++] & 0x80) == 0) return true;
@@ -467,7 +625,85 @@ public class Input extends InputStream {
 		return true;
 	}
 
-	// string
+	// float:
+
+	/** Reads a 4 byte float. */
+	public float readFloat () throws KryoException {
+		require(4);
+		byte[] buffer = this.buffer;
+		int p = this.position;
+		this.position = p + 4;
+		return Float.intBitsToFloat((buffer[p] & 0xFF) << 24 //
+			| (buffer[p + 1] & 0xFF) << 16 //
+			| (buffer[p + 2] & 0xFF) << 8 //
+			| buffer[p + 3] & 0xFF);
+	}
+
+	/** Reads a 1-5 byte float with reduced precision. */
+	public float readVarFloat (float precision, boolean optimizePositive) throws KryoException {
+		return readVarInt(optimizePositive) / (float)precision;
+	}
+
+	// double:
+
+	/** Reads an 8 byte double. */
+	public double readDouble () throws KryoException {
+		require(8);
+		byte[] buffer = this.buffer;
+		int p = position;
+		position = p + 8;
+		return Double.longBitsToDouble((long)buffer[p] << 56 //
+			| (long)(buffer[p + 1] & 0xFF) << 48 //
+			| (long)(buffer[p + 2] & 0xFF) << 40 //
+			| (long)(buffer[p + 3] & 0xFF) << 32 //
+			| (long)(buffer[p + 4] & 0xFF) << 24 //
+			| (buffer[p + 5] & 0xFF) << 16 //
+			| (buffer[p + 6] & 0xFF) << 8 //
+			| buffer[p + 7] & 0xFF);
+	}
+
+	/** Reads a 1-9 byte double with reduced precision. */
+	public double readVarDouble (double precision, boolean optimizePositive) throws KryoException {
+		return readVarLong(optimizePositive) / (double)precision;
+	}
+
+	// short:
+
+	/** Reads a 2 byte short. */
+	public short readShort () throws KryoException {
+		require(2);
+		int p = position;
+		position = p + 2;
+		return (short)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
+	}
+
+	/** Reads a 2 byte short as an int from 0 to 65535. */
+	public int readShortUnsigned () throws KryoException {
+		require(2);
+		int p = position;
+		position = p + 2;
+		return ((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF);
+	}
+
+	// char:
+
+	/** Reads a 2 byte char. */
+	public char readChar () throws KryoException {
+		require(2);
+		int p = position;
+		position = p + 2;
+		return (char)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
+	}
+
+	// boolean:
+
+	/** Reads a 1 byte boolean. */
+	public boolean readBoolean () throws KryoException {
+		if (position == limit) require(1);
+		return buffer[position++] == 1;
+	}
+
+	// String:
 
 	/** Reads the length and string of UTF8 characters, or null. This can read strings written by
 	 * {@link Output#writeString(String)} , {@link Output#writeUtf8(CharSequence)}, and {@link Output#writeAscii(String)}.
@@ -657,240 +893,165 @@ public class Input extends InputStream {
 		return builder;
 	}
 
-	// float
+	// Primitive arrays:
 
-	/** Reads a 4 byte float. */
-	public float readFloat () throws KryoException {
-		return Float.intBitsToFloat(readInt());
-	}
-
-	/** Reads a 1-5 byte float with reduced precision. */
-	public float readVarFloat (float precision, boolean optimizePositive) throws KryoException {
-		return readVarInt(optimizePositive) / (float)precision;
-	}
-
-	// short
-
-	/** Reads a 2 byte short. */
-	public short readShort () throws KryoException {
-		require(2);
-		int p = position;
-		position = p + 2;
-		return (short)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
-	}
-
-	/** Reads a 2 byte short as an int from 0 to 65535. */
-	public int readShortUnsigned () throws KryoException {
-		require(2);
-		int p = position;
-		position = p + 2;
-		return ((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF);
-	}
-
-	// long
-
-	/** Reads an 8 byte long. */
-	public long readLong () throws KryoException {
-		require(8);
-		byte[] buffer = this.buffer;
-		int p = position;
-		position = p + 8;
-		return (long)buffer[p] << 56 //
-			| (long)(buffer[p + 1] & 0xFF) << 48 //
-			| (long)(buffer[p + 2] & 0xFF) << 40 //
-			| (long)(buffer[p + 3] & 0xFF) << 32 //
-			| (long)(buffer[p + 4] & 0xFF) << 24 //
-			| (buffer[p + 5] & 0xFF) << 16 //
-			| (buffer[p + 6] & 0xFF) << 8 //
-			| buffer[p + 7] & 0xFF;
-	}
-
-	/** Reads a 1-9 byte long. */
-	public long readVarLong (boolean optimizePositive) throws KryoException {
-		if (require(1) < 9) return readVarLong_slow(optimizePositive);
-		int p = position;
-		int b = buffer[p++];
-		long result = b & 0x7F;
-		if ((b & 0x80) != 0) {
-			byte[] buffer = this.buffer;
-			b = buffer[p++];
-			result |= (b & 0x7F) << 7;
-			if ((b & 0x80) != 0) {
-				b = buffer[p++];
-				result |= (b & 0x7F) << 14;
-				if ((b & 0x80) != 0) {
-					b = buffer[p++];
-					result |= (b & 0x7F) << 21;
-					if ((b & 0x80) != 0) {
-						b = buffer[p++];
-						result |= (long)(b & 0x7F) << 28;
-						if ((b & 0x80) != 0) {
-							b = buffer[p++];
-							result |= (long)(b & 0x7F) << 35;
-							if ((b & 0x80) != 0) {
-								b = buffer[p++];
-								result |= (long)(b & 0x7F) << 42;
-								if ((b & 0x80) != 0) {
-									b = buffer[p++];
-									result |= (long)(b & 0x7F) << 49;
-									if ((b & 0x80) != 0) {
-										b = buffer[p++];
-										result |= (long)b << 56;
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		position = p;
-		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
-		return result;
-	}
-
-	private long readVarLong_slow (boolean optimizePositive) {
-		// The buffer is guaranteed to have at least 1 byte.
-		int b = buffer[position++];
-		long result = b & 0x7F;
-		if ((b & 0x80) != 0) {
-			if (position == limit) require(1);
-			byte[] buffer = this.buffer;
-			b = buffer[position++];
-			result |= (b & 0x7F) << 7;
-			if ((b & 0x80) != 0) {
-				if (position == limit) require(1);
-				b = buffer[position++];
-				result |= (b & 0x7F) << 14;
-				if ((b & 0x80) != 0) {
-					if (position == limit) require(1);
-					b = buffer[position++];
-					result |= (b & 0x7F) << 21;
-					if ((b & 0x80) != 0) {
-						if (position == limit) require(1);
-						b = buffer[position++];
-						result |= (long)(b & 0x7F) << 28;
-						if ((b & 0x80) != 0) {
-							if (position == limit) require(1);
-							b = buffer[position++];
-							result |= (long)(b & 0x7F) << 35;
-							if ((b & 0x80) != 0) {
-								if (position == limit) require(1);
-								b = buffer[position++];
-								result |= (long)(b & 0x7F) << 42;
-								if ((b & 0x80) != 0) {
-									if (position == limit) require(1);
-									b = buffer[position++];
-									result |= (long)(b & 0x7F) << 49;
-									if ((b & 0x80) != 0) {
-										if (position == limit) require(1);
-										b = buffer[position++];
-										result |= (long)b << 56;
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
-		return result;
-	}
-
-	// boolean
-
-	/** Reads a 1 byte boolean. */
-	public boolean readBoolean () throws KryoException {
-		if (position == limit) require(1);
-		return buffer[position++] == 1;
-	}
-
-	// char
-
-	/** Reads a 2 byte char. */
-	public char readChar () throws KryoException {
-		require(2);
-		int p = position;
-		position = p + 2;
-		return (char)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
-	}
-
-	// double
-
-	/** Reads an 8 byte double. */
-	public double readDouble () throws KryoException {
-		return Double.longBitsToDouble(readLong());
-	}
-
-	/** Reads a 1-9 byte double with reduced precision. */
-	public double readVarDouble (double precision, boolean optimizePositive) throws KryoException {
-		return readVarLong(optimizePositive) / (double)precision;
-	}
-
-	// Primitive arrays
-
-	/** Reads an int array. */
+	/** Reads an int array in bulk. This may be more efficient than reading them individually. */
 	public int[] readInts (int length) throws KryoException {
 		int[] array = new int[length];
-		for (int i = 0; i < length; i++)
-			array[i] = readInt();
+		if (optional(length << 2) == length << 2) {
+			byte[] buffer = this.buffer;
+			int p = this.position;
+			for (int i = 0; i < length; i++, p += 4) {
+				array[i] = (buffer[p] & 0xFF) << 24 //
+					| (buffer[p + 1] & 0xFF) << 16 //
+					| (buffer[p + 2] & 0xFF) << 8 //
+					| buffer[p + 3] & 0xFF;
+			}
+			position = p;
+		} else {
+			for (int i = 0; i < length; i++)
+				array[i] = readInt();
+		}
 		return array;
 	}
 
-	/** Reads an int array using variable length encoding. */
-	public int[] readVarInts (int length, boolean optimizePositive) throws KryoException {
-		int[] array = new int[length];
-		for (int i = 0; i < length; i++)
-			array[i] = readVarInt(optimizePositive);
-		return array;
+	/** Reads an int array in bulk using fixed or variable length encoding, depending on
+	 * {@link #setVariableLengthEncoding(boolean)}. This may be more efficient than reading them individually. */
+	public int[] readInts (int length, boolean optimizePositive) throws KryoException {
+		if (varEncoding) {
+			int[] array = new int[length];
+			for (int i = 0; i < length; i++)
+				array[i] = readVarInt(optimizePositive);
+			return array;
+		}
+		return readInts(length);
 	}
 
-	/** Reads a long array. */
+	/** Reads a long array in bulk. This may be more efficient than reading them individually. */
 	public long[] readLongs (int length) throws KryoException {
 		long[] array = new long[length];
-		for (int i = 0; i < length; i++)
-			array[i] = readLong();
+		if (optional(length << 3) == length << 3) {
+			byte[] buffer = this.buffer;
+			int p = this.position;
+			for (int i = 0; i < length; i++, p += 8) {
+				array[i] = (long)buffer[p] << 56 //
+					| (long)(buffer[p + 1] & 0xFF) << 48 //
+					| (long)(buffer[p + 2] & 0xFF) << 40 //
+					| (long)(buffer[p + 3] & 0xFF) << 32 //
+					| (long)(buffer[p + 4] & 0xFF) << 24 //
+					| (buffer[p + 5] & 0xFF) << 16 //
+					| (buffer[p + 6] & 0xFF) << 8 //
+					| buffer[p + 7] & 0xFF;
+			}
+			position = p;
+		} else {
+			for (int i = 0; i < length; i++)
+				array[i] = readLong();
+		}
 		return array;
 	}
 
-	/** Reads a long array using variable length encoding. */
-	public long[] readVarLongs (int length, boolean optimizePositive) throws KryoException {
-		long[] array = new long[length];
-		for (int i = 0; i < length; i++)
-			array[i] = readVarLong(optimizePositive);
-		return array;
+	/** Reads an int array in bulk using fixed or variable length encoding, depending on
+	 * {@link #setVariableLengthEncoding(boolean)}. This may be more efficient than reading them individually. */
+	public long[] readLongs (int length, boolean optimizePositive) throws KryoException {
+		if (varEncoding) {
+			long[] array = new long[length];
+			for (int i = 0; i < length; i++)
+				array[i] = readVarLong(optimizePositive);
+			return array;
+		}
+		return readLongs(length);
 	}
 
-	/** Reads a float array. */
+	/** Reads a float array in bulk. This may be more efficient than reading them individually. */
 	public float[] readFloats (int length) throws KryoException {
 		float[] array = new float[length];
-		for (int i = 0; i < length; i++)
-			array[i] = readFloat();
+		if (optional(length << 2) == length << 2) {
+			byte[] buffer = this.buffer;
+			int p = this.position;
+			for (int i = 0; i < length; i++, p += 4) {
+				array[i] = Float.intBitsToFloat((buffer[p] & 0xFF) << 24 //
+					| (buffer[p + 1] & 0xFF) << 16 //
+					| (buffer[p + 2] & 0xFF) << 8 //
+					| buffer[p + 3] & 0xFF);
+			}
+			position = p;
+		} else {
+			for (int i = 0; i < length; i++)
+				array[i] = readFloat();
+		}
 		return array;
 	}
 
-	/** Reads a short array. */
-	public short[] readShorts (int length) throws KryoException {
-		short[] array = new short[length];
-		for (int i = 0; i < length; i++)
-			array[i] = readShort();
-		return array;
-	}
-
-	/** Reads a char array. */
-	public char[] readChars (int length) throws KryoException {
-		char[] array = new char[length];
-		for (int i = 0; i < length; i++)
-			array[i] = readChar();
-		return array;
-	}
-
-	/** Reads a double array. */
+	/** Reads a double array in bulk. This may be more efficient than reading them individually. */
 	public double[] readDoubles (int length) throws KryoException {
 		double[] array = new double[length];
-		for (int i = 0; i < length; i++)
-			array[i] = readDouble();
+		if (optional(length << 3) == length << 3) {
+			byte[] buffer = this.buffer;
+			int p = this.position;
+			for (int i = 0; i < length; i++, p += 8) {
+				array[i] = Double.longBitsToDouble((long)buffer[p] << 56 //
+					| (long)(buffer[p + 1] & 0xFF) << 48 //
+					| (long)(buffer[p + 2] & 0xFF) << 40 //
+					| (long)(buffer[p + 3] & 0xFF) << 32 //
+					| (long)(buffer[p + 4] & 0xFF) << 24 //
+					| (buffer[p + 5] & 0xFF) << 16 //
+					| (buffer[p + 6] & 0xFF) << 8 //
+					| buffer[p + 7] & 0xFF);
+			}
+			position = p;
+		} else {
+			for (int i = 0; i < length; i++)
+				array[i] = readDouble();
+		}
+		return array;
+	}
+
+	/** Reads a short array in bulk. This may be more efficient than reading them individually. */
+	public short[] readShorts (int length) throws KryoException {
+		short[] array = new short[length];
+		if (optional(length << 1) == length << 1) {
+			byte[] buffer = this.buffer;
+			int p = this.position;
+			for (int i = 0; i < length; i++, p += 2)
+				array[i] = (short)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
+			position = p;
+		} else {
+			for (int i = 0; i < length; i++)
+				array[i] = readShort();
+		}
+		return array;
+	}
+
+	/** Reads a char array in bulk. This may be more efficient than reading them individually. */
+	public char[] readChars (int length) throws KryoException {
+		char[] array = new char[length];
+		if (optional(length << 1) == length << 1) {
+			byte[] buffer = this.buffer;
+			int p = this.position;
+			for (int i = 0; i < length; i++, p += 2)
+				array[i] = (char)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
+			position = p;
+		} else {
+			for (int i = 0; i < length; i++)
+				array[i] = readChar();
+		}
+		return array;
+	}
+
+	/** Reads a boolean array in bulk. This may be more efficient than reading them individually. */
+	public boolean[] readBooleans (int length) throws KryoException {
+		boolean[] array = new boolean[length];
+		if (optional(length) == length) {
+			byte[] buffer = this.buffer;
+			int p = this.position;
+			for (int i = 0; i < length; i++, p++)
+				array[i] = buffer[p] != 0;
+			position = p;
+		} else {
+			for (int i = 0; i < length; i++)
+				array[i] = readBoolean();
+		}
 		return array;
 	}
 }

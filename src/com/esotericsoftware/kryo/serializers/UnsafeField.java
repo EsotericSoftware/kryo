@@ -19,33 +19,35 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.unsafe.UnsafeUtil.*;
+
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
-import com.esotericsoftware.reflectasm.FieldAccess;
 
 import java.lang.reflect.Field;
 
-/*** Read and write a non-primitive field using ReflectASM bytecode generation.
+/*** Read and write a non-primitive field using Unsafe.
  * @author Nathan Sweet */
-class AsmField extends ReflectField {
-	public AsmField (Field field, FieldSerializer serializer, GenericType genericType) {
+class UnsafeField extends ReflectField {
+	public UnsafeField (Field field, FieldSerializer serializer, GenericType genericType) {
 		super(field, serializer, genericType);
+		offset = unsafe.objectFieldOffset(field);
 	}
 
 	public Object get (Object object) throws IllegalAccessException {
-		return access.get(object, accessIndex);
+		return unsafe.getObject(object, offset);
 	}
 
 	public void set (Object object, Object value) throws IllegalAccessException {
-		((FieldAccess)access).set(object, accessIndex, value);
+		unsafe.putObject(object, offset, value);
 	}
 
 	public void copy (Object original, Object copy) {
 		try {
-			access.set(copy, accessIndex, fieldSerializer.kryo.copy(access.get(original, accessIndex)));
+			unsafe.putObject(copy, offset, fieldSerializer.kryo.copy(unsafe.getObject(original, offset)));
 		} catch (KryoException ex) {
 			ex.addTrace(this + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
@@ -56,177 +58,186 @@ class AsmField extends ReflectField {
 		}
 	}
 
-	final static class IntAsmField extends CachedField {
-		public IntAsmField (Field field) {
+	final static class IntUnsafeField extends CachedField {
+		public IntUnsafeField (Field field) {
 			super(field);
+			offset = unsafe.objectFieldOffset(field);
 		}
 
 		public void write (Output output, Object object) {
 			if (varInt)
-				output.writeVarInt(access.getInt(object, accessIndex), false);
+				output.writeVarInt(unsafe.getInt(object, offset), false);
 			else
-				output.writeInt(access.getInt(object, accessIndex));
+				output.writeInt(unsafe.getInt(object, offset));
 		}
 
 		public void read (Input input, Object object) {
 			if (varInt)
-				access.setInt(object, accessIndex, input.readVarInt(false));
+				unsafe.putInt(object, offset, input.readVarInt(false));
 			else
-				access.setInt(object, accessIndex, input.readInt());
+				unsafe.putInt(object, offset, input.readInt());
 		}
 
 		public void copy (Object original, Object copy) {
-			access.setInt(copy, accessIndex, access.getInt(original, accessIndex));
+			unsafe.putInt(copy, offset, unsafe.getInt(original, offset));
 		}
 	}
 
-	final static class FloatAsmField extends CachedField {
-		public FloatAsmField (Field field) {
+	final static class FloatUnsafeField extends CachedField {
+		public FloatUnsafeField (Field field) {
 			super(field);
+			offset = unsafe.objectFieldOffset(field);
 		}
 
 		public void write (Output output, Object object) {
-			output.writeFloat(access.getFloat(object, accessIndex));
+			output.writeFloat(unsafe.getFloat(object, offset));
 		}
 
 		public void read (Input input, Object object) {
-			access.setFloat(object, accessIndex, input.readFloat());
+			unsafe.putFloat(object, offset, input.readFloat());
 		}
 
 		public void copy (Object original, Object copy) {
-			access.setFloat(copy, accessIndex, access.getFloat(original, accessIndex));
+			unsafe.putFloat(copy, offset, unsafe.getFloat(original, offset));
 		}
 	}
 
-	final static class ShortAsmField extends CachedField {
-		public ShortAsmField (Field field) {
+	final static class ShortUnsafeField extends CachedField {
+		public ShortUnsafeField (Field field) {
 			super(field);
+			offset = unsafe.objectFieldOffset(field);
 		}
 
 		public void write (Output output, Object object) {
-			output.writeShort(access.getShort(object, accessIndex));
+			output.writeShort(unsafe.getShort(object, offset));
 		}
 
 		public void read (Input input, Object object) {
-			access.setShort(object, accessIndex, input.readShort());
+			unsafe.putShort(object, offset, input.readShort());
 		}
 
 		public void copy (Object original, Object copy) {
-			access.setShort(copy, accessIndex, access.getShort(original, accessIndex));
+			unsafe.putShort(copy, offset, unsafe.getShort(original, offset));
 		}
 	}
 
-	final static class ByteAsmField extends CachedField {
-		public ByteAsmField (Field field) {
+	final static class ByteUnsafeField extends CachedField {
+		public ByteUnsafeField (Field field) {
 			super(field);
+			offset = unsafe.objectFieldOffset(field);
 		}
 
 		public void write (Output output, Object object) {
-			output.writeByte(access.getByte(object, accessIndex));
+			output.writeByte(unsafe.getByte(object, offset));
 		}
 
 		public void read (Input input, Object object) {
-			access.setByte(object, accessIndex, input.readByte());
+			unsafe.putByte(object, offset, input.readByte());
 		}
 
 		public void copy (Object original, Object copy) {
-			access.setByte(copy, accessIndex, access.getByte(original, accessIndex));
+			unsafe.putByte(copy, offset, unsafe.getByte(original, offset));
 		}
 	}
 
-	final static class BooleanAsmField extends CachedField {
-		public BooleanAsmField (Field field) {
+	final static class BooleanUnsafeField extends CachedField {
+		public BooleanUnsafeField (Field field) {
 			super(field);
+			offset = unsafe.objectFieldOffset(field);
 		}
 
 		public void write (Output output, Object object) {
-			output.writeBoolean(access.getBoolean(object, accessIndex));
+			output.writeBoolean(unsafe.getBoolean(object, offset));
 		}
 
 		public void read (Input input, Object object) {
-			access.setBoolean(object, accessIndex, input.readBoolean());
+			unsafe.putBoolean(object, offset, input.readBoolean());
 		}
 
 		public void copy (Object original, Object copy) {
-			access.setBoolean(copy, accessIndex, access.getBoolean(original, accessIndex));
+			unsafe.putBoolean(copy, offset, unsafe.getBoolean(original, offset));
 		}
 	}
 
-	final static class CharAsmField extends CachedField {
-		public CharAsmField (Field field) {
+	final static class CharUnsafeField extends CachedField {
+		public CharUnsafeField (Field field) {
 			super(field);
+			offset = unsafe.objectFieldOffset(field);
 		}
 
 		public void write (Output output, Object object) {
-			output.writeChar(access.getChar(object, accessIndex));
+			output.writeChar(unsafe.getChar(object, offset));
 		}
 
 		public void read (Input input, Object object) {
-			access.setChar(object, accessIndex, input.readChar());
+			unsafe.putChar(object, offset, input.readChar());
 		}
 
 		public void copy (Object original, Object copy) {
-			access.setChar(copy, accessIndex, access.getChar(original, accessIndex));
+			unsafe.putChar(copy, offset, unsafe.getChar(original, offset));
 		}
 	}
 
-	final static class LongAsmField extends CachedField {
-		public LongAsmField (Field field) {
+	final static class LongUnsafeField extends CachedField {
+		public LongUnsafeField (Field field) {
 			super(field);
+			offset = unsafe.objectFieldOffset(field);
 		}
 
 		public void write (Output output, Object object) {
 			if (varInt)
-				output.writeVarLong(access.getLong(object, accessIndex), false);
+				output.writeVarLong(unsafe.getLong(object, offset), false);
 			else
-				output.writeLong(access.getLong(object, accessIndex));
+				output.writeLong(unsafe.getLong(object, offset));
 		}
 
 		public void read (Input input, Object object) {
 			if (varInt)
-				access.setLong(object, accessIndex, input.readVarLong(false));
+				unsafe.putLong(object, offset, input.readVarLong(false));
 			else
-				access.setLong(object, accessIndex, input.readLong());
+				unsafe.putLong(object, offset, input.readLong());
 		}
 
 		public void copy (Object original, Object copy) {
-			access.setLong(copy, accessIndex, access.getLong(original, accessIndex));
+			unsafe.putLong(copy, offset, unsafe.getLong(original, offset));
 		}
 	}
 
-	final static class DoubleAsmField extends CachedField {
-		public DoubleAsmField (Field field) {
+	final static class DoubleUnsafeField extends CachedField {
+		public DoubleUnsafeField (Field field) {
 			super(field);
+			offset = unsafe.objectFieldOffset(field);
 		}
 
 		public void write (Output output, Object object) {
-			output.writeDouble(access.getDouble(object, accessIndex));
+			output.writeDouble(unsafe.getDouble(object, offset));
 		}
 
 		public void read (Input input, Object object) {
-			access.setDouble(object, accessIndex, input.readDouble());
+			unsafe.putDouble(object, offset, input.readDouble());
 		}
 
 		public void copy (Object original, Object copy) {
-			access.setDouble(copy, accessIndex, access.getDouble(original, accessIndex));
+			unsafe.putDouble(copy, offset, unsafe.getDouble(original, offset));
 		}
 	}
 
-	final static class StringAsmField extends CachedField {
-		public StringAsmField (Field field) {
+	final static class StringUnsafeField extends CachedField {
+		public StringUnsafeField (Field field) {
 			super(field);
+			offset = unsafe.objectFieldOffset(field);
 		}
 
 		public void write (Output output, Object object) {
-			output.writeString(access.getString(object, accessIndex));
+			output.writeString((String)unsafe.getObject(object, offset));
 		}
 
 		public void read (Input input, Object object) {
-			access.set(object, accessIndex, input.readString());
+			unsafe.putObject(object, offset, input.readString());
 		}
 
 		public void copy (Object original, Object copy) {
-			access.set(copy, accessIndex, access.getString(original, accessIndex));
+			unsafe.putObject(copy, offset, unsafe.getObject(original, offset));
 		}
 	}
 }

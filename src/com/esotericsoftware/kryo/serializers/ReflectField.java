@@ -28,6 +28,8 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 
+import java.lang.reflect.Field;
+
 /*** Read and write a non-primitive field using reflection.
  * @author Nathan Sweet
  * @author Roman Levenstein <romixlev@gmail.com> */
@@ -35,7 +37,8 @@ class ReflectField extends CachedField {
 	final FieldSerializer fieldSerializer;
 	final GenericType genericType;
 
-	ReflectField (FieldSerializer fieldSerializer, GenericType genericType) {
+	ReflectField (Field field, FieldSerializer fieldSerializer, GenericType genericType) {
+		super(field);
 		this.fieldSerializer = fieldSerializer;
 		this.genericType = genericType;
 	}
@@ -157,8 +160,8 @@ class ReflectField extends CachedField {
 	}
 
 	final static class IntReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalAccessException {
-			return field.getInt(object);
+		public IntReflectField (Field field) {
+			super(field);
 		}
 
 		public void write (Output output, Object object) {
@@ -199,8 +202,8 @@ class ReflectField extends CachedField {
 	}
 
 	final static class FloatReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalAccessException {
-			return field.getFloat(object);
+		public FloatReflectField (Field field) {
+			super(field);
 		}
 
 		public void write (Output output, Object object) {
@@ -235,8 +238,8 @@ class ReflectField extends CachedField {
 	}
 
 	final static class ShortReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalAccessException {
-			return field.getShort(object);
+		public ShortReflectField (Field field) {
+			super(field);
 		}
 
 		public void write (Output output, Object object) {
@@ -271,8 +274,8 @@ class ReflectField extends CachedField {
 	}
 
 	final static class ByteReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalAccessException {
-			return field.getByte(object);
+		public ByteReflectField (Field field) {
+			super(field);
 		}
 
 		public void write (Output output, Object object) {
@@ -307,8 +310,8 @@ class ReflectField extends CachedField {
 	}
 
 	final static class BooleanReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalAccessException {
-			return field.getBoolean(object);
+		public BooleanReflectField (Field field) {
+			super(field);
 		}
 
 		public void write (Output output, Object object) {
@@ -343,8 +346,8 @@ class ReflectField extends CachedField {
 	}
 
 	final static class CharReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalAccessException {
-			return field.getChar(object);
+		public CharReflectField (Field field) {
+			super(field);
 		}
 
 		public void write (Output output, Object object) {
@@ -379,8 +382,8 @@ class ReflectField extends CachedField {
 	}
 
 	final static class LongReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalAccessException {
-			return field.getLong(object);
+		public LongReflectField (Field field) {
+			super(field);
 		}
 
 		public void write (Output output, Object object) {
@@ -421,8 +424,8 @@ class ReflectField extends CachedField {
 	}
 
 	final static class DoubleReflectField extends CachedField {
-		public Object getField (Object object) throws IllegalAccessException {
-			return field.getDouble(object);
+		public DoubleReflectField (Field field) {
+			super(field);
 		}
 
 		public void write (Output output, Object object) {

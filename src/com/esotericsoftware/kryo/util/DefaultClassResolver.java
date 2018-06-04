@@ -141,7 +141,8 @@ public class DefaultClassResolver implements ClassResolver {
 			return memoizedClassIdValue;
 		}
 		Registration registration = idToRegistration.get(classID - 2);
-		if (registration == null) throw new KryoException("Encountered unregistered class ID: " + (classID - 2));
+		if (registration == null)
+			throw new KryoException("Encountered unregistered class ID: " + (classID - 2));
 		if (TRACE) trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()) + pos(input.position()));
 		memoizedClassId = classID;
 		memoizedClassIdValue = registration;

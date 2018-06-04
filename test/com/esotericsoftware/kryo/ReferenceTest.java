@@ -96,7 +96,7 @@ public class ReferenceTest extends KryoTestCase {
 			kryo.register(subList.getClass(), new SubListSerializer());
 
 		}
-		roundTrip(26, -1, subList);
+		roundTrip(26, subList);
 	}
 
 	static public class SubListSerializer extends Serializer<List> {

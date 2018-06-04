@@ -34,7 +34,9 @@ import sun.nio.ch.DirectBuffer;
 /** Utility methods for using {@link sun.misc.Unsafe}, mostly for private use. Not available on all JVMs or Android.
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class UnsafeUtil {
-	static final Unsafe unsafe;
+	/** The sun.misc.Unsafe instance, or null if Unsafe is unavailable. */
+	static public final Unsafe unsafe;
+
 	static public final long byteArrayBaseOffset;
 	static public final long floatArrayBaseOffset;
 	static public final long doubleArrayBaseOffset;
@@ -42,6 +44,7 @@ public class UnsafeUtil {
 	static public final long longArrayBaseOffset;
 	static public final long shortArrayBaseOffset;
 	static public final long charArrayBaseOffset;
+	static public final long booleanArrayBaseOffset;
 
 	static {
 		Unsafe tempUnsafe = null;
@@ -52,6 +55,7 @@ public class UnsafeUtil {
 		long tempLongArrayBaseOffset = 0;
 		long tempShortArrayBaseOffset = 0;
 		long tempCharArrayBaseOffset = 0;
+		long tempBooleanArrayBaseOffset = 0;
 
 		try {
 			if (!Util.isAndroid) {
@@ -65,6 +69,7 @@ public class UnsafeUtil {
 				tempFloatArrayBaseOffset = tempUnsafe.arrayBaseOffset(float[].class);
 				tempLongArrayBaseOffset = tempUnsafe.arrayBaseOffset(long[].class);
 				tempDoubleArrayBaseOffset = tempUnsafe.arrayBaseOffset(double[].class);
+				tempBooleanArrayBaseOffset = tempUnsafe.arrayBaseOffset(boolean[].class);
 			} else {
 				if (DEBUG) debug("kryo", "Unsafe is not available on Android.");
 			}
@@ -79,10 +84,11 @@ public class UnsafeUtil {
 		floatArrayBaseOffset = tempFloatArrayBaseOffset;
 		longArrayBaseOffset = tempLongArrayBaseOffset;
 		doubleArrayBaseOffset = tempDoubleArrayBaseOffset;
+		booleanArrayBaseOffset = tempBooleanArrayBaseOffset;
 		unsafe = tempUnsafe;
 	}
 
-	// Constructor to be used for creation of ByteBuffers that use preallocated memory regions
+	// Constructor to be used for creation of ByteBuffers that use preallocated memory regions.
 	static Constructor<? extends ByteBuffer> directByteBufferConstructor;
 
 	static {
@@ -94,12 +100,6 @@ public class UnsafeUtil {
 			if (DEBUG) debug("kryo", "No direct ByteBuffer constructor available.", ex);
 			directByteBufferConstructor = null;
 		}
-	}
-
-	/** Returns the sun.misc.Unsafe instance. If null is returned, unsafe is disabled and no further UnsafeUtil methods should be
-	 * used. */
-	static public Unsafe unsafe () {
-		return unsafe;
 	}
 
 	/** Create a ByteBuffer that uses the specified off-heap memory address instead of allocating a new one.

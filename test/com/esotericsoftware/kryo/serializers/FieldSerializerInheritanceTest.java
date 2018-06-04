@@ -32,7 +32,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		kryo.setDefaultSerializer(FieldSerializer.class);
 		kryo.register(TestDefault.class);
 
-		roundTrip(17, -1, testDefault);
+		roundTrip(17, testDefault);
 
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestDefault.class);
 		assertNotNull(serializer.getField("a"));
@@ -47,7 +47,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		kryo.setDefaultSerializer(FieldSerializer.class);
 		kryo.register(TestExtended.class);
 
-		roundTrip(34, -1, testExtended);
+		roundTrip(34, testExtended);
 
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestExtended.class);
 
@@ -69,7 +69,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		kryo.setDefaultSerializer(factory);
 		kryo.register(TestExtended.class);
 
-		roundTrip(34, -1, testExtended);
+		roundTrip(34, testExtended);
 
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestExtended.class);
 

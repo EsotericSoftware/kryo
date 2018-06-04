@@ -19,11 +19,11 @@
 
 package com.esotericsoftware.kryo.io;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.util.Util;
+
+import java.io.IOException;
+import java.io.OutputStream;
 
 /** An OutputStream that writes data to a byte[] and optionally flushes to another OutputStream. Utility methods are provided for
  * efficiently writing primitive types and strings using big endian.
@@ -35,6 +35,7 @@ public class Output extends OutputStream {
 	protected int capacity;
 	protected byte[] buffer;
 	protected OutputStream outputStream;
+	protected boolean varEncoding = true;
 
 	/** Creates an uninitialized Output, {@link #setBuffer(byte[], int)} must be called before the Output is used. */
 	public Output () {
@@ -135,6 +136,17 @@ public class Output extends OutputStream {
 		return newBuffer;
 	}
 
+	public boolean getVariableLengthEncoding () {
+		return varEncoding;
+	}
+
+	/** If false, {@link #writeInt(int, boolean)}, {@link #writeLong(long, boolean)}, {@link #writeInts(int[], int, int, boolean)},
+	 * and {@link #writeLongs(long[], int, int, boolean)} will use fixed length encoding, which may be faster for some data.
+	 * Default is true. */
+	public void setVariableLengthEncoding (boolean varEncoding) {
+		this.varEncoding = varEncoding;
+	}
+
 	/** Returns the current position in the buffer. This is the number of bytes that have not been flushed. */
 	public int position () {
 		return position;
@@ -177,7 +189,7 @@ public class Output extends OutputStream {
 		return true;
 	}
 
-	// OutputStream
+	// OutputStream:
 
 	/** Flushes the buffered bytes. The default implementation writes the buffered bytes to the {@link #getOutputStream()
 	 * OutputStream}, if any, and sets the position to 0. Can be overridden to flush the bytes somewhere else. */
@@ -221,7 +233,7 @@ public class Output extends OutputStream {
 		writeBytes(bytes, offset, length);
 	}
 
-	// byte
+	// byte:
 
 	public void writeByte (byte value) throws KryoException {
 		if (position == capacity) require(1);
@@ -254,7 +266,7 @@ public class Output extends OutputStream {
 		}
 	}
 
-	// int
+	// int:
 
 	/** Writes a 4 byte int. */
 	public void writeInt (int value) throws KryoException {
@@ -268,9 +280,22 @@ public class Output extends OutputStream {
 		buffer[p + 3] = (byte)value;
 	}
 
+	/** Reads an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
+	 * {@link #writeVarInt(int, boolean)} explicitly when writing values that should always use variable length encoding (eg values
+	 * that appear many times).
+	 * @return The number of bytes written.
+	 * @see #intLength(int, boolean) */
+	public int writeInt (int value, boolean optimizePositive) throws KryoException {
+		if (varEncoding) return writeVarInt(value, optimizePositive);
+		writeInt(value);
+		return 4;
+	}
+
 	/** Writes a 1-5 byte int.
 	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (5 bytes). */
+	 *           inefficient (5 bytes).
+	 * @return The number of bytes written.
+	 * @see #varIntLength(int, boolean) */
 	public int writeVarInt (int value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
 		if (value >>> 7 == 0) {
@@ -319,7 +344,240 @@ public class Output extends OutputStream {
 		return 5;
 	}
 
-	// string
+	/** Returns the number of bytes that would be written with {@link #writeInt(int, boolean)}. */
+	public int intLength (int value, boolean optimizePositive) {
+		if (varEncoding) return varIntLength(value, optimizePositive);
+		return 4;
+	}
+
+	// long:
+
+	/** Writes an 8 byte long. */
+	public void writeLong (long value) throws KryoException {
+		require(8);
+		byte[] buffer = this.buffer;
+		int p = position;
+		position = p + 8;
+		buffer[p] = (byte)(value >>> 56);
+		buffer[p + 1] = (byte)(value >>> 48);
+		buffer[p + 2] = (byte)(value >>> 40);
+		buffer[p + 3] = (byte)(value >>> 32);
+		buffer[p + 4] = (byte)(value >>> 24);
+		buffer[p + 5] = (byte)(value >>> 16);
+		buffer[p + 6] = (byte)(value >>> 8);
+		buffer[p + 7] = (byte)value;
+	}
+
+	/** Reads a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
+	 * {@link #writeVarLong(long, boolean)} explicitly when writing values that should always use variable length encoding (eg
+	 * values that appear many times).
+	 * @return The number of bytes written.
+	 * @see #longLength(int, boolean) */
+	public int writeLong (long value, boolean optimizePositive) throws KryoException {
+		if (varEncoding) return writeVarLong(value, optimizePositive);
+		writeLong(value);
+		return 8;
+
+	}
+
+	/** Writes a 1-9 byte long.
+	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
+	 *           inefficient (9 bytes).
+	 * @return The number of bytes written.
+	 * @see #varLongLength(long, boolean) */
+	public int writeVarLong (long value, boolean optimizePositive) throws KryoException {
+		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
+		if (value >>> 7 == 0) {
+			if (position == capacity) require(1);
+			buffer[position++] = (byte)value;
+			return 1;
+		}
+		if (value >>> 14 == 0) {
+			require(2);
+			int p = position;
+			position = p + 2;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7);
+			return 2;
+		}
+		if (value >>> 21 == 0) {
+			require(3);
+			int p = position;
+			position = p + 3;
+			byte[] buffer = this.buffer;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14);
+			return 3;
+		}
+		if (value >>> 28 == 0) {
+			require(4);
+			int p = position;
+			position = p + 4;
+			byte[] buffer = this.buffer;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+			buffer[p + 3] = (byte)(value >>> 21);
+			return 4;
+		}
+		if (value >>> 35 == 0) {
+			require(5);
+			int p = position;
+			position = p + 5;
+			byte[] buffer = this.buffer;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
+			buffer[p + 4] = (byte)(value >>> 28);
+			return 5;
+		}
+		if (value >>> 42 == 0) {
+			require(6);
+			int p = position;
+			position = p + 6;
+			byte[] buffer = this.buffer;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
+			buffer[p + 4] = (byte)(value >>> 28 | 0x80);
+			buffer[p + 5] = (byte)(value >>> 35);
+			return 6;
+		}
+		if (value >>> 49 == 0) {
+			require(7);
+			int p = position;
+			position = p + 7;
+			byte[] buffer = this.buffer;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
+			buffer[p + 4] = (byte)(value >>> 28 | 0x80);
+			buffer[p + 5] = (byte)(value >>> 35 | 0x80);
+			buffer[p + 6] = (byte)(value >>> 42);
+			return 7;
+		}
+		if (value >>> 56 == 0) {
+			require(8);
+			int p = position;
+			position = p + 8;
+			byte[] buffer = this.buffer;
+			buffer[p] = (byte)((value & 0x7F) | 0x80);
+			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
+			buffer[p + 4] = (byte)(value >>> 28 | 0x80);
+			buffer[p + 5] = (byte)(value >>> 35 | 0x80);
+			buffer[p + 6] = (byte)(value >>> 42 | 0x80);
+			buffer[p + 7] = (byte)(value >>> 49);
+			return 8;
+		}
+		require(9);
+		int p = position;
+		position = p + 9;
+		byte[] buffer = this.buffer;
+		buffer[p] = (byte)((value & 0x7F) | 0x80);
+		buffer[p + 1] = (byte)(value >>> 7 | 0x80);
+		buffer[p + 2] = (byte)(value >>> 14 | 0x80);
+		buffer[p + 3] = (byte)(value >>> 21 | 0x80);
+		buffer[p + 4] = (byte)(value >>> 28 | 0x80);
+		buffer[p + 5] = (byte)(value >>> 35 | 0x80);
+		buffer[p + 6] = (byte)(value >>> 42 | 0x80);
+		buffer[p + 7] = (byte)(value >>> 49 | 0x80);
+		buffer[p + 8] = (byte)(value >>> 56);
+		return 9;
+	}
+
+	/** Returns the number of bytes that would be written with {@link #writeLong(long, boolean)}. */
+	public int longLength (int value, boolean optimizePositive) {
+		if (varEncoding) return varLongLength(value, optimizePositive);
+		return 8;
+	}
+
+	// float:
+
+	/** Writes a 4 byte float. */
+	public void writeFloat (float value) throws KryoException {
+		require(4);
+		byte[] buffer = this.buffer;
+		int p = position;
+		position = p + 4;
+		int intValue = Float.floatToIntBits(value);
+		buffer[p] = (byte)(intValue >> 24);
+		buffer[p + 1] = (byte)(intValue >> 16);
+		buffer[p + 2] = (byte)(intValue >> 8);
+		buffer[p + 3] = (byte)intValue;
+	}
+
+	/** Writes a 1-5 byte float with reduced precision.
+	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
+	 *           inefficient (5 bytes).
+	 * @return The number of bytes written. */
+	public int writeVarFloat (float value, float precision, boolean optimizePositive) throws KryoException {
+		return writeVarInt((int)(value * precision), optimizePositive);
+	}
+
+	// double:
+
+	/** Writes an 8 byte double. */
+	public void writeDouble (double value) throws KryoException {
+		require(8);
+		byte[] buffer = this.buffer;
+		int p = position;
+		position = p + 8;
+		long longValue = Double.doubleToLongBits(value);
+		buffer[p] = (byte)(longValue >>> 56);
+		buffer[p + 1] = (byte)(longValue >>> 48);
+		buffer[p + 2] = (byte)(longValue >>> 40);
+		buffer[p + 3] = (byte)(longValue >>> 32);
+		buffer[p + 4] = (byte)(longValue >>> 24);
+		buffer[p + 5] = (byte)(longValue >>> 16);
+		buffer[p + 6] = (byte)(longValue >>> 8);
+		buffer[p + 7] = (byte)longValue;
+	}
+
+	/** Writes a 1-9 byte double with reduced precision.
+	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
+	 *           inefficient (9 bytes).
+	 * @return The number of bytes written. */
+	public int writeVarDouble (double value, double precision, boolean optimizePositive) throws KryoException {
+		return writeVarLong((long)(value * precision), optimizePositive);
+	}
+
+	// short:
+
+	/** Writes a 2 byte short. */
+	public void writeShort (int value) throws KryoException {
+		require(2);
+		int p = position;
+		position = p + 2;
+		buffer[p] = (byte)(value >>> 8);
+		buffer[p + 1] = (byte)value;
+	}
+
+	// char:
+
+	/** Writes a 2 byte char. */
+	public void writeChar (char value) throws KryoException {
+		require(2);
+		int p = position;
+		position = p + 2;
+		buffer[p] = (byte)(value >>> 8);
+		buffer[p + 1] = (byte)value;
+	}
+
+	// boolean:
+
+	/** Writes a 1 byte boolean. */
+	public void writeBoolean (boolean value) throws KryoException {
+		if (position == capacity) require(1);
+		buffer[position++] = value ? (byte)1 : 0;
+	}
+
+	// String:
 
 	/** Writes the length and string, or null. Short strings are checked and if ASCII they are written more efficiently, else they
 	 * are written as UTF8. If a string is known to be ASCII, {@link #writeAscii(String)} may be used. The string can be read using
@@ -509,239 +767,158 @@ public class Output extends OutputStream {
 		}
 	}
 
-	// float
+	// Primitive arrays:
 
-	/** Writes a 4 byte float. */
-	public void writeFloat (float value) throws KryoException {
-		writeInt(Float.floatToIntBits(value));
-	}
-
-	/** Writes a 1-5 byte float with reduced precision.
-	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (5 bytes). */
-	public int writeVarFloat (float value, float precision, boolean optimizePositive) throws KryoException {
-		return writeVarInt((int)(value * precision), optimizePositive);
-	}
-
-	// short
-
-	/** Writes a 2 byte short. */
-	public void writeShort (int value) throws KryoException {
-		require(2);
-		int p = position;
-		position = p + 2;
-		buffer[p] = (byte)(value >>> 8);
-		buffer[p + 1] = (byte)value;
-	}
-
-	// long
-
-	/** Writes an 8 byte long. */
-	public void writeLong (long value) throws KryoException {
-		require(8);
-		byte[] buffer = this.buffer;
-		int p = position;
-		position = p + 8;
-		buffer[p] = (byte)(value >>> 56);
-		buffer[p + 1] = (byte)(value >>> 48);
-		buffer[p + 2] = (byte)(value >>> 40);
-		buffer[p + 3] = (byte)(value >>> 32);
-		buffer[p + 4] = (byte)(value >>> 24);
-		buffer[p + 5] = (byte)(value >>> 16);
-		buffer[p + 6] = (byte)(value >>> 8);
-		buffer[p + 7] = (byte)value;
-	}
-
-	/** Writes a 1-9 byte long.
-	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (9 bytes). */
-	public int writeVarLong (long value, boolean optimizePositive) throws KryoException {
-		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
-		if (value >>> 7 == 0) {
-			if (position == capacity) require(1);
-			buffer[position++] = (byte)value;
-			return 1;
-		}
-		if (value >>> 14 == 0) {
-			require(2);
-			int p = position;
-			position = p + 2;
-			buffer[p] = (byte)((value & 0x7F) | 0x80);
-			buffer[p + 1] = (byte)(value >>> 7);
-			return 2;
-		}
-		if (value >>> 21 == 0) {
-			require(3);
-			int p = position;
-			position = p + 3;
+	/** Writes an int array in bulk. This may be more efficient than writing them individually. */
+	public void writeInts (int[] array, int offset, int count) throws KryoException {
+		if (capacity >= count << 2 && require(count << 2)) {
 			byte[] buffer = this.buffer;
-			buffer[p] = (byte)((value & 0x7F) | 0x80);
-			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
-			buffer[p + 2] = (byte)(value >>> 14);
-			return 3;
-		}
-		if (value >>> 28 == 0) {
-			require(4);
 			int p = position;
-			position = p + 4;
-			byte[] buffer = this.buffer;
-			buffer[p] = (byte)((value & 0x7F) | 0x80);
-			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
-			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
-			buffer[p + 3] = (byte)(value >>> 21);
-			return 4;
+			for (int n = offset + count; offset < n; offset++, p += 4) {
+				int value = array[offset];
+				buffer[p] = (byte)(value >> 24);
+				buffer[p + 1] = (byte)(value >> 16);
+				buffer[p + 2] = (byte)(value >> 8);
+				buffer[p + 3] = (byte)value;
+			}
+			position = p;
+		} else {
+			for (int n = offset + count; offset < n; offset++)
+				writeInt(array[offset]);
 		}
-		if (value >>> 35 == 0) {
-			require(5);
+	}
+
+	/** Writes an int array in bulk using fixed or variable length encoding, depending on
+	 * {@link #setVariableLengthEncoding(boolean)}. This may be more efficient than writing them individually. */
+	public void writeInts (int[] array, int offset, int count, boolean optimizePositive) throws KryoException {
+		if (varEncoding) {
+			for (int n = offset + count; offset < n; offset++)
+				writeVarInt(array[offset], optimizePositive);
+		} else
+			writeInts(array, offset, count);
+	}
+
+	/** Writes a long array in bulk. This may be more efficient than writing them individually. */
+	public void writeLongs (long[] array, int offset, int count) throws KryoException {
+		if (capacity >= count << 3 && require(count << 3)) {
+			byte[] buffer = this.buffer;
 			int p = position;
-			position = p + 5;
-			byte[] buffer = this.buffer;
-			buffer[p] = (byte)((value & 0x7F) | 0x80);
-			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
-			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
-			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
-			buffer[p + 4] = (byte)(value >>> 28);
-			return 5;
+			for (int n = offset + count; offset < n; offset++, p += 8) {
+				long value = array[offset];
+				buffer[p] = (byte)(value >>> 56);
+				buffer[p + 1] = (byte)(value >>> 48);
+				buffer[p + 2] = (byte)(value >>> 40);
+				buffer[p + 3] = (byte)(value >>> 32);
+				buffer[p + 4] = (byte)(value >>> 24);
+				buffer[p + 5] = (byte)(value >>> 16);
+				buffer[p + 6] = (byte)(value >>> 8);
+				buffer[p + 7] = (byte)value;
+			}
+			position = p;
+		} else {
+			for (int n = offset + count; offset < n; offset++)
+				writeLong(array[offset]);
 		}
-		if (value >>> 42 == 0) {
-			require(6);
+	}
+
+	/** Writes a long array in bulk using fixed or variable length encoding, depending on
+	 * {@link #setVariableLengthEncoding(boolean)}. This may be more efficient than writing them individually. */
+	public void writeLongs (long[] array, int offset, int count, boolean optimizePositive) throws KryoException {
+		if (varEncoding) {
+			for (int n = offset + count; offset < n; offset++)
+				writeVarLong(array[offset], optimizePositive);
+		} else
+			writeLongs(array, offset, count);
+	}
+
+	/** Writes a float array in bulk. This may be more efficient than writing them individually. */
+	public void writeFloats (float[] array, int offset, int count) throws KryoException {
+		if (capacity >= count << 2 && require(count << 2)) {
+			byte[] buffer = this.buffer;
 			int p = position;
-			position = p + 6;
-			byte[] buffer = this.buffer;
-			buffer[p] = (byte)((value & 0x7F) | 0x80);
-			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
-			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
-			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
-			buffer[p + 4] = (byte)(value >>> 28 | 0x80);
-			buffer[p + 5] = (byte)(value >>> 35);
-			return 6;
+			for (int n = offset + count; offset < n; offset++, p += 4) {
+				int value = Float.floatToIntBits(array[offset]);
+				buffer[p] = (byte)(value >> 24);
+				buffer[p + 1] = (byte)(value >> 16);
+				buffer[p + 2] = (byte)(value >> 8);
+				buffer[p + 3] = (byte)value;
+			}
+			position = p;
+		} else {
+			for (int n = offset + count; offset < n; offset++)
+				writeFloat(array[offset]);
 		}
-		if (value >>> 49 == 0) {
-			require(7);
+	}
+
+	/** Writes a double array in bulk. This may be more efficient than writing them individually. */
+	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
+		if (capacity >= count << 3 && require(count << 3)) {
+			byte[] buffer = this.buffer;
 			int p = position;
-			position = p + 7;
-			byte[] buffer = this.buffer;
-			buffer[p] = (byte)((value & 0x7F) | 0x80);
-			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
-			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
-			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
-			buffer[p + 4] = (byte)(value >>> 28 | 0x80);
-			buffer[p + 5] = (byte)(value >>> 35 | 0x80);
-			buffer[p + 6] = (byte)(value >>> 42);
-			return 7;
+			for (int n = offset + count; offset < n; offset++, p += 8) {
+				long value = Double.doubleToLongBits(array[offset]);
+				buffer[p] = (byte)(value >>> 56);
+				buffer[p + 1] = (byte)(value >>> 48);
+				buffer[p + 2] = (byte)(value >>> 40);
+				buffer[p + 3] = (byte)(value >>> 32);
+				buffer[p + 4] = (byte)(value >>> 24);
+				buffer[p + 5] = (byte)(value >>> 16);
+				buffer[p + 6] = (byte)(value >>> 8);
+				buffer[p + 7] = (byte)value;
+			}
+			position = p;
+		} else {
+			for (int n = offset + count; offset < n; offset++)
+				writeDouble(array[offset]);
 		}
-		if (value >>> 56 == 0) {
-			require(8);
+	}
+
+	/** Writes a short array in bulk. This may be more efficient than writing them individually. */
+	public void writeShorts (short[] array, int offset, int count) throws KryoException {
+		if (capacity >= count << 1 && require(count << 1)) {
+			byte[] buffer = this.buffer;
 			int p = position;
-			position = p + 8;
-			byte[] buffer = this.buffer;
-			buffer[p] = (byte)((value & 0x7F) | 0x80);
-			buffer[p + 1] = (byte)(value >>> 7 | 0x80);
-			buffer[p + 2] = (byte)(value >>> 14 | 0x80);
-			buffer[p + 3] = (byte)(value >>> 21 | 0x80);
-			buffer[p + 4] = (byte)(value >>> 28 | 0x80);
-			buffer[p + 5] = (byte)(value >>> 35 | 0x80);
-			buffer[p + 6] = (byte)(value >>> 42 | 0x80);
-			buffer[p + 7] = (byte)(value >>> 49);
-			return 8;
+			for (int n = offset + count; offset < n; offset++, p += 2) {
+				int value = array[offset];
+				buffer[p] = (byte)(value >>> 8);
+				buffer[p + 1] = (byte)value;
+			}
+			position = p;
+		} else {
+			for (int n = offset + count; offset < n; offset++)
+				writeShort(array[offset]);
 		}
-		require(9);
-		int p = position;
-		position = p + 9;
-		byte[] buffer = this.buffer;
-		buffer[p] = (byte)((value & 0x7F) | 0x80);
-		buffer[p + 1] = (byte)(value >>> 7 | 0x80);
-		buffer[p + 2] = (byte)(value >>> 14 | 0x80);
-		buffer[p + 3] = (byte)(value >>> 21 | 0x80);
-		buffer[p + 4] = (byte)(value >>> 28 | 0x80);
-		buffer[p + 5] = (byte)(value >>> 35 | 0x80);
-		buffer[p + 6] = (byte)(value >>> 42 | 0x80);
-		buffer[p + 7] = (byte)(value >>> 49 | 0x80);
-		buffer[p + 8] = (byte)(value >>> 56);
-		return 9;
 	}
 
-	// boolean
-
-	/** Writes a 1 byte boolean. */
-	public void writeBoolean (boolean value) throws KryoException {
-		if (position == capacity) require(1);
-		buffer[position++] = (byte)(value ? 1 : 0);
+	/** Writes a char array in bulk. This may be more efficient than writing them individually. */
+	public void writeChars (char[] array, int offset, int count) throws KryoException {
+		if (capacity >= count << 1 && require(count << 1)) {
+			byte[] buffer = this.buffer;
+			int p = position;
+			for (int n = offset + count; offset < n; offset++, p += 2) {
+				int value = array[offset];
+				buffer[p] = (byte)(value >>> 8);
+				buffer[p + 1] = (byte)value;
+			}
+			position = p;
+		} else {
+			for (int n = offset + count; offset < n; offset++)
+				writeChar(array[offset]);
+		}
 	}
 
-	// char
-
-	/** Writes a 2 byte char. */
-	public void writeChar (char value) throws KryoException {
-		require(2);
-		int p = position;
-		position = p + 2;
-		buffer[p] = (byte)(value >>> 8);
-		buffer[p + 1] = (byte)value;
-	}
-
-	// double
-
-	/** Writes an 8 byte double. */
-	public void writeDouble (double value) throws KryoException {
-		writeLong(Double.doubleToLongBits(value));
-	}
-
-	/** Writes a 1-9 byte double with reduced precision.
-	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
-	 *           inefficient (9 bytes). */
-	public int writeVarDouble (double value, double precision, boolean optimizePositive) throws KryoException {
-		return writeVarLong((long)(value * precision), optimizePositive);
-	}
-
-	// Primitive arrays
-
-	/** Writes an int array. */
-	public void writeInts (int[] object) throws KryoException {
-		for (int i = 0, n = object.length; i < n; i++)
-			writeInt(object[i]);
-	}
-
-	/** Writes an int array using variable length encoding. */
-	public void writeVarInts (int[] object, boolean optimizePositive) throws KryoException {
-		for (int i = 0, n = object.length; i < n; i++)
-			writeVarInt(object[i], optimizePositive);
-	}
-
-	/** Writes an long array. */
-	public void writeLongs (long[] object) throws KryoException {
-		for (int i = 0, n = object.length; i < n; i++)
-			writeLong(object[i]);
-	}
-
-	/** Writes a long array using variable length encoding. */
-	public void writeVarLongs (long[] object, boolean optimizePositive) throws KryoException {
-		for (int i = 0, n = object.length; i < n; i++)
-			writeVarLong(object[i], optimizePositive);
-	}
-
-	/** Writes a float array. */
-	public void writeFloats (float[] object) throws KryoException {
-		for (int i = 0, n = object.length; i < n; i++)
-			writeFloat(object[i]);
-	}
-
-	/** Writes a short array. */
-	public void writeShorts (short[] object) throws KryoException {
-		for (int i = 0, n = object.length; i < n; i++)
-			writeShort(object[i]);
-	}
-
-	/** Writes a char array. */
-	public void writeChars (char[] object) throws KryoException {
-		for (int i = 0, n = object.length; i < n; i++)
-			writeChar(object[i]);
-	}
-
-	/** Writes a double array. */
-	public void writeDoubles (double[] object) throws KryoException {
-		for (int i = 0, n = object.length; i < n; i++)
-			writeDouble(object[i]);
+	/** Writes a boolean array in bulk. This may be more efficient than writing them individually. */
+	public void writeBooleans (boolean[] array, int offset, int count) throws KryoException {
+		if (capacity >= count && require(count)) {
+			byte[] buffer = this.buffer;
+			int p = position;
+			for (int n = offset + count; offset < n; offset++, p++)
+				buffer[p] = array[offset] ? (byte)1 : 0;
+			position = p;
+		} else {
+			for (int n = offset + count; offset < n; offset++)
+				writeBoolean(array[offset]);
+		}
 	}
 
 	//

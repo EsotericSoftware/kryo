@@ -24,6 +24,8 @@ import static com.esotericsoftware.minlog.Log.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
+import sun.misc.Unsafe;
+
 /** Configuration for FieldSerializer instances. */
 public class FieldSerializerConfig implements Cloneable {
 	boolean fieldsCanBeNull = true;
@@ -34,6 +36,7 @@ public class FieldSerializerConfig implements Cloneable {
 	boolean serializeTransient;
 	boolean varInts = true;
 	boolean extendedFieldNames;
+	boolean unsafe;
 
 	public FieldSerializerConfig clone () {
 		try {
@@ -111,7 +114,7 @@ public class FieldSerializerConfig implements Cloneable {
 		return serializeTransient;
 	}
 
-	/** When true, int fields are written as varints by default. Default is true.
+	/** When true, variable length values are used for int and long fields. Default is true.
 	 * @see CachedField#setVarInt(boolean) */
 	public void setVarInts (boolean varInts) {
 		this.varInts = varInts;
@@ -123,7 +126,7 @@ public class FieldSerializerConfig implements Cloneable {
 	}
 
 	/** When true, field names are prefixed by their declaring class. This can avoid conflicts when a subclass has a field with the
-	 * same name as a super class. */
+	 * same name as a super class. Default is false. */
 	public void setExtendedFieldNames (boolean extendedFieldNames) {
 		this.extendedFieldNames = extendedFieldNames;
 		if (TRACE) trace("kryo", "FieldSerializerConfig extendedFieldNames: " + extendedFieldNames);
@@ -131,5 +134,14 @@ public class FieldSerializerConfig implements Cloneable {
 
 	public boolean getExtendedFieldNames () {
 		return extendedFieldNames;
+	}
+
+	public boolean getUnsafe () {
+		return unsafe;
+	}
+
+	/** When true, fields will be read using {@link Unsafe}, if possible. */
+	public void setUnsafe (boolean unsafe) {
+		this.unsafe = unsafe;
 	}
 }

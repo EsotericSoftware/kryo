@@ -71,13 +71,13 @@ public class DefaultArraySerializers {
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
-			output.writeVarInts(object, false);
+			output.writeInts(object, 0, object.length, false);
 		}
 
 		public int[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			return input.readVarInts(length - 1, false);
+			return input.readInts(length - 1, false);
 		}
 
 		public int[] copy (Kryo kryo, int[] original) {
@@ -98,7 +98,7 @@ public class DefaultArraySerializers {
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
-			output.writeFloats(object);
+			output.writeFloats(object, 0, object.length);
 		}
 
 		public float[] read (Kryo kryo, Input input, Class type) {
@@ -125,13 +125,13 @@ public class DefaultArraySerializers {
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
-			output.writeVarLongs(object, false);
+			output.writeLongs(object, 0, object.length, false);
 		}
 
 		public long[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			return input.readVarLongs(length - 1, false);
+			return input.readLongs(length - 1, false);
 		}
 
 		public long[] copy (Kryo kryo, long[] original) {
@@ -152,7 +152,7 @@ public class DefaultArraySerializers {
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
-			output.writeShorts(object);
+			output.writeShorts(object, 0, object.length);
 		}
 
 		public short[] read (Kryo kryo, Input input, Class type) {
@@ -179,7 +179,7 @@ public class DefaultArraySerializers {
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
-			output.writeChars(object);
+			output.writeChars(object, 0, object.length);
 		}
 
 		public char[] read (Kryo kryo, Input input, Class type) {
@@ -206,7 +206,7 @@ public class DefaultArraySerializers {
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
-			output.writeDoubles(object);
+			output.writeDoubles(object, 0, object.length);
 		}
 
 		public double[] read (Kryo kryo, Input input, Class type) {

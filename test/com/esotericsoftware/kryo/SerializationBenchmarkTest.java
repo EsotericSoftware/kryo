@@ -44,7 +44,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	static private final int RUN_CNT = 1;
 
 	/** Number of iterations. Set it to something rather big for obtaining meaningful results */
-// static private final int ITER_CNT = 200000;
+	// static private final int ITER_CNT = 10000;
 	static private final int ITER_CNT = 100;
 
 	static private final int SLEEP_BETWEEN_RUNS = 100;
@@ -162,8 +162,8 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		avgDur /= RUN_CNT;
 
 		if (outputResults) {
-			System.out.format("\n>>> Java serialization via Externalizable (average): %,d ms\n\n", avgDur);
-			System.out.format("\n>>> Java serialization via Externalizable (best time): %,d ms\n\n", bestTime);
+			System.out.format(">>> Java serialization via Externalizable (average): %,d ms\n", avgDur);
+			System.out.format(">>> Java serialization via Externalizable (best time): %,d ms\n\n", bestTime);
 		}
 
 	}
@@ -219,8 +219,8 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		avgDur /= RUN_CNT;
 
 		if (outputResults) {
-			System.out.format("\n>>> Java serialization without try-catch via Externalizable (average): %,d ms\n\n", avgDur);
-			System.out.format("\n>>> Java serialization without try-catch via Externalizable (best time): %,d ms\n\n", bestTime);
+			System.out.format(">>> Java serialization without try-catch via Externalizable (average): %,d ms\n", avgDur);
+			System.out.format(">>> Java serialization without try-catch via Externalizable (best time): %,d ms\n\n", bestTime);
 		}
 	}
 
@@ -276,8 +276,8 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		avgDur /= RUN_CNT;
 
 		if (outputResults) {
-			System.out.format("\n>>> Kryo serialization (average): %,d ms\n\n", avgDur);
-			System.out.format("\n>>> Kryo serialization (best time): %,d ms\n\n", bestTime);
+			System.out.format(">>> Kryo serialization (average): %,d ms\n", avgDur);
+			System.out.format(">>> Kryo serialization (best time): %,d ms\n\n", bestTime);
 		}
 
 	}
@@ -334,8 +334,8 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		avgDur /= RUN_CNT;
 
 		if (outputResults) {
-			System.out.format("\n>>> Kryo unmodified serialization (average): %,d ms\n\n", avgDur);
-			System.out.format("\n>>> Kryo unmodified serialization (best time): %,d ms\n\n", bestTime);
+			System.out.format(">>> Kryo unmodified serialization (average): %,d ms\n", avgDur);
+			System.out.format(">>> Kryo unmodified serialization (best time): %,d ms\n\n", bestTime);
 		}
 	}
 
@@ -389,8 +389,8 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		avgDur /= RUN_CNT;
 
 		if (outputResults) {
-			System.out.format("\n>>> Kryo serialization without try-catch (average): %,d ms\n\n", avgDur);
-			System.out.format("\n>>> Kryo serialization without try-catch (best time): %,d ms\n\n", bestTime);
+			System.out.format(">>> Kryo serialization without try-catch (average): %,d ms\n", avgDur);
+			System.out.format(">>> Kryo serialization without try-catch (best time): %,d ms\n\n", bestTime);
 		}
 	}
 

@@ -49,7 +49,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
 		kryo.register(TestClass.class);
 		kryo.register(AnotherClass.class);
-		TestClass object2 = roundTrip(57, -1, object1);
+		TestClass object2 = roundTrip(57, object1);
 		assertTrue(object2.ignored == 0);
 	}
 
@@ -63,7 +63,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
 		kryo.register(AnotherClass.class, new TaggedFieldSerializer(kryo, AnotherClass.class));
-		roundTrip(39, -1, object1);
+		roundTrip(39, object1);
 
 		kryo.register(TestClass.class, new TaggedFieldSerializer(kryo, TestClass.class));
 		Object object2 = kryo.readClassAndObject(input);

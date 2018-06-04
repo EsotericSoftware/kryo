@@ -67,7 +67,7 @@ public class ListReferenceResolver implements ReferenceResolver {
 		seenObjects.clear();
 	}
 
-	/** Returns false for all primitive wrappers. */
+	/** Returns false for all primitive wrappers and enums. */
 	public boolean useReferences (Class type) {
 		return !Util.isWrapperClass(type) && !Util.isEnum(type);
 	}

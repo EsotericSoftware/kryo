@@ -22,6 +22,16 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.Kryo.*;
 import static com.esotericsoftware.kryo.util.Util.*;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.KryoSerializable;
+import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
+
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -46,14 +56,6 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.KryoSerializable;
-import com.esotericsoftware.kryo.Registration;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
  * @author Nathan Sweet */

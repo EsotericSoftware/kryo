@@ -82,7 +82,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		kryo.register(Value.class);
 		kryo.register(ArrayList.class, collectionSerializer);
 
-		roundTrip(28, -1, values);
+		roundTrip(28, values);
 	}
 
 	@Test
@@ -108,7 +108,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		kryo.register(PassArgToSupers.class);
 		kryo.register(ArrayList.class, collectionSerializer);
 
-		roundTrip(33, -1, superTest);
+		roundTrip(33, superTest);
 	}
 
 	@Test
@@ -129,7 +129,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 
 		NestedLists nestedLists = new NestedLists();
 		nestedLists.lists = new ArrayList(Arrays.asList(new NestedListValue(123), new NestedListValue(456)));
-		roundTrip(7, -1, nestedLists);
+		roundTrip(7, nestedLists);
 	}
 
 	// ---

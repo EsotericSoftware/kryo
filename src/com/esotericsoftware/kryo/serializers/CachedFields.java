@@ -22,15 +22,6 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.security.AccessControlException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Map;
-
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
@@ -53,11 +44,41 @@ import com.esotericsoftware.kryo.serializers.ReflectField.FloatReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.IntReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.LongReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.ShortReflectField;
+import com.esotericsoftware.kryo.serializers.UnsafeField.BooleanUnsafeField;
+import com.esotericsoftware.kryo.serializers.UnsafeField.ByteUnsafeField;
+import com.esotericsoftware.kryo.serializers.UnsafeField.CharUnsafeField;
+import com.esotericsoftware.kryo.serializers.UnsafeField.DoubleUnsafeField;
+import com.esotericsoftware.kryo.serializers.UnsafeField.FloatUnsafeField;
+import com.esotericsoftware.kryo.serializers.UnsafeField.IntUnsafeField;
+import com.esotericsoftware.kryo.serializers.UnsafeField.LongUnsafeField;
+import com.esotericsoftware.kryo.serializers.UnsafeField.ShortUnsafeField;
+import com.esotericsoftware.kryo.serializers.UnsafeField.StringUnsafeField;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.security.AccessControlException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Map;
+
 class CachedFields implements Comparator<CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
+
+	static final boolean unsafe;
+	static {
+		boolean found = false;
+		try {
+			found = Class.forName("com.esotericsoftware.kryo.util.UnsafeUtil", true, FieldSerializer.class.getClassLoader())
+				.getField("unsafe").get(null) != null;
+		} catch (Throwable ex) {
+			if (TRACE) trace("kryo", "Unsafe is unavailable.");
+		}
+		unsafe = found;
+	}
 
 	private final FieldSerializer serializer;
 	CachedField[] fields = new CachedField[0];
@@ -137,17 +158,23 @@ class CachedFields implements Comparator<CachedField> {
 			}
 		}
 
-		CachedField cachedField = newCachedField(fieldClass, accessIndex != -1, genericType);
-		cachedField.field = field;
+		CachedField cachedField;
+		if (unsafe)
+			cachedField = newUnsafeField(field, fieldClass, genericType);
+		else if (accessIndex != -1) {
+			cachedField = newAsmField(field, fieldClass, genericType);
+			cachedField.access = (FieldAccess)access;
+			cachedField.accessIndex = accessIndex;
+		} else
+			cachedField = newReflectField(field, fieldClass, genericType);
+
 		cachedField.varInt = config.varInts;
-		cachedField.access = (FieldAccess)access;
-		cachedField.accessIndex = accessIndex;
 		if (config.extendedFieldNames)
 			cachedField.name = declaringClass.getSimpleName() + "." + field.getName();
 		else
 			cachedField.name = field.getName();
 
-		if (cachedField instanceof ReflectField) {
+		if (cachedField instanceof ReflectField) { // Object field.
 			cachedField.canBeNull = config.fieldsCanBeNull && !field.isAnnotationPresent(NotNull.class);
 			if (serializer.kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
 
@@ -174,34 +201,52 @@ class CachedFields implements Comparator<CachedField> {
 		}
 	}
 
-	private CachedField newCachedField (Class fieldClass, boolean asm, GenericType genericType) {
-		if (asm) {
-			if (fieldClass.isPrimitive()) {
-				if (fieldClass == boolean.class) return new BooleanAsmField();
-				if (fieldClass == byte.class) return new ByteAsmField();
-				if (fieldClass == char.class) return new CharAsmField();
-				if (fieldClass == short.class) return new ShortAsmField();
-				if (fieldClass == int.class) return new IntAsmField();
-				if (fieldClass == long.class) return new LongAsmField();
-				if (fieldClass == float.class) return new FloatAsmField();
-				if (fieldClass == double.class) return new DoubleAsmField();
-			}
-			if (fieldClass == String.class
-				&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-				return new StringAsmField();
-			return new AsmField(serializer, genericType);
-		}
+	private CachedField newUnsafeField (Field field, Class fieldClass, GenericType genericType) {
 		if (fieldClass.isPrimitive()) {
-			if (fieldClass == boolean.class) return new BooleanReflectField();
-			if (fieldClass == byte.class) return new ByteReflectField();
-			if (fieldClass == char.class) return new CharReflectField();
-			if (fieldClass == short.class) return new ShortReflectField();
-			if (fieldClass == int.class) return new IntReflectField();
-			if (fieldClass == long.class) return new LongReflectField();
-			if (fieldClass == float.class) return new FloatReflectField();
-			if (fieldClass == double.class) return new DoubleReflectField();
+			if (fieldClass == int.class) return new IntUnsafeField(field);
+			if (fieldClass == float.class) return new FloatUnsafeField(field);
+			if (fieldClass == boolean.class) return new BooleanUnsafeField(field);
+			if (fieldClass == long.class) return new LongUnsafeField(field);
+			if (fieldClass == double.class) return new DoubleUnsafeField(field);
+			if (fieldClass == short.class) return new ShortUnsafeField(field);
+			if (fieldClass == char.class) return new CharUnsafeField(field);
+			if (fieldClass == byte.class) return new ByteUnsafeField(field);
 		}
-		return new ReflectField(serializer, genericType);
+		if (fieldClass == String.class
+			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
+			return new StringUnsafeField(field);
+		return new UnsafeField(field, serializer, genericType);
+	}
+
+	private CachedField newAsmField (Field field, Class fieldClass, GenericType genericType) {
+		if (fieldClass.isPrimitive()) {
+			if (fieldClass == int.class) return new IntAsmField(field);
+			if (fieldClass == float.class) return new FloatAsmField(field);
+			if (fieldClass == boolean.class) return new BooleanAsmField(field);
+			if (fieldClass == long.class) return new LongAsmField(field);
+			if (fieldClass == double.class) return new DoubleAsmField(field);
+			if (fieldClass == short.class) return new ShortAsmField(field);
+			if (fieldClass == char.class) return new CharAsmField(field);
+			if (fieldClass == byte.class) return new ByteAsmField(field);
+		}
+		if (fieldClass == String.class
+			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
+			return new StringAsmField(field);
+		return new AsmField(field, serializer, genericType);
+	}
+
+	private CachedField newReflectField (Field field, Class fieldClass, GenericType genericType) {
+		if (fieldClass.isPrimitive()) {
+			if (fieldClass == int.class) return new IntReflectField(field);
+			if (fieldClass == float.class) return new FloatReflectField(field);
+			if (fieldClass == boolean.class) return new BooleanReflectField(field);
+			if (fieldClass == long.class) return new LongReflectField(field);
+			if (fieldClass == double.class) return new DoubleReflectField(field);
+			if (fieldClass == short.class) return new ShortReflectField(field);
+			if (fieldClass == char.class) return new CharReflectField(field);
+			if (fieldClass == byte.class) return new ByteReflectField(field);
+		}
+		return new ReflectField(field, serializer, genericType);
 	}
 
 	public int compare (CachedField o1, CachedField o2) {

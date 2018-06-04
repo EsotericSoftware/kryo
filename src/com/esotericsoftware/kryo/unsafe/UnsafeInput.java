@@ -27,8 +27,7 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 
 /** An {@link Input} that reads data from a byte[] using sun.misc.Unsafe. Multi-byte primitive types use native byte order, so the
- * native byte order on different computers which read and write the data must be the same. Variable length encoding is not used
- * for int or long to maximize performance.
+ * native byte order on different computers which read and write the data must be the same.
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class UnsafeInput extends Input {
 	/** Creates an uninitialized Input, {@link #setBuffer(byte[])} must be called before the Input is used. */
@@ -73,18 +72,24 @@ public class UnsafeInput extends Input {
 		return result;
 	}
 
-	public int readVarInt (boolean optimizePositive) throws KryoException {
-		return readInt();
-	}
-
-	public boolean canReadVarInt () throws KryoException {
-		return limit - position >= 4;
+	public long readLong () throws KryoException {
+		require(8);
+		long result = unsafe.getLong(buffer, byteArrayBaseOffset + position);
+		position += 8;
+		return result;
 	}
 
 	public float readFloat () throws KryoException {
 		require(4);
 		float result = unsafe.getFloat(buffer, byteArrayBaseOffset + position);
 		position += 4;
+		return result;
+	}
+
+	public double readDouble () throws KryoException {
+		require(8);
+		double result = unsafe.getDouble(buffer, byteArrayBaseOffset + position);
+		position += 8;
 		return result;
 	}
 
@@ -95,28 +100,6 @@ public class UnsafeInput extends Input {
 		return result;
 	}
 
-	public long readLong () throws KryoException {
-		require(8);
-		long result = unsafe.getLong(buffer, byteArrayBaseOffset + position);
-		position += 8;
-		return result;
-	}
-
-	public long readVarLong (boolean optimizePositive) throws KryoException {
-		return readLong();
-	}
-
-	public boolean canReadVarLong () throws KryoException {
-		return limit - position >= 8;
-	}
-
-	public double readDouble () throws KryoException {
-		require(8);
-		double result = unsafe.getDouble(buffer, byteArrayBaseOffset + position);
-		position += 8;
-		return result;
-	}
-
 	public char readChar () throws KryoException {
 		require(2);
 		char result = unsafe.getChar(buffer, byteArrayBaseOffset + position);
@@ -124,64 +107,64 @@ public class UnsafeInput extends Input {
 		return result;
 	}
 
-	public int[] readVarInts (int length, boolean optimizePositive) throws KryoException {
-		int[] array = new int[length];
-		readBytes(array, intArrayBaseOffset, 0, length << 2);
-		return array;
-	}
-
-	public long[] readVarLongs (int length, boolean optimizePositive) throws KryoException {
-		long[] array = new long[length];
-		readBytes(array, longArrayBaseOffset, 0, length << 3);
-		return array;
+	public boolean readBoolean () throws KryoException {
+		require(1);
+		boolean result = unsafe.getByte(buffer, byteArrayBaseOffset + position) != 0;
+		position++;
+		return result;
 	}
 
 	public int[] readInts (int length) throws KryoException {
 		int[] array = new int[length];
-		readBytes(array, intArrayBaseOffset, 0, length << 2);
+		readBytes(array, intArrayBaseOffset, length << 2);
 		return array;
 	}
 
 	public long[] readLongs (int length) throws KryoException {
 		long[] array = new long[length];
-		readBytes(array, longArrayBaseOffset, 0, length << 3);
+		readBytes(array, longArrayBaseOffset, length << 3);
 		return array;
 	}
 
 	public float[] readFloats (int length) throws KryoException {
 		float[] array = new float[length];
-		readBytes(array, floatArrayBaseOffset, 0, length << 2);
-		return array;
-	}
-
-	public short[] readShorts (int length) throws KryoException {
-		short[] array = new short[length];
-		readBytes(array, shortArrayBaseOffset, 0, length << 1);
-		return array;
-	}
-
-	public char[] readChars (int length) throws KryoException {
-		char[] array = new char[length];
-		readBytes(array, charArrayBaseOffset, 0, length << 1);
+		readBytes(array, floatArrayBaseOffset, length << 2);
 		return array;
 	}
 
 	public double[] readDoubles (int length) throws KryoException {
 		double[] array = new double[length];
-		readBytes(array, doubleArrayBaseOffset, 0, length << 3);
+		readBytes(array, doubleArrayBaseOffset, length << 3);
 		return array;
 	}
 
-	/** Reads bytes to the specified array. */
-	public void readBytes (Object toArray, long offset, long count) throws KryoException {
-		if (!toArray.getClass().isArray()) throw new KryoException("toArray must be an array.");
-		readBytes(toArray, 0, offset, (int)count);
+	public short[] readShorts (int length) throws KryoException {
+		short[] array = new short[length];
+		readBytes(array, shortArrayBaseOffset, length << 1);
+		return array;
 	}
 
-	private void readBytes (Object toArray, long toArrayTypeOffset, long offset, int count) throws KryoException {
+	public char[] readChars (int length) throws KryoException {
+		char[] array = new char[length];
+		readBytes(array, charArrayBaseOffset, length << 1);
+		return array;
+	}
+
+	public boolean[] readBooleans (int length) throws KryoException {
+		boolean[] array = new boolean[length];
+		readBytes(array, booleanArrayBaseOffset, length);
+		return array;
+	}
+
+	public void readBytes (byte[] bytes, int offset, int count) throws KryoException {
+		readBytes(bytes, byteArrayBaseOffset + offset, count);
+	}
+
+	/** Read count bytes and write them to the object at the given offset inside the in-memory representation of the object. */
+	public void readBytes (Object to, long offset, int count) throws KryoException {
 		int copyCount = Math.min(limit - position, count);
 		while (true) {
-			unsafe.copyMemory(buffer, byteArrayBaseOffset + position, toArray, toArrayTypeOffset + offset, copyCount);
+			unsafe.copyMemory(buffer, byteArrayBaseOffset + position, to, offset, copyCount);
 			position += copyCount;
 			count -= copyCount;
 			if (count == 0) break;

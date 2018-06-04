@@ -27,16 +27,16 @@ import com.esotericsoftware.kryo.KryoTestCase;
 public class JavaSerializerTest extends KryoTestCase {
 	public void testJavaSerializer () {
 		kryo.register(String.class, new JavaSerializer());
-		roundTrip(50, -1, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
-		roundTrip(12, -1, "meow");
+		roundTrip(50, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+		roundTrip(12, "meow");
 
 		kryo.register(TestClass.class, new JavaSerializer());
 		TestClass test = new TestClass();
 		test.stringField = "fubar";
 		test.intField = 54321;
-		roundTrip(146, -1, test);
-		roundTrip(146, -1, test);
-		roundTrip(146, -1, test);
+		roundTrip(146, test);
+		roundTrip(146, test);
+		roundTrip(146, test);
 	}
 
 	static public class TestClass implements Serializable {

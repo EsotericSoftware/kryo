@@ -22,12 +22,6 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.lang.reflect.Field;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
@@ -38,12 +32,19 @@ import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Field;
+
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
- * configuration. It is efficient and writes only the field data, without any extra information. It does not support adding,
- * removing, or changing the type of fields without invalidating previously serialized bytes. This can be acceptable in many
- * situations, such as when sending data over a network, but may not be a good choice for long term data storage because the Java
- * classes cannot evolve. Because FieldSerializer attempts to read and write non-public fields by default, it is important to
- * evaluate each class that will be serialized. If fields are public, bytecode generation will be used instead of reflection.
+ * configuration. It is efficient by writing only the field data, without any schema information, using the Java class files as
+ * the schema. It does not support adding, removing, or changing the type of fields without invalidating previously serialized
+ * bytes. This can be acceptable in many situations, such as when sending data over a network, but may not be a good choice for
+ * long term data storage because the Java classes cannot evolve. Because FieldSerializer attempts to read and write all
+ * non-public fields by default, it is important to evaluate each class that will be serialized. If fields are public, faster
+ * bytecode generation will be used instead of reflection.
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
  * @see VersionFieldSerializer
@@ -74,18 +75,22 @@ public class FieldSerializer<T> extends Serializer<T> {
 		cachedFields.rebuild();
 	}
 
-	/** Must be called after config settings are changed. */
+	/** Called when {@link #getFields()} and {@link #getCopyFields()} have been repopulated. Subclasses can override this method to
+	 * configure or remove cached fields. */
+	protected void initializeCachedFields () {
+	}
+
+	/** If the returned config settings are modified, {@link #updateConfig()} must be called. */
+	public FieldSerializerConfig getFieldSerializerConfig () {
+		return config;
+	}
+
+	/** Must be called after {@link #getFieldSerializerConfig()} settings are changed to repopulate the cached fields. */
 	public void updateConfig () {
 		if (TRACE) trace("kryo", "Update FieldSerializerConfig: " + className(type));
 		cachedFields.rebuild();
 	}
 
-	protected void initializeCachedFields () {
-	}
-
-	/** This method can be called for different fields having the same type. Even though the raw type is the same, if the type is
-	 * generic, it could happen that different concrete classes are used to instantiate it. Therefore, in case of different
-	 * instantiation parameters, the fields analysis should be repeated. */
 	public void write (Kryo kryo, Output output, T object) {
 		int pop = pushTypeVariables();
 
@@ -152,17 +157,19 @@ public class FieldSerializer<T> extends Serializer<T> {
 			+ className(cachedField.field.getDeclaringClass()) + ')' + pos(position));
 	}
 
-	/** Allows specific fields to be optimized. */
+	/** Returns the field with the specified name, allowing field specific settings to be configured. */
 	public CachedField getField (String fieldName) {
 		for (CachedField cachedField : cachedFields.fields)
 			if (cachedField.name.equals(fieldName)) return cachedField;
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
 	}
 
+	/** Removes a field so that it won't be serialized. */
 	public void removeField (String fieldName) {
 		cachedFields.removeField(fieldName);
 	}
 
+	/** Removes a field so that it won't be serialized. */
 	public void removeField (CachedField field) {
 		cachedFields.removeField(field);
 	}
@@ -201,19 +208,24 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return copy;
 	}
 
-	public FieldSerializerConfig getFieldSerializerConfig () {
-		return config;
-	}
-
 	/** Settings for serializing a field. */
 	static public abstract class CachedField {
-		Field field;
-		FieldAccess access;
+		final Field field;
 		String name;
 		Class valueClass;
 		Serializer serializer;
 		boolean canBeNull, varInt = true, optimizePositive;
+
+		// For AsmField.
+		FieldAccess access;
 		int accessIndex = -1;
+
+		// For UnsafeField.
+		long offset;
+
+		public CachedField (Field field) {
+			this.field = field;
+		}
 
 		/** The concrete class of the values for this field, or null if it is not known. This saves 1-2 bytes. Only set to a
 		 * non-null value if the field type in the class definition is final or the values for this field are known to be of the
@@ -254,7 +266,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return canBeNull;
 		}
 
-		/** When true, variable length values are used for int and long fields. Default is true. */
+		/** When true, variable length values are used if this is an int or long fields. Default is true. */
 		public void setVarInt (boolean varInt) {
 			this.varInt = varInt;
 		}

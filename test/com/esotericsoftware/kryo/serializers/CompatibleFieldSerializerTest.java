@@ -39,7 +39,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
 		kryo.register(TestClass.class);
 		kryo.register(AnotherClass.class);
-		roundTrip(107, -1, object1);
+		roundTrip(107, object1);
 	}
 
 	public void testAddedField () throws FileNotFoundException {
@@ -52,7 +52,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
 		kryo.register(AnotherClass.class, new CompatibleFieldSerializer(kryo, AnotherClass.class));
-		roundTrip(80, -1, object1);
+		roundTrip(80, object1);
 
 		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
 		Object object2 = kryo.readClassAndObject(input);
@@ -103,7 +103,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bAdd");
 		kryo.register(ClassWithManyFields.class, serializer);
-		roundTrip(226, -1, object1);
+		roundTrip(226, object1);
 
 		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
 		Object object2 = kryo.readClassAndObject(input);
@@ -115,7 +115,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.child = new TestClass();
 
 		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
-		roundTrip(94, -1, object1);
+		roundTrip(94, object1);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
 		serializer.removeField("text");
@@ -167,7 +167,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.zz = "zzaa";
 
 		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
-		roundTrip(236, -1, object1);
+		roundTrip(236, object1);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bAdd");
@@ -211,7 +211,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.zz = "zz";
 
 		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
-		roundTrip(220, -1, object1);
+		roundTrip(220, object1);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bb");
@@ -239,7 +239,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ExtendedTestClass.class, config);
 		kryo.register(ExtendedTestClass.class, serializer);
-		roundTrip(286, -1, extendedObject);
+		roundTrip(286, extendedObject);
 
 		ExtendedTestClass object2 = (ExtendedTestClass)kryo.readClassAndObject(input);
 		assertEquals(extendedObject, object2);

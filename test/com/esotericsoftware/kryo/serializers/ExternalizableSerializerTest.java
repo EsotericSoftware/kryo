@@ -40,9 +40,9 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		test.stringField = "fubar";
 		test.intField = 54321;
 
-		roundTrip(11, -1, test);
-		roundTrip(11, -1, test);
-		roundTrip(11, -1, test);
+		roundTrip(11, test);
+		roundTrip(11, test);
+		roundTrip(11, test);
 	}
 
 	public void testDefault () {
@@ -51,9 +51,9 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		TestClass test = new TestClass();
 		test.stringField = "fubar";
 		test.intField = 54321;
-		roundTrip(88, -1, test);
-		roundTrip(88, -1, test);
-		roundTrip(88, -1, test);
+		roundTrip(88, test);
+		roundTrip(88, test);
+		roundTrip(88, test);
 	}
 
 	public void testReadResolve () {
