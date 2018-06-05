@@ -28,7 +28,7 @@ import com.esotericsoftware.reflectasm.FieldAccess;
 
 import java.lang.reflect.Field;
 
-/*** Read and write a non-primitive field using ReflectASM bytecode generation.
+/** Read and write a non-primitive field using ReflectASM bytecode generation.
  * @author Nathan Sweet */
 class AsmField extends ReflectField {
 	public AsmField (Field field, FieldSerializer serializer, GenericType genericType) {

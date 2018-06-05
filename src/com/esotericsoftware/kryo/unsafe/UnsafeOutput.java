@@ -1,3 +1,21 @@
+/* Copyright (c) 2008-2017, Nathan Sweet
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
+ * conditions are met:
+ * 
+ * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+ * disclaimer in the documentation and/or other materials provided with the distribution.
+ * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
+ * from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+ * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 package com.esotericsoftware.kryo.unsafe;
 
@@ -10,7 +28,10 @@ import java.io.OutputStream;
 
 /** An {@link Output} that reads data using sun.misc.Unsafe. Multi-byte primitive types use native byte order, so the native byte
  * order on different computers which read and write the data must be the same.
- * @author Roman Levenstein <romixlev@gmail.com> */
+ * <p>
+ * This class may be much faster when {@link #setVariableLengthEncoding(boolean)} is false.
+ * @author Roman Levenstein <romixlev@gmail.com>
+ * @author Nathan Sweet */
 public class UnsafeOutput extends Output {
 	/** Creates an uninitialized Output, {@link #setBuffer(byte[], int)} must be called before the Output is used. */
 	public UnsafeOutput () {
@@ -95,27 +116,27 @@ public class UnsafeOutput extends Output {
 		position++;
 	}
 
-	public void writeInts (int[] array) throws KryoException {
+	public void writeInts (int[] array, int offset, int count) throws KryoException {
 		writeBytes(array, intArrayBaseOffset, array.length << 2);
 	}
 
-	public void writeLongs (long[] array) throws KryoException {
+	public void writeLongs (long[] array, int offset, int count) throws KryoException {
 		writeBytes(array, longArrayBaseOffset, array.length << 3);
 	}
 
-	public void writeFloats (float[] array) throws KryoException {
+	public void writeFloats (float[] array, int offset, int count) throws KryoException {
 		writeBytes(array, floatArrayBaseOffset, array.length << 2);
 	}
 
-	public void writeDoubles (double[] array) throws KryoException {
+	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
 		writeBytes(array, doubleArrayBaseOffset, array.length << 3);
 	}
 
-	public void writeShorts (short[] array) throws KryoException {
+	public void writeShorts (short[] array, int offset, int count) throws KryoException {
 		writeBytes(array, shortArrayBaseOffset, array.length << 1);
 	}
 
-	public void writeChars (char[] array) throws KryoException {
+	public void writeChars (char[] array, int offset, int count) throws KryoException {
 		writeBytes(array, charArrayBaseOffset, array.length << 1);
 	}
 

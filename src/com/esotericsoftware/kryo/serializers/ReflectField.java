@@ -30,7 +30,7 @@ import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.lang.reflect.Field;
 
-/*** Read and write a non-primitive field using reflection.
+/** Read and write a non-primitive field using reflection.
  * @author Nathan Sweet
  * @author Roman Levenstein <romixlev@gmail.com> */
 class ReflectField extends CachedField {

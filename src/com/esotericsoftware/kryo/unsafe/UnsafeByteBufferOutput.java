@@ -32,7 +32,10 @@ import sun.nio.ch.DirectBuffer;
 /** A {@link ByteBufferOutput} that writes data to a direct ByteBuffer (off-heap memory) using sun.misc.Unsafe. Multi-byte
  * primitive types use native byte order, so the native byte order on different computers which read and write the data must be
  * the same.
- * @author Roman Levenstein <romixlev@gmail.com> */
+ * <p>
+ * This class may be much faster when {@link #setVariableLengthEncoding(boolean)} is false.
+ * @author Roman Levenstein <romixlev@gmail.com>
+ * @author Nathan Sweet */
 public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	/** Start address of the memory buffer. It must be non-movable, which normally means that is is allocated off-heap. */
 	private long bufferAddress;
@@ -135,27 +138,27 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		byteBuffer.position(position);
 	}
 
-	public void writeInts (int[] array) throws KryoException {
+	public void writeInts (int[] array, int offset, int count) throws KryoException {
 		writeBytes(array, intArrayBaseOffset, array.length << 2);
 	}
 
-	public void writeLongs (long[] array) throws KryoException {
+	public void writeLongs (long[] array, int offset, int count) throws KryoException {
 		writeBytes(array, longArrayBaseOffset, array.length << 3);
 	}
 
-	public void writeFloats (float[] array) throws KryoException {
+	public void writeFloats (float[] array, int offset, int count) throws KryoException {
 		writeBytes(array, floatArrayBaseOffset, array.length << 2);
 	}
 
-	public void writeDoubles (double[] array) throws KryoException {
+	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
 		writeBytes(array, doubleArrayBaseOffset, array.length << 3);
 	}
 
-	public void writeShorts (short[] array) throws KryoException {
+	public void writeShorts (short[] array, int offset, int count) throws KryoException {
 		writeBytes(array, shortArrayBaseOffset, array.length << 1);
 	}
 
-	public void writeChars (char[] array) throws KryoException {
+	public void writeChars (char[] array, int offset, int count) throws KryoException {
 		writeBytes(array, charArrayBaseOffset, array.length << 1);
 	}
 

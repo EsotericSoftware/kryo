@@ -22,6 +22,8 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
 import sun.misc.Unsafe;
@@ -115,7 +117,9 @@ public class FieldSerializerConfig implements Cloneable {
 	}
 
 	/** When true, variable length values are used for int and long fields. Default is true.
-	 * @see CachedField#setVariableLengthEncoding(boolean) */
+	 * @see CachedField#setVariableLengthEncoding(boolean)
+	 * @see Output#setVariableLengthEncoding(boolean)
+	 * @see Input#setVariableLengthEncoding(boolean) */
 	public void setVariableLengthEncoding (boolean varEncoding) {
 		this.varEncoding = varEncoding;
 		if (TRACE) trace("kryo", "FieldSerializerConfig variable length encoding: " + varEncoding);

@@ -28,7 +28,10 @@ import com.esotericsoftware.kryo.io.Input;
 
 /** An {@link Input} that reads data from a byte[] using sun.misc.Unsafe. Multi-byte primitive types use native byte order, so the
  * native byte order on different computers which read and write the data must be the same.
- * @author Roman Levenstein <romixlev@gmail.com> */
+ * <p>
+ * This class may be much faster when {@link #setVariableLengthEncoding(boolean)} is false.
+ * @author Roman Levenstein <romixlev@gmail.com>
+ * @author Nathan Sweet */
 public class UnsafeInput extends Input {
 	/** Creates an uninitialized Input, {@link #setBuffer(byte[])} must be called before the Input is used. */
 	public UnsafeInput () {

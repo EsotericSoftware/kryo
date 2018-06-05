@@ -29,7 +29,7 @@ import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.lang.reflect.Field;
 
-/*** Read and write a non-primitive field using Unsafe.
+/** Read and write a non-primitive field using Unsafe.
  * @author Nathan Sweet */
 class UnsafeField extends ReflectField {
 	public UnsafeField (Field field, FieldSerializer serializer, GenericType genericType) {

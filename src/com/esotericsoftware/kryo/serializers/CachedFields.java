@@ -65,6 +65,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 
+/** @author Nathan Sweet */
 class CachedFields implements Comparator<CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
 
@@ -72,9 +73,10 @@ class CachedFields implements Comparator<CachedField> {
 	static {
 		boolean found = false;
 		try {
-			found = Class.forName("com.esotericsoftware.kryo.util.UnsafeUtil", true, FieldSerializer.class.getClassLoader())
+			found = Class.forName("com.esotericsoftware.kryo.unsafe.UnsafeUtil", true, FieldSerializer.class.getClassLoader())
 				.getField("unsafe").get(null) != null;
 		} catch (Throwable ex) {
+			ex.printStackTrace();
 			if (TRACE) trace("kryo", "Unsafe is unavailable.");
 		}
 		unsafe = found;
@@ -99,7 +101,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 
 		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
-		boolean asm = !isAndroid && Modifier.isPublic(serializer.type.getModifiers());
+		boolean asm = !unsafe && !isAndroid && Modifier.isPublic(serializer.type.getModifiers());
 		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
 			for (Field field : nextClass.getDeclaredFields())

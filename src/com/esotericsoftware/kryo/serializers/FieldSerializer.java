@@ -266,7 +266,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return canBeNull;
 		}
 
-		/** When true, variable length encoding is used for int or long fields. Default is true. */
+		/** When true, variable length encoding is used for int or long fields. Default is true.
+		 * @see FieldSerializerConfig#setVariableLengthEncoding(boolean)
+		 * @see Output#setVariableLengthEncoding(boolean)
+		 * @see Input#setVariableLengthEncoding(boolean) */
 		public void setVariableLengthEncoding (boolean varEncoding) {
 			this.varEncoding = varEncoding;
 		}

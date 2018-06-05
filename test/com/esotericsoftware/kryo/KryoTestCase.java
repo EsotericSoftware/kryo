@@ -189,7 +189,6 @@ abstract public class KryoTestCase extends TestCase {
 		assertEquals("Incorrect number of bytes written.", length, output.total());
 		doAssertEquals(object1, object2);
 
-		System.out.println();
 		if (debug) return (T)object2;
 
 		// Test output to stream, small buffer.
