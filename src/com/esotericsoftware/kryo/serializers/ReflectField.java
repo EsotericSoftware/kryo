@@ -166,7 +166,7 @@ class ReflectField extends CachedField {
 
 		public void write (Output output, Object object) {
 			try {
-				if (varInt)
+				if (varEncoding)
 					output.writeVarInt(field.getInt(object), false);
 				else
 					output.writeInt(field.getInt(object));
@@ -179,7 +179,7 @@ class ReflectField extends CachedField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (varInt)
+				if (varEncoding)
 					field.setInt(object, input.readVarInt(false));
 				else
 					field.setInt(object, input.readInt());
@@ -388,7 +388,7 @@ class ReflectField extends CachedField {
 
 		public void write (Output output, Object object) {
 			try {
-				if (varInt)
+				if (varEncoding)
 					output.writeVarLong(field.getLong(object), false);
 				else
 					output.writeLong(field.getLong(object));
@@ -401,7 +401,7 @@ class ReflectField extends CachedField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (varInt)
+				if (varEncoding)
 					field.setLong(object, input.readVarLong(false));
 				else
 					field.setLong(object, input.readLong());

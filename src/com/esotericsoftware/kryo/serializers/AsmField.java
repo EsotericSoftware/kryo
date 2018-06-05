@@ -62,14 +62,14 @@ class AsmField extends ReflectField {
 		}
 
 		public void write (Output output, Object object) {
-			if (varInt)
+			if (varEncoding)
 				output.writeVarInt(access.getInt(object, accessIndex), false);
 			else
 				output.writeInt(access.getInt(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			if (varInt)
+			if (varEncoding)
 				access.setInt(object, accessIndex, input.readVarInt(false));
 			else
 				access.setInt(object, accessIndex, input.readInt());
@@ -176,14 +176,14 @@ class AsmField extends ReflectField {
 		}
 
 		public void write (Output output, Object object) {
-			if (varInt)
+			if (varEncoding)
 				output.writeVarLong(access.getLong(object, accessIndex), false);
 			else
 				output.writeLong(access.getLong(object, accessIndex));
 		}
 
 		public void read (Input input, Object object) {
-			if (varInt)
+			if (varEncoding)
 				access.setLong(object, accessIndex, input.readVarLong(false));
 			else
 				access.setLong(object, accessIndex, input.readLong());

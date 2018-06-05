@@ -65,14 +65,14 @@ class UnsafeField extends ReflectField {
 		}
 
 		public void write (Output output, Object object) {
-			if (varInt)
+			if (varEncoding)
 				output.writeVarInt(unsafe.getInt(object, offset), false);
 			else
 				output.writeInt(unsafe.getInt(object, offset));
 		}
 
 		public void read (Input input, Object object) {
-			if (varInt)
+			if (varEncoding)
 				unsafe.putInt(object, offset, input.readVarInt(false));
 			else
 				unsafe.putInt(object, offset, input.readInt());
@@ -185,14 +185,14 @@ class UnsafeField extends ReflectField {
 		}
 
 		public void write (Output output, Object object) {
-			if (varInt)
+			if (varEncoding)
 				output.writeVarLong(unsafe.getLong(object, offset), false);
 			else
 				output.writeLong(unsafe.getLong(object, offset));
 		}
 
 		public void read (Input input, Object object) {
-			if (varInt)
+			if (varEncoding)
 				unsafe.putLong(object, offset, input.readVarLong(false));
 			else
 				unsafe.putLong(object, offset, input.readLong());

@@ -111,11 +111,11 @@ public class DefaultSerializers {
 
 	static public class IntSerializer extends ImmutableSerializer<Integer> {
 		public void write (Kryo kryo, Output output, Integer object) {
-			output.writeVarInt(object, false);
+			output.writeInt(object, false);
 		}
 
 		public Integer read (Kryo kryo, Input input, Class<? extends Integer> type) {
-			return input.readVarInt(false);
+			return input.readInt(false);
 		}
 	}
 
@@ -241,18 +241,18 @@ public class DefaultSerializers {
 			// fast-path optimizations for BigDecimal constants
 			if (value == BigDecimal.ZERO) {
 				bigIntegerSerializer.write(kryo, output, BigInteger.ZERO);
-				output.writeVarInt(0, false); // for backwards compatibility
+				output.writeInt(0, false); // for backwards compatibility
 				return;
 			}
 			// default behaviour
 			bigIntegerSerializer.write(kryo, output, value.unscaledValue());
-			output.writeVarInt(value.scale(), false);
+			output.writeInt(value.scale(), false);
 		}
 
 		public BigDecimal read (Kryo kryo, Input input, Class<? extends BigDecimal> type) {
 			BigInteger unscaledValue = bigIntegerSerializer.read(kryo, input, BigInteger.class);
 			if (unscaledValue == null) return null;
-			int scale = input.readVarInt(false);
+			int scale = input.readInt(false);
 			if (type != BigDecimal.class && type != null) {
 				// For subclasses, use reflection
 				try {
@@ -595,8 +595,8 @@ public class DefaultSerializers {
 			timeZoneSerializer.write(kryo, output, object.getTimeZone()); // can't be null
 			output.writeVarLong(object.getTimeInMillis(), true);
 			output.writeBoolean(object.isLenient());
-			output.writeVarInt(object.getFirstDayOfWeek(), true);
-			output.writeVarInt(object.getMinimalDaysInFirstWeek(), true);
+			output.writeInt(object.getFirstDayOfWeek(), true);
+			output.writeInt(object.getMinimalDaysInFirstWeek(), true);
 			if (object instanceof GregorianCalendar)
 				output.writeVarLong(((GregorianCalendar)object).getGregorianChange().getTime(), false);
 			else
@@ -607,8 +607,8 @@ public class DefaultSerializers {
 			Calendar result = Calendar.getInstance(timeZoneSerializer.read(kryo, input, TimeZone.class));
 			result.setTimeInMillis(input.readVarLong(true));
 			result.setLenient(input.readBoolean());
-			result.setFirstDayOfWeek(input.readVarInt(true));
-			result.setMinimalDaysInFirstWeek(input.readVarInt(true));
+			result.setFirstDayOfWeek(input.readInt(true));
+			result.setMinimalDaysInFirstWeek(input.readInt(true));
 			long gregorianChange = input.readVarLong(false);
 			if (gregorianChange != DEFAULT_GREGORIAN_CUTOVER)
 				if (result instanceof GregorianCalendar) ((GregorianCalendar)result).setGregorianChange(new Date(gregorianChange));

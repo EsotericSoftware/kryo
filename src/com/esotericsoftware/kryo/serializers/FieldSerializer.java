@@ -214,7 +214,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		String name;
 		Class valueClass;
 		Serializer serializer;
-		boolean canBeNull, varInt = true, optimizePositive;
+		boolean canBeNull, varEncoding = true, optimizePositive;
 
 		// For AsmField.
 		FieldAccess access;
@@ -266,13 +266,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return canBeNull;
 		}
 
-		/** When true, variable length values are used if this is an int or long fields. Default is true. */
-		public void setVarInt (boolean varInt) {
-			this.varInt = varInt;
+		/** When true, variable length encoding is used for int or long fields. Default is true. */
+		public void setVariableLengthEncoding (boolean varEncoding) {
+			this.varEncoding = varEncoding;
 		}
 
-		public boolean getVarInt () {
-			return varInt;
+		public boolean getVariableLengthEncoding () {
+			return varEncoding;
 		}
 
 		/** When true, variable length int and long values are written with fewer bytes for positive values and more bytes for

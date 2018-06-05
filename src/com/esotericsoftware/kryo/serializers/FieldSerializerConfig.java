@@ -34,7 +34,7 @@ public class FieldSerializerConfig implements Cloneable {
 	boolean fixedFieldTypes;
 	boolean copyTransient = true;
 	boolean serializeTransient;
-	boolean varInts = true;
+	boolean varEncoding = true;
 	boolean extendedFieldNames;
 	boolean unsafe;
 
@@ -115,14 +115,14 @@ public class FieldSerializerConfig implements Cloneable {
 	}
 
 	/** When true, variable length values are used for int and long fields. Default is true.
-	 * @see CachedField#setVarInt(boolean) */
-	public void setVarInts (boolean varInts) {
-		this.varInts = varInts;
-		if (TRACE) trace("kryo", "FieldSerializerConfig varInts: " + varInts);
+	 * @see CachedField#setVariableLengthEncoding(boolean) */
+	public void setVariableLengthEncoding (boolean varEncoding) {
+		this.varEncoding = varEncoding;
+		if (TRACE) trace("kryo", "FieldSerializerConfig variable length encoding: " + varEncoding);
 	}
 
-	public boolean getVarInts () {
-		return varInts;
+	public boolean getVariableLengthEncoding () {
+		return varEncoding;
 	}
 
 	/** When true, field names are prefixed by their declaring class. This can avoid conflicts when a subclass has a field with the

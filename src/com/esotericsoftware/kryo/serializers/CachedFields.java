@@ -168,7 +168,7 @@ class CachedFields implements Comparator<CachedField> {
 		} else
 			cachedField = newReflectField(field, fieldClass, genericType);
 
-		cachedField.varInt = config.varInts;
+		cachedField.varEncoding = config.varEncoding;
 		if (config.extendedFieldNames)
 			cachedField.name = declaringClass.getSimpleName() + "." + field.getName();
 		else
