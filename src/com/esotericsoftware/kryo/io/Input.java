@@ -377,10 +377,10 @@ public class Input extends InputStream {
 		byte[] buffer = this.buffer;
 		int p = this.position;
 		this.position = p + 4;
-		return (buffer[p] & 0xFF) << 24 //
-			| (buffer[p + 1] & 0xFF) << 16 //
-			| (buffer[p + 2] & 0xFF) << 8 //
-			| buffer[p + 3] & 0xFF;
+		return buffer[p] & 0xFF //
+			| (buffer[p + 1] & 0xFF) << 8 //
+			| (buffer[p + 2] & 0xFF) << 16 //
+			| (buffer[p + 3] & 0xFF) << 24;
 	}
 
 	/** Reads an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
@@ -480,14 +480,14 @@ public class Input extends InputStream {
 		byte[] buffer = this.buffer;
 		int p = position;
 		position = p + 8;
-		return (long)buffer[p] << 56 //
-			| (long)(buffer[p + 1] & 0xFF) << 48 //
-			| (long)(buffer[p + 2] & 0xFF) << 40 //
-			| (long)(buffer[p + 3] & 0xFF) << 32 //
-			| (long)(buffer[p + 4] & 0xFF) << 24 //
-			| (buffer[p + 5] & 0xFF) << 16 //
-			| (buffer[p + 6] & 0xFF) << 8 //
-			| buffer[p + 7] & 0xFF;
+		return buffer[p] & 0xFF //
+			| (buffer[p + 1] & 0xFF) << 8 //
+			| (buffer[p + 2] & 0xFF) << 16 //
+			| (long)(buffer[p + 3] & 0xFF) << 24 //
+			| (long)(buffer[p + 4] & 0xFF) << 32 //
+			| (long)(buffer[p + 5] & 0xFF) << 40 //
+			| (long)(buffer[p + 6] & 0xFF) << 48 //
+			| (long)buffer[p + 7] << 56;
 	}
 
 	/** Reads a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
@@ -633,10 +633,10 @@ public class Input extends InputStream {
 		byte[] buffer = this.buffer;
 		int p = this.position;
 		this.position = p + 4;
-		return Float.intBitsToFloat((buffer[p] & 0xFF) << 24 //
-			| (buffer[p + 1] & 0xFF) << 16 //
-			| (buffer[p + 2] & 0xFF) << 8 //
-			| buffer[p + 3] & 0xFF);
+		return Float.intBitsToFloat(buffer[p] & 0xFF //
+			| (buffer[p + 1] & 0xFF) << 8 //
+			| (buffer[p + 2] & 0xFF) << 16 //
+			| (buffer[p + 3] & 0xFF) << 24);
 	}
 
 	/** Reads a 1-5 byte float with reduced precision. */
@@ -652,14 +652,14 @@ public class Input extends InputStream {
 		byte[] buffer = this.buffer;
 		int p = position;
 		position = p + 8;
-		return Double.longBitsToDouble((long)buffer[p] << 56 //
-			| (long)(buffer[p + 1] & 0xFF) << 48 //
-			| (long)(buffer[p + 2] & 0xFF) << 40 //
-			| (long)(buffer[p + 3] & 0xFF) << 32 //
-			| (long)(buffer[p + 4] & 0xFF) << 24 //
-			| (buffer[p + 5] & 0xFF) << 16 //
-			| (buffer[p + 6] & 0xFF) << 8 //
-			| buffer[p + 7] & 0xFF);
+		return Double.longBitsToDouble(buffer[p] & 0xFF //
+			| (buffer[p + 1] & 0xFF) << 8 //
+			| (buffer[p + 2] & 0xFF) << 16 //
+			| (long)(buffer[p + 3] & 0xFF) << 24 //
+			| (long)(buffer[p + 4] & 0xFF) << 32 //
+			| (long)(buffer[p + 5] & 0xFF) << 40 //
+			| (long)(buffer[p + 6] & 0xFF) << 48 //
+			| (long)buffer[p + 7] << 56);
 	}
 
 	/** Reads a 1-9 byte double with reduced precision. */
@@ -674,7 +674,7 @@ public class Input extends InputStream {
 		require(2);
 		int p = position;
 		position = p + 2;
-		return (short)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
+		return (short)((buffer[p] & 0xFF) | ((buffer[p + 1] & 0xFF)) << 8);
 	}
 
 	/** Reads a 2 byte short as an int from 0 to 65535. */
@@ -682,7 +682,7 @@ public class Input extends InputStream {
 		require(2);
 		int p = position;
 		position = p + 2;
-		return ((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF);
+		return (buffer[p] & 0xFF) | ((buffer[p + 1] & 0xFF)) << 8;
 	}
 
 	// char:
@@ -692,7 +692,7 @@ public class Input extends InputStream {
 		require(2);
 		int p = position;
 		position = p + 2;
-		return (char)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
+		return (char)((buffer[p] & 0xFF) | ((buffer[p + 1] & 0xFF)) << 8);
 	}
 
 	// boolean:
@@ -902,10 +902,10 @@ public class Input extends InputStream {
 			byte[] buffer = this.buffer;
 			int p = this.position;
 			for (int i = 0; i < length; i++, p += 4) {
-				array[i] = (buffer[p] & 0xFF) << 24 //
-					| (buffer[p + 1] & 0xFF) << 16 //
-					| (buffer[p + 2] & 0xFF) << 8 //
-					| buffer[p + 3] & 0xFF;
+				array[i] = buffer[p] & 0xFF //
+					| (buffer[p + 1] & 0xFF) << 8 //
+					| (buffer[p + 2] & 0xFF) << 16 //
+					| (buffer[p + 3] & 0xFF) << 24;
 			}
 			position = p;
 		} else {
@@ -934,14 +934,14 @@ public class Input extends InputStream {
 			byte[] buffer = this.buffer;
 			int p = this.position;
 			for (int i = 0; i < length; i++, p += 8) {
-				array[i] = (long)buffer[p] << 56 //
-					| (long)(buffer[p + 1] & 0xFF) << 48 //
-					| (long)(buffer[p + 2] & 0xFF) << 40 //
-					| (long)(buffer[p + 3] & 0xFF) << 32 //
-					| (long)(buffer[p + 4] & 0xFF) << 24 //
-					| (buffer[p + 5] & 0xFF) << 16 //
-					| (buffer[p + 6] & 0xFF) << 8 //
-					| buffer[p + 7] & 0xFF;
+				array[i] = buffer[p] & 0xFF //
+					| (buffer[p + 1] & 0xFF) << 8 //
+					| (buffer[p + 2] & 0xFF) << 16 //
+					| (long)(buffer[p + 3] & 0xFF) << 24 //
+					| (long)(buffer[p + 4] & 0xFF) << 32 //
+					| (long)(buffer[p + 5] & 0xFF) << 40 //
+					| (long)(buffer[p + 6] & 0xFF) << 48 //
+					| (long)buffer[p + 7] << 56;
 			}
 			position = p;
 		} else {
@@ -970,10 +970,10 @@ public class Input extends InputStream {
 			byte[] buffer = this.buffer;
 			int p = this.position;
 			for (int i = 0; i < length; i++, p += 4) {
-				array[i] = Float.intBitsToFloat((buffer[p] & 0xFF) << 24 //
-					| (buffer[p + 1] & 0xFF) << 16 //
-					| (buffer[p + 2] & 0xFF) << 8 //
-					| buffer[p + 3] & 0xFF);
+				array[i] = Float.intBitsToFloat(buffer[p] & 0xFF //
+					| (buffer[p + 1] & 0xFF) << 8 //
+					| (buffer[p + 2] & 0xFF) << 16 //
+					| (buffer[p + 3] & 0xFF) << 24);
 			}
 			position = p;
 		} else {
@@ -990,14 +990,14 @@ public class Input extends InputStream {
 			byte[] buffer = this.buffer;
 			int p = this.position;
 			for (int i = 0; i < length; i++, p += 8) {
-				array[i] = Double.longBitsToDouble((long)buffer[p] << 56 //
-					| (long)(buffer[p + 1] & 0xFF) << 48 //
-					| (long)(buffer[p + 2] & 0xFF) << 40 //
-					| (long)(buffer[p + 3] & 0xFF) << 32 //
-					| (long)(buffer[p + 4] & 0xFF) << 24 //
-					| (buffer[p + 5] & 0xFF) << 16 //
-					| (buffer[p + 6] & 0xFF) << 8 //
-					| buffer[p + 7] & 0xFF);
+				array[i] = Double.longBitsToDouble(buffer[p] & 0xFF //
+					| (buffer[p + 1] & 0xFF) << 8 //
+					| (buffer[p + 2] & 0xFF) << 16 //
+					| (long)(buffer[p + 3] & 0xFF) << 24 //
+					| (long)(buffer[p + 4] & 0xFF) << 32 //
+					| (long)(buffer[p + 5] & 0xFF) << 40 //
+					| (long)(buffer[p + 6] & 0xFF) << 48 //
+					| (long)buffer[p + 7] << 56);
 			}
 			position = p;
 		} else {
@@ -1014,7 +1014,7 @@ public class Input extends InputStream {
 			byte[] buffer = this.buffer;
 			int p = this.position;
 			for (int i = 0; i < length; i++, p += 2)
-				array[i] = (short)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
+				array[i] = (short)((buffer[p] & 0xFF) | ((buffer[p + 1] & 0xFF)) << 8);
 			position = p;
 		} else {
 			for (int i = 0; i < length; i++)
@@ -1030,7 +1030,7 @@ public class Input extends InputStream {
 			byte[] buffer = this.buffer;
 			int p = this.position;
 			for (int i = 0; i < length; i++, p += 2)
-				array[i] = (char)(((buffer[p] & 0xFF) << 8) | (buffer[p + 1] & 0xFF));
+				array[i] = (char)((buffer[p] & 0xFF) | ((buffer[p + 1] & 0xFF)) << 8);
 			position = p;
 		} else {
 			for (int i = 0; i < length; i++)

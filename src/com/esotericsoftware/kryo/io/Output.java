@@ -274,10 +274,10 @@ public class Output extends OutputStream {
 		byte[] buffer = this.buffer;
 		int p = position;
 		position = p + 4;
-		buffer[p] = (byte)(value >> 24);
-		buffer[p + 1] = (byte)(value >> 16);
-		buffer[p + 2] = (byte)(value >> 8);
-		buffer[p + 3] = (byte)value;
+		buffer[p] = (byte)value;
+		buffer[p + 1] = (byte)(value >> 8);
+		buffer[p + 2] = (byte)(value >> 16);
+		buffer[p + 3] = (byte)(value >> 24);
 	}
 
 	/** Reads an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
@@ -358,14 +358,14 @@ public class Output extends OutputStream {
 		byte[] buffer = this.buffer;
 		int p = position;
 		position = p + 8;
-		buffer[p] = (byte)(value >>> 56);
-		buffer[p + 1] = (byte)(value >>> 48);
-		buffer[p + 2] = (byte)(value >>> 40);
-		buffer[p + 3] = (byte)(value >>> 32);
-		buffer[p + 4] = (byte)(value >>> 24);
-		buffer[p + 5] = (byte)(value >>> 16);
-		buffer[p + 6] = (byte)(value >>> 8);
-		buffer[p + 7] = (byte)value;
+		buffer[p] = (byte)value;
+		buffer[p + 1] = (byte)(value >>> 8);
+		buffer[p + 2] = (byte)(value >>> 16);
+		buffer[p + 3] = (byte)(value >>> 24);
+		buffer[p + 4] = (byte)(value >>> 32);
+		buffer[p + 5] = (byte)(value >>> 40);
+		buffer[p + 6] = (byte)(value >>> 48);
+		buffer[p + 7] = (byte)(value >>> 56);
 	}
 
 	/** Reads a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
@@ -506,10 +506,10 @@ public class Output extends OutputStream {
 		int p = position;
 		position = p + 4;
 		int intValue = Float.floatToIntBits(value);
-		buffer[p] = (byte)(intValue >> 24);
-		buffer[p + 1] = (byte)(intValue >> 16);
-		buffer[p + 2] = (byte)(intValue >> 8);
-		buffer[p + 3] = (byte)intValue;
+		buffer[p] = (byte)intValue;
+		buffer[p + 1] = (byte)(intValue >> 8);
+		buffer[p + 2] = (byte)(intValue >> 16);
+		buffer[p + 3] = (byte)(intValue >> 24);
 	}
 
 	/** Writes a 1-5 byte float with reduced precision.
@@ -529,14 +529,14 @@ public class Output extends OutputStream {
 		int p = position;
 		position = p + 8;
 		long longValue = Double.doubleToLongBits(value);
-		buffer[p] = (byte)(longValue >>> 56);
-		buffer[p + 1] = (byte)(longValue >>> 48);
-		buffer[p + 2] = (byte)(longValue >>> 40);
-		buffer[p + 3] = (byte)(longValue >>> 32);
-		buffer[p + 4] = (byte)(longValue >>> 24);
-		buffer[p + 5] = (byte)(longValue >>> 16);
-		buffer[p + 6] = (byte)(longValue >>> 8);
-		buffer[p + 7] = (byte)longValue;
+		buffer[p] = (byte)longValue;
+		buffer[p + 1] = (byte)(longValue >>> 8);
+		buffer[p + 2] = (byte)(longValue >>> 16);
+		buffer[p + 3] = (byte)(longValue >>> 24);
+		buffer[p + 4] = (byte)(longValue >>> 32);
+		buffer[p + 5] = (byte)(longValue >>> 40);
+		buffer[p + 6] = (byte)(longValue >>> 48);
+		buffer[p + 7] = (byte)(longValue >>> 56);
 	}
 
 	/** Writes a 1-9 byte double with reduced precision.
@@ -554,8 +554,8 @@ public class Output extends OutputStream {
 		require(2);
 		int p = position;
 		position = p + 2;
-		buffer[p] = (byte)(value >>> 8);
-		buffer[p + 1] = (byte)value;
+		buffer[p] = (byte)value;
+		buffer[p + 1] = (byte)(value >>> 8);
 	}
 
 	// char:
@@ -565,8 +565,8 @@ public class Output extends OutputStream {
 		require(2);
 		int p = position;
 		position = p + 2;
-		buffer[p] = (byte)(value >>> 8);
-		buffer[p + 1] = (byte)value;
+		buffer[p] = (byte)value;
+		buffer[p + 1] = (byte)(value >>> 8);
 	}
 
 	// boolean:
@@ -776,10 +776,10 @@ public class Output extends OutputStream {
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 4) {
 				int value = array[offset];
-				buffer[p] = (byte)(value >> 24);
-				buffer[p + 1] = (byte)(value >> 16);
-				buffer[p + 2] = (byte)(value >> 8);
-				buffer[p + 3] = (byte)value;
+				buffer[p] = (byte)value;
+				buffer[p + 1] = (byte)(value >> 8);
+				buffer[p + 2] = (byte)(value >> 16);
+				buffer[p + 3] = (byte)(value >> 24);
 			}
 			position = p;
 		} else {
@@ -805,14 +805,14 @@ public class Output extends OutputStream {
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 8) {
 				long value = array[offset];
-				buffer[p] = (byte)(value >>> 56);
-				buffer[p + 1] = (byte)(value >>> 48);
-				buffer[p + 2] = (byte)(value >>> 40);
-				buffer[p + 3] = (byte)(value >>> 32);
-				buffer[p + 4] = (byte)(value >>> 24);
-				buffer[p + 5] = (byte)(value >>> 16);
-				buffer[p + 6] = (byte)(value >>> 8);
-				buffer[p + 7] = (byte)value;
+				buffer[p] = (byte)value;
+				buffer[p + 1] = (byte)(value >>> 8);
+				buffer[p + 2] = (byte)(value >>> 16);
+				buffer[p + 3] = (byte)(value >>> 24);
+				buffer[p + 4] = (byte)(value >>> 32);
+				buffer[p + 5] = (byte)(value >>> 40);
+				buffer[p + 6] = (byte)(value >>> 48);
+				buffer[p + 7] = (byte)(value >>> 56);
 			}
 			position = p;
 		} else {
@@ -838,10 +838,10 @@ public class Output extends OutputStream {
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 4) {
 				int value = Float.floatToIntBits(array[offset]);
-				buffer[p] = (byte)(value >> 24);
-				buffer[p + 1] = (byte)(value >> 16);
-				buffer[p + 2] = (byte)(value >> 8);
-				buffer[p + 3] = (byte)value;
+				buffer[p] = (byte)value;
+				buffer[p + 1] = (byte)(value >> 8);
+				buffer[p + 2] = (byte)(value >> 16);
+				buffer[p + 3] = (byte)(value >> 24);
 			}
 			position = p;
 		} else {
@@ -857,14 +857,14 @@ public class Output extends OutputStream {
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 8) {
 				long value = Double.doubleToLongBits(array[offset]);
-				buffer[p] = (byte)(value >>> 56);
-				buffer[p + 1] = (byte)(value >>> 48);
-				buffer[p + 2] = (byte)(value >>> 40);
-				buffer[p + 3] = (byte)(value >>> 32);
-				buffer[p + 4] = (byte)(value >>> 24);
-				buffer[p + 5] = (byte)(value >>> 16);
-				buffer[p + 6] = (byte)(value >>> 8);
-				buffer[p + 7] = (byte)value;
+				buffer[p] = (byte)value;
+				buffer[p + 1] = (byte)(value >>> 8);
+				buffer[p + 2] = (byte)(value >>> 16);
+				buffer[p + 3] = (byte)(value >>> 24);
+				buffer[p + 4] = (byte)(value >>> 32);
+				buffer[p + 5] = (byte)(value >>> 40);
+				buffer[p + 6] = (byte)(value >>> 48);
+				buffer[p + 7] = (byte)(value >>> 56);
 			}
 			position = p;
 		} else {
@@ -880,8 +880,8 @@ public class Output extends OutputStream {
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 2) {
 				int value = array[offset];
-				buffer[p] = (byte)(value >>> 8);
-				buffer[p + 1] = (byte)value;
+				buffer[p] = (byte)value;
+				buffer[p + 1] = (byte)(value >>> 8);
 			}
 			position = p;
 		} else {
@@ -897,8 +897,8 @@ public class Output extends OutputStream {
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 2) {
 				int value = array[offset];
-				buffer[p] = (byte)(value >>> 8);
-				buffer[p + 1] = (byte)value;
+				buffer[p] = (byte)value;
+				buffer[p + 1] = (byte)(value >>> 8);
 			}
 			position = p;
 		} else {

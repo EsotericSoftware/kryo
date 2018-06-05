@@ -160,7 +160,7 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	}
 
 	public void writeBooleans (boolean[] array, int offset, int count) throws KryoException {
-		writeBytes(array, booleanArrayBaseOffset, array.length << 1);
+		writeBytes(array, booleanArrayBaseOffset, array.length);
 	}
 
 	public void writeBytes (byte[] array, int offset, int count) throws KryoException {

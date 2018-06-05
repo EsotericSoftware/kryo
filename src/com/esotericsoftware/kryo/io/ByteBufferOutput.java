@@ -258,10 +258,10 @@ public class ByteBufferOutput extends Output {
 		require(4);
 		position += 4;
 		ByteBuffer byteBuffer = this.byteBuffer;
-		byteBuffer.put((byte)(value >> 24));
-		byteBuffer.put((byte)(value >> 16));
-		byteBuffer.put((byte)(value >> 8));
 		byteBuffer.put((byte)value);
+		byteBuffer.put((byte)(value >> 8));
+		byteBuffer.put((byte)(value >> 16));
+		byteBuffer.put((byte)(value >> 24));
 	}
 
 	public int writeVarInt (int value, boolean optimizePositive) throws KryoException {
@@ -315,14 +315,14 @@ public class ByteBufferOutput extends Output {
 		require(8);
 		position += 8;
 		ByteBuffer byteBuffer = this.byteBuffer;
-		byteBuffer.put((byte)(value >>> 56));
-		byteBuffer.put((byte)(value >>> 48));
-		byteBuffer.put((byte)(value >>> 40));
-		byteBuffer.put((byte)(value >>> 32));
-		byteBuffer.put((byte)(value >>> 24));
-		byteBuffer.put((byte)(value >>> 16));
-		byteBuffer.put((byte)(value >>> 8));
 		byteBuffer.put((byte)value);
+		byteBuffer.put((byte)(value >>> 8));
+		byteBuffer.put((byte)(value >>> 16));
+		byteBuffer.put((byte)(value >>> 24));
+		byteBuffer.put((byte)(value >>> 32));
+		byteBuffer.put((byte)(value >>> 40));
+		byteBuffer.put((byte)(value >>> 48));
+		byteBuffer.put((byte)(value >>> 56));
 	}
 
 	public int writeVarLong (long value, boolean optimizePositive) throws KryoException {
@@ -431,10 +431,10 @@ public class ByteBufferOutput extends Output {
 		ByteBuffer byteBuffer = this.byteBuffer;
 		position += 4;
 		int intValue = Float.floatToIntBits(value);
-		byteBuffer.put((byte)(intValue >> 24));
-		byteBuffer.put((byte)(intValue >> 16));
-		byteBuffer.put((byte)(intValue >> 8));
 		byteBuffer.put((byte)intValue);
+		byteBuffer.put((byte)(intValue >> 8));
+		byteBuffer.put((byte)(intValue >> 16));
+		byteBuffer.put((byte)(intValue >> 24));
 	}
 
 	// double:
@@ -444,14 +444,14 @@ public class ByteBufferOutput extends Output {
 		position += 8;
 		ByteBuffer byteBuffer = this.byteBuffer;
 		long longValue = Double.doubleToLongBits(value);
-		byteBuffer.put((byte)(longValue >>> 56));
-		byteBuffer.put((byte)(longValue >>> 48));
-		byteBuffer.put((byte)(longValue >>> 40));
-		byteBuffer.put((byte)(longValue >>> 32));
-		byteBuffer.put((byte)(longValue >>> 24));
-		byteBuffer.put((byte)(longValue >>> 16));
-		byteBuffer.put((byte)(longValue >>> 8));
 		byteBuffer.put((byte)longValue);
+		byteBuffer.put((byte)(longValue >>> 8));
+		byteBuffer.put((byte)(longValue >>> 16));
+		byteBuffer.put((byte)(longValue >>> 24));
+		byteBuffer.put((byte)(longValue >>> 32));
+		byteBuffer.put((byte)(longValue >>> 40));
+		byteBuffer.put((byte)(longValue >>> 48));
+		byteBuffer.put((byte)(longValue >>> 56));
 	}
 
 	// short:
@@ -459,8 +459,8 @@ public class ByteBufferOutput extends Output {
 	public void writeShort (int value) throws KryoException {
 		require(2);
 		position += 2;
-		byteBuffer.put((byte)(value >>> 8));
 		byteBuffer.put((byte)value);
+		byteBuffer.put((byte)(value >>> 8));
 	}
 
 	// char:
@@ -468,8 +468,8 @@ public class ByteBufferOutput extends Output {
 	public void writeChar (char value) throws KryoException {
 		require(2);
 		position += 2;
-		byteBuffer.put((byte)(value >>> 8));
 		byteBuffer.put((byte)value);
+		byteBuffer.put((byte)(value >>> 8));
 	}
 
 	// boolean:
@@ -661,10 +661,10 @@ public class ByteBufferOutput extends Output {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];
-				byteBuffer.put((byte)(value >> 24));
-				byteBuffer.put((byte)(value >> 16));
-				byteBuffer.put((byte)(value >> 8));
 				byteBuffer.put((byte)value);
+				byteBuffer.put((byte)(value >> 8));
+				byteBuffer.put((byte)(value >> 16));
+				byteBuffer.put((byte)(value >> 24));
 			}
 			position = byteBuffer.position();
 		} else {
@@ -678,14 +678,14 @@ public class ByteBufferOutput extends Output {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
 				long value = array[offset];
-				byteBuffer.put((byte)(value >>> 56));
-				byteBuffer.put((byte)(value >>> 48));
-				byteBuffer.put((byte)(value >>> 40));
-				byteBuffer.put((byte)(value >>> 32));
-				byteBuffer.put((byte)(value >>> 24));
-				byteBuffer.put((byte)(value >>> 16));
-				byteBuffer.put((byte)(value >>> 8));
 				byteBuffer.put((byte)value);
+				byteBuffer.put((byte)(value >>> 8));
+				byteBuffer.put((byte)(value >>> 16));
+				byteBuffer.put((byte)(value >>> 24));
+				byteBuffer.put((byte)(value >>> 32));
+				byteBuffer.put((byte)(value >>> 40));
+				byteBuffer.put((byte)(value >>> 48));
+				byteBuffer.put((byte)(value >>> 56));
 			}
 			position = byteBuffer.position();
 		} else {
@@ -699,10 +699,10 @@ public class ByteBufferOutput extends Output {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
 				int value = Float.floatToIntBits(array[offset]);
-				byteBuffer.put((byte)(value >> 24));
-				byteBuffer.put((byte)(value >> 16));
-				byteBuffer.put((byte)(value >> 8));
 				byteBuffer.put((byte)value);
+				byteBuffer.put((byte)(value >> 8));
+				byteBuffer.put((byte)(value >> 16));
+				byteBuffer.put((byte)(value >> 24));
 			}
 			position = byteBuffer.position();
 		} else {
@@ -716,14 +716,14 @@ public class ByteBufferOutput extends Output {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
 				long value = Double.doubleToLongBits(array[offset]);
-				byteBuffer.put((byte)(value >>> 56));
-				byteBuffer.put((byte)(value >>> 48));
-				byteBuffer.put((byte)(value >>> 40));
-				byteBuffer.put((byte)(value >>> 32));
-				byteBuffer.put((byte)(value >>> 24));
-				byteBuffer.put((byte)(value >>> 16));
-				byteBuffer.put((byte)(value >>> 8));
 				byteBuffer.put((byte)value);
+				byteBuffer.put((byte)(value >>> 8));
+				byteBuffer.put((byte)(value >>> 16));
+				byteBuffer.put((byte)(value >>> 24));
+				byteBuffer.put((byte)(value >>> 32));
+				byteBuffer.put((byte)(value >>> 40));
+				byteBuffer.put((byte)(value >>> 48));
+				byteBuffer.put((byte)(value >>> 56));
 			}
 			position = byteBuffer.position();
 		} else {
@@ -737,8 +737,8 @@ public class ByteBufferOutput extends Output {
 			byte[] buffer = this.buffer;
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];
-				byteBuffer.put((byte)(value >>> 8));
 				byteBuffer.put((byte)value);
+				byteBuffer.put((byte)(value >>> 8));
 			}
 			position = byteBuffer.position();
 		} else {
@@ -752,13 +752,25 @@ public class ByteBufferOutput extends Output {
 			byte[] buffer = this.buffer;
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];
-				byteBuffer.put((byte)(value >>> 8));
 				byteBuffer.put((byte)value);
+				byteBuffer.put((byte)(value >>> 8));
 			}
 			position = byteBuffer.position();
 		} else {
 			for (int n = offset + count; offset < n; offset++)
 				writeChar(array[offset]);
+		}
+	}
+
+	public void writeBooleans (boolean[] array, int offset, int count) throws KryoException {
+		if (capacity >= count && require(count)) {
+			byte[] buffer = this.buffer;
+			for (int n = offset + count; offset < n; offset++)
+				byteBuffer.put(array[offset] ? (byte)1 : 0);
+			position = byteBuffer.position();
+		} else {
+			for (int n = offset + count; offset < n; offset++)
+				writeBoolean(array[offset]);
 		}
 	}
 }

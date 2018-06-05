@@ -90,8 +90,8 @@ public class KryoDataOutput implements DataOutput {
 		int len = s.length();
 		for (int i = 0; i < len; i++) {
 			int v = s.charAt(i);
+			output.write(v & 0xFF);
 			output.write((v >>> 8) & 0xFF);
-			output.write((v >>> 0) & 0xFF);
 		}
 	}
 

@@ -316,10 +316,10 @@ public class ByteBufferInput extends Input {
 		require(4);
 		position += 4;
 		ByteBuffer byteBuffer = this.byteBuffer;
-		return (byteBuffer.get() & 0xFF) << 24 //
-			| (byteBuffer.get() & 0xFF) << 16 //
+		return byteBuffer.get() & 0xFF //
 			| (byteBuffer.get() & 0xFF) << 8 //
-			| byteBuffer.get() & 0xFF;
+			| (byteBuffer.get() & 0xFF) << 16 //
+			| (byteBuffer.get() & 0xFF) << 24;
 	}
 
 	public int readVarInt (boolean optimizePositive) throws KryoException {
@@ -402,14 +402,14 @@ public class ByteBufferInput extends Input {
 		require(8);
 		position += 8;
 		ByteBuffer byteBuffer = this.byteBuffer;
-		return (long)byteBuffer.get() << 56 //
-			| (long)(byteBuffer.get() & 0xFF) << 48 //
-			| (long)(byteBuffer.get() & 0xFF) << 40 //
-			| (long)(byteBuffer.get() & 0xFF) << 32 //
-			| (long)(byteBuffer.get() & 0xFF) << 24 //
-			| (byteBuffer.get() & 0xFF) << 16 //
+		return byteBuffer.get() & 0xFF //
 			| (byteBuffer.get() & 0xFF) << 8 //
-			| byteBuffer.get() & 0xFF;
+			| (byteBuffer.get() & 0xFF) << 16 //
+			| (long)(byteBuffer.get() & 0xFF) << 24 //
+			| (long)(byteBuffer.get() & 0xFF) << 32 //
+			| (long)(byteBuffer.get() & 0xFF) << 40 //
+			| (long)(byteBuffer.get() & 0xFF) << 48 //
+			| (long)byteBuffer.get() << 56;
 	}
 
 	public long readVarLong (boolean optimizePositive) throws KryoException {
@@ -543,10 +543,10 @@ public class ByteBufferInput extends Input {
 		byte[] buffer = this.buffer;
 		int p = this.position;
 		this.position = p + 4;
-		return Float.intBitsToFloat((byteBuffer.get() & 0xFF) << 24 //
-			| (byteBuffer.get() & 0xFF) << 16 //
+		return Float.intBitsToFloat(byteBuffer.get() & 0xFF //
 			| (byteBuffer.get() & 0xFF) << 8 //
-			| byteBuffer.get() & 0xFF);
+			| (byteBuffer.get() & 0xFF) << 16 //
+			| (byteBuffer.get() & 0xFF) << 24);
 	}
 
 	// double:
@@ -556,14 +556,14 @@ public class ByteBufferInput extends Input {
 		byte[] buffer = this.buffer;
 		int p = position;
 		position = p + 8;
-		return Double.longBitsToDouble((long)byteBuffer.get() << 56 //
-			| (long)(byteBuffer.get() & 0xFF) << 48 //
-			| (long)(byteBuffer.get() & 0xFF) << 40 //
-			| (long)(byteBuffer.get() & 0xFF) << 32 //
-			| (long)(byteBuffer.get() & 0xFF) << 24 //
-			| (byteBuffer.get() & 0xFF) << 16 //
+		return Double.longBitsToDouble(byteBuffer.get() & 0xFF //
 			| (byteBuffer.get() & 0xFF) << 8 //
-			| byteBuffer.get() & 0xFF);
+			| (byteBuffer.get() & 0xFF) << 16 //
+			| (long)(byteBuffer.get() & 0xFF) << 24 //
+			| (long)(byteBuffer.get() & 0xFF) << 32 //
+			| (long)(byteBuffer.get() & 0xFF) << 40 //
+			| (long)(byteBuffer.get() & 0xFF) << 48 //
+			| (long)byteBuffer.get() << 56);
 	}
 
 	// boolean:
@@ -579,13 +579,13 @@ public class ByteBufferInput extends Input {
 	public short readShort () throws KryoException {
 		require(2);
 		position += 2;
-		return (short)(((byteBuffer.get() & 0xFF) << 8) | (byteBuffer.get() & 0xFF));
+		return (short)((byteBuffer.get() & 0xFF) | ((byteBuffer.get() & 0xFF) << 8));
 	}
 
 	public int readShortUnsigned () throws KryoException {
 		require(2);
 		position += 2;
-		return ((byteBuffer.get() & 0xFF) << 8) | (byteBuffer.get() & 0xFF);
+		return (byteBuffer.get() & 0xFF) | ((byteBuffer.get() & 0xFF) << 8);
 	}
 
 	// char:
@@ -593,7 +593,7 @@ public class ByteBufferInput extends Input {
 	public char readChar () throws KryoException {
 		require(2);
 		position += 2;
-		return (char)(((byteBuffer.get() & 0xFF) << 8) | (byteBuffer.get() & 0xFF));
+		return (char)((byteBuffer.get() & 0xFF) | ((byteBuffer.get() & 0xFF) << 8));
 	}
 
 	// String:
@@ -797,10 +797,10 @@ public class ByteBufferInput extends Input {
 		if (optional(length << 2) == length << 2) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++) {
-				array[i] = (byteBuffer.get() & 0xFF) << 24 //
-					| (byteBuffer.get() & 0xFF) << 16 //
+				array[i] = byteBuffer.get() & 0xFF //
 					| (byteBuffer.get() & 0xFF) << 8 //
-					| byteBuffer.get() & 0xFF;
+					| (byteBuffer.get() & 0xFF) << 16 //
+					| (byteBuffer.get() & 0xFF) << 24;
 			}
 			position = byteBuffer.position();
 		} else {
@@ -815,14 +815,14 @@ public class ByteBufferInput extends Input {
 		if (optional(length << 3) == length << 3) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++) {
-				array[i] = (long)byteBuffer.get() << 56 //
-					| (long)(byteBuffer.get() & 0xFF) << 48 //
-					| (long)(byteBuffer.get() & 0xFF) << 40 //
-					| (long)(byteBuffer.get() & 0xFF) << 32 //
-					| (long)(byteBuffer.get() & 0xFF) << 24 //
-					| (byteBuffer.get() & 0xFF) << 16 //
+				array[i] = byteBuffer.get() & 0xFF//
 					| (byteBuffer.get() & 0xFF) << 8 //
-					| byteBuffer.get() & 0xFF;
+					| (byteBuffer.get() & 0xFF) << 16 //
+					| (long)(byteBuffer.get() & 0xFF) << 24 //
+					| (long)(byteBuffer.get() & 0xFF) << 32 //
+					| (long)(byteBuffer.get() & 0xFF) << 40 //
+					| (long)(byteBuffer.get() & 0xFF) << 48 //
+					| (long)byteBuffer.get() << 56;
 			}
 			position = byteBuffer.position();
 		} else {
@@ -837,10 +837,10 @@ public class ByteBufferInput extends Input {
 		if (optional(length << 2) == length << 2) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++) {
-				array[i] = Float.intBitsToFloat((byteBuffer.get() & 0xFF) << 24 //
-					| (byteBuffer.get() & 0xFF) << 16 //
+				array[i] = Float.intBitsToFloat(byteBuffer.get() & 0xFF //
 					| (byteBuffer.get() & 0xFF) << 8 //
-					| byteBuffer.get() & 0xFF);
+					| (byteBuffer.get() & 0xFF) << 16 //
+					| (byteBuffer.get() & 0xFF) << 24);
 			}
 			position = byteBuffer.position();
 		} else {
@@ -855,14 +855,14 @@ public class ByteBufferInput extends Input {
 		if (optional(length << 3) == length << 3) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++) {
-				array[i] = Double.longBitsToDouble((long)byteBuffer.get() << 56 //
-					| (long)(byteBuffer.get() & 0xFF) << 48 //
-					| (long)(byteBuffer.get() & 0xFF) << 40 //
-					| (long)(byteBuffer.get() & 0xFF) << 32 //
-					| (long)(byteBuffer.get() & 0xFF) << 24 //
-					| (byteBuffer.get() & 0xFF) << 16 //
+				array[i] = Double.longBitsToDouble(byteBuffer.get() & 0xFF //
 					| (byteBuffer.get() & 0xFF) << 8 //
-					| byteBuffer.get() & 0xFF);
+					| (byteBuffer.get() & 0xFF) << 16 //
+					| (long)(byteBuffer.get() & 0xFF) << 24 //
+					| (long)(byteBuffer.get() & 0xFF) << 32 //
+					| (long)(byteBuffer.get() & 0xFF) << 40 //
+					| (long)(byteBuffer.get() & 0xFF) << 48 //
+					| (long)byteBuffer.get() << 56);
 			}
 			position = byteBuffer.position();
 		} else {
@@ -877,7 +877,7 @@ public class ByteBufferInput extends Input {
 		if (optional(length << 1) == length << 1) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++)
-				array[i] = (short)(((byteBuffer.get() & 0xFF) << 8) | (byteBuffer.get() & 0xFF));
+				array[i] = (short)((byteBuffer.get() & 0xFF) | ((byteBuffer.get() & 0xFF) << 8));
 			position = byteBuffer.position();
 		} else {
 			for (int i = 0; i < length; i++)
@@ -891,7 +891,7 @@ public class ByteBufferInput extends Input {
 		if (optional(length << 1) == length << 1) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++)
-				array[i] = (char)(((byteBuffer.get() & 0xFF) << 8) | (byteBuffer.get() & 0xFF));
+				array[i] = (char)((byteBuffer.get() & 0xFF) | ((byteBuffer.get() & 0xFF) << 8));
 			position = byteBuffer.position();
 		} else {
 			for (int i = 0; i < length; i++)
@@ -902,7 +902,7 @@ public class ByteBufferInput extends Input {
 
 	public boolean[] readBooleans (int length) throws KryoException {
 		boolean[] array = new boolean[length];
-		if (optional(length << 1) == length << 1) {
+		if (optional(length) == length) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++)
 				array[i] = byteBuffer.get() != 0;
