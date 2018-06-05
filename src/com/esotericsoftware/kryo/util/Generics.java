@@ -202,7 +202,7 @@ public class Generics {
 					for (int ii = 0, nn = superArgs.length; ii < nn; ii++) {
 						Type superArg = superArgs[ii];
 						if (superArg == param) {
-							// BOZO - Skip if super class doesn't use the type in a field?
+							// We could skip if the super class doesn't use the type in a field.
 							param = superParams[ii];
 							temp.add(param);
 							counts[i]++;
