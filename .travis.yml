@@ -1,0 +1,41 @@
+language: java
+
+env:
+  global:
+    # Check if version is a SNAPSHOT - grep returns 0 if the pattern is found, otherwise 1
+    - IS_SNAPSHOT=$(grep -A 1 "<artifactId>kryo.*</artifactId>" pom.xml | grep SNAPSHOT)
+    - SONATYPE_USERNAME=martin.grotzke
+    - secure: kCOLgEveEDprSL3fOBeCc1/nmHVYEcNh/lRRWiJywFehOzKBTBF40pAWX7JtsWUPG8aPKGYFEE4sjYd+DF2DRknbuB2ZfAEgs9Xp9h5Mx1KztJYNiCfEnLciBBRDXA7t1M3TLKyT3ptA+Kk307cH2QHv9sUUnhnf0IofJyQhQvA=
+  
+jdk:
+  #- openjdk7
+  - oraclejdk8
+
+install:
+  # compile and test java 8
+  - mvn -B -V -f pom-main.xml clean test
+
+script:
+  # compile tests with java 8, but with testSource/testTarget 1.7 (disabled java8 profile), so that we can run tests with java 7
+  - jdk_switcher use oraclejdk8
+  - mvn -B -f pom-main.xml -P!java8 clean install
+  # test java 7
+  - jdk_switcher use openjdk7
+  - mvn -B -f pom-main.xml surefire:test
+  # install and publish snapshot with java 8
+  # not via `after_success` but directly in `script`, since a failure would be silently ignored in `after_success`, which
+  # is documented in https://docs.travis-ci.com/user/customizing-the-build#Breaking-the-Build
+  - jdk_switcher use oraclejdk8
+  - if [ $TRAVIS_BRANCH = "master" ] && [ $TRAVIS_PULL_REQUEST = "false" ] && [ $IS_SNAPSHOT ]; then
+      mvn -B -P requireSnapshot -DskipTests=true deploy --settings .settings.xml;
+    else
+      echo "Skipping deployment...";
+    fi
+  #- mvn -B -P requireSnapshot -DskipTests=true deploy --settings .settings.xml
+
+cache:
+  directories:
+    - $HOME/.m2
+
+# use container
+sudo: false

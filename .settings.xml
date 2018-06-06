@@ -1,0 +1,11 @@
+<!-- settings.xml -->
+<settings>
+<servers>
+    <server>
+        <!-- Maven Central Deployment -->
+        <id>sonatype-nexus-snapshots</id>
+        <username>${env.SONATYPE_USERNAME}</username>
+        <password>${env.SONATYPE_PASSWORD}</password>
+    </server>
+</servers>
+</settings>

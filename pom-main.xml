@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>com.esotericsoftware</groupId>
 		<artifactId>kryo-parent</artifactId>
-		<version>4.0.2-SNAPSHOT</version>
+		<version>4.0.3-SNAPSHOT</version>
 		<relativePath>./pom.xml</relativePath>
 	</parent>
 	<artifactId>kryo</artifactId>
@@ -80,9 +80,13 @@
 					<skip>false</skip>
 					<logResults>true</logResults>
 					<minSeverity>warning</minSeverity>
+					<excludes>
+						<!-- Internal APIs -->
+						<exclude>com/esotericsoftware/kryo/util/IntArray</exclude>
+					</excludes>
 					<!-- Configure ignored differences: http://mojo.codehaus.org/clirr-maven-plugin/examples/ignored-differences.html -->
 					<ignored>
-						<!-- Internal APIs -->
+						<!-- Specific internal APIs -->
 						<difference>
 							<className>com/esotericsoftware/kryo/Kryo</className>
 							<method>*GenericsScope*</method>

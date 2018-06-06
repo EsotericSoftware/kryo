@@ -1,6 +1,6 @@
 ![KryoNet](https://raw.github.com/wiki/EsotericSoftware/kryo/images/logo.jpg)
 
-[![Build Status](https://jenkins.inoio.de/buildStatus/icon?job=kryo&foo=bar)](https://jenkins.inoio.de/job/kryo/)
+[![Build Status](https://travis-ci.org/EsotericSoftware/kryo.png?branch=master)](https://travis-ci.org/EsotericSoftware/kryo)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.esotericsoftware/kryo/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.esotericsoftware%22%20AND%20a%3Akryo)
 [![Join the chat at https://gitter.im/EsotericSoftware/kryo](https://badges.gitter.im/EsotericSoftware/kryo.svg)](https://gitter.im/EsotericSoftware/kryo)
 
@@ -14,7 +14,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 
 ## Contents
 
-- [New in release 4.0.1](#new-in-release-401)
+- [New in release 4.0.2](#new-in-release-402)
 - [Versioning Semantics, Upgrading](#versioning-semantics-upgrading)
 - [Installation](#installation)
  - [Integration with Maven](#integration-with-maven)
@@ -50,9 +50,9 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [Projects using Kryo](#projects-using-kryo)
 - [Contact / Mailing list](#contact--mailing-list)
 
-## New in release 4.0.1
+## New in release 4.0.2
 
-The 4.0.1 release brings several fixes and improvements, for details check out the [release notes](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.1).
+The 4.0.2 release brings several fixes and improvements, for details check out the [release notes](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.2).
 
 ## Versioning Semantics, Upgrading
 
@@ -74,8 +74,7 @@ When upgrading kryo check the included changes and test thoroughly the new versi
 We try to make it as safe and easy as possible:
 * at development time we test serialization compatibility for the different binary formats and default serializers
 * at development time we track binary and source compatibility with [clirr](http://www.mojohaus.org/clirr-maven-plugin/)
-* for each release we provide a [ChangeLog](https://github.com/EsotericSoftware/kryo/blob/master/CHANGES.md) that additionally contains
-a section reporting the serialization, binary and source compatibilities (for reporting binary and source compatibility we use [japi-compliance-checker](https://github.com/lvc/japi-compliance-checker/))
+* for each release we provide a [changelog](https://github.com/EsotericSoftware/kryo/releases) that additionally contains a section reporting the serialization, binary and source compatibilities (for reporting binary and source compatibility we use [japi-compliance-checker](https://github.com/lvc/japi-compliance-checker/))
 
 ## Installation
 
@@ -89,7 +88,7 @@ To use the official release of Kryo, please use the following snippet in your po
     <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo</artifactId>
-        <version>4.0.1</version>
+        <version>4.0.2</version>
     </dependency>
 ```
 
@@ -99,7 +98,7 @@ If you experience issues because you already have a different version of asm in 
     <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo-shaded</artifactId>
-        <version>4.0.1</version>
+        <version>4.0.2</version>
     </dependency>
 ```
 
@@ -115,7 +114,7 @@ If you want to test the latest snapshot of Kryo, please use the following snippe
     <dependency>
        <groupId>com.esotericsoftware</groupId>
        <artifactId>kryo</artifactId>
-        <version>4.0.1-SNAPSHOT</version>
+        <version>4.0.3-SNAPSHOT</version>
     </dependency>
 ```
 
@@ -129,6 +128,10 @@ If you use Kryo without Maven, be aware that Kryo jar file has a couple of exter
 Jumping ahead to show how the library is used:
 
 ```java
+    import com.esotericsoftware.kryo.Kryo;
+    import com.esotericsoftware.kryo.io.Output;
+    import com.esotericsoftware.kryo.io.Input;
+    // ...
     Kryo kryo = new Kryo();
     // ...
     Output output = new Output(new FileOutputStream("file.bin"));
@@ -557,13 +560,21 @@ kryo.setDefaultSerializer(TaggedFieldSerializer.class);
 
 BeanSerializer is very similar to FieldSerializer, except it uses bean getter and setter methods rather than direct field access. This slightly slower, but may be safer because it uses the public API to configure the object.
 
+#### VersionFieldSerializer
+
 VersionFieldSerializer extends FieldSerializer and allows fields to have a `@Since(int)` annotation to indicate the version they were added. For a particular field, the value in `@Since` should never change once created. This is less flexible than FieldSerializer, which can handle most classes without needing annotations, but it provides backward compatibility. This means that new fields can be added, but removing, renaming or changing the type of any field will invalidate previous serialized bytes. VersionFieldSerializer has very little overhead (a single additional varint) compared to FieldSerializer.
+
+#### TaggedFieldSerializer
 
 TaggedFieldSerializer extends FieldSerializer to only serialize fields that have a `@Tag(int)` annotation, providing backward compatibility so new fields can be added. TaggedFieldSerializer has two advantages over VersionFieldSerializer: 1) fields can be renamed and 2) fields marked with the `@Deprecated` annotation will be ignored when reading old bytes and won't be written to new bytes. Deprecation effectively removes the field from serialization, though the field and `@Tag` annotation must remain in the class. Deprecated fields can optionally be made private and/or renamed so they don't clutter the class (eg, `ignored`, `ignored2`). For these reasons, TaggedFieldSerializer generally provides more flexibility for classes to evolve. The downside is that it has a small amount of additional overhead compared to VersionFieldSerializer (an additional varint per field).
 
 TaggedFieldSerializer also provides optional forward compatibility by the use of `setSkipUnknownTags(true)`, which causes the data of unknown field tags to be skipped. Forward compatibility only works if the newly added fields are tagged with the `annexed` property set true (`@Tag(value=1, annexed=true)`), which causes the associated fields to be written with chunked encoding so they can be skipped.
 
-CompatibleFieldSerializer extends FieldSerializer to provide both forward and backward compatibility, meaning fields can be added or removed without invalidating previously serialized bytes. Changing the type of a field is not supported. Like FieldSerializer, it can serialize most classes without needing annotations. The forward and backward compatibility comes at a cost: the first time the class is encountered in the serialized bytes, a simple schema is written containing the field name strings. Also, during serialization and deserialization buffers are allocated to perform chunked encoding. This is what enables CompatibleFieldSerializer to skip bytes for fields it does not know about. When Kryo is configured to use references, there can be a [problem](https://github.com/EsotericSoftware/kryo/issues/286#issuecomment-74870545) with CompatibleFieldSerializer if a field is removed. In case your class inheritance hierarchy contains same named fields, use the `CachedFieldNameStrategy.EXTENDED` strategy.
+#### CompatibleFieldSerializer
+
+CompatibleFieldSerializer extends FieldSerializer to provide both forward and backward compatibility, meaning fields can be added or removed without invalidating previously serialized bytes. Changing the type of a field is not supported. Like FieldSerializer, it can serialize most classes without needing annotations. The forward and backward compatibility comes at a cost: the first time the class is encountered in the serialized bytes, a simple schema is written containing the field name strings. Also, during serialization and deserialization buffers are allocated to perform chunked encoding. This is what enables CompatibleFieldSerializer to skip bytes for fields it does not know about.<br/>
+**Note:** When Kryo is configured to use references, there can be a [problem](https://github.com/EsotericSoftware/kryo/issues/286#issuecomment-74870545) with CompatibleFieldSerializer if a field is removed! I.e. with CompatibleFieldSerializer you should seriously consider to disable references (`kryo.setReferences(false);`)!<br/>
+In case your class inheritance hierarchy contains same named fields, use the `CachedFieldNameStrategy.EXTENDED` strategy:
 
 ```java
 class A {
@@ -577,6 +588,7 @@ class B extends A {
 // use `EXTENDED` name strategy, otherwise serialized object can't be deserialized correctly. Attention, `EXTENDED` strategy increases the serialized footprint.
 kryo.getFieldSerializerConfig().setCachedFieldNameStrategy(FieldSerializer.CachedFieldNameStrategy.EXTENDED);
 ```
+
 
 Additional serializers can easily be developed for forward and backward compatibility, such as a serializer that uses an external, hand written schema.
 
