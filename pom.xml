@@ -44,6 +44,7 @@
 	<modules>
 		<module>pom-main.xml</module>
 		<module>pom-shaded.xml</module>
+		<module>benchmarks</module>
 	</modules>
 	
 	<dependencyManagement>
