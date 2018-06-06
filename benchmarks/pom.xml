@@ -85,7 +85,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<mainClass>com.esotericsoftware.kryo.KryoBenchmarks</mainClass>
+					<mainClass>com.esotericsoftware.kryo.benchmarks.KryoBenchmarks</mainClass>
 					<systemProperties>
 						<systemProperty>
 							<key>java.class.path</key>

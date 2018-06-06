@@ -17,13 +17,53 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo;
+package com.esotericsoftware.kryo.benchmarks;
 
-import org.openjdk.jmh.Main;
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 
-public class KryoBenchmarks {
-	/** To run, in command-line: $ mvn clean install exec:java -Dexec.args="-f 1 -wi 10 -i 10 -t 1" */
-	public static void main (String[] args) throws Exception {
-		Main.main(args);
+import java.util.Arrays;
+
+public class SampleObject1 {
+	@Tag(1) int intValue;
+	@Tag(2) float floatValue;
+	@Tag(3) Short shortValue;
+	@Tag(4) long[] longArray;
+	@Tag(5) double[] doubleArray;
+	@Tag(6) String stringValue;
+
+	public SampleObject1 () {
+	}
+
+	SampleObject1 (int intVal, float floatVal, short shortVal, long[] longArr, double[] dblArr, String str) {
+		this.intValue = intVal;
+		this.floatValue = floatVal;
+		this.shortValue = shortVal;
+		this.longArray = longArr;
+		this.doubleArray = dblArr;
+		this.stringValue = str;
+	}
+
+	static SampleObject1 createSample () {
+		long[] longArray = new long[10];
+		for (int i = 0; i < longArray.length; i++)
+			longArray[i] = i;
+
+		double[] doubleArray = new double[10];
+		for (int i = 0; i < doubleArray.length; i++)
+			doubleArray[i] = 0.1 * i;
+
+		return new SampleObject1(123, 123.456f, (short)321, longArray, doubleArray, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+	}
+
+	public boolean equals (Object other) {
+		if (this == other) return true;
+		if (other == null || getClass() != other.getClass()) return false;
+		SampleObject1 obj = (SampleObject1)other;
+		return intValue == obj.intValue //
+			&& floatValue == obj.floatValue //
+			&& shortValue.equals(obj.shortValue) //
+			&& Arrays.equals(doubleArray, obj.doubleArray) //
+			&& Arrays.equals(longArray, obj.longArray) //
+			&& (stringValue == null ? obj.stringValue == null : stringValue.equals(obj.stringValue));
 	}
 }
