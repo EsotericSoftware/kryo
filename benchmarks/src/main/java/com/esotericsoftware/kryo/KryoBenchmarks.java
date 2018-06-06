@@ -19,52 +19,11 @@
 
 package com.esotericsoftware.kryo;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
 import org.openjdk.jmh.Main;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 public class KryoBenchmarks {
-	/** To run, in command-line: $ mvn clean install exec:java -Dexec.args="-wi 10 -i 10" */
+	/** To run, in command-line: $ mvn clean install exec:java -Dexec.args="-f 1 -wi 10 -i 10 -t 1" */
 	public static void main (String[] args) throws Exception {
-
-		org.apache.commons.cli.Options cliOptions = new org.apache.commons.cli.Options();
-
-		Option includeOption = Option.builder("incl").argName("include").hasArg().build();
-		Option forksOption = Option.builder("f").argName("forks").hasArg().build();
-		Option warmupIterationsOption = Option.builder("wi").argName("warmupIterations").hasArg().build();
-		Option iterationsOption = Option.builder("i").argName("iterations").hasArg().build();
-		Option threadsOption = Option.builder("t").argName("threads").hasArg().build();
-
-		cliOptions.addOption(includeOption);
-		cliOptions.addOption(forksOption);
-		cliOptions.addOption(warmupIterationsOption);
-		cliOptions.addOption(iterationsOption);
-		cliOptions.addOption(threadsOption);
-
-		CommandLineParser parser = new DefaultParser();
-		CommandLine cl = parser.parse(cliOptions, args);
-
-		String include = cl.getOptionValue(includeOption.getOpt(), "Benchmark");
-		int forks = intValue(cl, forksOption, "1");
-		int warmupIterations = intValue(cl, warmupIterationsOption, "10");
-		int iterations = intValue(cl, iterationsOption, "5");
-		int threads = intValue(cl, threadsOption, "1");
-
-		Options options = new OptionsBuilder().include(include).forks(forks)
-			// .mode(Mode.SampleTime)
-			// .timeUnit(TimeUnit.NANOSECONDS)
-			.warmupIterations(warmupIterations).measurementIterations(iterations).threads(threads).build();
-
-		//new Runner(options).run();
 		Main.main(args);
-	}
-
-	private static int intValue (CommandLine cl, Option o, String defaultValue) {
-		return Integer.parseInt(cl.getOptionValue(o.getOpt(), defaultValue));
 	}
 }
