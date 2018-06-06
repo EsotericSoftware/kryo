@@ -223,6 +223,11 @@ public class ByteBufferOutput extends Output {
 			newBuffer.put(niobuffer);
 			newBuffer.order(niobuffer.order());
 
+			//release old niobuffer,issue #582
+      niobuffer.clear();
+      UnsafeUtil.releaseBuffer(niobuffer);
+      niobuffer = null;
+
 			// writeVarInt & writeVarLong mess with the byte order. need to keep track of the current byte order when growing
 			final ByteOrder currentByteOrder = byteOrder;
 			setBuffer(newBuffer, maxCapacity);
