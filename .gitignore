@@ -7,3 +7,4 @@
 bin/
 target/
 .idea/
+.apt_generated/
