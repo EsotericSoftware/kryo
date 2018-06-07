@@ -175,18 +175,24 @@ public class Output extends OutputStream {
 		if (required > maxCapacity)
 			throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
 		flush();
-		while (capacity - position < required) {
-			if (capacity == maxCapacity)
-				throw new KryoException("Buffer overflow. Available: " + (capacity - position) + ", required: " + required);
-			// Grow buffer.
-			if (capacity == 0) capacity = 1;
+		if (capacity - position >= required) return true;
+		if (required > maxCapacity - position)
+			throw new KryoException("Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
+		if (capacity == 0) capacity = 1;
+		do {
 			capacity = Math.min(capacity * 2, maxCapacity);
-			if (capacity < 0) capacity = maxCapacity;
-			byte[] newBuffer = new byte[capacity];
-			System.arraycopy(buffer, 0, newBuffer, 0, position);
-			buffer = newBuffer;
-		}
+		} while (capacity - position < required);
+		byte[] newBuffer = new byte[capacity];
+		System.arraycopy(buffer, 0, newBuffer, 0, position);
+		buffer = newBuffer;
 		return true;
+	}
+
+	static public void main (String[] args) throws Exception {
+		Output output = new Output(1, 100);
+		output.writeInt(123, true);
+		output.writeInt(123, true);
+		output.writeInt(123, true);
 	}
 
 	// OutputStream:

@@ -159,21 +159,19 @@ public class ByteBufferOutput extends Output {
 		if (required > maxCapacity)
 			throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
 		flush();
-		while (capacity - position < required) {
-			if (capacity == maxCapacity)
-				throw new KryoException("Buffer overflow. Available: " + (capacity - position) + ", required: " + required);
-			// Grow buffer.
-			if (capacity == 0) capacity = 1;
+		if (capacity - position >= required) return true;
+		if (required > maxCapacity - position)
+			throw new KryoException("Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
+		if (capacity == 0) capacity = 1;
+		do {
 			capacity = Math.min(capacity * 2, maxCapacity);
-			if (capacity < 0) capacity = maxCapacity;
-			ByteBuffer newBuffer = !byteBuffer.isDirect() ? ByteBuffer.allocate(capacity) : ByteBuffer.allocateDirect(capacity);
-			// Copy the whole buffer
-			byteBuffer.position(0);
-			byteBuffer.limit(position);
-			newBuffer.put(byteBuffer);
-			newBuffer.order(byteBuffer.order());
-			setBuffer(newBuffer, maxCapacity);
-		}
+		} while (capacity - position < required);
+		ByteBuffer newBuffer = !byteBuffer.isDirect() ? ByteBuffer.allocate(capacity) : ByteBuffer.allocateDirect(capacity);
+		byteBuffer.position(0);
+		byteBuffer.limit(position);
+		newBuffer.put(byteBuffer);
+		newBuffer.order(byteBuffer.order());
+		byteBuffer = newBuffer;
 		return true;
 	}
 
