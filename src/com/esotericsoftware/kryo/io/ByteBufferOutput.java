@@ -156,13 +156,14 @@ public class ByteBufferOutput extends Output {
 
 	protected boolean require (int required) throws KryoException {
 		if (capacity - position >= required) return false;
-		if (required > maxCapacity)
-			throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
 		flush();
 		if (capacity - position >= required) return true;
-		if (required > maxCapacity - position)
+		if (required > maxCapacity - position) {
+			if (required > maxCapacity)
+				throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
 			throw new KryoException("Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
-		if (capacity == 0) capacity = 1;
+		}
+		if (capacity == 0) capacity = 16;
 		do {
 			capacity = Math.min(capacity * 2, maxCapacity);
 		} while (capacity - position < required);

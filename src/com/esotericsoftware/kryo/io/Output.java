@@ -172,13 +172,14 @@ public class Output extends OutputStream {
 	 * @return true if the buffer has been resized. */
 	protected boolean require (int required) throws KryoException {
 		if (capacity - position >= required) return false;
-		if (required > maxCapacity)
-			throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
 		flush();
 		if (capacity - position >= required) return true;
-		if (required > maxCapacity - position)
+		if (required > maxCapacity - position) {
+			if (required > maxCapacity)
+				throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
 			throw new KryoException("Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
-		if (capacity == 0) capacity = 1;
+		}
+		if (capacity == 0) capacity = 16;
 		do {
 			capacity = Math.min(capacity * 2, maxCapacity);
 		} while (capacity - position < required);
@@ -186,13 +187,6 @@ public class Output extends OutputStream {
 		System.arraycopy(buffer, 0, newBuffer, 0, position);
 		buffer = newBuffer;
 		return true;
-	}
-
-	static public void main (String[] args) throws Exception {
-		Output output = new Output(1, 100);
-		output.writeInt(123, true);
-		output.writeInt(123, true);
-		output.writeInt(123, true);
 	}
 
 	// OutputStream:
