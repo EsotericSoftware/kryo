@@ -43,8 +43,8 @@ public class UnsafeByteBufferInputOutputTest extends KryoTestCase {
 			ByteBufferInput inputBuffer = new ByteBufferInput(outputBuffer.getByteBuffer());
 			inputBuffer.readInt();
 
-			UnsafeUtil.releaseBuffer(inputBuffer.getByteBuffer());
-			UnsafeUtil.releaseBuffer(outputBuffer.getByteBuffer());
+			UnsafeUtil.dispose(inputBuffer.getByteBuffer());
+			UnsafeUtil.dispose(outputBuffer.getByteBuffer());
 
 			outputBuffer = new UnsafeByteBufferOutput(bufAddress, 4096);
 			outputBuffer.writeInt(10);
@@ -52,8 +52,8 @@ public class UnsafeByteBufferInputOutputTest extends KryoTestCase {
 			inputBuffer = new UnsafeByteBufferInput(outputBuffer.getByteBuffer());
 			inputBuffer.readInt();
 
-			UnsafeUtil.releaseBuffer(inputBuffer.getByteBuffer());
-			UnsafeUtil.releaseBuffer(outputBuffer.getByteBuffer());
+			UnsafeUtil.dispose(inputBuffer.getByteBuffer());
+			UnsafeUtil.dispose(outputBuffer.getByteBuffer());
 		} catch (Throwable t) {
 			System.err.println("Streams with preallocated direct memory are not supported on this JVM");
 			t.printStackTrace();

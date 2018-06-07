@@ -63,7 +63,8 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		updateBufferAddress();
 	}
 
-	/** Creates a new Input for reading from a ByteBuffer representing the memory region at the specified address and size. */
+	/** Creates a new Input for reading from a ByteBuffer representing the memory region at the specified address and size. @throws
+	 * UnsupportedOperationException if creating a ByteBuffer this way is not available. */
 	public UnsafeByteBufferInput (long address, int size) {
 		super(newDirectBuffer(address, size));
 		updateBufferAddress();
@@ -83,6 +84,7 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 
 	public void setBuffer (ByteBuffer buffer) {
 		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
+		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
 		super.setBuffer(buffer);
 		updateBufferAddress();
 	}

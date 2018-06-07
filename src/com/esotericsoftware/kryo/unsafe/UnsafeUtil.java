@@ -21,11 +21,11 @@ package com.esotericsoftware.kryo.unsafe;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import com.esotericsoftware.kryo.util.Util;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-
-import com.esotericsoftware.kryo.util.Util;
 
 import sun.misc.Cleaner;
 import sun.misc.Unsafe;
@@ -97,7 +97,7 @@ public class UnsafeUtil {
 			directByteBufferConstructor = buffer.getClass().getDeclaredConstructor(long.class, int.class, Object.class);
 			directByteBufferConstructor.setAccessible(true);
 		} catch (Exception ex) {
-			if (DEBUG) debug("kryo", "No direct ByteBuffer constructor available.", ex);
+			if (DEBUG) debug("kryo", "No direct ByteBuffer constructor is available.", ex);
 			directByteBufferConstructor = null;
 		}
 	}
@@ -105,9 +105,10 @@ public class UnsafeUtil {
 	/** Create a ByteBuffer that uses the specified off-heap memory address instead of allocating a new one.
 	 * @param address Address of the memory region to be used for a ByteBuffer.
 	 * @param size Size in bytes of the memory region.
-	 * @return null if creating a ByteBuffer this way is not available. */
+	 * @throws UnsupportedOperationException if creating a ByteBuffer this way is not available. */
 	static public ByteBuffer newDirectBuffer (long address, int size) {
-		if (directByteBufferConstructor == null) return null;
+		if (directByteBufferConstructor == null)
+			throw new UnsupportedOperationException("No direct ByteBuffer constructor is available.");
 		try {
 			return directByteBufferConstructor.newInstance(address, size, null);
 		} catch (Exception ex) {
@@ -115,8 +116,13 @@ public class UnsafeUtil {
 		}
 	}
 
+	/** Returns true if {@link #newDirectBuffer(long, int)} can be called. */
+	static public boolean isNewDirectBufferAvailable () {
+		return directByteBufferConstructor != null;
+	}
+
 	/** Release a direct buffer immediately rather than waiting for GC. */
-	static public void releaseBuffer (ByteBuffer buffer) {
+	static public void dispose (ByteBuffer buffer) {
 		if (!(buffer instanceof DirectBuffer)) return;
 		Object cleaner = ((DirectBuffer)buffer).cleaner();
 		if (cleaner != null) ((Cleaner)cleaner).clean();

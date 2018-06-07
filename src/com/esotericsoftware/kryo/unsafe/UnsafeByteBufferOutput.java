@@ -73,7 +73,8 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		updateBufferAddress();
 	}
 
-	/** Creates a new Output for writing to a ByteBuffer representing the memory region at the specified address and size. */
+	/** Creates a new Output for writing to a ByteBuffer representing the memory region at the specified address and size. @throws
+	 * UnsupportedOperationException if creating a ByteBuffer this way is not available. */
 	public UnsafeByteBufferOutput (long address, int size) {
 		super(newDirectBuffer(address, size));
 		updateBufferAddress();
@@ -81,12 +82,28 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 
 	public void setBuffer (ByteBuffer buffer, int maxBufferSize) {
 		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
+		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
 		super.setBuffer(buffer, maxBufferSize);
 		updateBufferAddress();
 	}
 
 	private void updateBufferAddress () {
 		bufferAddress = ((DirectBuffer)byteBuffer).address();
+	}
+
+	protected boolean require (int required) throws KryoException {
+		ByteBuffer oldBuffer = byteBuffer;
+		boolean result = super.require(required);
+		if (byteBuffer != oldBuffer) UnsafeUtil.dispose(oldBuffer);
+		return result;
+	}
+
+	/** Releases the byte buffer immediately, rather than waiting for GC. This output can no longer be used until a new byte buffer
+	 * is set. */
+	public void dispose () {
+		UnsafeUtil.dispose(byteBuffer);
+		byteBuffer = null;
+		bufferAddress = 0;
 	}
 
 	public void writeInt (int value) throws KryoException {
