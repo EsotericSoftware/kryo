@@ -63,14 +63,16 @@ final class FieldSerializerAnnotationsUtil {
 						+ fields[i].getField().getName() + ", because it has a serializer already.");
 				CollectionSerializer.BindCollection annotation = field.getAnnotation(CollectionSerializer.BindCollection.class);
 				if (Collection.class.isAssignableFrom(fields[i].field.getType())) {
+					Class<?> elementClass = annotation.elementClass();
+					// Those serializers that use elementClass will throw NPE, but it's better than using the default
+					// and silently producing wrong results.
+					if (elementClass == Object.class) elementClass = null;
 					Class<? extends Serializer> elementSerializerClass = annotation.elementSerializer();
 					if (elementSerializerClass == Serializer.class) elementSerializerClass = null;
 					Serializer elementSerializer = (elementSerializerClass == null) ? null
 						: ReflectionSerializerFactory.makeSerializer(fieldSerializer.getKryo(), elementSerializerClass,
-							field.getClass());
+							elementClass);
 					boolean elementsCanBeNull = annotation.elementsCanBeNull();
-					Class<?> elementClass = annotation.elementClass();
-					if (elementClass == Object.class) elementClass = null;
 					CollectionSerializer serializer = new CollectionSerializer();
 					serializer.setElementsCanBeNull(elementsCanBeNull);
 					serializer.setElementClass(elementClass, elementSerializer);

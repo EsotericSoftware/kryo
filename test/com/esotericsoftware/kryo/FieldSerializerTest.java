@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
@@ -597,6 +598,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(HashMap.class);
 		kryo.register(ArrayList.class);
 		kryo.register(AnnotatedFields.class);
+		kryo.register(AnnotatedFields.HasFields.class);
 		AnnotatedFields obj1 = new AnnotatedFields();
 		obj1.map = new HashMap<String, int[]>();
 		obj1.map.put("key1", new int[] {1, 2, 3});
@@ -605,8 +607,14 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		obj1.collection = new ArrayList<long[]>();
 		obj1.collection.add(new long[] {1, 2, 3});
+		
+		obj1.listOfHasFields = new ArrayList<AnnotatedFields.HasFields>();
+		AnnotatedFields.HasFields hasFields = new AnnotatedFields.HasFields();
+		hasFields.number = 42;
+		hasFields.text = "foo";
+		obj1.listOfHasFields.add(hasFields);
 
-		roundTrip(31, 73, obj1);
+		roundTrip(37, 82, obj1);
 	}
 
 	public void testWronglyAnnotatedCollectionFields () {
@@ -1088,11 +1096,28 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	static public class AnnotatedFields {
+		static public class HasFields {
+			int number;
+			String text;
+			
+			public boolean equals (Object obj) {
+				if (this == obj) return true;
+				if (obj == null) return false;
+				if (getClass() != obj.getClass()) return false;
+				HasFields other = (HasFields)obj;
+				if (number != other.number) return false;
+				if (!Objects.equals(text, other.text)) return false;
+				return true;
+			}
+		} 
+		
 		@Bind(StringSerializer.class) Object stringField;
 
 		@BindMap(valueSerializer = IntArraySerializer.class, keySerializer = StringSerializer.class, valueClass = int[].class, keyClass = String.class, keysCanBeNull = false) Map map;
 
 		@BindCollection(elementSerializer = LongArraySerializer.class, elementClass = long[].class, elementsCanBeNull = false) Collection collection;
+		
+		@BindCollection(elementSerializer = FieldSerializer.class, elementClass = HasFields.class, elementsCanBeNull = false) List listOfHasFields;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -1125,6 +1150,7 @@ public class FieldSerializerTest extends KryoTestCase {
 					if (!Arrays.equals((long[])e1, (long[])e2)) return false;
 				}
 			}
+			if (!Objects.equals(listOfHasFields, other.listOfHasFields)) return false;
 			return true;
 		}
 	}
