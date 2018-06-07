@@ -22,8 +22,10 @@ package com.esotericsoftware.kryo.benchmarks;
 import org.openjdk.jmh.Main;
 
 public class KryoBenchmarks {
-	/** To run, in command-line: $ mvn clean install exec:java -Dexec.args="-f 1 -wi 10 -i 10 -t 1" */
-	public static void main (String[] args) throws Exception {
+	/** To run from command line: $ mvn clean install exec:java -Dexec.args="-f 1 -wi 10 -i 10 -t 1"
+	 * <p>
+	 * Fork 0 can be used for debugging, eg: -f 0 -wi 1 -i 1 -t 1 -w 1s -r 1s */
+	static public void main (String[] args) throws Exception {
 		Main.main(args);
 	}
 }

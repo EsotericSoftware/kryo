@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.benchmarks;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.benchmarks.data.Sample;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
@@ -29,127 +30,167 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
 
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.annotations.TearDown;
 
 public class KryoFieldSerializersBenchmark {
-	static class BenchmarkState {
-		Kryo kryo;
-		byte[] buffer;
-		Output output;
-		SampleObject1 object;
+	@State(Scope.Thread)
+	static abstract class BenchmarkState {
+		final Kryo kryo;
+		final Output output;
+		final Input input;
+		final Sample object;
 
-		void setup (Class<? extends Serializer> defaultSerializer) {
+		public BenchmarkState () {
 			kryo = new Kryo();
-			kryo.setDefaultSerializer(defaultSerializer);
-			kryo.setRegistrationRequired(true);
 			kryo.register(double[].class);
+			kryo.register(int[].class);
 			kryo.register(long[].class);
-			kryo.register(SampleObject1.class);
+			kryo.register(float[].class);
+			kryo.register(double[].class);
+			kryo.register(short[].class);
+			kryo.register(char[].class);
+			kryo.register(boolean[].class);
+			kryo.register(Sample.class);
 
-			buffer = new byte[1024];
-			output = new Output(buffer);
+			output = new Output(1024);
+			input = new Input(output.getBuffer());
 
-			object = SampleObject1.createSample();
+			object = new Sample();
+			object.defaultValues();
+		}
+
+		@Setup(Level.Trial)
+		abstract public void setup ();
+
+		@TearDown(Level.Invocation)
+		public void reset () {
+			input.setPosition(0);
+			input.setLimit(output.position());
+			Sample object2 = kryo.readObject(input, Sample.class);
+			if (!object.equals(object2)) throw new RuntimeException();
+
+			output.setPosition(0);
 		}
 	}
 
-	@State(Scope.Thread)
-	public static class FieldSerializerState extends BenchmarkState {
-		@Setup(Level.Invocation)
+	static public class FieldSerializerState extends BenchmarkState {
 		public void setup () {
-			super.setup(FieldSerializer.class);
+			kryo.setDefaultSerializer(FieldSerializer.class);
 		}
 	}
 
-	@State(Scope.Thread)
-	public static class CompatibleFieldSerializerState extends BenchmarkState {
-		@Setup(Level.Invocation)
+	static public class CompatibleFieldSerializerState extends BenchmarkState {
 		public void setup () {
-			super.setup(CompatibleFieldSerializer.class);
+			kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
 		}
 	}
 
-	@State(Scope.Thread)
-	public static class TaggedFieldSerializerState extends BenchmarkState {
-		@Setup(Level.Invocation)
+	static public class TaggedFieldSerializerState extends BenchmarkState {
 		public void setup () {
-			super.setup(TaggedFieldSerializer.class);
+			kryo.setDefaultSerializer(TaggedFieldSerializer.class);
 		}
 	}
 
-	@State(Scope.Thread)
-	public static class VersionFieldSerializerState extends BenchmarkState {
-		@Setup(Level.Invocation)
+	static public class VersionFieldSerializerState extends BenchmarkState {
 		public void setup () {
-			super.setup(VersionFieldSerializer.class);
+			kryo.setDefaultSerializer(VersionFieldSerializer.class);
 		}
 	}
 
-	@State(Scope.Thread)
-	public static class CustomSerializerState extends BenchmarkState {
-		@Setup(Level.Invocation)
+	static public class CustomSerializerState extends BenchmarkState {
 		public void setup () {
-			super.setup(FieldSerializer.class);
-			kryo.register(SampleObject1.class, new Serializer<SampleObject1>() {
-				public void write (Kryo kryo, Output output, SampleObject1 object) {
+			kryo.setDefaultSerializer(FieldSerializer.class);
+			kryo.register(Sample.class, new Serializer<Sample>() {
+				public void write (Kryo kryo, Output output, Sample object) {
 					output.writeInt(object.intValue);
+					output.writeLong(object.longValue);
 					output.writeFloat(object.floatValue);
-					output.writeShort(object.shortValue.intValue());
-					kryo.writeObject(output, object.longArray); // could be referenced
-					kryo.writeObject(output, object.doubleArray); // could be referenced
-					output.writeString(object.stringValue);
+					output.writeDouble(object.doubleValue);
+					output.writeShort(object.shortValue);
+					output.writeChar(object.charValue);
+					output.writeBoolean(object.booleanValue);
+					kryo.writeObject(output, object.IntValue);
+					kryo.writeObject(output, object.LongValue);
+					kryo.writeObject(output, object.FloatValue);
+					kryo.writeObject(output, object.DoubleValue);
+					kryo.writeObject(output, object.ShortValue);
+					kryo.writeObject(output, object.CharValue);
+					kryo.writeObject(output, object.BooleanValue);
+
+					kryo.writeObject(output, object.intArray);
+					kryo.writeObject(output, object.longArray);
+					kryo.writeObject(output, object.floatArray);
+					kryo.writeObject(output, object.doubleArray);
+					kryo.writeObject(output, object.shortArray);
+					kryo.writeObject(output, object.charArray);
+					kryo.writeObject(output, object.booleanArray);
+
+					kryo.writeObject(output, object.string);
+					kryo.writeObject(output, object.sample);
 				}
 
-				public SampleObject1 read (Kryo kryo, Input input, Class<? extends SampleObject1> type) {
-					return new SampleObject1( //
-						input.readInt(), //
-						input.readFloat(), //
-						input.readShort(), //
-						kryo.readObject(input, long[].class), //
-						kryo.readObject(input, double[].class), //
-						input.readString() //
-					);
+				public Sample read (Kryo kryo, Input input, Class<? extends Sample> type) {
+					Sample object = new Sample();
+					object.intValue = input.readInt();
+					object.longValue = input.readLong();
+					object.floatValue = input.readFloat();
+					object.doubleValue = input.readDouble();
+					object.shortValue = input.readShort();
+					object.charValue = input.readChar();
+					object.booleanValue = input.readBoolean();
+					object.IntValue = kryo.readObject(input, Integer.class);
+					object.LongValue = kryo.readObject(input, Long.class);
+					object.FloatValue = kryo.readObject(input, Float.class);
+					object.DoubleValue = kryo.readObject(input, Double.class);
+					object.ShortValue = kryo.readObject(input, Short.class);
+					object.CharValue = kryo.readObject(input, Character.class);
+					object.BooleanValue = kryo.readObject(input, Boolean.class);
+
+					object.intArray = kryo.readObject(input, int[].class);
+					object.longArray = kryo.readObject(input, long[].class);
+					object.floatArray = kryo.readObject(input, float[].class);
+					object.doubleArray = kryo.readObject(input, double[].class);
+					object.shortArray = kryo.readObject(input, short[].class);
+					object.charArray = kryo.readObject(input, char[].class);
+					object.booleanArray = kryo.readObject(input, boolean[].class);
+
+					object.string = kryo.readObject(input, String.class);
+					object.sample = kryo.readObject(input, Sample.class);
+
+					return object;
 				}
 			});
 		}
 	}
 
 	@Benchmark
-	public byte[] fieldSerializerSer (FieldSerializerState state, Blackhole blackhole) {
+	public void fieldSerializerSer (FieldSerializerState state) {
 		state.kryo.writeObject(state.output, state.object);
-		state.output.close();
-		return state.buffer;
 	}
 
 	@Benchmark
-	public byte[] compatibleFieldSerializerSer (CompatibleFieldSerializerState state) {
+	public void compatibleFieldSerializerSer (CompatibleFieldSerializerState state) {
 		state.kryo.writeObject(state.output, state.object);
-		state.output.close();
-		return state.buffer;
 	}
 
 	@Benchmark
-	public byte[] taggedFieldSerializerSer (TaggedFieldSerializerState state) {
+	public void taggedFieldSerializerSer (TaggedFieldSerializerState state) {
 		state.kryo.writeObject(state.output, state.object);
-		state.output.close();
-		return state.buffer;
 	}
 
 	@Benchmark
-	public byte[] versionFieldSerializerSer (VersionFieldSerializerState state) {
+	public void versionFieldSerializerSer (VersionFieldSerializerState state) {
 		state.kryo.writeObject(state.output, state.object);
-		state.output.close();
-		return state.buffer;
 	}
 
 	@Benchmark
-	public byte[] customSerializerSer (CustomSerializerState state) {
+	public void customSerializerSer (CustomSerializerState state) {
 		state.kryo.writeObject(state.output, state.object);
-		state.output.close();
-		return state.buffer;
 	}
 }
