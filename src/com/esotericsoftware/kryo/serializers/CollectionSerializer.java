@@ -74,8 +74,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	}
 
 	public void write (Kryo kryo, Output output, T collection) {
-		int length = collection.size();
-		output.writeVarInt(length, true);
+		output.writeVarInt(collection.size(), true);
 
 		Serializer serializer = this.serializer;
 		if (serializer == null) {

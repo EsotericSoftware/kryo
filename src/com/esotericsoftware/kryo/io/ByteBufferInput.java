@@ -396,6 +396,73 @@ public class ByteBufferInput extends Input {
 		return true;
 	}
 
+	/** Reads the boolean part of a varint flag. The position is not advanced, {@link #readVarIntFlag(boolean)} should be used to
+	 * advance the position. */
+	public boolean readVarIntFlag () {
+		if (position == limit) require(1);
+		return (byteBuffer.get(position) & 0x80) != 0;
+	}
+
+	/** Reads the 1-5 byte int part of a varint flag. The position is advanced so if the boolean part is needed it should be read
+	 * first with {@link #readVarIntFlag()}. */
+	public int readVarIntFlag (boolean optimizePositive) {
+		if (require(1) < 5) return readVarIntFlag_slow(optimizePositive);
+		int b = byteBuffer.get();
+		int result = b & 0x3F; // Mask first 6 bits.
+		if ((b & 0x40) != 0) { // Bit 7 means another byte, bit 8 means UTF8.
+			ByteBuffer byteBuffer = this.byteBuffer;
+			b = byteBuffer.get();
+			result |= (b & 0x7F) << 6;
+			if ((b & 0x80) != 0) {
+				b = byteBuffer.get();
+				result |= (b & 0x7F) << 13;
+				if ((b & 0x80) != 0) {
+					b = byteBuffer.get();
+					result |= (b & 0x7F) << 20;
+					if ((b & 0x80) != 0) {
+						b = byteBuffer.get();
+						result |= (b & 0x7F) << 27;
+					}
+				}
+			}
+		}
+		position = byteBuffer.position();
+		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
+	}
+
+	private int readVarIntFlag_slow (boolean optimizePositive) {
+		// The buffer is guaranteed to have at least 1 byte.
+		position++;
+		int b = byteBuffer.get();
+		int result = b & 0x3F;
+		if ((b & 0x40) != 0) {
+			if (position == limit) require(1);
+			position++;
+			ByteBuffer byteBuffer = this.byteBuffer;
+			b = byteBuffer.get();
+			result |= (b & 0x7F) << 6;
+			if ((b & 0x80) != 0) {
+				if (position == limit) require(1);
+				position++;
+				b = byteBuffer.get();
+				result |= (b & 0x7F) << 13;
+				if ((b & 0x80) != 0) {
+					if (position == limit) require(1);
+					position++;
+					b = byteBuffer.get();
+					result |= (b & 0x7F) << 20;
+					if ((b & 0x80) != 0) {
+						if (position == limit) require(1);
+						position++;
+						b = byteBuffer.get();
+						result |= (b & 0x7F) << 27;
+					}
+				}
+			}
+		}
+		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
+	}
+
 	// long:
 
 	public long readLong () throws KryoException {
@@ -450,8 +517,7 @@ public class ByteBufferInput extends Input {
 			}
 		}
 		position = byteBuffer.position();
-		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
-		return result;
+		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
 	private long readVarLong_slow (boolean optimizePositive) {
@@ -508,8 +574,7 @@ public class ByteBufferInput extends Input {
 				}
 			}
 		}
-		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
-		return result;
+		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
 	public boolean canReadVarLong () throws KryoException {
@@ -599,15 +664,9 @@ public class ByteBufferInput extends Input {
 	// String:
 
 	public String readString () {
-		int available = require(1);
-		int b = byteBuffer.get();
-		if ((b & 0x80) == 0) {
-			byteBuffer.position(position); // Move back 1 byte.
-			return readAscii(); // ASCII.
-		}
-		position++;
+		if (!readVarIntFlag()) return readAsciiString(); // ASCII.
 		// Null, empty, or UTF8.
-		int charCount = available >= 5 ? readUtf8Length(b) : readUtf8Length_slow(b);
+		int charCount = readVarIntFlag(true);
 		switch (charCount) {
 		case 0:
 			return null;
@@ -616,64 +675,29 @@ public class ByteBufferInput extends Input {
 		}
 		charCount--;
 		if (chars.length < charCount) chars = new char[charCount];
-		readUtf8(charCount);
+		readUtf8Chars(charCount);
 		return new String(chars, 0, charCount);
 	}
 
-	private int readUtf8Length (int b) {
-		int result = b & 0x3F; // Mask all but first 6 bits.
-		if ((b & 0x40) != 0) { // Bit 7 means another byte, bit 8 means UTF8.
-			ByteBuffer byteBuffer = this.byteBuffer;
-			b = byteBuffer.get();
-			result |= (b & 0x7F) << 6;
-			if ((b & 0x80) != 0) {
-				b = byteBuffer.get();
-				result |= (b & 0x7F) << 13;
-				if ((b & 0x80) != 0) {
-					b = byteBuffer.get();
-					result |= (b & 0x7F) << 20;
-					if ((b & 0x80) != 0) {
-						b = byteBuffer.get();
-						result |= (b & 0x7F) << 27;
-					}
-				}
-			}
-			position = byteBuffer.position();
+	public StringBuilder readStringBuilder () {
+		if (!readVarIntFlag()) return new StringBuilder(readAsciiString()); // ASCII.
+		// Null, empty, or UTF8.
+		int charCount = readVarIntFlag(true);
+		switch (charCount) {
+		case 0:
+			return null;
+		case 1:
+			return new StringBuilder("");
 		}
-		return result;
+		charCount--;
+		if (chars.length < charCount) chars = new char[charCount];
+		readUtf8Chars(charCount);
+		StringBuilder builder = new StringBuilder(charCount);
+		builder.append(chars, 0, charCount);
+		return builder;
 	}
 
-	private int readUtf8Length_slow (int b) {
-		int result = b & 0x3F; // Mask all but first 6 bits.
-		if ((b & 0x40) != 0) { // Bit 7 means another byte, bit 8 means UTF8.
-			if (position == limit) require(1);
-			position++;
-			ByteBuffer byteBuffer = this.byteBuffer;
-			b = byteBuffer.get();
-			result |= (b & 0x7F) << 6;
-			if ((b & 0x80) != 0) {
-				if (position == limit) require(1);
-				position++;
-				b = byteBuffer.get();
-				result |= (b & 0x7F) << 13;
-				if ((b & 0x80) != 0) {
-					if (position == limit) require(1);
-					position++;
-					b = byteBuffer.get();
-					result |= (b & 0x7F) << 20;
-					if ((b & 0x80) != 0) {
-						if (position == limit) require(1);
-						position++;
-						b = byteBuffer.get();
-						result |= (b & 0x7F) << 27;
-					}
-				}
-			}
-		}
-		return result;
-	}
-
-	private void readUtf8 (int charCount) {
+	private void readUtf8Chars (int charCount) {
 		char[] chars = this.chars;
 		// Try to read 7 bit ASCII chars.
 		ByteBuffer byteBuffer = this.byteBuffer;
@@ -688,11 +712,11 @@ public class ByteBufferInput extends Input {
 		// If buffer didn't hold all chars or any were not ASCII, use slow path for remainder.
 		if (charIndex < charCount) {
 			byteBuffer.position(position);
-			readUtf8_slow(charCount, charIndex);
+			readUtf8Chars_slow(charCount, charIndex);
 		}
 	}
 
-	private void readUtf8_slow (int charCount, int charIndex) {
+	private void readUtf8Chars_slow (int charCount, int charIndex) {
 		ByteBuffer byteBuffer = this.byteBuffer;
 		char[] chars = this.chars;
 		while (charIndex < charCount) {
@@ -728,7 +752,7 @@ public class ByteBufferInput extends Input {
 		}
 	}
 
-	private String readAscii () {
+	private String readAsciiString () {
 		char[] chars = this.chars;
 		ByteBuffer byteBuffer = this.byteBuffer;
 		int charCount = 0;
@@ -764,30 +788,6 @@ public class ByteBufferInput extends Input {
 			}
 			chars[charCount++] = (char)b;
 		}
-	}
-
-	public StringBuilder readStringBuilder () {
-		int available = require(1);
-		int b = byteBuffer.get();
-		if ((b & 0x80) == 0) {
-			byteBuffer.position(position); // Move back 1 byte.
-			return new StringBuilder(readAscii()); // ASCII.
-		}
-		position++;
-		// Null, empty, or UTF8.
-		int charCount = available >= 5 ? readUtf8Length(b) : readUtf8Length_slow(b);
-		switch (charCount) {
-		case 0:
-			return null;
-		case 1:
-			return new StringBuilder("");
-		}
-		charCount--;
-		if (chars.length < charCount) chars = new char[charCount];
-		readUtf8(charCount);
-		StringBuilder builder = new StringBuilder(charCount);
-		builder.append(chars, 0, charCount);
-		return builder;
 	}
 
 	// Primitive arrays:

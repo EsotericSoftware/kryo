@@ -344,6 +344,56 @@ public class Output extends OutputStream {
 		return 5;
 	}
 
+	/** Writes a 1-5 byte int, encoding the boolean value with a bit flag.
+	 * @param optimizePositive If true, small positive numbers will be more efficient (1 byte) and small negative numbers will be
+	 *           inefficient (5 bytes).
+	 * @return The number of bytes written. */
+	public int writeVarIntFlag (boolean flag, int value, boolean optimizePositive) throws KryoException {
+		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
+		int first = (value & 0x3F) | (flag ? 0x80 : 0); // Mask first 6 bits, bit 8 is the flag.
+		if (value >>> 6 == 0) {
+			if (position == capacity) require(1);
+			buffer[position++] = (byte)first;
+			return 1;
+		} else if (value >>> 13 == 0) {
+			require(2);
+			int p = position;
+			position = p + 2;
+			buffer[p] = (byte)(first | 0x40); // Set bit 7.
+			buffer[p + 1] = (byte)(value >>> 6);
+			return 2;
+		} else if (value >>> 20 == 0) {
+			require(3);
+			byte[] buffer = this.buffer;
+			int p = position;
+			position = p + 3;
+			buffer[p] = (byte)(first | 0x40); // Set bit 7.
+			buffer[p + 1] = (byte)((value >>> 6) | 0x80); // Set bit 8.
+			buffer[p + 2] = (byte)(value >>> 13);
+			return 3;
+		} else if (value >>> 27 == 0) {
+			require(4);
+			byte[] buffer = this.buffer;
+			int p = position;
+			position = p + 4;
+			buffer[p] = (byte)(first | 0x40); // Set bit 7.
+			buffer[p + 1] = (byte)((value >>> 6) | 0x80); // Set bit 8.
+			buffer[p + 2] = (byte)((value >>> 13) | 0x80); // Set bit 8.
+			buffer[p + 3] = (byte)(value >>> 20);
+			return 4;
+		}
+		require(5);
+		byte[] buffer = this.buffer;
+		int p = position;
+		position = p + 5;
+		buffer[p] = (byte)(first | 0x40); // Set bit 7.
+		buffer[p + 1] = (byte)((value >>> 6) | 0x80); // Set bit 8.
+		buffer[p + 2] = (byte)((value >>> 13) | 0x80); // Set bit 8.
+		buffer[p + 3] = (byte)((value >>> 20) | 0x80); // Set bit 8.
+		buffer[p + 4] = (byte)(value >>> 27);
+		return 5;
+	}
+
 	/** Returns the number of bytes that would be written with {@link #writeInt(int, boolean)}. */
 	public int intLength (int value, boolean optimizePositive) {
 		if (varEncoding) return varIntLength(value, optimizePositive);
@@ -607,7 +657,7 @@ public class Output extends OutputStream {
 			buffer[position - 1] |= 0x80;
 			return;
 		}
-		writeUtf8Length(charCount + 1);
+		writeVarIntFlag(true, charCount + 1, true);
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
 			// Try to write 7 bit chars.
@@ -641,7 +691,7 @@ public class Output extends OutputStream {
 			writeByte(1 | 0x80); // 1 means empty string, bit 8 means UTF8.
 			return;
 		}
-		writeUtf8Length(charCount + 1);
+		writeVarIntFlag(true, charCount + 1, true);
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
 			// Try to write 7 bit chars.
@@ -689,48 +739,6 @@ public class Output extends OutputStream {
 			position += charCount;
 		}
 		buffer[position - 1] |= 0x80; // Bit 8 means end of ASCII.
-	}
-
-	/** Writes the length of a string, which is a variable length encoded int except the first byte uses bit 8 to denote UTF8 and
-	 * bit 7 to denote if another byte is present. */
-	private void writeUtf8Length (int value) {
-		if (value >>> 6 == 0) {
-			if (position == capacity) require(1);
-			buffer[position++] = (byte)(value | 0x80); // Set bit 8.
-		} else if (value >>> 13 == 0) {
-			require(2);
-			int p = position;
-			position = p + 2;
-			buffer[p] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
-			buffer[p + 1] = (byte)(value >>> 6);
-		} else if (value >>> 20 == 0) {
-			require(3);
-			byte[] buffer = this.buffer;
-			int p = position;
-			position = p + 3;
-			buffer[p] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
-			buffer[p + 1] = (byte)((value >>> 6) | 0x80); // Set bit 8.
-			buffer[p + 2] = (byte)(value >>> 13);
-		} else if (value >>> 27 == 0) {
-			require(4);
-			byte[] buffer = this.buffer;
-			int p = position;
-			position = p + 4;
-			buffer[p] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
-			buffer[p + 1] = (byte)((value >>> 6) | 0x80); // Set bit 8.
-			buffer[p + 2] = (byte)((value >>> 13) | 0x80); // Set bit 8.
-			buffer[p + 3] = (byte)(value >>> 20);
-		} else {
-			require(5);
-			byte[] buffer = this.buffer;
-			int p = position;
-			position = p + 5;
-			buffer[p] = (byte)(value | 0x40 | 0x80); // Set bit 7 and 8.
-			buffer[p + 1] = (byte)((value >>> 6) | 0x80); // Set bit 8.
-			buffer[p + 2] = (byte)((value >>> 13) | 0x80); // Set bit 8.
-			buffer[p + 3] = (byte)((value >>> 20) | 0x80); // Set bit 8.
-			buffer[p + 4] = (byte)(value >>> 27);
-		}
 	}
 
 	private void writeUtf8_slow (CharSequence value, int charCount, int charIndex) {

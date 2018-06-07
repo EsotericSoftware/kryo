@@ -214,6 +214,54 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(false, read.canReadVarInt());
 	}
 
+	public void testVarIntFlagOutput () throws IOException {
+		Output output = new Output(4096);
+		Input input = new Input(output.getBuffer());
+		runVarIntFlagsTest(output, input);
+	}
+
+	public void testVarIntFlagByteBufferOutput () throws IOException {
+		ByteBufferOutput output = new ByteBufferOutput(4096);
+		ByteBufferInput input = new ByteBufferInput(output.getByteBuffer());
+		runVarIntFlagsTest(output, input);
+	}
+
+	public void runVarIntFlagsTest (Output output, Input input) throws IOException {
+		assertEquals(1, output.writeVarIntFlag(true, 63, true));
+		assertEquals(2, output.writeVarIntFlag(true, 64, true));
+
+		assertEquals(1, output.writeVarIntFlag(false, 63, true));
+		assertEquals(2, output.writeVarIntFlag(false, 64, true));
+
+		assertEquals(1, output.writeVarIntFlag(true, 31, false));
+		assertEquals(2, output.writeVarIntFlag(true, 32, false));
+
+		assertEquals(1, output.writeVarIntFlag(false, 31, false));
+		assertEquals(2, output.writeVarIntFlag(false, 32, false));
+
+		input.setPosition(0);
+		input.setLimit(output.position());
+		assertEquals(true, input.readVarIntFlag());
+		assertEquals(63, input.readVarIntFlag(true));
+		assertEquals(true, input.readVarIntFlag());
+		assertEquals(64, input.readVarIntFlag(true));
+
+		assertEquals(false, input.readVarIntFlag());
+		assertEquals(63, input.readVarIntFlag(true));
+		assertEquals(false, input.readVarIntFlag());
+		assertEquals(64, input.readVarIntFlag(true));
+
+		assertEquals(true, input.readVarIntFlag());
+		assertEquals(31, input.readVarIntFlag(false));
+		assertEquals(true, input.readVarIntFlag());
+		assertEquals(32, input.readVarIntFlag(false));
+
+		assertEquals(false, input.readVarIntFlag());
+		assertEquals(31, input.readVarIntFlag(false));
+		assertEquals(false, input.readVarIntFlag());
+		assertEquals(32, input.readVarIntFlag(false));
+	}
+
 	public void testInts () throws IOException {
 		runIntTest(new Output(4096));
 		runIntTest(new Output(new ByteArrayOutputStream()));

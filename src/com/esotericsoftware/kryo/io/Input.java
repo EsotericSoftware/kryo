@@ -186,7 +186,7 @@ public class Input extends InputStream {
 
 	/** Fills the buffer with at least the number of bytes specified.
 	 * @param required Must be > 0.
-	 * @return The number of bytes remaining in the buffer.
+	 * @return The number of bytes remaining in the buffer, which will be at least <code>required</code> bytes.
 	 * @throws KryoException if {@link #fill(byte[], int, int)} is unable to provide more bytes (buffer underflow). */
 	protected int require (int required) throws KryoException {
 		int remaining = limit - position;
@@ -392,15 +392,22 @@ public class Input extends InputStream {
 		return readInt();
 	}
 
+	/** Returns true if enough bytes are available to read an int with {@link #readInt(boolean)}. */
+	public boolean canReadInt () throws KryoException {
+		if (varEncoding) return canReadVarInt();
+		if (limit - position >= 4) return true;
+		return optional(4) == 4;
+	}
+
 	/** Reads a 1-5 byte int.
 	 * @see #canReadVarInt() */
 	public int readVarInt (boolean optimizePositive) throws KryoException {
 		if (require(1) < 5) return readVarInt_slow(optimizePositive);
-		int p = position;
-		int b = buffer[p++];
+		int b = buffer[position++];
 		int result = b & 0x7F;
 		if ((b & 0x80) != 0) {
 			byte[] buffer = this.buffer;
+			int p = position;
 			b = buffer[p++];
 			result |= (b & 0x7F) << 7;
 			if ((b & 0x80) != 0) {
@@ -415,8 +422,8 @@ public class Input extends InputStream {
 					}
 				}
 			}
+			position = p;
 		}
-		position = p;
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
@@ -448,13 +455,6 @@ public class Input extends InputStream {
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
-	/** Returns true if enough bytes are available to read an int with {@link #readInt(boolean)}. */
-	public boolean canReadInt () throws KryoException {
-		if (varEncoding) return canReadVarInt();
-		if (limit - position >= 4) return true;
-		return optional(4) == 4;
-	}
-
 	/** Returns true if enough bytes are available to read an int with {@link #readVarInt(boolean)}. */
 	public boolean canReadVarInt () throws KryoException {
 		if (limit - position >= 5) return true;
@@ -470,6 +470,69 @@ public class Input extends InputStream {
 		if ((buffer[p++] & 0x80) == 0) return true;
 		if (p == limit) return false;
 		return true;
+	}
+
+	/** Reads the boolean part of a varint flag. The position is not advanced, {@link #readVarIntFlag(boolean)} should be used to
+	 * advance the position. */
+	public boolean readVarIntFlag () {
+		if (position == limit) require(1);
+		return (buffer[position] & 0x80) != 0;
+	}
+
+	/** Reads the 1-5 byte int part of a varint flag. The position is advanced so if the boolean part is needed it should be read
+	 * first with {@link #readVarIntFlag()}. */
+	public int readVarIntFlag (boolean optimizePositive) {
+		if (require(1) < 5) return readVarIntFlag_slow(optimizePositive);
+		int b = buffer[position++];
+		int result = b & 0x3F; // Mask first 6 bits.
+		if ((b & 0x40) != 0) { // Bit 7 means another byte, bit 8 means UTF8.
+			byte[] buffer = this.buffer;
+			int p = position;
+			b = buffer[p++];
+			result |= (b & 0x7F) << 6;
+			if ((b & 0x80) != 0) {
+				b = buffer[p++];
+				result |= (b & 0x7F) << 13;
+				if ((b & 0x80) != 0) {
+					b = buffer[p++];
+					result |= (b & 0x7F) << 20;
+					if ((b & 0x80) != 0) {
+						b = buffer[p++];
+						result |= (b & 0x7F) << 27;
+					}
+				}
+			}
+			position = p;
+		}
+		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
+	}
+
+	private int readVarIntFlag_slow (boolean optimizePositive) {
+		// The buffer is guaranteed to have at least 1 byte.
+		int b = buffer[position++];
+		int result = b & 0x3F;
+		if ((b & 0x40) != 0) {
+			if (position == limit) require(1);
+			byte[] buffer = this.buffer;
+			b = buffer[position++];
+			result |= (b & 0x7F) << 6;
+			if ((b & 0x80) != 0) {
+				if (position == limit) require(1);
+				b = buffer[position++];
+				result |= (b & 0x7F) << 13;
+				if ((b & 0x80) != 0) {
+					if (position == limit) require(1);
+					b = buffer[position++];
+					result |= (b & 0x7F) << 20;
+					if ((b & 0x80) != 0) {
+						if (position == limit) require(1);
+						b = buffer[position++];
+						result |= (b & 0x7F) << 27;
+					}
+				}
+			}
+		}
+		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
 	// long:
@@ -540,8 +603,7 @@ public class Input extends InputStream {
 			}
 		}
 		position = p;
-		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
-		return result;
+		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
 	private long readVarLong_slow (boolean optimizePositive) {
@@ -589,8 +651,7 @@ public class Input extends InputStream {
 				}
 			}
 		}
-		if (!optimizePositive) result = (result >>> 1) ^ -(result & 1);
-		return result;
+		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
 	/** Returns true if enough bytes are available to read a long with {@link #readLong(boolean)}. */
@@ -706,15 +767,12 @@ public class Input extends InputStream {
 	// String:
 
 	/** Reads the length and string of UTF8 characters, or null. This can read strings written by
-	 * {@link Output#writeString(String)} , {@link Output#writeUtf8(CharSequence)}, and {@link Output#writeAscii(String)}.
+	 * {@link Output#writeString(String)}, {@link Output#writeUtf8(CharSequence)}, and {@link Output#writeAscii(String)}.
 	 * @return May be null. */
 	public String readString () {
-		int available = require(1);
-		int b = buffer[position];
-		if ((b & 0x80) == 0) return readAscii(); // ASCII.
-		position++;
+		if (!readVarIntFlag()) return readAsciiString(); // ASCII.
 		// Null, empty, or UTF8.
-		int charCount = available >= 5 ? readUtf8Length(b) : readUtf8Length_slow(b);
+		int charCount = readVarIntFlag(true);
 		switch (charCount) {
 		case 0:
 			return null;
@@ -723,61 +781,33 @@ public class Input extends InputStream {
 		}
 		charCount--;
 		if (chars.length < charCount) chars = new char[charCount];
-		readUtf8(charCount);
+		readUtf8Chars(charCount);
 		return new String(chars, 0, charCount);
 	}
 
-	private int readUtf8Length (int b) {
-		int result = b & 0x3F; // Mask all but first 6 bits.
-		if ((b & 0x40) != 0) { // Bit 7 means another byte, bit 8 means UTF8.
-			byte[] buffer = this.buffer;
-			int p = position;
-			b = buffer[p++];
-			result |= (b & 0x7F) << 6;
-			if ((b & 0x80) != 0) {
-				b = buffer[p++];
-				result |= (b & 0x7F) << 13;
-				if ((b & 0x80) != 0) {
-					b = buffer[p++];
-					result |= (b & 0x7F) << 20;
-					if ((b & 0x80) != 0) {
-						b = buffer[p++];
-						result |= (b & 0x7F) << 27;
-					}
-				}
-			}
-			position = p;
+	/** Reads the length and string of UTF8 characters, or null. For non-ASCII strings, this method avoids allocating a string by
+	 * reading directly to the StringBuilder. This can read strings written by {@link Output#writeString(String)} ,
+	 * {@link Output#writeUtf8(CharSequence)}, and {@link Output#writeAscii(String)}.
+	 * @return May be null. */
+	public StringBuilder readStringBuilder () {
+		if (!readVarIntFlag()) return new StringBuilder(readAsciiString()); // ASCII.
+		// Null, empty, or UTF8.
+		int charCount = readVarIntFlag(true);
+		switch (charCount) {
+		case 0:
+			return null;
+		case 1:
+			return new StringBuilder(0);
 		}
-		return result;
+		charCount--;
+		if (chars.length < charCount) chars = new char[charCount];
+		readUtf8Chars(charCount);
+		StringBuilder builder = new StringBuilder(charCount);
+		builder.append(chars, 0, charCount);
+		return builder;
 	}
 
-	private int readUtf8Length_slow (int b) {
-		int result = b & 0x3F; // Mask all but first 6 bits.
-		if ((b & 0x40) != 0) { // Bit 7 means another byte, bit 8 means UTF8.
-			if (position == limit) require(1);
-			byte[] buffer = this.buffer;
-			b = buffer[position++];
-			result |= (b & 0x7F) << 6;
-			if ((b & 0x80) != 0) {
-				if (position == limit) require(1);
-				b = buffer[position++];
-				result |= (b & 0x7F) << 13;
-				if ((b & 0x80) != 0) {
-					if (position == limit) require(1);
-					b = buffer[position++];
-					result |= (b & 0x7F) << 20;
-					if ((b & 0x80) != 0) {
-						if (position == limit) require(1);
-						b = buffer[position++];
-						result |= (b & 0x7F) << 27;
-					}
-				}
-			}
-		}
-		return result;
-	}
-
-	private void readUtf8 (int charCount) {
+	private void readUtf8Chars (int charCount) {
 		byte[] buffer = this.buffer;
 		char[] chars = this.chars;
 		// Try to read 7 bit ASCII chars.
@@ -794,10 +824,10 @@ public class Input extends InputStream {
 		}
 		position = p;
 		// If buffer didn't hold all chars or any were not ASCII, use slow path for remainder.
-		if (charIndex < charCount) readUtf8_slow(charCount, charIndex);
+		if (charIndex < charCount) readUtf8Chars_slow(charCount, charIndex);
 	}
 
-	private void readUtf8_slow (int charCount, int charIndex) {
+	private void readUtf8Chars_slow (int charCount, int charIndex) {
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		while (charIndex < charCount) {
@@ -830,7 +860,7 @@ public class Input extends InputStream {
 		}
 	}
 
-	private String readAscii () {
+	private String readAsciiString () {
 		char[] chars = this.chars;
 		byte[] buffer = this.buffer;
 		int p = position;
@@ -866,31 +896,6 @@ public class Input extends InputStream {
 			}
 			chars[charCount++] = (char)b;
 		}
-	}
-
-	/** Reads the length and string of UTF8 characters, or null. For non-ASCII strings, this method avoids allocating a string by
-	 * reading directly to the StringBuilder. This can read strings written by {@link Output#writeString(String)} ,
-	 * {@link Output#writeUtf8(CharSequence)}, and {@link Output#writeAscii(String)}.
-	 * @return May be null. */
-	public StringBuilder readStringBuilder () {
-		int available = require(1);
-		int b = buffer[position];
-		if ((b & 0x80) == 0) return new StringBuilder(readAscii()); // ASCII.
-		position++;
-		// Null, empty, or UTF8.
-		int charCount = available >= 5 ? readUtf8Length(b) : readUtf8Length_slow(b);
-		switch (charCount) {
-		case 0:
-			return null;
-		case 1:
-			return new StringBuilder(0);
-		}
-		charCount--;
-		if (chars.length < charCount) chars = new char[charCount];
-		readUtf8(charCount);
-		StringBuilder builder = new StringBuilder(charCount);
-		builder.append(chars, 0, charCount);
-		return builder;
 	}
 
 	// Primitive arrays:

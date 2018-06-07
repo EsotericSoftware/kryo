@@ -308,6 +308,49 @@ public class ByteBufferOutput extends Output {
 		return 5;
 	}
 
+	public int writeVarIntFlag (boolean flag, int value, boolean optimizePositive) throws KryoException {
+		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
+		int first = (value & 0x3F) | (flag ? 0x80 : 0); // Mask first 6 bits, bit 8 is the flag.
+		if (value >>> 6 == 0) {
+			if (position == capacity) require(1);
+			byteBuffer.put((byte)first);
+			position++;
+			return 1;
+		} else if (value >>> 13 == 0) {
+			require(2);
+			position += 2;
+			byteBuffer.put((byte)(first | 0x40)); // Set bit 7.
+			byteBuffer.put((byte)(value >>> 6));
+			return 2;
+		} else if (value >>> 20 == 0) {
+			require(3);
+			position += 3;
+			ByteBuffer byteBuffer = this.byteBuffer;
+			byteBuffer.put((byte)(first | 0x40)); // Set bit 7.
+			byteBuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
+			byteBuffer.put((byte)(value >>> 13));
+			return 3;
+		} else if (value >>> 27 == 0) {
+			require(4);
+			position += 4;
+			ByteBuffer byteBuffer = this.byteBuffer;
+			byteBuffer.put((byte)(first | 0x40)); // Set bit 7.
+			byteBuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
+			byteBuffer.put((byte)((value >>> 13) | 0x80)); // Set bit 8.
+			byteBuffer.put((byte)(value >>> 20));
+			return 4;
+		}
+		require(5);
+		position += 5;
+		ByteBuffer byteBuffer = this.byteBuffer;
+		byteBuffer.put((byte)(first | 0x40)); // Set bit 7.
+		byteBuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
+		byteBuffer.put((byte)((value >>> 13) | 0x80)); // Set bit 8.
+		byteBuffer.put((byte)((value >>> 20) | 0x80)); // Set bit 8.
+		byteBuffer.put((byte)(value >>> 27));
+		return 5;
+	}
+
 	// long:
 
 	public void writeLong (long value) throws KryoException {
@@ -506,7 +549,7 @@ public class ByteBufferOutput extends Output {
 			byteBuffer.put(position - 1, (byte)(byteBuffer.get(position - 1) | 0x80));
 			return;
 		}
-		writeUtf8Length(charCount + 1);
+		writeVarIntFlag(true, charCount + 1, true);
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
 			// Try to write 7 bit chars.
@@ -536,7 +579,7 @@ public class ByteBufferOutput extends Output {
 			writeByte(1 | 0x80); // 1 means empty string, bit 8 means UTF8.
 			return;
 		}
-		writeUtf8Length(charCount + 1);
+		writeVarIntFlag(true, charCount + 1, true);
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
 			// Try to write 7 bit chars.
@@ -575,45 +618,6 @@ public class ByteBufferOutput extends Output {
 			position += charCount;
 		}
 		byteBuffer.put(position - 1, (byte)(byteBuffer.get(position - 1) | 0x80)); // Bit 8 means end of ASCII.
-	}
-
-	/** Writes the length of a string, which is a variable length encoded int except the first byte uses bit 8 to denote UTF8 and
-	 * bit 7 to denote if another byte is present. */
-	private void writeUtf8Length (int value) {
-		if (value >>> 6 == 0) {
-			if (position == capacity) require(1);
-			byteBuffer.put((byte)(value | 0x80)); // Set bit 8.
-			position++;
-		} else if (value >>> 13 == 0) {
-			require(2);
-			position += 2;
-			byteBuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
-			byteBuffer.put((byte)(value >>> 6));
-		} else if (value >>> 20 == 0) {
-			require(3);
-			position += 3;
-			ByteBuffer byteBuffer = this.byteBuffer;
-			byteBuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
-			byteBuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
-			byteBuffer.put((byte)(value >>> 13));
-		} else if (value >>> 27 == 0) {
-			require(4);
-			position += 4;
-			ByteBuffer byteBuffer = this.byteBuffer;
-			byteBuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
-			byteBuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
-			byteBuffer.put((byte)((value >>> 13) | 0x80)); // Set bit 8.
-			byteBuffer.put((byte)(value >>> 20));
-		} else {
-			require(5);
-			position += 5;
-			ByteBuffer byteBuffer = this.byteBuffer;
-			byteBuffer.put((byte)(value | 0x40 | 0x80)); // Set bit 7 and 8.
-			byteBuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
-			byteBuffer.put((byte)((value >>> 13) | 0x80)); // Set bit 8.
-			byteBuffer.put((byte)((value >>> 20) | 0x80)); // Set bit 8.
-			byteBuffer.put((byte)(value >>> 27));
-		}
 	}
 
 	private void writeUtf8_slow (CharSequence value, int charCount, int charIndex) {
