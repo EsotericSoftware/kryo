@@ -173,13 +173,13 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, BigInteger object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			BigInteger value = (BigInteger)object;
 			// fast-path optimizations for BigInteger.ZERO constant
 			if (value == BigInteger.ZERO) {
-				output.writeVarInt(2, true);
+				output.writeByte(2);
 				output.writeByte(0);
 				return;
 			}
@@ -234,7 +234,7 @@ public class DefaultSerializers {
 
 		public void write (Kryo kryo, Output output, BigDecimal object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			BigDecimal value = (BigDecimal)object;

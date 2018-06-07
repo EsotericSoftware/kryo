@@ -624,14 +624,14 @@ public class Kryo {
 	boolean writeReferenceOrNull (Output output, Object object, boolean mayBeNull) {
 		if (object == null) {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", null, output.position());
-			output.writeVarInt(Kryo.NULL, true);
+			output.writeByte(NULL);
 			return true;
 		}
 
 		if (!referenceResolver.useReferences(object.getClass())) {
 			if (mayBeNull) {
 				if (TRACE) trace("kryo", "Write: <not null>" + pos(output.position()));
-				output.writeVarInt(Kryo.NOT_NULL, true);
+				output.writeByte(NOT_NULL);
 			}
 			return false;
 		}
@@ -649,7 +649,7 @@ public class Kryo {
 		// Otherwise write NOT_NULL and then the object bytes.
 		id = referenceResolver.addWrittenObject(object);
 		if (TRACE) trace("kryo", "Write: <not null>" + pos(output.position()));
-		output.writeVarInt(NOT_NULL, true);
+		output.writeByte(NOT_NULL);
 		if (TRACE) trace("kryo", "Write initial object reference " + id + ": " + string(object) + pos(output.position()));
 		return false;
 	}
@@ -798,7 +798,7 @@ public class Kryo {
 		int id;
 		if (mayBeNull) {
 			id = input.readVarInt(true);
-			if (id == Kryo.NULL) {
+			if (id == NULL) {
 				if (TRACE || (DEBUG && depth == 1)) log("Read", null, input.position());
 				readObject = null;
 				return REF;

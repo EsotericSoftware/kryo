@@ -40,7 +40,7 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, byte[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
@@ -67,7 +67,7 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, int[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
@@ -94,7 +94,7 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, float[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
@@ -121,7 +121,7 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, long[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
@@ -148,7 +148,7 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, short[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
@@ -175,7 +175,7 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, char[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
@@ -202,7 +202,7 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, double[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
@@ -229,7 +229,7 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, boolean[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
@@ -260,7 +260,7 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, String[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
@@ -315,7 +315,7 @@ public class DefaultArraySerializers {
 
 		public void write (Kryo kryo, Output output, Object[] object) {
 			if (object == null) {
-				output.writeVarInt(NULL, true);
+				output.writeByte(NULL);
 				return;
 			}
 			int n = object.length;

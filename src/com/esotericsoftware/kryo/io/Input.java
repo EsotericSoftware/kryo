@@ -780,7 +780,6 @@ public class Input extends InputStream {
 			return "";
 		}
 		charCount--;
-		if (chars.length < charCount) chars = new char[charCount];
 		readUtf8Chars(charCount);
 		return new String(chars, 0, charCount);
 	}
@@ -800,7 +799,6 @@ public class Input extends InputStream {
 			return new StringBuilder(0);
 		}
 		charCount--;
-		if (chars.length < charCount) chars = new char[charCount];
 		readUtf8Chars(charCount);
 		StringBuilder builder = new StringBuilder(charCount);
 		builder.append(chars, 0, charCount);
@@ -808,6 +806,7 @@ public class Input extends InputStream {
 	}
 
 	private void readUtf8Chars (int charCount) {
+		if (chars.length < charCount) chars = new char[charCount];
 		byte[] buffer = this.buffer;
 		char[] chars = this.chars;
 		// Try to read 7 bit ASCII chars.

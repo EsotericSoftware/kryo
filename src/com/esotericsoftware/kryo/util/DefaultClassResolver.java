@@ -91,7 +91,7 @@ public class DefaultClassResolver implements ClassResolver {
 	public Registration writeClass (Output output, Class type) {
 		if (type == null) {
 			if (TRACE || (DEBUG && kryo.getDepth() == 1)) log("Write", null, output.position());
-			output.writeVarInt(Kryo.NULL, true);
+			output.writeByte(Kryo.NULL);
 			return null;
 		}
 		Registration registration = kryo.getRegistration(type);
@@ -105,7 +105,7 @@ public class DefaultClassResolver implements ClassResolver {
 	}
 
 	protected void writeName (Output output, Class type, Registration registration) {
-		output.writeVarInt(NAME + 2, true);
+		output.writeByte(1); // NAME + 2
 		if (classToNameId != null) {
 			int nameId = classToNameId.get(type, -1);
 			if (nameId != -1) {

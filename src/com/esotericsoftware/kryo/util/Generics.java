@@ -65,7 +65,8 @@ public class Generics {
 		depths[size] = kryo.getDepth();
 	}
 
-	/** Removes the generic types being tracked since the corresponding {@link #pushGenericType(GenericType)}. */
+	/** Removes the generic types being tracked since the corresponding {@link #pushGenericType(GenericType)}. This is safe to call
+	 * even if {@link #pushGenericType(GenericType)} was not called. */
 	public void popGenericType () {
 		int size = genericTypesSize;
 		if (size == 0) return;
