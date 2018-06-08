@@ -332,19 +332,19 @@ class CachedFields implements Comparator<CachedField> {
 		// Set a specific serializer for a particular field.
 		if (field.isAnnotationPresent(FieldSerializer.Bind.class)) {
 			Class serializerClass = field.getAnnotation(FieldSerializer.Bind.class).value();
-			cachedField.setSerializer(ReflectionSerializerFactory.newSerializer(serializer.kryo, serializerClass, field.getClass()));
+			cachedField.setSerializer(newSerializer(serializerClass, field.getType()));
 		}
 
 		// Set a specific collection serializer for a particular field
 		if (field.isAnnotationPresent(CollectionSerializer.BindCollection.class)) {
 			if (cachedField.serializer != null) {
 				throw new RuntimeException("CollectionSerialier.Bind cannot be used with field " + field.getDeclaringClass().getName()
-					+ "." + field.getName() + ", because it has a serializer already.");
+					+ "." + field.getName() + " because it has a serializer already.");
 			}
 			if (Collection.class.isAssignableFrom(field.getType())) {
 				CollectionSerializer.BindCollection annotation = field.getAnnotation(CollectionSerializer.BindCollection.class);
-				Serializer elementSerializer = newSerializer(annotation.elementSerializer(), field);
 				Class elementClass = annotation.elementClass();
+				Serializer elementSerializer = newSerializer(annotation.elementSerializer(), elementClass);
 
 				CollectionSerializer serializer = new CollectionSerializer();
 				serializer.setElementsCanBeNull(annotation.elementsCanBeNull());
@@ -365,11 +365,10 @@ class CachedFields implements Comparator<CachedField> {
 			}
 			if (Map.class.isAssignableFrom(field.getType())) {
 				MapSerializer.BindMap annotation = field.getAnnotation(MapSerializer.BindMap.class);
-				Serializer valueSerializer = newSerializer(annotation.valueSerializer(), field);
-				Serializer keySerializer = newSerializer(annotation.keySerializer(), field);
-
-				Class keyClass = annotation.keyClass();
 				Class valueClass = annotation.valueClass();
+				Serializer valueSerializer = newSerializer(annotation.valueSerializer(), valueClass);
+				Class keyClass = annotation.keyClass();
+				Serializer keySerializer = newSerializer(annotation.keySerializer(), keyClass);
 
 				MapSerializer serializer = new MapSerializer();
 				serializer.setKeysCanBeNull(annotation.keysCanBeNull());
@@ -384,8 +383,8 @@ class CachedFields implements Comparator<CachedField> {
 		}
 	}
 
-	private Serializer newSerializer (Class serializerClass, Field field) {
+	private Serializer newSerializer (Class serializerClass, Class type) {
 		if (serializerClass == Serializer.class) return null;
-		return ReflectionSerializerFactory.newSerializer(serializer.kryo, serializerClass, field.getClass());
+		return ReflectionSerializerFactory.newSerializer(serializer.kryo, serializerClass, type);
 	}
 }

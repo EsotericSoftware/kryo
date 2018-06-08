@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
@@ -588,6 +589,8 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(HashMap.class);
 		kryo.register(ArrayList.class);
 		kryo.register(AnnotatedFields.class);
+		kryo.register(byte[].class);
+		kryo.register(AnnotatedFields.HasFields.class);
 		AnnotatedFields obj1 = new AnnotatedFields();
 		obj1.map = new HashMap();
 		obj1.map.put("key1", new int[] {1, 2, 3});
@@ -597,7 +600,15 @@ public class FieldSerializerTest extends KryoTestCase {
 		obj1.collection = new ArrayList();
 		obj1.collection.add(new long[] {1, 2, 3});
 
-		roundTrip(31, obj1);
+		roundTrip(32, obj1);
+
+		obj1.listOfHasFields = new ArrayList();
+		AnnotatedFields.HasFields hasFields = new AnnotatedFields.HasFields();
+		hasFields.number = 42;
+		hasFields.text = "foo";
+		obj1.listOfHasFields.add(hasFields);
+
+		roundTrip(37, obj1);
 	}
 
 	public void testWronglyAnnotatedCollectionFields () {
@@ -1078,27 +1089,69 @@ public class FieldSerializerTest extends KryoTestCase {
 	static public class MultipleTimesAnnotatedCollectionFields {
 		// This annotation should result in an exception, because
 		// it is applied to a non-collection field
-		@BindCollection(elementSerializer = LongArraySerializer.class, elementClass = long[].class, elementsCanBeNull = false) @Bind(CollectionSerializer.class) Collection collection;
+		@BindCollection(elementSerializer = LongArraySerializer.class, //
+			elementClass = long[].class, //
+			elementsCanBeNull = false) //
+		@Bind(CollectionSerializer.class) //
+		Collection collection;
 	}
 
 	static public class WronglyAnnotatedCollectionFields {
 		// This annotation should result in an exception, because
 		// it is applied to a non-collection field
-		@BindCollection(elementSerializer = LongArraySerializer.class, elementClass = long[].class, elementsCanBeNull = false) int collection;
+		@BindCollection(elementSerializer = LongArraySerializer.class, //
+			elementClass = long[].class, //
+			elementsCanBeNull = false) //
+		int collection;
 	}
 
 	static public class WronglyAnnotatedMapFields {
 		// This annotation should result in an exception, because
 		// it is applied to a non-map field
-		@BindMap(valueSerializer = IntArraySerializer.class, keySerializer = StringSerializer.class, valueClass = int[].class, keyClass = String.class, keysCanBeNull = false) Object map;
+		@BindMap(valueSerializer = IntArraySerializer.class, //
+			keySerializer = StringSerializer.class, //
+			valueClass = int[].class, //
+			keyClass = String.class, //
+			keysCanBeNull = false) //
+		Object map;
 	}
 
 	static public class AnnotatedFields {
+		static public class HasFields {
+			public int number;
+			public String text;
+
+			public boolean equals (Object obj) {
+				if (this == obj) return true;
+				if (obj == null) return false;
+				if (getClass() != obj.getClass()) return false;
+				HasFields other = (HasFields)obj;
+				if (number != other.number) 
+					return false;
+				if (!Objects.equals(text, other.text)) 
+					return false;
+				return true;
+			}
+		}
+
 		@Bind(StringSerializer.class) Object stringField;
 
-		@BindMap(valueSerializer = IntArraySerializer.class, keySerializer = StringSerializer.class, valueClass = int[].class, keyClass = String.class, keysCanBeNull = false) Map map;
+		@BindMap(valueSerializer = IntArraySerializer.class, //
+			keySerializer = StringSerializer.class, //
+			valueClass = int[].class, //
+			keyClass = String.class, //
+			keysCanBeNull = false) //
+		Map map;
 
-		@BindCollection(elementSerializer = LongArraySerializer.class, elementClass = long[].class, elementsCanBeNull = false) Collection collection;
+		@BindCollection(elementSerializer = LongArraySerializer.class, //
+			elementClass = long[].class, //
+			elementsCanBeNull = false) //
+		Collection collection;
+
+		@BindCollection(elementSerializer = FieldSerializer.class, //
+			elementClass = HasFields.class, //
+			elementsCanBeNull = false) //
+		List listOfHasFields;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -1131,6 +1184,7 @@ public class FieldSerializerTest extends KryoTestCase {
 					if (!Arrays.equals((long[])e1, (long[])e2)) return false;
 				}
 			}
+			if (!Objects.equals(listOfHasFields, other.listOfHasFields)) return false;
 			return true;
 		}
 	}
