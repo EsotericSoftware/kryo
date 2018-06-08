@@ -47,9 +47,9 @@ import com.esotericsoftware.kryo.io.OutputChunked;
  * <p>
  * Forward compatibility is optionally supported by enabling {@link TaggedFieldSerializerConfig#setSkipUnknownTags(boolean)},
  * which allows it to skip reading unknown tagged fields, which are presumably new fields added in future versions of an
- * application. The data is only forward compatible for fields that have {@link TaggedFieldSerializer.Tag#annexed()} set to true,
- * which comes with the cost of chunked encoding: when annexed fields are encountered during the read or write process of an
- * object, a buffer is allocated to perform the chunked encoding.
+ * application. The data is only forward compatible for fields that have {@link TaggedFieldSerializer.Tag#chunkedEncoding()} set
+ * to true, which comes with the cost of chunked encoding: when chunked fields are encountered during the read or write process of
+ * an object, a buffer is allocated to perform the chunked encoding.
  * <p>
  * Tag values must be entirely unique, both within a class and all its superclasses. An IllegalArgumentException will be thrown by
  * {@link Kryo#register(Class)} (and its overloads) if duplicate tag values are encountered.
@@ -64,7 +64,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	private int[] tags;
 	private int writeFieldCount;
-	private boolean[] deprecated, annexed;
+	private boolean[] deprecated, chunked;
 	private final TaggedFieldSerializerConfig config;
 
 	public TaggedFieldSerializer (Kryo kryo, Class type) {
@@ -94,7 +94,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		writeFieldCount = n;
 		tags = new int[n];
 		deprecated = new boolean[n];
-		annexed = new boolean[n];
+		chunked = new boolean[n];
 		for (int i = 0; i < n; i++) {
 			Field field = fields[i].getField();
 			tags[i] = field.getAnnotation(Tag.class).value();
@@ -104,7 +104,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				deprecated[i] = true;
 				writeFieldCount--;
 			}
-			if (field.getAnnotation(Tag.class).annexed()) annexed[i] = true;
+			if (field.getAnnotation(Tag.class).chunkedEncoding()) chunked[i] = true;
 		}
 	}
 
@@ -124,12 +124,12 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		CachedField[] fields = getFields();
 		OutputChunked outputChunked = null; // Only instantiate if needed.
 		int[] tags = this.tags;
-		boolean[] annexed = this.annexed, deprecated = this.deprecated;
+		boolean[] chunked = this.chunked, deprecated = this.deprecated;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (deprecated[i]) continue;
 			output.writeVarInt(tags[i], true);
-			if (annexed[i]) {
-				if (TRACE) log("Write annexed", fields[i], output.position());
+			if (chunked[i]) {
+				if (TRACE) log("Write chunked", fields[i], output.position());
 				if (outputChunked == null) outputChunked = new OutputChunked(output, 1024);
 				fields[i].write(outputChunked, object);
 				outputChunked.endChunk();
@@ -148,31 +148,32 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		CachedField[] fields = getFields();
 		InputChunked inputChunked = null; // Only instantiate if needed.
 		int[] tags = this.tags;
-		boolean[] annexed = this.annexed;
+		boolean[] chunked = this.chunked;
 		for (int i = 0, n = fieldCount; i < n; i++) {
 			int tag = input.readVarInt(true);
 			CachedField cachedField = null;
-			boolean isAnnexed = false;
+			boolean isChunked = false;
 			for (int ii = 0, nn = tags.length; ii < nn; ii++) {
 				if (tags[ii] == tag) {
 					cachedField = fields[ii];
-					isAnnexed = annexed[ii];
+					isChunked = chunked[ii];
 					break;
 				}
 			}
 			if (cachedField == null) {
 				if (config.skipUnknownTags) {
 					if (inputChunked == null) inputChunked = new InputChunked(input, 1024);
-					inputChunked.nextChunk(); // Assume future annexed field and skip.
-					if (TRACE) trace(String.format("Unknown field tag: %d (%s) encountered. Assuming a future annexed "
-						+ "tag with chunked encoding and skipping.", tag, getType().getName()));
+					inputChunked.nextChunk(); // Assume future chunked field and skip.
+					if (TRACE) trace(String.format(
+						"Unknown field tag: %d (%s) encountered. Assuming a future tag with chunked encoding and skipping.", tag,
+						getType().getName()));
 					continue;
 				} else
 					throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
 			}
 
-			if (isAnnexed) {
-				if (TRACE) log("Read annexed", fields[i], input.position());
+			if (isChunked) {
+				if (TRACE) log("Read chunked", fields[i], input.position());
 				if (inputChunked == null) inputChunked = new InputChunked(input, 1024);
 				cachedField.read(inputChunked, object);
 				inputChunked.nextChunk();
@@ -196,6 +197,6 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		/** If true, the field is serialized with chunked encoding and is forward compatible, meaning safe to read in versions of
 		 * the class without the field if {@link TaggedFieldSerializerConfig#getSkipUnknownTags()} is true. */
-		boolean annexed() default false;
+		boolean chunkedEncoding() default false;
 	}
 }

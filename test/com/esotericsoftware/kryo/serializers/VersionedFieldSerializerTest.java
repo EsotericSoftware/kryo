@@ -102,7 +102,7 @@ public class VersionedFieldSerializerTest extends KryoTestCase {
 			return true;
 		}
 
-		/** What equals(Object) would have been before the annexed fields were added to the class. */
+		/** What equals(Object) would have been before the chunked fields were added to the class. */
 		public boolean pastEquals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -142,7 +142,7 @@ public class VersionedFieldSerializerTest extends KryoTestCase {
 			return true;
 		}
 
-		/** What equals(Object) would have been before the annexed fields were added to the class. */
+		/** What equals(Object) would have been before the chunked fields were added to the class. */
 		public boolean pastEquals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;

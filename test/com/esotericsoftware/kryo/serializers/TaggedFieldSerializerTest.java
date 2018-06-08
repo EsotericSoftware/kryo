@@ -189,7 +189,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 	static private class FutureClass {
 		@Tag(0) public Integer value;
 		@Tag(1) public FutureClass2 futureClass2;
-		@Tag(value = 2, annexed = true) public String futureString = "unchanged";
+		@Tag(value = 2, chunkedEncoding = true) public String futureString = "unchanged";
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -208,7 +208,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 			return true;
 		}
 
-		/** What equals(Object) would have been before the annexed fields were added to the class. */
+		/** What equals(Object) would have been before the chunked fields were added to the class. */
 		public boolean pastEquals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -228,8 +228,8 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		@Tag(0) public String text = "something";
 		@Tag(1) public int moo = 120;
 		@Tag(2) public long moo2 = 1234120;
-		@Tag(value = 3, annexed = true) public int zzz = 123;
-		@Tag(value = 4, annexed = true) public FutureClass2 fc2;
+		@Tag(value = 3, chunkedEncoding = true) public int zzz = 123;
+		@Tag(value = 4, chunkedEncoding = true) public FutureClass2 fc2;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -248,7 +248,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 			return true;
 		}
 
-		/** What equals(Object) would have been before the annexed fields were added to the class. */
+		/** What equals(Object) would have been before the chunked fields were added to the class. */
 		public boolean pastEquals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;

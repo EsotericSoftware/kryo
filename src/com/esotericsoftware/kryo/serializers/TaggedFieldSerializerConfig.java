@@ -30,12 +30,12 @@ public class TaggedFieldSerializerConfig extends FieldSerializerConfig {
 	}
 
 	/** Set whether associated TaggedFieldSerializers should attempt to skip reading the data of unknown tags, rather than throwing
-	 * a KryoException. Data can be skipped if it was tagged with {@link TaggedFieldSerializer.Tag#annexed()} set true. This
+	 * a KryoException. Data can be skipped if it was tagged with {@link TaggedFieldSerializer.Tag#chunkedEncoding()} set true. This
 	 * enables forward compatibility.
 	 * <p>
 	 * This setting is false by default.
 	 * @param skipUnknownTags If true, unknown field tags will be skipped, with the assumption that they are future tagged values
-	 *           with {@link TaggedFieldSerializer.Tag#annexed()} set true. If false KryoException will be thrown whenever unknown
+	 *           with {@link TaggedFieldSerializer.Tag#chunkedEncoding()} set true. If false KryoException will be thrown whenever unknown
 	 *           tags are encountered. */
 	public void setSkipUnknownTags (boolean skipUnknownTags) {
 		this.skipUnknownTags = skipUnknownTags;
@@ -44,7 +44,7 @@ public class TaggedFieldSerializerConfig extends FieldSerializerConfig {
 
 	/** Whether the TaggedFieldSerializers should attempt to skip reading the data of unknown tags, rather than throwing a
 	 * KryoException. The data may only be skipped if the later version of the application which created the data set those unknown
-	 * tags with {@link TaggedFieldSerializer.Tag#annexed()} true. See {@link #setSkipUnknownTags(boolean)}. */
+	 * tags with {@link TaggedFieldSerializer.Tag#chunkedEncoding()} true. See {@link #setSkipUnknownTags(boolean)}. */
 	public boolean getSkipUnknownTags () {
 		return skipUnknownTags;
 	}
