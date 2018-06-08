@@ -1,15 +1,15 @@
 /* Copyright (c) 2008, Nathan Sweet
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
  * conditions are met:
- * 
+ *
  * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
  * disclaimer in the documentation and/or other materials provided with the distribution.
  * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
  * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
  * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
@@ -54,8 +54,7 @@ import com.esotericsoftware.kryo.factories.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.factories.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.ClosureSerializer;
-import com.esotericsoftware.kryo.serializers.CollectionSerializer;
+import com.esotericsoftware.kryo.serializers.*;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.BooleanArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ByteArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.CharArraySerializer;
@@ -99,13 +98,6 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeMapSerialize
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeSetSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.URLSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.VoidSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
-import com.esotericsoftware.kryo.serializers.GenericsResolver;
-import com.esotericsoftware.kryo.serializers.MapSerializer;
-import com.esotericsoftware.kryo.serializers.OptionalSerializers;
-import com.esotericsoftware.kryo.serializers.TaggedFieldSerializerConfig;
-import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultStreamFactory;
 import com.esotericsoftware.kryo.util.IdentityMap;
@@ -225,6 +217,7 @@ public class Kryo {
 		addDefaultSerializer(URL.class, URLSerializer.class);
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
+		ReverseComparator2Serializer.addDefaultSerializers(this);
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
@@ -1222,11 +1215,11 @@ public class Kryo {
 
 	/** Tells Kryo, if ASM-based backend should be used by new serializer instances created using this Kryo instance. Already
 	 * existing serializer instances are not affected by this setting.
-	 * 
+	 *
 	 * <p>
 	 * By default, Kryo uses ASM-based backend.
 	 * </p>
-	 * 
+	 *
 	 * @param flag if true, ASM-based backend will be used. Otherwise Unsafe-based backend could be used by some serializers, e.g.
 	 *           FieldSerializer
 	 *
