@@ -57,8 +57,8 @@ class ReflectField extends CachedField {
 			Object value = get(object);
 
 			Serializer serializer = this.serializer;
-			Class fieldClass = resolveFieldClass();
-			if (fieldClass == null) {
+			Class concreteType = resolveFieldClass();
+			if (concreteType == null) {
 				// The concrete type of the field is unknown, write the class first.
 				if (value == null) {
 					kryo.writeClass(output, null);
@@ -70,7 +70,7 @@ class ReflectField extends CachedField {
 				kryo.writeObject(output, value, serializer);
 			} else {
 				// The concrete type of the field is known, always use the same serializer.
-				if (serializer == null) serializer = kryo.getSerializer(fieldClass);
+				if (serializer == null) serializer = kryo.getSerializer(concreteType);
 				kryo.getGenerics().pushGenericType(genericType);
 				if (canBeNull) {
 					kryo.writeObjectOrNull(output, value, serializer);
@@ -100,8 +100,8 @@ class ReflectField extends CachedField {
 		try {
 			Object value;
 
-			Class concreteType = resolveFieldClass();
 			Serializer serializer = this.serializer;
+			Class concreteType = resolveFieldClass();
 			if (concreteType == null) {
 				// The concrete type of the field is unknown, read the class first.
 				Registration registration = kryo.readClass(input);
