@@ -19,18 +19,19 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.Kryo.*;
 import static com.esotericsoftware.minlog.Log.*;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 
 /** Serializes objects using direct field assignment, with versioning backward compatibility. Allows fields to have a
  * <code>@Since(int)</code> annotation to indicate the version they were added. For a particular field, the value in
@@ -47,6 +48,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 
 	public VersionFieldSerializer (Kryo kryo, Class type) {
 		super(kryo, type);
+		setAcceptsNull(true);
 		// Make sure this is done before any read / write operations.
 		initializeCachedFields();
 	}
@@ -84,9 +86,14 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
+		if (object == null) {
+			output.writeByte(NULL);
+			return;
+		}
+
 		CachedField[] fields = getFields();
 		// Write type version.
-		output.writeVarInt(typeVersion, true);
+		output.writeVarInt(typeVersion + 1, true);
 		// Write fields.
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Write", fields[i], output.position());
@@ -95,15 +102,15 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
+		int version = input.readVarInt(true);
+		if (version == NULL) return null;
+		version--;
+		if (!compatible && version != typeVersion)
+			throw new KryoException("Version not compatible: " + version + " <-> " + typeVersion);
+
 		T object = create(kryo, input, type);
 		kryo.reference(object);
 
-		// Read input version.
-		int version = input.readVarInt(true);
-		if (!compatible && version != typeVersion) {
-			// Reject to read
-			throw new KryoException("Version not compatible: " + version + " <-> " + typeVersion);
-		}
 		CachedField[] fields = getFields();
 		for (int i = 0, n = fields.length; i < n; i++) {
 			// Field is not present in input, skip it.

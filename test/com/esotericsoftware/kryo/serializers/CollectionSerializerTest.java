@@ -40,23 +40,36 @@ public class CollectionSerializerTest extends KryoTestCase {
 		kryo.register(ArrayList.class);
 		kryo.register(LinkedList.class);
 		kryo.register(CopyOnWriteArrayList.class);
-		roundTrip(11, list("1", "2", "3"));
+		roundTrip(2, list());
+		roundTrip(10, list("1", "2", "3"));
+		roundTrip(9, list("1", "2", null));
 		roundTrip(13, list("1", "2", null, 1, 2));
 		roundTrip(15, list("1", "2", null, 1, 2, 5));
-		roundTrip(11, list("1", "2", "3"));
-		roundTrip(11, list("1", "2", "3"));
-		roundTrip(13, list("1", "2", list("3")));
-		roundTrip(13, new LinkedList(list("1", "2", list("3"))));
-		roundTrip(13, new CopyOnWriteArrayList(list("1", "2", list("3"))));
+
+		roundTrip(16, list("11", "22", "33", "44", "55", "66"));
+		roundTrip(19, list("11", "22", 33, "44", "55", "66"));
+		roundTrip(15, list("11", "22", null, "44", "55", "66"));
+		roundTrip(17, list("11", "22", 33, null, "55", "66"));
+		roundTrip(3, list(null, null, null, null, null, null));
+
+		roundTrip(10, list("1", "2", "3"));
+		roundTrip(10, list("1", "2", "3"));
+		roundTrip(14, list("1", "2", list("3")));
+		roundTrip(14, new LinkedList(list("1", "2", list("3"))));
+		roundTrip(14, new CopyOnWriteArrayList(list("1", "2", list("3"))));
 
 		CollectionSerializer serializer = new CollectionSerializer();
 		kryo.register(ArrayList.class, serializer);
 		kryo.register(LinkedList.class, serializer);
 		kryo.register(CopyOnWriteArrayList.class, serializer);
+		serializer.setElementClass(Integer.class, kryo.getSerializer(Integer.class));
+		roundTrip(5, list(1, 2, 3));
+		roundTrip(7, list(1, 2, null));
 		serializer.setElementClass(String.class, kryo.getSerializer(String.class));
 		roundTrip(8, list("1", "2", "3"));
 		serializer.setElementClass(String.class, new StringSerializer());
 		roundTrip(8, list("1", "2", "3"));
+		roundTrip(7, list("1", "2", null));
 		serializer.setElementsCanBeNull(false);
 		roundTrip(8, list("1", "2", "3"));
 
@@ -79,7 +92,7 @@ public class CollectionSerializerTest extends KryoTestCase {
 		set.add(63);
 		set.add(34);
 		set.add(45);
-		roundTrip(11, set);
+		roundTrip(9, set);
 	}
 
 	static public class TreeSetSubclass<E> extends TreeSet<E> {

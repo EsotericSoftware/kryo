@@ -19,17 +19,20 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.Kryo.*;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Collection;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 
 /** Serializes objects that implement the {@link Collection} interface.
  * <p>
@@ -41,6 +44,10 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	private boolean elementsCanBeNull = true;
 	private Serializer serializer;
 	private Class elementClass;
+
+	{
+		setAcceptsNull(true);
+	}
 
 	public CollectionSerializer () {
 	}
@@ -73,14 +80,68 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		this.serializer = serializer;
 	}
 
-	public void write (Kryo kryo, Output output, T collection) {
-		output.writeVarInt(collection.size(), true);
+	final public void write (Kryo kryo, Output output, T collection) {
+		if (collection == null) {
+			output.writeByte(NULL);
+			return;
+		}
 
+		int length = collection.size();
+		if (length == 0) {
+			output.writeByte(1);
+			return;
+		}
+
+		boolean elementsCanBeNull = this.elementsCanBeNull;
 		Serializer serializer = this.serializer;
 		if (serializer == null) {
 			Class genericClass = kryo.getGenerics().nextGenericClass();
 			if (genericClass != null && kryo.isFinal(genericClass)) serializer = kryo.getSerializer(genericClass);
 		}
+		outer:
+		if (serializer != null) {
+			inner:
+			if (elementsCanBeNull) {
+				for (Object element : collection) {
+					if (element == null) {
+						output.writeVarIntFlag(true, length + 1, true);
+						break inner;
+					}
+				}
+				output.writeVarIntFlag(false, length + 1, true);
+				elementsCanBeNull = false;
+			} else
+				output.writeVarInt(length + 1, true);
+			writeHeader(kryo, output, collection);
+		} else { // Serializer is unknown, check if all elements are the same type.
+			Class elementType = null;
+			boolean hasNull = false;
+			for (Object element : collection) {
+				if (element == null)
+					hasNull = true;
+				else if (elementType == null)
+					elementType = element.getClass();
+				else if (element.getClass() != elementType) { // Elements are different types.
+					output.writeVarIntFlag(false, length + 1, true);
+					writeHeader(kryo, output, collection);
+					break outer;
+				}
+			}
+			output.writeVarIntFlag(true, length + 1, true);
+			writeHeader(kryo, output, collection);
+			if (elementType == null) { // All elements are null.
+				output.writeByte(NULL);
+				return;
+			}
+			// All elements are the same class.
+			kryo.writeClass(output, elementType);
+			serializer = kryo.getSerializer(elementType);
+			if (elementsCanBeNull) {
+				output.writeBoolean(hasNull);
+				elementsCanBeNull = hasNull;
+			}
+		}
+
 		if (serializer != null) {
 			if (elementsCanBeNull) {
 				for (Object element : collection)
@@ -96,19 +157,18 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		kryo.getGenerics().popGenericType();
 	}
 
-	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
-	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
+	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class)}. The default implementation does nothing. */
+	protected void writeHeader (Kryo kryo, Output output, T collection) {
+	}
+
+	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation (eg
+	 * to call a constructor with arguments), optionally reading bytes written in {@link #writeHeader(Kryo, Output, Collection)}.
+	 * The default implementation uses {@link Kryo#newInstance(Class)}. */
 	protected T create (Kryo kryo, Input input, Class<? extends T> type) {
 		return kryo.newInstance(type);
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-		T collection = create(kryo, input, type);
-		kryo.reference(collection);
-
-		int length = input.readVarInt(true);
-		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
-
 		Class elementClass = this.elementClass;
 		Serializer serializer = this.serializer;
 		if (serializer == null) {
@@ -118,6 +178,51 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				elementClass = genericClass;
 			}
 		}
+
+		T collection;
+		int length;
+		boolean elementsCanBeNull = this.elementsCanBeNull;
+		if (serializer != null) {
+			if (elementsCanBeNull) {
+				elementsCanBeNull = input.readVarIntFlag();
+				length = input.readVarIntFlag(true);
+			} else
+				length = input.readVarInt(true);
+			if (length == 0) return null;
+
+			collection = create(kryo, input, type);
+			kryo.reference(collection);
+
+			if (length == 1) return collection;
+			length--;
+		} else {
+			boolean sameType = input.readVarIntFlag();
+			length = input.readVarIntFlag(true);
+			if (length == 0) return null;
+
+			collection = create(kryo, input, type);
+			kryo.reference(collection);
+
+			if (length == 1) return collection;
+			length--;
+
+			if (sameType) {
+				Registration registration = kryo.readClass(input);
+				if (registration == null) { // All elements are null.
+					if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
+					for (int i = 0; i < length; i++)
+						collection.add(null);
+					kryo.getGenerics().popGenericType();
+					return collection;
+				}
+				elementClass = registration.getType();
+				serializer = kryo.getSerializer(elementClass);
+				if (elementsCanBeNull) elementsCanBeNull = input.readBoolean();
+			}
+		}
+
+		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
+
 		if (serializer != null) {
 			if (elementsCanBeNull) {
 				for (int i = 0; i < length; i++)

@@ -657,9 +657,8 @@ public class DefaultSerializers {
 	/** Serializer for {@link TreeMap} and any subclass.
 	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
 	static public class TreeSetSerializer extends CollectionSerializer<TreeSet> {
-		public void write (Kryo kryo, Output output, TreeSet treeSet) {
+		protected void writeHeader (Kryo kryo, Output output, TreeSet treeSet) {
 			kryo.writeClassAndObject(output, treeSet.comparator());
-			super.write(kryo, output, treeSet);
 		}
 
 		protected TreeSet create (Kryo kryo, Input input, Class<? extends TreeSet> type) {
