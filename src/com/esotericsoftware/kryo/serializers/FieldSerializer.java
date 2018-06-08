@@ -25,6 +25,8 @@ import static com.esotericsoftware.minlog.Log.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.Generics;
@@ -323,8 +325,12 @@ public class FieldSerializer<T> extends Serializer<T> {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface Bind {
-		/** The serializer class to use for this field. */
-		Class<? extends Serializer> value();
+		/** The serializer class to serialize the annotated field, which will be created by the {@link #serializerFactory()}. Can be
+		 * omitted if the serializer factory knows what type of serializer to create. */
+		Class<? extends Serializer> value() default Serializer.class;
+
+		/** The factory used to create the serializer. */
+		Class<? extends SerializerFactory> serializerFactory() default ReflectionSerializerFactory.class;
 	}
 
 	/** Used to annotate that a field uses a specific class.

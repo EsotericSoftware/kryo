@@ -617,9 +617,8 @@ public class FieldSerializerTest extends KryoTestCase {
 			WronglyAnnotatedCollectionFields obj1 = new WronglyAnnotatedCollectionFields();
 			roundTrip(31, obj1);
 		} catch (RuntimeException ex) {
-			Throwable cause = ex.getCause().getCause();
 			assertTrue("Exception should complain about a field not implementing java.util.Collection",
-				cause.getMessage().contains("be used only with fields implementing java.util.Collection"));
+				ex.getMessage().contains("be used only with fields implementing java.util.Collection"));
 			return;
 		}
 
@@ -632,9 +631,8 @@ public class FieldSerializerTest extends KryoTestCase {
 			WronglyAnnotatedMapFields obj1 = new WronglyAnnotatedMapFields();
 			roundTrip(31, obj1);
 		} catch (RuntimeException ex) {
-			Throwable cause = ex.getCause().getCause();
 			assertTrue("Exception should complain about a field not implementing java.util.Map ",
-				cause.getMessage().contains("be used only with fields implementing java.util.Map"));
+				ex.getMessage().contains("be used only with fields implementing java.util.Map"));
 			return;
 		}
 
@@ -647,9 +645,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			MultipleTimesAnnotatedCollectionFields obj1 = new MultipleTimesAnnotatedCollectionFields();
 			roundTrip(31, obj1);
 		} catch (RuntimeException ex) {
-			Throwable cause = ex.getCause().getCause();
-			assertTrue("Exception should complain about a field that has a serializer already",
-				cause.getMessage().contains("already"));
+			assertTrue("Exception should complain about a field that has a serializer already", ex.getMessage().contains("already"));
 			return;
 		}
 
@@ -741,7 +737,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	static public final class A {
 		public int value;
-		public B b;
+		@Bind(serializerFactory = FieldSerializerFactory.class) public B b;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -933,6 +929,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
+	@DefaultSerializer(FieldSerializer.class)
 	static public class HasNonNull {
 		@NotNull public String nonNullText;
 
@@ -948,6 +945,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
+	@DefaultSerializer(serializerFactory = FieldSerializerFactory.class)
 	static public class HasStringField {
 		public String text;
 
@@ -1126,10 +1124,8 @@ public class FieldSerializerTest extends KryoTestCase {
 				if (obj == null) return false;
 				if (getClass() != obj.getClass()) return false;
 				HasFields other = (HasFields)obj;
-				if (number != other.number) 
-					return false;
-				if (!Objects.equals(text, other.text)) 
-					return false;
+				if (number != other.number) return false;
+				if (!Objects.equals(text, other.text)) return false;
 				return true;
 			}
 		}

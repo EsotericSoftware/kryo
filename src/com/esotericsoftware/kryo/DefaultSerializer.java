@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo;
 
+import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -31,5 +33,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface DefaultSerializer {
-	Class<? extends Serializer> value();
+	/** The serializer class to serialize the annotated type, which will be created by the {@link #serializerFactory()}. Can be
+	 * omitted if the serializer factory knows what type of serializer to create. */
+	Class<? extends Serializer> value() default Serializer.class;
+
+	/** The factory used to create the serializer. */
+	Class<? extends SerializerFactory> serializerFactory() default ReflectionSerializerFactory.class;
 }

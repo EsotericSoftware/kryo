@@ -24,6 +24,8 @@ import static com.esotericsoftware.kryo.Kryo.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -253,20 +255,22 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		return copy;
 	}
 
-	/** Used to annotate fields that are collections with specific Kryo serializers for their values. */
+	/** Used to annotate a collection field with {@link CollectionSerializer} settings. */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindCollection {
-		/** Serializer to be used for values
-		 * @return the class<? extends Serializer> used for values serialization */
-		Class<? extends Serializer> elementSerializer() default Serializer.class;
-
-		/** Class used for elements
-		 * @return the class used for elements */
+		/** @see CollectionSerializer#setElementClass(Class, Serializer) */
 		Class elementClass() default Object.class;
 
-		/** Indicates if elements can be null
-		 * @return true, if elements can be null */
+		/** The element serializer class, which will be created using the {@link #elementSerializerFactory()}. Can be omitted if the
+		 * serializer factory knows what type of serializer to create.
+		 * @see CollectionSerializer#setElementClass(Class, Serializer) */
+		Class<? extends Serializer> elementSerializer() default Serializer.class;
+
+		/** The factory used to create the element serializer. */
+		Class<? extends SerializerFactory> elementSerializerFactory() default ReflectionSerializerFactory.class;
+
+		/** @see CollectionSerializer#setElementsCanBeNull(boolean) */
 		boolean elementsCanBeNull() default true;
 	}
 }

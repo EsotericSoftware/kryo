@@ -37,6 +37,28 @@ public interface SerializerFactory {
 	 * @return An implementation of a serializer that is able to serialize an object of type {@code type}. */
 	Serializer newSerializer (Kryo kryo, Class type);
 
+	/** @param factoryClass Must have a constructor that takes a serializer class, or a zero argument constructor.
+	 * @param serializerClass May be null if the factory alread knows the serializer class to create. */
+	static public <T extends SerializerFactory> T newFactory (Class<T> factoryClass, Class<? extends Serializer> serializerClass) {
+		if (serializerClass == Serializer.class) serializerClass = null; // Happens if not set in an annotation.
+		try {
+			if (serializerClass != null) {
+				try {
+					return factoryClass.getConstructor(Class.class).newInstance(serializerClass);
+				} catch (NoSuchMethodException ex) {
+				}
+			}
+			return factoryClass.newInstance();
+		} catch (Exception ex) {
+			if (serializerClass == null)
+				throw new IllegalArgumentException("Unable to create serializer factory: " + factoryClass.getName(), ex);
+			else {
+				throw new IllegalArgumentException("Unable to create serializer factory \"" + factoryClass.getName()
+					+ "\" for serializer class: " + className(serializerClass), ex);
+			}
+		}
+	}
+
 	/** This factory instantiates new serializers of a given class via reflection. The constructors of the given
 	 * {@code serializerClass} must either take an instance of {@link Kryo} and an instance of {@link Class} as its parameter, take
 	 * only a {@link Kryo} or {@link Class} as its only argument or take no arguments. If several of the described constructors are

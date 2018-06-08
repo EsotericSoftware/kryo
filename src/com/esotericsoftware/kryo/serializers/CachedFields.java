@@ -24,7 +24,7 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.serializers.AsmField.BooleanAsmField;
 import com.esotericsoftware.kryo.serializers.AsmField.ByteAsmField;
 import com.esotericsoftware.kryo.serializers.AsmField.CharAsmField;
@@ -34,6 +34,7 @@ import com.esotericsoftware.kryo.serializers.AsmField.IntAsmField;
 import com.esotericsoftware.kryo.serializers.AsmField.LongAsmField;
 import com.esotericsoftware.kryo.serializers.AsmField.ShortAsmField;
 import com.esotericsoftware.kryo.serializers.AsmField.StringAsmField;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.ReflectField.BooleanReflectField;
@@ -331,8 +332,9 @@ class CachedFields implements Comparator<CachedField> {
 
 		// Set a specific serializer for a particular field.
 		if (field.isAnnotationPresent(FieldSerializer.Bind.class)) {
-			Class serializerClass = field.getAnnotation(FieldSerializer.Bind.class).value();
-			cachedField.setSerializer(newSerializer(serializerClass, field.getType()));
+			Bind annotation = field.getAnnotation(FieldSerializer.Bind.class);
+			cachedField.setSerializer(SerializerFactory.newFactory(annotation.serializerFactory(), annotation.value())
+				.newSerializer(serializer.kryo, field.getType()));
 		}
 
 		// Set a specific collection serializer for a particular field
@@ -344,7 +346,9 @@ class CachedFields implements Comparator<CachedField> {
 			if (Collection.class.isAssignableFrom(field.getType())) {
 				CollectionSerializer.BindCollection annotation = field.getAnnotation(CollectionSerializer.BindCollection.class);
 				Class elementClass = annotation.elementClass();
-				Serializer elementSerializer = newSerializer(annotation.elementSerializer(), elementClass);
+				Serializer elementSerializer = SerializerFactory
+					.newFactory(annotation.elementSerializerFactory(), annotation.elementSerializer())
+					.newSerializer(serializer.kryo, elementClass);
 
 				CollectionSerializer serializer = new CollectionSerializer();
 				serializer.setElementsCanBeNull(annotation.elementsCanBeNull());
@@ -366,9 +370,13 @@ class CachedFields implements Comparator<CachedField> {
 			if (Map.class.isAssignableFrom(field.getType())) {
 				MapSerializer.BindMap annotation = field.getAnnotation(MapSerializer.BindMap.class);
 				Class valueClass = annotation.valueClass();
-				Serializer valueSerializer = newSerializer(annotation.valueSerializer(), valueClass);
+				Serializer valueSerializer = SerializerFactory
+					.newFactory(annotation.valueSerializerFactory(), annotation.valueSerializer())
+					.newSerializer(serializer.kryo, valueClass);
 				Class keyClass = annotation.keyClass();
-				Serializer keySerializer = newSerializer(annotation.keySerializer(), keyClass);
+				Serializer keySerializer = SerializerFactory //
+					.newFactory(annotation.keySerializerFactory(), annotation.keySerializer())
+					.newSerializer(serializer.kryo, keyClass);
 
 				MapSerializer serializer = new MapSerializer();
 				serializer.setKeysCanBeNull(annotation.keysCanBeNull());
@@ -381,10 +389,5 @@ class CachedFields implements Comparator<CachedField> {
 					+ field.getDeclaringClass().getName() + "." + field.getName() + " does not implement it.");
 			}
 		}
-	}
-
-	private Serializer newSerializer (Class serializerClass, Class type) {
-		if (serializerClass == Serializer.class) return null;
-		return ReflectionSerializerFactory.newSerializer(serializer.kryo, serializerClass, type);
 	}
 }

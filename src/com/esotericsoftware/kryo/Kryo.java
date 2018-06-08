@@ -22,32 +22,7 @@ package com.esotericsoftware.kryo;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Proxy;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.Currency;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
-import org.objenesis.instantiator.ObjectInstantiator;
-import org.objenesis.strategy.InstantiatorStrategy;
-import org.objenesis.strategy.SerializingInstantiatorStrategy;
-import org.objenesis.strategy.StdInstantiatorStrategy;
-
+import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.SingletonSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -110,6 +85,32 @@ import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
+import java.util.Currency;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import org.objenesis.instantiator.ObjectInstantiator;
+import org.objenesis.strategy.InstantiatorStrategy;
+import org.objenesis.strategy.SerializingInstantiatorStrategy;
+import org.objenesis.strategy.StdInstantiatorStrategy;
+
 /** Maps classes to serializers so object graphs can be serialized automatically.
  * @author Nathan Sweet */
 public class Kryo {
@@ -119,7 +120,7 @@ public class Kryo {
 	static private final int REF = -1;
 	static private final int NO_REF = -2;
 
-	private SerializerFactory defaultSerializer = new ReflectionSerializerFactory(FieldSerializer.class);
+	private SerializerFactory defaultSerializer = new FieldSerializerFactory();
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(53);
 	private final int lowPriorityDefaultSerializerCount;
 
@@ -225,7 +226,7 @@ public class Kryo {
 	// --- Default serializers ---
 
 	/** Sets the serializer factory to use when no {@link #addDefaultSerializer(Class, Class) default serializers} match an
-	 * object's type. Default is {@link ReflectionSerializerFactory} with {@link FieldSerializer}.
+	 * object's type. Default is {@link FieldSerializerFactory}.
 	 * @see #newDefaultSerializer(Class) */
 	public void setDefaultSerializer (SerializerFactory serializer) {
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
@@ -365,8 +366,8 @@ public class Kryo {
 
 	protected Serializer getDefaultSerializerForAnnotatedType (Class type) {
 		if (type.isAnnotationPresent(DefaultSerializer.class)) {
-			DefaultSerializer defaultSerializerAnnotation = (DefaultSerializer)type.getAnnotation(DefaultSerializer.class);
-			return ReflectionSerializerFactory.newSerializer(this, defaultSerializerAnnotation.value(), type);
+			DefaultSerializer annotation = (DefaultSerializer)type.getAnnotation(DefaultSerializer.class);
+			return SerializerFactory.newFactory(annotation.serializerFactory(), annotation.value()).newSerializer(this, type);
 		}
 		return null;
 	}

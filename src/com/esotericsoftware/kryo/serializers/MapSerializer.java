@@ -19,6 +19,14 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Generics.GenericType;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -26,12 +34,6 @@ import java.lang.annotation.Target;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 /** Serializes objects that implement the {@link Map} interface.
  * <p>
@@ -185,21 +187,27 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindMap {
-		/** Serializer to be used for keys
-		 * @return the class<? extends serializer> used for keys serialization */
-		Class<? extends Serializer> keySerializer() default Serializer.class;
-
-		/** Serializer to be used for values
-		 * @return the class<? extends serializer> used for values serialization */
-		Class<? extends Serializer> valueSerializer() default Serializer.class;
-
-		/** Class used for keys
-		 * @return the class used for keys */
+		/** @see MapSerializer#setKeyClass(Class, Serializer) */
 		Class keyClass() default Object.class;
 
-		/** Class used for values
-		 * @return the class used for values */
+		/** The key serializer class, which will be created using the {@link #keySerializerFactory()}. Can be omitted if the
+		 * serializer factory knows what type of serializer to create.
+		 * @see MapSerializer#setKeyClass(Class, Serializer) */
+		Class<? extends Serializer> keySerializer() default Serializer.class;
+
+		/** The factory used to create the key serializer. */
+		Class<? extends SerializerFactory> keySerializerFactory() default ReflectionSerializerFactory.class;
+
+		/** @see MapSerializer#setValueClass(Class, Serializer) */
 		Class valueClass() default Object.class;
+
+		/** The value serializer class, which will be created using the {@link #valueSerializerFactory()}. Can be omitted if the
+		 * serializer factory knows what type of serializer to create.
+		 * @see MapSerializer#setValueClass(Class, Serializer) */
+		Class<? extends Serializer> valueSerializer() default Serializer.class;
+
+		/** The factory used to create the value serializer. */
+		Class<? extends SerializerFactory> valueSerializerFactory() default ReflectionSerializerFactory.class;
 
 		/** Indicates if keys can be null
 		 * @return true, if keys can be null */
