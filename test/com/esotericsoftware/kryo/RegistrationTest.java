@@ -6,6 +6,7 @@ import static com.esotericsoftware.minlog.Log.*;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,6 +15,14 @@ import java.io.IOException;
 import junit.framework.TestCase;
 
 public class RegistrationTest extends TestCase {
+	public void testDefaultSerializerOrder () {
+		Kryo kryo = new Kryo();
+		kryo.addDefaultSerializer(Fruit.class, new FieldSerializer(kryo, Fruit.class));
+		FieldSerializer appleSerializer = new FieldSerializer(kryo, Apple.class);
+		kryo.addDefaultSerializer(Apple.class, appleSerializer);
+		assertSame(appleSerializer, kryo.getDefaultSerializer(Apple.class));
+	}
+
 	public void testReplaceRegistration () throws IOException {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(true);
@@ -53,5 +62,11 @@ public class RegistrationTest extends TestCase {
 		public Some (T t) {
 			this.value = t;
 		}
+	}
+
+	static public class Fruit {
+	}
+
+	static public class Apple extends Fruit {
 	}
 }

@@ -247,8 +247,7 @@ public class Kryo {
 	public void addDefaultSerializer (Class type, Serializer serializer) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		DefaultSerializerEntry entry = new DefaultSerializerEntry(type, new SingletonSerializerFactory(serializer));
-		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
+		insertDefaultSerializer(type, new SingletonSerializerFactory(serializer));
 	}
 
 	/** Instances of the specified class will use the specified factory to create a serializer when {@link #register(Class)} or
@@ -257,8 +256,7 @@ public class Kryo {
 	public void addDefaultSerializer (Class type, SerializerFactory serializerFactory) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerFactory == null) throw new IllegalArgumentException("serializerFactory cannot be null.");
-		DefaultSerializerEntry entry = new DefaultSerializerEntry(type, serializerFactory);
-		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
+		insertDefaultSerializer(type, serializerFactory);
 	}
 
 	/** Instances of the specified class will use the specified serializer when {@link #register(Class)} or
@@ -341,8 +339,15 @@ public class Kryo {
 	public void addDefaultSerializer (Class type, Class<? extends Serializer> serializerClass) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerClass == null) throw new IllegalArgumentException("serializerClass cannot be null.");
-		DefaultSerializerEntry entry = new DefaultSerializerEntry(type, new ReflectionSerializerFactory(serializerClass));
-		defaultSerializers.add(defaultSerializers.size() - lowPriorityDefaultSerializerCount, entry);
+		insertDefaultSerializer(type, new ReflectionSerializerFactory(serializerClass));
+	}
+
+	private int insertDefaultSerializer (Class type, SerializerFactory factory) {
+		int lowest = 0;
+		for (int i = 0, n = defaultSerializers.size() - lowPriorityDefaultSerializerCount; i < n; i++)
+			if (type.isAssignableFrom(defaultSerializers.get(i).type)) lowest = i + 1;
+		defaultSerializers.add(lowest, new DefaultSerializerEntry(type, factory));
+		return lowest;
 	}
 
 	/** Returns the best matching serializer for a class. This method can be overridden to implement custom logic to choose a
