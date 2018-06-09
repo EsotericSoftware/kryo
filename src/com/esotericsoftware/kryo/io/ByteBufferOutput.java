@@ -316,13 +316,15 @@ public class ByteBufferOutput extends Output {
 			byteBuffer.put((byte)first);
 			position++;
 			return 1;
-		} else if (value >>> 13 == 0) {
+		}
+		if (value >>> 13 == 0) {
 			require(2);
 			position += 2;
 			byteBuffer.put((byte)(first | 0x40)); // Set bit 7.
 			byteBuffer.put((byte)(value >>> 6));
 			return 2;
-		} else if (value >>> 20 == 0) {
+		}
+		if (value >>> 20 == 0) {
 			require(3);
 			position += 3;
 			ByteBuffer byteBuffer = this.byteBuffer;
@@ -330,7 +332,8 @@ public class ByteBufferOutput extends Output {
 			byteBuffer.put((byte)((value >>> 6) | 0x80)); // Set bit 8.
 			byteBuffer.put((byte)(value >>> 13));
 			return 3;
-		} else if (value >>> 27 == 0) {
+		}
+		if (value >>> 27 == 0) {
 			require(4);
 			position += 4;
 			ByteBuffer byteBuffer = this.byteBuffer;
@@ -620,7 +623,31 @@ public class ByteBufferOutput extends Output {
 		byteBuffer.put(position - 1, (byte)(byteBuffer.get(position - 1) | 0x80)); // Bit 8 means end of ASCII.
 	}
 
+	private void writeUtf8_slow (String value, int charCount, int charIndex) {
+		int capacity = this.capacity;
+		for (; charIndex < charCount; charIndex++) {
+			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
+			position++;
+			int c = value.charAt(charIndex);
+			if (c <= 0x007F)
+				byteBuffer.put((byte)c);
+			else if (c > 0x07FF) {
+				byteBuffer.put((byte)(0xE0 | c >> 12 & 0x0F));
+				require(2);
+				position += 2;
+				byteBuffer.put((byte)(0x80 | c >> 6 & 0x3F));
+				byteBuffer.put((byte)(0x80 | c & 0x3F));
+			} else {
+				byteBuffer.put((byte)(0xC0 | c >> 6 & 0x1F));
+				if (position == capacity) require(1);
+				position++;
+				byteBuffer.put((byte)(0x80 | c & 0x3F));
+			}
+		}
+	}
+
 	private void writeUtf8_slow (CharSequence value, int charCount, int charIndex) {
+		int capacity = this.capacity;
 		for (; charIndex < charCount; charIndex++) {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
 			position++;

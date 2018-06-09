@@ -355,14 +355,16 @@ public class Output extends OutputStream implements AutoCloseable {
 			if (position == capacity) require(1);
 			buffer[position++] = (byte)first;
 			return 1;
-		} else if (value >>> 13 == 0) {
+		}
+		if (value >>> 13 == 0) {
 			require(2);
 			int p = position;
 			position = p + 2;
 			buffer[p] = (byte)(first | 0x40); // Set bit 7.
 			buffer[p + 1] = (byte)(value >>> 6);
 			return 2;
-		} else if (value >>> 20 == 0) {
+		}
+		if (value >>> 20 == 0) {
 			require(3);
 			byte[] buffer = this.buffer;
 			int p = position;
@@ -371,7 +373,8 @@ public class Output extends OutputStream implements AutoCloseable {
 			buffer[p + 1] = (byte)((value >>> 6) | 0x80); // Set bit 8.
 			buffer[p + 2] = (byte)(value >>> 13);
 			return 3;
-		} else if (value >>> 27 == 0) {
+		}
+		if (value >>> 27 == 0) {
 			require(4);
 			byte[] buffer = this.buffer;
 			int p = position;
@@ -741,7 +744,28 @@ public class Output extends OutputStream implements AutoCloseable {
 		buffer[position - 1] |= 0x80; // Bit 8 means end of ASCII.
 	}
 
+	private void writeUtf8_slow (String value, int charCount, int charIndex) {
+		int capacity = this.capacity;
+		for (; charIndex < charCount; charIndex++) {
+			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
+			int c = value.charAt(charIndex);
+			if (c <= 0x007F)
+				buffer[position++] = (byte)c;
+			else if (c > 0x07FF) {
+				buffer[position++] = (byte)(0xE0 | c >> 12 & 0x0F);
+				require(2);
+				buffer[position++] = (byte)(0x80 | c >> 6 & 0x3F);
+				buffer[position++] = (byte)(0x80 | c & 0x3F);
+			} else {
+				buffer[position++] = (byte)(0xC0 | c >> 6 & 0x1F);
+				if (position == capacity) require(1);
+				buffer[position++] = (byte)(0x80 | c & 0x3F);
+			}
+		}
+	}
+
 	private void writeUtf8_slow (CharSequence value, int charCount, int charIndex) {
+		int capacity = this.capacity;
 		for (; charIndex < charCount; charIndex++) {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
 			int c = value.charAt(charIndex);
