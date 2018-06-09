@@ -49,11 +49,10 @@ public class ExternalizableSerializer extends Serializer {
 
 	public void write (Kryo kryo, Output output, Object object) {
 		JavaSerializer serializer = getJavaSerializerIfRequired(object.getClass());
-		if (serializer == null) {
+		if (serializer == null)
 			writeExternal(kryo, output, object);
-		} else {
+		else
 			serializer.write(kryo, output, object);
-		}
 	}
 
 	public Object read (Kryo kryo, Input input, Class type) {
@@ -81,36 +80,28 @@ public class ExternalizableSerializer extends Serializer {
 	}
 
 	private ObjectOutput getObjectOutput (Kryo kryo, Output output) {
-		if (objectOutput == null) {
+		if (objectOutput == null)
 			objectOutput = new KryoObjectOutput(kryo, output);
-		} else {
+		else
 			objectOutput.setOutput(output);
-		}
-
 		return objectOutput;
 	}
 
 	private ObjectInput getObjectInput (Kryo kryo, Input input) {
-		if (objectInput == null) {
+		if (objectInput == null)
 			objectInput = new KryoObjectInput(kryo, input);
-		} else {
+		else
 			objectInput.setInput(input);
-		}
-
 		return objectInput;
 	}
 
 	/** Determines if this class requires the fall-back {@code JavaSerializer}. If the class does not require any specialized Java
 	 * serialization features then null will be returned.
-	 *
 	 * @param type the type we wish to externalize
 	 * @return a {@code JavaSerializer} if the type requires more than simple externalization. */
 	private JavaSerializer getJavaSerializerIfRequired (Class type) {
 		JavaSerializer javaSerializer = getCachedSerializer(type);
-		if (javaSerializer == null && isJavaSerializerRequired(type)) {
-			javaSerializer = new JavaSerializer();
-		}
-
+		if (javaSerializer == null && isJavaSerializerRequired(type)) javaSerializer = new JavaSerializer();
 		return javaSerializer;
 	}
 
@@ -123,7 +114,7 @@ public class ExternalizableSerializer extends Serializer {
 	}
 
 	private boolean isJavaSerializerRequired (Class type) {
-		return (hasInheritableReplaceMethod(type, "writeReplace") || hasInheritableReplaceMethod(type, "readResolve"));
+		return hasInheritableReplaceMethod(type, "writeReplace") || hasInheritableReplaceMethod(type, "readResolve");
 	}
 
 	/* find out if there are any pesky serialization extras on this class */
