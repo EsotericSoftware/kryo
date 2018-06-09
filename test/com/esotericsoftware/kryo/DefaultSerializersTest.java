@@ -1,15 +1,15 @@
 /* Copyright (c) 2008, Nathan Sweet
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
  * conditions are met:
- * 
+ *
  * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
  * disclaimer in the documentation and/or other materials provided with the distribution.
  * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
  * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
  * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
@@ -32,6 +32,9 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 
 import org.junit.Assert;
 import org.objenesis.strategy.StdInstantiatorStrategy;
@@ -388,6 +391,16 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(41, 41, new URL("https://github.com/EsotericSoftware/kryo"));
 		roundTrip(78, 78, new URL("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
 	}
+
+  public void testInet4Serializer () throws Exception {
+    kryo.register(Inet4Address.class);
+    roundTrip(5, 5, InetAddress.getByName("238.12.46.156"));
+  }
+
+  public void testInet6Serializer () throws Exception {
+    kryo.register(Inet6Address.class);
+    roundTrip(17, 17, InetAddress.getByName("1080:0:0:0:8:800:200C:417A"));
+  }
 
 	public enum TestEnum {
 		a, b, c
