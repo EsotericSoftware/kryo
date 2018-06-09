@@ -88,8 +88,8 @@ class ReflectField extends CachedField {
 		} catch (KryoException ex) {
 			ex.addTrace(name + " (" + object.getClass().getName() + ")");
 			throw ex;
-		} catch (RuntimeException runtimeEx) {
-			KryoException ex = new KryoException(runtimeEx);
+		} catch (Throwable t) {
+			KryoException ex = new KryoException(t);
 			ex.addTrace(name + " (" + object.getClass().getName() + ")");
 			throw ex;
 		}
@@ -129,8 +129,8 @@ class ReflectField extends CachedField {
 		} catch (KryoException ex) {
 			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
-		} catch (RuntimeException runtimeEx) {
-			KryoException ex = new KryoException(runtimeEx);
+		} catch (Throwable t) {
+			KryoException ex = new KryoException(t);
 			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
 		}
@@ -152,8 +152,8 @@ class ReflectField extends CachedField {
 		} catch (KryoException ex) {
 			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
-		} catch (RuntimeException runtimeEx) {
-			KryoException ex = new KryoException(runtimeEx);
+		} catch (Throwable t) {
+			KryoException ex = new KryoException(t);
 			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
 		}
@@ -170,8 +170,8 @@ class ReflectField extends CachedField {
 					output.writeVarInt(field.getInt(object), false);
 				else
 					output.writeInt(field.getInt(object));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (int)");
 				throw ex;
 			}
@@ -183,8 +183,8 @@ class ReflectField extends CachedField {
 					field.setInt(object, input.readVarInt(false));
 				else
 					field.setInt(object, input.readInt());
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (int)");
 				throw ex;
 			}
@@ -193,8 +193,8 @@ class ReflectField extends CachedField {
 		public void copy (Object original, Object copy) {
 			try {
 				field.setInt(copy, field.getInt(original));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (int)");
 				throw ex;
 			}
@@ -209,8 +209,8 @@ class ReflectField extends CachedField {
 		public void write (Output output, Object object) {
 			try {
 				output.writeFloat(field.getFloat(object));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (float)");
 				throw ex;
 			}
@@ -219,8 +219,8 @@ class ReflectField extends CachedField {
 		public void read (Input input, Object object) {
 			try {
 				field.setFloat(object, input.readFloat());
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (float)");
 				throw ex;
 			}
@@ -229,8 +229,8 @@ class ReflectField extends CachedField {
 		public void copy (Object original, Object copy) {
 			try {
 				field.setFloat(copy, field.getFloat(original));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (float)");
 				throw ex;
 			}
@@ -245,8 +245,8 @@ class ReflectField extends CachedField {
 		public void write (Output output, Object object) {
 			try {
 				output.writeShort(field.getShort(object));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (short)");
 				throw ex;
 			}
@@ -255,8 +255,8 @@ class ReflectField extends CachedField {
 		public void read (Input input, Object object) {
 			try {
 				field.setShort(object, input.readShort());
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (short)");
 				throw ex;
 			}
@@ -265,8 +265,8 @@ class ReflectField extends CachedField {
 		public void copy (Object original, Object copy) {
 			try {
 				field.setShort(copy, field.getShort(original));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (short)");
 				throw ex;
 			}
@@ -281,8 +281,8 @@ class ReflectField extends CachedField {
 		public void write (Output output, Object object) {
 			try {
 				output.writeByte(field.getByte(object));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (byte)");
 				throw ex;
 			}
@@ -291,8 +291,8 @@ class ReflectField extends CachedField {
 		public void read (Input input, Object object) {
 			try {
 				field.setByte(object, input.readByte());
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (byte)");
 				throw ex;
 			}
@@ -301,8 +301,8 @@ class ReflectField extends CachedField {
 		public void copy (Object original, Object copy) {
 			try {
 				field.setByte(copy, field.getByte(original));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (byte)");
 				throw ex;
 			}
@@ -317,8 +317,8 @@ class ReflectField extends CachedField {
 		public void write (Output output, Object object) {
 			try {
 				output.writeBoolean(field.getBoolean(object));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (boolean)");
 				throw ex;
 			}
@@ -327,8 +327,8 @@ class ReflectField extends CachedField {
 		public void read (Input input, Object object) {
 			try {
 				field.setBoolean(object, input.readBoolean());
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (boolean)");
 				throw ex;
 			}
@@ -337,8 +337,8 @@ class ReflectField extends CachedField {
 		public void copy (Object original, Object copy) {
 			try {
 				field.setBoolean(copy, field.getBoolean(original));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (boolean)");
 				throw ex;
 			}
@@ -353,8 +353,8 @@ class ReflectField extends CachedField {
 		public void write (Output output, Object object) {
 			try {
 				output.writeChar(field.getChar(object));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (char)");
 				throw ex;
 			}
@@ -363,8 +363,8 @@ class ReflectField extends CachedField {
 		public void read (Input input, Object object) {
 			try {
 				field.setChar(object, input.readChar());
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (char)");
 				throw ex;
 			}
@@ -373,8 +373,8 @@ class ReflectField extends CachedField {
 		public void copy (Object original, Object copy) {
 			try {
 				field.setChar(copy, field.getChar(original));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (char)");
 				throw ex;
 			}
@@ -392,8 +392,8 @@ class ReflectField extends CachedField {
 					output.writeVarLong(field.getLong(object), false);
 				else
 					output.writeLong(field.getLong(object));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (long)");
 				throw ex;
 			}
@@ -405,8 +405,8 @@ class ReflectField extends CachedField {
 					field.setLong(object, input.readVarLong(false));
 				else
 					field.setLong(object, input.readLong());
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (long)");
 				throw ex;
 			}
@@ -415,8 +415,8 @@ class ReflectField extends CachedField {
 		public void copy (Object original, Object copy) {
 			try {
 				field.setLong(copy, field.getLong(original));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (long)");
 				throw ex;
 			}
@@ -431,8 +431,8 @@ class ReflectField extends CachedField {
 		public void write (Output output, Object object) {
 			try {
 				output.writeDouble(field.getDouble(object));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (double)");
 				throw ex;
 			}
@@ -441,8 +441,8 @@ class ReflectField extends CachedField {
 		public void read (Input input, Object object) {
 			try {
 				field.setDouble(object, input.readDouble());
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (double)");
 				throw ex;
 			}
@@ -451,8 +451,8 @@ class ReflectField extends CachedField {
 		public void copy (Object original, Object copy) {
 			try {
 				field.setDouble(copy, field.getDouble(original));
-			} catch (Exception e) {
-				KryoException ex = new KryoException(e);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(name + " (double)");
 				throw ex;
 			}

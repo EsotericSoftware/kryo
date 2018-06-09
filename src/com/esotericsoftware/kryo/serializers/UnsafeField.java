@@ -51,8 +51,8 @@ class UnsafeField extends ReflectField {
 		} catch (KryoException ex) {
 			ex.addTrace(this + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
-		} catch (RuntimeException runtimeEx) {
-			KryoException ex = new KryoException(runtimeEx);
+		} catch (Throwable t) {
+			KryoException ex = new KryoException(t);
 			ex.addTrace(this + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
 		}

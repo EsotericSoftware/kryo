@@ -124,8 +124,8 @@ public class BeanSerializer<T> extends Serializer<T> {
 			} catch (KryoException ex) {
 				ex.addTrace(property + " (" + type.getName() + ")");
 				throw ex;
-			} catch (RuntimeException runtimeEx) {
-				KryoException ex = new KryoException(runtimeEx);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(property + " (" + type.getName() + ")");
 				throw ex;
 			}
@@ -153,8 +153,8 @@ public class BeanSerializer<T> extends Serializer<T> {
 			} catch (KryoException ex) {
 				ex.addTrace(property + " (" + object.getClass().getName() + ")");
 				throw ex;
-			} catch (RuntimeException runtimeEx) {
-				KryoException ex = new KryoException(runtimeEx);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(property + " (" + object.getClass().getName() + ")");
 				throw ex;
 			}
@@ -172,12 +172,12 @@ public class BeanSerializer<T> extends Serializer<T> {
 			} catch (KryoException ex) {
 				ex.addTrace(property + " (" + copy.getClass().getName() + ")");
 				throw ex;
-			} catch (RuntimeException runtimeEx) {
-				KryoException ex = new KryoException(runtimeEx);
-				ex.addTrace(property + " (" + copy.getClass().getName() + ")");
-				throw ex;
 			} catch (Exception ex) {
 				throw new KryoException("Error copying bean property: " + property + " (" + copy.getClass().getName() + ")", ex);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
+				ex.addTrace(property + " (" + copy.getClass().getName() + ")");
+				throw ex;
 			}
 		}
 		return copy;

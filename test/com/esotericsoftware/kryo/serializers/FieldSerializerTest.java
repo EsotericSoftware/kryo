@@ -198,18 +198,18 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d = new D();
 		c.d.e = new E();
 		c.d.e.f = new F();
-		c.d.e.f.a = c.a;
+		c.d.e.f.d = c.d; // Circular.
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		roundTrip(75, c);
 		C c2 = (C)object2;
-		assertTrue(c2.a == c2.d.e.f.a);
+		assertTrue(c2.d == c2.d.e.f.d);
 
 		// Test reset clears unregistered class names.
 		roundTrip(75, c);
 		c2 = (C)object2;
-		assertTrue(c2.a == c2.d.e.f.a);
+		assertTrue(c2.d == c2.d.e.f.d);
 
 		kryo = new Kryo();
 		kryo.register(A.class);
@@ -220,7 +220,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(F.class);
 		roundTrip(15, c);
 		c2 = (C)object2;
-		assertTrue(c2.a == c2.d.e.f.a);
+		assertTrue(c2.d == c2.d.e.f.d);
 	}
 
 	public void testRegistrationOrder () {
@@ -821,7 +821,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	static public final class F {
 		public int value;
 		public final int finalValue = 12;
-		public A a;
+		public D d;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
