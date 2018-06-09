@@ -70,6 +70,17 @@ public class DefaultClassResolver implements ClassResolver {
 		return registration;
 	}
 
+	public Registration unregister (int classID) {
+		Registration registration = idToRegistration.remove(classID);
+		if (registration != null) {
+			classToRegistration.remove(registration.getType());
+			memoizedClassId = -1;
+			memoizedClass = null;
+			if (registration.getType().isPrimitive()) classToRegistration.remove(getWrapperClass(registration.getType()));
+		}
+		return registration;
+	}
+
 	public Registration registerImplicit (Class type) {
 		return register(new Registration(type, kryo.getDefaultSerializer(type), NAME));
 	}

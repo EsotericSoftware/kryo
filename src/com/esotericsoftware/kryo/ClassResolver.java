@@ -32,6 +32,10 @@ public interface ClassResolver {
 	 * @see Kryo#register(Registration) */
 	public Registration register (Registration registration);
 
+	/** Removes the registration for the specified ID.
+	 * @return May be null if the class ID was not registered. */
+	public Registration unregister (int classID);
+
 	/** Called when an unregistered type is encountered and {@link Kryo#setRegistrationRequired(boolean)} is false. */
 	public Registration registerImplicit (Class type);
 

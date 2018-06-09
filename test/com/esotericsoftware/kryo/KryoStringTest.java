@@ -24,9 +24,7 @@ import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
 
 public class KryoStringTest extends KryoTestCase {
-
 	static KryoFactory factory = new KryoFactory() {
-
 		public Kryo create () {
 			Kryo kryo = new Kryo();
 			return kryo;

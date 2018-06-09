@@ -68,6 +68,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	public FieldSerializer (Kryo kryo, Class type, FieldSerializerConfig config) {
 		if (config == null) throw new IllegalArgumentException("config cannot be null.");
+		if (type.isPrimitive()) throw new IllegalArgumentException("type cannot be a primitive class: " + type);
 		this.kryo = kryo;
 		this.type = type;
 		this.config = config;

@@ -443,11 +443,9 @@ public class Kryo {
 		int id = registration.getId();
 		if (id < 0) throw new IllegalArgumentException("id must be > 0: " + id);
 
-		Registration existing = getRegistration(registration.getId());
-		if (DEBUG && existing != null && existing.getType() != registration.getType()) {
-			debug("An existing registration with a different type already uses ID: " + registration.getId()
-				+ "\nExisting registration: " + existing + "\nis now overwritten with: " + registration);
-		}
+		Registration existing = classResolver.unregister(id);
+		if (DEBUG && existing != null && existing.getType() != registration.getType())
+			debug("kryo", "Registration overwritten: " + existing + " -> " + registration);
 
 		return classResolver.register(registration);
 	}
