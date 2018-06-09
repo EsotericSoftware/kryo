@@ -42,20 +42,20 @@ import java.lang.reflect.Field;
  * @see TaggedFieldSerializer
  * @author Tianyi HE <hty0807@gmail.com> */
 public class VersionFieldSerializer<T> extends FieldSerializer<T> {
-	private int typeVersion = 0; // Version of current type.
+	private final VersionFieldSerializerConfig config;
+	private int typeVersion; // Version of the type being serialized.
 	private int[] fieldVersion; // Version of each field.
-	private boolean compatible = true; // True if current type is compatible with serialized objects that have a different version.
 
 	public VersionFieldSerializer (Kryo kryo, Class type) {
+		this(kryo, type, new VersionFieldSerializerConfig());
+	}
+
+	public VersionFieldSerializer (Kryo kryo, Class type, VersionFieldSerializerConfig config) {
 		super(kryo, type);
+		this.config = config;
 		setAcceptsNull(true);
 		// Make sure this is done before any read / write operations.
 		initializeCachedFields();
-	}
-
-	public VersionFieldSerializer (Kryo kryo, Class type, boolean compatible) {
-		this(kryo, type);
-		this.compatible = compatible;
 	}
 
 	protected void initializeCachedFields () {
@@ -105,7 +105,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		int version = input.readVarInt(true);
 		if (version == NULL) return null;
 		version--;
-		if (!compatible && version != typeVersion)
+		if (!config.compatible && version != typeVersion)
 			throw new KryoException("Version not compatible: " + version + " <-> " + typeVersion);
 
 		T object = create(kryo, input, type);
@@ -130,5 +130,24 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	public @interface Since {
 		/** Version of annotated field, default is 0, and must be incremental to maintain compatibility. */
 		int value() default 0;
+	}
+
+	/** Configuration for VersionFieldSerializer instances. */
+	static public class VersionFieldSerializerConfig extends FieldSerializerConfig {
+		boolean compatible = true;
+
+		public VersionFieldSerializerConfig clone () {
+			return (VersionFieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
+		}
+
+		/** When false, as exception is thrown when reading an objects with a different version. Default is true. */
+		public void setCompatible (boolean compatible) {
+			this.compatible = compatible;
+			if (TRACE) trace("kryo", "VersionFieldSerializerConfig setCompatible: " + compatible);
+		}
+
+		public boolean getCompatible () {
+			return compatible;
+		}
 	}
 }

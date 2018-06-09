@@ -23,6 +23,8 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
@@ -36,21 +38,21 @@ import com.esotericsoftware.kryo.util.ObjectMap;
  * field name strings. Also, during serialization and deserialization buffers are allocated to perform chunked encoding. This is
  * what enables CompatibleFieldSerializer to skip bytes for fields it does not know about.
  * <p>
- * Removing fields when {@link Kryo#setReferences(boolean) references} are enabled can cause compatibility issues. See
- * <a href="https://github.com/EsotericSoftware/kryo/issues/286#issuecomment-74870545">here</a>.
- * <p>
- * Note that the field data is identified by name. The situation where a super class has a field with the same name as a subclass
- * must be avoided.
+ * Note that the field data is identified by name. If a super class has a field with the same name as a subclass,
+ * {@link CompatibleFieldSerializerConfig#setExtendedFieldNames(boolean)} must be true.
  * @author Nathan Sweet */
 public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	static private final int binarySearchThreshold = 32;
 
+	private CompatibleFieldSerializerConfig config;
+
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
-		super(kryo, type, new FieldSerializerConfig());
+		this(kryo, type, new CompatibleFieldSerializerConfig());
 	}
 
-	public CompatibleFieldSerializer (Kryo kryo, Class type, FieldSerializerConfig config) {
+	public CompatibleFieldSerializer (Kryo kryo, Class type, CompatibleFieldSerializerConfig config) {
 		super(kryo, type, config);
+		this.config = config;
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
@@ -67,11 +69,34 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 		}
 
-		OutputChunked outputChunked = new OutputChunked(output, 1024);
+		boolean chunked = config.chunked;
+		boolean writeValueClass = !chunked || kryo.getReferences();
+		Output fieldOutput;
+		OutputChunked outputChunked = null;
+		if (chunked)
+			fieldOutput = outputChunked = new OutputChunked(output, 1024);
+		else
+			fieldOutput = output;
 		for (int i = 0, n = fields.length; i < n; i++) {
-			if (TRACE) log("Write", fields[i], output.position());
-			fields[i].write(outputChunked, object);
-			outputChunked.endChunk();
+			CachedField cachedField = fields[i];
+			if (TRACE) log("Write", cachedField, output.position());
+
+			// Write the concrete type in case the field is removed there was a reference to the field value.
+			if (writeValueClass) {
+				Class valueClass = null;
+				try {
+					if (object != null) {
+						Object value = cachedField.getField().get(object);
+						if (value != null) valueClass = value.getClass();
+					}
+				} catch (IllegalAccessException ex) {
+				}
+				kryo.writeClass(fieldOutput, valueClass);
+				cachedField.setClass(valueClass);
+			}
+
+			cachedField.write(fieldOutput, object);
+			if (chunked) outputChunked.endChunk();
 		}
 	}
 
@@ -83,19 +108,53 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		CachedField[] fields = (CachedField[])kryo.getGraphContext().get(this);
 		if (fields == null) fields = readFields(kryo, input);
 
-		InputChunked inputChunked = new InputChunked(input, 1024);
+		boolean chunked = config.chunked;
+		boolean readValueClass = !chunked || kryo.getReferences();
+		Input fieldInput;
+		InputChunked inputChunked = null;
+		if (chunked)
+			fieldInput = inputChunked = new InputChunked(input, 1024);
+		else
+			fieldInput = input;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
-			if (cachedField == null) {
+
+			if (readValueClass) {
+				Registration registration;
+				try {
+					registration = kryo.readClass(fieldInput);
+				} catch (KryoException ex) {
+					if (!chunked) throw new KryoException("Unable to read obsolete data (unknown type).", ex);
+					if (DEBUG) debug("kryo", "Unable to read obsolete data (unknown type).", ex);
+					inputChunked.nextChunk();
+					continue;
+				}
+				Class valueClass = registration == null ? null : registration.getType();
+				if (cachedField == null) {
+					// Read obsolete data in case it is a reference.
+					if (TRACE) trace("kryo", "Skip obsolete field, type: " + valueClass == null ? null : className(valueClass));
+					try {
+						if (valueClass != null) kryo.readObject(fieldInput, valueClass);
+					} catch (KryoException ex) {
+						if (!chunked) throw new KryoException("Unable to read obsolete data.", ex);
+						if (DEBUG) debug("kryo", "Unable to read obsolete data.", ex);
+					}
+					if (chunked) inputChunked.nextChunk();
+					continue;
+				}
+				cachedField.setClass(valueClass);
+			} else if (cachedField == null) {
 				if (TRACE) trace("kryo", "Skip obsolete field.");
 				inputChunked.nextChunk();
 				continue;
 			}
-			if (TRACE) log("Read", fields[i], input.position());
-			cachedField.read(inputChunked, object);
-			inputChunked.nextChunk();
+
+			if (TRACE) log("Read", cachedField, input.position());
+			cachedField.read(fieldInput, object);
+			if (chunked) inputChunked.nextChunk();
 		}
 		return object;
+
 	}
 
 	private CachedField[] readFields (Kryo kryo, Input input) {
@@ -118,7 +177,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 						continue outer;
 					}
 				}
-				if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
+				if (TRACE) trace("kryo", "Ignore obsolete field name: " + schemaName);
 			}
 		} else {
 			int low, mid, high, compare;
@@ -140,11 +199,33 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 						continue outer;
 					}
 				}
-				if (TRACE) trace("kryo", "Ignore obsolete field: " + schemaName);
+				if (TRACE) trace("kryo", "Ignore obsolete field name: " + schemaName);
 			}
 		}
 
 		kryo.getGraphContext().put(this, fields);
 		return fields;
+	}
+
+	public CompatibleFieldSerializerConfig getCompatibleFieldSerializerConfig () {
+		return config;
+	}
+
+	/** Configuration for CompatibleFieldSerializer instances. */
+	static public class CompatibleFieldSerializerConfig extends FieldSerializerConfig {
+		boolean chunked;
+
+		public CompatibleFieldSerializerConfig clone () {
+			return (CompatibleFieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
+		}
+
+		public void setChunked (boolean chunked) {
+			this.chunked = chunked;
+			if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig setChunked: " + chunked);
+		}
+
+		public boolean getChunked () {
+			return chunked;
+		}
 	}
 }

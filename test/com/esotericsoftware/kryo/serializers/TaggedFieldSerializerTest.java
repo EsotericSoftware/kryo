@@ -98,11 +98,11 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		kryo.register(Object[].class);
 		TaggedFieldSerializer<FutureClass> futureSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
 		futureSerializer.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
-		futureSerializer.updateConfig();
+		futureSerializer.updateFields();
 		kryo.register(FutureClass.class, futureSerializer);
 		TaggedFieldSerializer<FutureClass2> futureSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
 		futureSerializer2.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
-		futureSerializer2.updateConfig();
+		futureSerializer2.updateFields();
 		kryo.register(FutureClass2.class, futureSerializer2);
 
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -113,12 +113,12 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 
 		TaggedFieldSerializer<FutureClass> presentSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
 		presentSerializer.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
-		presentSerializer.updateConfig();
+		presentSerializer.updateFields();
 		presentSerializer.removeField("futureString"); // simulate past version of application
 		kryo.register(FutureClass.class, presentSerializer);
 		TaggedFieldSerializer<FutureClass2> presentSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
 		presentSerializer2.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
-		presentSerializer2.updateConfig();
+		presentSerializer2.updateFields();
 		presentSerializer2.removeField("zzz"); // simulate past version of application
 		presentSerializer2.removeField("fc2"); // simulate past version of application
 		kryo.register(FutureClass2.class, presentSerializer2);

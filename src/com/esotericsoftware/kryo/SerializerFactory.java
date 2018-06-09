@@ -21,21 +21,25 @@ package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.kryo.util.Util.*;
 
+import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
+import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.CompatibleFieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializerConfig;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
-import com.esotericsoftware.kryo.serializers.TaggedFieldSerializerConfig;
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSerializerConfig;
+import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
+import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.VersionFieldSerializerConfig;
 
 /** A serializer factory that allows the creation of serializers. This factory will be called when a {@link Kryo} serializer
  * discovers a new type for which no serializer is yet known. For example, when a factory is registered via
  * {@link Kryo#setDefaultSerializer(SerializerFactory)} a different serializer can be created dependent on the type of a class.
  * @author Rafael Winterhalter <rafael.wth@web.de> */
-public interface SerializerFactory {
+public interface SerializerFactory<T extends Serializer> {
 	/** Creates a new serializer
 	 * @param kryo The serializer instance requesting the new serializer.
 	 * @param type The type of the object that is to be serialized.
 	 * @return An implementation of a serializer that is able to serialize an object of type {@code type}. */
-	Serializer newSerializer (Kryo kryo, Class type);
+	T newSerializer (Kryo kryo, Class<T> type);
 
 	/** @param factoryClass Must have a constructor that takes a serializer class, or a zero argument constructor.
 	 * @param serializerClass May be null if the factory alread knows the serializer class to create. */
@@ -64,20 +68,20 @@ public interface SerializerFactory {
 	 * only a {@link Kryo} or {@link Class} as its only argument or take no arguments. If several of the described constructors are
 	 * found, the first found constructor is used, in the order as they were just described.
 	 * @author Rafael Winterhalter <rafael.wth@web.de> */
-	static public class ReflectionSerializerFactory implements SerializerFactory {
-		private final Class<? extends Serializer> serializerClass;
+	static public class ReflectionSerializerFactory<T extends Serializer> implements SerializerFactory<T> {
+		private final Class<T> serializerClass;
 
-		public ReflectionSerializerFactory (Class<? extends Serializer> serializerClass) {
+		public ReflectionSerializerFactory (Class<T> serializerClass) {
 			this.serializerClass = serializerClass;
 		}
 
-		public Serializer newSerializer (Kryo kryo, Class type) {
+		public T newSerializer (Kryo kryo, Class type) {
 			return newSerializer(kryo, serializerClass, type);
 		}
 
 		/** Creates a new instance of the specified serializer for serializing the specified class. Serializers must have a zero
 		 * argument constructor or one that takes (Kryo), (Class), or (Kryo, Class). */
-		static public Serializer newSerializer (Kryo kryo, Class<? extends Serializer> serializerClass, Class type) {
+		static public <T extends Serializer> T newSerializer (Kryo kryo, Class<T> serializerClass, Class type) {
 			try {
 				try {
 					return serializerClass.getConstructor(Kryo.class, Class.class).newInstance(kryo, type);
@@ -103,21 +107,21 @@ public interface SerializerFactory {
 	 * be used when multiple types should be serialized by the same serializer. This also allows serializers to be shared among
 	 * different {@link Kryo} instances.
 	 * @author Rafael Winterhalter <rafael.wth@web.de> */
-	static public class SingletonSerializerFactory implements SerializerFactory {
-		private final Serializer serializer;
+	static public class SingletonSerializerFactory<T extends Serializer> implements SerializerFactory<T> {
+		private final T serializer;
 
-		public SingletonSerializerFactory (Serializer serializer) {
+		public SingletonSerializerFactory (T serializer) {
 			this.serializer = serializer;
 		}
 
-		public Serializer newSerializer (Kryo kryo, Class type) {
+		public T newSerializer (Kryo kryo, Class<T> type) {
 			return serializer;
 		}
 	}
 
 	/** A serializer factory that returns new, configured {@link FieldSerializer} instances.
 	 * @author Nathan Sweet */
-	static public class FieldSerializerFactory implements SerializerFactory {
+	static public class FieldSerializerFactory implements SerializerFactory<FieldSerializer> {
 		private final FieldSerializerConfig config;
 
 		public FieldSerializerFactory () {
@@ -132,14 +136,14 @@ public interface SerializerFactory {
 			return config;
 		}
 
-		public Serializer newSerializer (Kryo kryo, Class type) {
+		public FieldSerializer newSerializer (Kryo kryo, Class type) {
 			return new FieldSerializer(kryo, type, config.clone());
 		}
 	}
 
 	/** A serializer factory that returns new, configured {@link TaggedFieldSerializer} instances.
 	 * @author Nathan Sweet */
-	static public class TaggedFieldSerializerFactory implements SerializerFactory {
+	static public class TaggedFieldSerializerFactory implements SerializerFactory<TaggedFieldSerializer> {
 		private final TaggedFieldSerializerConfig config;
 
 		public TaggedFieldSerializerFactory () {
@@ -154,8 +158,52 @@ public interface SerializerFactory {
 			return config;
 		}
 
-		public Serializer newSerializer (Kryo kryo, Class type) {
+		public TaggedFieldSerializer newSerializer (Kryo kryo, Class type) {
 			return new TaggedFieldSerializer(kryo, type, config.clone());
+		}
+	}
+
+	/** A serializer factory that returns new, configured {@link VersionFieldSerializer} instances.
+	 * @author Nathan Sweet */
+	static public class VersionFieldSerializerFactory implements SerializerFactory<VersionFieldSerializer> {
+		private final VersionFieldSerializerConfig config;
+
+		public VersionFieldSerializerFactory () {
+			this.config = new VersionFieldSerializerConfig();
+		}
+
+		public VersionFieldSerializerFactory (VersionFieldSerializerConfig config) {
+			this.config = config;
+		}
+
+		public VersionFieldSerializerConfig getConfig () {
+			return config;
+		}
+
+		public VersionFieldSerializer newSerializer (Kryo kryo, Class type) {
+			return new VersionFieldSerializer(kryo, type, config.clone());
+		}
+	}
+
+	/** A serializer factory that returns new, configured {@link CompatibleFieldSerializer} instances.
+	 * @author Nathan Sweet */
+	static public class CompatibleFieldSerializerFactory implements SerializerFactory<CompatibleFieldSerializer> {
+		private final CompatibleFieldSerializerConfig config;
+
+		public CompatibleFieldSerializerFactory () {
+			this.config = new CompatibleFieldSerializerConfig();
+		}
+
+		public CompatibleFieldSerializerFactory (CompatibleFieldSerializerConfig config) {
+			this.config = config;
+		}
+
+		public CompatibleFieldSerializerConfig getConfig () {
+			return config;
+		}
+
+		public CompatibleFieldSerializer newSerializer (Kryo kryo, Class type) {
+			return new CompatibleFieldSerializer(kryo, type, config.clone());
 		}
 	}
 }

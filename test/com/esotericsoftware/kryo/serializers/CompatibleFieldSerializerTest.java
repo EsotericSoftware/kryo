@@ -19,11 +19,13 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.io.FileNotFoundException;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
+import com.esotericsoftware.minlog.Log;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
-
-import com.esotericsoftware.kryo.KryoTestCase;
 
 /** @author Nathan Sweet */
 public class CompatibleFieldSerializerTest extends KryoTestCase {
@@ -31,35 +33,80 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		supportsCopy = true;
 	}
 
-	public void testCompatibleFieldSerializer () throws FileNotFoundException {
-		TestClass object1 = new TestClass();
-		object1.child = new TestClass();
-		object1.other = new AnotherClass();
-		object1.other.value = "meow";
-		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
-		kryo.register(TestClass.class);
-		kryo.register(AnotherClass.class);
-		roundTrip(107, object1);
+	public void testCompatibleFieldSerializer () {
+		testCompatibleFieldSerializer(87, false, false);
+		testCompatibleFieldSerializer(87, false, true);
+		testCompatibleFieldSerializer(88, true, false);
+		testCompatibleFieldSerializer(88, true, true);
 	}
 
-	public void testAddedField () throws FileNotFoundException {
+	public void testCompatibleFieldSerializer (int length, boolean references, final boolean chunked) {
+		kryo.setReferences(references);
+
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory() {
+			public CompatibleFieldSerializer newSerializer (Kryo kryo, Class type) {
+				CompatibleFieldSerializer serializer = super.newSerializer(kryo, type);
+				serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+				return serializer;
+			}
+		});
+
+		kryo.register(TestClass.class);
+		kryo.register(AnotherClass.class);
+
+		TestClass object1 = new TestClass();
+		object1.child = new TestClass();
+		object1.other = new AnotherClass();
+		object1.other.value = "meow";
+		roundTrip(length, object1);
+	}
+
+	public void testAddedField () {
+		testAddedField(63, false, false);
+		testAddedField(80, false, true);
+		testAddedField(65, true, false);
+		testAddedField(93, true, true);
+	}
+
+	public void testAddedField (int length, boolean references, boolean chunked) {
+		kryo.setReferences(references);
+
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, AnotherClass.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		kryo.register(AnotherClass.class, serializer);
+
+		serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		kryo.register(TestClass.class, serializer);
+
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();
 		object1.other = new AnotherClass();
 		object1.other.value = "meow";
 
-		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
 		serializer.removeField("text");
-		kryo.register(TestClass.class, serializer);
-		kryo.register(AnotherClass.class, new CompatibleFieldSerializer(kryo, AnotherClass.class));
-		roundTrip(80, object1);
+		roundTrip(length, object1);
 
-		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
+		serializer.updateFields();
 		Object object2 = kryo.readClassAndObject(input);
 		assertEquals(object1, object2);
 	}
 
-	public void testAddedFieldToClassWithManyFields () throws FileNotFoundException {
+	public void testAddedFieldToClassWithManyFields () {
+		testAddedFieldToClassWithManyFields(189, false, false);
+		testAddedFieldToClassWithManyFields(226, false, true);
+		testAddedFieldToClassWithManyFields(227, true, false);
+		testAddedFieldToClassWithManyFields(301, true, true);
+	}
+
+	public void testAddedFieldToClassWithManyFields (int length, boolean references, boolean chunked) {
+		kryo.setReferences(references);
+
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		kryo.register(ClassWithManyFields.class, serializer);
+
 		// class must have more than CompatibleFieldSerializer#THRESHOLD_BINARY_SEARCH number of fields
 		ClassWithManyFields object1 = new ClassWithManyFields();
 		object1.aa = "aa";
@@ -100,31 +147,66 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.yy = "yy";
 		object1.zz = "zzaa";
 
-		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bAdd");
 		kryo.register(ClassWithManyFields.class, serializer);
-		roundTrip(226, object1);
+		roundTrip(length, object1);
 
-		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
+		serializer.updateFields();
 		Object object2 = kryo.readClassAndObject(input);
 		assertEquals(object1, object2);
 	}
 
-	public void testRemovedField () throws FileNotFoundException {
+	public void testRemovedField () {
+		testRemovedField(96, false, false);
+		testRemovedField(116, false, true);
+		testRemovedField(89, true, false);
+		testRemovedField(122, true, true);
+	}
+
+	private void testRemovedField (int length, boolean references, boolean chunked) {
+		kryo.setReferences(references);
+
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, AnotherClass.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		kryo.register(AnotherClass.class, serializer);
+
+		serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		kryo.register(TestClass.class, serializer);
+
 		TestClass object1 = new TestClass();
+		object1.text = "so much fun";
 		object1.child = new TestClass();
+		object1.other = new AnotherClass();
+		object1.other.value = object1.text;
 
-		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
-		roundTrip(94, object1);
+		TestClass object2 = roundTrip(length, object1);
+		assertEquals("so much fun", object2.text);
+		assertEquals("so much fun", object1.other.value);
 
-		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
-		Object object2 = kryo.readClassAndObject(input);
+		object2 = (TestClass)kryo.readClassAndObject(input);
+		assertEquals("so much fun", object2.other.value);
+		assertEquals("something", object2.text);
+		object2.text = "so much fun";
 		assertEquals(object1, object2);
 	}
 
-	public void testRemovedFieldFromClassWithManyFields () throws FileNotFoundException {
+	public void testRemovedFieldFromClassWithManyFields () {
+		testRemovedFieldFromClassWithManyFields(198, false, false);
+		testRemovedFieldFromClassWithManyFields(236, false, true);
+		testRemovedFieldFromClassWithManyFields(237, true, false);
+		testRemovedFieldFromClassWithManyFields(313, true, true);
+	}
+
+	public void testRemovedFieldFromClassWithManyFields (int length, boolean references, boolean chunked) {
+		kryo.setReferences(references);
+
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		kryo.register(ClassWithManyFields.class, serializer);
+
 		// class must have more than CompatibleFieldSerializer#THRESHOLD_BINARY_SEARCH number of fields
 		ClassWithManyFields object1 = new ClassWithManyFields();
 		object1.aa = "aa";
@@ -166,10 +248,8 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.yy = "yy";
 		object1.zz = "zzaa";
 
-		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
-		roundTrip(236, object1);
+		roundTrip(length, object1);
 
-		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bAdd");
 		kryo.register(ClassWithManyFields.class, serializer);
 		Object object2 = kryo.readClassAndObject(input);
@@ -180,7 +260,20 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals(object1, object2);
 	}
 
-	public void testRemovedMultipleFieldsFromClassWithManyFields () throws FileNotFoundException {
+	public void testRemovedMultipleFieldsFromClassWithManyFields () {
+		testRemovedMultipleFieldsFromClassWithManyFields(182, false, false);
+		testRemovedMultipleFieldsFromClassWithManyFields(220, false, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(209, true, false);
+		testRemovedMultipleFieldsFromClassWithManyFields(285, true, true);
+	}
+
+	public void testRemovedMultipleFieldsFromClassWithManyFields (int length, boolean references, boolean chunked) {
+		kryo.setReferences(references);
+
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		kryo.register(ClassWithManyFields.class, serializer);
+
 		// class must have more than CompatibleFieldSerializer#THRESHOLD_BINARY_SEARCH number of fields
 		ClassWithManyFields object1 = new ClassWithManyFields();
 		object1.aa = "aa";
@@ -210,10 +303,8 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.yy = "yy";
 		object1.zz = "zz";
 
-		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
-		roundTrip(220, object1);
+		roundTrip(length, object1);
 
-		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bb");
 		serializer.removeField("cc");
 		serializer.removeField("dd");
@@ -230,16 +321,25 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals(object1, object2);
 	}
 
-	public void testExtendedClass () throws FileNotFoundException {
-		ExtendedTestClass extendedObject = new ExtendedTestClass();
+	public void testExtendedClass () {
+		testExtendedClass(274, false, false);
+		testExtendedClass(286, false, true);
+		testExtendedClass(277, true, false);
+		testExtendedClass(301, true, true);
+	}
 
+	public void testExtendedClass (int length, boolean references, boolean chunked) {
+		kryo.setReferences(references);
+
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ExtendedTestClass.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
 		// this test would fail with DEFAULT field name strategy
-		FieldSerializerConfig config = new FieldSerializerConfig();
-		config.setExtendedFieldNames(true);
-
-		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ExtendedTestClass.class, config);
+		serializer.getCompatibleFieldSerializerConfig().setExtendedFieldNames(true);
+		serializer.updateFields();
 		kryo.register(ExtendedTestClass.class, serializer);
-		roundTrip(286, extendedObject);
+
+		ExtendedTestClass extendedObject = new ExtendedTestClass();
+		roundTrip(length, extendedObject);
 
 		ExtendedTestClass object2 = (ExtendedTestClass)kryo.readClassAndObject(input);
 		assertEquals(extendedObject, object2);

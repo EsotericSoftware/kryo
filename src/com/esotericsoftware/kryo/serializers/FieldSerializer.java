@@ -29,6 +29,7 @@ import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.util.Generics;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
@@ -82,14 +83,14 @@ public class FieldSerializer<T> extends Serializer<T> {
 	protected void initializeCachedFields () {
 	}
 
-	/** If the returned config settings are modified, {@link #updateConfig()} must be called. */
+	/** If the returned config settings are modified, {@link #updateFields()} must be called. */
 	public FieldSerializerConfig getFieldSerializerConfig () {
 		return config;
 	}
 
 	/** Must be called after {@link #getFieldSerializerConfig()} settings are changed to repopulate the cached fields. */
-	public void updateConfig () {
-		if (TRACE) trace("kryo", "Update FieldSerializerConfig: " + className(type));
+	public void updateFields () {
+		if (TRACE) trace("kryo", "Update fields: " + className(type));
 		cachedFields.rebuild();
 	}
 
@@ -340,5 +341,128 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public @interface BindClass {
 		/** The concrete class to use for all values of this field. */
 		Class value();
+	}
+
+	/** Configuration for FieldSerializer instances. */
+	static public class FieldSerializerConfig implements Cloneable {
+		boolean fieldsCanBeNull = true;
+		boolean setFieldsAsAccessible = true;
+		boolean ignoreSyntheticFields = true;
+		boolean fixedFieldTypes;
+		boolean copyTransient = true;
+		boolean serializeTransient;
+		boolean varEncoding = true;
+		boolean extendedFieldNames;
+		boolean unsafe;
+
+		public FieldSerializerConfig clone () {
+			try {
+				return (FieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
+			} catch (CloneNotSupportedException ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+
+		/** Sets the default value for {@link FieldSerializer.CachedField#setCanBeNull(boolean)}.
+		 * @param fieldsCanBeNull False if none of the fields are null. Saves 0-1 byte per field. True if it is not known
+		 *           (default). */
+		public void setFieldsCanBeNull (boolean fieldsCanBeNull) {
+			this.fieldsCanBeNull = fieldsCanBeNull;
+			if (TRACE) trace("kryo", "FieldSerializerConfig fieldsCanBeNull: " + fieldsCanBeNull);
+		}
+
+		public boolean getFieldsCanBeNull () {
+			return fieldsCanBeNull;
+		}
+
+		/** Controls which fields are serialized.
+		 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
+		 *           {@link java.lang.reflect.Field#setAccessible(boolean) set as accessible} if necessary (default). If false, only
+		 *           fields in the public API will be serialized. */
+		public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
+			this.setFieldsAsAccessible = setFieldsAsAccessible;
+			if (TRACE) trace("kryo", "FieldSerializerConfig setFieldsAsAccessible: " + setFieldsAsAccessible);
+		}
+
+		public boolean getSetFieldsAsAccessible () {
+			return setFieldsAsAccessible;
+		}
+
+		/** Controls if synthetic fields are serialized. Default is true.
+		 * @param ignoreSyntheticFields If true, only non-synthetic fields will be serialized. */
+		public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
+			this.ignoreSyntheticFields = ignoreSyntheticFields;
+			if (TRACE) trace("kryo", "FieldSerializerConfig ignoreSyntheticFields: " + ignoreSyntheticFields);
+		}
+
+		public boolean getIgnoreSyntheticFields () {
+			return ignoreSyntheticFields;
+		}
+
+		/** Sets the default value for {@link FieldSerializer.CachedField#setClass(Class)} to the field's declared type. This allows
+		 * FieldSerializer to be more efficient, since it knows field values will not be a subclass of their declared type. Default
+		 * is false. */
+		public void setFixedFieldTypes (boolean fixedFieldTypes) {
+			this.fixedFieldTypes = fixedFieldTypes;
+			if (TRACE) trace("kryo", "FieldSerializerConfig fixedFieldTypes: " + fixedFieldTypes);
+		}
+
+		public boolean getFixedFieldTypes () {
+			return fixedFieldTypes;
+		}
+
+		/** If false, when {@link Kryo#copy(Object)} is called all transient fields that are accessible will be ignored from being
+		 * copied. Default is true. */
+		public void setCopyTransient (boolean copyTransient) {
+			this.copyTransient = copyTransient;
+			if (TRACE) trace("kryo", "FieldSerializerConfig copyTransient: " + copyTransient);
+		}
+
+		public boolean getCopyTransient () {
+			return copyTransient;
+		}
+
+		/** If set, transient fields will be serialized. Default is false. */
+		public void setSerializeTransient (boolean serializeTransient) {
+			this.serializeTransient = serializeTransient;
+			if (TRACE) trace("kryo", "FieldSerializerConfig serializeTransient: " + serializeTransient);
+		}
+
+		public boolean getSerializeTransient () {
+			return serializeTransient;
+		}
+
+		/** When true, variable length values are used for int and long fields. Default is true.
+		 * @see CachedField#setVariableLengthEncoding(boolean)
+		 * @see Output#setVariableLengthEncoding(boolean)
+		 * @see Input#setVariableLengthEncoding(boolean) */
+		public void setVariableLengthEncoding (boolean varEncoding) {
+			this.varEncoding = varEncoding;
+			if (TRACE) trace("kryo", "FieldSerializerConfig variable length encoding: " + varEncoding);
+		}
+
+		public boolean getVariableLengthEncoding () {
+			return varEncoding;
+		}
+
+		/** When true, field names are prefixed by their declaring class. This can avoid conflicts when a subclass has a field with
+		 * the same name as a super class. Default is false. */
+		public void setExtendedFieldNames (boolean extendedFieldNames) {
+			this.extendedFieldNames = extendedFieldNames;
+			if (TRACE) trace("kryo", "FieldSerializerConfig extendedFieldNames: " + extendedFieldNames);
+		}
+
+		public boolean getExtendedFieldNames () {
+			return extendedFieldNames;
+		}
+
+		public boolean getUnsafe () {
+			return unsafe;
+		}
+
+		/** When true, fields will be read using {@link sun.misc.Unsafe}, if possible. */
+		public void setUnsafe (boolean unsafe) {
+			this.unsafe = unsafe;
+		}
 	}
 }

@@ -36,6 +36,7 @@ import com.esotericsoftware.kryo.serializers.AsmField.ShortAsmField;
 import com.esotericsoftware.kryo.serializers.AsmField.StringAsmField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.ReflectField.BooleanReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.ByteReflectField;
