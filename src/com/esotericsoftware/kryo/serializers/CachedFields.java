@@ -352,8 +352,9 @@ class CachedFields implements Comparator<CachedField> {
 					.newSerializer(serializer.kryo, elementClass);
 
 				CollectionSerializer serializer = new CollectionSerializer();
-				serializer.setElementsCanBeNull(annotation.elementsCanBeNull());
-				serializer.setElementClass(elementClass == Object.class ? null : elementClass, elementSerializer);
+				serializer.getCollectionSerializerConfig().setElementsCanBeNull(annotation.elementsCanBeNull());
+				serializer.getCollectionSerializerConfig().setElementClass(elementClass == Object.class ? null : elementClass,
+					elementSerializer);
 				cachedField.setSerializer(serializer);
 			} else {
 				throw new RuntimeException(

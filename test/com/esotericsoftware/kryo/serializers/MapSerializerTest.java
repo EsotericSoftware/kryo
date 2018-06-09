@@ -206,9 +206,9 @@ public class MapSerializerTest extends KryoTestCase {
 	}
 
 	public void testArrayListKeys () {
-		// Log.TRACE();
 		CollectionSerializer collectionSerializer = new CollectionSerializer();
-		collectionSerializer.setElementsCanBeNull(false); // Increase generics savings so difference is more easily seen.
+		// Increase generics savings so difference is more easily seen.
+		collectionSerializer.getCollectionSerializerConfig().setElementsCanBeNull(false);
 
 		kryo.register(ArrayListKeys.class);
 		kryo.register(HashMap.class);

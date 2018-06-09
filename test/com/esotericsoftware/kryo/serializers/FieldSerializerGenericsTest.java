@@ -77,7 +77,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		values.string = new Value("abc");
 
 		CollectionSerializer collectionSerializer = new CollectionSerializer();
-		collectionSerializer.setElementsCanBeNull(false); // Increase generics savings so difference is more easily seen.
+		collectionSerializer.getCollectionSerializerConfig().setElementsCanBeNull(false); // Increase generics savings so difference is more easily seen.
 
 		kryo.register(MultipleValues.class);
 		kryo.register(Value.class);
@@ -103,7 +103,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		superTest.string.value = "value";
 
 		CollectionSerializer collectionSerializer = new CollectionSerializer();
-		collectionSerializer.setElementsCanBeNull(false); // Increase generics savings so difference is more easily seen.
+		collectionSerializer.getCollectionSerializerConfig().setElementsCanBeNull(false); // Increase generics savings so difference is more easily seen.
 
 		kryo.register(SuperTest.class);
 		kryo.register(PassArgToSupers.class);
@@ -122,7 +122,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		nestedListValueSerializer.getField("value").setCanBeNull(false);
 
 		CollectionSerializer collectionSerializer = new CollectionSerializer();
-		collectionSerializer.setElementsCanBeNull(false);
+		collectionSerializer.getCollectionSerializerConfig().setElementsCanBeNull(false);
 
 		kryo.register(ArrayList.class, collectionSerializer);
 		kryo.register(NestedLists.class);

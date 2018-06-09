@@ -62,15 +62,15 @@ public class CollectionSerializerTest extends KryoTestCase {
 		kryo.register(ArrayList.class, serializer);
 		kryo.register(LinkedList.class, serializer);
 		kryo.register(CopyOnWriteArrayList.class, serializer);
-		serializer.setElementClass(Integer.class, kryo.getSerializer(Integer.class));
+		serializer.getCollectionSerializerConfig().setElementClass(Integer.class, kryo.getSerializer(Integer.class));
 		roundTrip(5, list(1, 2, 3));
 		roundTrip(7, list(1, 2, null));
-		serializer.setElementClass(String.class, kryo.getSerializer(String.class));
+		serializer.getCollectionSerializerConfig().setElementClass(String.class, kryo.getSerializer(String.class));
 		roundTrip(8, list("1", "2", "3"));
-		serializer.setElementClass(String.class, new StringSerializer());
+		serializer.getCollectionSerializerConfig().setElementClass(String.class, new StringSerializer());
 		roundTrip(8, list("1", "2", "3"));
 		roundTrip(7, list("1", "2", null));
-		serializer.setElementsCanBeNull(false);
+		serializer.getCollectionSerializerConfig().setElementsCanBeNull(false);
 		roundTrip(8, list("1", "2", "3"));
 
 		kryo.register(TreeSet.class);
