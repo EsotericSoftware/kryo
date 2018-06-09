@@ -74,6 +74,21 @@ public class UnsafeOutput extends Output {
 		super(outputStream, bufferSize);
 	}
 
+	public void write (int value) throws KryoException {
+		if (position == capacity) require(1);
+		unsafe.putByte(buffer, byteArrayBaseOffset + position++, (byte)value);
+	}
+
+	public void writeByte (byte value) throws KryoException {
+		if (position == capacity) require(1);
+		unsafe.putByte(buffer, byteArrayBaseOffset + position++, value);
+	}
+
+	public void writeByte (int value) throws KryoException {
+		if (position == capacity) require(1);
+		unsafe.putByte(buffer, byteArrayBaseOffset + position++, (byte)value);
+	}
+
 	public void writeInt (int value) throws KryoException {
 		require(4);
 		unsafe.putInt(buffer, byteArrayBaseOffset + position, value);
@@ -111,9 +126,8 @@ public class UnsafeOutput extends Output {
 	}
 
 	public void writeBoolean (boolean value) throws KryoException {
-		require(1);
-		unsafe.putByte(buffer, byteArrayBaseOffset + position, value ? (byte)1 : 0);
-		position++;
+		if (position == capacity) require(1);
+		unsafe.putByte(buffer, byteArrayBaseOffset + position++, value ? (byte)1 : 0);
 	}
 
 	public void writeInts (int[] array, int offset, int count) throws KryoException {

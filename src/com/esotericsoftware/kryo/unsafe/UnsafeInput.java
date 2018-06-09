@@ -21,10 +21,10 @@ package com.esotericsoftware.kryo.unsafe;
 
 import static com.esotericsoftware.kryo.unsafe.UnsafeUtil.*;
 
-import java.io.InputStream;
-
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
+
+import java.io.InputStream;
 
 /** An {@link Input} that reads data from a byte[] using sun.misc.Unsafe. Multi-byte primitive types use native byte order, so the
  * native byte order on different computers which read and write the data must be the same.
@@ -66,6 +66,21 @@ public class UnsafeInput extends Input {
 	/** Creates a new Input for reading from an InputStream with the specified buffer size. */
 	public UnsafeInput (InputStream inputStream, int bufferSize) {
 		super(inputStream, bufferSize);
+	}
+
+	public int read () throws KryoException {
+		if (optional(1) <= 0) return -1;
+		return unsafe.getByte(buffer, byteArrayBaseOffset + position++) & 0xFF;
+	}
+
+	public byte readByte () throws KryoException {
+		if (position == limit) require(1);
+		return unsafe.getByte(buffer, byteArrayBaseOffset + position++);
+	}
+
+	public int readByteUnsigned () throws KryoException {
+		if (position == limit) require(1);
+		return unsafe.getByte(buffer, byteArrayBaseOffset + position++) & 0xFF;
 	}
 
 	public int readInt () throws KryoException {
@@ -111,9 +126,8 @@ public class UnsafeInput extends Input {
 	}
 
 	public boolean readBoolean () throws KryoException {
-		require(1);
-		boolean result = unsafe.getByte(buffer, byteArrayBaseOffset + position) != 0;
-		position++;
+		if (position == limit) require(1);
+		boolean result = unsafe.getByte(buffer, byteArrayBaseOffset + position++) != 0;
 		return result;
 	}
 

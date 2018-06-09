@@ -106,6 +106,24 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		bufferAddress = 0;
 	}
 
+	public void write (int value) throws KryoException {
+		if (position == capacity) require(1);
+		unsafe.putByte(bufferAddress + position++, (byte)value);
+		byteBuffer.position(position);
+	}
+
+	public void writeByte (byte value) throws KryoException {
+		if (position == capacity) require(1);
+		unsafe.putByte(bufferAddress + position++, value);
+		byteBuffer.position(position);
+	}
+
+	public void writeByte (int value) throws KryoException {
+		if (position == capacity) require(1);
+		unsafe.putByte(bufferAddress + position++, (byte)value);
+		byteBuffer.position(position);
+	}
+
 	public void writeInt (int value) throws KryoException {
 		require(4);
 		unsafe.putInt(bufferAddress + position, value);
@@ -149,9 +167,8 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	}
 
 	public void writeBoolean (boolean value) throws KryoException {
-		require(1);
-		unsafe.putByte(bufferAddress + position, value ? (byte)1 : 0);
-		position++;
+		if (position == capacity) require(1);
+		unsafe.putByte(bufferAddress + position++, value ? (byte)1 : 0);
 		byteBuffer.position(position);
 	}
 

@@ -93,6 +93,27 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		bufferAddress = ((DirectBuffer)byteBuffer).address();
 	}
 
+	public int read () throws KryoException {
+		if (optional(1) <= 0) return -1;
+		int result = unsafe.getByte(bufferAddress + position++) & 0xFF;
+		byteBuffer.position(position);
+		return result;
+	}
+
+	public byte readByte () throws KryoException {
+		if (position == limit) require(1);
+		byte result = unsafe.getByte(bufferAddress + position++);
+		byteBuffer.position(position);
+		return result;
+	}
+
+	public int readByteUnsigned () throws KryoException {
+		if (position == limit) require(1);
+		int result = unsafe.getByte(bufferAddress + position++) & 0xFF;
+		byteBuffer.position(position);
+		return result;
+	}
+
 	public int readInt () throws KryoException {
 		require(4);
 		int result = unsafe.getInt(bufferAddress + position);
@@ -142,9 +163,8 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 	}
 
 	public boolean readBoolean () throws KryoException {
-		require(1);
-		boolean result = unsafe.getByte(bufferAddress + position) != 0;
-		position++;
+		if (position == limit) require(1);
+		boolean result = unsafe.getByte(bufferAddress + position++) != 0;
 		byteBuffer.position(position);
 		return result;
 	}
