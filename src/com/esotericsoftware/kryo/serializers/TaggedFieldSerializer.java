@@ -19,6 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.Kryo.*;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
@@ -77,6 +78,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	public TaggedFieldSerializer (Kryo kryo, Class type, TaggedFieldSerializerConfig config) {
 		super(kryo, type, config);
 		this.config = config;
+		setAcceptsNull(true);
 	}
 
 	protected void initializeCachedFields () {
@@ -120,9 +122,15 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
+		if (object == null) {
+			output.writeByte(NULL);
+			return;
+		}
+
 		int pop = pushTypeVariables();
 
-		output.writeVarInt(writeFieldCount, true); // Can be used for null. BOZO
+		output.writeVarInt(writeFieldCount + 1, true);
+		writeHeader(kryo, output, object);
 
 		CachedField[] fields = cachedFields.fields;
 
@@ -164,16 +172,23 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			cachedField.write(fieldOutput, object);
 			if (chunked) outputChunked.endChunk();
 		}
-		
+
 		if (pop > 0) popTypeVariables(pop);
 	}
 
+	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class)}. The default implementation does nothing. */
+	protected void writeHeader (Kryo kryo, Output output, T object) {
+	}
+
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
+		int fieldCount = input.readVarInt(true);
+		if (fieldCount == NULL) return null;
+		fieldCount--;
+
 		int pop = pushTypeVariables();
 
 		T object = create(kryo, input, type);
 		kryo.reference(object);
-		int fieldCount = input.readVarInt(true);
 
 		CachedField[] fields = cachedFields.fields;
 
@@ -237,7 +252,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			cachedField.read(fieldInput, object);
 			if (chunked) inputChunked.nextChunk();
 		}
-		
+
 		if (pop > 0) popTypeVariables(pop);
 		return object;
 	}
