@@ -70,16 +70,7 @@ public class FieldSerializerBenchmark {
 
 		public void reset () {
 			input.setPosition(0);
-			input.setLimit(output.position());
-			if (output.position() > 0) {
-				Sample object2 = kryo.readObject(input, Sample.class);
-				if (!object.equals(object2)) throw new RuntimeException();
-			}
-
-			input.setPosition(0);
-			input.setLimit(output.position());
-
-			output.clear();
+			output.setPosition(0);
 		}
 	}
 
@@ -186,62 +177,52 @@ public class FieldSerializerBenchmark {
 	}
 
 	@Benchmark
-	@OperationsPerInvocation(100)
-	public long field (FieldSerializerState state) {
+	public void field (FieldSerializerState state) {
 		state.reset();
 		for (int i = 0; i < 100; i++) {
 			state.kryo.writeObject(state.output, state.object);
 			state.input.setLimit(state.output.position());
 			state.kryo.readObject(state.input, Sample.class);
 		}
-		return state.output.total();
 	}
 
 	@Benchmark
-	@OperationsPerInvocation(100)
-	public long compatible (CompatibleState state) {
+	public void compatible (CompatibleState state) {
 		state.reset();
 		for (int i = 0; i < 100; i++) {
 			state.kryo.writeObject(state.output, state.object);
 			state.input.setLimit(state.output.position());
 			state.kryo.readObject(state.input, Sample.class);
 		}
-		return state.output.total();
 	}
 
 	@Benchmark
-	@OperationsPerInvocation(100)
-	public long tagged (TaggedState state) {
+	public void tagged (TaggedState state) {
 		state.reset();
 		for (int i = 0; i < 100; i++) {
 			state.kryo.writeObject(state.output, state.object);
 			state.input.setLimit(state.output.position());
 			state.kryo.readObject(state.input, Sample.class);
 		}
-		return state.output.total();
 	}
 
 	@Benchmark
-	@OperationsPerInvocation(100)
-	public long version (VersionState state) {
+	public void version (VersionState state) {
 		state.reset();
 		for (int i = 0; i < 100; i++) {
 			state.kryo.writeObject(state.output, state.object);
 			state.input.setLimit(state.output.position());
 			state.kryo.readObject(state.input, Sample.class);
 		}
-		return state.output.total();
 	}
 
 	@Benchmark
-	@OperationsPerInvocation(100)
-	public long custom (CustomState state) {
+	public void custom (CustomState state) {
 		state.reset();
 		for (int i = 0; i < 100; i++) {
 			state.kryo.writeObject(state.output, state.object);
 			state.input.setLimit(state.output.position());
 			state.kryo.readObject(state.input, Sample.class);
 		}
-		return state.output.total();
 	}
 }
