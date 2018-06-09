@@ -350,15 +350,13 @@ public class Kryo {
 	public Serializer getDefaultSerializer (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 
-		final Serializer serializerForAnnotation = getDefaultSerializerForAnnotatedType(type);
+		Serializer serializerForAnnotation = getDefaultSerializerForAnnotatedType(type);
 		if (serializerForAnnotation != null) return serializerForAnnotation;
 
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
-			if (entry.type.isAssignableFrom(type)) {
-				Serializer defaultSerializer = entry.serializerFactory.newSerializer(this, type);
-				return defaultSerializer;
-			}
+			if (entry.type.isAssignableFrom(type) && entry.serializerFactory.isSupported(type))
+				return entry.serializerFactory.newSerializer(this, type);
 		}
 
 		return newDefaultSerializer(type);
@@ -1080,7 +1078,7 @@ public class Kryo {
 	/** Returns a new instantiator for creating new instances of the specified type. By default, an instantiator is returned that
 	 * uses reflection if the class has a zero argument constructor, an exception is thrown. If a
 	 * {@link #setInstantiatorStrategy(InstantiatorStrategy) strategy} is set, it will be used instead of throwing an exception. */
-	protected ObjectInstantiator newInstantiator (final Class type) {
+	protected ObjectInstantiator newInstantiator (Class type) {
 		return strategy.newInstantiatorOf(type);
 	}
 

@@ -39,7 +39,10 @@ public interface SerializerFactory<T extends Serializer> {
 	 * @param kryo The serializer instance requesting the new serializer.
 	 * @param type The type of the object that is to be serialized.
 	 * @return An implementation of a serializer that is able to serialize an object of type {@code type}. */
-	T newSerializer (Kryo kryo, Class<T> type);
+	public T newSerializer (Kryo kryo, Class type);
+
+	/** Returns true if this factory can create a serializer for the specified type. */
+	public boolean isSupported (Class type);
 
 	/** @param factoryClass Must have a constructor that takes a serializer class, or a zero argument constructor.
 	 * @param serializerClass May be null if the factory alread knows the serializer class to create. */
@@ -63,12 +66,18 @@ public interface SerializerFactory<T extends Serializer> {
 		}
 	}
 
+	static public abstract class BaseSerializerFactory<T extends Serializer> implements SerializerFactory<T> {
+		public boolean isSupported (Class type) {
+			return true;
+		}
+	}
+
 	/** This factory instantiates new serializers of a given class via reflection. The constructors of the given
 	 * {@code serializerClass} must either take an instance of {@link Kryo} and an instance of {@link Class} as its parameter, take
 	 * only a {@link Kryo} or {@link Class} as its only argument or take no arguments. If several of the described constructors are
 	 * found, the first found constructor is used, in the order as they were just described.
 	 * @author Rafael Winterhalter <rafael.wth@web.de> */
-	static public class ReflectionSerializerFactory<T extends Serializer> implements SerializerFactory<T> {
+	static public class ReflectionSerializerFactory<T extends Serializer> extends BaseSerializerFactory<T> {
 		private final Class<T> serializerClass;
 
 		public ReflectionSerializerFactory (Class<T> serializerClass) {
@@ -107,21 +116,21 @@ public interface SerializerFactory<T extends Serializer> {
 	 * be used when multiple types should be serialized by the same serializer. This also allows serializers to be shared among
 	 * different {@link Kryo} instances.
 	 * @author Rafael Winterhalter <rafael.wth@web.de> */
-	static public class SingletonSerializerFactory<T extends Serializer> implements SerializerFactory<T> {
+	static public class SingletonSerializerFactory<T extends Serializer> extends BaseSerializerFactory<T> {
 		private final T serializer;
 
 		public SingletonSerializerFactory (T serializer) {
 			this.serializer = serializer;
 		}
 
-		public T newSerializer (Kryo kryo, Class<T> type) {
+		public T newSerializer (Kryo kryo, Class type) {
 			return serializer;
 		}
 	}
 
 	/** A serializer factory that returns new, configured {@link FieldSerializer} instances.
 	 * @author Nathan Sweet */
-	static public class FieldSerializerFactory implements SerializerFactory<FieldSerializer> {
+	static public class FieldSerializerFactory extends BaseSerializerFactory<FieldSerializer> {
 		private final FieldSerializerConfig config;
 
 		public FieldSerializerFactory () {
@@ -143,7 +152,7 @@ public interface SerializerFactory<T extends Serializer> {
 
 	/** A serializer factory that returns new, configured {@link TaggedFieldSerializer} instances.
 	 * @author Nathan Sweet */
-	static public class TaggedFieldSerializerFactory implements SerializerFactory<TaggedFieldSerializer> {
+	static public class TaggedFieldSerializerFactory extends BaseSerializerFactory<TaggedFieldSerializer> {
 		private final TaggedFieldSerializerConfig config;
 
 		public TaggedFieldSerializerFactory () {
@@ -165,7 +174,7 @@ public interface SerializerFactory<T extends Serializer> {
 
 	/** A serializer factory that returns new, configured {@link VersionFieldSerializer} instances.
 	 * @author Nathan Sweet */
-	static public class VersionFieldSerializerFactory implements SerializerFactory<VersionFieldSerializer> {
+	static public class VersionFieldSerializerFactory extends BaseSerializerFactory<VersionFieldSerializer> {
 		private final VersionFieldSerializerConfig config;
 
 		public VersionFieldSerializerFactory () {
@@ -187,7 +196,7 @@ public interface SerializerFactory<T extends Serializer> {
 
 	/** A serializer factory that returns new, configured {@link CompatibleFieldSerializer} instances.
 	 * @author Nathan Sweet */
-	static public class CompatibleFieldSerializerFactory implements SerializerFactory<CompatibleFieldSerializer> {
+	static public class CompatibleFieldSerializerFactory extends BaseSerializerFactory<CompatibleFieldSerializer> {
 		private final CompatibleFieldSerializerConfig config;
 
 		public CompatibleFieldSerializerFactory () {
