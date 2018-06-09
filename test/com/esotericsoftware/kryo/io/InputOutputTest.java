@@ -33,6 +33,13 @@ import com.esotericsoftware.kryo.Registration;
 
 /** @author Nathan Sweet */
 public class InputOutputTest extends KryoTestCase {
+	public void testByteBufferInputEnd () {
+		Input in = new Input(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
+		assertEquals(false, in.end());
+		in.setPosition(4);
+		assertEquals(true, in.end());
+	}
+
 	public void testOutputStream () throws IOException {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 		Output output = new Output(buffer, 2);

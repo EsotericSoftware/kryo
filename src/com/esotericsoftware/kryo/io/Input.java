@@ -228,7 +228,7 @@ public class Input extends InputStream {
 	 * @param optional Must be > 0.
 	 * @return the number of bytes remaining, but not more than optional, or -1 if {@link #fill(byte[], int, int)} is unable to
 	 *         provide more bytes. */
-	private int optional (int optional) throws KryoException {
+	protected int optional (int optional) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= optional) return optional;
 		optional = Math.min(optional, capacity);

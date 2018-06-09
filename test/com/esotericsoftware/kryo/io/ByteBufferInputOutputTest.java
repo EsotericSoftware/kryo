@@ -19,12 +19,20 @@
 
 package com.esotericsoftware.kryo.io;
 
+import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 
 public class ByteBufferInputOutputTest extends KryoTestCase {
+	public void testByteBufferInputEnd () {
+		ByteBufferInput in = new ByteBufferInput(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
+		assertEquals(false, in.end());
+		in.setPosition(4);
+		assertEquals(true, in.end());
+	}
+
 	public void testByteBufferInputPosition () {
 		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
 		ByteBufferInput inputBuffer = new ByteBufferInput(byteBuffer);
