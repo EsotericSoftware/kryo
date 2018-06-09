@@ -20,29 +20,23 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 
-/** Serializes enums using the enum's name. This prevents invalidating previously serialized byts when the enum order changes.
- * @author KwonNam Son <kwon37xi@gmail.com> */
-public class EnumNameSerializer extends ImmutableSerializer<Enum> {
+import java.util.EnumMap;
+
+/** @author Nathan Sweet */
+public class EnumMapSerializer extends MapSerializer<EnumMap> {
 	private final Class<? extends Enum> enumType;
 
-	public EnumNameSerializer (Class<? extends Enum> enumType) {
+	public EnumMapSerializer (Class<? extends Enum> enumType) {
 		this.enumType = enumType;
 	}
 
-	public void write (Kryo kryo, Output output, Enum object) {
-		output.writeString(object.name());
+	protected EnumMap create (Kryo kryo, Input input, Class<? extends EnumMap> type, int size) {
+		return new EnumMap(enumType);
 	}
 
-	public Enum read (Kryo kryo, Input input, Class type) {
-		String name = input.readString();
-		try {
-			return Enum.valueOf(enumType, name);
-		} catch (IllegalArgumentException ex) {
-			throw new KryoException("Enum value not found with name: " + name, ex);
-		}
+	protected EnumMap createCopy (Kryo kryo, EnumMap original) {
+		return new EnumMap(original);
 	}
 }

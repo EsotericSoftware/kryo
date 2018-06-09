@@ -623,12 +623,11 @@ public class DefaultSerializers {
 	/** Serializer for {@link TreeMap} and any subclass.
 	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
 	static public class TreeMapSerializer extends MapSerializer<TreeMap> {
-		public void write (Kryo kryo, Output output, TreeMap treeMap) {
-			kryo.writeClassAndObject(output, treeMap.comparator());
-			super.write(kryo, output, treeMap);
+		protected void writeHeader (Kryo kryo, Output output, TreeMap treeSet) {
+			kryo.writeClassAndObject(output, treeSet.comparator());
 		}
 
-		protected TreeMap create (Kryo kryo, Input input, Class<? extends TreeMap> type) {
+		protected TreeMap create (Kryo kryo, Input input, Class<? extends TreeMap> type, int size) {
 			return createTreeMap(type, (Comparator)kryo.readClassAndObject(input));
 		}
 
@@ -661,7 +660,7 @@ public class DefaultSerializers {
 			kryo.writeClassAndObject(output, treeSet.comparator());
 		}
 
-		protected TreeSet create (Kryo kryo, Input input, Class<? extends TreeSet> type) {
+		protected TreeSet create (Kryo kryo, Input input, Class<? extends TreeSet> type, int size) {
 			return createTreeSet(type, (Comparator)kryo.readClassAndObject(input));
 		}
 

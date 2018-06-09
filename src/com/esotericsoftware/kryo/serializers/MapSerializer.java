@@ -31,6 +31,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,6 +44,10 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
 	private boolean keysCanBeNull = true, valuesCanBeNull = true;
+
+	public MapSerializer () {
+		setAcceptsNull(true);
+	}
 
 	/** @param keysCanBeNull False if all keys are not null. This saves 1 byte per key if keyClass is set. True if it is not known
 	 *           (default). */
@@ -73,7 +78,20 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	}
 
 	public void write (Kryo kryo, Output output, T map) {
-		output.writeVarInt(map.size(), true);
+		if (map == null) {
+			output.writeByte(0);
+			return;
+		}
+
+		int size = map.size();
+		if (size == 0) {
+			output.writeByte(1);
+			writeHeader(kryo, output, map);
+			return;
+		}
+
+		output.writeVarInt(size + 1, true);
+		writeHeader(kryo, output, map);
 
 		Serializer keySerializer = this.keySerializer, valueSerializer = this.valueSerializer;
 
@@ -111,15 +129,27 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		kryo.getGenerics().popGenericType();
 	}
 
+	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class, int)}. The default implementation does
+	 * nothing. */
+	protected void writeHeader (Kryo kryo, Output output, T map) {
+	}
+
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
-	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
-	protected T create (Kryo kryo, Input input, Class<? extends T> type) {
+	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)} with a special case
+	 * for HashMap. */
+	protected T create (Kryo kryo, Input input, Class<? extends T> type, int size) {
+		if (type == HashMap.class) return (T)new HashMap(size);
 		return kryo.newInstance(type);
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-		T map = create(kryo, input, type);
 		int length = input.readVarInt(true);
+		if (length == 0) return null;
+		length--;
+
+		T map = create(kryo, input, type, length);
+		kryo.reference(map);
+		if (length == 0) return map;
 
 		Class keyClass = this.keyClass;
 		Class valueClass = this.valueClass;
@@ -142,8 +172,6 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 				}
 			}
 		}
-
-		kryo.reference(map);
 
 		for (int i = 0; i < length; i++) {
 			Object key;

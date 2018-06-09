@@ -52,13 +52,12 @@ public class ReferenceTest extends KryoTestCase {
 
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		kryo.addDefaultSerializer(Stuff.class, new MapSerializer() {
-			public void write (Kryo kryo, Output output, Map object) {
-				kryo.writeObjectOrNull(output, ((Stuff)object).ordering, Ordering.class);
-				super.write(kryo, output, object);
+		kryo.addDefaultSerializer(Stuff.class, new MapSerializer<Stuff>() {
+			protected void writeHeader (Kryo kryo, Output output, Stuff map) {
+				kryo.writeObjectOrNull(output, map.ordering, Ordering.class);
 			}
 
-			protected Map create (Kryo kryo, Input input, Class type) {
+			protected Stuff create (Kryo kryo, Input input, Class<? extends Stuff> type, int size) {
 				Ordering ordering = kryo.readObjectOrNull(input, Ordering.class);
 				return new Stuff(ordering);
 			}

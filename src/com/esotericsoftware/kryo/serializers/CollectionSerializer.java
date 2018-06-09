@@ -91,6 +91,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		int length = collection.size();
 		if (length == 0) {
 			output.writeByte(1);
+			writeHeader(kryo, output, collection);
 			return;
 		}
 
@@ -159,15 +160,19 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		kryo.getGenerics().popGenericType();
 	}
 
-	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class)}. The default implementation does nothing. */
+	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class, int)}. The default implementation does
+	 * nothing. */
 	protected void writeHeader (Kryo kryo, Output output, T collection) {
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation (eg
 	 * to call a constructor with arguments), optionally reading bytes written in {@link #writeHeader(Kryo, Output, Collection)}.
-	 * The default implementation uses {@link Kryo#newInstance(Class)}. */
-	protected T create (Kryo kryo, Input input, Class<? extends T> type) {
-		return kryo.newInstance(type);
+	 * The default implementation uses {@link Kryo#newInstance(Class)} with special cases for ArrayList. */
+	protected T create (Kryo kryo, Input input, Class<? extends T> type, int size) {
+		if (type == ArrayList.class) return (T)new ArrayList(size);
+		T collection = kryo.newInstance(type);
+		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(size);
+		return collection;
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
@@ -192,26 +197,25 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				length = input.readVarInt(true);
 			if (length == 0) return null;
 
-			collection = create(kryo, input, type);
+			length--;
+			collection = create(kryo, input, type, length);
 			kryo.reference(collection);
 
-			if (length == 1) return collection;
-			length--;
+			if (length == 0) return collection;
 		} else {
 			boolean sameType = input.readVarIntFlag();
 			length = input.readVarIntFlag(true);
 			if (length == 0) return null;
 
-			collection = create(kryo, input, type);
+			length--;
+			collection = create(kryo, input, type, length);
 			kryo.reference(collection);
 
-			if (length == 1) return collection;
-			length--;
+			if (length == 0) return collection;
 
 			if (sameType) {
 				Registration registration = kryo.readClass(input);
 				if (registration == null) { // All elements are null.
-					if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
 					for (int i = 0; i < length; i++)
 						collection.add(null);
 					kryo.getGenerics().popGenericType();
@@ -222,8 +226,6 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				if (elementsCanBeNull) elementsCanBeNull = input.readBoolean();
 			}
 		}
-
-		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
 
 		if (serializer != null) {
 			if (elementsCanBeNull) {

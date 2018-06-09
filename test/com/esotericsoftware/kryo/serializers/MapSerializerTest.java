@@ -23,6 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -65,6 +66,17 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(14, map);
 		serializer.setValuesCanBeNull(false);
 		roundTrip(14, map);
+	}
+
+	public void testEnumMap () {
+		kryo.register(SomeEnum.class);
+		kryo.register(EnumMap.class, new EnumMapSerializer(SomeEnum.class));
+
+		roundTrip(2, new EnumMap(SomeEnum.class));
+
+		EnumMap map = new EnumMap(SomeEnum.class);
+		map.put(SomeEnum.b, "b");
+		roundTrip(7, map);
 	}
 
 	public void testEmptyHashMap () {
@@ -250,5 +262,9 @@ public class MapSerializerTest extends KryoTestCase {
 		public TreeMapSubclass (Comparator<? super K> comparator) {
 			super(comparator);
 		}
+	}
+
+	static public enum SomeEnum {
+		a, b, c
 	}
 }
