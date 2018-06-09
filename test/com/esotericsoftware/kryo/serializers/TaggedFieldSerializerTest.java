@@ -92,16 +92,16 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		futureArray[1] = new TestClass();
 
 		TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
-		factory.getConfig().setSkipUnknownTags(true);
+		factory.getConfig().setChunkedEncoding(true);
 		kryo.setDefaultSerializer(factory);
 		kryo.register(TestClass.class);
 		kryo.register(Object[].class);
 		TaggedFieldSerializer<FutureClass> futureSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
-		futureSerializer.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
+		futureSerializer.getTaggedFieldSerializerConfig().setChunkedEncoding(true);
 		futureSerializer.updateFields();
 		kryo.register(FutureClass.class, futureSerializer);
 		TaggedFieldSerializer<FutureClass2> futureSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
-		futureSerializer2.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
+		futureSerializer2.getTaggedFieldSerializerConfig().setChunkedEncoding(true);
 		futureSerializer2.updateFields();
 		kryo.register(FutureClass2.class, futureSerializer2);
 
@@ -112,12 +112,12 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		byte[] futureArrayData = outStream.toByteArray();
 
 		TaggedFieldSerializer<FutureClass> presentSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
-		presentSerializer.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
+		presentSerializer.getTaggedFieldSerializerConfig().setChunkedEncoding(true);
 		presentSerializer.updateFields();
 		presentSerializer.removeField("futureString"); // simulate past version of application
 		kryo.register(FutureClass.class, presentSerializer);
 		TaggedFieldSerializer<FutureClass2> presentSerializer2 = new TaggedFieldSerializer(kryo, FutureClass2.class);
-		presentSerializer2.getTaggedFieldSerializerConfig().setSkipUnknownTags(true);
+		presentSerializer2.getTaggedFieldSerializerConfig().setChunkedEncoding(true);
 		presentSerializer2.updateFields();
 		presentSerializer2.removeField("zzz"); // simulate past version of application
 		presentSerializer2.removeField("fc2"); // simulate past version of application
@@ -138,7 +138,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		Kryo newKryo = new Kryo();
 		newKryo.setReferences(true);
 		TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
-		factory.getConfig().setSkipUnknownTags(true);
+		factory.getConfig().setChunkedEncoding(true);
 		kryo.setDefaultSerializer(factory);
 		newKryo.setDefaultSerializer(TaggedFieldSerializer.class);
 
@@ -189,7 +189,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 	static private class FutureClass {
 		@Tag(0) public Integer value;
 		@Tag(1) public FutureClass2 futureClass2;
-		@Tag(value = 2, chunkedEncoding = true) public String futureString = "unchanged";
+		@Tag(value = 2) public String futureString = "unchanged";
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -228,8 +228,8 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		@Tag(0) public String text = "something";
 		@Tag(1) public int moo = 120;
 		@Tag(2) public long moo2 = 1234120;
-		@Tag(value = 3, chunkedEncoding = true) public int zzz = 123;
-		@Tag(value = 4, chunkedEncoding = true) public FutureClass2 fc2;
+		@Tag(value = 3) public int zzz = 123;
+		@Tag(value = 4) public FutureClass2 fc2;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;

@@ -21,33 +21,42 @@ package com.esotericsoftware.kryo.benchmarks;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.benchmarks.data.Sample;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
 
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
-import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OperationsPerInvocation;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 
-public class KryoFieldSerializersBenchmark {
+public class FieldSerializerBenchmark {
 	@State(Scope.Thread)
-	static abstract class BenchmarkState {
-		final Kryo kryo;
+	static public abstract class BenchmarkState {
+		@Param({"true", "false"}) public boolean references;
+
+		final Kryo kryo = new Kryo();
 		final Output output;
 		final Input input;
 		final Sample object;
 
 		public BenchmarkState () {
-			kryo = new Kryo();
+			output = new Output(1024 * 512);
+			input = new Input(output.getBuffer());
+
+			object = new Sample();
+			object.defaultValues();
+		}
+
+		@Setup(Level.Trial)
+		public void setup () {
 			kryo.register(double[].class);
 			kryo.register(int[].class);
 			kryo.register(long[].class);
@@ -57,55 +66,62 @@ public class KryoFieldSerializersBenchmark {
 			kryo.register(char[].class);
 			kryo.register(boolean[].class);
 			kryo.register(Sample.class);
-
-			output = new Output(1024);
-			input = new Input(output.getBuffer());
-
-			object = new Sample();
-			object.defaultValues();
 		}
 
-		@Setup(Level.Trial)
-		abstract public void setup ();
-
-		@TearDown(Level.Invocation)
 		public void reset () {
 			input.setPosition(0);
 			input.setLimit(output.position());
-			Sample object2 = kryo.readObject(input, Sample.class);
-			if (!object.equals(object2)) throw new RuntimeException();
+			if (output.position() > 0) {
+				Sample object2 = kryo.readObject(input, Sample.class);
+				if (!object.equals(object2)) throw new RuntimeException();
+			}
 
-			output.setPosition(0);
+			input.setPosition(0);
+			input.setLimit(output.position());
+
+			output.clear();
 		}
 	}
 
 	static public class FieldSerializerState extends BenchmarkState {
 		public void setup () {
 			kryo.setDefaultSerializer(FieldSerializer.class);
+			super.setup();
 		}
 	}
 
-	static public class CompatibleFieldSerializerState extends BenchmarkState {
+	static public class CompatibleState extends BenchmarkState {
+		@Param({"true", "false"}) public boolean chunked;
+
 		public void setup () {
-			kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
+			factory.getConfig().setChunkedEncoding(chunked);
+			kryo.setDefaultSerializer(factory);
+			super.setup();
 		}
 	}
 
-	static public class TaggedFieldSerializerState extends BenchmarkState {
+	static public class TaggedState extends BenchmarkState {
+		@Param({"true", "false"}) public boolean chunked;
+
 		public void setup () {
-			kryo.setDefaultSerializer(TaggedFieldSerializer.class);
+			TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
+			factory.getConfig().setChunkedEncoding(chunked);
+			kryo.setDefaultSerializer(factory);
+			super.setup();
 		}
 	}
 
-	static public class VersionFieldSerializerState extends BenchmarkState {
+	static public class VersionState extends BenchmarkState {
 		public void setup () {
 			kryo.setDefaultSerializer(VersionFieldSerializer.class);
+			super.setup();
 		}
 	}
 
-	static public class CustomSerializerState extends BenchmarkState {
+	static public class CustomState extends BenchmarkState {
 		public void setup () {
-			kryo.setDefaultSerializer(FieldSerializer.class);
+			super.setup();
 			kryo.register(Sample.class, new Serializer<Sample>() {
 				public void write (Kryo kryo, Output output, Sample object) {
 					output.writeInt(object.intValue);
@@ -170,27 +186,62 @@ public class KryoFieldSerializersBenchmark {
 	}
 
 	@Benchmark
-	public void fieldSerializerSer (FieldSerializerState state) {
-		state.kryo.writeObject(state.output, state.object);
+	@OperationsPerInvocation(100)
+	public long field (FieldSerializerState state) {
+		state.reset();
+		for (int i = 0; i < 100; i++) {
+			state.kryo.writeObject(state.output, state.object);
+			state.input.setLimit(state.output.position());
+			state.kryo.readObject(state.input, Sample.class);
+		}
+		return state.output.total();
 	}
 
 	@Benchmark
-	public void compatibleFieldSerializerSer (CompatibleFieldSerializerState state) {
-		state.kryo.writeObject(state.output, state.object);
+	@OperationsPerInvocation(100)
+	public long compatible (CompatibleState state) {
+		state.reset();
+		for (int i = 0; i < 100; i++) {
+			state.kryo.writeObject(state.output, state.object);
+			state.input.setLimit(state.output.position());
+			state.kryo.readObject(state.input, Sample.class);
+		}
+		return state.output.total();
 	}
 
 	@Benchmark
-	public void taggedFieldSerializerSer (TaggedFieldSerializerState state) {
-		state.kryo.writeObject(state.output, state.object);
+	@OperationsPerInvocation(100)
+	public long tagged (TaggedState state) {
+		state.reset();
+		for (int i = 0; i < 100; i++) {
+			state.kryo.writeObject(state.output, state.object);
+			state.input.setLimit(state.output.position());
+			state.kryo.readObject(state.input, Sample.class);
+		}
+		return state.output.total();
 	}
 
 	@Benchmark
-	public void versionFieldSerializerSer (VersionFieldSerializerState state) {
-		state.kryo.writeObject(state.output, state.object);
+	@OperationsPerInvocation(100)
+	public long version (VersionState state) {
+		state.reset();
+		for (int i = 0; i < 100; i++) {
+			state.kryo.writeObject(state.output, state.object);
+			state.input.setLimit(state.output.position());
+			state.kryo.readObject(state.input, Sample.class);
+		}
+		return state.output.total();
 	}
 
 	@Benchmark
-	public void customSerializerSer (CustomSerializerState state) {
-		state.kryo.writeObject(state.output, state.object);
+	@OperationsPerInvocation(100)
+	public long custom (CustomState state) {
+		state.reset();
+		for (int i = 0; i < 100; i++) {
+			state.kryo.writeObject(state.output, state.object);
+			state.input.setLimit(state.output.position());
+			state.kryo.readObject(state.input, Sample.class);
+		}
+		return state.output.total();
 	}
 }

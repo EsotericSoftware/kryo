@@ -110,7 +110,7 @@ public class Generics {
 	}
 
 	/** Stores the types of the type parameters for the specified class hierarchy. Must be balanced by
-	 * {@link #popTypeVariables(int)}.
+	 * {@link #popTypeVariables(int)} if >0 is returned.
 	 * @param args May contain null for type arguments that aren't known.
 	 * @return The number of entries that were pushed. */
 	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args) {

@@ -26,6 +26,8 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSerializerConfig;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -41,6 +43,18 @@ import java.lang.reflect.Field;
  * overhead (a single additional varint) compared to FieldSerializer. Forward compatibility is not supported.
  * @see TaggedFieldSerializer
  * @author Tianyi HE <hty0807@gmail.com> */
+
+/** Serializes objects using direct field assignment, providing backward compatibility with minimal overhead. This means fields
+ * can be added without invalidating previously serialized bytes. Removing, renaming, or changing the type of a field is not
+ * supported. Like {@link FieldSerializer}, it can serialize most classes without needing annotations.
+ * <p>
+ * When a field is added, it must have the {@link Since} annotation to indicate the version it was added in order to be compatible
+ * with previously serialized bytes. The annotation value must never change.
+ * <p>
+ * Compared to {@link FieldSerializer}, VersionFieldSerializer writes a single additional varint and requires annotations for
+ * added fields, but provides backward compatibility so fields can be added. {@link TaggedFieldSerializer} provides more
+ * flexibility for classes to evolve in exchange for a slightly larger serialized size.
+ * @author Nathan Sweet */
 public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	private final VersionFieldSerializerConfig config;
 	private int typeVersion; // Version of the type being serialized.
@@ -54,12 +68,12 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		super(kryo, type);
 		this.config = config;
 		setAcceptsNull(true);
-		// Make sure this is done before any read / write operations.
+		// Make sure this is done before any read/write operations.
 		initializeCachedFields();
 	}
 
 	protected void initializeCachedFields () {
-		CachedField[] fields = getFields();
+		CachedField[] fields = cachedFields.fields;
 		fieldVersion = new int[fields.length];
 		for (int i = 0, n = fields.length; i < n; i++) {
 			Field field = fields[i].getField();
@@ -91,7 +105,9 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 			return;
 		}
 
-		CachedField[] fields = getFields();
+		int pop = pushTypeVariables();
+
+		CachedField[] fields = cachedFields.fields;
 		// Write type version.
 		output.writeVarInt(typeVersion + 1, true);
 		// Write fields.
@@ -99,6 +115,8 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 			if (TRACE) log("Write", fields[i], output.position());
 			fields[i].write(output, object);
 		}
+
+		if (pop > 0) popTypeVariables(pop);
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
@@ -106,22 +124,30 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		if (version == NULL) return null;
 		version--;
 		if (!config.compatible && version != typeVersion)
-			throw new KryoException("Version not compatible: " + version + " <-> " + typeVersion);
+			throw new KryoException("Version is not compatible: " + version + " != " + typeVersion);
+
+		int pop = pushTypeVariables();
 
 		T object = create(kryo, input, type);
 		kryo.reference(object);
 
-		CachedField[] fields = getFields();
+		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			// Field is not present in input, skip it.
 			if (fieldVersion[i] > version) {
-				if (DEBUG) debug("Skip field " + fields[i].getField().getName());
+				if (DEBUG) debug("Skip field: " + fields[i].getField().getName());
 				continue;
 			}
 			if (TRACE) log("Read", fields[i], input.position());
 			fields[i].read(input, object);
 		}
+
+		if (pop > 0) popTypeVariables(pop);
 		return object;
+	}
+
+	public VersionFieldSerializerConfig getVersionFieldSerializerConfig () {
+		return config;
 	}
 
 	/** Incremental modification of serialized objects must add {@link Since} for new fields. */

@@ -34,10 +34,10 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	public void testCompatibleFieldSerializer () {
-		testCompatibleFieldSerializer(87, false, false);
-		testCompatibleFieldSerializer(87, false, true);
-		testCompatibleFieldSerializer(88, true, false);
-		testCompatibleFieldSerializer(88, true, true);
+		testCompatibleFieldSerializer(83, false, false);
+		testCompatibleFieldSerializer(83, false, true);
+		testCompatibleFieldSerializer(86, true, false);
+		testCompatibleFieldSerializer(86, true, true);
 	}
 
 	public void testCompatibleFieldSerializer (int length, boolean references, final boolean chunked) {
@@ -47,7 +47,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory() {
 			public CompatibleFieldSerializer newSerializer (Kryo kryo, Class type) {
 				CompatibleFieldSerializer serializer = super.newSerializer(kryo, type);
-				serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+				serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 				return serializer;
 			}
 		});
@@ -63,21 +63,21 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	public void testAddedField () {
-		testAddedField(63, false, false);
-		testAddedField(80, false, true);
-		testAddedField(65, true, false);
-		testAddedField(93, true, true);
+		testAddedField(59, false, false);
+		testAddedField(87, false, true);
+		testAddedField(63, true, false);
+		testAddedField(91, true, true);
 	}
 
 	public void testAddedField (int length, boolean references, boolean chunked) {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, AnotherClass.class);
-		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(AnotherClass.class, serializer);
 
 		serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
-		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(TestClass.class, serializer);
 
 		TestClass object1 = new TestClass();
@@ -94,17 +94,25 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	public void testAddedFieldToClassWithManyFields () {
-		testAddedFieldToClassWithManyFields(189, false, false);
-		testAddedFieldToClassWithManyFields(226, false, true);
-		testAddedFieldToClassWithManyFields(227, true, false);
-		testAddedFieldToClassWithManyFields(301, true, true);
+		testAddedFieldToClassWithManyFields(189, false, false, true);
+		testAddedFieldToClassWithManyFields(152, false, false, false);
+
+		testAddedFieldToClassWithManyFields(263, false, true, true);
+		testAddedFieldToClassWithManyFields(226, false, true, false);
+
+		testAddedFieldToClassWithManyFields(227, true, false, true);
+		testAddedFieldToClassWithManyFields(190, true, false, false);
+
+		testAddedFieldToClassWithManyFields(301, true, true, true);
+		testAddedFieldToClassWithManyFields(264, true, true, false);
 	}
 
-	public void testAddedFieldToClassWithManyFields (int length, boolean references, boolean chunked) {
+	public void testAddedFieldToClassWithManyFields (int length, boolean references, boolean chunked, boolean readUnknownTagData) {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
-		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		serializer.getCompatibleFieldSerializerConfig().setReadUnknownTagData(readUnknownTagData);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(ClassWithManyFields.class, serializer);
 
 		// class must have more than CompatibleFieldSerializer#THRESHOLD_BINARY_SEARCH number of fields
@@ -157,21 +165,21 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	public void testRemovedField () {
-		testRemovedField(96, false, false);
-		testRemovedField(116, false, true);
-		testRemovedField(89, true, false);
-		testRemovedField(122, true, true);
+		testRemovedField(92, false, false);
+		testRemovedField(125, false, true);
+		testRemovedField(87, true, false);
+		testRemovedField(120, true, true);
 	}
 
 	private void testRemovedField (int length, boolean references, boolean chunked) {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, AnotherClass.class);
-		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(AnotherClass.class, serializer);
 
 		serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
-		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(TestClass.class, serializer);
 
 		TestClass object1 = new TestClass();
@@ -194,17 +202,26 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	public void testRemovedFieldFromClassWithManyFields () {
-		testRemovedFieldFromClassWithManyFields(198, false, false);
-		testRemovedFieldFromClassWithManyFields(236, false, true);
-		testRemovedFieldFromClassWithManyFields(237, true, false);
-		testRemovedFieldFromClassWithManyFields(313, true, true);
+		testRemovedFieldFromClassWithManyFields(198, false, false, true);
+		// testRemovedFieldFromClassWithManyFields(0, false, false, false); // Doesn't support remove.
+
+		testRemovedFieldFromClassWithManyFields(274, false, true, true);
+		testRemovedFieldFromClassWithManyFields(236, false, true, false);
+
+		testRemovedFieldFromClassWithManyFields(237, true, false, true);
+		// testRemovedFieldFromClassWithManyFields(0, true, false, false); // Doesn't support remove.
+
+		testRemovedFieldFromClassWithManyFields(313, true, true, true);
+		testRemovedFieldFromClassWithManyFields(275, true, true, false);
 	}
 
-	public void testRemovedFieldFromClassWithManyFields (int length, boolean references, boolean chunked) {
+	public void testRemovedFieldFromClassWithManyFields (int length, boolean references, boolean chunked,
+		boolean readUnknownTagData) {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
-		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		serializer.getCompatibleFieldSerializerConfig().setReadUnknownTagData(readUnknownTagData);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(ClassWithManyFields.class, serializer);
 
 		// class must have more than CompatibleFieldSerializer#THRESHOLD_BINARY_SEARCH number of fields
@@ -261,17 +278,26 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	public void testRemovedMultipleFieldsFromClassWithManyFields () {
-		testRemovedMultipleFieldsFromClassWithManyFields(182, false, false);
-		testRemovedMultipleFieldsFromClassWithManyFields(220, false, true);
-		testRemovedMultipleFieldsFromClassWithManyFields(209, true, false);
-		testRemovedMultipleFieldsFromClassWithManyFields(285, true, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(170, false, false, true);
+		// testRemovedMultipleFieldsFromClassWithManyFields(0, false, false, false); // Doesn't support remove.
+
+		testRemovedMultipleFieldsFromClassWithManyFields(246, false, true, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(220, false, true, false);
+
+		testRemovedMultipleFieldsFromClassWithManyFields(197, true, false, true);
+		// testRemovedMultipleFieldsFromClassWithManyFields(0, true, false, false); // Doesn't support remove.
+
+		testRemovedMultipleFieldsFromClassWithManyFields(273, true, true, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(247, true, true, false);
 	}
 
-	public void testRemovedMultipleFieldsFromClassWithManyFields (int length, boolean references, boolean chunked) {
+	public void testRemovedMultipleFieldsFromClassWithManyFields (int length, boolean references, boolean chunked,
+		boolean readUnknownTagData) {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
-		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		serializer.getCompatibleFieldSerializerConfig().setReadUnknownTagData(readUnknownTagData);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(ClassWithManyFields.class, serializer);
 
 		// class must have more than CompatibleFieldSerializer#THRESHOLD_BINARY_SEARCH number of fields
@@ -322,17 +348,17 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	public void testExtendedClass () {
-		testExtendedClass(274, false, false);
-		testExtendedClass(286, false, true);
-		testExtendedClass(277, true, false);
-		testExtendedClass(301, true, true);
+		testExtendedClass(270, false, false);
+		testExtendedClass(294, false, true);
+		testExtendedClass(273, true, false);
+		testExtendedClass(297, true, true);
 	}
 
 	public void testExtendedClass (int length, boolean references, boolean chunked) {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ExtendedTestClass.class);
-		serializer.getCompatibleFieldSerializerConfig().setChunked(chunked);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		// this test would fail with DEFAULT field name strategy
 		serializer.getCompatibleFieldSerializerConfig().setExtendedFieldNames(true);
 		serializer.updateFields();

@@ -29,7 +29,6 @@ import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.util.Generics;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
@@ -123,7 +122,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return object;
 	}
 
-	private int pushTypeVariables () {
+	/** Prepares the type variables for the serialized type. Must be balanced with {@link #popTypeVariables(int)} if >0 is
+	 * returned. */
+	protected int pushTypeVariables () {
 		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
 		if (genericTypes == null) return 0;
 
@@ -132,7 +133,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return pop;
 	}
 
-	private void popTypeVariables (int pop) {
+	protected void popTypeVariables (int pop) {
 		Generics generics = kryo.getGenerics();
 		generics.popTypeVariables(pop);
 		generics.popGenericType();
