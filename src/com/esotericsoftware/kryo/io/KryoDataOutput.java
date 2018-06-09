@@ -24,7 +24,7 @@ import java.io.IOException;
 
 /** A {@link DataOutput} which writes data to an {@link Output}.
  * @author Robert DiFalco <robert.difalco@gmail.com> */
-public class KryoDataOutput implements DataOutput {
+public class KryoDataOutput implements DataOutput, AutoCloseable {
 	protected Output output;
 
 	public KryoDataOutput (Output output) {
@@ -97,5 +97,9 @@ public class KryoDataOutput implements DataOutput {
 
 	public void writeUTF (String s) throws IOException {
 		output.writeString(s);
+	}
+
+	public void close () throws Exception {
+		output.close();
 	}
 }

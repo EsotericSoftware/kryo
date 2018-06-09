@@ -28,7 +28,7 @@ import java.io.InputStream;
 /** An InputStream that reads data from a byte[] and optionally fills the byte[] from another InputStream as needed. Utility
  * methods are provided for efficiently reading primitive types and strings.
  * @author Nathan Sweet */
-public class Input extends InputStream {
+public class Input extends InputStream implements AutoCloseable {
 	protected byte[] buffer;
 	protected int position;
 	protected int capacity;

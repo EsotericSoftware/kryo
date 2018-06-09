@@ -28,7 +28,7 @@ import java.io.OutputStream;
 /** An OutputStream that writes data to a byte[] and optionally flushes to another OutputStream. Utility methods are provided for
  * efficiently writing primitive types and strings using big endian.
  * @author Nathan Sweet */
-public class Output extends OutputStream {
+public class Output extends OutputStream implements AutoCloseable {
 	protected int maxCapacity;
 	protected long total;
 	protected int position;
