@@ -166,6 +166,7 @@ public class SerializationCompatTestData {
 		private List<String> _arrayList;
 		private Set<String> _hashSet;
 		private Map<String, Integer> _hashMap;
+		private List<Integer> _asList = Arrays.asList(1, 2, 3);
 		private int[] _intArray;
 		private long[] _longArray;
 		private short[] _shortArray;

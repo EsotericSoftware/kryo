@@ -59,7 +59,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		return config;
 	}
 
-	final public void write (Kryo kryo, Output output, T collection) {
+	public void write (Kryo kryo, Output output, T collection) {
 		if (collection == null) {
 			output.writeByte(NULL);
 			return;

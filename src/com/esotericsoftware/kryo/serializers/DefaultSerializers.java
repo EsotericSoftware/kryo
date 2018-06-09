@@ -29,8 +29,6 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
-import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
 
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
@@ -40,6 +38,8 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -773,6 +773,23 @@ public class DefaultSerializers {
 			} catch (MalformedURLException ex) {
 				throw new KryoException(ex);
 			}
+		}
+	}
+
+	/** Serializer for {@link Arrays#asList(Object...)}. */
+	static public class ArraysAsListSerializer extends CollectionSerializer<List> {
+		protected List create (Kryo kryo, Input input, Class type, int size) {
+			return new ArrayList(size);
+		}
+
+		public List read (Kryo kryo, Input input, Class type) {
+			List list = super.read(kryo, input, type);
+			if (list == null) return null;
+			return Arrays.asList(list.toArray());
+		}
+
+		public List copy (Kryo kryo, List original) {
+			return Arrays.asList(original.toArray());
 		}
 	}
 }

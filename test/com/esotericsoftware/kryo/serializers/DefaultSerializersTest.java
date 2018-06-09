@@ -276,6 +276,18 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(249, test);
 	}
 
+	public void testArraysAsListUnregistered () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(29, Arrays.asList());
+		roundTrip(37, Arrays.asList(new String[] {"A", "B", "C"}));
+	}
+
+	public void testArraysAsList () {
+		kryo.register(Arrays.asList().getClass());
+		roundTrip(2, Arrays.asList());
+		roundTrip(10, Arrays.asList(new String[] {"A", "B", "C"}));
+	}
+
 	public void testDeepCollectionCloning () {
 		kryo.setRegistrationRequired(false);
 		Object contents = new Object();

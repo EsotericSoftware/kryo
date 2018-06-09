@@ -21,6 +21,15 @@ package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.kryo.ReflectionAssert.*;
 
+import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
+import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava8;
+import com.esotericsoftware.kryo.io.ByteBufferInput;
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import com.esotericsoftware.minlog.Log;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -32,15 +41,6 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
-
-import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
-import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava8;
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.ByteBufferOutput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-import com.esotericsoftware.minlog.Log;
 
 /** Test for serialization compatibility: data serialized with an older version (same major version) must be deserializable with
  * this newer (same major) version. Serialization compatibility is checked for each type that has a default serializer
@@ -67,17 +67,17 @@ import com.esotericsoftware.minlog.Log;
  * related tag and run the test (there's nothing here to automate creation of test files for a different version). */
 public class SerializationCompatTest extends KryoTestCase {
 	// Set to true to delete failed test files, then set back to false, set expected bytes, and run again to generate new files.
-	static private final boolean DELETE_FAILED_TEST_FILES = false;
+	static private final boolean DELETE_FAILED_TEST_FILES = true;
 
 	static private final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
 	static private final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
-	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 35 : 53; // Also change
+	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 36 : 54; // Also change
 																															// Kryo#defaultSerializers.
 	static private final List<TestDataDescription> TEST_DATAS = new ArrayList();
 
 	static {
-		TEST_DATAS.add(new TestDataDescription<TestData>("5.0.0", new TestData(), 1858));
-		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("5.0.0", new TestDataJava8(), 2016));
+		TEST_DATAS.add(new TestDataDescription<TestData>("5.0.0", new TestData(), 1891));
+		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("5.0.0", new TestDataJava8(), 2049));
 	};
 
 	public void setUp () throws Exception {
@@ -96,11 +96,12 @@ public class SerializationCompatTest extends KryoTestCase {
 		Field defaultSerializersField = Kryo.class.getDeclaredField("defaultSerializers");
 		defaultSerializersField.setAccessible(true);
 		List defaultSerializers = (List)defaultSerializersField.get(kryo);
-		assertEquals("The registered default serializers changed.\n" + "Because serialization compatibility shall be checked"
-			+ " for default serializers, you must extend SerializationCompatTestData.TestData to have a field for the"
-			+ " type of the new default serializer.\n" + "After that's done, you must create new versions of 'test/resources/data*'"
-			+ " because the new TestData instance will no longer be equals the formerly written/serialized one.",
-			EXPECTED_DEFAULT_SERIALIZER_COUNT, defaultSerializers.size());
+		assertEquals("The registered default serializers have changed.\n" //
+			+ "Because serialization compatibility shall be checked for default serializers, you must extend " //
+			+ "SerializationCompatTestData.TestData to have a field for the type of the new default serializer.\n" //
+			+ "After that's done, you must create new versions of 'test/resources/data*' because the new TestData instance will " //
+			+ "no longer be equals the formerly written/serialized one.", EXPECTED_DEFAULT_SERIALIZER_COUNT,
+			defaultSerializers.size());
 	}
 
 	public void testStandard () throws Exception {
