@@ -179,50 +179,40 @@ public class FieldSerializerBenchmark {
 	@Benchmark
 	public void field (FieldSerializerState state) {
 		state.reset();
-		for (int i = 0; i < 100; i++) {
-			state.kryo.writeObject(state.output, state.object);
-			state.input.setLimit(state.output.position());
-			state.kryo.readObject(state.input, Sample.class);
-		}
+		state.kryo.writeObject(state.output, state.object);
+		state.input.setLimit(state.output.position());
+		state.kryo.readObject(state.input, Sample.class);
 	}
 
 	@Benchmark
 	public void compatible (CompatibleState state) {
 		state.reset();
-		for (int i = 0; i < 100; i++) {
-			state.kryo.writeObject(state.output, state.object);
-			state.input.setLimit(state.output.position());
-			state.kryo.readObject(state.input, Sample.class);
-		}
+		state.kryo.writeObject(state.output, state.object);
+		state.input.setLimit(state.output.position());
+		state.kryo.readObject(state.input, Sample.class);
 	}
 
 	@Benchmark
 	public void tagged (TaggedState state) {
 		state.reset();
-		for (int i = 0; i < 100; i++) {
-			state.kryo.writeObject(state.output, state.object);
-			state.input.setLimit(state.output.position());
-			state.kryo.readObject(state.input, Sample.class);
-		}
+		state.kryo.writeObject(state.output, state.object);
+		state.input.setLimit(state.output.position());
+		state.kryo.readObject(state.input, Sample.class);
 	}
 
 	@Benchmark
 	public void version (VersionState state) {
 		state.reset();
-		for (int i = 0; i < 100; i++) {
-			state.kryo.writeObject(state.output, state.object);
-			state.input.setLimit(state.output.position());
-			state.kryo.readObject(state.input, Sample.class);
-		}
+		state.kryo.writeObject(state.output, state.object);
+		state.input.setLimit(state.output.position());
+		state.kryo.readObject(state.input, Sample.class);
 	}
 
 	@Benchmark
 	public void custom (CustomState state) {
 		state.reset();
-		for (int i = 0; i < 100; i++) {
-			state.kryo.writeObject(state.output, state.object);
-			state.input.setLimit(state.output.position());
-			state.kryo.readObject(state.input, Sample.class);
-		}
+		state.kryo.writeObject(state.output, state.object);
+		state.input.setLimit(state.output.position());
+		state.kryo.readObject(state.input, Sample.class);
 	}
 }

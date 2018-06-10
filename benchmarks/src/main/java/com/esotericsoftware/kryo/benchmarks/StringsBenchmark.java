@@ -30,7 +30,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
 @BenchmarkMode(Mode.SingleShotTime)
-@Measurement(batchSize = 40000)
+@Measurement(batchSize = 12000000)
 public class StringsBenchmark {
 	@State(Scope.Thread)
 	static public class BenchmarkState {
@@ -72,42 +72,38 @@ public class StringsBenchmark {
 	@Benchmark
 	public void writeString (BenchmarkState state) {
 		state.reset();
-		for (int i = 0; i < 1000; i++)
-			state.output.writeString("abc0123456789");
+		state.output.writeString("abc0123456789"); // Short enough to be detected as ASCII.
 	}
 
 	@Benchmark
-	public void readString (ReadString state) {
+	public String readString (ReadString state) {
 		state.reset();
-		for (int i = 0; i < 1000; i++)
-			state.input.readString();
+		return state.input.readString();
 	}
 
 	@Benchmark
 	public void writeStringLong (BenchmarkState state) {
 		state.reset();
-		for (int i = 0; i < 1000; i++)
-			state.output.writeString("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789");
+		state.output.writeString(
+			"abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789");
 	}
 
 	@Benchmark
-	public void readStringLong (ReadStringLong state) {
+	public String readStringLong (ReadStringLong state) {
 		state.reset();
-		for (int i = 0; i < 1000; i++)
-			state.input.readString();
+		return state.input.readString();
 	}
 
 	@Benchmark
 	public void writeAsciiLong (BenchmarkState state) {
 		state.reset();
-		for (int i = 0; i < 1000; i++)
-			state.output.writeAscii("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789");
+		state.output.writeAscii(
+			"abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789");
 	}
 
 	@Benchmark
-	public void readAsciiLong (ReadAsciiLong state) {
+	public String readAsciiLong (ReadAsciiLong state) {
 		state.reset();
-		for (int i = 0; i < 1000; i++)
-			state.input.readString();
+		return state.input.readString();
 	}
 }
