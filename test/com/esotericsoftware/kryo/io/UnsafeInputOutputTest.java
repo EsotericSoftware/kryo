@@ -123,8 +123,8 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(value, read.readStringBuilder().toString());
 
 		write.clear();
-		write.writeUtf8(buffer);
-		write.writeUtf8(buffer);
+		write.writeString(buffer.toString());
+		write.writeString(buffer.toString());
 		read = new UnsafeInput(write.toBytes());
 		assertEquals(value, read.readStringBuilder().toString());
 		assertEquals(value, read.readString());
@@ -670,7 +670,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		write.writeDouble(-8192);
 		write.writeDouble(-16384);
 		write.writeDouble(-32768);
-		
+
 		assertEquals(1, write.writeVarDouble(0, 1000, true));
 		assertEquals(1, write.writeVarDouble(0, 1000, false));
 		assertEquals(3, write.writeVarDouble(63, 1000, true));
@@ -715,7 +715,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(read.readDouble(), -8192d);
 		assertEquals(read.readDouble(), -16384d);
 		assertEquals(read.readDouble(), -32768d);
-		
+
 		assertEquals(read.readVarDouble(1000, true), 0d);
 		assertEquals(read.readVarDouble(1000, false), 0d);
 		assertEquals(read.readVarDouble(1000, true), 63d);

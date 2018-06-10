@@ -436,7 +436,7 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, StringBuffer object) {
-			output.writeUtf8(object);
+			output.writeString(object.toString());
 		}
 
 		public StringBuffer read (Kryo kryo, Input input, Class<? extends StringBuffer> type) {
@@ -457,7 +457,7 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, StringBuilder object) {
-			output.writeUtf8(object);
+			output.writeString(object.toString());
 		}
 
 		public StringBuilder read (Kryo kryo, Input input, Class<? extends StringBuilder> type) {

@@ -134,7 +134,7 @@ public class DefaultClassResolver implements ClassResolver {
 		if (registration.isTypeNameAscii())
 			output.writeAscii(type.getName());
 		else
-			output.writeUtf8(type.getName());
+			output.writeString(type.getName());
 	}
 
 	public Registration readClass (Input input) {

@@ -767,7 +767,7 @@ public class Input extends InputStream implements AutoCloseable {
 	// String:
 
 	/** Reads the length and string of UTF8 characters, or null. This can read strings written by
-	 * {@link Output#writeString(String)}, {@link Output#writeUtf8(CharSequence)}, and {@link Output#writeAscii(String)}.
+	 * {@link Output#writeString(String)} and {@link Output#writeAscii(String)}.
 	 * @return May be null. */
 	public String readString () {
 		if (!readVarIntFlag()) return readAsciiString(); // ASCII.
@@ -785,8 +785,8 @@ public class Input extends InputStream implements AutoCloseable {
 	}
 
 	/** Reads the length and string of UTF8 characters, or null. For non-ASCII strings, this method avoids allocating a string by
-	 * reading directly to the StringBuilder. This can read strings written by {@link Output#writeString(String)} ,
-	 * {@link Output#writeUtf8(CharSequence)}, and {@link Output#writeAscii(String)}.
+	 * reading directly to the StringBuilder. This can read strings written by {@link Output#writeString(String)} and
+	 * {@link Output#writeAscii(String)}.
 	 * @return May be null. */
 	public StringBuilder readStringBuilder () {
 		if (!readVarIntFlag()) return new StringBuilder(readAsciiString()); // ASCII.

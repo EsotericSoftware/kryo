@@ -681,40 +681,6 @@ public class Output extends OutputStream implements AutoCloseable {
 		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
 
-	/** Writes the length and CharSequence as UTF8, or null. The string can be read using {@link Input#readString()} or
-	 * {@link Input#readStringBuilder()}.
-	 * @param value May be null. */
-	public void writeUtf8 (CharSequence value) throws KryoException {
-		if (value == null) {
-			writeByte(0x80); // 0 means null, bit 8 means UTF8.
-			return;
-		}
-		int charCount = value.length();
-		if (charCount == 0) {
-			writeByte(1 | 0x80); // 1 means empty string, bit 8 means UTF8.
-			return;
-		}
-		writeVarIntFlag(true, charCount + 1, true);
-		int charIndex = 0;
-		if (capacity - position >= charCount) {
-			// Try to write 7 bit chars.
-			byte[] buffer = this.buffer;
-			int p = position;
-			while (true) {
-				int c = value.charAt(charIndex);
-				if (c > 127) break;
-				buffer[p++] = (byte)c;
-				charIndex++;
-				if (charIndex == charCount) {
-					position = p;
-					return;
-				}
-			}
-			position = p;
-		}
-		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
-	}
-
 	/** Writes a string that is known to contain only ASCII characters. Non-ASCII strings passed to this method will be corrupted.
 	 * Each byte is a 7 bit character with the remaining byte denoting if another character is available. This is slightly more
 	 * efficient than {@link #writeString(String)}. The string can be read using {@link Input#readString()} or
@@ -731,8 +697,9 @@ public class Output extends OutputStream implements AutoCloseable {
 			writeByte(1 | 0x80); // 1 is string length + 1, bit 8 means UTF8.
 			return;
 		case 1:
-			writeByte(2 | 0x80); // 2 is string length + 1, bit 8 means UTF8.
-			writeByte(value.charAt(0));
+			require(2);
+			buffer[position++] = (byte)(2 | 0x80); // 2 is string length + 1, bit 8 means UTF8.
+			buffer[position++] = (byte)value.charAt(0);
 			return;
 		}
 		if (capacity - position < charCount)
@@ -745,26 +712,6 @@ public class Output extends OutputStream implements AutoCloseable {
 	}
 
 	private void writeUtf8_slow (String value, int charCount, int charIndex) {
-		int capacity = this.capacity;
-		for (; charIndex < charCount; charIndex++) {
-			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
-			int c = value.charAt(charIndex);
-			if (c <= 0x007F)
-				buffer[position++] = (byte)c;
-			else if (c > 0x07FF) {
-				buffer[position++] = (byte)(0xE0 | c >> 12 & 0x0F);
-				require(2);
-				buffer[position++] = (byte)(0x80 | c >> 6 & 0x3F);
-				buffer[position++] = (byte)(0x80 | c & 0x3F);
-			} else {
-				buffer[position++] = (byte)(0xC0 | c >> 6 & 0x1F);
-				if (position == capacity) require(1);
-				buffer[position++] = (byte)(0x80 | c & 0x3F);
-			}
-		}
-	}
-
-	private void writeUtf8_slow (CharSequence value, int charCount, int charIndex) {
 		int capacity = this.capacity;
 		for (; charIndex < charCount; charIndex++) {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));

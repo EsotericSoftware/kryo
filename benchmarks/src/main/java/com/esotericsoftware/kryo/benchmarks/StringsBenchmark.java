@@ -26,7 +26,6 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OperationsPerInvocation;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
@@ -50,42 +49,63 @@ public class StringsBenchmark {
 	}
 
 	@State(Scope.Thread)
-	static public class Read extends BenchmarkState {
-		public Read () {
-			new StringsBenchmark().write(this);
+	static public class ReadString extends BenchmarkState {
+		public ReadString () {
+			new StringsBenchmark().writeString(this);
 		}
 	}
 
 	@State(Scope.Thread)
-	static public class ReadLong extends BenchmarkState {
-		public ReadLong () {
-			new StringsBenchmark().writeLong(this);
+	static public class ReadStringLong extends BenchmarkState {
+		public ReadStringLong () {
+			new StringsBenchmark().writeStringLong(this);
+		}
+	}
+
+	@State(Scope.Thread)
+	static public class ReadAsciiLong extends BenchmarkState {
+		public ReadAsciiLong () {
+			new StringsBenchmark().writeAsciiLong(this);
 		}
 	}
 
 	@Benchmark
-	public void write (BenchmarkState state) {
+	public void writeString (BenchmarkState state) {
 		state.reset();
 		for (int i = 0; i < 1000; i++)
 			state.output.writeString("abc0123456789");
 	}
 
 	@Benchmark
-	public void read (Read state) {
+	public void readString (ReadString state) {
 		state.reset();
 		for (int i = 0; i < 1000; i++)
 			state.input.readString();
 	}
 
 	@Benchmark
-	public void writeLong (BenchmarkState state) {
+	public void writeStringLong (BenchmarkState state) {
 		state.reset();
 		for (int i = 0; i < 1000; i++)
 			state.output.writeString("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789");
 	}
 
 	@Benchmark
-	public void readLong (ReadLong state) {
+	public void readStringLong (ReadStringLong state) {
+		state.reset();
+		for (int i = 0; i < 1000; i++)
+			state.input.readString();
+	}
+
+	@Benchmark
+	public void writeAsciiLong (BenchmarkState state) {
+		state.reset();
+		for (int i = 0; i < 1000; i++)
+			state.output.writeAscii("abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789");
+	}
+
+	@Benchmark
+	public void readAsciiLong (ReadAsciiLong state) {
 		state.reset();
 		for (int i = 0; i < 1000; i++)
 			state.input.readString();
