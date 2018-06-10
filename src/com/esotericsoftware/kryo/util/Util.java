@@ -19,8 +19,11 @@
 
 package com.esotericsoftware.kryo.util;
 
+import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.lang.reflect.Type;
@@ -191,5 +194,27 @@ public class Util {
 		for (int i = 0, n = value.length(); i < n; i++)
 			if (value.charAt(i) > 127) return false;
 		return true;
+	}
+
+	/** @param factoryClass Must have a constructor that takes a serializer class, or a zero argument constructor.
+	 * @param serializerClass May be null if the factory alread knows the serializer class to create. */
+	static public <T extends SerializerFactory> T newFactory (Class<T> factoryClass, Class<? extends Serializer> serializerClass) {
+		if (serializerClass == Serializer.class) serializerClass = null; // Happens if not set in an annotation.
+		try {
+			if (serializerClass != null) {
+				try {
+					return factoryClass.getConstructor(Class.class).newInstance(serializerClass);
+				} catch (NoSuchMethodException ex) {
+				}
+			}
+			return factoryClass.newInstance();
+		} catch (Exception ex) {
+			if (serializerClass == null)
+				throw new IllegalArgumentException("Unable to create serializer factory: " + factoryClass.getName(), ex);
+			else {
+				throw new IllegalArgumentException("Unable to create serializer factory \"" + factoryClass.getName()
+					+ "\" for serializer class: " + className(serializerClass), ex);
+			}
+		}
 	}
 }

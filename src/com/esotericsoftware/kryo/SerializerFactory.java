@@ -44,28 +44,6 @@ public interface SerializerFactory<T extends Serializer> {
 	/** Returns true if this factory can create a serializer for the specified type. */
 	public boolean isSupported (Class type);
 
-	/** @param factoryClass Must have a constructor that takes a serializer class, or a zero argument constructor.
-	 * @param serializerClass May be null if the factory alread knows the serializer class to create. */
-	static public <T extends SerializerFactory> T newFactory (Class<T> factoryClass, Class<? extends Serializer> serializerClass) {
-		if (serializerClass == Serializer.class) serializerClass = null; // Happens if not set in an annotation.
-		try {
-			if (serializerClass != null) {
-				try {
-					return factoryClass.getConstructor(Class.class).newInstance(serializerClass);
-				} catch (NoSuchMethodException ex) {
-				}
-			}
-			return factoryClass.newInstance();
-		} catch (Exception ex) {
-			if (serializerClass == null)
-				throw new IllegalArgumentException("Unable to create serializer factory: " + factoryClass.getName(), ex);
-			else {
-				throw new IllegalArgumentException("Unable to create serializer factory \"" + factoryClass.getName()
-					+ "\" for serializer class: " + className(serializerClass), ex);
-			}
-		}
-	}
-
 	static public abstract class BaseSerializerFactory<T extends Serializer> implements SerializerFactory<T> {
 		public boolean isSupported (Class type) {
 			return true;

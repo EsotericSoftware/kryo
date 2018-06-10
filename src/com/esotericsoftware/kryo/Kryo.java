@@ -373,7 +373,7 @@ public class Kryo {
 	protected Serializer getDefaultSerializerForAnnotatedType (Class type) {
 		if (type.isAnnotationPresent(DefaultSerializer.class)) {
 			DefaultSerializer annotation = (DefaultSerializer)type.getAnnotation(DefaultSerializer.class);
-			return SerializerFactory.newFactory(annotation.serializerFactory(), annotation.value()).newSerializer(this, type);
+			return newFactory(annotation.serializerFactory(), annotation.value()).newSerializer(this, type);
 		}
 		return null;
 	}
