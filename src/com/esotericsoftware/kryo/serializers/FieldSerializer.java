@@ -41,12 +41,16 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
- * configuration. It is efficient by writing only the field data, without any schema information, using the Java class files as
- * the schema. It does not support adding, removing, or changing the type of fields without invalidating previously serialized
- * bytes. This can be acceptable in many situations, such as when sending data over a network, but may not be a good choice for
- * long term data storage because the Java classes cannot evolve. Because FieldSerializer attempts to read and write all
- * non-public fields by default, it is important to evaluate each class that will be serialized. If fields are public, faster
- * bytecode generation will be used instead of reflection.
+ * configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be
+ * serialized. If fields are public, serialization may be faster.
+ * <p>
+ * FieldSerializer is efficient by writing only the field data, without any schema information, using the Java class files as the
+ * schema. It does not support adding, removing, or changing the type of fields without invalidating previously serialized bytes.
+ * Renaming fields is allowed only if it doesn't change the alphabetical order of the fields.
+ * <p>
+ * FieldSerializer's compatibility drawbacks can be acceptable in many situations, such as when sending data over a network, but
+ * may not be a good choice for long term data storage because the Java classes cannot evolve. Subclasses provided more flexible
+ * compatibility.
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
  * @see VersionFieldSerializer
@@ -355,7 +359,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 		boolean serializeTransient;
 		boolean varEncoding = true;
 		boolean extendedFieldNames;
-		boolean unsafe;
 
 		public FieldSerializerConfig clone () {
 			try {
@@ -456,15 +459,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public boolean getExtendedFieldNames () {
 			return extendedFieldNames;
-		}
-
-		public boolean getUnsafe () {
-			return unsafe;
-		}
-
-		/** When true, fields will be read using {@link sun.misc.Unsafe}, if possible. */
-		public void setUnsafe (boolean unsafe) {
-			this.unsafe = unsafe;
 		}
 	}
 }
