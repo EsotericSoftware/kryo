@@ -70,19 +70,6 @@ import java.util.Map;
 class CachedFields implements Comparator<CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
 
-	static final boolean unsafe;
-	static {
-		boolean found = false;
-		try {
-			found = Class.forName("com.esotericsoftware.kryo.unsafe.UnsafeUtil", true, FieldSerializer.class.getClassLoader())
-				.getField("unsafe").get(null) != null;
-		} catch (Throwable ex) {
-			ex.printStackTrace();
-			if (TRACE) trace("kryo", "Unsafe is unavailable.");
-		}
-		unsafe = found;
-	}
-
 	private final FieldSerializer serializer;
 	CachedField[] fields = new CachedField[0];
 	CachedField[] copyFields = new CachedField[0];

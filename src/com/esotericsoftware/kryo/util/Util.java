@@ -24,6 +24,7 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.lang.reflect.Type;
@@ -32,6 +33,20 @@ import java.lang.reflect.Type;
  * @author Nathan Sweet */
 public class Util {
 	static public final boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
+
+	/** True if Unsafe is available. */
+	static public final boolean unsafe;
+	static {
+		boolean found = false;
+		try {
+			found = Class.forName("com.esotericsoftware.kryo.unsafe.UnsafeUtil", true, FieldSerializer.class.getClassLoader())
+				.getField("unsafe").get(null) != null;
+		} catch (Throwable ex) {
+			ex.printStackTrace();
+			if (TRACE) trace("kryo", "Unsafe is unavailable.");
+		}
+		unsafe = found;
+	}
 
 	// Maximum reasonable array length. See: https://stackoverflow.com/questions/3038392/do-java-arrays-have-a-maximum-size
 	static public final int maxArraySize = Integer.MAX_VALUE - 8;
