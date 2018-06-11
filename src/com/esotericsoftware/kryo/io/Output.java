@@ -162,6 +162,12 @@ public class Output extends OutputStream implements AutoCloseable {
 		return total + position;
 	}
 
+	/** The maximum buffer size, or -1 for no maximum.
+	 * @see Output#Output(int, int) */
+	public int getMaxCapacity () {
+		return maxCapacity;
+	}
+
 	/** Sets the position and total to 0. */
 	public void clear () {
 		position = 0;
@@ -712,7 +718,6 @@ public class Output extends OutputStream implements AutoCloseable {
 	}
 
 	private void writeUtf8_slow (String value, int charCount, int charIndex) {
-		int capacity = this.capacity;
 		for (; charIndex < charCount; charIndex++) {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
 			int c = value.charAt(charIndex);
