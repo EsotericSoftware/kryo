@@ -572,36 +572,6 @@ public class ByteBufferOutput extends Output {
 		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
 
-	public void writeUtf8 (CharSequence value) throws KryoException {
-		if (value == null) {
-			writeByte(0x80); // 0 means null, bit 8 means UTF8.
-			return;
-		}
-		int charCount = value.length();
-		if (charCount == 0) {
-			writeByte(1 | 0x80); // 1 means empty string, bit 8 means UTF8.
-			return;
-		}
-		writeVarIntFlag(true, charCount + 1, true);
-		int charIndex = 0;
-		if (capacity - position >= charCount) {
-			// Try to write 7 bit chars.
-			ByteBuffer byteBuffer = this.byteBuffer;
-			while (true) {
-				int c = value.charAt(charIndex);
-				if (c > 127) break;
-				byteBuffer.put((byte)c);
-				charIndex++;
-				if (charIndex == charCount) {
-					position = byteBuffer.position();
-					return;
-				}
-			}
-			position = byteBuffer.position();
-		}
-		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
-	}
-
 	public void writeAscii (String value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
@@ -624,30 +594,6 @@ public class ByteBufferOutput extends Output {
 	}
 
 	private void writeUtf8_slow (String value, int charCount, int charIndex) {
-		int capacity = this.capacity;
-		for (; charIndex < charCount; charIndex++) {
-			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
-			position++;
-			int c = value.charAt(charIndex);
-			if (c <= 0x007F)
-				byteBuffer.put((byte)c);
-			else if (c > 0x07FF) {
-				byteBuffer.put((byte)(0xE0 | c >> 12 & 0x0F));
-				require(2);
-				position += 2;
-				byteBuffer.put((byte)(0x80 | c >> 6 & 0x3F));
-				byteBuffer.put((byte)(0x80 | c & 0x3F));
-			} else {
-				byteBuffer.put((byte)(0xC0 | c >> 6 & 0x1F));
-				if (position == capacity) require(1);
-				position++;
-				byteBuffer.put((byte)(0x80 | c & 0x3F));
-			}
-		}
-	}
-
-	private void writeUtf8_slow (CharSequence value, int charCount, int charIndex) {
-		int capacity = this.capacity;
 		for (; charIndex < charCount; charIndex++) {
 			if (position == capacity) require(Math.min(capacity, charCount - charIndex));
 			position++;
