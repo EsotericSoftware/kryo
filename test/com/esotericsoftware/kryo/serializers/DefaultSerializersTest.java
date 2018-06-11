@@ -307,6 +307,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	public void testClassSerializer () {
 		kryo.register(Class.class);
 		kryo.register(ArrayList.class);
+		kryo.register(void.class);
 		kryo.setRegistrationRequired(false);
 		final Output out = new Output(1024);
 

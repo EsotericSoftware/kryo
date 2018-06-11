@@ -209,6 +209,7 @@ public class Kryo {
 		addDefaultSerializer(Charset.class, CharsetSerializer.class);
 		addDefaultSerializer(URL.class, URLSerializer.class);
 		addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer.class);
+		addDefaultSerializer(void.class, new VoidSerializer());
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
@@ -223,7 +224,6 @@ public class Kryo {
 		register(short.class, new ShortSerializer());
 		register(long.class, new LongSerializer());
 		register(double.class, new DoubleSerializer());
-		register(void.class, new VoidSerializer());
 	}
 
 	// --- Default serializers ---
