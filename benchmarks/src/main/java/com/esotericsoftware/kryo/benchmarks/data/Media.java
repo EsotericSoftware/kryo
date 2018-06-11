@@ -1,21 +1,23 @@
 
 package com.esotericsoftware.kryo.benchmarks.data;
 
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
+
 import java.util.List;
 
 public class Media implements java.io.Serializable {
-	public String uri;
-	public String title; // Can be unset.
-	public int width;
-	public int height;
-	public String format;
-	public long duration;
-	public long size;
-	public int bitrate; // Can be unset.
-	public boolean hasBitrate;
-	public List<String> persons;
-	public Player player;
-	public String copyright; // Can be unset.
+	@Tag(0) public String uri;
+	@Tag(1) public String title; // Can be null.
+	@Tag(2) public int width;
+	@Tag(3) public int height;
+	@Tag(4) public String format;
+	@Tag(5) public long duration;
+	@Tag(6) public long size;
+	@Tag(7) public int bitrate;
+	@Tag(8) public boolean hasBitrate;
+	@Tag(9) public List<String> persons;
+	@Tag(10) public Player player;
+	@Tag(11) public String copyright; // Can be null.
 
 	public Media () {
 	}

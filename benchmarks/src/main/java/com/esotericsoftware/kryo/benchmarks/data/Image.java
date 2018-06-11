@@ -1,22 +1,26 @@
 
 package com.esotericsoftware.kryo.benchmarks.data;
 
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
+
 public class Image {
-	public String uri;
-	public String title; // Can be null
-	public int width;
-	public int height;
-	public Size size;
+	@Tag(0) public String uri;
+	@Tag(1) public String title; // Can be null.
+	@Tag(2) public int width;
+	@Tag(3) public int height;
+	@Tag(4) public Size size;
+	@Tag(5) public Media media; // Can be null.
 
 	public Image () {
 	}
 
-	public Image (String uri, String title, int width, int height, Size size) {
+	public Image (String uri, String title, int width, int height, Size size, Media media) {
 		this.height = height;
 		this.title = title;
 		this.uri = uri;
 		this.width = width;
 		this.size = size;
+		this.media = media;
 	}
 
 	public boolean equals (Object o) {

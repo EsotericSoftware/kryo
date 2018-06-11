@@ -23,54 +23,104 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
+import com.esotericsoftware.kryo.benchmarks.data.Image;
+import com.esotericsoftware.kryo.benchmarks.data.Image.Size;
+import com.esotericsoftware.kryo.benchmarks.data.Media;
+import com.esotericsoftware.kryo.benchmarks.data.Media.Player;
+import com.esotericsoftware.kryo.benchmarks.data.MediaContent;
 import com.esotericsoftware.kryo.benchmarks.data.Sample;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
 
+import java.util.ArrayList;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
-import org.openjdk.jmh.annotations.OperationsPerInvocation;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
 public class FieldSerializerBenchmark {
+	@Benchmark
+	public void field (FieldSerializerState state) {
+		state.roundTrip();
+	}
+
+	@Benchmark
+	public void compatible (CompatibleState state) {
+		state.roundTrip();
+	}
+
+	@Benchmark
+	public void tagged (TaggedState state) {
+		state.roundTrip();
+	}
+
+	@Benchmark
+	public void version (VersionState state) {
+		state.roundTrip();
+	}
+
+	@Benchmark
+	public void custom (CustomState state) {
+		state.roundTrip();
+	}
+
+	//
+
 	@State(Scope.Thread)
 	static public abstract class BenchmarkState {
 		@Param({"true", "false"}) public boolean references;
+		@Param() public ObjectType objectType;
 
 		final Kryo kryo = new Kryo();
-		final Output output;
-		final Input input;
-		final Sample object;
-
-		public BenchmarkState () {
-			output = new Output(1024 * 512);
-			input = new Input(output.getBuffer());
-
-			object = new Sample();
-			object.defaultValues();
-		}
+		final Output output = new Output(1024 * 512);
+		final Input input = new Input(output.getBuffer());
+		Object object;
 
 		@Setup(Level.Trial)
 		public void setup () {
-			kryo.register(double[].class);
-			kryo.register(int[].class);
-			kryo.register(long[].class);
-			kryo.register(float[].class);
-			kryo.register(double[].class);
-			kryo.register(short[].class);
-			kryo.register(char[].class);
-			kryo.register(boolean[].class);
-			kryo.register(Sample.class);
+			switch (objectType) {
+			case sample:
+				object = new Sample().populate(references);
+				kryo.register(double[].class);
+				kryo.register(int[].class);
+				kryo.register(long[].class);
+				kryo.register(float[].class);
+				kryo.register(double[].class);
+				kryo.register(short[].class);
+				kryo.register(char[].class);
+				kryo.register(boolean[].class);
+				kryo.register(object.getClass());
+				break;
+			case media:
+				object = new MediaContent().populate(references);
+				kryo.register(Image.class);
+				kryo.register(Size.class);
+				kryo.register(Media.class);
+				kryo.register(Player.class);
+				kryo.register(ArrayList.class);
+				kryo.register(MediaContent.class);
+				break;
+			}
+
+			kryo.setReferences(references);
 		}
 
-		public void reset () {
-			input.setPosition(0);
+		public void roundTrip () {
 			output.setPosition(0);
+			kryo.writeObject(output, object);
+			input.setPosition(0);
+			input.setLimit(output.position());
+			kryo.readObject(input, object.getClass());
+		}
+
+		static public enum ObjectType {
+			sample, media
 		}
 	}
 
@@ -87,6 +137,7 @@ public class FieldSerializerBenchmark {
 		public void setup () {
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
 			factory.getConfig().setChunkedEncoding(chunked);
+			factory.getConfig().setReadUnknownTagData(true); // Typical to always use.
 			kryo.setDefaultSerializer(factory);
 			super.setup();
 		}
@@ -98,6 +149,7 @@ public class FieldSerializerBenchmark {
 		public void setup () {
 			TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
 			factory.getConfig().setChunkedEncoding(chunked);
+			if (chunked) factory.getConfig().setReadUnknownTagData(true); // Typical to use with chunked.
 			kryo.setDefaultSerializer(factory);
 			super.setup();
 		}
@@ -113,106 +165,149 @@ public class FieldSerializerBenchmark {
 	static public class CustomState extends BenchmarkState {
 		public void setup () {
 			super.setup();
-			kryo.register(Sample.class, new Serializer<Sample>() {
-				public void write (Kryo kryo, Output output, Sample object) {
-					output.writeInt(object.intValue);
-					output.writeLong(object.longValue);
-					output.writeFloat(object.floatValue);
-					output.writeDouble(object.doubleValue);
-					output.writeShort(object.shortValue);
-					output.writeChar(object.charValue);
-					output.writeBoolean(object.booleanValue);
-					kryo.writeObject(output, object.IntValue);
-					kryo.writeObject(output, object.LongValue);
-					kryo.writeObject(output, object.FloatValue);
-					kryo.writeObject(output, object.DoubleValue);
-					kryo.writeObject(output, object.ShortValue);
-					kryo.writeObject(output, object.CharValue);
-					kryo.writeObject(output, object.BooleanValue);
+			switch (objectType) {
+			case sample:
+				kryo.register(Sample.class, new Serializer<Sample>() {
+					public void write (Kryo kryo, Output output, Sample object) {
+						output.writeInt(object.intValue);
+						output.writeLong(object.longValue);
+						output.writeFloat(object.floatValue);
+						output.writeDouble(object.doubleValue);
+						output.writeShort(object.shortValue);
+						output.writeChar(object.charValue);
+						output.writeBoolean(object.booleanValue);
+						kryo.writeObject(output, object.IntValue);
+						kryo.writeObject(output, object.LongValue);
+						kryo.writeObject(output, object.FloatValue);
+						kryo.writeObject(output, object.DoubleValue);
+						kryo.writeObject(output, object.ShortValue);
+						kryo.writeObject(output, object.CharValue);
+						kryo.writeObject(output, object.BooleanValue);
 
-					kryo.writeObject(output, object.intArray);
-					kryo.writeObject(output, object.longArray);
-					kryo.writeObject(output, object.floatArray);
-					kryo.writeObject(output, object.doubleArray);
-					kryo.writeObject(output, object.shortArray);
-					kryo.writeObject(output, object.charArray);
-					kryo.writeObject(output, object.booleanArray);
+						kryo.writeObject(output, object.intArray);
+						kryo.writeObject(output, object.longArray);
+						kryo.writeObject(output, object.floatArray);
+						kryo.writeObject(output, object.doubleArray);
+						kryo.writeObject(output, object.shortArray);
+						kryo.writeObject(output, object.charArray);
+						kryo.writeObject(output, object.booleanArray);
 
-					kryo.writeObject(output, object.string);
-					kryo.writeObject(output, object.sample);
-				}
+						kryo.writeObjectOrNull(output, object.string, String.class);
+						kryo.writeObjectOrNull(output, object.sample, Sample.class);
+					}
 
-				public Sample read (Kryo kryo, Input input, Class<? extends Sample> type) {
-					Sample object = new Sample();
-					object.intValue = input.readInt();
-					object.longValue = input.readLong();
-					object.floatValue = input.readFloat();
-					object.doubleValue = input.readDouble();
-					object.shortValue = input.readShort();
-					object.charValue = input.readChar();
-					object.booleanValue = input.readBoolean();
-					object.IntValue = kryo.readObject(input, Integer.class);
-					object.LongValue = kryo.readObject(input, Long.class);
-					object.FloatValue = kryo.readObject(input, Float.class);
-					object.DoubleValue = kryo.readObject(input, Double.class);
-					object.ShortValue = kryo.readObject(input, Short.class);
-					object.CharValue = kryo.readObject(input, Character.class);
-					object.BooleanValue = kryo.readObject(input, Boolean.class);
+					public Sample read (Kryo kryo, Input input, Class<? extends Sample> type) {
+						Sample object = new Sample();
+						object.intValue = input.readInt();
+						object.longValue = input.readLong();
+						object.floatValue = input.readFloat();
+						object.doubleValue = input.readDouble();
+						object.shortValue = input.readShort();
+						object.charValue = input.readChar();
+						object.booleanValue = input.readBoolean();
+						object.IntValue = kryo.readObject(input, Integer.class);
+						object.LongValue = kryo.readObject(input, Long.class);
+						object.FloatValue = kryo.readObject(input, Float.class);
+						object.DoubleValue = kryo.readObject(input, Double.class);
+						object.ShortValue = kryo.readObject(input, Short.class);
+						object.CharValue = kryo.readObject(input, Character.class);
+						object.BooleanValue = kryo.readObject(input, Boolean.class);
 
-					object.intArray = kryo.readObject(input, int[].class);
-					object.longArray = kryo.readObject(input, long[].class);
-					object.floatArray = kryo.readObject(input, float[].class);
-					object.doubleArray = kryo.readObject(input, double[].class);
-					object.shortArray = kryo.readObject(input, short[].class);
-					object.charArray = kryo.readObject(input, char[].class);
-					object.booleanArray = kryo.readObject(input, boolean[].class);
+						object.intArray = kryo.readObject(input, int[].class);
+						object.longArray = kryo.readObject(input, long[].class);
+						object.floatArray = kryo.readObject(input, float[].class);
+						object.doubleArray = kryo.readObject(input, double[].class);
+						object.shortArray = kryo.readObject(input, short[].class);
+						object.charArray = kryo.readObject(input, char[].class);
+						object.booleanArray = kryo.readObject(input, boolean[].class);
 
-					object.string = kryo.readObject(input, String.class);
-					object.sample = kryo.readObject(input, Sample.class);
+						object.string = kryo.readObjectOrNull(input, String.class);
+						object.sample = kryo.readObjectOrNull(input, Sample.class);
 
-					return object;
-				}
-			});
+						return object;
+					}
+				});
+				break;
+			case media:
+				MediaSerializer mediaSerializer = new MediaSerializer(kryo);
+				ImageSerializer imageSerializer = new ImageSerializer();
+				kryo.register(Image.class, imageSerializer);
+				kryo.register(Media.class, mediaSerializer);
+				kryo.register(MediaContent.class, new MediaContentSerializer(kryo, mediaSerializer, imageSerializer));
+				break;
+			}
 		}
 	}
 
-	@Benchmark
-	public void field (FieldSerializerState state) {
-		state.reset();
-		state.kryo.writeObject(state.output, state.object);
-		state.input.setLimit(state.output.position());
-		state.kryo.readObject(state.input, Sample.class);
+	static class MediaContentSerializer extends Serializer<MediaContent> {
+		private final MediaSerializer mediaSerializer;
+		private final CollectionSerializer imagesSerializer;
+
+		public MediaContentSerializer (Kryo kryo, MediaSerializer mediaSerializer, ImageSerializer imageSerializer) {
+			this.mediaSerializer = mediaSerializer;
+			imagesSerializer = new CollectionSerializer();
+			imagesSerializer.getCollectionSerializerConfig().setElementsCanBeNull(false);
+			imagesSerializer.getCollectionSerializerConfig().setElementClass(Image.class, imageSerializer);
+		}
+
+		public MediaContent read (Kryo kryo, Input input, Class<? extends MediaContent> type) {
+			return new MediaContent(kryo.readObject(input, Media.class), kryo.readObject(input, ArrayList.class, imagesSerializer));
+		}
+
+		public void write (Kryo kryo, Output output, MediaContent mediaContent) {
+			kryo.writeObject(output, mediaContent.media, mediaSerializer);
+			kryo.writeObject(output, mediaContent.images, imagesSerializer);
+		}
 	}
 
-	@Benchmark
-	public void compatible (CompatibleState state) {
-		state.reset();
-		state.kryo.writeObject(state.output, state.object);
-		state.input.setLimit(state.output.position());
-		state.kryo.readObject(state.input, Sample.class);
+	static class MediaSerializer extends Serializer<Media> {
+		static private final Media.Player[] players = Media.Player.values();
+
+		private final CollectionSerializer personsSerializer;
+
+		public MediaSerializer (final Kryo kryo) {
+			personsSerializer = new CollectionSerializer();
+			personsSerializer.getCollectionSerializerConfig().setElementsCanBeNull(false);
+			personsSerializer.getCollectionSerializerConfig().setElementClass(String.class, kryo.getSerializer(String.class));
+		}
+
+		public Media read (Kryo kryo, Input input, Class<? extends Media> type) {
+			return new Media(input.readString(), input.readString(), input.readInt(true), input.readInt(true), input.readString(),
+				input.readLong(true), input.readLong(true), input.readInt(true), input.readBoolean(),
+				kryo.readObject(input, ArrayList.class, personsSerializer), players[input.readInt(true)], input.readString());
+		}
+
+		public void write (Kryo kryo, Output output, Media media) {
+			output.writeString(media.uri);
+			output.writeString(media.title);
+			output.writeInt(media.width, true);
+			output.writeInt(media.height, true);
+			output.writeString(media.format);
+			output.writeLong(media.duration, true);
+			output.writeLong(media.size, true);
+			output.writeInt(media.bitrate, true);
+			output.writeBoolean(media.hasBitrate);
+			kryo.writeObject(output, media.persons, personsSerializer);
+			output.writeInt(media.player.ordinal(), true);
+			output.writeString(media.copyright);
+		}
 	}
 
-	@Benchmark
-	public void tagged (TaggedState state) {
-		state.reset();
-		state.kryo.writeObject(state.output, state.object);
-		state.input.setLimit(state.output.position());
-		state.kryo.readObject(state.input, Sample.class);
-	}
+	static class ImageSerializer extends Serializer<Image> {
+		static private final Size[] sizes = Size.values();
 
-	@Benchmark
-	public void version (VersionState state) {
-		state.reset();
-		state.kryo.writeObject(state.output, state.object);
-		state.input.setLimit(state.output.position());
-		state.kryo.readObject(state.input, Sample.class);
-	}
+		public Image read (Kryo kryo, Input input, Class<? extends Image> type) {
+			return new Image(input.readString(), input.readString(), input.readInt(true), input.readInt(true),
+				sizes[input.readInt(true)], kryo.readObjectOrNull(input, Media.class));
+		}
 
-	@Benchmark
-	public void custom (CustomState state) {
-		state.reset();
-		state.kryo.writeObject(state.output, state.object);
-		state.input.setLimit(state.output.position());
-		state.kryo.readObject(state.input, Sample.class);
+		public void write (Kryo kryo, Output output, Image image) {
+			output.writeString(image.uri);
+			output.writeString(image.title);
+			output.writeInt(image.width, true);
+			output.writeInt(image.height, true);
+			output.writeInt(image.size.ordinal(), true);
+			kryo.writeObjectOrNull(output, image.media, Media.class);
+		}
 	}
 }

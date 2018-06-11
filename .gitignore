@@ -4,6 +4,10 @@
 .DS_STORE
 *.iml
 
+benchmarks/charts/results
+jmh-result.csv
+.R*
+
 bin/
 target/
 
@@ -21,3 +25,4 @@ target/
 
 # Eclipse
 .apt_generated/
+.Rproj.user

@@ -17,12 +17,7 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo.benchmarks;
-
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.ByteBufferOutput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
+package com.esotericsoftware.kryo.benchmarks.io;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -34,52 +29,8 @@ import org.openjdk.jmh.annotations.State;
 @BenchmarkMode(Mode.SingleShotTime)
 @Measurement(batchSize = 150000000)
 public class VariableEncodingBenchmark {
-	@State(Scope.Thread)
-	static public class BenchmarkState {
-		final Output output;
-		final Input input;
-
-		public BenchmarkState () {
-			output = new Output(1024 * 512);
-			input = new Input(output.getBuffer());
-		}
-
-		public void reset () {
-			input.setPosition(0);
-			output.setPosition(0);
-		}
-	}
-
-	@State(Scope.Thread)
-	static public class ReadInt extends BenchmarkState {
-		public ReadInt () {
-			new VariableEncodingBenchmark().writeInt(this);
-		}
-	}
-
-	@State(Scope.Thread)
-	static public class ReadVarInt extends BenchmarkState {
-		public ReadVarInt () {
-			new VariableEncodingBenchmark().readVarInt(this);
-		}
-	}
-
-	@State(Scope.Thread)
-	static public class ReadLong extends BenchmarkState {
-		public ReadLong () {
-			new VariableEncodingBenchmark().writeLong(this);
-		}
-	}
-
-	@State(Scope.Thread)
-	static public class ReadVarLong extends BenchmarkState {
-		public ReadVarLong () {
-			new VariableEncodingBenchmark().writeVarLong(this);
-		}
-	}
-
 	@Benchmark
-	public void writeInt (BenchmarkState state) {
+	public void writeInt (InputOutputState state) {
 		state.reset();
 		state.output.writeInt(1234);
 	}
@@ -91,7 +42,7 @@ public class VariableEncodingBenchmark {
 	}
 
 	@Benchmark
-	public void writeVarInt (BenchmarkState state) {
+	public void writeVarInt (InputOutputState state) {
 		state.reset();
 		state.output.writeVarInt(1234, true);
 	}
@@ -103,7 +54,7 @@ public class VariableEncodingBenchmark {
 	}
 
 	@Benchmark
-	public void writeLong (BenchmarkState state) {
+	public void writeLong (InputOutputState state) {
 		state.reset();
 		state.output.writeLong(12341234);
 	}
@@ -115,7 +66,7 @@ public class VariableEncodingBenchmark {
 	}
 
 	@Benchmark
-	public void writeVarLong (BenchmarkState state) {
+	public void writeVarLong (InputOutputState state) {
 		state.reset();
 		state.output.writeVarLong(12341234, true);
 	}
@@ -124,5 +75,35 @@ public class VariableEncodingBenchmark {
 	public long readVarLong (ReadLong state) {
 		state.reset();
 		return state.input.readVarLong(true);
+	}
+
+	//
+
+	@State(Scope.Thread)
+	static public class ReadInt extends InputOutputState {
+		public ReadInt () {
+			new VariableEncodingBenchmark().writeInt(this);
+		}
+	}
+
+	@State(Scope.Thread)
+	static public class ReadVarInt extends InputOutputState {
+		public ReadVarInt () {
+			new VariableEncodingBenchmark().readVarInt(this);
+		}
+	}
+
+	@State(Scope.Thread)
+	static public class ReadLong extends InputOutputState {
+		public ReadLong () {
+			new VariableEncodingBenchmark().writeLong(this);
+		}
+	}
+
+	@State(Scope.Thread)
+	static public class ReadVarLong extends InputOutputState {
+		public ReadVarLong () {
+			new VariableEncodingBenchmark().writeVarLong(this);
+		}
 	}
 }

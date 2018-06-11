@@ -24,37 +24,37 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import java.util.Arrays;
 
 public class Sample {
-	@Tag(1) public int intValue;
-	@Tag(2) public long longValue;
-	@Tag(3) public float floatValue;
-	@Tag(4) public double doubleValue;
-	@Tag(5) public short shortValue;
-	@Tag(6) public char charValue;
-	@Tag(7) public boolean booleanValue;
+	@Tag(0) public int intValue;
+	@Tag(1) public long longValue;
+	@Tag(2) public float floatValue;
+	@Tag(3) public double doubleValue;
+	@Tag(4) public short shortValue;
+	@Tag(5) public char charValue;
+	@Tag(6) public boolean booleanValue;
 
-	@Tag(8) public Integer IntValue;
-	@Tag(9) public Long LongValue;
-	@Tag(10) public Float FloatValue;
-	@Tag(11) public Double DoubleValue;
-	@Tag(12) public Short ShortValue;
-	@Tag(13) public Character CharValue;
-	@Tag(14) public Boolean BooleanValue;
+	@Tag(7) public Integer IntValue;
+	@Tag(8) public Long LongValue;
+	@Tag(9) public Float FloatValue;
+	@Tag(10) public Double DoubleValue;
+	@Tag(11) public Short ShortValue;
+	@Tag(12) public Character CharValue;
+	@Tag(13) public Boolean BooleanValue;
 
-	@Tag(15) public int[] intArray;
-	@Tag(16) public long[] longArray;
-	@Tag(17) public float[] floatArray;
-	@Tag(18) public double[] doubleArray;
-	@Tag(19) public short[] shortArray;
-	@Tag(20) public char[] charArray;
-	@Tag(21) public boolean[] booleanArray;
+	@Tag(14) public int[] intArray;
+	@Tag(15) public long[] longArray;
+	@Tag(16) public float[] floatArray;
+	@Tag(17) public double[] doubleArray;
+	@Tag(18) public short[] shortArray;
+	@Tag(19) public char[] charArray;
+	@Tag(20) public boolean[] booleanArray;
 
-	@Tag(22) public String string;
-	@Tag(23) public Sample sample;
+	@Tag(21) public String string; // Can be null.
+	@Tag(22) public Sample sample; // Can be null.
 
 	public Sample () {
 	}
 
-	public void defaultValues () {
+	public Sample populate (boolean circularReference) {
 		intValue = 123;
 		longValue = 1230000;
 		floatValue = 12.345f;
@@ -80,7 +80,8 @@ public class Sample {
 		booleanArray = new boolean[] {true, false, false, true};
 
 		string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-		sample = this;
+		if (circularReference) sample = this;
+		return this;
 	}
 
 	public int hashCode () {
