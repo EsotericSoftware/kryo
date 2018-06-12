@@ -4,8 +4,8 @@
 	<classpathentry kind="src" path="benchmarks/src/main/java"/>
 	<classpathentry excluding="**/.svn/*" kind="src" path="test"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry exported="true" kind="lib" path="lib/reflectasm-1.11.5-all.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/minlog-1.3.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/reflectasm-1.11.6.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/objenesis-2.6.jar"/>
 	<classpathentry kind="lib" path="build/commons-lang-2.6.jar"/>
 	<classpathentry kind="lib" path="build/junit-4.12.jar"/>
