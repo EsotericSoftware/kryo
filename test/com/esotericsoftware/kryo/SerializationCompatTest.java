@@ -67,7 +67,7 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
  * related tag and run the test (there's nothing here to automate creation of test files for a different version). */
 public class SerializationCompatTest extends KryoTestCase {
 	// Set to true to delete failed test files, then set back to false, set expected bytes, and run again to generate new files.
-	static private final boolean DELETE_FAILED_TEST_FILES = true;
+	static private final boolean DELETE_FAILED_TEST_FILES = false;
 
 	static private final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
 	static private final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
