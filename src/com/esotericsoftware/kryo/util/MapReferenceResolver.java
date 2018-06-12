@@ -25,7 +25,9 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.ReferenceResolver;
 
 /** Uses an {@link IdentityObjectIntMap} to track objects that have already been written. This can handle a graph with any number
- * of objects, but is slightly slower than {@link ListReferenceResolver} for graphs with few objects.
+ * of objects, but is slightly slower than {@link ListReferenceResolver} for graphs with few objects. Compared to
+ * {@link HashMapReferenceResolver}, this may provide better performance for most object graphs since the IdentityObjectIntMap
+ * does not normally allocate for get or put.
  * @author Nathan Sweet */
 public class MapReferenceResolver implements ReferenceResolver {
 	protected Kryo kryo;
