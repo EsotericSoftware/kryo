@@ -32,8 +32,8 @@ import com.esotericsoftware.kryo.io.OutputChunked;
 import com.esotericsoftware.kryo.util.ObjectMap;
 
 /** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
- * added or removed without invalidating previously serialized bytes. Changing the type of a field is not supported. Like
- * {@link FieldSerializer}, it can serialize most classes without needing annotations.
+ * added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported.
+ * Like {@link FieldSerializer}, it can serialize most classes without needing annotations.
  * <p>
  * The forward and backward compatibility and serialization performance depend on
  * {@link CompatibleFieldSerializerConfig#setReadUnknownTagData(boolean)} and

@@ -35,18 +35,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 
-/** Serializes objects using direct field assignment, with versioning backward compatibility. Allows fields to have a
- * <code>@Since(int)</code> annotation to indicate the version they were added. For a particular field, the value in
- * <code>@Since</code> should never change once created. This is less flexible than FieldSerializer, which can handle most classes
- * without needing annotations, but it provides backward compatibility. This means that new fields can be added, but removing,
- * renaming or changing the type of any field will invalidate previous serialized bytes. VersionFieldSerializer has very little
- * overhead (a single additional varint) compared to FieldSerializer. Forward compatibility is not supported.
- * @see TaggedFieldSerializer
- * @author Tianyi HE <hty0807@gmail.com> */
-
 /** Serializes objects using direct field assignment, providing backward compatibility with minimal overhead. This means fields
  * can be added without invalidating previously serialized bytes. Removing, renaming, or changing the type of a field is not
- * supported. Like {@link FieldSerializer}, it can serialize most classes without needing annotations.
+ * supported.
  * <p>
  * When a field is added, it must have the {@link Since} annotation to indicate the version it was added in order to be compatible
  * with previously serialized bytes. The annotation value must never change.
@@ -166,7 +157,8 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 			return (VersionFieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
 		}
 
-		/** When false, as exception is thrown when reading an objects with a different version. Default is true. */
+		/** When false, an exception is thrown when reading an object with a different version. The version of an object is the
+		 * maximum version of any field. Default is true. */
 		public void setCompatible (boolean compatible) {
 			this.compatible = compatible;
 			if (TRACE) trace("kryo", "VersionFieldSerializerConfig setCompatible: " + compatible);

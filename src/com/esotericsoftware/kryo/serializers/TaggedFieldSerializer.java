@@ -40,21 +40,21 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 /** Serializes objects using direct field assignment for fields that have a <code>@Tag(int)</code> annotation, providing backward
- * compatibility and optional forward compatibility. This means fields can be added and optionally removed without invalidating
- * previously serialized bytes. Changing the type of a field is not supported. Like {@link FieldSerializer}, it can serialize most
- * classes without needing annotations.
+ * compatibility and optional forward compatibility. This means fields can be added or renamed and optionally removed without
+ * invalidating previously serialized bytes. Changing the type of a field is not supported.
  * <p>
  * Fields are identified by the {@link Tag} annotation. Fields can be renamed without affecting serialization. Field tag values
  * must be unique, both within a class and all its super classes. An exception is thrown if duplicate tag values are encountered.
  * <p>
  * The forward and backward compatibility and serialization performance depend on
  * {@link TaggedFieldSerializerConfig#setReadUnknownTagData(boolean)} and
- * {@link TaggedFieldSerializerConfig#setChunkedEncoding(boolean)}. Additionally, a varint is written before each field.
+ * {@link TaggedFieldSerializerConfig#setChunkedEncoding(boolean)}. Additionally, a varint is written before each field for the
+ * tag value.
  * <p>
  * If <code>readUnknownTagData</code> and <code>chunkedEncoding</code> are false, fields must not be removed but the
  * {@link Deprecated} annotation can be applied. Deprecated fields are read when reading old bytes but aren't written to new
- * bytes. Classes can evolve by moving deprecated field values elsewhere. Fields can be renamed and/or made private to reduce
- * clutter in the class (eg, <code>ignored1</code>, <code>ignored2</code>).
+ * bytes. Classes can evolve by reading the values of deprecated fields and writing them elsewhere. Fields can be renamed and/or
+ * made private to reduce clutter in the class (eg, <code>ignored1</code>, <code>ignored2</code>).
  * <p>
  * Compared to {@link VersionFieldSerializer}, TaggedFieldSerializer allows renaming and deprecating fields, so has more
  * flexibility for classes to evolve. This comes at the cost of one varint per field.
@@ -294,7 +294,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			return readUnknownTagData;
 		}
 
-		/** When true, fields are written with chunked encoding to allow unknown field data to be skipped.
+		/** When true, fields are written with chunked encoding to allow unknown field data to be skipped. This impacts performance.
 		 * @see #setReadUnknownTagData(boolean) */
 		public void setChunkedEncoding (boolean chunked) {
 			this.chunked = chunked;

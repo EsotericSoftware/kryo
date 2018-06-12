@@ -41,7 +41,7 @@ import com.esotericsoftware.kryo.Kryo;
  * // Simple pool, you might also activate SoftReferences to fight OOMEs.
  * KryoPool pool = new KryoPool.Builder(factory).build();
  * Kryo kryo = pool.borrow();
- * // do s.th. with kryo here, and afterwards release it
+ * // Use the Kryo instance here.
  * pool.release(kryo);
  * 
  * // or use a callback to work with kryo (pool.run borrows+releases for you)
