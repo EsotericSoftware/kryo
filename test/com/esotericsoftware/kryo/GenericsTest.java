@@ -35,10 +35,10 @@ import com.esotericsoftware.kryo.io.Output;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 @RunWith(Parameterized.class)
-public class GenericsTest extends KryoTestCase {
-	{
-		supportsCopy = true;
-	}
+public class GenericsTest {
+	private final Kryo kryo = new TestKryoFactory().create();
+	private final boolean supportsCopy = true;
+	private final KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
 
 	@Parameters(name = "optimizedGenerics_{0}")
 	public static Iterable<?> optimizedGenerics () {
@@ -49,12 +49,6 @@ public class GenericsTest extends KryoTestCase {
 
 	public GenericsTest (boolean optimizedGenerics) {
 		this.optimizedGenerics = optimizedGenerics;
-	}
-
-	@Override
-	@Before
-	public void setUp () throws Exception {
-		super.setUp();
 	}
 
 	@Test
@@ -69,7 +63,7 @@ public class GenericsTest extends KryoTestCase {
 			new SerializableObjectFoo("three"));
 		BaseGeneric<SerializableObjectFoo> bg1 = new BaseGeneric<SerializableObjectFoo>(list);
 
-		roundTrip(108, 108, bg1);
+		support.roundTrip(108, 108, bg1);
 	}
 
 	@Test
@@ -84,7 +78,7 @@ public class GenericsTest extends KryoTestCase {
 			new SerializableObjectFoo("three"));
 		ConcreteClass cc1 = new ConcreteClass(list);
 
-		roundTrip(108, 108, cc1);
+		support.roundTrip(108, 108, cc1);
 	}
 
 	// Test for/from https://github.com/EsotericSoftware/kryo/issues/377

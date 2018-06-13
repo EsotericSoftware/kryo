@@ -34,16 +34,16 @@ import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 
-public class KryoStringTest extends KryoTestCase {
+public class KryoStringTest {
 
-	static KryoFactory factory = new KryoFactory() {
+	private final KryoFactory factory = new KryoFactory() {
 		@Override
 		public Kryo create () {
-			Kryo kryo = new Kryo();
-			return kryo;
+			return new Kryo();
 		}
 	};
 
+	@Test
 	public void testSerialize () {
 		String reason = "node/read";
 		long localTimestamp = 1;

@@ -33,6 +33,11 @@ import java.util.concurrent.TimeUnit;
 //import org.gridgain.grid.marshaller.GridMarshaller;
 //import org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller;
 
+import javax.annotation.Generated;
+
+import org.junit.Before;
+import org.junit.Test;
+
 import com.esotericsoftware.kryo.io.FastInput;
 import com.esotericsoftware.kryo.io.FastOutput;
 import com.esotericsoftware.kryo.io.Input;
@@ -46,7 +51,9 @@ import com.esotericsoftware.minlog.Log;
  * Kryo, Kryo with Unsafe patches and GridGain's serialization.
  * 
  * @author Roman Levenstein <romixlev@gmail.com> */
-public class SerializationBenchmarkTest extends KryoTestCase {
+public class SerializationBenchmarkTest {
+	private final Kryo kryo = new TestKryoFactory().create();
+
 	private static final int WARMUP_ITERATIONS = 1000;
 
 	/** Number of runs. */
@@ -96,54 +103,63 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 // // benchmark.gridGainSerialization(obj);
 // }
 
+	@Test
 	public void testJavaSerialization () throws Exception {
 		// Warm-up phase: Perform 100000 iterations
 		runJavaSerialization(1, WARMUP_ITERATIONS, false);
 		runJavaSerialization(RUN_CNT, ITER_CNT, true);
 	}
 
+	@Test
 	public void testJavaSerializationWithoutTryCatch () throws Exception {
 		// Warm-up phase: Perform 100000 iterations
 		runJavaSerializationWithoutTryCatch(1, WARMUP_ITERATIONS, false);
 		runJavaSerializationWithoutTryCatch(RUN_CNT, ITER_CNT, true);
 	}
 
+	@Test
 	public void testKryoSerialization () throws Exception {
 		// Warm-up phase: Perform 100000 iterations
 		runKryoSerialization(1, WARMUP_ITERATIONS, false);
 		runKryoSerialization(RUN_CNT, ITER_CNT, true);
 	}
 
+	@Test
 	public void testKryoSerializationUnmodified () throws Exception {
 		// Warm-up phase: Perform 100000 iterations
 		runKryoSerializationUmodified(1, WARMUP_ITERATIONS, false);
 		runKryoSerializationUmodified(RUN_CNT, ITER_CNT, true);
 	}
 
+	@Test
 	public void testKryoSerializationWithoutTryCatch () throws Exception {
 		// Warm-up phase: Perform 100000 iterations
 		runKryoSerializationWithoutTryCatch(1, WARMUP_ITERATIONS, false);
 		runKryoSerializationWithoutTryCatch(RUN_CNT, ITER_CNT, true);
 	}
 
+	@Test
 	public void testKryoSerializationWithoutTryCatchWithFastStreams () throws Exception {
 		// Warm-up phase: Perform 100000 iterations
 		runKryoSerializationWithoutTryCatchWithFastStreams(1, WARMUP_ITERATIONS, false);
 		runKryoSerializationWithoutTryCatchWithFastStreams(RUN_CNT, ITER_CNT, true);
 	}
 
+	@Test
 	public void testKryoUnsafeSerializationWithoutTryCatch () throws Exception {
 		// Warm-up phase: Perform 100000 iterations
 		runKryoUnsafeSerializationWithoutTryCatch(1, WARMUP_ITERATIONS, false);
 		runKryoUnsafeSerializationWithoutTryCatch(RUN_CNT, ITER_CNT, true);
 	}
 
+	@Test
 	public void testKryoUnsafeSerializationWithoutTryCatchWithoutAsm () throws Exception {
 		// Warm-up phase: Perform 100000 iterations
 		runKryoUnsafeSerializationWithoutTryCatchWithoutAsm(1, WARMUP_ITERATIONS, false);
 		runKryoUnsafeSerializationWithoutTryCatchWithoutAsm(RUN_CNT, ITER_CNT, true);
 	}
 
+	@Test
 	public void testKryoUnsafeSerializationWithoutTryCatchWithoutReferences () throws Exception {
 		// Warm-up phase: Perform 100000 iterations
 		runKryoUnsafeSerializationWithoutTryCatchWithoutReferences(1, WARMUP_ITERATIONS, false);
@@ -718,8 +734,8 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 // return avgDur;
 // }
 
-	protected void setUp () throws Exception {
-		super.setUp();
+	@Before
+	public void setUp () throws Exception {
 		Log.WARN();
 	}
 

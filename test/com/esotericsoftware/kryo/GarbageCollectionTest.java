@@ -28,11 +28,16 @@ import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
 import junit.framework.TestCase;
 
+import org.junit.Test;
+
+import static junit.framework.TestCase.*;
+
 /** Tests for detecting PermGen memory leaks.
  * 
  * @author Tumi <serverperformance@gmail.com> */
-public class GarbageCollectionTest extends TestCase {
+public class GarbageCollectionTest {
 
+	@Test
 	public void testDefaultStreamFactory () {
 		final DefaultStreamFactory strongRefToStreamFactory = new DefaultStreamFactory();
 		Kryo kryo = new Kryo(new DefaultClassResolver(), new MapReferenceResolver(), strongRefToStreamFactory);
@@ -41,6 +46,7 @@ public class GarbageCollectionTest extends TestCase {
 		reclaim(kryoWeakRef);
 	}
 
+	@Test
 	public void testFastestStreamFactory () {
 		final FastestStreamFactory strongRefToStreamFactory = new FastestStreamFactory();
 		Kryo kryo = new Kryo(new DefaultClassResolver(), new MapReferenceResolver(), strongRefToStreamFactory);

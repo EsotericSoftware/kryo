@@ -31,7 +31,7 @@ public class CopyTest {
 	private final Kryo kryo = new TestKryoFactory().create();
 
 	@Before
-	public void setUp () throws Exception {
+	public void setUp() throws Exception {
 		kryo.setRegistrationRequired(false);
 	}
 

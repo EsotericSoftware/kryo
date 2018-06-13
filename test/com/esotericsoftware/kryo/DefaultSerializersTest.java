@@ -57,9 +57,9 @@ public class DefaultSerializersTest {
 
 	@Test
 	public void testByte () {
-		support.roundTrip(2, 2, (byte)1);
-		support.roundTrip(2, 2, (byte)125);
-		support.roundTrip(2, 2, (byte)-125);
+		support.roundTrip(2, 2, (byte) 1);
+		support.roundTrip(2, 2, (byte) 125);
+		support.roundTrip(2, 2, (byte) -125);
 	}
 
 	@Test
@@ -136,13 +136,13 @@ public class DefaultSerializersTest {
 
 	@Test
 	public void testShort () {
-		support.roundTrip(3, 3, (short)0);
-		support.roundTrip(3, 3, (short)123);
-		support.roundTrip(3, 3, (short)123);
-		support.roundTrip(3, 3, (short)-123);
-		support.roundTrip(3, 3, (short)250);
-		support.roundTrip(3, 3, (short)123);
-		support.roundTrip(3, 3, (short)400);
+		support.roundTrip(3, 3, (short) 0);
+		support.roundTrip(3, 3, (short) 123);
+		support.roundTrip(3, 3, (short) 123);
+		support.roundTrip(3, 3, (short) -123);
+		support.roundTrip(3, 3, (short) 250);
+		support.roundTrip(3, 3, (short) 123);
+		support.roundTrip(3, 3, (short) 400);
 	}
 
 	@Test
@@ -161,14 +161,14 @@ public class DefaultSerializersTest {
 		support.roundTrip(3, 3, "\n");
 		support.roundTrip(2, 2, "");
 		support.roundTrip(100, 100,
-			"ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
+				"ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
 
 		support.roundTrip(21, 21, "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u7C9F");
 	}
 
 	@Test
 	public void testVoid () throws InstantiationException, IllegalAccessException {
-		support.roundTrip(1, 1, (Void)null);
+		support.roundTrip(1, 1, (Void) null);
 	}
 
 	@Test
