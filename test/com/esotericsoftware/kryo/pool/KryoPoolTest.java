@@ -21,6 +21,8 @@ package com.esotericsoftware.kryo.pool;
 
 import static org.junit.Assert.*;
 
+import com.esotericsoftware.kryo.Kryo;
+
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -29,8 +31,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import com.esotericsoftware.kryo.Kryo;
 
 @RunWith(Parameterized.class)
 public class KryoPoolTest {

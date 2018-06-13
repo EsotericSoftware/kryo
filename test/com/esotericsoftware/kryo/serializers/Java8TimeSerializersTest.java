@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.KryoTestCase;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -37,8 +39,6 @@ import java.time.ZonedDateTime;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import com.esotericsoftware.kryo.KryoTestCase;
 
 /** Test for java 8 java.time.* serializers. Excluded from surefire tests via the "until-java8" profile in pom.xml which excludes
  * "Java8*Tests". */

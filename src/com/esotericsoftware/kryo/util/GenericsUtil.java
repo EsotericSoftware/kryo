@@ -19,14 +19,14 @@
 
 package com.esotericsoftware.kryo.util;
 
+import com.esotericsoftware.kryo.KryoException;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
-
-import com.esotericsoftware.kryo.KryoException;
 
 /** @author Nathan Sweet */
 public class GenericsUtil {

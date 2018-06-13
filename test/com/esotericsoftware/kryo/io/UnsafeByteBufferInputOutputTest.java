@@ -19,17 +19,15 @@
 
 package com.esotericsoftware.kryo.io;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Random;
-
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
 import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
-import com.esotericsoftware.minlog.Log;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Random;
 
 /** @author Roman Levenstein <romixlev@gmail.com> */
 public class UnsafeByteBufferInputOutputTest extends KryoTestCase {

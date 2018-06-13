@@ -19,10 +19,10 @@
 
 package com.esotericsoftware.kryo.io;
 
+import com.esotericsoftware.kryo.Kryo;
+
 import java.io.IOException;
 import java.io.ObjectInput;
-
-import com.esotericsoftware.kryo.Kryo;
 
 /** An {@link ObjectInput} which reads data from an {@link Input}.
  * <p>

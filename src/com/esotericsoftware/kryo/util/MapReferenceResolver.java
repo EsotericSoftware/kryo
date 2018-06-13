@@ -19,10 +19,10 @@
 
 package com.esotericsoftware.kryo.util;
 
-import java.util.ArrayList;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.ReferenceResolver;
+
+import java.util.ArrayList;
 
 /** Uses an {@link IdentityObjectIntMap} to track objects that have already been written. This can handle a graph with any number
  * of objects, but is slightly slower than {@link ListReferenceResolver} for graphs with few objects. Compared to

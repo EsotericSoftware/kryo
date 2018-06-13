@@ -19,14 +19,14 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+
 import java.lang.invoke.SerializedLambda;
 import java.util.concurrent.Callable;
 
 import org.junit.Assert;
 import org.objenesis.strategy.StdInstantiatorStrategy;
-
-import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 
 /** Test for java 8 closures.
  *

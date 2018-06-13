@@ -851,10 +851,10 @@ public class Kryo {
 		}
 	}
 
-	/** Resets unregistered class names, references to previously serialized or deserialized objects, and the
-	 * {@link #getGraphContext() graph context}. If {@link #setAutoReset(boolean) auto reset} is true, this method is called
-	 * automatically when an object graph has been completely serialized or deserialized. If overridden, the super method must be
-	 * called. */
+	/** Resets unregistered class names, references to previously serialized or deserialized objects, the
+	 * {@link #getOriginalToCopyMap() original to copy map}, and the {@link #getGraphContext() graph context}. If
+	 * {@link #setAutoReset(boolean) auto reset} is true, this method is called automatically when an object graph has been
+	 * completely serialized or deserialized. If overridden, the super method must be called. */
 	public void reset () {
 		depth = 0;
 		if (graphContext != null) graphContext.clear();
@@ -1144,7 +1144,7 @@ public class Kryo {
 	/** Returns true if the specified type is final. Final types can be serialized more efficiently because they are
 	 * non-polymorphic.
 	 * <p>
-	 * This can be overridden to force non-final classes to be treated as final. Eg, if an application uses ArrayList extensively
+	 * .This can be overridden to force non-final classes to be treated as final. Eg, if an application uses ArrayList extensively
 	 * but never uses an ArrayList subclass, treating ArrayList as final could allow FieldSerializer to save 1-2 bytes per
 	 * ArrayList field. */
 	public boolean isFinal (Class type) {
@@ -1153,14 +1153,14 @@ public class Kryo {
 		return Modifier.isFinal(type.getModifiers());
 	}
 
-	/** Returns true if the specified type is a closure.
-	 * <p>
-	 * This can be overridden to support alternative implementations of clousres. Current version supports Oracle's Java8 only */
+	/** Returns true if the specified type is a closure. This can be overridden to support alternative implementations of closures.
+	 * Current version supports Java 8+ closures only. */
 	protected boolean isClosure (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		return type.getName().indexOf('/') >= 0;
 	}
 
+	/** Tracks the generic type arguments and actual classes for type variables in the object graph during seralization. */
 	public Generics getGenerics () {
 		return generics;
 	}

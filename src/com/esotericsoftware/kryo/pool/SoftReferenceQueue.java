@@ -19,12 +19,12 @@
 
 package com.esotericsoftware.kryo.pool;
 
+import com.esotericsoftware.kryo.Kryo;
+
 import java.lang.ref.SoftReference;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
-
-import com.esotericsoftware.kryo.Kryo;
 
 /** Internally uses {@link SoftReference}s for queued Kryo instances, most importantly adjusts the {@link Queue#poll() poll}
  * behavior so that GC'ed Kryo instances are skipped. Most other methods are unsupported.

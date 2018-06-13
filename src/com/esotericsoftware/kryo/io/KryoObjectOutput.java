@@ -19,10 +19,10 @@
 
 package com.esotericsoftware.kryo.io;
 
+import com.esotericsoftware.kryo.Kryo;
+
 import java.io.IOException;
 import java.io.ObjectOutput;
-
-import com.esotericsoftware.kryo.Kryo;
 
 /** An {@link java.io.ObjectOutput} which writes data to an {@link Output}.
  * <p>

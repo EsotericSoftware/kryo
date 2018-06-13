@@ -19,6 +19,9 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Output;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,9 +29,6 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.io.Output;
 
 public class GenericsTest extends KryoTestCase {
 	{

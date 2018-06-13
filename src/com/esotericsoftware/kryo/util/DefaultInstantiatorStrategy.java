@@ -21,14 +21,14 @@ package com.esotericsoftware.kryo.util;
 
 import static com.esotericsoftware.kryo.util.Util.*;
 
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.reflectasm.ConstructorAccess;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
-
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.reflectasm.ConstructorAccess;
 
 public class DefaultInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
 	private InstantiatorStrategy fallbackStrategy;

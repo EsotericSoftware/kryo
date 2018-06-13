@@ -19,10 +19,10 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import javax.crypto.KeyGenerator;
-
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
+
+import javax.crypto.KeyGenerator;
 
 /** @author Nathan Sweet */
 public class BlowfishSerializerTest extends KryoTestCase {

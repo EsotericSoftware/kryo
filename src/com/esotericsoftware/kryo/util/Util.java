@@ -19,7 +19,6 @@
 
 package com.esotericsoftware.kryo.util;
 
-import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Serializer;
@@ -138,6 +137,7 @@ public class Util {
 
 	/** Returns the class formatted as a string. The format varies depending on the type. */
 	static public String className (Class type) {
+		if (type == null) return "null";
 		if (type.isArray()) {
 			Class elementClass = getElementClass(type);
 			StringBuilder buffer = new StringBuilder(16);
@@ -212,9 +212,8 @@ public class Util {
 	}
 
 	/** @param factoryClass Must have a constructor that takes a serializer class, or a zero argument constructor.
-	 * @param serializerClass May be null if the factory alread knows the serializer class to create. */
+	 * @param serializerClass May be null if the factory already knows the serializer class to create. */
 	static public <T extends SerializerFactory> T newFactory (Class<T> factoryClass, Class<? extends Serializer> serializerClass) {
-		if (serializerClass == Serializer.class) serializerClass = null; // Happens if not set in an annotation.
 		try {
 			if (serializerClass != null) {
 				try {

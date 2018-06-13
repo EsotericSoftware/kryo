@@ -19,13 +19,13 @@
 
 package com.esotericsoftware.kryo.pool;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.serializers.FieldSerializerTest.DefaultTypes;
+
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.serializers.FieldSerializerTest.DefaultTypes;
 
 public class KryoPoolBenchmarkTest {
 

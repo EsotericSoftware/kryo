@@ -26,7 +26,6 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
-import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.Generics;
@@ -70,8 +69,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public FieldSerializer (Kryo kryo, Class type, FieldSerializerConfig config) {
-		if (config == null) throw new IllegalArgumentException("config cannot be null.");
+		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (type.isPrimitive()) throw new IllegalArgumentException("type cannot be a primitive class: " + type);
+		if (config == null) throw new IllegalArgumentException("config cannot be null.");
 		this.kryo = kryo;
 		this.type = type;
 		this.config = config;
@@ -237,23 +237,25 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 
 		/** The concrete class of the values for this field, or null if it is not known. This saves 1-2 bytes. Only set to a
-		 * non-null value if the field type in the class definition is final or the values for this field are known to be of the
-		 * specified type. Default is true if the field type is final or {@link FieldSerializerConfig#setFixedFieldTypes(boolean)}
-		 * is true.
-		 * <p>
-		 * If the field type is a type variable, the default value is used. */
-		public void setClass (Class valueClass) {
+		 * non-null value if the values for this field are known to be of the specified type (or null). Default is the field type if
+		 * it is a primitive, primitive wrapper, or final or if {@link FieldSerializerConfig#setFixedFieldTypes(boolean)} is
+		 * true. */
+		public void setValueClass (Class valueClass) {
 			this.valueClass = valueClass;
 		}
 
-		/** Sets both {@link #setClass(Class)} and {@link #setSerializer(Serializer)}. */
-		public void setClass (Class valueClass, Serializer serializer) {
+		public Class getValueClass () {
+			return valueClass;
+		}
+
+		/** Sets both {@link #setValueClass(Class)} and {@link #setSerializer(Serializer)}. */
+		public void setValueClass (Class valueClass, Serializer serializer) {
 			this.valueClass = valueClass;
 			this.serializer = serializer;
 		}
 
-		/** The serializer to be used for this field when {@link #setClass(Class)} is not null, or null to use the serializer
-		 * registered with {@link Kryo} for the type. Default is null. */
+		/** The serializer to be used for this field, or null to use the serializer registered with {@link Kryo} for the type.
+		 * Default is null. */
 		public void setSerializer (Serializer serializer) {
 			this.serializer = serializer;
 		}
@@ -328,25 +330,19 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Used to annotate fields with a specific Kryo serializer.
-	 * @see com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField#setSerializer(Serializer) */
+	 * @see CachedField#setSerializer(Serializer) */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface Bind {
+		/** The concrete class to use for all values of this field. */
+		Class valueClass() default Object.class;
+
 		/** The serializer class to serialize the annotated field, which will be created by the {@link #serializerFactory()}. Can be
 		 * omitted if the serializer factory knows what type of serializer to create. */
-		Class<? extends Serializer> value() default Serializer.class;
+		Class<? extends Serializer> serializer() default Serializer.class;
 
 		/** The factory used to create the serializer. */
-		Class<? extends SerializerFactory> serializerFactory() default ReflectionSerializerFactory.class;
-	}
-
-	/** Used to annotate that a field uses a specific class.
-	 * @see com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField#setClass(Class) */
-	@Retention(RetentionPolicy.RUNTIME)
-	@Target(ElementType.FIELD)
-	public @interface BindClass {
-		/** The concrete class to use for all values of this field. */
-		Class value();
+		Class<? extends SerializerFactory> serializerFactory() default SerializerFactory.class;
 	}
 
 	/** Configuration for FieldSerializer instances. */
@@ -404,9 +400,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return ignoreSyntheticFields;
 		}
 
-		/** Sets the default value for {@link FieldSerializer.CachedField#setClass(Class)} to the field's declared type. This allows
-		 * FieldSerializer to be more efficient, since it knows field values will not be a subclass of their declared type. Default
-		 * is false. */
+		/** Sets the default value for {@link FieldSerializer.CachedField#setValueClass(Class)} to the field's declared type. This
+		 * allows FieldSerializer to be more efficient, since it knows field values will not be a subclass of their declared type.
+		 * Default is false. */
 		public void setFixedFieldTypes (boolean fixedFieldTypes) {
 			this.fixedFieldTypes = fixedFieldTypes;
 			if (TRACE) trace("kryo", "FieldSerializerConfig fixedFieldTypes: " + fixedFieldTypes);

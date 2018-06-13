@@ -28,7 +28,6 @@ import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -40,23 +39,47 @@ import java.util.Collection;
 /** Serializes objects that implement the {@link Collection} interface.
  * <p>
  * With the default constructor, a collection requires a 1-3 byte header and an extra 2-3 bytes is written for each element in the
- * collection. The alternate constructor can be used to improve efficiency to match that of using an array instead of a
  * collection.
  * @author Nathan Sweet */
 public class CollectionSerializer<T extends Collection> extends Serializer<T> {
-	private final CollectionSerializerConfig config;
+	private boolean elementsCanBeNull = true;
+	private Serializer elementSerializer;
+	private Class elementClass;
 
 	public CollectionSerializer () {
-		this(new CollectionSerializerConfig());
-	}
-
-	public CollectionSerializer (CollectionSerializerConfig config) {
-		this.config = config;
 		setAcceptsNull(true);
 	}
 
-	public CollectionSerializerConfig getCollectionSerializerConfig () {
-		return config;
+	/** @param elementsCanBeNull False if all elements are not null. This saves 1 byte per element if elementClass is set. True if
+	 *           it is not known (default). */
+	public void setElementsCanBeNull (boolean elementsCanBeNull) {
+		this.elementsCanBeNull = elementsCanBeNull;
+	}
+
+	/** The concrete class of the collection elements, or null if it is not known. This saves 1-2 bytes per element. Only set to a
+	 * non-null value if the elements in the collection are known to all be instances of this class (or null). */
+	public void setElementClass (Class elementClass) {
+		this.elementClass = elementClass;
+	}
+
+	public Class getElementClass () {
+		return elementClass;
+	}
+
+	/** Sets both {@link #setElementClass(Class)} and {@link #setElementSerializer(Serializer)}. */
+	public void setElementClass (Class elementClass, Serializer serializer) {
+		this.elementClass = elementClass;
+		this.elementSerializer = serializer;
+	}
+
+	/** The serializer to be used for elements in collection, or null to use the serializer registered with {@link Kryo} for each
+	 * element's type. Default is null. */
+	public void setElementSerializer (Serializer elementSerializer) {
+		this.elementSerializer = elementSerializer;
+	}
+
+	public Serializer getElementSerializer () {
+		return this.elementSerializer;
 	}
 
 	public void write (Kryo kryo, Output output, T collection) {
@@ -72,14 +95,14 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 			return;
 		}
 
-		boolean elementsCanBeNull = config.elementsCanBeNull;
-		Serializer serializer = config.serializer;
-		if (serializer == null) {
+		boolean elementsCanBeNull = this.elementsCanBeNull;
+		Serializer elementSerializer = this.elementSerializer;
+		if (elementSerializer == null) {
 			Class genericClass = kryo.getGenerics().nextGenericClass();
-			if (genericClass != null && kryo.isFinal(genericClass)) serializer = kryo.getSerializer(genericClass);
+			if (genericClass != null && kryo.isFinal(genericClass)) elementSerializer = kryo.getSerializer(genericClass);
 		}
 		outer:
-		if (serializer != null) {
+		if (elementSerializer != null) {
 			inner:
 			if (elementsCanBeNull) {
 				for (Object element : collection) {
@@ -115,20 +138,20 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 			}
 			// All elements are the same class.
 			kryo.writeClass(output, elementType);
-			serializer = kryo.getSerializer(elementType);
+			elementSerializer = kryo.getSerializer(elementType);
 			if (elementsCanBeNull) {
 				output.writeBoolean(hasNull);
 				elementsCanBeNull = hasNull;
 			}
 		}
 
-		if (serializer != null) {
+		if (elementSerializer != null) {
 			if (elementsCanBeNull) {
 				for (Object element : collection)
-					kryo.writeObjectOrNull(output, element, serializer);
+					kryo.writeObjectOrNull(output, element, elementSerializer);
 			} else {
 				for (Object element : collection)
-					kryo.writeObject(output, element, serializer);
+					kryo.writeObject(output, element, elementSerializer);
 			}
 		} else {
 			for (Object element : collection)
@@ -153,20 +176,20 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-		Class elementClass = config.elementClass;
-		Serializer serializer = config.serializer;
-		if (serializer == null) {
+		Class elementClass = this.elementClass;
+		Serializer elementSerializer = this.elementSerializer;
+		if (elementSerializer == null) {
 			Class genericClass = kryo.getGenerics().nextGenericClass();
 			if (genericClass != null && kryo.isFinal(genericClass)) {
-				serializer = kryo.getSerializer(genericClass);
+				elementSerializer = kryo.getSerializer(genericClass);
 				elementClass = genericClass;
 			}
 		}
 
 		T collection;
 		int length;
-		boolean elementsCanBeNull = config.elementsCanBeNull;
-		if (serializer != null) {
+		boolean elementsCanBeNull = this.elementsCanBeNull;
+		if (elementSerializer != null) {
 			if (elementsCanBeNull) {
 				elementsCanBeNull = input.readVarIntFlag();
 				length = input.readVarIntFlag(true);
@@ -199,18 +222,18 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 					return collection;
 				}
 				elementClass = registration.getType();
-				serializer = kryo.getSerializer(elementClass);
+				elementSerializer = kryo.getSerializer(elementClass);
 				if (elementsCanBeNull) elementsCanBeNull = input.readBoolean();
 			}
 		}
 
-		if (serializer != null) {
+		if (elementSerializer != null) {
 			if (elementsCanBeNull) {
 				for (int i = 0; i < length; i++)
-					collection.add(kryo.readObjectOrNull(input, elementClass, serializer));
+					collection.add(kryo.readObjectOrNull(input, elementClass, elementSerializer));
 			} else {
 				for (int i = 0; i < length; i++)
-					collection.add(kryo.readObject(input, elementClass, serializer));
+					collection.add(kryo.readObject(input, elementClass, elementSerializer));
 			}
 		} else {
 			for (int i = 0; i < length; i++)
@@ -234,53 +257,22 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		return copy;
 	}
 
-	/** Used to annotate a collection field with {@link CollectionSerializer} settings. */
+	/** Used to annotate a {@link Collection} field with {@link CollectionSerializer} settings for {@link FieldSerializer}. */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindCollection {
-		/** @see CollectionSerializerConfig#setElementClass(Class, Serializer) */
+		/** @see CollectionSerializer#setElementClass(Class, Serializer) */
 		Class elementClass() default Object.class;
 
 		/** The element serializer class, which will be created using the {@link #elementSerializerFactory()}. Can be omitted if the
 		 * serializer factory knows what type of serializer to create.
-		 * @see CollectionSerializerConfig#setElementClass(Class, Serializer) */
+		 * @see CollectionSerializer#setElementClass(Class, Serializer) */
 		Class<? extends Serializer> elementSerializer() default Serializer.class;
 
 		/** The factory used to create the element serializer. */
 		Class<? extends SerializerFactory> elementSerializerFactory() default ReflectionSerializerFactory.class;
 
-		/** @see CollectionSerializerConfig#setElementsCanBeNull(boolean) */
+		/** @see CollectionSerializer#setElementsCanBeNull(boolean) */
 		boolean elementsCanBeNull() default true;
-	}
-
-	/** Configuration for CollectionSerializer instances. */
-	static public class CollectionSerializerConfig implements Cloneable {
-		boolean elementsCanBeNull = true;
-		Serializer serializer;
-		Class elementClass;
-
-		public CollectionSerializerConfig clone () {
-			try {
-				return (CollectionSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
-			} catch (CloneNotSupportedException ex) {
-				throw new RuntimeException(ex);
-			}
-		}
-
-		/** @param elementsCanBeNull False if all elements are not null. This saves 1 byte per element if elementClass is set. True
-		 *           if it is not known (default). */
-		public void setElementsCanBeNull (boolean elementsCanBeNull) {
-			this.elementsCanBeNull = elementsCanBeNull;
-		}
-
-		/** @param elementClass The concrete class of each element. This saves 1-2 bytes per element. Set to null if the class is
-		 *           not known or varies per element (default).
-		 * @param serializer The serializer to use for each element. */
-		public void setElementClass (Class elementClass, Serializer serializer) {
-			if (elementClass == null) throw new IllegalArgumentException("elementClass cannot be null.");
-			if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-			this.elementClass = elementClass;
-			this.serializer = serializer;
-		}
 	}
 }

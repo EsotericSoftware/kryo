@@ -21,10 +21,10 @@ package com.esotericsoftware.kryo.io;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import com.esotericsoftware.kryo.KryoException;
+
 import java.io.IOException;
 import java.io.InputStream;
-
-import com.esotericsoftware.kryo.KryoException;
 
 /** An {@link Input} that reads lengths and chunks of data from another OutputStream, allowing chunks to be skipped.
  * @author Nathan Sweet */

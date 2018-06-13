@@ -19,6 +19,11 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,11 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Assert;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 
 /** @author Nathan Sweet */
 @SuppressWarnings("synthetic-access")
@@ -208,7 +208,7 @@ public class MapSerializerTest extends KryoTestCase {
 	public void testArrayListKeys () {
 		CollectionSerializer collectionSerializer = new CollectionSerializer();
 		// Increase generics savings so difference is more easily seen.
-		collectionSerializer.getCollectionSerializerConfig().setElementsCanBeNull(false);
+		collectionSerializer.setElementsCanBeNull(false);
 
 		kryo.register(ArrayListKeys.class);
 		kryo.register(HashMap.class);

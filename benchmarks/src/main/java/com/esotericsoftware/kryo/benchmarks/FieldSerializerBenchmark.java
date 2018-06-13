@@ -246,8 +246,8 @@ public class FieldSerializerBenchmark {
 		public MediaContentSerializer (Kryo kryo, MediaSerializer mediaSerializer, ImageSerializer imageSerializer) {
 			this.mediaSerializer = mediaSerializer;
 			imagesSerializer = new CollectionSerializer();
-			imagesSerializer.getCollectionSerializerConfig().setElementsCanBeNull(false);
-			imagesSerializer.getCollectionSerializerConfig().setElementClass(Image.class, imageSerializer);
+			imagesSerializer.setElementsCanBeNull(false);
+			imagesSerializer.setElementClass(Image.class, imageSerializer);
 		}
 
 		public MediaContent read (Kryo kryo, Input input, Class<? extends MediaContent> type) {
@@ -267,8 +267,8 @@ public class FieldSerializerBenchmark {
 
 		public MediaSerializer (final Kryo kryo) {
 			personsSerializer = new CollectionSerializer();
-			personsSerializer.getCollectionSerializerConfig().setElementsCanBeNull(false);
-			personsSerializer.getCollectionSerializerConfig().setElementClass(String.class, kryo.getSerializer(String.class));
+			personsSerializer.setElementsCanBeNull(false);
+			personsSerializer.setElementClass(String.class, kryo.getSerializer(String.class));
 		}
 
 		public Media read (Kryo kryo, Input input, Class<? extends Media> type) {

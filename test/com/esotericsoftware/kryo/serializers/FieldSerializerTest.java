@@ -19,18 +19,6 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import org.objenesis.strategy.StdInstantiatorStrategy;
-
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -48,6 +36,18 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
+
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet */
 @SuppressWarnings("synthetic-access")
@@ -592,6 +592,8 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(byte[].class);
 		kryo.register(AnnotatedFields.HasFields.class);
 		AnnotatedFields obj1 = new AnnotatedFields();
+		obj1.stringField = "meow";
+
 		obj1.map = new HashMap();
 		obj1.map.put("key1", new int[] {1, 2, 3});
 		obj1.map.put("key2", new int[] {3, 4, 5});
@@ -600,7 +602,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		obj1.collection = new ArrayList();
 		obj1.collection.add(new long[] {1, 2, 3});
 
-		roundTrip(32, obj1);
+		roundTrip(36, obj1);
 
 		obj1.listOfHasFields = new ArrayList();
 		AnnotatedFields.HasFields hasFields = new AnnotatedFields.HasFields();
@@ -608,7 +610,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		hasFields.text = "foo";
 		obj1.listOfHasFields.add(hasFields);
 
-		roundTrip(37, obj1);
+		roundTrip(41, obj1);
 	}
 
 	public void testWronglyAnnotatedCollectionFields () {
@@ -737,7 +739,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	static public final class A {
 		public int value;
-		@Bind(serializerFactory = FieldSerializerFactory.class) public B b;
+		@Bind(valueClass = B.class, serializerFactory = FieldSerializerFactory.class) public B b;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -754,7 +756,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	static public final class B {
 		public int value;
-		public A a;
+		@Bind(valueClass = A.class) public A a;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -771,7 +773,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	static public final class C {
 		public A a;
-		public D d;
+		@Bind(serializer = FieldSerializer.class, valueClass = D.class) public D d;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -1090,7 +1092,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		@BindCollection(elementSerializer = LongArraySerializer.class, //
 			elementClass = long[].class, //
 			elementsCanBeNull = false) //
-		@Bind(CollectionSerializer.class) //
+		@Bind(serializer = CollectionSerializer.class) //
 		Collection collection;
 	}
 
@@ -1130,7 +1132,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			}
 		}
 
-		@Bind(StringSerializer.class) Object stringField;
+		@Bind(serializer = StringSerializer.class) Object stringField;
 
 		@BindMap(valueSerializer = IntArraySerializer.class, //
 			keySerializer = StringSerializer.class, //

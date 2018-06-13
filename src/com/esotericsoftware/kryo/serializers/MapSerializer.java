@@ -211,7 +211,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		return copy;
 	}
 
-	/** Used to annotate fields that are maps with specific Kryo serializers for their keys or values. */
+	/** Used to annotate a {@link Map} field with {@link MapSerializer} settings for {@link FieldSerializer}. */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindMap {

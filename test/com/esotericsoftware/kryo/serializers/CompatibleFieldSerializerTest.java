@@ -21,9 +21,7 @@ package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
-import com.esotericsoftware.minlog.Log;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 

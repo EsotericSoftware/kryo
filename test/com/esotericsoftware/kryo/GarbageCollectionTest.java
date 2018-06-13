@@ -19,10 +19,10 @@
 
 package com.esotericsoftware.kryo;
 
-import java.lang.ref.WeakReference;
-
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
+
+import java.lang.ref.WeakReference;
 
 import junit.framework.TestCase;
 

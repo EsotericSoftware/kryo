@@ -99,7 +99,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					continue;
 				}
 				cachedField.setCanBeNull(false);
-				cachedField.setClass(valueClass);
+				cachedField.setValueClass(valueClass);
 			}
 
 			cachedField.write(fieldOutput, object);
@@ -158,7 +158,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					continue;
 				}
 				cachedField.setCanBeNull(false);
-				cachedField.setClass(valueClass);
+				cachedField.setValueClass(valueClass);
 			} else if (cachedField == null) {
 				if (!chunked) throw new KryoException("Unknown field. (" + getType().getName() + ")");
 				if (TRACE) trace("kryo", "Skip unknown field.");

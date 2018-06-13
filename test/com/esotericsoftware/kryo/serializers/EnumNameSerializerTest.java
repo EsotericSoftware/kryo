@@ -19,12 +19,12 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.util.EnumSet;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+
+import java.util.EnumSet;
 
 /** @author KwonNam Son <kwon37xi@gmail.com> */
 public class EnumNameSerializerTest extends KryoTestCase {

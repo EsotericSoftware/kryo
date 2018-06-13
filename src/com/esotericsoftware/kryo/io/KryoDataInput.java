@@ -19,11 +19,11 @@
 
 package com.esotericsoftware.kryo.io;
 
+import com.esotericsoftware.kryo.KryoException;
+
 import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
-
-import com.esotericsoftware.kryo.KryoException;
 
 /** A {@link DataInput} which reads from an {@link Input}. {@link #readLine()} is unsupported. Other methods behave slightly
  * differently, eg {@link #readUTF()} may return a null string.

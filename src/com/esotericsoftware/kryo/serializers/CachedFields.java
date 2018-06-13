@@ -24,6 +24,8 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.serializers.AsmField.BooleanAsmField;
 import com.esotericsoftware.kryo.serializers.AsmField.ByteAsmField;
 import com.esotericsoftware.kryo.serializers.AsmField.CharAsmField;
@@ -313,18 +315,19 @@ class CachedFields implements Comparator<CachedField> {
 	private void applyAnnotations (CachedField cachedField) {
 		Field field = cachedField.field;
 
-		// Set a specific class for a particular field.
-		if (field.isAnnotationPresent(FieldSerializer.BindClass.class))
-			cachedField.setClass(field.getAnnotation(FieldSerializer.BindClass.class).value());
-
-		// Set a specific serializer for a particular field.
+		// Set the value class and/or serializer for a field.
 		if (field.isAnnotationPresent(FieldSerializer.Bind.class)) {
 			Bind annotation = field.getAnnotation(FieldSerializer.Bind.class);
-			cachedField.setSerializer(
-				newFactory(annotation.serializerFactory(), annotation.value()).newSerializer(serializer.kryo, field.getType()));
+
+			Class valueClass = annotation.valueClass();
+			if (valueClass == Object.class) valueClass = null;
+			if (valueClass != null) cachedField.setValueClass(valueClass);
+
+			Serializer serializer = newSerializer(valueClass, annotation.serializer(), annotation.serializerFactory());
+			if (serializer != null) cachedField.setSerializer(serializer);
 		}
 
-		// Set a specific collection serializer for a particular field
+		// Set CollectionSerializer settings for a collection field.
 		if (field.isAnnotationPresent(CollectionSerializer.BindCollection.class)) {
 			if (cachedField.serializer != null) {
 				throw new RuntimeException("CollectionSerialier.Bind cannot be used with field " + field.getDeclaringClass().getName()
@@ -332,14 +335,17 @@ class CachedFields implements Comparator<CachedField> {
 			}
 			if (Collection.class.isAssignableFrom(field.getType())) {
 				CollectionSerializer.BindCollection annotation = field.getAnnotation(CollectionSerializer.BindCollection.class);
+
 				Class elementClass = annotation.elementClass();
-				Serializer elementSerializer = newFactory(annotation.elementSerializerFactory(), annotation.elementSerializer())
-					.newSerializer(serializer.kryo, elementClass);
+				if (elementClass == Object.class) elementClass = null;
+
+				Serializer elementSerializer = newSerializer(elementClass, annotation.elementSerializer(),
+					annotation.elementSerializerFactory());
 
 				CollectionSerializer serializer = new CollectionSerializer();
-				serializer.getCollectionSerializerConfig().setElementsCanBeNull(annotation.elementsCanBeNull());
-				serializer.getCollectionSerializerConfig().setElementClass(elementClass == Object.class ? null : elementClass,
-					elementSerializer);
+				serializer.setElementsCanBeNull(annotation.elementsCanBeNull());
+				if (elementClass != null) serializer.setElementClass(elementClass);
+				if (elementSerializer != null) serializer.setElementSerializer(elementSerializer);
 				cachedField.setSerializer(serializer);
 			} else {
 				throw new RuntimeException(
@@ -348,7 +354,7 @@ class CachedFields implements Comparator<CachedField> {
 			}
 		}
 
-		// Set a specific map serializer for a particular field
+		// Set MapSerializer settings for a map field.
 		if (field.isAnnotationPresent(MapSerializer.BindMap.class)) {
 			if (cachedField.serializer != null) {
 				throw new RuntimeException("MapSerialier.Bind cannot be used with field " + field.getDeclaringClass().getName() + "."
@@ -356,23 +362,34 @@ class CachedFields implements Comparator<CachedField> {
 			}
 			if (Map.class.isAssignableFrom(field.getType())) {
 				MapSerializer.BindMap annotation = field.getAnnotation(MapSerializer.BindMap.class);
+
 				Class valueClass = annotation.valueClass();
-				Serializer valueSerializer = newFactory(annotation.valueSerializerFactory(), annotation.valueSerializer())
-					.newSerializer(serializer.kryo, valueClass);
+				if (valueClass == Object.class) valueClass = null;
+				Serializer valueSerializer = newSerializer(valueClass, annotation.valueSerializer(),
+					annotation.valueSerializerFactory());
+
 				Class keyClass = annotation.keyClass();
-				Serializer keySerializer = newFactory(annotation.keySerializerFactory(), annotation.keySerializer())
-					.newSerializer(serializer.kryo, keyClass);
+				if (keyClass == Object.class) keyClass = null;
+				Serializer keySerializer = newSerializer(keyClass, annotation.keySerializer(), annotation.keySerializerFactory());
 
 				MapSerializer serializer = new MapSerializer();
 				serializer.setKeysCanBeNull(annotation.keysCanBeNull());
 				serializer.setValuesCanBeNull(annotation.valuesCanBeNull());
-				serializer.setKeyClass(keyClass == Object.class ? null : keyClass, keySerializer);
-				serializer.setValueClass(valueClass == Object.class ? null : valueClass, valueSerializer);
+				serializer.setKeyClass(keyClass, keySerializer);
+				serializer.setValueClass(valueClass, valueSerializer);
 				cachedField.setSerializer(serializer);
 			} else {
 				throw new RuntimeException("MapSerialier.Bind should be used only with fields implementing java.util.Map, but field "
 					+ field.getDeclaringClass().getName() + "." + field.getName() + " does not implement it.");
 			}
 		}
+	}
+
+	private Serializer newSerializer (Class valueClass, Class serializerClass, Class factoryClass) {
+		if (serializerClass == Serializer.class) serializerClass = null;
+		if (factoryClass == SerializerFactory.class) factoryClass = null;
+		if (factoryClass == null && serializerClass != null) factoryClass = ReflectionSerializerFactory.class;
+		if (factoryClass == null) return null;
+		return newFactory(factoryClass, serializerClass).newSerializer(serializer.kryo, valueClass);
 	}
 }

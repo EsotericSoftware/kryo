@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.KryoTestCase;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalDouble;
@@ -27,8 +29,6 @@ import java.util.OptionalLong;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import com.esotericsoftware.kryo.KryoTestCase;
 
 /** Test for java 8 Optional* serializers. Excluded from surefire tests via the "until-java8" profile in pom.xml which excludes
  * "Java8*Tests". */

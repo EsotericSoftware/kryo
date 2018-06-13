@@ -19,9 +19,9 @@
 
 package com.esotericsoftware.kryo.pool;
 
-import java.util.Queue;
-
 import com.esotericsoftware.kryo.Kryo;
+
+import java.util.Queue;
 
 /** A simple {@link Queue} based {@link KryoPool} implementation, should be built using the KryoPool.Builder.
  * @author Martin Grotzke */

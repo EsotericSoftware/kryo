@@ -19,11 +19,6 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.io.Externalizable;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.lang.reflect.Method;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
@@ -32,6 +27,11 @@ import com.esotericsoftware.kryo.io.KryoObjectInput;
 import com.esotericsoftware.kryo.io.KryoObjectOutput;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.ObjectMap;
+
+import java.io.Externalizable;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.lang.reflect.Method;
 
 /** Writes using the objects externalizable interface if it can reliably do so. Typically, a object can be efficiently written
  * with Kryo and Java's externalizable interface. However, there may be behavior problems if the class uses either the

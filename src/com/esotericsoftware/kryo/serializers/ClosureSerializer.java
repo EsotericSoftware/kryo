@@ -19,13 +19,13 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.lang.invoke.SerializedLambda;
-import java.lang.reflect.Method;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+
+import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.Method;
 
 /** Serializer for Java8 closures. To serialize closures, use:
  * <p>

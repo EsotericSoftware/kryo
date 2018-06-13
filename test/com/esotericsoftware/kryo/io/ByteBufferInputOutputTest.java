@@ -19,11 +19,10 @@
 
 package com.esotericsoftware.kryo.io;
 
+import com.esotericsoftware.kryo.KryoTestCase;
+
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
-
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.KryoTestCase;
 
 public class ByteBufferInputOutputTest extends KryoTestCase {
 	public void testByteBufferInputEnd () {

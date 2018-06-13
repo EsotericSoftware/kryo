@@ -19,16 +19,16 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
+import com.esotericsoftware.kryo.serializers.MapSerializerTest.KeyComparator;
+import com.esotericsoftware.kryo.serializers.MapSerializerTest.KeyThatIsntComparable;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
-import com.esotericsoftware.kryo.serializers.MapSerializerTest.KeyComparator;
-import com.esotericsoftware.kryo.serializers.MapSerializerTest.KeyThatIsntComparable;
 
 /** @author Nathan Sweet */
 public class CollectionSerializerTest extends KryoTestCase {
@@ -62,15 +62,15 @@ public class CollectionSerializerTest extends KryoTestCase {
 		kryo.register(ArrayList.class, serializer);
 		kryo.register(LinkedList.class, serializer);
 		kryo.register(CopyOnWriteArrayList.class, serializer);
-		serializer.getCollectionSerializerConfig().setElementClass(Integer.class, kryo.getSerializer(Integer.class));
+		serializer.setElementClass(Integer.class, kryo.getSerializer(Integer.class));
 		roundTrip(5, list(1, 2, 3));
 		roundTrip(7, list(1, 2, null));
-		serializer.getCollectionSerializerConfig().setElementClass(String.class, kryo.getSerializer(String.class));
+		serializer.setElementClass(String.class, kryo.getSerializer(String.class));
 		roundTrip(8, list("1", "2", "3"));
-		serializer.getCollectionSerializerConfig().setElementClass(String.class, new StringSerializer());
+		serializer.setElementClass(String.class, new StringSerializer());
 		roundTrip(8, list("1", "2", "3"));
 		roundTrip(7, list("1", "2", null));
-		serializer.getCollectionSerializerConfig().setElementsCanBeNull(false);
+		serializer.setElementsCanBeNull(false);
 		roundTrip(8, list("1", "2", "3"));
 
 		kryo.register(TreeSet.class);

@@ -19,10 +19,10 @@
 
 package com.esotericsoftware.kryo.util;
 
-import java.util.ArrayList;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.ReferenceResolver;
+
+import java.util.ArrayList;
 
 /** Uses an {@link ArrayList} to track objects that have already been written. This is more efficient than
  * {@link MapReferenceResolver} for graphs with few objects, providing an approximate 15% increase in deserialization speed. This

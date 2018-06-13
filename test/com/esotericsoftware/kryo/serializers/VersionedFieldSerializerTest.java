@@ -41,7 +41,7 @@ public class VersionedFieldSerializerTest extends KryoTestCase {
 
 		// Make VersionFieldSerializer handle "child" field being null.
 		VersionFieldSerializer serializer = new VersionFieldSerializer(kryo, TestClass.class);
-		serializer.getField("child").setClass(TestClass.class, serializer);
+		serializer.getField("child").setValueClass(TestClass.class, serializer);
 		kryo.register(TestClass.class, serializer);
 
 		TestClass object2 = roundTrip(25, object1);
