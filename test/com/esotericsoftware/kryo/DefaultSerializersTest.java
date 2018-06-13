@@ -45,9 +45,9 @@ import static junit.framework.TestCase.assertNull;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class DefaultSerializersTest {
-	private Kryo kryo = new TestKryoFactory().create();
+	private final Kryo kryo = new TestKryoFactory().create();
 	private final boolean supportsCopy = true;
-	private KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
+	private final KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
 
 	@Test
 	public void testBoolean () {
@@ -147,9 +147,9 @@ public class DefaultSerializersTest {
 
 	@Test
 	public void testString () {
-		kryo = new Kryo();
+		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(true);
-		support = new KryoTestSupport(kryo, supportsCopy);
+		KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
 
 		support.roundTrip(6, 6, "meow");
 		support.roundTrip(70, 70, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
@@ -260,15 +260,18 @@ public class DefaultSerializersTest {
 		support.roundTrip(2, 2, TestEnum.b);
 		support.roundTrip(2, 2, TestEnum.c);
 
-		kryo = new Kryo();
-		kryo.setRegistrationRequired(false);
-		support = new KryoTestSupport(kryo, supportsCopy);
-		// 1 byte identifying it's a class name
-		// 1 byte for the class name id
-		// 57 bytes for the class name characters
-		// 1 byte for the reference id
-		// 1 byte for the enum value
-		support.roundTrip(61, 61, TestEnum.c);
+		{
+			Kryo kryo = new Kryo();
+			kryo.setRegistrationRequired(false);
+			KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
+			// 1 byte identifying it's a class name
+			// 1 byte for the class name id
+			// 57 bytes for the class name characters
+			// 1 byte for the reference id
+			// 1 byte for the enum value
+			support.roundTrip(61, 61, TestEnum.c);
+		}
+
 	}
 
 	@Test
@@ -282,11 +285,13 @@ public class DefaultSerializersTest {
 		// Test empty EnumSet
 		support.roundTrip(3, 6, EnumSet.noneOf(TestEnum.class));
 
-		kryo = new Kryo();
-		kryo.setRegistrationRequired(false);
-		support = new KryoTestSupport(kryo, supportsCopy);
+		{
+			Kryo kryo = new Kryo();
+			kryo.setRegistrationRequired(false);
+			KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
+			support.roundTrip(89, 92, EnumSet.of(TestEnum.a, TestEnum.c));
+		}
 
-		support.roundTrip(89, 92, EnumSet.of(TestEnum.a, TestEnum.c));
 	}
 
 	@Test
@@ -296,10 +301,13 @@ public class DefaultSerializersTest {
 		support.roundTrip(2, 2, TestEnumWithMethods.b);
 		support.roundTrip(2, 2, TestEnumWithMethods.c);
 
-		kryo = new Kryo();
-		kryo.setRegistrationRequired(false);
-		support = new KryoTestSupport(kryo, supportsCopy);
-		support.roundTrip(76, 76, TestEnumWithMethods.c);
+		{
+			Kryo kryo = new Kryo();
+			kryo.setRegistrationRequired(false);
+			KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
+			support.roundTrip(76, 76, TestEnumWithMethods.c);
+		}
+
 	}
 
 	@Test
@@ -409,15 +417,18 @@ public class DefaultSerializersTest {
 			support.roundTrip(expectedLength, expectedLength, charset);
 		}
 
-		kryo = new Kryo();
-		kryo.setRegistrationRequired(false);
-		support = new KryoTestSupport(kryo, supportsCopy);
+		{
+			Kryo kryo = new Kryo();
+			kryo.setRegistrationRequired(false);
+			KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
 
-		for (String cs : css) {
-			Charset charset = Charset.forName(cs);
-			int expectedLength = 3 + charset.getClass().getName().length() + cs.length();
-			support.roundTrip(expectedLength, expectedLength, charset);
+			for (String cs : css) {
+				Charset charset = Charset.forName(cs);
+				int expectedLength = 3 + charset.getClass().getName().length() + cs.length();
+				support.roundTrip(expectedLength, expectedLength, charset);
+			}
 		}
+
 	}
 
 	@Test
