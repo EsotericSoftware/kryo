@@ -315,7 +315,7 @@ Under the covers, a ReferenceResolver handles tracking objects that have been re
 
 The `useReferences(Class)` method returns a boolean to decide if references are supported for a class. If a class doesn't support references, the varint reference ID is not written before objects of that type. If a class does not need references and objects of that type appear in the object graph many times, the serialized size can be greatly reduced by disabling references for that class. The default reference resolver returns false for all primitive wrappers and enums. It is common to also return false for String and other classes, depending on the object graphs being serialized.
 
-```
+```java
     public boolean useReferences (Class type) {
        return !Util.isWrapperClass(type) && !Util.isEnum(type) && type != String.class;
     }
@@ -509,7 +509,7 @@ static public class TreeMapSerializer extends MapSerializer<TreeMap> {
 
 If a serializer doesn't provide `writeHeader`, writing data for `create` can be done in `write`.
 
-```
+```java
 static public class SomeClassSerializer extends FieldSerializer<SomeClass> {
 	public SomeClassSerializer (Kryo kryo) {
 		super(kryo, SomeClass.class);
@@ -815,7 +815,7 @@ Setting | Description | Default value
 
 FieldSerializer provides the fields that will be serialized. Fields can be removed, so they won't be serialized. Fields can be configured to make serialiation more efficient.
 
-```
+```java
 FieldSerializer fieldSerializer = ...
 fieldSerializer.removeField("id"); // Won't be serialized.
 CachedField nameField = fieldSerializer.getField("name");
