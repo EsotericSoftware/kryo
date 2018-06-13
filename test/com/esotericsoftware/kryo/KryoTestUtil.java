@@ -23,7 +23,15 @@ public class KryoTestUtil {
 		return list;
 	}
 
-	static public void assertEquals (Object object1, Object object2) {
+	static void assertEquals (Object object1, Object object2) {
 		Assert.assertEquals(object1, object2);
+	}
+
+	static void assertDoubleEquals (double expected, double actual) {
+		Assert.assertEquals(expected, actual, 0);
+	}
+
+	static void assertFloatEquals (float expected, float actual) {
+		Assert.assertEquals(expected, actual, 0);
 	}
 }

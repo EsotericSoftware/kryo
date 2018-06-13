@@ -24,13 +24,21 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Random;
 
+import org.junit.Test;
+
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.UnsafeInput;
 import com.esotericsoftware.kryo.io.UnsafeOutput;
 
+import static com.esotericsoftware.kryo.KryoTestUtil.assertDoubleEquals;
+import static com.esotericsoftware.kryo.KryoTestUtil.assertFloatEquals;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
 /** @author Nathan Sweet <misc@n4te.com> */
-public class UnsafeInputOutputTest extends KryoTestCase {
+public class UnsafeInputOutputTest {
+	@Test
 	public void testOutputStream () throws IOException {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 		UnsafeOutput output = new UnsafeOutput(buffer, 2);
@@ -40,13 +48,14 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		output.writeBytes(new byte[] {61, 62, 63, 64, 65});
 		output.flush();
 
-		assertEquals(new byte[] { //
+		assertArrayEquals(new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
 			61, 62, 63, 64, 65}, buffer.toByteArray());
 	}
 
+	@Test
 	public void testInputStream () throws IOException {
 		byte[] bytes = new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
@@ -60,16 +69,17 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(bytes.length, count);
 		byte[] temp2 = new byte[count];
 		System.arraycopy(temp, 512, temp2, 0, count);
-		assertEquals(bytes, temp2);
+		assertArrayEquals(bytes, temp2);
 
 		input = new UnsafeInput(bytes);
 		count = input.read(temp, 512, 512);
 		assertEquals(bytes.length, count);
 		temp2 = new byte[count];
 		System.arraycopy(temp, 512, temp2, 0, count);
-		assertEquals(bytes, temp2);
+		assertArrayEquals(bytes, temp2);
 	}
 
+	@Test
 	public void testWriteBytes () throws IOException {
 		UnsafeOutput buffer = new UnsafeOutput(512);
 		buffer.writeBytes(new byte[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26});
@@ -83,13 +93,14 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		buffer.writeByte(65);
 		buffer.flush();
 
-		assertEquals(new byte[] { //
+		assertArrayEquals(new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
 			61, 62, 63, 64, 65}, buffer.toBytes());
 	}
 
+	@Test
 	public void testStrings () throws IOException {
 		runStringTest(new UnsafeOutput(4096));
 		runStringTest(new UnsafeOutput(897));
@@ -189,6 +200,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 			assertEquals(String.valueOf((char)i) + "abc", read.readStringBuilder().toString());
 	}
 
+	@Test
 	public void testCanReadInt () throws IOException {
 		UnsafeOutput write = new UnsafeOutput(new ByteArrayOutputStream());
 
@@ -203,6 +215,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(false, read.canReadInt());
 	}
 
+	@Test
 	public void testInts () throws IOException {
 		runIntTest(new UnsafeOutput(4096));
 		runIntTest(new UnsafeOutput(new ByteArrayOutputStream()));
@@ -372,6 +385,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		}
 	}
 
+	@Test
 	public void testLongs () throws IOException {
 		runLongTest(new UnsafeOutput(4096));
 		runLongTest(new UnsafeOutput(new ByteArrayOutputStream()));
@@ -525,6 +539,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		}
 	}
 
+	@Test
 	public void testShorts () throws IOException {
 		runShortTest(new UnsafeOutput(4096));
 		runShortTest(new UnsafeOutput(new ByteArrayOutputStream()));
@@ -565,6 +580,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(-32768, read.readShort());
 	}
 
+	@Test
 	public void testFloats () throws IOException {
 		runFloatTest(new UnsafeOutput(4096));
 		runFloatTest(new UnsafeOutput(new ByteArrayOutputStream()));
@@ -614,49 +630,50 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(4, write.writeFloat(-8192, 1000, true));
 
 		Input read = new UnsafeInput(write.toBytes());
-		assertEquals(read.readFloat(), 0f);
-		assertEquals(read.readFloat(), 63f);
-		assertEquals(read.readFloat(), 64f);
-		assertEquals(read.readFloat(), 127f);
-		assertEquals(read.readFloat(), 128f);
-		assertEquals(read.readFloat(), 8192f);
-		assertEquals(read.readFloat(), 16384f);
-		assertEquals(read.readFloat(), 32767f);
-		assertEquals(read.readFloat(), -63f);
-		assertEquals(read.readFloat(), -64f);
-		assertEquals(read.readFloat(), -127f);
-		assertEquals(read.readFloat(), -128f);
-		assertEquals(read.readFloat(), -8192f);
-		assertEquals(read.readFloat(), -16384f);
-		assertEquals(read.readFloat(), -32768f);
-		assertEquals(read.readFloat(1000, true), 0f);
-		assertEquals(read.readFloat(1000, false), 0f);
-		assertEquals(read.readFloat(1000, true), 63f);
-		assertEquals(read.readFloat(1000, false), 63f);
-		assertEquals(read.readFloat(1000, true), 64f);
-		assertEquals(read.readFloat(1000, false), 64f);
-		assertEquals(read.readFloat(1000, true), 127f);
-		assertEquals(read.readFloat(1000, false), 127f);
-		assertEquals(read.readFloat(1000, true), 128f);
-		assertEquals(read.readFloat(1000, false), 128f);
-		assertEquals(read.readFloat(1000, true), 8191f);
-		assertEquals(read.readFloat(1000, false), 8191f);
-		assertEquals(read.readFloat(1000, true), 8192f);
-		assertEquals(read.readFloat(1000, false), 8192f);
-		assertEquals(read.readFloat(1000, true), 16383f);
-		assertEquals(read.readFloat(1000, false), 16383f);
-		assertEquals(read.readFloat(1000, true), 16384f);
-		assertEquals(read.readFloat(1000, false), 16384f);
-		assertEquals(read.readFloat(1000, true), 32767f);
-		assertEquals(read.readFloat(1000, false), 32767f);
-		assertEquals(read.readFloat(1000, false), -64f);
-		assertEquals(read.readFloat(1000, true), -64f);
-		assertEquals(read.readFloat(1000, false), -65f);
-		assertEquals(read.readFloat(1000, true), -65f);
-		assertEquals(read.readFloat(1000, false), -8192f);
-		assertEquals(read.readFloat(1000, true), -8192f);
+		assertFloatEquals(read.readFloat(), 0f);
+		assertFloatEquals(read.readFloat(), 63f);
+		assertFloatEquals(read.readFloat(), 64f);
+		assertFloatEquals(read.readFloat(), 127f);
+		assertFloatEquals(read.readFloat(), 128f);
+		assertFloatEquals(read.readFloat(), 8192f);
+		assertFloatEquals(read.readFloat(), 16384f);
+		assertFloatEquals(read.readFloat(), 32767f);
+		assertFloatEquals(read.readFloat(), -63f);
+		assertFloatEquals(read.readFloat(), -64f);
+		assertFloatEquals(read.readFloat(), -127f);
+		assertFloatEquals(read.readFloat(), -128f);
+		assertFloatEquals(read.readFloat(), -8192f);
+		assertFloatEquals(read.readFloat(), -16384f);
+		assertFloatEquals(read.readFloat(), -32768f);
+		assertFloatEquals(read.readFloat(1000, true), 0f);
+		assertFloatEquals(read.readFloat(1000, false), 0f);
+		assertFloatEquals(read.readFloat(1000, true), 63f);
+		assertFloatEquals(read.readFloat(1000, false), 63f);
+		assertFloatEquals(read.readFloat(1000, true), 64f);
+		assertFloatEquals(read.readFloat(1000, false), 64f);
+		assertFloatEquals(read.readFloat(1000, true), 127f);
+		assertFloatEquals(read.readFloat(1000, false), 127f);
+		assertFloatEquals(read.readFloat(1000, true), 128f);
+		assertFloatEquals(read.readFloat(1000, false), 128f);
+		assertFloatEquals(read.readFloat(1000, true), 8191f);
+		assertFloatEquals(read.readFloat(1000, false), 8191f);
+		assertFloatEquals(read.readFloat(1000, true), 8192f);
+		assertFloatEquals(read.readFloat(1000, false), 8192f);
+		assertFloatEquals(read.readFloat(1000, true), 16383f);
+		assertFloatEquals(read.readFloat(1000, false), 16383f);
+		assertFloatEquals(read.readFloat(1000, true), 16384f);
+		assertFloatEquals(read.readFloat(1000, false), 16384f);
+		assertFloatEquals(read.readFloat(1000, true), 32767f);
+		assertFloatEquals(read.readFloat(1000, false), 32767f);
+		assertFloatEquals(read.readFloat(1000, false), -64f);
+		assertFloatEquals(read.readFloat(1000, true), -64f);
+		assertFloatEquals(read.readFloat(1000, false), -65f);
+		assertFloatEquals(read.readFloat(1000, true), -65f);
+		assertFloatEquals(read.readFloat(1000, false), -8192f);
+		assertFloatEquals(read.readFloat(1000, true), -8192f);
 	}
 
+	@Test
 	public void testDoubles () throws IOException {
 		runDoubleTest(new UnsafeOutput(4096));
 		runDoubleTest(new UnsafeOutput(new ByteArrayOutputStream()));
@@ -707,50 +724,51 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		write.writeDouble(1.23456d);
 
 		Input read = new UnsafeInput(write.toBytes());
-		assertEquals(read.readDouble(), 0d);
-		assertEquals(read.readDouble(), 63d);
-		assertEquals(read.readDouble(), 64d);
-		assertEquals(read.readDouble(), 127d);
-		assertEquals(read.readDouble(), 128d);
-		assertEquals(read.readDouble(), 8192d);
-		assertEquals(read.readDouble(), 16384d);
-		assertEquals(read.readDouble(), 32767d);
-		assertEquals(read.readDouble(), -63d);
-		assertEquals(read.readDouble(), -64d);
-		assertEquals(read.readDouble(), -127d);
-		assertEquals(read.readDouble(), -128d);
-		assertEquals(read.readDouble(), -8192d);
-		assertEquals(read.readDouble(), -16384d);
-		assertEquals(read.readDouble(), -32768d);
-		assertEquals(read.readDouble(1000, true), 0d);
-		assertEquals(read.readDouble(1000, false), 0d);
-		assertEquals(read.readDouble(1000, true), 63d);
-		assertEquals(read.readDouble(1000, false), 63d);
-		assertEquals(read.readDouble(1000, true), 64d);
-		assertEquals(read.readDouble(1000, false), 64d);
-		assertEquals(read.readDouble(1000, true), 127d);
-		assertEquals(read.readDouble(1000, false), 127d);
-		assertEquals(read.readDouble(1000, true), 128d);
-		assertEquals(read.readDouble(1000, false), 128d);
-		assertEquals(read.readDouble(1000, true), 8191d);
-		assertEquals(read.readDouble(1000, false), 8191d);
-		assertEquals(read.readDouble(1000, true), 8192d);
-		assertEquals(read.readDouble(1000, false), 8192d);
-		assertEquals(read.readDouble(1000, true), 16383d);
-		assertEquals(read.readDouble(1000, false), 16383d);
-		assertEquals(read.readDouble(1000, true), 16384d);
-		assertEquals(read.readDouble(1000, false), 16384d);
-		assertEquals(read.readDouble(1000, true), 32767d);
-		assertEquals(read.readDouble(1000, false), 32767d);
-		assertEquals(read.readDouble(1000, false), -64d);
-		assertEquals(read.readDouble(1000, true), -64d);
-		assertEquals(read.readDouble(1000, false), -65d);
-		assertEquals(read.readDouble(1000, true), -65d);
-		assertEquals(read.readDouble(1000, false), -8192d);
-		assertEquals(read.readDouble(1000, true), -8192d);
-		assertEquals(1.23456d, read.readDouble());
+		assertDoubleEquals(read.readDouble(), 0d);
+		assertDoubleEquals(read.readDouble(), 63d);
+		assertDoubleEquals(read.readDouble(), 64d);
+		assertDoubleEquals(read.readDouble(), 127d);
+		assertDoubleEquals(read.readDouble(), 128d);
+		assertDoubleEquals(read.readDouble(), 8192d);
+		assertDoubleEquals(read.readDouble(), 16384d);
+		assertDoubleEquals(read.readDouble(), 32767d);
+		assertDoubleEquals(read.readDouble(), -63d);
+		assertDoubleEquals(read.readDouble(), -64d);
+		assertDoubleEquals(read.readDouble(), -127d);
+		assertDoubleEquals(read.readDouble(), -128d);
+		assertDoubleEquals(read.readDouble(), -8192d);
+		assertDoubleEquals(read.readDouble(), -16384d);
+		assertDoubleEquals(read.readDouble(), -32768d);
+		assertDoubleEquals(read.readDouble(1000, true), 0d);
+		assertDoubleEquals(read.readDouble(1000, false), 0d);
+		assertDoubleEquals(read.readDouble(1000, true), 63d);
+		assertDoubleEquals(read.readDouble(1000, false), 63d);
+		assertDoubleEquals(read.readDouble(1000, true), 64d);
+		assertDoubleEquals(read.readDouble(1000, false), 64d);
+		assertDoubleEquals(read.readDouble(1000, true), 127d);
+		assertDoubleEquals(read.readDouble(1000, false), 127d);
+		assertDoubleEquals(read.readDouble(1000, true), 128d);
+		assertDoubleEquals(read.readDouble(1000, false), 128d);
+		assertDoubleEquals(read.readDouble(1000, true), 8191d);
+		assertDoubleEquals(read.readDouble(1000, false), 8191d);
+		assertDoubleEquals(read.readDouble(1000, true), 8192d);
+		assertDoubleEquals(read.readDouble(1000, false), 8192d);
+		assertDoubleEquals(read.readDouble(1000, true), 16383d);
+		assertDoubleEquals(read.readDouble(1000, false), 16383d);
+		assertDoubleEquals(read.readDouble(1000, true), 16384d);
+		assertDoubleEquals(read.readDouble(1000, false), 16384d);
+		assertDoubleEquals(read.readDouble(1000, true), 32767d);
+		assertDoubleEquals(read.readDouble(1000, false), 32767d);
+		assertDoubleEquals(read.readDouble(1000, false), -64d);
+		assertDoubleEquals(read.readDouble(1000, true), -64d);
+		assertDoubleEquals(read.readDouble(1000, false), -65d);
+		assertDoubleEquals(read.readDouble(1000, true), -65d);
+		assertDoubleEquals(read.readDouble(1000, false), -8192d);
+		assertDoubleEquals(read.readDouble(1000, true), -8192d);
+		assertDoubleEquals(1.23456d, read.readDouble());
 	}
 
+	@Test
 	public void testBooleans () throws IOException {
 		runBooleanTest(new UnsafeOutput(4096));
 		runBooleanTest(new UnsafeOutput(new ByteArrayOutputStream()));
@@ -769,6 +787,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		}
 	}
 
+	@Test
 	public void testChars () throws IOException {
 		runCharTest(new UnsafeOutput(4096));
 		runCharTest(new UnsafeOutput(new ByteArrayOutputStream()));
@@ -798,6 +817,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 	}
 
 	// Check if writing varInts may produce more bytes than expected
+	@Test
 	public void testWriteTooManyBytes () throws IOException {
 		ByteArrayOutputStream os = new ByteArrayOutputStream(1);
 		runVarIntTest(new UnsafeOutput(os, 4), os);
@@ -820,6 +840,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(true, read.eof());
 	}
 
+	@Test
 	public void testSimpleVarInt () {
 		final int value = 39117;
 		final Output out = new UnsafeOutput(1024);

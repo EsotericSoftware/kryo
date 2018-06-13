@@ -24,17 +24,22 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 
 import org.junit.Assert;
+import org.junit.Test;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 
-public class TaggedFieldSerializerTest extends KryoTestCase {
-	{
-		supportsCopy = true;
-	}
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+public class TaggedFieldSerializerTest {
+	private final Kryo kryo = new TestKryoFactory().create();
+	private final boolean supportsCopy = true;
+	private final KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
+
+	@Test
 	public void testTaggedFieldSerializer () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.moo = 2;
@@ -46,10 +51,11 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
 		kryo.register(TestClass.class);
 		kryo.register(AnotherClass.class);
-		TestClass object2 = roundTrip(57, 75, object1).getDeserializeObject();
+		TestClass object2 = support.roundTrip(57, 75, object1).getDeserializeObject();
 		assertTrue(object2.ignored == 0);
 	}
 
+	@Test
 	public void testAddedField () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();
@@ -60,7 +66,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
 		kryo.register(AnotherClass.class, new TaggedFieldSerializer(kryo, AnotherClass.class));
-		RoundTripOutput<TestClass> roundTripOutput = roundTrip(39, 55, object1);
+		RoundTripAssertionOutput<TestClass> roundTripOutput = support.roundTrip(39, 55, object1);
 
 		kryo.register(TestClass.class, new TaggedFieldSerializer(kryo, TestClass.class));
 		try (Input input = roundTripOutput.getKryoInput()) {
@@ -72,6 +78,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 	/** Serializes an array with a Class with two tagged fields. Then deserializes it using a serializer that has removed some 
 	 * fields to simulate a past version of the compiled application. An array is used to ensure subsequent bytes in the stream 
 	 * are unaffected.*/
+	@Test
 	public void testForwardCompatibility () {
 		FutureClass futureObject = new FutureClass();
 		futureObject.value = 3;
@@ -129,6 +136,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 
 	/** Attempts to register a class with a field tagged with a value already used in its superclass. Should receive
 	 * IllegalArgumentException. */
+	@Test
 	public void testInvalidTagValue () {
 		Kryo newKryo = new Kryo();
 		newKryo.setReferences(true);

@@ -25,6 +25,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import com.esotericsoftware.kryo.KryoTestCase.StreamFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -33,20 +36,21 @@ import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
 import com.esotericsoftware.minlog.Log;
 import com.esotericsoftware.minlog.Log.Logger;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /** @author Tiago Albineli Motta <timotta@gmail.com> */
-public class WarnUnregisteredClassesTest extends TestCase {
+public class WarnUnregisteredClassesTest {
 
 	LoggerStub log;
 
-	@Override
-	protected void setUp () throws Exception {
-		super.setUp();
+	@Before
+	public void setUp () throws Exception {
 		log = new LoggerStub();
 		Log.setLogger(log);
 	}
 
+	@Test
 	public void testLogOnlyOneTimePerClass () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
@@ -65,6 +69,7 @@ public class WarnUnregisteredClassesTest extends TestCase {
 		assertEquals(2, log.messages.size());
 	}
 
+	@Test
 	public void testDontLogIfNotRequired () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
@@ -77,6 +82,7 @@ public class WarnUnregisteredClassesTest extends TestCase {
 		assertEquals(0, log.messages.size());
 	}
 
+	@Test
 	public void testDontLogClassIsRegistered () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
@@ -87,6 +93,7 @@ public class WarnUnregisteredClassesTest extends TestCase {
 		assertEquals(0, log.messages.size());
 	}
 
+	@Test
 	public void testLogShouldBeWarn () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
@@ -96,6 +103,7 @@ public class WarnUnregisteredClassesTest extends TestCase {
 		assertEquals(Log.LEVEL_WARN, log.levels.get(0).intValue());
 	}
 
+	@Test
 	public void testLogMessageShouldContainsClassName () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
