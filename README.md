@@ -493,7 +493,7 @@ Alternatively, some generic serializers provide methods that can be overridden t
     });
 ```
 
-Some serializers provide a `writeHeader` method that can be overridden to write data that is needed in `create`.
+Some serializers provide a `writeHeader` method that can be overridden to write data that is needed in `create` at the right time.
 
 ```java
 static public class TreeMapSerializer extends MapSerializer<TreeMap> {
@@ -834,7 +834,7 @@ Setting | Description | Default value
 
 #### FieldSerializer annotations
 
-Annotations can be used to configure the serializers for each field. `@Bind` sets the serializer and/or value class for any field. `@CollectionBind` sets the CollectionSerializer settings for Collection fields. `@MapBind` sets the MapSerializer settings for Map fields. `@NotNull` marks a field as never being null.
+Annotations can be used to configure the serializers for each field. `@Bind` sets the serializer and/or value class for any field (some serializers required the class to be set). `@CollectionBind` sets the CollectionSerializer settings for Collection fields. `@MapBind` sets the MapSerializer settings for Map fields. `@NotNull` marks a field as never being null.
 
 ```java
     public class SomeClass {

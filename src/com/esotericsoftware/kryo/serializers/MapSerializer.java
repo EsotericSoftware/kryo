@@ -25,6 +25,7 @@ import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.lang.annotation.ElementType;
@@ -55,20 +56,56 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		this.keysCanBeNull = keysCanBeNull;
 	}
 
-	/** @param keyClass The concrete class of each key. This saves 1 byte per key. Set to null if the class is not known or varies
-	 *           per key (default).
-	 * @param keySerializer The serializer to use for each key. */
+	/** The concrete class of the keys for this map, or null if it is not known. This saves 1-2 bytes. Only set to a non-null value
+	 * if the keys for this map are known to be of the specified type (or null). */
+	public void setKeyClass (Class keyClass) {
+		this.keyClass = keyClass;
+	}
+
+	public Class getKeyClass () {
+		return keyClass;
+	}
+
+	/** Sets both {@link #setKeyClass(Class)} and {@link #setKeySerializer(Serializer)}. */
 	public void setKeyClass (Class keyClass, Serializer keySerializer) {
 		this.keyClass = keyClass;
 		this.keySerializer = keySerializer;
 	}
 
-	/** @param valueClass The concrete class of each value. This saves 1 byte per value. Set to null if the class is not known or
-	 *           varies per value (default).
-	 * @param valueSerializer The serializer to use for each value. */
+	/** The serializer to be used for the keys in this map, or null to use the serializer registered with {@link Kryo} for the
+	 * type. Default is null. */
+	public void setKeySerializer (Serializer keySerializer) {
+		this.keySerializer = keySerializer;
+	}
+
+	public Serializer getKeySerializer () {
+		return this.keySerializer;
+	}
+
+	/** The concrete class of the values for this map, or null if it is not known. This saves 1-2 bytes. Only set to a non-null
+	 * value if the values for this map are known to be of the specified type (or null). */
+	public void setValueClass (Class valueClass) {
+		this.valueClass = valueClass;
+	}
+
+	public Class getValueClass () {
+		return valueClass;
+	}
+
+	/** Sets both {@link #setValueClass(Class)} and {@link #setValueSerializer(Serializer)}. */
 	public void setValueClass (Class valueClass, Serializer valueSerializer) {
 		this.valueClass = valueClass;
 		this.valueSerializer = valueSerializer;
+	}
+
+	/** The serializer to be used for this field, or null to use the serializer registered with {@link Kryo} for the type. Default
+	 * is null. */
+	public void setValueSerializer (Serializer valueSerializer) {
+		this.valueSerializer = valueSerializer;
+	}
+
+	public Serializer getValueSerializer () {
+		return this.valueSerializer;
 	}
 
 	/** @param valuesCanBeNull True if values are not null. This saves 1 byte per value if keyClass is set. False if it is not

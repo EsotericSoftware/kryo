@@ -338,7 +338,6 @@ class CachedFields implements Comparator<CachedField> {
 
 				Class elementClass = annotation.elementClass();
 				if (elementClass == Object.class) elementClass = null;
-
 				Serializer elementSerializer = newSerializer(elementClass, annotation.elementSerializer(),
 					annotation.elementSerializerFactory());
 
@@ -375,8 +374,10 @@ class CachedFields implements Comparator<CachedField> {
 				MapSerializer serializer = new MapSerializer();
 				serializer.setKeysCanBeNull(annotation.keysCanBeNull());
 				serializer.setValuesCanBeNull(annotation.valuesCanBeNull());
-				serializer.setKeyClass(keyClass, keySerializer);
-				serializer.setValueClass(valueClass, valueSerializer);
+				if (keyClass != null) serializer.setKeyClass(keyClass);
+				if (keySerializer != null) serializer.setKeySerializer(keySerializer);
+				if (valueClass != null) serializer.setValueClass(valueClass);
+				if (valueSerializer != null) serializer.setValueSerializer(valueSerializer);
 				cachedField.setSerializer(serializer);
 			} else {
 				throw new RuntimeException("MapSerialier.Bind should be used only with fields implementing java.util.Map, but field "
