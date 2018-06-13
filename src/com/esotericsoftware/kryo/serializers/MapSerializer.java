@@ -22,10 +22,8 @@ package com.esotericsoftware.kryo.serializers;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
-import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.lang.annotation.ElementType;
@@ -261,7 +259,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		Class<? extends Serializer> keySerializer() default Serializer.class;
 
 		/** The factory used to create the key serializer. */
-		Class<? extends SerializerFactory> keySerializerFactory() default ReflectionSerializerFactory.class;
+		Class<? extends SerializerFactory> keySerializerFactory() default SerializerFactory.class;
 
 		/** @see MapSerializer#setValueClass(Class, Serializer) */
 		Class valueClass() default Object.class;
@@ -272,7 +270,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		Class<? extends Serializer> valueSerializer() default Serializer.class;
 
 		/** The factory used to create the value serializer. */
-		Class<? extends SerializerFactory> valueSerializerFactory() default ReflectionSerializerFactory.class;
+		Class<? extends SerializerFactory> valueSerializerFactory() default SerializerFactory.class;
 
 		/** Indicates if keys can be null
 		 * @return true, if keys can be null */

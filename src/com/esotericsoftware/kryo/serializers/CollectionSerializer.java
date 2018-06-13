@@ -25,7 +25,6 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
-import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -270,7 +269,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		Class<? extends Serializer> elementSerializer() default Serializer.class;
 
 		/** The factory used to create the element serializer. */
-		Class<? extends SerializerFactory> elementSerializerFactory() default ReflectionSerializerFactory.class;
+		Class<? extends SerializerFactory> elementSerializerFactory() default SerializerFactory.class;
 
 		/** @see CollectionSerializer#setElementsCanBeNull(boolean) */
 		boolean elementsCanBeNull() default true;

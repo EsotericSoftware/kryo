@@ -28,8 +28,8 @@ public class KryoBenchmarks {
 	static public void main (String[] args) throws Exception {
 		if (args.length == 0) {
 			String commandLine = "-f 0 -wi 1 -i 1 -t 1 -w 1s -r 1s " // For developement only (fork 0, short runs).
-				// + "-bs 2500000 ArrayBenchmark" //
-				+ "-rf csv FieldSerializerBenchmark.field FieldSerializerBenchmark.tagged" //
+			// + "-bs 2500000 ArrayBenchmark" //
+			// + "-rf csv FieldSerializerBenchmark.field FieldSerializerBenchmark.tagged" //
 			// + "FieldSerializerBenchmark.tagged" //
 			;
 			System.out.println(commandLine);
