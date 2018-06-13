@@ -47,7 +47,7 @@ import junit.framework.TestCase;
 abstract public class KryoTestCase extends TestCase {
 	protected Kryo kryo;
 	private Output output;
-	protected Input input;
+	private Input input;
 	private Object object1, object2;
 	protected boolean supportsCopy;
 
@@ -72,7 +72,25 @@ abstract public class KryoTestCase extends TestCase {
 		// kryo.useAsmBackend(false);
 	}
 
-	public <T> T roundTrip (int length, int unsafeLength, T object1) {
+	static class RoundTripOutput<T> {
+		private final Input input;
+		private final T deserializeObject;
+
+		private RoundTripOutput (Input input, T object) {
+			this.input = input;
+			this.deserializeObject = object;
+		}
+
+		Input getKryoInput () {
+			return input;
+		}
+
+		T getDeserializeObject () {
+			return deserializeObject;
+		}
+	}
+
+	public <T> RoundTripOutput<T> roundTrip (int length, int unsafeLength, T object1) {
 
 		roundTripWithStreamFactory(unsafeLength, object1, new StreamFactory() {
 			public Output createOutput (OutputStream os) {
@@ -185,7 +203,7 @@ abstract public class KryoTestCase extends TestCase {
 		});
 	}
 
-	public <T> T roundTripWithStreamFactory (int length, T object1, StreamFactory sf) {
+	public <T> RoundTripOutput<T> roundTripWithStreamFactory (int length, T object1, StreamFactory sf) {
 		this.object1 = object1;
 
 		// Test output to stream, large buffer.
@@ -251,7 +269,7 @@ abstract public class KryoTestCase extends TestCase {
 			doAssertEquals(object1, copy);
 		}
 
-		return (T)object2;
+		return new RoundTripOutput<>(input, (T)object2);
 	}
 
 	protected void doAssertEquals (Object object1, Object object2) {

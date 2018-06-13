@@ -192,11 +192,11 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		kryo = new Kryo();
 
-		C c2 = roundTrip(63, 73, c);
+		C c2 = roundTrip(63, 73, c).getDeserializeObject();
 		assertTrue(c2.a == c2.d.e.f.a);
 
 		// Test reset clears unregistered class names.
-		c2 = roundTrip(63, 73, c);
+		c2 = roundTrip(63, 73, c).getDeserializeObject();
 		assertTrue(c2.a == c2.d.e.f.a);
 
 		kryo = new Kryo();
@@ -207,8 +207,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(D.class);
 		kryo.register(E.class);
 		kryo.register(F.class);
-		c2 = roundTrip(15, 25, c);
-		;
+		c2 = roundTrip(15, 25, c).getDeserializeObject();
 		assertTrue(c2.a == c2.d.e.f.a);
 	}
 
