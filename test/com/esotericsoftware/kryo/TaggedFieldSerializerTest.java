@@ -23,11 +23,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.minlog.Log;
 import org.junit.Assert;
 
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 
@@ -101,10 +100,10 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		kryo.register(FutureClass2.class, futureSerializer2);
 
 		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		output = new Output(outStream);
-		kryo.writeClassAndObject(output, futureArray);
-		output.flush();
-		byte[] futureArrayData = outStream.toByteArray();
+		try (Output output = new Output(outStream)) {
+			kryo.writeClassAndObject(output, futureArray);
+			output.flush();
+		}
 
 		TaggedFieldSerializer presentSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
 		presentSerializer.setSkipUnknownTags(true);
@@ -116,13 +115,14 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		presentSerializer2.removeField("fc2"); // simulate past version of application
 		kryo.register(FutureClass2.class, presentSerializer2);
 
-		ByteArrayInputStream inStream = new ByteArrayInputStream(futureArrayData);
-		input = new Input(inStream);
-		Object[] presentArray = (Object[])kryo.readClassAndObject(input); 
-		FutureClass presentObject = (FutureClass)presentArray[0];
-		Assert.assertNotEquals(futureObject, presentObject);
-		assertTrue(presentObject.pastEquals(futureObject));
-		assertEquals(futureArray[1], presentArray[1]);
+		ByteArrayInputStream inStream = new ByteArrayInputStream(outStream.toByteArray());
+		try (Input input = new Input(inStream)) {
+			Object[] presentArray = (Object[])kryo.readClassAndObject(input);
+			FutureClass presentObject = (FutureClass)presentArray[0];
+			Assert.assertNotEquals(futureObject, presentObject);
+			assertTrue(presentObject.pastEquals(futureObject));
+			assertEquals(futureArray[1], presentArray[1]);
+		}
 	}
 
 	/** Attempts to register a class with a field tagged with a value already used in its superclass. Should receive

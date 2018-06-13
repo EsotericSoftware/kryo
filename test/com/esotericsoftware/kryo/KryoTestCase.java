@@ -46,9 +46,9 @@ import junit.framework.TestCase;
  * @author Nathan Sweet <misc@n4te.com> */
 abstract public class KryoTestCase extends TestCase {
 	protected Kryo kryo;
-	protected Output output;
+	private Output output;
 	protected Input input;
-	protected Object object1, object2;
+	private Object object1, object2;
 	protected boolean supportsCopy;
 
 	static interface StreamFactory {

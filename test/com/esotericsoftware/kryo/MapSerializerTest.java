@@ -86,13 +86,17 @@ public class MapSerializerTest extends KryoTestCase {
 		HasGenerics test = new HasGenerics();
 		test.map.put("moo", new Integer[] {1, 2});
 
-		output = new Output(4096);
-		kryo.writeClassAndObject(output, test);
-		output.flush();
+		byte[] bytes;
+		try (Output output = new Output(4096)) {
+			kryo.writeClassAndObject(output, test);
+			output.flush();
+			bytes = output.toBytes();
+		}
 
-		input = new Input(output.toBytes());
-		HasGenerics test2 = (HasGenerics)kryo.readClassAndObject(input);
-		assertEquals(test.map.get("moo"), test2.map.get("moo"));
+		try (Input input = new Input(bytes)) {
+			HasGenerics test2 = (HasGenerics)kryo.readClassAndObject(input);
+			assertEquals(test.map.get("moo"), test2.map.get("moo"));
+		}
 	}
 
 	private void execute (Map<Object, Object> map, int inserts) {
