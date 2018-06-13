@@ -19,8 +19,6 @@
 
 package com.esotericsoftware.kryo;
 
-import static com.esotericsoftware.kryo.ReflectionAssert.*;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -31,6 +29,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
+import org.junit.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
@@ -46,6 +45,10 @@ import com.esotericsoftware.kryo.io.UnsafeMemoryInput;
 import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
 import com.esotericsoftware.kryo.io.UnsafeOutput;
 import com.esotericsoftware.minlog.Log;
+
+import static com.esotericsoftware.kryo.ReflectionAssert.assertReflectionEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /** Test for serialization compatibility: data serialized with an older version (same major version) must be deserializable with
  * this newer (same major) version. Serialization compatibility is checked for each type that has a default serializer
@@ -70,7 +73,10 @@ import com.esotericsoftware.minlog.Log;
  * commit the changes. Depending on the situation you may consider creating new files from the smallest version of the same major
  * version (e.g. for 3.1.4 this is 3.0.0) - to do this just save this test and the {@link SerializationCompatTest}, go back to the
  * related tag and run the test (there's nothing here to automate creation of test files for a different version). */
-public class SerializationCompatTest extends KryoTestCase {
+public class SerializationCompatTest {
+
+	private Kryo kryo = new TestKryoFactory().create();
+	private KryoTestReflectionEqualsSupport support = new KryoTestReflectionEqualsSupport(kryo);
 
 	private static final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
 	private static final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
@@ -81,10 +87,10 @@ public class SerializationCompatTest extends KryoTestCase {
 		TEST_DATAS.add(new TestDataDescription<TestData>("3.0.0", new TestData(), 1865, 1882, 1973, 1990));
 		if (JAVA_VERSION >= 8)
 			TEST_DATAS.add(new TestDataDescription<TestDataJava8>("3.1.0", new TestDataJava8(), 2025, 2042, 2177, 2194));
-	};
+	}
 
 	private void setUp (boolean optimizedGenerics) throws Exception {
-		super.setUp();
+		kryo = new TestKryoFactory().create();
 		kryo.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
 		kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.setReferences(true);
@@ -94,8 +100,11 @@ public class SerializationCompatTest extends KryoTestCase {
 		// could not be loaded by a different name. However, with the registered EnumSet, the serializer is used directly according
 		// to the registered id.
 		kryo.register(EnumSet.class);
+
+		support = new KryoTestReflectionEqualsSupport(kryo);
 	}
 
+	@Test
 	public void testDefaultSerializers () throws Exception {
 		Field defaultSerializersField = Kryo.class.getDeclaredField("defaultSerializers");
 		defaultSerializersField.setAccessible(true);
@@ -107,6 +116,7 @@ public class SerializationCompatTest extends KryoTestCase {
 			EXPECTED_DEFAULT_SERIALIZER_COUNT, defaultSerializers.size());
 	}
 
+	@Test
 	public void testStandard () throws Exception {
 		runTests("standard", new Function1<File, Input>() {
 			public Input apply (File file) throws FileNotFoundException {
@@ -119,6 +129,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		});
 	}
 
+	@Test
 	public void testByteBuffer () throws Exception {
 		runTests("bytebuffer", new Function1<File, Input>() {
 			public Input apply (File file) throws FileNotFoundException {
@@ -131,6 +142,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		});
 	}
 
+	@Test
 	public void testFast () throws Exception {
 		runTests("fast", new Function1<File, Input>() {
 			public Input apply (File file) throws FileNotFoundException {
@@ -143,6 +155,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		});
 	}
 
+	@Test
 	public void testUnsafe () throws Exception {
 		runTests("unsafe-" + ENDIANNESS, new Function1<File, Input>() {
 			public Input apply (File file) throws FileNotFoundException {
@@ -155,6 +168,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		});
 	}
 
+	@Test
 	public void testUnsafeMemory () throws Exception {
 		runTests("unsafeMemory-" + ENDIANNESS, new Function1<File, Input>() {
 			public Input apply (File file) throws FileNotFoundException {
@@ -211,7 +225,7 @@ public class SerializationCompatTest extends KryoTestCase {
 	private void readAndRunTest (TestDataDescription<?> description, boolean optimizedGenerics, Input in)
 		throws FileNotFoundException {
 		TestData actual = kryo.readObject(in, description.testDataClass());
-		roundTrip(optimizedGenerics ? description.lengthOptGenerics : description.lengthNonOptGenerics,
+		support.roundTrip(optimizedGenerics ? description.lengthOptGenerics : description.lengthNonOptGenerics,
 			optimizedGenerics ? description.unsafeLengthOptGenerics : description.unsafeLengthNonOptGenerics, actual);
 		try {
 			assertReflectionEquals(actual, description.testData);
@@ -224,17 +238,23 @@ public class SerializationCompatTest extends KryoTestCase {
 
 	private void runTestAndWrite (TestDataDescription<?> description, boolean optimizedGenerics, Output out)
 		throws FileNotFoundException {
-		roundTrip(optimizedGenerics ? description.lengthOptGenerics : description.lengthNonOptGenerics,
+		support.roundTrip(optimizedGenerics ? description.lengthOptGenerics : description.lengthNonOptGenerics,
 			optimizedGenerics ? description.unsafeLengthOptGenerics : description.unsafeLengthNonOptGenerics, description.testData);
 		kryo.writeObject(out, description.testData);
 	}
 
-	@Override
-	protected void doAssertEquals (final Object one, final Object another) {
-		try {
-			assertReflectionEquals(one, another);
-		} catch (Exception e) {
-			fail("Test failed: " + e);
+	private static class KryoTestReflectionEqualsSupport extends KryoTestSupport {
+		public KryoTestReflectionEqualsSupport (Kryo kryo) {
+			super(kryo);
+		}
+
+		@Override
+		protected void doAssertEquals (final Object one, final Object another) {
+			try {
+				assertReflectionEquals(one, another);
+			} catch (Exception e) {
+				fail("Test failed: " + e);
+			}
 		}
 	}
 
