@@ -23,18 +23,34 @@ import java.lang.invoke.SerializedLambda;
 import java.util.concurrent.Callable;
 
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.KryoTestSupport;
+import com.esotericsoftware.kryo.TestKryoFactory;
 
 /** Test for java 8 closures.
- *
+ * <p>
  * For jdk < 1.8 excluded from surefire tests via the "until-java8" profile in pom.xml which excludes "Java8*Tests". */
-public class Java8ClosureSerializerTest extends KryoTestCase {
+public class Java8ClosureSerializerTest {
 
+	private final Kryo kryo = new TestKryoFactory().create();
+	private final KryoTestSupport support = new KryoTestSupport(kryo) {
+		// we must override equals as lambdas have no equals check built in...
+		@Override
+		protected void doAssertEquals (Object object1, Object object2) {
+			try {
+				Assert.assertEquals(((Callable<?>)object1).call(), ((Callable<?>)object2).call());
+			} catch (Exception e) {
+				throw new RuntimeException(e.getMessage());
+			}
+		}
+	};
+
+	@Before
 	public void setUp () throws Exception {
-		super.setUp();
 		kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		// the following registrations are needed because registration is required
 		kryo.register(Object[].class);
@@ -45,19 +61,9 @@ public class Java8ClosureSerializerTest extends KryoTestCase {
 		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
 	}
 
+	@Test
 	public void testSerializeSerializableLambdaWithKryo () throws Exception {
 		Callable<Boolean> doNothing = (Callable<Boolean> & java.io.Serializable)( () -> true);
-		roundTrip(222, 225, doNothing);
+		support.roundTrip(222, 225, doNothing);
 	}
-
-	// we must override equals as lambdas have no equals check built in...
-	@Override
-	protected void doAssertEquals (Object object1, Object object2) {
-		try {
-			Assert.assertEquals(((Callable<?>)object1).call(), ((Callable<?>)object2).call());
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage());
-		}
-	}
-
 }
