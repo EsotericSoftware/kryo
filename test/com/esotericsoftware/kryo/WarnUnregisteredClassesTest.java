@@ -28,7 +28,6 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.esotericsoftware.kryo.KryoTestCase.StreamFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.UnsafeMemoryInput;
@@ -114,7 +113,7 @@ public class WarnUnregisteredClassesTest {
 	}
 
 	public void write (Kryo kryo, Object object) {
-		StreamFactory sf = new StreamFactory() {
+		KryoTestSupport.StreamFactory sf = new KryoTestSupport.StreamFactory() {
 			public Output createOutput (OutputStream os) {
 				return new UnsafeMemoryOutput(os);
 			}
