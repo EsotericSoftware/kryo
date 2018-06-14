@@ -120,18 +120,18 @@ public class UnsafeByteBufferInputOutputTest extends KryoTestCase {
 	}
 
 	public void testStrings () throws IOException {
-//		runStringTest(new UnsafeByteBufferOutput(4096));
-//		runStringTest(new UnsafeByteBufferOutput(897));
-//		runStringTest(new UnsafeByteBufferOutput(new ByteArrayOutputStream()));
+		runStringTest(new UnsafeByteBufferOutput(4096));
+		runStringTest(new UnsafeByteBufferOutput(897));
+		runStringTest(new UnsafeByteBufferOutput(new ByteArrayOutputStream()));
 
-//		UnsafeByteBufferOutput write = new UnsafeByteBufferOutput(21);
-//		String value = "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234";
-//		write.writeString(value);
-//		Input read = new UnsafeByteBufferInput(write.toBytes());
-//		assertEquals(value, read.readString());
-//
-//		runStringTest(127);
-//		runStringTest(256);
+		UnsafeByteBufferOutput write = new UnsafeByteBufferOutput(21);
+		String value = "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234";
+		write.writeString(value);
+		Input read = new UnsafeByteBufferInput(write.toBytes());
+		assertEquals(value, read.readString());
+
+		runStringTest(127);
+		runStringTest(256);
 		runStringTest(1024 * 1023);
 		runStringTest(1024 * 1024);
 		runStringTest(1024 * 1025);
