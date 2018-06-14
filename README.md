@@ -120,20 +120,21 @@ Not everyone is a Maven fan. Using Kryo without Maven requires placing the Kryo 
 
 ## Quickstart
 
-Jumping ahead to show how the library is used:
+Jumping ahead to show how the library can be used:
 
 ```java
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.Input;
-// ...
+
 Kryo kryo = new Kryo();
-// ...
-Output output = new Output(new FileOutputStream("file.bin"));
+
 SomeClass object = ...
+
+Output output = new Output(new FileOutputStream("file.bin"));
 kryo.writeObject(output, object);
 output.close();
-// ...
+
 Input input = new Input(new FileInputStream("file.bin"));
 SomeClass object = kryo.readObject(input, SomeClass.class);
 input.close();
@@ -252,7 +253,7 @@ Kryo has three sets of methods for reading and writing objects. If the concrete 
 
 ```java
 kryo.writeClassAndObject(output, object);
-// ...
+
 Object object = kryo.readClassAndObject(input);
 if (object instanceof SomeClass) {
    // ...
@@ -263,7 +264,7 @@ If the class is known and the object could be null:
 
 ```java
 kryo.writeObjectOrNull(output, object);
-// ...
+
 SomeClass object = kryo.readObjectOrNull(input, SomeClass.class);
 ```
 
@@ -271,7 +272,7 @@ If the class is known and the object cannot be null:
 
 ```java
 kryo.writeObject(output, object);
-// ...
+
 SomeClass object = kryo.readObject(input, SomeClass.class);
 ```
 
@@ -420,7 +421,7 @@ If a serializer is not specified or when an unregistered class is encountered, a
 Kryo kryo = new Kryo();
 kryo.setRegistrationRequired(false);
 kryo.addDefaultSerializer(SomeClass.class, SomeSerializer.class);
-// ...
+
 Output output = ...
 SomeClass object = ...
 kryo.writeObject(output, object);
@@ -519,11 +520,11 @@ Some serializers provide a `writeHeader` method that can be overridden to write 
 ```java
 static public class TreeMapSerializer extends MapSerializer<TreeMap> {
    protected void writeHeader (Kryo kryo, Output output, TreeMap map) {
-  kryo.writeClassAndObject(output, map.comparator());
+      kryo.writeClassAndObject(output, map.comparator());
    }
 
    protected TreeMap create (Kryo kryo, Input input, Class<? extends TreeMap> type, int size) {
-  return new TreeMap((Comparator)kryo.readClassAndObject(input));
+      return new TreeMap((Comparator)kryo.readClassAndObject(input));
    }
 }
 ```
@@ -603,7 +604,7 @@ If the object could be null:
 ```java
 Serializer serializer = ...
 kryo.writeObjectOrNull(output, object, serializer);
-// ...
+
 SomeClass object = kryo.readObjectOrNull(input, SomeClass.class, serializer);
 ```
 
@@ -612,7 +613,7 @@ If the object cannot be null:
 ```java
 Serializer serializer = ...
 kryo.writeObject(output, object, serializer);
-// ...
+
 SomeClass object = kryo.readObject(input, SomeClass.class, serializer);
 ```
 
@@ -732,7 +733,7 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
 For serializers which pass type parameter information for nested objects in the object graph (somewhat advanced usage), first GenericsHierarchy is used to store the type parameters for a class. During serialization, Generics `pushTypeVariables` is called before generic types are resolved (if any). If >0 is returned, this must be followed by Generics `popTypeVariables`. See FieldSerializer for an example.
 
 ```java
-static public class SomeClass<T> {
+public class SomeClass<T> {
    T value;
    List<T> list;
 }
@@ -795,16 +796,16 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
 
 ### KryoSerializable
 
-A class can choose to do its own serialization by implementing KryoSerializable (similar to java.io.Externalizable).
+Instead of using a serializer, a class can choose to do its own serialization by implementing KryoSerializable (similar to java.io.Externalizable).
 
 ```java
 public class SomeClass implements KryoSerializable {
-   // ...
+	private int value;
    public void write (Kryo kryo, Output output) {
-      // ...
+      output.writeInt(value, false);
    }
    public void read (Kryo kryo, Input input) {
-      // ...
+      value = input.readInt(false);
    }
 }
 ```
@@ -817,24 +818,22 @@ Serializers only support copying if `copy` is overridden. Similar to Serializer 
 
 ```java
 class SomeClassSerializer extends Serializer<SomeClass> {
-// ...
-public SomeClass copy (Kryo kryo, SomeClass original) {
-   SomeClass copy = new SomeClass();
-   kryo.reference(copy);
-   copy.intValue = original.intValue;
-   copy.object = kryo.copy(original.object);
-   return copy;
-}
+   public SomeClass copy (Kryo kryo, SomeClass original) {
+      SomeClass copy = new SomeClass();
+      kryo.reference(copy);
+      copy.intValue = original.intValue;
+      copy.object = kryo.copy(original.object);
+      return copy;
+   }
 }
 ```
 
 #### KryoCopyable
 
-Classes can implement KryoCopyable to do their own copying:
+Instead of using a serializer, classes can implement KryoCopyable to do their own copying:
 
 ```java
 public class SomeClass implements KryoCopyable<SomeClass> {
-   // ...
    public SomeClass copy (Kryo kryo) {
       SomeClass copy = new SomeClass();
       kryo.reference(copy);
@@ -902,9 +901,12 @@ FieldSerializer provides the fields that will be serialized. Fields can be remov
 
 ```java
 FieldSerializer fieldSerializer = ...
+
 fieldSerializer.removeField("id"); // Won't be serialized.
+
 CachedField nameField = fieldSerializer.getField("name");
 nameField.setCanBeNull(false);
+
 CachedField someClassField = fieldSerializer.getField("someClass");
 someClassField.setClass(SomeClass.class, new SomeClassSerializer());
 ```
@@ -923,7 +925,7 @@ Annotations can be used to configure the serializers for each field. `@Bind` set
 
 ```java
 public class SomeClass {
-		 @NotNull
+   @NotNull
    @Bind(serializer = StringSerializer.class, valueClass = String.class) 
    Object stringField;
    
@@ -942,8 +944,6 @@ public class SomeClass {
       elementClass = long[].class, 
       elementsCanBeNull = false) 
    Collection collection;
-   
-   // ...
 }
 ```
 
@@ -1076,13 +1076,13 @@ Because Kryo is not thread safe and constructing and configuring a Kryo instance
 
 ```java
 static private final ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
-protected Kryo initialValue() {
-    Kryo kryo = new Kryo();
-    // Configure the Kryo instance.
-    return kryo;
+   protected Kryo initialValue() {
+      Kryo kryo = new Kryo();
+      // Configure the Kryo instance.
+      return kryo;
+   };
 };
-};
-// ...
+
 Kryo kryo = kryos.get();
 ```
 
@@ -1091,9 +1091,9 @@ For pooling, Kryo provides the `KryoFactory` and `KryoPool` classes.
 ```java
 KryoFactory factory = new KryoFactory() {
    public Kryo create () {
-  Kryo kryo = new Kryo();
-  // Configure the Kryo instance.
-  return kryo;
+      Kryo kryo = new Kryo();
+      // Configure the Kryo instance.
+      return kryo;
    }
 };
 KryoPool pool = new KryoPool.Builder(factory).build();
