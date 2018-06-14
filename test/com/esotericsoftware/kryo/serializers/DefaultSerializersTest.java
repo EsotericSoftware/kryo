@@ -299,12 +299,16 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	public void testPriorityQueueCopy () {
-		List<Double> values = Arrays.asList(7d, 0d, 5d, 123d, 432d);
-		PriorityQueue<Double> queue = new PriorityQueue(3, Comparator.reverseOrder());
+		List<Integer> values = Arrays.asList(7, 0, 5, 123, 432);
+		PriorityQueue<Integer> queue = new PriorityQueue(3, new Comparator<Integer>() {
+			public int compare (Integer o1, Integer o2) {
+				return o2 - o1;
+			}
+		});
 		queue.addAll(values);
 
 		kryo.register(PriorityQueue.class);
-		PriorityQueue<Double> copy = kryo.copy(queue);
+		PriorityQueue<Integer> copy = kryo.copy(queue);
 		System.out.println(queue);
 		System.out.println(copy);
 		assertEquals(queue.peek(), copy.peek());
