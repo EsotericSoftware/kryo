@@ -71,7 +71,7 @@ public class SerializationCompatTest extends KryoTestCase {
 
 	static private final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
 	static private final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
-	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 37 : 55; // Also change
+	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 38 : 56; // Also change
 																															// Kryo#defaultSerializers.
 	static private final List<TestDataDescription> TEST_DATAS = new ArrayList();
 
