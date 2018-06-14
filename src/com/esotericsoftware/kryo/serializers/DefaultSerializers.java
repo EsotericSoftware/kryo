@@ -666,7 +666,7 @@ public class DefaultSerializers {
 		}
 
 		protected TreeSet createCopy (Kryo kryo, TreeSet original) {
-			return createTreeSet(original.getClass(), ((TreeSet)original).comparator());
+			return createTreeSet(original.getClass(), original.comparator());
 		}
 
 		private TreeSet createTreeSet (Class<? extends Collection> type, Comparator comparator) {
@@ -695,18 +695,18 @@ public class DefaultSerializers {
 		}
 
 		protected PriorityQueue create (Kryo kryo, Input input, Class<? extends PriorityQueue> type, int size) {
-			return createPriorityQueue(type, (Comparator)kryo.readClassAndObject(input));
+			return createPriorityQueue(type, size, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected PriorityQueue createCopy (Kryo kryo, PriorityQueue original) {
-			return createPriorityQueue(original.getClass(), ((PriorityQueue)original).comparator());
+			return createPriorityQueue(original.getClass(), original.size(), original.comparator());
 		}
 
-		private PriorityQueue createPriorityQueue (Class<? extends Collection> type, Comparator comparator) {
-			if (type == PriorityQueue.class || type == null) return new PriorityQueue(comparator);
+		private PriorityQueue createPriorityQueue (Class<? extends Collection> type, int size, Comparator comparator) {
+			if (type == PriorityQueue.class || type == null) return new PriorityQueue(size, comparator);
 			// Use reflection for subclasses.
 			try {
-				Constructor constructor = type.getConstructor(Comparator.class);
+				Constructor constructor = type.getConstructor(int.class, Comparator.class);
 				if (!constructor.isAccessible()) {
 					try {
 						constructor.setAccessible(true);

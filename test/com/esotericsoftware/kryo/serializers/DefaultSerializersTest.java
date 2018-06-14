@@ -309,8 +309,6 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 		kryo.register(PriorityQueue.class);
 		PriorityQueue<Integer> copy = kryo.copy(queue);
-		System.out.println(queue);
-		System.out.println(copy);
 		assertEquals(queue.peek(), copy.peek());
 	}
 
