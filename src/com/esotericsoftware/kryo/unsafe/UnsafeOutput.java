@@ -23,11 +23,14 @@ import static com.esotericsoftware.kryo.unsafe.UnsafeUtil.*;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Util;
 
 import java.io.OutputStream;
 
 /** An {@link Output} that reads data using sun.misc.Unsafe. Multi-byte primitive types use native byte order, so the native byte
  * order on different computers which read and write the data must be the same.
+ * <p>
+ * Not available on all JVMs. {@link Util#unsafe} can be checked before using this class.
  * <p>
  * This class may be much faster when {@link #setVariableLengthEncoding(boolean)} is false.
  * @author Roman Levenstein <romixlev@gmail.com>

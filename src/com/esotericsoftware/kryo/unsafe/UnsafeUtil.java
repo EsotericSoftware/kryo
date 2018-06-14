@@ -31,7 +31,9 @@ import sun.misc.Cleaner;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
-/** Utility methods for using {@link sun.misc.Unsafe}, mostly for private use. Not available on all JVMs or Android.
+/** Utility methods for using {@link sun.misc.Unsafe}.
+ * <p>
+ * Not available on all JVMs. {@link Util#unsafe} can be checked before using this class.
  * @author Roman Levenstein <romixlev@gmail.com> */
 public class UnsafeUtil {
 	/** The sun.misc.Unsafe instance, or null if Unsafe is unavailable. */
