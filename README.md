@@ -150,21 +150,21 @@ Getting data in and out of Kryo is done using the Input and Output classes. Thes
 
 ### Output
 
-The Output class is an OutputStream that writes data to a byte array buffer. This buffer can be obtained and used directly, if a byte array is desired. If the Output is given an OutputStream, it will flush the bytes to the stream when the buffer becomes full, otherwise Output can grow its buffer automatically. Output has many methods for efficiently writing primitives and strings to bytes. It provides functionality similar to DataOutputStream, BufferedOutputStream, FilterOutputStream, and ByteArrayOutputStream, all in one class. Unlike many streams, an Output instance can be reused by setting the position, or setting a new byte array or stream.
+The Output class is an OutputStream that writes data to a byte array buffer. This buffer can be obtained and used directly, if a byte array is desired. If the Output is given an OutputStream, it will flush the bytes to the stream when the buffer becomes full, otherwise Output can grow its buffer automatically. Output has many methods for efficiently writing primitives and strings to bytes. It provides functionality similar to DataOutputStream, BufferedOutputStream, FilterOutputStream, and ByteArrayOutputStream, all in one class.
 
 > Tip: Output and Input provide all the functionality of ByteArrayOutputStream. There is seldom a reason to have Output flush to a ByteArrayOutputStream.
 
-Output buffers when writing to an OutputStream, so `flush` or `close` must be called after writing is complete to cause the buffered bytes to be written to the OutputStream.
+Output buffers the bytes when writing to an OutputStream, so `flush` or `close` must be called after writing is complete to cause the buffered bytes to be written to the OutputStream. If the Output has not been provided an OutputStream, calling `flush` or `close` is unnecessary. Unlike many streams, an Output instance can be reused by setting the position, or setting a new byte array or stream.
 
 > Tip: Since Output buffers already, there is no reason to have Output flush to a BufferedOutputStream.
 
 ### Input
 
-The Input class is an InputStream that reads data from a byte array buffer. This buffer can be set directly, if reading from a byte array is desired. If the Input is given an InputStream, it will fill the buffer from the stream when all the data in the buffer has been read. Input has many methods for efficiently reading primitives and strings from bytes. It provides functionality similar to DataInputStream, BufferedInputStream, FilterInputStream, and ByteArrayInputStream, all in one class. Unlike many streams, an Input instance can be reused by setting the position and limit, or setting a new byte array or stream.
+The Input class is an InputStream that reads data from a byte array buffer. This buffer can be set directly, if reading from a byte array is desired. If the Input is given an InputStream, it will fill the buffer from the stream when all the data in the buffer has been read. Input has many methods for efficiently reading primitives and strings from bytes. It provides functionality similar to DataInputStream, BufferedInputStream, FilterInputStream, and ByteArrayInputStream, all in one class.
 
 > Tip: Input provides all the functionality of ByteArrayInputStream. There is seldom a reason to have Input read from a ByteArrayInputStream.
 
-To read from a source or write to a target other than a byte array, simply provide the appropriate InputStream or OutputStream.
+If the Input `close` is called, the Input's InputStream is closed, if any. If not reading from an InputStream then it is not necessary to call `close`. Unlike many streams, an Input instance can be reused by setting the position and limit, or setting a new byte array or InputStream.
 
 ### ByteBuffers
 
@@ -292,13 +292,14 @@ kryo.register(SomeClass.class);
 
 SomeClass object1 = new SomeClass();
 
-Output output = new Output(1024, -1); // Start at 1024, grow without limit.
+Output output = new Output(1024, -1);
 kryo.writeObject(output, object1);
 
-// Read directly from the output's buffer.
 Input input = new Input(output.getBuffer(), 0, output.position());
 SomeClass object2 = kryo.readObject(input, SomeClass.class);
 ```
+
+In this example the Output starts with a buffer that has a capacity of 1024 bytes. If more bytes are written to the Output, the buffer will grow in size without limit. The Output does not need to be closed because it has not been given an OutputStream. The Input reads directly from the Output's `byte[]` buffer.
 
 ### Deep and shallow copies
 
