@@ -23,7 +23,6 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -343,6 +342,14 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		/** The factory used to create the serializer. */
 		Class<? extends SerializerFactory> serializerFactory() default SerializerFactory.class;
+	}
+
+	/** Indicates a field can never be null when it is being serialized and deserialized. Some serializers use this to save space.
+	 * Eg, {@link FieldSerializer} may save 1 byte per field.
+	 * @author Nathan Sweet */
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.FIELD)
+	public @interface NotNull {
 	}
 
 	/** Configuration for FieldSerializer instances. */
