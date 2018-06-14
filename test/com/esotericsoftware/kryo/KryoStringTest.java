@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,25 +19,12 @@
 
 package com.esotericsoftware.kryo;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
-import org.junit.Test;
-
-import com.esotericsoftware.kryo.FieldSerializerTest.DefaultTypes;
-import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
-import com.esotericsoftware.kryo.serializers.MapSerializer;
 
 public class KryoStringTest extends KryoTestCase {
-
 	static KryoFactory factory = new KryoFactory() {
-		@Override
 		public Kryo create () {
 			Kryo kryo = new Kryo();
 			return kryo;

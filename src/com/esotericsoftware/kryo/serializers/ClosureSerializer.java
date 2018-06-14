@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,78 +19,108 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.lang.reflect.Method;
+import static com.esotericsoftware.kryo.util.Util.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-/** Serializer for Java8 closures. To serialize closures, use:
+import java.io.Serializable;
+import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.Method;
+
+/** Serializer for Java8 closures which implement Serializable. To serialize closures, use:
  * <p>
- * <code>
+ * <code>kryo.register(Object[].class);
+ * kryo.register(Class.class);
  * kryo.register(java.lang.invoke.SerializedLambda.class);<br>
  * kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());</code>
- * @author Roman Levenstein <romixlev@gmail.com> */
+ * <p>
+ * Also, the closure's capturing class must be registered.
+ * @author Roman Levenstein <romixlev@gmail.com>
+ * @author Nathan Sweet */
 public class ClosureSerializer extends Serializer {
-
-	/** Marker class to bind ClosureSerializer to. See also {@link Kryo#isClosure(Class)} and
-	 * {@link Kryo#getRegistration(Class)} */
-	@SuppressWarnings("javadoc")
-	public static class Closure {
+	/** Marker class used to find the class {@link Registration} for closure instances.
+	 * @see Kryo#isClosure(Class) */
+	static public class Closure {
 	}
 
-	private static Method readResolve;
-	private static Class serializedLambda = java.lang.invoke.SerializedLambda.class;
-	static {
-		try {
-			readResolve = serializedLambda.getDeclaredMethod("readResolve");
-			readResolve.setAccessible(true);
-		} catch (Exception e) {
-			throw new RuntimeException("Could not obtain SerializedLambda or its methods via reflection", e);
-		}
-	}
+	static private Method readResolve;
 
 	public ClosureSerializer () {
+		if (readResolve == null) {
+			try {
+				readResolve = SerializedLambda.class.getDeclaredMethod("readResolve");
+				readResolve.setAccessible(true);
+			} catch (Exception ex) {
+				throw new KryoException("Unable to obtain SerializedLambda#readResolve via reflection.", ex);
+			}
+		}
 	}
 
 	public void write (Kryo kryo, Output output, Object object) {
+		SerializedLambda serializedLambda = toSerializedLambda(object);
+		int count = serializedLambda.getCapturedArgCount();
+		output.writeVarInt(count, true);
+		for (int i = 0; i < count; i++)
+			kryo.writeObject(output, serializedLambda.getCapturedArg(i));
 		try {
-			Class type = object.getClass();
-			Method writeReplace = type.getDeclaredMethod("writeReplace");
-			writeReplace.setAccessible(true);
-			Object replacement = writeReplace.invoke(object);
-			if (serializedLambda.isInstance(replacement)) {
-				// Serialize the representation of this lambda
-				kryo.writeObject(output, replacement);
-			} else
-				throw new RuntimeException("Could not serialize lambda");
-		} catch (Exception e) {
-			throw new RuntimeException("Could not serialize lambda", e);
+			kryo.writeClass(output, Class.forName(serializedLambda.getCapturingClass().replace('/', '.')));
+		} catch (ClassNotFoundException ex) {
+			throw new KryoException("Error writing closure.", ex);
 		}
+		output.writeString(serializedLambda.getFunctionalInterfaceClass());
+		output.writeString(serializedLambda.getFunctionalInterfaceMethodName());
+		output.writeString(serializedLambda.getFunctionalInterfaceMethodSignature());
+		output.writeVarInt(serializedLambda.getImplMethodKind(), true);
+		output.writeString(serializedLambda.getImplClass());
+		output.writeString(serializedLambda.getImplMethodName());
+		output.writeString(serializedLambda.getImplMethodSignature());
+		output.writeString(serializedLambda.getInstantiatedMethodType());
 	}
 
 	public Object read (Kryo kryo, Input input, Class type) {
+		int count = input.readVarInt(true);
+		Object[] capturedArgs = new Object[count];
+		for (int i = 0; i < count; i++)
+			capturedArgs[i] = kryo.readClassAndObject(input);
+		SerializedLambda serializedLambda = new SerializedLambda(kryo.readClass(input).getType(), input.readString(),
+			input.readString(), input.readString(), input.readVarInt(true), input.readString(), input.readString(),
+			input.readString(), input.readString(), capturedArgs);
 		try {
-			Object object = kryo.readObject(input, serializedLambda);
-			return readResolve.invoke(object);
-		} catch (Exception e) {
-			throw new RuntimeException("Could not serialize lambda", e);
+			return readResolve.invoke(serializedLambda);
+		} catch (Exception ex) {
+			throw new KryoException("Error reading closure.", ex);
 		}
 	}
 
 	public Object copy (Kryo kryo, Object original) {
 		try {
-			Class type = original.getClass();
-			Method writeReplace = type.getDeclaredMethod("writeReplace");
+			return readResolve.invoke(toSerializedLambda(original));
+		} catch (Exception ex) {
+			throw new KryoException("Error copying closure.", ex);
+		}
+	}
+
+	private SerializedLambda toSerializedLambda (Object object) {
+		Object replacement;
+		try {
+			Method writeReplace = object.getClass().getDeclaredMethod("writeReplace");
 			writeReplace.setAccessible(true);
-			Object replacement = writeReplace.invoke(original);
-			if (serializedLambda.isInstance(replacement)) {
-				return readResolve.invoke(replacement);
-			} else
-				throw new RuntimeException("Could not serialize lambda");
-		} catch (Exception e) {
-			throw new RuntimeException("Could not serialize lambda", e);
+			replacement = writeReplace.invoke(object);
+		} catch (Exception ex) {
+			if (object instanceof Serializable) throw new KryoException("Error serializing closure.", ex);
+			throw new KryoException("Closure must implement java.io.Serializable.", ex);
+		}
+		try {
+			return (SerializedLambda)replacement;
+		} catch (Exception ex) {
+			throw new KryoException(
+				"writeReplace must return a SerializedLambda: " + (replacement == null ? null : className(replacement.getClass())),
+				ex);
 		}
 	}
 }

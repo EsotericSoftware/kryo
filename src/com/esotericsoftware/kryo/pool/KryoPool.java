@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,15 +19,13 @@
 
 package com.esotericsoftware.kryo.pool;
 
+import com.esotericsoftware.kryo.Kryo;
+
 import java.lang.ref.SoftReference;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import com.esotericsoftware.kryo.Kryo;
-
-/** A simple pool interface for {@link Kryo} instances. Use the {@link KryoPool.Builder} to construct a pool instance.
- * 
- * Usage:
+/** A simple pool interface for {@link Kryo} instances. Use the {@link KryoPool.Builder} to construct a pool instance. Usage:
  * 
  * <pre>
  * import com.esotericsoftware.kryo.Kryo;
@@ -43,7 +41,7 @@ import com.esotericsoftware.kryo.Kryo;
  * // Simple pool, you might also activate SoftReferences to fight OOMEs.
  * KryoPool pool = new KryoPool.Builder(factory).build();
  * Kryo kryo = pool.borrow();
- * // do s.th. with kryo here, and afterwards release it
+ * // Use the Kryo instance here.
  * pool.release(kryo);
  * 
  * // or use a callback to work with kryo (pool.run borrows+releases for you)
@@ -52,12 +50,10 @@ import com.esotericsoftware.kryo.Kryo;
  *     return kryo.readObject(input, String.class);
  *   }
  * });
- *
  * </pre>
  * 
  * @author Martin Grotzke */
 public interface KryoPool {
-
 	/** Takes a {@link Kryo} instance from the pool or creates a new one (using the factory) if the pool is empty. */
 	Kryo borrow ();
 
@@ -69,10 +65,9 @@ public interface KryoPool {
 	<T> T run (KryoCallback<T> callback);
 
 	/** Builder for a {@link KryoPool} instance, constructs a {@link KryoPoolQueueImpl} instance. */
-	public static class Builder {
-
+	static public class Builder {
 		private final KryoFactory factory;
-		private Queue<Kryo> queue = new ConcurrentLinkedQueue<Kryo>();
+		private Queue queue = new ConcurrentLinkedQueue();
 		private boolean softReferences;
 
 		public Builder (KryoFactory factory) {
@@ -82,8 +77,9 @@ public interface KryoPool {
 			this.factory = factory;
 		}
 
-		/** Use the given queue for pooling kryo instances (by default a {@link ConcurrentLinkedQueue} is used). */
-		public Builder queue (Queue<Kryo> queue) {
+		/** Use the given queue for pooling Kryo or SoftReference<Kryo> instances (by default a {@link ConcurrentLinkedQueue} is
+		 * used). */
+		public Builder queue (Queue<? super Object> queue) {
 			if (queue == null) {
 				throw new IllegalArgumentException("queue must not be null");
 			}
@@ -104,10 +100,8 @@ public interface KryoPool {
 			return new KryoPoolQueueImpl(factory, q);
 		}
 
-		@Override
 		public String toString () {
 			return getClass().getName() + "[queue.class=" + queue.getClass() + ", softReferences=" + softReferences + "]";
 		}
 	}
-
 }

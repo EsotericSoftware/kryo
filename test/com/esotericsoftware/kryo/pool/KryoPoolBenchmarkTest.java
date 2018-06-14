@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,29 +19,29 @@
 
 package com.esotericsoftware.kryo.pool;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.serializers.FieldSerializerTest.DefaultTypes;
+
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
-import com.esotericsoftware.kryo.FieldSerializerTest.DefaultTypes;
-import com.esotericsoftware.kryo.Kryo;
-
 public class KryoPoolBenchmarkTest {
 
-	private static final int WARMUP_ITERATIONS = 10000;
+	static private final int WARMUP_ITERATIONS = 1000;
 
 	/** Number of runs. */
-	private static final int RUN_CNT = 10;
+	static private final int RUN_CNT = 5;
 
 	/** Number of iterations. Set it to something rather big for obtaining meaningful results */
-// private static final int ITER_CNT = 200000;
-	private static final int ITER_CNT = 10000;
-	private static final int SLEEP_BETWEEN_RUNS = 100;
+// static private final int ITER_CNT = 200000;
+	static private final int ITER_CNT = 1000;
+	static private final int SLEEP_BETWEEN_RUNS = 10;
 
 	// not private to prevent the synthetic accessor method
 	static KryoFactory factory = new KryoFactory() {
-		@Override
+
 		public Kryo create () {
 			Kryo kryo = new Kryo();
 			kryo.register(DefaultTypes.class);
@@ -105,7 +105,7 @@ public class KryoPoolBenchmarkTest {
 
 	private void runWithoutPool (final int runCount, final int iterCount, boolean outputResults) throws Exception {
 		run("Without pool", new Runnable() {
-			@Override
+
 			public void run () {
 				factory.create();
 			}
@@ -116,7 +116,7 @@ public class KryoPoolBenchmarkTest {
 		throws Exception {
 		final KryoPool pool = builder.build();
 		run("With pool " + builder.toString(), new Runnable() {
-			@Override
+
 			public void run () {
 				Kryo kryo = pool.borrow();
 				pool.release(kryo);
@@ -130,7 +130,7 @@ public class KryoPoolBenchmarkTest {
 		System.gc();
 	}
 
-	private static class SampleObject {
+	static private class SampleObject {
 		private int intVal;
 		private float floatVal;
 		private Short shortVal;
@@ -150,19 +150,15 @@ public class KryoPoolBenchmarkTest {
 			this.str = str;
 		}
 
-		/** {@inheritDoc} */
-		@Override
 		public boolean equals (Object other) {
 			if (this == other) return true;
 
 			if (other == null || getClass() != other.getClass()) return false;
 
 			SampleObject obj = (SampleObject)other;
-
 			return intVal == obj.intVal && floatVal == obj.floatVal && shortVal.equals(obj.shortVal)
 				&& Arrays.equals(dblArr, obj.dblArr) && Arrays.equals(longArr, obj.longArr)
 				&& (str == null ? obj.str == null : str.equals(obj.str));
 		}
 	}
-
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -22,10 +22,8 @@ package com.esotericsoftware.kryo.pool;
 import com.esotericsoftware.kryo.Kryo;
 
 /** Callback to run with a provided kryo instance.
- *
  * @author Martin Grotzke
- *
- * @param <T> The type of the result of the interaction with kryo. */
+ * @param <T> The type of the result of the interaction with Kryo. */
 public interface KryoCallback<T> {
 	T execute (Kryo kryo);
 }

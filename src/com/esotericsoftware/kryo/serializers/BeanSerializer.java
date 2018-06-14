@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -21,6 +21,13 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.reflectasm.MethodAccess;
+
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -31,13 +38,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.reflectasm.MethodAccess;
-
 /** Serializes Java beans using bean accessor methods. Only bean properties with both a getter and setter are serialized. This
  * class is not as fast as {@link FieldSerializer} but is much faster and more efficient than Java serialization. Bytecode
  * generation is used to invoke the bean property methods, if possible.
@@ -46,7 +46,7 @@ import com.esotericsoftware.reflectasm.MethodAccess;
  * primitives are final) then an extra byte is written for that property.
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class BeanSerializer<T> extends Serializer<T> {
 	static final Object[] noArgs = {};
 	private CachedProperty[] properties;
@@ -124,15 +124,15 @@ public class BeanSerializer<T> extends Serializer<T> {
 			} catch (KryoException ex) {
 				ex.addTrace(property + " (" + type.getName() + ")");
 				throw ex;
-			} catch (RuntimeException runtimeEx) {
-				KryoException ex = new KryoException(runtimeEx);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(property + " (" + type.getName() + ")");
 				throw ex;
 			}
 		}
 	}
 
-	public T read (Kryo kryo, Input input, Class<T> type) {
+	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		T object = kryo.newInstance(type);
 		kryo.reference(object);
 		for (int i = 0, n = properties.length; i < n; i++) {
@@ -153,8 +153,8 @@ public class BeanSerializer<T> extends Serializer<T> {
 			} catch (KryoException ex) {
 				ex.addTrace(property + " (" + object.getClass().getName() + ")");
 				throw ex;
-			} catch (RuntimeException runtimeEx) {
-				KryoException ex = new KryoException(runtimeEx);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
 				ex.addTrace(property + " (" + object.getClass().getName() + ")");
 				throw ex;
 			}
@@ -172,12 +172,12 @@ public class BeanSerializer<T> extends Serializer<T> {
 			} catch (KryoException ex) {
 				ex.addTrace(property + " (" + copy.getClass().getName() + ")");
 				throw ex;
-			} catch (RuntimeException runtimeEx) {
-				KryoException ex = new KryoException(runtimeEx);
-				ex.addTrace(property + " (" + copy.getClass().getName() + ")");
-				throw ex;
 			} catch (Exception ex) {
 				throw new KryoException("Error copying bean property: " + property + " (" + copy.getClass().getName() + ")", ex);
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
+				ex.addTrace(property + " (" + copy.getClass().getName() + ")");
+				throw ex;
 			}
 		}
 		return copy;

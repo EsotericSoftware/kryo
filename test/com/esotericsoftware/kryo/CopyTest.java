@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -22,7 +22,7 @@ package com.esotericsoftware.kryo;
 import java.util.ArrayList;
 
 public class CopyTest extends KryoTestCase {
-	protected void setUp () throws Exception {
+	public void setUp () throws Exception {
 		super.setUp();
 		kryo.setRegistrationRequired(false);
 	}

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -21,6 +21,8 @@ package com.esotericsoftware.kryo.pool;
 
 import static org.junit.Assert.*;
 
+import com.esotericsoftware.kryo.Kryo;
+
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -30,13 +32,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import com.esotericsoftware.kryo.Kryo;
-
 @RunWith(Parameterized.class)
 public class KryoPoolTest {
 
-	private static KryoFactory factory = new KryoFactory() {
-		@Override
+	static private KryoFactory factory = new KryoFactory() {
+
 		public Kryo create () {
 			Kryo kryo = new Kryo();
 			// configure kryo
@@ -45,7 +45,7 @@ public class KryoPoolTest {
 	};
 
 	@Parameters
-	public static Collection<Object[]> data () {
+	static public Collection<Object[]> data () {
 		return Arrays.asList(new Object[][] {{new KryoPool.Builder(factory)}, {new KryoPool.Builder(factory).softReferences()}});
 	}
 
@@ -96,7 +96,7 @@ public class KryoPoolTest {
 	@Test
 	public void runWithKryoShouldReturnResult () {
 		String value = pool.run(new KryoCallback<String>() {
-			@Override
+
 			public String execute (Kryo kryo) {
 				return "foo";
 			}
@@ -108,7 +108,7 @@ public class KryoPoolTest {
 	public void runWithKryoShouldAddKryoToPool () {
 		assertEquals(0, size());
 		pool.run(new KryoCallback<String>() {
-			@Override
+
 			public String execute (Kryo kryo) {
 				return null;
 			}
@@ -121,14 +121,13 @@ public class KryoPoolTest {
 		assertEquals(0, size());
 		try {
 			pool.run(new KryoCallback<String>() {
-				@Override
+
 				public String execute (Kryo kryo) {
 					throw new RuntimeException();
 				}
 			});
 			fail("Exception should be rethrown.");
-		} catch (RuntimeException e) {
-			// expected
+		} catch (RuntimeException expected) {
 		}
 		assertEquals(1, size());
 	}
@@ -136,7 +135,7 @@ public class KryoPoolTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void runWithKryoShouldRethrowException () {
 		String value = pool.run(new KryoCallback<String>() {
-			@Override
+
 			public String execute (Kryo kryo) {
 				throw new IllegalArgumentException();
 			}

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,7 +19,13 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.Kryo.*;
 import static com.esotericsoftware.minlog.Log.*;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -27,38 +33,36 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-
-/** Serializes objects using direct field assignment, with versioning backward compatibility. Allows fields to have a
- * <code>@Since(int)</code> annotation to indicate the version they were added. For a particular field, the value in
- * <code>@Since</code> should never change once created. This is less flexible than FieldSerializer, which can handle most classes
- * without needing annotations, but it provides backward compatibility. This means that new fields can be added, but removing,
- * renaming or changing the type of any field will invalidate previous serialized bytes. VersionFieldSerializer has very little
- * overhead (a single additional varint) compared to FieldSerializer. Forward compatibility is not supported.
- * @see TaggedFieldSerializer
- * @author Tianyi HE <hty0807@gmail.com> */
+/** Serializes objects using direct field assignment, providing backward compatibility with minimal overhead. This means fields
+ * can be added without invalidating previously serialized bytes. Removing, renaming, or changing the type of a field is not
+ * supported.
+ * <p>
+ * When a field is added, it must have the {@link Since} annotation to indicate the version it was added in order to be compatible
+ * with previously serialized bytes. The annotation value must never change.
+ * <p>
+ * Compared to {@link FieldSerializer}, VersionFieldSerializer writes a single additional varint and requires annotations for
+ * added fields, but provides backward compatibility so fields can be added. {@link TaggedFieldSerializer} provides more
+ * flexibility for classes to evolve in exchange for a slightly larger serialized size.
+ * @author Nathan Sweet */
 public class VersionFieldSerializer<T> extends FieldSerializer<T> {
-	private int typeVersion = 0; // Version of current type.
+	private final VersionFieldSerializerConfig config;
+	private int typeVersion; // Version of the type being serialized.
 	private int[] fieldVersion; // Version of each field.
-	private boolean compatible = true; // Whether current type is compatible with serialized objects with different version.
 
 	public VersionFieldSerializer (Kryo kryo, Class type) {
+		this(kryo, type, new VersionFieldSerializerConfig());
+	}
+
+	public VersionFieldSerializer (Kryo kryo, Class type, VersionFieldSerializerConfig config) {
 		super(kryo, type);
-		// Make sure this is done before any read / write operations.
+		this.config = config;
+		setAcceptsNull(true);
+		// Make sure this is done before any read/write operations.
 		initializeCachedFields();
 	}
 
-	public VersionFieldSerializer (Kryo kryo, Class type, boolean compatible) {
-		this(kryo, type);
-		this.compatible = compatible;
-	}
-
-	@Override
 	protected void initializeCachedFields () {
-		CachedField[] fields = getFields();
+		CachedField[] fields = cachedFields.fields;
 		fieldVersion = new int[fields.length];
 		for (int i = 0, n = fields.length; i < n; i++) {
 			Field field = fields[i].getField();
@@ -71,54 +75,68 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 				fieldVersion[i] = 0;
 			}
 		}
-		this.removedFields.clear();
 		if (DEBUG) debug("Version for type " + getType().getName() + " is " + typeVersion);
 	}
 
-	@Override
 	public void removeField (String fieldName) {
 		super.removeField(fieldName);
 		initializeCachedFields();
 	}
 
-	@Override
 	public void removeField (CachedField field) {
 		super.removeField(field);
 		initializeCachedFields();
 	}
 
-	@Override
 	public void write (Kryo kryo, Output output, T object) {
-		CachedField[] fields = getFields();
+		if (object == null) {
+			output.writeByte(NULL);
+			return;
+		}
+
+		int pop = pushTypeVariables();
+
+		CachedField[] fields = cachedFields.fields;
 		// Write type version.
-		output.writeVarInt(typeVersion, true);
+		output.writeVarInt(typeVersion + 1, true);
 		// Write fields.
 		for (int i = 0, n = fields.length; i < n; i++) {
+			if (TRACE) log("Write", fields[i], output.position());
 			fields[i].write(output, object);
 		}
+
+		if (pop > 0) popTypeVariables(pop);
 	}
 
-	@Override
-	public T read (Kryo kryo, Input input, Class<T> type) {
+	public T read (Kryo kryo, Input input, Class<? extends T> type) {
+		int version = input.readVarInt(true);
+		if (version == NULL) return null;
+		version--;
+		if (!config.compatible && version != typeVersion)
+			throw new KryoException("Version is not compatible: " + version + " != " + typeVersion);
+
+		int pop = pushTypeVariables();
+
 		T object = create(kryo, input, type);
 		kryo.reference(object);
 
-		// Read input version.
-		int version = input.readVarInt(true);
-		if (!compatible && version != typeVersion) {
-			// Reject to read
-			throw new KryoException("Version not compatible: " + version + " <-> " + typeVersion);
-		}
-		CachedField[] fields = getFields();
+		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			// Field is not present in input, skip it.
 			if (fieldVersion[i] > version) {
-				if (DEBUG) debug("Skip field " + fields[i].getField().getName());
+				if (DEBUG) debug("Skip field: " + fields[i].getField().getName());
 				continue;
 			}
+			if (TRACE) log("Read", fields[i], input.position());
 			fields[i].read(input, object);
 		}
+
+		if (pop > 0) popTypeVariables(pop);
 		return object;
+	}
+
+	public VersionFieldSerializerConfig getVersionFieldSerializerConfig () {
+		return config;
 	}
 
 	/** Incremental modification of serialized objects must add {@link Since} for new fields. */
@@ -127,5 +145,25 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	public @interface Since {
 		/** Version of annotated field, default is 0, and must be incremental to maintain compatibility. */
 		int value() default 0;
+	}
+
+	/** Configuration for VersionFieldSerializer instances. */
+	static public class VersionFieldSerializerConfig extends FieldSerializerConfig {
+		boolean compatible = true;
+
+		public VersionFieldSerializerConfig clone () {
+			return (VersionFieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
+		}
+
+		/** When false, an exception is thrown when reading an object with a different version. The version of an object is the
+		 * maximum version of any field. Default is true. */
+		public void setCompatible (boolean compatible) {
+			this.compatible = compatible;
+			if (TRACE) trace("kryo", "VersionFieldSerializerConfig setCompatible: " + compatible);
+		}
+
+		public boolean getCompatible () {
+			return compatible;
+		}
 	}
 }

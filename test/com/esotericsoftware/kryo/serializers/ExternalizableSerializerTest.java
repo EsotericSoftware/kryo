@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,6 +19,10 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -26,10 +30,6 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
-import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 
 /** @author Robert DiFalco <robert.difalco@gmail.com> */
 public class ExternalizableSerializerTest extends KryoTestCase {
@@ -40,9 +40,9 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		test.stringField = "fubar";
 		test.intField = 54321;
 
-		roundTrip(11, 11, test);
-		roundTrip(11, 11, test);
-		roundTrip(11, 11, test);
+		roundTrip(11, test);
+		roundTrip(11, test);
+		roundTrip(11, test);
 	}
 
 	public void testDefault () {
@@ -51,9 +51,9 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		TestClass test = new TestClass();
 		test.stringField = "fubar";
 		test.intField = 54321;
-		roundTrip(90, 90, test);
-		roundTrip(90, 90, test);
-		roundTrip(90, 90, test);
+		roundTrip(88, test);
+		roundTrip(88, test);
+		roundTrip(88, test);
 	}
 
 	public void testReadResolve () {
@@ -99,7 +99,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		assertEquals(result.get(1), test2);
 	}
 
-	public static class TestClass implements Externalizable {
+	static public class TestClass implements Externalizable {
 		String stringField;
 		int intField;
 
@@ -138,7 +138,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		}
 	}
 
-	public static class AnotherTestClass implements Externalizable {
+	static public class AnotherTestClass implements Externalizable {
 		private Date dateField;
 		private long longField;
 
@@ -177,7 +177,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		}
 	}
 
-	public static class ReadResolvable implements Externalizable {
+	static public class ReadResolvable implements Externalizable {
 		String value;
 		private Object makeSureNullWorks;
 

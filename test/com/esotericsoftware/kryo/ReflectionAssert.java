@@ -1,15 +1,15 @@
-/* Copyright (c) 2016, Martin Grotzke
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
- *
+ * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
  * conditions are met:
- *
+ * 
  * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
  * disclaimer in the documentation and/or other materials provided with the distribution.
  * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
  * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
  * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
@@ -64,11 +64,11 @@ class ReflectionAssert {
 	 *           implementing class. If <code>false</code>, it's only checked if both objects are a {@link List}, {@link Set} or
 	 *           {@link Map}. */
 	static void assertReflectionEquals (final Object one, final Object another, final boolean requireMatchingCollectionClasses) {
-		assertReflectionEquals(one, another, requireMatchingCollectionClasses, new IdentityHashMap<Object, Object>(), "");
+		assertReflectionEquals(one, another, requireMatchingCollectionClasses, new IdentityHashMap(), "");
 	}
 
 	// CHECKSTYLE:OFF
-	private static void assertReflectionEquals (final Object one, final Object another,
+	static private void assertReflectionEquals (final Object one, final Object another,
 		final boolean requireMatchingCollectionClasses, final Map<Object, Object> alreadyChecked, final String path) {
 		if (one == another) {
 			return;
@@ -124,8 +124,7 @@ class ReflectionAssert {
 		}
 
 		if (Collection.class.isAssignableFrom(one.getClass())) {
-			assertCollectionEquals((Collection<?>)one, (Collection<?>)another, requireMatchingCollectionClasses, alreadyChecked,
-				path);
+			assertCollectionEquals((Collection)one, (Collection)another, requireMatchingCollectionClasses, alreadyChecked, path);
 			return;
 		}
 
@@ -143,7 +142,7 @@ class ReflectionAssert {
 			return;
 		}
 
-		Class<?> clazz = one.getClass();
+		Class clazz = one.getClass();
 		while (clazz != null) {
 			assertEqualDeclaredFields(clazz, one, another, requireMatchingCollectionClasses, alreadyChecked, path);
 			clazz = clazz.getSuperclass();
@@ -151,13 +150,13 @@ class ReflectionAssert {
 
 	} // CHECKSTYLE:ON
 
-	private static boolean isOnlyOneAssignable (final Class<?> checkedClazz, final Object one, final Object another) {
+	static private boolean isOnlyOneAssignable (final Class checkedClazz, final Object one, final Object another) {
 		return checkedClazz.isAssignableFrom(one.getClass()) && !checkedClazz.isAssignableFrom(another.getClass())
 			|| checkedClazz.isAssignableFrom(another.getClass()) && !checkedClazz.isAssignableFrom(one.getClass());
 	}
 
-	private static boolean oneIsAssignable (final Object one, final Object another, final Class<?>... checkedClazzes) {
-		for (final Class<?> checkedClazz : checkedClazzes) {
+	static private boolean oneIsAssignable (final Object one, final Object another, final Class... checkedClazzes) {
+		for (final Class checkedClazz : checkedClazzes) {
 			if (checkedClazz.isAssignableFrom(one.getClass()) || checkedClazz.isAssignableFrom(another.getClass())) {
 				return true;
 			}
@@ -169,19 +168,19 @@ class ReflectionAssert {
 	 * TODO (MG): this assumes same iteration order, which must not be given for sets. There could be a specialized implementation
 	 * for sets.
 	 */
-	private static void assertCollectionEquals (final Collection<?> m1, final Collection<?> m2,
-		final boolean requireMatchingClasses, final Map<Object, Object> alreadyChecked, final String path) {
+	static private void assertCollectionEquals (final Collection m1, final Collection m2, final boolean requireMatchingClasses,
+		final Map<Object, Object> alreadyChecked, final String path) {
 		Assert.assertEquals("Collection size does not match for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ",
 			m1.size(), m2.size());
-		final Iterator<?> iter1 = m1.iterator();
-		final Iterator<?> iter2 = m2.iterator();
+		final Iterator iter1 = m1.iterator();
+		final Iterator iter2 = m2.iterator();
 		int i = 0;
 		while (iter1.hasNext()) {
 			assertReflectionEquals(iter1.next(), iter2.next(), requireMatchingClasses, alreadyChecked, path + "[" + i++ + "]");
 		}
 	}
 
-	private static void assertMapEquals (final Map<?, ?> m1, final Map<?, ?> m2, final boolean requireMatchingClasses,
+	static private void assertMapEquals (final Map<?, ?> m1, final Map<?, ?> m2, final boolean requireMatchingClasses,
 		final Map<Object, Object> alreadyChecked, final String path) {
 		Assert.assertEquals("Map size does not match for path '" + (StringUtils.isEmpty(path) ? "." : path) + "', map contents:"
 			+ "\nmap1: " + m1 + "\nmap2: " + m2 + "\n", m1.size(), m2.size());
@@ -191,7 +190,7 @@ class ReflectionAssert {
 		}
 	}
 
-	private static void assertEqualDeclaredFields (final Class<? extends Object> clazz, final Object one, final Object another,
+	static private void assertEqualDeclaredFields (final Class<? extends Object> clazz, final Object one, final Object another,
 		final boolean requireMatchingClasses, final Map<Object, Object> alreadyChecked, final String path) {
 		for (final Field field : clazz.getDeclaredFields()) {
 			field.setAccessible(true);
@@ -199,10 +198,8 @@ class ReflectionAssert {
 				try {
 					assertReflectionEquals(field.get(one), field.get(another), requireMatchingClasses, alreadyChecked,
 						path + "." + field.getName());
-				} catch (final IllegalArgumentException e) {
-					throw new RuntimeException(e);
-				} catch (final IllegalAccessException e) {
-					throw new RuntimeException(e);
+				} catch (final Exception ex) {
+					throw new RuntimeException(ex);
 				}
 			}
 		}

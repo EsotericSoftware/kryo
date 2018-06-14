@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,6 +19,17 @@
 
 package com.esotericsoftware.kryo;
 
+import static com.esotericsoftware.minlog.Log.*;
+
+import com.esotericsoftware.kryo.io.ByteBufferInput;
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
+import com.esotericsoftware.kryo.unsafe.UnsafeInput;
+import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -27,31 +38,23 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 import org.junit.Assert;
-
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.ByteBufferOutput;
-import com.esotericsoftware.kryo.io.FastInput;
-import com.esotericsoftware.kryo.io.FastOutput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.UnsafeInput;
-import com.esotericsoftware.kryo.io.UnsafeMemoryInput;
-import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
-import com.esotericsoftware.kryo.io.UnsafeOutput;
+import org.junit.Before;
 
 import junit.framework.TestCase;
 
 /** Convenience methods for round tripping objects.
- * 
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 abstract public class KryoTestCase extends TestCase {
+	// When true, roundTrip will only do a single write/read to make debugging easier (breaks some tests).
+	static private final boolean debug = false;
+
 	protected Kryo kryo;
 	protected Output output;
 	protected Input input;
 	protected Object object1, object2;
 	protected boolean supportsCopy;
 
-	static interface StreamFactory {
+	static interface BufferFactory {
 		public Output createOutput (OutputStream os);
 
 		public Output createOutput (OutputStream os, int size);
@@ -63,62 +66,41 @@ abstract public class KryoTestCase extends TestCase {
 		public Input createInput (byte[] buffer);
 	}
 
-	protected void setUp () throws Exception {
-		// Log.TRACE();
+	@Before
+	public void setUp () throws Exception {
+		if (debug && WARN) warn("*** DEBUG TEST ***");
 
 		kryo = new Kryo();
 		kryo.setReferences(false);
-		kryo.setRegistrationRequired(true);
-		// kryo.useAsmBackend(false);
 	}
 
-	public <T> T roundTrip (int length, int unsafeLength, T object1) {
-
-		roundTripWithStreamFactory(unsafeLength, object1, new StreamFactory() {
+	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
+	public <T> T roundTrip (int length, T object1) {
+		T object2 = roundTripWithBufferFactory(length, object1, new BufferFactory() {
 			public Output createOutput (OutputStream os) {
-				return new UnsafeMemoryOutput(os);
+				return new Output(os);
 			}
 
 			public Output createOutput (OutputStream os, int size) {
-				return new UnsafeMemoryOutput(os, size);
+				return new Output(os, size);
 			}
 
 			public Output createOutput (int size, int limit) {
-				return new UnsafeMemoryOutput(size, limit);
+				return new Output(size, limit);
 			}
 
 			public Input createInput (InputStream os, int size) {
-				return new UnsafeMemoryInput(os, size);
+				return new Input(os, size);
 			}
 
 			public Input createInput (byte[] buffer) {
-				return new UnsafeMemoryInput(buffer);
+				return new Input(buffer);
 			}
 		});
 
-		roundTripWithStreamFactory(unsafeLength, object1, new StreamFactory() {
-			public Output createOutput (OutputStream os) {
-				return new UnsafeOutput(os);
-			}
+		if (debug) return (T)object2;
 
-			public Output createOutput (OutputStream os, int size) {
-				return new UnsafeOutput(os, size);
-			}
-
-			public Output createOutput (int size, int limit) {
-				return new UnsafeOutput(size, limit);
-			}
-
-			public Input createInput (InputStream os, int size) {
-				return new UnsafeInput(os, size);
-			}
-
-			public Input createInput (byte[] buffer) {
-				return new UnsafeInput(buffer);
-			}
-		});
-
-		roundTripWithStreamFactory(length, object1, new StreamFactory() {
+		roundTripWithBufferFactory(length, object1, new BufferFactory() {
 			public Output createOutput (OutputStream os) {
 				return new ByteBufferOutput(os);
 			}
@@ -140,52 +122,57 @@ abstract public class KryoTestCase extends TestCase {
 			}
 		});
 
-		roundTripWithStreamFactory(unsafeLength, object1, new StreamFactory() {
+		roundTripWithBufferFactory(length, object1, new BufferFactory() {
 			public Output createOutput (OutputStream os) {
-				return new FastOutput(os);
+				return new UnsafeOutput(os);
 			}
 
 			public Output createOutput (OutputStream os, int size) {
-				return new FastOutput(os, size);
+				return new UnsafeOutput(os, size);
 			}
 
 			public Output createOutput (int size, int limit) {
-				return new FastOutput(size, limit);
+				return new UnsafeOutput(size, limit);
 			}
 
 			public Input createInput (InputStream os, int size) {
-				return new FastInput(os, size);
+				return new UnsafeInput(os, size);
 			}
 
 			public Input createInput (byte[] buffer) {
-				return new FastInput(buffer);
+				return new UnsafeInput(buffer);
 			}
 		});
 
-		return roundTripWithStreamFactory(length, object1, new StreamFactory() {
+		roundTripWithBufferFactory(length, object1, new BufferFactory() {
 			public Output createOutput (OutputStream os) {
-				return new Output(os);
+				return new UnsafeByteBufferOutput(os);
 			}
 
 			public Output createOutput (OutputStream os, int size) {
-				return new Output(os, size);
+				return new UnsafeByteBufferOutput(os, size);
 			}
 
 			public Output createOutput (int size, int limit) {
-				return new Output(size, limit);
+				return new UnsafeByteBufferOutput(size, limit);
 			}
 
 			public Input createInput (InputStream os, int size) {
-				return new Input(os, size);
+				return new UnsafeByteBufferInput(os, size);
 			}
 
 			public Input createInput (byte[] buffer) {
-				return new Input(buffer);
+				return new UnsafeByteBufferInput(buffer);
 			}
 		});
+
+		return object2;
 	}
 
-	public <T> T roundTripWithStreamFactory (int length, T object1, StreamFactory sf) {
+	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
+	public <T> T roundTripWithBufferFactory (int length, T object1, BufferFactory sf) {
+		boolean checkLength = length != Integer.MIN_VALUE;
+
 		this.object1 = object1;
 
 		// Test output to stream, large buffer.
@@ -194,13 +181,19 @@ abstract public class KryoTestCase extends TestCase {
 		kryo.writeClassAndObject(output, object1);
 		output.flush();
 
+		if (debug) System.out.println();
+
 		// Test input from stream, large buffer.
 		byte[] out = outStream.toByteArray();
 		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 4096);
 		object2 = kryo.readClassAndObject(input);
-		assertEquals("Incorrect number of bytes read.", length, input.total());
-		assertEquals("Incorrect number of bytes written.", length, output.total());
 		doAssertEquals(object1, object2);
+		if (checkLength) {
+			assertEquals("Incorrect number of bytes read.", length, input.total());
+			assertEquals("Incorrect number of bytes written.", length, output.total());
+		}
+
+		if (debug) return (T)object2;
 
 		// Test output to stream, small buffer.
 		outStream = new ByteArrayOutputStream();
@@ -211,8 +204,8 @@ abstract public class KryoTestCase extends TestCase {
 		// Test input from stream, small buffer.
 		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
 		object2 = kryo.readClassAndObject(input);
-		assertEquals("Incorrect number of bytes read.", length, input.total());
 		doAssertEquals(object1, object2);
+		if (checkLength) assertEquals("Incorrect number of bytes read.", length, input.total());
 
 		if (object1 != null) {
 			// Test null with serializer.
@@ -239,8 +232,10 @@ abstract public class KryoTestCase extends TestCase {
 		input = sf.createInput(output.toBytes());
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
-		assertEquals("Incorrect length.", length, output.total());
-		assertEquals("Incorrect number of bytes read.", length, input.total());
+		if (checkLength) {
+			assertEquals("Incorrect length.", length, output.total());
+			assertEquals("Incorrect number of bytes read.", length, input.total());
+		}
 		input.rewind();
 
 		if (supportsCopy) {

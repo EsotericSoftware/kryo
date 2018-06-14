@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,12 +19,6 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectStreamClass;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoSerializable;
@@ -33,12 +27,18 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.ObjectMap;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
+
 /** Serializes objects using Java's built in serialization mechanism. Note that this is very inefficient and should be avoided if
  * possible.
  * @see Serializer
  * @see FieldSerializer
  * @see KryoSerializable
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class JavaSerializer extends Serializer {
 	public void write (Kryo kryo, Output output, Object object) {
 		try {
@@ -69,27 +69,23 @@ public class JavaSerializer extends Serializer {
 		}
 	}
 
-	/**
-	 * ${@link ObjectInputStream} uses the last user-defined ${@link ClassLoader} which may not be the correct one.
-		* This is a known Java issue and is often solved by using a specific class loader.
-	 * See:
+	/** {@link ObjectInputStream} uses the last user-defined {@link ClassLoader}, which may not be the correct one. This is a known
+	 * Java issue and is often solved by using a specific class loader. See:
 	 * https://github.com/apache/spark/blob/v1.6.3/streaming/src/main/scala/org/apache/spark/streaming/Checkpoint.scala#L154
-	 * https://issues.apache.org/jira/browse/GROOVY-1627
-	 */
-	private static class ObjectInputStreamWithKryoClassLoader extends ObjectInputStream {
-		private final ClassLoader loader;
+	 * https://issues.apache.org/jira/browse/GROOVY-1627 */
+	static private class ObjectInputStreamWithKryoClassLoader extends ObjectInputStream {
+		private final Kryo kryo;
 
-		ObjectInputStreamWithKryoClassLoader(InputStream in, Kryo kryo) throws IOException {
+		ObjectInputStreamWithKryoClassLoader (InputStream in, Kryo kryo) throws IOException {
 			super(in);
-			this.loader = kryo.getClassLoader();
+			this.kryo = kryo;
 		}
 
-		@Override
-		protected Class<?> resolveClass(ObjectStreamClass desc) {
+		protected Class resolveClass (ObjectStreamClass type) {
 			try {
-				return Class.forName(desc.getName(), false, loader);
-			} catch (ClassNotFoundException e) {
-				throw new RuntimeException("Class not found: " + desc.getName(), e);
+				return Class.forName(type.getName(), false, kryo.getClassLoader());
+			} catch (ClassNotFoundException ex) {
+				throw new KryoException("Class not found: " + type.getName(), ex);
 			}
 		}
 	}

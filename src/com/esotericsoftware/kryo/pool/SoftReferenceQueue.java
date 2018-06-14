@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,34 +19,30 @@
 
 package com.esotericsoftware.kryo.pool;
 
+import com.esotericsoftware.kryo.Kryo;
+
 import java.lang.ref.SoftReference;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
 
-import com.esotericsoftware.kryo.Kryo;
-
 /** Internally uses {@link SoftReference}s for queued Kryo instances, most importantly adjusts the {@link Queue#poll() poll}
- * behavior so that gc'ed Kryo instances are skipped. Most other methods are unsupported.
- *
+ * behavior so that GC'ed Kryo instances are skipped. Most other methods are unsupported.
  * @author Martin Grotzke */
 class SoftReferenceQueue implements Queue<Kryo> {
+	private Queue delegate;
 
-	private Queue<SoftReference<Kryo>> delegate;
-
-	public SoftReferenceQueue (Queue<?> delegate) {
-		this.delegate = (Queue<SoftReference<Kryo>>)delegate;
+	public SoftReferenceQueue (Queue delegate) {
+		this.delegate = delegate;
 	}
 
 	public Kryo poll () {
-		Kryo res;
-		SoftReference<Kryo> ref;
-		while ((ref = delegate.poll()) != null) {
-			if ((res = ref.get()) != null) {
-				return res;
-			}
+		while (true) {
+			SoftReference<Kryo> ref = (SoftReference<Kryo>)delegate.poll();
+			if (ref == null) return null;
+			Kryo res = ref.get();
+			if (res != null) return res;
 		}
-		return null;
 	}
 
 	public boolean offer (Kryo e) {
@@ -81,7 +77,6 @@ class SoftReferenceQueue implements Queue<Kryo> {
 		return delegate.hashCode();
 	}
 
-	@Override
 	public String toString () {
 		return getClass().getSimpleName() + super.toString();
 	}
@@ -114,7 +109,7 @@ class SoftReferenceQueue implements Queue<Kryo> {
 		throw new UnsupportedOperationException();
 	}
 
-	public boolean containsAll (Collection<?> c) {
+	public boolean containsAll (Collection c) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -122,11 +117,11 @@ class SoftReferenceQueue implements Queue<Kryo> {
 		throw new UnsupportedOperationException();
 	}
 
-	public boolean removeAll (Collection<?> c) {
+	public boolean removeAll (Collection c) {
 		throw new UnsupportedOperationException();
 	}
 
-	public boolean retainAll (Collection<?> c) {
+	public boolean retainAll (Collection c) {
 		throw new UnsupportedOperationException();
 	}
 }

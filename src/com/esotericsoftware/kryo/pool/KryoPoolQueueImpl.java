@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,19 +19,17 @@
 
 package com.esotericsoftware.kryo.pool;
 
-import java.util.Queue;
-
 import com.esotericsoftware.kryo.Kryo;
 
+import java.util.Queue;
+
 /** A simple {@link Queue} based {@link KryoPool} implementation, should be built using the KryoPool.Builder.
- *
  * @author Martin Grotzke */
 class KryoPoolQueueImpl implements KryoPool {
-
-	private final Queue<Kryo> queue;
+	private final Queue queue;
 	private final KryoFactory factory;
 
-	KryoPoolQueueImpl (KryoFactory factory, Queue<Kryo> queue) {
+	KryoPoolQueueImpl (KryoFactory factory, Queue queue) {
 		this.factory = factory;
 		this.queue = queue;
 	}
@@ -41,10 +39,8 @@ class KryoPoolQueueImpl implements KryoPool {
 	}
 
 	public Kryo borrow () {
-		Kryo res;
-		if ((res = queue.poll()) != null) {
-			return res;
-		}
+		Object kryo = queue.poll();
+		if (kryo != null) return (Kryo)kryo;
 		return factory.create();
 	}
 
@@ -64,5 +60,4 @@ class KryoPoolQueueImpl implements KryoPool {
 	public void clear () {
 		queue.clear();
 	}
-
 }
