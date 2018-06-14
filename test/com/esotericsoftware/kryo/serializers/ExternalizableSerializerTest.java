@@ -35,6 +35,8 @@ import com.esotericsoftware.kryo.TestKryoFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import static org.junit.Assert.assertEquals;
+
 /** @author Robert DiFalco <robert.difalco@gmail.com> */
 public class ExternalizableSerializerTest {
 	private final Kryo kryo = new TestKryoFactory().create();
@@ -80,8 +82,8 @@ public class ExternalizableSerializerTest {
 		input.close();
 
 		// ensure read resolve happened!
-		support.assertEquals(String.class, result.getClass());
-		support.assertEquals(test.value, result);
+		assertEquals(String.class, result.getClass());
+		assertEquals(test.value, result);
 	}
 
 	@Test
@@ -106,8 +108,8 @@ public class ExternalizableSerializerTest {
 		input.close();
 
 		// ensure read resolve happened!
-		support.assertEquals(result.get(0), test1.value);
-		support.assertEquals(result.get(1), test2);
+		assertEquals(result.get(0), test1.value);
+		assertEquals(result.get(1), test2);
 	}
 
 	public static class TestClass implements Externalizable {

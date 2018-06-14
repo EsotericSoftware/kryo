@@ -32,7 +32,7 @@ import com.esotericsoftware.kryo.MapSerializerTest.KeyThatIsntComparable;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 
-import static com.esotericsoftware.kryo.KryoTestCase.list;
+import static com.esotericsoftware.kryo.KryoTestUtil.list;
 
 /** @author Nathan Sweet <misc@n4te.com> */
 public class CollectionSerializerTest {

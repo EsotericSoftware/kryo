@@ -6,6 +6,13 @@ import java.util.ArrayList;
 
 import org.junit.Assert;
 
+/**
+ * <pre>
+ * Kryo Test Utility Class.
+ * This class should consisted of Kryo Project specific assertions,
+ * boiler factory code.
+ * </pre>
+ */
 public class KryoTestUtil {
 
 	static public ArrayList list (Object... items) {
@@ -15,16 +22,12 @@ public class KryoTestUtil {
 		return list;
 	}
 
-	static public Object arrayToList (Object array) {
+	static Object arrayToList (Object array) {
 		if (array == null || !array.getClass().isArray()) return array;
 		ArrayList list = new ArrayList(Array.getLength(array));
 		for (int i = 0, n = Array.getLength(array); i < n; i++)
 			list.add(arrayToList(Array.get(array, i)));
 		return list;
-	}
-
-	static void assertEquals (Object object1, Object object2) {
-		Assert.assertEquals(object1, object2);
 	}
 
 	static void assertDoubleEquals (double expected, double actual) {
