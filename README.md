@@ -331,7 +331,9 @@ SomeClass copy2 = kryo.copyShallow(object);
 
 All the serializers being used need to support [copying](#Serializer-copying). All serializers provided with Kryo support copying.
 
-Like with serialization, multiple references to the same object and circular references are handled by Kryo automatically if references are enabled.
+Like with serialization, when copying, multiple references to the same object and circular references are handled by Kryo automatically if references are enabled.
+
+If using Kryo only for copying, registration can be safely disabled.
 
 Kryo `getOriginalToCopyMap` can be used after an object graph is copied to obtain a map of old to new objects. The map is cleared automatically by Kryo `reset`, so is only useful when Kryo `setAutoReset` is false.
 
@@ -422,6 +424,10 @@ Use of registered and unregistered classes can be mixed. Unregistered classes ha
 
 1. There are security implications because it allows deserialization to create instances of any class. Classes with side effects during construction or finalization could be used for malicious purposes.
 2. Instead of writing a varint class ID (often 1-2 bytes), the fully qualified class name is written the first time an unregistered class appears in the object graph. Subsequent appearances of that class within the same object graph are written using a varint. Short package names could be considered to reduce the serialized size.
+
+If using Kryo only for copying, registration can be safely disabled.
+
+When registration is not required, Kryo `setWarnUnregisteredClasses` can be enabled to log a message when an unregistered class is encountered. This can be used to easily obtain a list of all unregistered classes. Kryo `unregisteredClassMessage` can be overridden to customize the log message or take other actions.
 
 ### Default serializers
 
