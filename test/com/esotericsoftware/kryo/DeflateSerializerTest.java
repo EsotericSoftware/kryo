@@ -19,16 +19,23 @@
 
 package com.esotericsoftware.kryo;
 
+import org.junit.Test;
+
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.DeflateSerializer;
 
 /** @author Nathan Sweet <misc@n4te.com> */
-public class DeflateSerializerTest extends KryoTestCase {
+public class DeflateSerializerTest {
+	private final Kryo kryo = new TestKryoFactory().create();
+	private final KryoTestSupport support = new KryoTestSupport(kryo);
+
+	@Test
 	public void testString () {
 		kryo.register(String.class, new DeflateSerializer(new StringSerializer()));
-		roundTrip(15, 15, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+		support.roundTrip(15, 15, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 	}
 
+	@Test
 	public void testGraph () {
 		kryo.register(Message.class);
 		kryo.register(MessageType.class);
@@ -40,7 +47,7 @@ public class DeflateSerializerTest extends KryoTestCase {
 		message.type = MessageType.SERVER_UPDATE;
 		message.data = physicsUpdate;
 
-		roundTrip(8, 8, message);
+		support.roundTrip(8, 8, message);
 	}
 
 	public static class ServerPhysicsUpdate {

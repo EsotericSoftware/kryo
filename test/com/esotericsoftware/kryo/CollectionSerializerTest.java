@@ -25,53 +25,58 @@ import java.util.LinkedList;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.junit.Test;
+
 import com.esotericsoftware.kryo.MapSerializerTest.KeyComparator;
 import com.esotericsoftware.kryo.MapSerializerTest.KeyThatIsntComparable;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 
-/** @author Nathan Sweet <misc@n4te.com> */
-public class CollectionSerializerTest extends KryoTestCase {
-	{
-		supportsCopy = true;
-	}
+import static com.esotericsoftware.kryo.KryoTestUtil.list;
 
+/** @author Nathan Sweet <misc@n4te.com> */
+public class CollectionSerializerTest {
+
+	private final Kryo kryo = new TestKryoFactory().create();
+	private final KryoTestSupport support = new KryoTestSupport(kryo, true);
+
+	@Test
 	public void testCollections () {
 		kryo.register(ArrayList.class);
 		kryo.register(LinkedList.class);
 		kryo.register(CopyOnWriteArrayList.class);
-		roundTrip(11, 11, list("1", "2", "3"));
-		roundTrip(13, 19, list("1", "2", null, 1, 2));
-		roundTrip(15, 24, list("1", "2", null, 1, 2, 5));
-		roundTrip(11, 11, list("1", "2", "3"));
-		roundTrip(11, 11, list("1", "2", "3"));
-		roundTrip(13, 13, list("1", "2", list("3")));
-		roundTrip(13, 13, new LinkedList(list("1", "2", list("3"))));
-		roundTrip(13, 13, new CopyOnWriteArrayList(list("1", "2", list("3"))));
+		support.roundTrip(11, 11, list("1", "2", "3"));
+		support.roundTrip(13, 19, list("1", "2", null, 1, 2));
+		support.roundTrip(15, 24, list("1", "2", null, 1, 2, 5));
+		support.roundTrip(11, 11, list("1", "2", "3"));
+		support.roundTrip(11, 11, list("1", "2", "3"));
+		support.roundTrip(13, 13, list("1", "2", list("3")));
+		support.roundTrip(13, 13, new LinkedList<>(list("1", "2", list("3"))));
+		support.roundTrip(13, 13, new CopyOnWriteArrayList<>(list("1", "2", list("3"))));
 
 		CollectionSerializer serializer = new CollectionSerializer();
 		kryo.register(ArrayList.class, serializer);
 		kryo.register(LinkedList.class, serializer);
 		kryo.register(CopyOnWriteArrayList.class, serializer);
 		serializer.setElementClass(String.class, kryo.getSerializer(String.class));
-		roundTrip(8, 8, list("1", "2", "3"));
+		support.roundTrip(8, 8, list("1", "2", "3"));
 		serializer.setElementClass(String.class, new StringSerializer());
-		roundTrip(8, 8, list("1", "2", "3"));
+		support.roundTrip(8, 8, list("1", "2", "3"));
 		serializer.setElementsCanBeNull(false);
-		roundTrip(8, 8, list("1", "2", "3"));
+		support.roundTrip(8, 8, list("1", "2", "3"));
 
 		kryo.register(TreeSet.class);
 		TreeSet set = new TreeSet();
 		set.add("1");
 		set.add("2");
-		roundTrip(9, 9, set);
+		support.roundTrip(9, 9, set);
 
 		kryo.register(KeyThatIsntComparable.class);
 		kryo.register(KeyComparator.class);
 		set = new TreeSet(new KeyComparator());
 		set.add(new KeyThatIsntComparable("1"));
 		set.add(new KeyThatIsntComparable("2"));
-		roundTrip(9, 9, set);
+		support.roundTrip(9, 9, set);
 
 		kryo.register(TreeSetSubclass.class);
 		set = new TreeSetSubclass<Integer>();
@@ -79,7 +84,7 @@ public class CollectionSerializerTest extends KryoTestCase {
 		set.add(63);
 		set.add(34);
 		set.add(45);
-		roundTrip(11, 23, set);
+		support.roundTrip(11, 23, set);
 	}
 
 	static public class TreeSetSubclass<E> extends TreeSet<E> {

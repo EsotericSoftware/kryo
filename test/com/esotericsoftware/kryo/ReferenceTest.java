@@ -25,11 +25,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.junit.Test;
+
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 
-public class ReferenceTest extends KryoTestCase {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+public class ReferenceTest {
+	private final Kryo kryo = new TestKryoFactory().create();
+	private final KryoTestSupport support = new KryoTestSupport(kryo);
+
 	static public class Ordering {
 		public String order;
 	}
@@ -42,6 +50,7 @@ public class ReferenceTest extends KryoTestCase {
 		}
 	}
 
+	@Test
 	public void testChildObjectBeforeReference () {
 		kryo.setReferences(false);
 		Ordering ordering = new Ordering();
@@ -77,6 +86,7 @@ public class ReferenceTest extends KryoTestCase {
 		assertTrue(stuff2.get("self") == stuff2);
 	}
 
+	@Test
 	public void testReadingNestedObjectsFirst () {
 		ArrayList list = new ArrayList();
 		list.add("1");
@@ -96,7 +106,7 @@ public class ReferenceTest extends KryoTestCase {
 			kryo.register(subList.getClass(), new SubListSerializer());
 
 		}
-		roundTrip(26, 26, subList);
+		support.roundTrip(26, 26, subList);
 	}
 
 	static public class SubListSerializer extends Serializer<List> {

@@ -19,13 +19,18 @@
 
 package com.esotericsoftware.kryo;
 
+import org.junit.Test;
+
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
 
+import static org.junit.Assert.assertEquals;
+
 /** @author Nathan Sweet <misc@n4te.com> */
-public class ChunkedTest extends KryoTestCase {
+public class ChunkedTest {
+	@Test
 	public void testChunks () {
 		Output output = new Output(512);
 		output.writeInt(1234);

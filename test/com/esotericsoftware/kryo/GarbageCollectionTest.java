@@ -21,18 +21,21 @@ package com.esotericsoftware.kryo;
 
 import java.lang.ref.WeakReference;
 
+import org.junit.Test;
+
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultStreamFactory;
 import com.esotericsoftware.kryo.util.FastestStreamFactory;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
-import junit.framework.TestCase;
+import static junit.framework.TestCase.assertNull;
 
 /** Tests for detecting PermGen memory leaks.
  * 
  * @author Tumi <serverperformance@gmail.com> */
-public class GarbageCollectionTest extends TestCase {
+public class GarbageCollectionTest {
 
+	@Test
 	public void testDefaultStreamFactory () {
 		final DefaultStreamFactory strongRefToStreamFactory = new DefaultStreamFactory();
 		Kryo kryo = new Kryo(new DefaultClassResolver(), new MapReferenceResolver(), strongRefToStreamFactory);
@@ -41,6 +44,7 @@ public class GarbageCollectionTest extends TestCase {
 		reclaim(kryoWeakRef);
 	}
 
+	@Test
 	public void testFastestStreamFactory () {
 		final FastestStreamFactory strongRefToStreamFactory = new FastestStreamFactory();
 		Kryo kryo = new Kryo(new DefaultClassResolver(), new MapReferenceResolver(), strongRefToStreamFactory);

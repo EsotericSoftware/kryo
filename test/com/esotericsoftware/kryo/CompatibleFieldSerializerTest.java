@@ -19,22 +19,25 @@
 
 package com.esotericsoftware.kryo;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.junit.Test;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import org.apache.commons.lang.builder.EqualsBuilder;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /** @author Nathan Sweet <misc@n4te.com> */
-public class CompatibleFieldSerializerTest extends KryoTestCase {
-	{
-		supportsCopy = true;
-	}
+public class CompatibleFieldSerializerTest {
+	private final Kryo kryo = new TestKryoFactory().create();
+	private final KryoTestSupport support = new KryoTestSupport(kryo, true);
 
+	@Test
 	public void testCompatibleFieldSerializer () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();
@@ -43,9 +46,10 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
 		kryo.register(TestClass.class);
 		kryo.register(AnotherClass.class);
-		roundTrip(107, 107, object1);
+		support.roundTrip(107, 107, object1);
 	}
 
+	@Test
 	public void testAddedField () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();
@@ -56,13 +60,16 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
 		kryo.register(AnotherClass.class, new CompatibleFieldSerializer(kryo, AnotherClass.class));
-		roundTrip(80, 80, object1);
+		RoundTripAssertionOutput<TestClass> roundTripOutput = support.roundTrip(80, 80, object1);
 
 		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
-		Object object2 = kryo.readClassAndObject(input);
-		assertEquals(object1, object2);
+		try (Input input = roundTripOutput.getKryoInput()) {
+			Object object2 = kryo.readClassAndObject(input);
+			assertEquals(object1, object2);
+		}
 	}
 
+	@Test
 	public void testAddedFieldToClassWithManyFields () throws FileNotFoundException {
 		// class must have more than CompatibleFieldSerializer#THRESHOLD_BINARY_SEARCH number of fields
 		ClassWithManyFields object1 = new ClassWithManyFields();
@@ -107,27 +114,33 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bAdd");
 		kryo.register(ClassWithManyFields.class, serializer);
-		roundTrip(226, 226, object1);
+		RoundTripAssertionOutput<ClassWithManyFields> roundTripOutput = support.roundTrip(226, 226, object1);
 
 		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
-		Object object2 = kryo.readClassAndObject(input);
-		assertEquals(object1, object2);
+		try (Input input = roundTripOutput.getKryoInput()) {
+			Object object2 = kryo.readClassAndObject(input);
+			assertEquals(object1, object2);
+		}
 	}
 
+	@Test
 	public void testRemovedField () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();
 
 		kryo.register(TestClass.class, new CompatibleFieldSerializer(kryo, TestClass.class));
-		roundTrip(94, 94, object1);
+		RoundTripAssertionOutput<TestClass> roundTripOutput = support.roundTrip(94, 94, object1);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
-		Object object2 = kryo.readClassAndObject(input);
-		assertEquals(object1, object2);
+		try (Input input = roundTripOutput.getKryoInput()) {
+			Object object2 = kryo.readClassAndObject(input);
+			assertEquals(object1, object2);
+		}
 	}
 
+	@Test
 	public void testRemovedFieldFromClassWithManyFields () throws FileNotFoundException {
 		// class must have more than CompatibleFieldSerializer#THRESHOLD_BINARY_SEARCH number of fields
 		ClassWithManyFields object1 = new ClassWithManyFields();
@@ -171,19 +184,22 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.zz = "zzaa";
 
 		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
-		roundTrip(236, 236, object1);
+		RoundTripAssertionOutput<ClassWithManyFields> roundTripOutput = support.roundTrip(236, 236, object1);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bAdd");
 		kryo.register(ClassWithManyFields.class, serializer);
-		Object object2 = kryo.readClassAndObject(input);
-		assertTrue(object2 instanceof ClassWithManyFields);
-		assertNull("the bAdd field should be null", ((ClassWithManyFields)object2).bAdd);
-		// update the field in order to verify the remainder of the object was deserialized correctly
-		((ClassWithManyFields)object2).bAdd = object1.bAdd;
-		assertEquals(object1, object2);
+		try (Input input = roundTripOutput.getKryoInput()) {
+			Object object2 = kryo.readClassAndObject(input);
+			assertTrue(object2 instanceof ClassWithManyFields);
+			assertNull("the bAdd field should be null", ((ClassWithManyFields)object2).bAdd);
+			// update the field in order to verify the remainder of the object was deserialized correctly
+			((ClassWithManyFields)object2).bAdd = object1.bAdd;
+			assertEquals(object1, object2);
+		}
 	}
 
+	@Test
 	public void testRemovedMultipleFieldsFromClassWithManyFields () throws FileNotFoundException {
 		// class must have more than CompatibleFieldSerializer#THRESHOLD_BINARY_SEARCH number of fields
 		ClassWithManyFields object1 = new ClassWithManyFields();
@@ -215,7 +231,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		object1.zz = "zz";
 
 		kryo.register(ClassWithManyFields.class, new CompatibleFieldSerializer(kryo, ClassWithManyFields.class));
-		roundTrip(220, 220, object1);
+		RoundTripAssertionOutput<ClassWithManyFields> roundTripOutput = support.roundTrip(220, 220, object1);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		serializer.removeField("bb");
@@ -223,17 +239,20 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		serializer.removeField("dd");
 
 		kryo.register(ClassWithManyFields.class, serializer);
-		ClassWithManyFields object2 = (ClassWithManyFields)kryo.readClassAndObject(input);
-		assertNull("bb should be null", object2.bb);
-		assertNull("cc should be null", object2.cc);
-		assertNull("dd should be null", object2.dd);
-		// update the fields to verify the remainder of the object was deserialized correctly
-		object2.bb = object1.bb;
-		object2.cc = object1.cc;
-		object2.dd = object1.dd;
-		assertEquals(object1, object2);
+		try (Input input = roundTripOutput.getKryoInput()) {
+			ClassWithManyFields object2 = (ClassWithManyFields)kryo.readClassAndObject(input);
+			assertNull("bb should be null", object2.bb);
+			assertNull("cc should be null", object2.cc);
+			assertNull("dd should be null", object2.dd);
+			// update the fields to verify the remainder of the object was deserialized correctly
+			object2.bb = object1.bb;
+			object2.cc = object1.cc;
+			object2.dd = object1.dd;
+			assertEquals(object1, object2);
+		}
 	}
 
+	@Test
 	public void testExtendedClass () throws FileNotFoundException {
 		ExtendedTestClass extendedObject = new ExtendedTestClass();
 
@@ -242,10 +261,12 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ExtendedTestClass.class);
 		kryo.register(ExtendedTestClass.class, serializer);
-		roundTrip(286, 286, extendedObject);
+		RoundTripAssertionOutput<ExtendedTestClass> roundTripOutput = support.roundTrip(286, 286, extendedObject);
 
-		ExtendedTestClass object2 = (ExtendedTestClass)kryo.readClassAndObject(input);
-		assertEquals(extendedObject, object2);
+		try (Input input = roundTripOutput.getKryoInput()) {
+			ExtendedTestClass object2 = (ExtendedTestClass)kryo.readClassAndObject(input);
+			assertEquals(extendedObject, object2);
+		}
 	}
 
 	static public class TestClass {

@@ -20,18 +20,27 @@
 package com.esotericsoftware.kryo;
 
 import org.junit.Assert;
+import org.junit.Test;
 
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 /** Created by phamrak on 8.6.2016. */
-public class FieldSerializerInheritanceTest extends KryoTestCase {
+public class FieldSerializerInheritanceTest {
+	private final Kryo kryo = new TestKryoFactory().create();
+	private final KryoTestSupport support = new KryoTestSupport(kryo);
+
+	@Test
 	public void testDefaultStrategyForDefaultClass () {
 		TestDefault testDefault = new TestDefault();
 		testDefault.a = "someDefaultValue";
 		kryo.setDefaultSerializer(FieldSerializer.class);
 		kryo.register(TestDefault.class);
 
-		roundTrip(17, 17, testDefault);
+		support.roundTrip(17, 17, testDefault);
 
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestDefault.class);
 		assertNotNull(serializer.getField("a"));
@@ -39,6 +48,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		assertFieldRemoved(serializer, "a");
 	}
 
+	@Test
 	public void testDefaultStrategyForExtendedClass () {
 		TestExtended testExtended = new TestExtended();
 		((TestDefault)testExtended).a = "someDefaultValue";
@@ -46,7 +56,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		kryo.setDefaultSerializer(FieldSerializer.class);
 		kryo.register(TestExtended.class);
 
-		roundTrip(34, 34, testExtended);
+		support.roundTrip(34, 34, testExtended);
 
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestExtended.class);
 
@@ -59,6 +69,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		assertFieldRemoved(serializer, "a");
 	}
 
+	@Test
 	public void testExtendedStrategyForExtendedClass () {
 		TestExtended testExtended = new TestExtended();
 		((TestDefault)testExtended).a = "someDefaultValue";
@@ -67,7 +78,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		kryo.setDefaultSerializer(FieldSerializer.class);
 		kryo.register(TestExtended.class);
 
-		roundTrip(34, 34, testExtended);
+		support.roundTrip(34, 34, testExtended);
 
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(TestExtended.class);
 

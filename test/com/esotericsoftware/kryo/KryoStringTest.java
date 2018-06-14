@@ -19,31 +19,22 @@
 
 package com.esotericsoftware.kryo;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.junit.Test;
 
-import com.esotericsoftware.kryo.FieldSerializerTest.DefaultTypes;
-import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
-import com.esotericsoftware.kryo.serializers.MapSerializer;
 
-public class KryoStringTest extends KryoTestCase {
+public class KryoStringTest {
 
-	static KryoFactory factory = new KryoFactory() {
+	private final KryoFactory factory = new KryoFactory() {
 		@Override
 		public Kryo create () {
-			Kryo kryo = new Kryo();
-			return kryo;
+			return new Kryo();
 		}
 	};
 
+	@Test
 	public void testSerialize () {
 		String reason = "node/read";
 		long localTimestamp = 1;

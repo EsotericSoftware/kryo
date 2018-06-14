@@ -34,241 +34,283 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import org.junit.Assert;
+import org.junit.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNull;
+
 /** @author Nathan Sweet <misc@n4te.com> */
-public class DefaultSerializersTest extends KryoTestCase {
-	{
-		supportsCopy = true;
-	}
+public class DefaultSerializersTest {
+	private final Kryo kryo = new TestKryoFactory().create();
+	private final boolean supportsCopy = true;
+	private final KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
 
+	@Test
 	public void testBoolean () {
-		roundTrip(2, 2, true);
-		roundTrip(2, 2, false);
+		support.roundTrip(2, 2, true);
+		support.roundTrip(2, 2, false);
 	}
 
+	@Test
 	public void testByte () {
-		roundTrip(2, 2, (byte)1);
-		roundTrip(2, 2, (byte)125);
-		roundTrip(2, 2, (byte)-125);
+		support.roundTrip(2, 2, (byte) 1);
+		support.roundTrip(2, 2, (byte) 125);
+		support.roundTrip(2, 2, (byte) -125);
 	}
 
+	@Test
 	public void testChar () {
-		roundTrip(3, 3, 'a');
-		roundTrip(3, 3, 'z');
+		support.roundTrip(3, 3, 'a');
+		support.roundTrip(3, 3, 'z');
 	}
 
+	@Test
 	public void testDouble () {
-		roundTrip(9, 9, 0d);
-		roundTrip(9, 9, 1234d);
-		roundTrip(9, 9, 1234.5678d);
+		support.roundTrip(9, 9, 0d);
+		support.roundTrip(9, 9, 1234d);
+		support.roundTrip(9, 9, 1234.5678d);
 	}
 
+	@Test
 	public void testFloat () {
-		roundTrip(5, 5, 0f);
-		roundTrip(5, 5, 123f);
-		roundTrip(5, 5, 123.456f);
+		support.roundTrip(5, 5, 0f);
+		support.roundTrip(5, 5, 123f);
+		support.roundTrip(5, 5, 123.456f);
 	}
 
+	@Test
 	public void testInt () {
-		roundTrip(2, 5, 0);
-		roundTrip(2, 5, 63);
-		roundTrip(3, 5, 64);
-		roundTrip(3, 5, 127);
-		roundTrip(3, 5, 128);
-		roundTrip(3, 5, 8191);
-		roundTrip(4, 5, 8192);
-		roundTrip(4, 5, 16383);
-		roundTrip(4, 5, 16384);
-		roundTrip(5, 5, 2097151);
-		roundTrip(4, 5, 1048575);
-		roundTrip(5, 5, 134217727);
-		roundTrip(6, 5, 268435455);
-		roundTrip(6, 5, 134217728);
-		roundTrip(6, 5, 268435456);
-		roundTrip(2, 5, -64);
-		roundTrip(3, 5, -65);
-		roundTrip(3, 5, -8192);
-		roundTrip(4, 5, -1048576);
-		roundTrip(5, 5, -134217728);
-		roundTrip(6, 5, -134217729);
+		support.roundTrip(2, 5, 0);
+		support.roundTrip(2, 5, 63);
+		support.roundTrip(3, 5, 64);
+		support.roundTrip(3, 5, 127);
+		support.roundTrip(3, 5, 128);
+		support.roundTrip(3, 5, 8191);
+		support.roundTrip(4, 5, 8192);
+		support.roundTrip(4, 5, 16383);
+		support.roundTrip(4, 5, 16384);
+		support.roundTrip(5, 5, 2097151);
+		support.roundTrip(4, 5, 1048575);
+		support.roundTrip(5, 5, 134217727);
+		support.roundTrip(6, 5, 268435455);
+		support.roundTrip(6, 5, 134217728);
+		support.roundTrip(6, 5, 268435456);
+		support.roundTrip(2, 5, -64);
+		support.roundTrip(3, 5, -65);
+		support.roundTrip(3, 5, -8192);
+		support.roundTrip(4, 5, -1048576);
+		support.roundTrip(5, 5, -134217728);
+		support.roundTrip(6, 5, -134217729);
 	}
 
+	@Test
 	public void testLong () {
-		roundTrip(2, 9, 0l);
-		roundTrip(2, 9, 63l);
-		roundTrip(3, 9, 64l);
-		roundTrip(3, 9, 127l);
-		roundTrip(3, 9, 128l);
-		roundTrip(3, 9, 8191l);
-		roundTrip(4, 9, 8192l);
-		roundTrip(4, 9, 16383l);
-		roundTrip(4, 9, 16384l);
-		roundTrip(5, 9, 2097151l);
-		roundTrip(4, 9, 1048575l);
-		roundTrip(5, 9, 134217727l);
-		roundTrip(6, 9, 268435455l);
-		roundTrip(6, 9, 134217728l);
-		roundTrip(6, 9, 268435456l);
-		roundTrip(2, 9, -64l);
-		roundTrip(3, 9, -65l);
-		roundTrip(3, 9, -8192l);
-		roundTrip(4, 9, -1048576l);
-		roundTrip(5, 9, -134217728l);
-		roundTrip(6, 9, -134217729l);
-		roundTrip(10, 9, 2368365495612416452l);
-		roundTrip(10, 9, -2368365495612416452l);
+		support.roundTrip(2, 9, 0l);
+		support.roundTrip(2, 9, 63l);
+		support.roundTrip(3, 9, 64l);
+		support.roundTrip(3, 9, 127l);
+		support.roundTrip(3, 9, 128l);
+		support.roundTrip(3, 9, 8191l);
+		support.roundTrip(4, 9, 8192l);
+		support.roundTrip(4, 9, 16383l);
+		support.roundTrip(4, 9, 16384l);
+		support.roundTrip(5, 9, 2097151l);
+		support.roundTrip(4, 9, 1048575l);
+		support.roundTrip(5, 9, 134217727l);
+		support.roundTrip(6, 9, 268435455l);
+		support.roundTrip(6, 9, 134217728l);
+		support.roundTrip(6, 9, 268435456l);
+		support.roundTrip(2, 9, -64l);
+		support.roundTrip(3, 9, -65l);
+		support.roundTrip(3, 9, -8192l);
+		support.roundTrip(4, 9, -1048576l);
+		support.roundTrip(5, 9, -134217728l);
+		support.roundTrip(6, 9, -134217729l);
+		support.roundTrip(10, 9, 2368365495612416452l);
+		support.roundTrip(10, 9, -2368365495612416452l);
 	}
 
+	@Test
 	public void testShort () {
-		roundTrip(3, 3, (short)0);
-		roundTrip(3, 3, (short)123);
-		roundTrip(3, 3, (short)123);
-		roundTrip(3, 3, (short)-123);
-		roundTrip(3, 3, (short)250);
-		roundTrip(3, 3, (short)123);
-		roundTrip(3, 3, (short)400);
+		support.roundTrip(3, 3, (short) 0);
+		support.roundTrip(3, 3, (short) 123);
+		support.roundTrip(3, 3, (short) 123);
+		support.roundTrip(3, 3, (short) -123);
+		support.roundTrip(3, 3, (short) 250);
+		support.roundTrip(3, 3, (short) 123);
+		support.roundTrip(3, 3, (short) 400);
 	}
 
+	@Test
 	public void testString () {
-		kryo = new Kryo();
+		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(true);
-		roundTrip(6, 6, "meow");
-		roundTrip(70, 70, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+		KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
+
+		support.roundTrip(6, 6, "meow");
+		support.roundTrip(70, 70, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 
 		kryo.setReferences(false);
-		roundTrip(5, 5, "meow");
+		support.roundTrip(5, 5, "meow");
 
-		roundTrip(3, 3, "a");
-		roundTrip(3, 3, "\n");
-		roundTrip(2, 2, "");
-		roundTrip(100, 100,
-			"ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
+		support.roundTrip(3, 3, "a");
+		support.roundTrip(3, 3, "\n");
+		support.roundTrip(2, 2, "");
+		support.roundTrip(100, 100,
+				"ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*");
 
-		roundTrip(21, 21, "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u7C9F");
+		support.roundTrip(21, 21, "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u7C9F");
 	}
 
+	@Test
 	public void testVoid () throws InstantiationException, IllegalAccessException {
-		roundTrip(1, 1, (Void)null);
+		support.roundTrip(1, 1, (Void) null);
 	}
 
-	public void testNull () {
-		kryo = new Kryo();
+	@Test
+	public void doTestNull () {
 		kryo.setRegistrationRequired(true);
 		kryo.register(ArrayList.class);
-		roundTrip(1, 1, null);
-		testNull(Long.class);
-		testNull(ArrayList.class);
+		support.roundTrip(1, 1, null);
+		doTestNull(Long.class);
+		doTestNull(ArrayList.class);
 
 		kryo.setReferences(false);
-		roundTrip(1, 1, null);
-		testNull(Long.class);
-		testNull(ArrayList.class);
+		support.roundTrip(1, 1, null);
+		doTestNull(Long.class);
+		doTestNull(ArrayList.class);
 	}
 
-	private void testNull (Class type) {
-		kryo.writeObjectOrNull(output, null, type);
-		input.setBuffer(output.toBytes());
-		Object object = kryo.readObjectOrNull(input, type);
-		assertNull(object);
+	private void doTestNull (Class type) {
+		byte[] bytes;
+		try (Output output = new Output(4096)) {
+			kryo.writeObjectOrNull(output, null, type);
+			output.flush();
+			bytes = output.toBytes();
+		}
+
+		try (Input input = new Input(bytes)) {
+			Object object = kryo.readObjectOrNull(input, type);
+			assertNull(object);
+		}
 	}
 
+	@Test
 	public void testDateSerializer () {
 		kryo.register(Date.class);
-		roundTrip(10, 9, new Date(-1234567));
-		roundTrip(2, 9, new Date(0));
-		roundTrip(4, 9, new Date(1234567));
-		roundTrip(10, 9, new Date(-1234567));
+		support.roundTrip(10, 9, new Date(-1234567));
+		support.roundTrip(2, 9, new Date(0));
+		support.roundTrip(4, 9, new Date(1234567));
+		support.roundTrip(10, 9, new Date(-1234567));
 
 		kryo.register(java.sql.Date.class);
-		roundTrip(10, 9, new java.sql.Date(Long.MIN_VALUE));
-		roundTrip(2, 9, new java.sql.Date(0));
-		roundTrip(4, 9, new java.sql.Date(1234567));
-		roundTrip(10, 9, new java.sql.Date(Long.MAX_VALUE));
-		roundTrip(10, 9, new java.sql.Date(-1234567));
+		support.roundTrip(10, 9, new java.sql.Date(Long.MIN_VALUE));
+		support.roundTrip(2, 9, new java.sql.Date(0));
+		support.roundTrip(4, 9, new java.sql.Date(1234567));
+		support.roundTrip(10, 9, new java.sql.Date(Long.MAX_VALUE));
+		support.roundTrip(10, 9, new java.sql.Date(-1234567));
 
 		kryo.register(java.sql.Time.class);
-		roundTrip(10, 9, new java.sql.Time(Long.MIN_VALUE));
-		roundTrip(2, 9, new java.sql.Time(0));
-		roundTrip(4, 9, new java.sql.Time(1234567));
-		roundTrip(10, 9, new java.sql.Time(Long.MAX_VALUE));
-		roundTrip(10, 9, new java.sql.Time(-1234567));
+		support.roundTrip(10, 9, new java.sql.Time(Long.MIN_VALUE));
+		support.roundTrip(2, 9, new java.sql.Time(0));
+		support.roundTrip(4, 9, new java.sql.Time(1234567));
+		support.roundTrip(10, 9, new java.sql.Time(Long.MAX_VALUE));
+		support.roundTrip(10, 9, new java.sql.Time(-1234567));
 
 		kryo.register(java.sql.Timestamp.class);
-		roundTrip(10, 9, new java.sql.Timestamp(Long.MIN_VALUE));
-		roundTrip(2, 9, new java.sql.Timestamp(0));
-		roundTrip(4, 9, new java.sql.Timestamp(1234567));
-		roundTrip(10, 9, new java.sql.Timestamp(Long.MAX_VALUE));
-		roundTrip(10, 9, new java.sql.Timestamp(-1234567));
+		support.roundTrip(10, 9, new java.sql.Timestamp(Long.MIN_VALUE));
+		support.roundTrip(2, 9, new java.sql.Timestamp(0));
+		support.roundTrip(4, 9, new java.sql.Timestamp(1234567));
+		support.roundTrip(10, 9, new java.sql.Timestamp(Long.MAX_VALUE));
+		support.roundTrip(10, 9, new java.sql.Timestamp(-1234567));
 	}
 
+	@Test
 	public void testBigDecimalSerializer () {
 		kryo.register(BigDecimal.class);
 		kryo.register(BigDecimalSubclass.class);
-		roundTrip(5, 8, BigDecimal.valueOf(12345, 2));
-		roundTrip(7, 10, new BigDecimal("12345.12345"));
-		roundTrip(4, 7, BigDecimal.ZERO);
-		roundTrip(4, 7, BigDecimal.ONE);
-		roundTrip(4, 7, BigDecimal.TEN);
-		roundTrip(5, 8, new BigDecimalSubclass(new BigInteger("12345"), 2));
-		roundTrip(7, 10, new BigDecimalSubclass("12345.12345"));
+		support.roundTrip(5, 8, BigDecimal.valueOf(12345, 2));
+		support.roundTrip(7, 10, new BigDecimal("12345.12345"));
+		support.roundTrip(4, 7, BigDecimal.ZERO);
+		support.roundTrip(4, 7, BigDecimal.ONE);
+		support.roundTrip(4, 7, BigDecimal.TEN);
+		support.roundTrip(5, 8, new BigDecimalSubclass(new BigInteger("12345"), 2));
+		support.roundTrip(7, 10, new BigDecimalSubclass("12345.12345"));
 	}
 
+	@Test
 	public void testBigIntegerSerializer () {
 		kryo.register(BigInteger.class);
 		kryo.register(BigIntegerSubclass.class);
-		roundTrip(8, 8, BigInteger.valueOf(1270507903945L));
-		roundTrip(3, 3, BigInteger.ZERO);
-		roundTrip(3, 3, BigInteger.ONE);
-		roundTrip(3, 3, BigInteger.TEN);
-		roundTrip(8, 8, new BigIntegerSubclass("1270507903945"));
+		support.roundTrip(8, 8, BigInteger.valueOf(1270507903945L));
+		support.roundTrip(3, 3, BigInteger.ZERO);
+		support.roundTrip(3, 3, BigInteger.ONE);
+		support.roundTrip(3, 3, BigInteger.TEN);
+		support.roundTrip(8, 8, new BigIntegerSubclass("1270507903945"));
 	}
 
+	@Test
 	public void testEnumSerializer () {
 		kryo.register(TestEnum.class);
-		roundTrip(2, 2, TestEnum.a);
-		roundTrip(2, 2, TestEnum.b);
-		roundTrip(2, 2, TestEnum.c);
+		support.roundTrip(2, 2, TestEnum.a);
+		support.roundTrip(2, 2, TestEnum.b);
+		support.roundTrip(2, 2, TestEnum.c);
 
-		kryo = new Kryo();
-		kryo.setRegistrationRequired(false);
-		// 1 byte identifying it's a class name
-		// 1 byte for the class name id
-		// 57 bytes for the class name characters
-		// 1 byte for the reference id
-		// 1 byte for the enum value
-		roundTrip(61, 61, TestEnum.c);
+		{
+			Kryo kryo = new Kryo();
+			kryo.setRegistrationRequired(false);
+			KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
+			// 1 byte identifying it's a class name
+			// 1 byte for the class name id
+			// 57 bytes for the class name characters
+			// 1 byte for the reference id
+			// 1 byte for the enum value
+			support.roundTrip(61, 61, TestEnum.c);
+		}
+
 	}
 
+	@Test
 	public void testEnumSetSerializer () {
 		kryo.register(EnumSet.class);
 		kryo.register(TestEnum.class);
-		roundTrip(5, 8, EnumSet.of(TestEnum.a, TestEnum.c));
-		roundTrip(4, 7, EnumSet.of(TestEnum.a));
-		roundTrip(6, 9, EnumSet.allOf(TestEnum.class));
+		support.roundTrip(5, 8, EnumSet.of(TestEnum.a, TestEnum.c));
+		support.roundTrip(4, 7, EnumSet.of(TestEnum.a));
+		support.roundTrip(6, 9, EnumSet.allOf(TestEnum.class));
 
 		// Test empty EnumSet
-		roundTrip(3, 6, EnumSet.noneOf(TestEnum.class));
+		support.roundTrip(3, 6, EnumSet.noneOf(TestEnum.class));
 
-		kryo = new Kryo();
-		kryo.setRegistrationRequired(false);
-		roundTrip(89, 92, EnumSet.of(TestEnum.a, TestEnum.c));
+		{
+			Kryo kryo = new Kryo();
+			kryo.setRegistrationRequired(false);
+			KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
+			support.roundTrip(89, 92, EnumSet.of(TestEnum.a, TestEnum.c));
+		}
+
 	}
 
+	@Test
 	public void testEnumSerializerWithMethods () {
 		kryo.register(TestEnumWithMethods.class);
-		roundTrip(2, 2, TestEnumWithMethods.a);
-		roundTrip(2, 2, TestEnumWithMethods.b);
-		roundTrip(2, 2, TestEnumWithMethods.c);
+		support.roundTrip(2, 2, TestEnumWithMethods.a);
+		support.roundTrip(2, 2, TestEnumWithMethods.b);
+		support.roundTrip(2, 2, TestEnumWithMethods.c);
 
-		kryo = new Kryo();
-		kryo.setRegistrationRequired(false);
-		roundTrip(76, 76, TestEnumWithMethods.c);
+		{
+			Kryo kryo = new Kryo();
+			kryo.setRegistrationRequired(false);
+			KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
+			support.roundTrip(76, 76, TestEnumWithMethods.c);
+		}
+
 	}
 
+	@Test
 	public void testCollectionsMethods () {
 		kryo.setRegistrationRequired(false);
 		ArrayList test = new ArrayList();
@@ -278,9 +320,10 @@ public class DefaultSerializersTest extends KryoTestCase {
 		test.add(Collections.singletonList("meow"));
 		test.add(Collections.singletonMap("moo", 1234));
 		test.add(Collections.singleton(12.34));
-		roundTrip(249, 251, test);
+		support.roundTrip(249, 251, test);
 	}
-	
+
+	@Test
 	public void testDeepCollectionCloning() {
 		kryo.setRegistrationRequired(false);
 		Object contents = new Object();
@@ -289,14 +332,16 @@ public class DefaultSerializersTest extends KryoTestCase {
 		Assert.assertNotEquals(kryo.copy(Collections.singletonMap(contents, contents)).values().iterator().next(), contents);
 	}
 
+	@Test
 	public void testCalendar () {
 		kryo.setRegistrationRequired(false);
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
 		calendar.set(1980, 7, 26, 12, 22, 46);
-		roundTrip(64, 73, calendar);
+		support.roundTrip(64, 73, calendar);
 	}
 
+	@Test
 	public void testClassSerializer () {
 		kryo.register(Class.class);
 		kryo.register(ArrayList.class);
@@ -349,17 +394,19 @@ public class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(Enum.class, kryo.readObject(in, Class.class));
 	}
 
+	@Test
 	public void testLocaleSerializer () {
 		kryo.setRegistrationRequired(true);
 		kryo.register(Locale.class);
 
-		roundTrip(5, 5, Locale.ENGLISH);
-		roundTrip(6, 6, Locale.US);
-		roundTrip(6, 6, Locale.SIMPLIFIED_CHINESE);
-		roundTrip(5, 5, new Locale("es"));
-		roundTrip(16, 16, new Locale("es", "ES", "áéíóú"));
+		support.roundTrip(5, 5, Locale.ENGLISH);
+		support.roundTrip(6, 6, Locale.US);
+		support.roundTrip(6, 6, Locale.SIMPLIFIED_CHINESE);
+		support.roundTrip(5, 5, new Locale("es"));
+		support.roundTrip(16, 16, new Locale("es", "ES", "áéíóú"));
 	}
 
+	@Test
 	public void testCharset () {
 		List<String> css = Arrays.asList("ISO-8859-1", "US-ASCII", "UTF-8", "UTF-16", "UTF-16BE", "UTF-16LE");
 
@@ -367,26 +414,31 @@ public class DefaultSerializersTest extends KryoTestCase {
 			Charset charset = Charset.forName(cs);
 			kryo.register(charset.getClass());
 			int expectedLength = 1 + cs.length();
-			roundTrip(expectedLength, expectedLength, charset);
+			support.roundTrip(expectedLength, expectedLength, charset);
 		}
 
-		kryo = new Kryo();
-		kryo.setRegistrationRequired(false);
+		{
+			Kryo kryo = new Kryo();
+			kryo.setRegistrationRequired(false);
+			KryoTestSupport support = new KryoTestSupport(kryo, supportsCopy);
 
-		for (String cs : css) {
-			Charset charset = Charset.forName(cs);
-			int expectedLength = 3 + charset.getClass().getName().length() + cs.length();
-			roundTrip(expectedLength, expectedLength, charset);
+			for (String cs : css) {
+				Charset charset = Charset.forName(cs);
+				int expectedLength = 3 + charset.getClass().getName().length() + cs.length();
+				support.roundTrip(expectedLength, expectedLength, charset);
+			}
 		}
+
 	}
 
+	@Test
 	public void testURLSerializer () throws Exception {
 		kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.setRegistrationRequired(true);
 		kryo.register(URL.class);
 
-		roundTrip(41, 41, new URL("https://github.com/EsotericSoftware/kryo"));
-		roundTrip(78, 78, new URL("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
+		support.roundTrip(41, 41, new URL("https://github.com/EsotericSoftware/kryo"));
+		support.roundTrip(78, 78, new URL("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
 	}
 
 	public enum TestEnum {
