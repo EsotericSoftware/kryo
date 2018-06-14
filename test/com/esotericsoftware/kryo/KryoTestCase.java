@@ -68,14 +68,13 @@ abstract public class KryoTestCase extends TestCase {
 
 	@Before
 	public void setUp () throws Exception {
-		// Log.TRACE();
-
 		if (debug && WARN) warn("*** DEBUG TEST ***");
 
 		kryo = new Kryo();
 		kryo.setReferences(false);
 	}
 
+	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
 	public <T> T roundTrip (int length, T object1) {
 		T object2 = roundTripWithBufferFactory(length, object1, new BufferFactory() {
 			public Output createOutput (OutputStream os) {
@@ -170,7 +169,10 @@ abstract public class KryoTestCase extends TestCase {
 		return object2;
 	}
 
+	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
 	public <T> T roundTripWithBufferFactory (int length, T object1, BufferFactory sf) {
+		boolean checkLength = length != Integer.MIN_VALUE;
+
 		this.object1 = object1;
 
 		// Test output to stream, large buffer.
@@ -186,8 +188,10 @@ abstract public class KryoTestCase extends TestCase {
 		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 4096);
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
-		assertEquals("Incorrect number of bytes read.", length, input.total());
-		assertEquals("Incorrect number of bytes written.", length, output.total());
+		if (checkLength) {
+			assertEquals("Incorrect number of bytes read.", length, input.total());
+			assertEquals("Incorrect number of bytes written.", length, output.total());
+		}
 
 		if (debug) return (T)object2;
 
@@ -201,7 +205,7 @@ abstract public class KryoTestCase extends TestCase {
 		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
-		assertEquals("Incorrect number of bytes read.", length, input.total());
+		if (checkLength) assertEquals("Incorrect number of bytes read.", length, input.total());
 
 		if (object1 != null) {
 			// Test null with serializer.
@@ -228,8 +232,10 @@ abstract public class KryoTestCase extends TestCase {
 		input = sf.createInput(output.toBytes());
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
-		assertEquals("Incorrect length.", length, output.total());
-		assertEquals("Incorrect number of bytes read.", length, input.total());
+		if (checkLength) {
+			assertEquals("Incorrect length.", length, output.total());
+			assertEquals("Incorrect number of bytes read.", length, input.total());
+		}
 		input.rewind();
 
 		if (supportsCopy) {

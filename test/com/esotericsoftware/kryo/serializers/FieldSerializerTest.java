@@ -620,7 +620,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			roundTrip(31, obj1);
 		} catch (RuntimeException ex) {
 			assertTrue("Exception should complain about a field not implementing java.util.Collection",
-				ex.getMessage().contains("be used only with fields implementing java.util.Collection"));
+				ex.getMessage().contains("only be used with a field implementing Collection"));
 			return;
 		}
 
@@ -634,7 +634,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			roundTrip(31, obj1);
 		} catch (RuntimeException ex) {
 			assertTrue("Exception should complain about a field not implementing java.util.Map ",
-				ex.getMessage().contains("be used only with fields implementing java.util.Map"));
+				ex.getMessage().contains("can only be used with a field implementing Map"));
 			return;
 		}
 
@@ -647,7 +647,8 @@ public class FieldSerializerTest extends KryoTestCase {
 			MultipleTimesAnnotatedCollectionFields obj1 = new MultipleTimesAnnotatedCollectionFields();
 			roundTrip(31, obj1);
 		} catch (RuntimeException ex) {
-			assertTrue("Exception should complain about a field that has a serializer already", ex.getMessage().contains("already"));
+			assertTrue("Exception should complain about a field that has a serializer already",
+				ex.getMessage().contains("already has a serializer"));
 			return;
 		}
 

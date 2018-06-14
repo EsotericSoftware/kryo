@@ -14,67 +14,82 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Table of contents
 
-* [Recent releases](#recent-releases)
-* [Installation](#installation)
-* [Quickstart](#quickstart)
-* [IO](#io)
-	* [Output](#output)
-	* [Input](#input)
-	* [ByteBuffers](#bytebuffers)
-	* [Unsafe buffers](#unsafe-buffers)
-	* [Variable length encoding](#variable-length-encoding)
-	* [Chunked encoding](#chunked-encoding)
-	* [Buffer performance](#buffer-performance)
-* [Reading and writing objects](#reading-and-writing-objects)
-	* [Round trip](#round-trip)
-	* [Deep and shallow copies](#deep-and-shallow-copies)
-	* [References](#references)
-		* [ReferenceResolver](#referenceresolver)
-		* [Reference limits](#reference-limits)
-	* [Context](#context)
-	* [Reset](#reset)
-	* [Final classes](#final-classes)
-* [Serializer framework](#serializer-framework)
-	* [Registration](#registration)
-		* [ClassResolver](#classresolver)
-		* [Optional registration](#optional-registration)
-	* [Default serializers](#default-serializers)
-		* [Serializer factories](#serializer-factories)
-	* [Object creation](#object-creation)
-		* [InstantiatorStrategy](#instantiatorstrategy)
-		* [Overriding create](#overriding-create)
-	* [Compression and encryption](#compression-and-encryption)
-* [Implementing a serializer](#implementing-a-serializer)
-	* [Serializer references](#serializer-references)
-		* [Nested serializers](#nested-serializers)
-		* [Stack size](#stack-size)
-	* [Accepting null](#accepting-null)
-	* [Generics](#generics)
-	* [KryoSerializable](#kryoserializable)
-	* [Serializer copying](#serializer-copying)
-		* [KryoCopyable](#kryocopyable)
-		* [Immutable serializers](#immutable-serializers)
-* [Kryo versioning and upgrading](#kryo-versioning-and-upgrading)
-* [Interoperability](#interoperability)
-* [Compatibility](#compatibility)
-* [Serializers](#serializers)
-	* [FieldSerializer](#fieldserializer)
-	* [VersionFieldSerializer](#versionfieldserializer)
-	* [TaggedFieldSerializer](#taggedfieldserializer)
-	* [CompatibleFieldSerializer](#compatiblefieldserializer)
-	* [BeanSerializer](#beanserializer)
-	* [CollectionSerializer](#collectionserializer)
-	* [MapSerializer](#mapSerializer)
-	* [JavaSerializer and ExternalizableSerializer](#javaserializer-and-externalizableserializer)
-* [Logging](#logging)
-* [Thread safety](#thread-safety)
-* [Pooling](#pooling)
-* [Benchmarks](#benchmarks)
-* [Links](#links)
-	* [Projects using Kryo](#projects-using-kryo)
-	* [Scala](#scala)
-	* [Clojure](#clojure)
-	* [Objective-C](#objective-c)
+- [Recent releases](#recent-releases)
+- [Installation](#installation)
+   * [With Maven](#with-maven)
+   * [Without Maven](#without-maven)
+- [Quickstart](#quickstart)
+- [IO](#io)
+   * [Output](#output)
+   * [Input](#input)
+   * [ByteBuffers](#bytebuffers)
+   * [Unsafe buffers](#unsafe-buffers)
+   * [Variable length encoding](#variable-length-encoding)
+   * [Chunked encoding](#chunked-encoding)
+   * [Buffer performance](#buffer-performance)
+- [Reading and writing objects](#reading-and-writing-objects)
+   * [Round trip](#round-trip)
+   * [Deep and shallow copies](#deep-and-shallow-copies)
+   * [References](#references)
+      + [ReferenceResolver](#referenceresolver)
+      + [Reference limits](#reference-limits)
+   * [Context](#context)
+   * [Reset](#reset)
+- [Serializer framework](#serializer-framework)
+   * [Registration](#registration)
+      + [ClassResolver](#classresolver)
+      + [Optional registration](#optional-registration)
+   * [Default serializers](#default-serializers)
+      + [Serializer factories](#serializer-factories)
+   * [Object creation](#object-creation)
+      + [InstantiatorStrategy](#instantiatorstrategy)
+      + [Overriding create](#overriding-create)
+   * [Final classes](#final-classes)
+   * [Closures](#closures)
+   * [Compression and encryption](#compression-and-encryption)
+- [Implementing a serializer](#implementing-a-serializer)
+   * [Serializer references](#serializer-references)
+      + [Nested serializers](#nested-serializers)
+      + [KryoException](#kryoexception)
+      + [Stack size](#stack-size)
+   * [Accepting null](#accepting-null)
+   * [Generics](#generics)
+   * [KryoSerializable](#kryoserializable)
+   * [Serializer copying](#serializer-copying)
+      + [KryoCopyable](#kryocopyable)
+      + [Immutable serializers](#immutable-serializers)
+- [Kryo versioning and upgrading](#kryo-versioning-and-upgrading)
+- [Interoperability](#interoperability)
+- [Compatibility](#compatibility)
+- [Serializers](#serializers)
+   * [FieldSerializer](#fieldserializer)
+      + [FieldSerializer settings](#fieldserializer-settings)
+      + [CachedField settings](#cachedfield-settings)
+      + [FieldSerializer annotations](#fieldserializer-annotations)
+   * [VersionFieldSerializer](#versionfieldserializer)
+      + [VersionFieldSerializer settings](#versionfieldserializer-settings)
+   * [TaggedFieldSerializer](#taggedfieldserializer)
+      + [TaggedFieldSerializer settings](#taggedfieldserializer-settings)
+   * [CompatibleFieldSerializer](#compatiblefieldserializer)
+      + [CompatibleFieldSerializer settings](#compatiblefieldserializer-settings)
+   * [BeanSerializer](#beanserializer)
+   * [CollectionSerializer](#collectionserializer)
+      + [CollectionSerializer settings](#collectionserializer-settings)
+   * [MapSerializer](#mapserializer)
+      + [MapSerializer settings](#mapserializer-settings)
+   * [JavaSerializer and ExternalizableSerializer](#javaserializer-and-externalizableserializer)
+- [Logging](#logging)
+- [Thread safety](#thread-safety)
+- [Pooling](#pooling)
+- [Benchmarks](#benchmarks)
+- [Links](#links)
+   * [Projects using Kryo](#projects-using-kryo)
+   * [Scala](#scala)
+   * [Clojure](#clojure)
+   * [Objective-C](#objective-c)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 
 ## Recent releases
 
@@ -158,6 +173,8 @@ Output buffers the bytes when writing to an OutputStream, so `flush` or `close` 
 
 > Tip: Since Output buffers already, there is no reason to have Output flush to a BufferedOutputStream.
 
+The zero argument Output constructor creates an uninitialized Output. Output `setBuffer` must be called before the Output can be used.
+
 ### Input
 
 The Input class is an InputStream that reads data from a byte array buffer. This buffer can be set directly, if reading from a byte array is desired. If the Input is given an InputStream, it will fill the buffer from the stream when all the data in the buffer has been read. Input has many methods for efficiently reading primitives and strings from bytes. It provides functionality similar to DataInputStream, BufferedInputStream, FilterInputStream, and ByteArrayInputStream, all in one class.
@@ -165,6 +182,8 @@ The Input class is an InputStream that reads data from a byte array buffer. This
 > Tip: Input provides all the functionality of ByteArrayInputStream. There is seldom a reason to have Input read from a ByteArrayInputStream.
 
 If the Input `close` is called, the Input's InputStream is closed, if any. If not reading from an InputStream then it is not necessary to call `close`. Unlike many streams, an Input instance can be reused by setting the position and limit, or setting a new byte array or InputStream.
+
+The zero argument Input constructor creates an uninitialized Input. Input `setBuffer` must be called before the Input can be used.
 
 ### ByteBuffers
 
@@ -532,21 +551,47 @@ If a serializer doesn't provide `writeHeader`, writing data for `create` can be 
 
 ```java
 static public class SomeClassSerializer extends FieldSerializer<SomeClass> {
-	public SomeClassSerializer (Kryo kryo) {
-		super(kryo, SomeClass.class);
-	}
-	public void write (Kryo kryo, Output output, SomeClass object) {
-		output.writeInt(object.value);
-	}
-	protected SomeClass create (Kryo kryo, Input input, Class<? extends SomeClass> type) {
-		return new SomeClass(input.readInt());
-	}
+   public SomeClassSerializer (Kryo kryo) {
+      super(kryo, SomeClass.class);
+   }
+   public void write (Kryo kryo, Output output, SomeClass object) {
+      output.writeInt(object.value);
+   }
+   protected SomeClass create (Kryo kryo, Input input, Class<? extends SomeClass> type) {
+      return new SomeClass(input.readInt());
+   }
 }
 ```
 
 ### Final classes
 
-Even when a serializer knows the expected class for a value (eg a field's class), if the value's concrete class is not final then the serializer needs to first write the class ID, then the value. Final classes can be serialized more efficiently because they are non-polymorphic. Kryo `isFinal` is used to determine if a class is final. This method can be overridden to return true even for types which are not final. For example, if an application uses ArrayList extensively but never uses an ArrayList subclass, treating ArrayList as final could allow FieldSerializer to save 1-2 bytes per ArrayList field.
+Even when a serializer knows the expected class for a value (eg a field's class), if the value's concrete class is not final then the serializer needs to first write the class ID, then the value. Final classes can be serialized more efficiently because they are non-polymorphic.
+
+Kryo `isFinal` is used to determine if a class is final. This method can be overridden to return true even for types which are not final. For example, if an application uses ArrayList extensively but never uses an ArrayList subclass, treating ArrayList as final could allow FieldSerializer to save 1-2 bytes per ArrayList field.
+
+### Closures
+
+Kryo can serialize Java 8+ closures that implement java.io.Serializable, with some caveats. Closures serialized on one JVM may fail to be deserialized on a different JVM.
+
+Kryo `isClosure` is used to determine if a class is a closure. If so, then ClosureSerializer.Closure is used to find the class registration instead of the closure's class. To serialize closures, the following classes must be registered: ClosureSerializer.Closure, SerializedLambda, Object[], and Class. Additionally, the closure's capturing class must be registered.
+
+```
+kryo.register(Object[].class);
+kryo.register(Class.class);
+kryo.register(SerializedLambda.class);
+kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
+kryo.register(CapturingClass.class);
+
+Callable<Integer> closure1 = (Callable<Integer> & java.io.Serializable)( () -> 72363 );
+
+Output output = new Output(1024, -1);
+kryo.writeObject(output, closure1);
+
+Input input = new Input(output.getBuffer(), 0, output.position());
+Callable<Integer> closure2 = (Callable<Integer>)kryo.readObject(input, ClosureSerializer.Closure.class);
+```
+
+Serializing closures which do not implement Serializable is possible [with some effort](https://ruediste.github.io/java,/kryo/2017/05/07/serializing-non-serializable-lambdas.html).
 
 ### Compression and encryption
 
@@ -618,6 +663,27 @@ SomeClass object = kryo.readObject(input, SomeClass.class, serializer);
 
 During serialization Kryo `getDepth` provides the current depth of the object graph.
 
+#### KryoException
+
+When a serialization fails, a KryoException can be thrown with serialization trace information about where in the object graph the exception occurred. When using nested serializers, KryoException can be caught to add serialization trace information.
+
+```java
+Object object = ...
+Field[] fields = ...
+for (Field field : fields) {
+	try {
+		// Use other serializers to serialize each field.
+	} catch (KryoException ex) {
+		ex.addTrace(field.getName() + " (" + object.getClass().getName() + ")");
+		throw ex;
+	} catch (Throwable t) {
+		KryoException ex = new KryoException(t);
+		ex.addTrace(field.getName() + " (" + object.getClass().getName() + ")");
+		throw ex;
+	}
+}
+```
+
 #### Stack size
 
 The serializers Kryo provides use the call stack when serializing nested objects. Kryo minimizes stack calls, but a stack overflow can occur for extremely deep object graphs. This is a common issue for most serialization libraries, including the built-in Java serialization. The stack size can be increased using `-Xss`, but note that this applies to all threads. Large stack sizes in a JVM with many threads may use a large amount of memory.
@@ -673,59 +739,59 @@ For a class with multiple type parameters, `nextGenericTypes` returns an array o
 
 ```java
 public class SomeClass<K, V> {
-	public K key;
-	public V value;
+   public K key;
+   public V value;
 }
 public class SomeClassSerializer extends Serializer<SomeClass> {
-	public void write (Kryo kryo, Output output, SomeClass object) {
-		Class keyClass = null, valueClass = null;
-		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
-		if (genericTypes != null) {
-			keyClass = genericTypes[0].resolve(kryo.getGenerics());
-			valueClass = genericTypes[1].resolve(kryo.getGenerics());
-		}
+   public void write (Kryo kryo, Output output, SomeClass object) {
+      Class keyClass = null, valueClass = null;
+      GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
+      if (genericTypes != null) {
+         keyClass = genericTypes[0].resolve(kryo.getGenerics());
+         valueClass = genericTypes[1].resolve(kryo.getGenerics());
+      }
 
-		if (keyClass != null && kryo.isFinal(keyClass)) {
-			Serializer serializer = kryo.getSerializer(keyClass);
-			kryo.writeObjectOrNull(output, object.key, serializer);
-		} else
-			kryo.writeClassAndObject(output, object.key);
+      if (keyClass != null && kryo.isFinal(keyClass)) {
+         Serializer serializer = kryo.getSerializer(keyClass);
+         kryo.writeObjectOrNull(output, object.key, serializer);
+      } else
+         kryo.writeClassAndObject(output, object.key);
 
-		if (valueClass != null && kryo.isFinal(valueClass)) {
-			Serializer serializer = kryo.getSerializer(valueClass);
-			kryo.writeObjectOrNull(output, object.value, serializer);
-		} else
-			kryo.writeClassAndObject(output, object.value);
+      if (valueClass != null && kryo.isFinal(valueClass)) {
+         Serializer serializer = kryo.getSerializer(valueClass);
+         kryo.writeObjectOrNull(output, object.value, serializer);
+      } else
+         kryo.writeClassAndObject(output, object.value);
 
-		kryo.getGenerics().popGenericType();
-	}
+      kryo.getGenerics().popGenericType();
+   }
 
-	public SomeClass read (Kryo kryo, Input input, Class<? extends SomeClass> type) {
-		Class keyClass = null, valueClass = null;
-		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
-		if (genericTypes != null) {
-			keyClass = genericTypes[0].resolve(kryo.getGenerics());
-			valueClass = genericTypes[1].resolve(kryo.getGenerics());
-		}
+   public SomeClass read (Kryo kryo, Input input, Class<? extends SomeClass> type) {
+      Class keyClass = null, valueClass = null;
+      GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
+      if (genericTypes != null) {
+         keyClass = genericTypes[0].resolve(kryo.getGenerics());
+         valueClass = genericTypes[1].resolve(kryo.getGenerics());
+      }
 
-		SomeClass object = new SomeClass();
-		kryo.reference(object);
+      SomeClass object = new SomeClass();
+      kryo.reference(object);
 
-		if (keyClass != null && kryo.isFinal(keyClass)) {
-			Serializer serializer = kryo.getSerializer(keyClass);
-			object.key = kryo.readObjectOrNull(input, keyClass, serializer);
-		} else
-			object.key = kryo.readClassAndObject(input);
+      if (keyClass != null && kryo.isFinal(keyClass)) {
+         Serializer serializer = kryo.getSerializer(keyClass);
+         object.key = kryo.readObjectOrNull(input, keyClass, serializer);
+      } else
+         object.key = kryo.readClassAndObject(input);
 
-		if (valueClass != null && kryo.isFinal(valueClass)) {
-			Serializer serializer = kryo.getSerializer(valueClass);
-			object.value = kryo.readObjectOrNull(input, valueClass, serializer);
-		} else
-			object.value = kryo.readClassAndObject(input);
+      if (valueClass != null && kryo.isFinal(valueClass)) {
+         Serializer serializer = kryo.getSerializer(valueClass);
+         object.value = kryo.readObjectOrNull(input, valueClass, serializer);
+      } else
+         object.value = kryo.readClassAndObject(input);
 
-		kryo.getGenerics().popGenericType();
-		return object;
-	}
+      kryo.getGenerics().popGenericType();
+      return object;
+   }
 }
 ```
 
@@ -799,7 +865,7 @@ Instead of using a serializer, a class can choose to do its own serialization by
 
 ```java
 public class SomeClass implements KryoSerializable {
-	private int value;
+   private int value;
    public void write (Kryo kryo, Output output) {
       output.writeInt(value, false);
    }

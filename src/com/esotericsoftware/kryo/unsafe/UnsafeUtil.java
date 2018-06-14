@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.unsafe;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.reflect.Constructor;
@@ -114,7 +115,7 @@ public class UnsafeUtil {
 		try {
 			return directByteBufferConstructor.newInstance(address, size, null);
 		} catch (Exception ex) {
-			throw new RuntimeException("Error creating a ByteBuffer at address: " + address, ex);
+			throw new KryoException("Error creating a ByteBuffer at address: " + address, ex);
 		}
 	}
 

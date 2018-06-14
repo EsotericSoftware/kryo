@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
@@ -317,6 +318,10 @@ class CachedFields implements Comparator<CachedField> {
 
 		// Set the CachedField settings for any field.
 		if (field.isAnnotationPresent(FieldSerializer.Bind.class)) {
+			if (cachedField.getSerializer() != null) {
+				throw new KryoException("@Bind applied to a field that already has a serializer: "
+					+ cachedField.getField().getDeclaringClass().getName() + "." + cachedField.getField().getName());
+			}
 			Bind annotation = field.getAnnotation(FieldSerializer.Bind.class);
 
 			Class valueClass = annotation.valueClass();
@@ -333,7 +338,11 @@ class CachedFields implements Comparator<CachedField> {
 
 		// Set CollectionSerializer settings for a collection field.
 		if (field.isAnnotationPresent(CollectionSerializer.BindCollection.class)) {
-			if (!Collection.class.isAssignableFrom(field.getType())) throw new RuntimeException(
+			if (cachedField.getSerializer() != null) {
+				throw new KryoException("@BindCollection applied to a field that already has a serializer: "
+					+ cachedField.getField().getDeclaringClass().getName() + "." + cachedField.getField().getName());
+			}
+			if (!Collection.class.isAssignableFrom(field.getType())) throw new KryoException(
 				"@BindCollection can only be used with a field implementing Collection: " + className(field.getType()));
 			CollectionSerializer.BindCollection annotation = field.getAnnotation(CollectionSerializer.BindCollection.class);
 
@@ -351,8 +360,12 @@ class CachedFields implements Comparator<CachedField> {
 
 		// Set MapSerializer settings for a map field.
 		if (field.isAnnotationPresent(MapSerializer.BindMap.class)) {
-			if (!Map.class.isAssignableFrom(field.getType())) throw new RuntimeException(
-				"@BindMap can only be used with a field implementing Collection: " + className(field.getType()));
+			if (cachedField.getSerializer() != null) {
+				throw new KryoException("@BindMap applied to a field that already has a serializer: "
+					+ cachedField.getField().getDeclaringClass().getName() + "." + cachedField.getField().getName());
+			}
+			if (!Map.class.isAssignableFrom(field.getType()))
+				throw new KryoException("@BindMap can only be used with a field implementing Map: " + className(field.getType()));
 			MapSerializer.BindMap annotation = field.getAnnotation(MapSerializer.BindMap.class);
 
 			Class valueClass = annotation.valueClass();

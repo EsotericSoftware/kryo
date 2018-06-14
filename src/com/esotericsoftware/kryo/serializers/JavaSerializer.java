@@ -69,23 +69,23 @@ public class JavaSerializer extends Serializer {
 		}
 	}
 
-	/** ${@link ObjectInputStream} uses the last user-defined ${@link ClassLoader} which may not be the correct one. This is a
-	 * known Java issue and is often solved by using a specific class loader. See:
+	/** {@link ObjectInputStream} uses the last user-defined {@link ClassLoader}, which may not be the correct one. This is a known
+	 * Java issue and is often solved by using a specific class loader. See:
 	 * https://github.com/apache/spark/blob/v1.6.3/streaming/src/main/scala/org/apache/spark/streaming/Checkpoint.scala#L154
 	 * https://issues.apache.org/jira/browse/GROOVY-1627 */
 	static private class ObjectInputStreamWithKryoClassLoader extends ObjectInputStream {
-		private final ClassLoader loader;
+		private final Kryo kryo;
 
 		ObjectInputStreamWithKryoClassLoader (InputStream in, Kryo kryo) throws IOException {
 			super(in);
-			this.loader = kryo.getClassLoader();
+			this.kryo = kryo;
 		}
 
-		protected Class resolveClass (ObjectStreamClass desc) {
+		protected Class resolveClass (ObjectStreamClass type) {
 			try {
-				return Class.forName(desc.getName(), false, loader);
+				return Class.forName(type.getName(), false, kryo.getClassLoader());
 			} catch (ClassNotFoundException ex) {
-				throw new RuntimeException("Class not found: " + desc.getName(), ex);
+				throw new KryoException("Class not found: " + type.getName(), ex);
 			}
 		}
 	}

@@ -28,6 +28,7 @@ import com.esotericsoftware.kryo.SerializerFactory.SingletonSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ClosureSerializer;
+import com.esotericsoftware.kryo.serializers.ClosureSerializer.Closure;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.BooleanArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ByteArraySerializer;
@@ -88,6 +89,7 @@ import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
@@ -482,11 +484,10 @@ public class Kryo {
 			} else if (!type.isEnum() && Enum.class.isAssignableFrom(type) && type != Enum.class) {
 				// This handles an enum value that is an inner class, eg: enum A {b{}}
 				registration = getRegistration(type.getEnclosingClass());
-			} else if (EnumSet.class.isAssignableFrom(type)) {
+			} else if (EnumSet.class.isAssignableFrom(type))
 				registration = classResolver.getRegistration(EnumSet.class);
-			} else if (isClosure(type)) {
+			else if (isClosure(type)) //
 				registration = classResolver.getRegistration(ClosureSerializer.Closure.class);
-			}
 			if (registration == null) {
 				if (registrationRequired) throw new IllegalArgumentException(unregisteredClassMessage(type));
 				if (WARN && warnUnregisteredClasses) warn(unregisteredClassMessage(type));
@@ -1155,9 +1156,12 @@ public class Kryo {
 		return Modifier.isFinal(type.getModifiers());
 	}
 
-	/** Returns true if the specified type is a closure. This can be overridden to support alternative implementations of closures.
-	 * Current version supports Java 8+ closures only. */
-	protected boolean isClosure (Class type) {
+	/** Returns true if the specified type is a closure. When true, Kryo uses {@link Closure} instead of the specified type to find
+	 * the class {@link Registration}.
+	 * <p>
+	 * This can be overridden to support alternative closure implementations. The default implementation returns true if the
+	 * specified type's name contains '/' (to detect a Java 8+ closure). */
+	public boolean isClosure (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		return type.getName().indexOf('/') >= 0;
 	}

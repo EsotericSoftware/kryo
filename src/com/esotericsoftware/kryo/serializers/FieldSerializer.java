@@ -23,6 +23,7 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -377,7 +378,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			try {
 				return (FieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
 			} catch (CloneNotSupportedException ex) {
-				throw new RuntimeException(ex);
+				throw new KryoException(ex);
 			}
 		}
 
