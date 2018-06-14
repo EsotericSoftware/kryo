@@ -92,7 +92,7 @@ public class GenericsUtilTest extends TestCase {
 					else if (arg instanceof Class)
 						value2 += ((Class)arg).getSimpleName();
 					else //
-						value2 += ((TypeVariable)arg).getTypeName();
+						value2 += ((TypeVariable)arg).getName();
 				}
 				value2 += ">";
 			}
