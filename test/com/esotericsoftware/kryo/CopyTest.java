@@ -35,6 +35,7 @@ public class CopyTest {
 		kryo.setRegistrationRequired(false);
 	}
 
+	@Test
 	public void testBasic () {
 		ArrayList test = new ArrayList();
 		test.add("one");

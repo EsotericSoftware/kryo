@@ -49,6 +49,7 @@ public class CompatibleFieldSerializerTest {
 		support.roundTrip(107, 107, object1);
 	}
 
+	@Test
 	public void testAddedField () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();
@@ -122,6 +123,7 @@ public class CompatibleFieldSerializerTest {
 		}
 	}
 
+	@Test
 	public void testRemovedField () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();

@@ -21,16 +21,14 @@ package com.esotericsoftware.kryo;
 
 import java.lang.ref.WeakReference;
 
+import org.junit.Test;
+
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultStreamFactory;
 import com.esotericsoftware.kryo.util.FastestStreamFactory;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
-import junit.framework.TestCase;
-
-import org.junit.Test;
-
-import static junit.framework.TestCase.*;
+import static junit.framework.TestCase.assertNull;
 
 /** Tests for detecting PermGen memory leaks.
  * 

@@ -30,11 +30,6 @@ import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-//import org.gridgain.grid.marshaller.GridMarshaller;
-//import org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller;
-
-import javax.annotation.Generated;
-
 import org.junit.Before;
 import org.junit.Test;
 
