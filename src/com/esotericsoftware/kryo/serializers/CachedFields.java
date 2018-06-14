@@ -315,7 +315,7 @@ class CachedFields implements Comparator<CachedField> {
 	private void applyAnnotations (CachedField cachedField) {
 		Field field = cachedField.field;
 
-		// Set the value class and/or serializer for a field.
+		// Set the CachedField settings for any field.
 		if (field.isAnnotationPresent(FieldSerializer.Bind.class)) {
 			Bind annotation = field.getAnnotation(FieldSerializer.Bind.class);
 
@@ -325,64 +325,53 @@ class CachedFields implements Comparator<CachedField> {
 
 			Serializer serializer = newSerializer(valueClass, annotation.serializer(), annotation.serializerFactory());
 			if (serializer != null) cachedField.setSerializer(serializer);
+
+			cachedField.setCanBeNull(annotation.canBeNull());
+			cachedField.setVariableLengthEncoding(annotation.variableLengthEncoding());
+			cachedField.setOptimizePositive(annotation.optimizePositive());
 		}
 
 		// Set CollectionSerializer settings for a collection field.
 		if (field.isAnnotationPresent(CollectionSerializer.BindCollection.class)) {
-			if (cachedField.serializer != null) {
-				throw new RuntimeException("CollectionSerialier.Bind cannot be used with field " + field.getDeclaringClass().getName()
-					+ "." + field.getName() + " because it has a serializer already.");
-			}
-			if (Collection.class.isAssignableFrom(field.getType())) {
-				CollectionSerializer.BindCollection annotation = field.getAnnotation(CollectionSerializer.BindCollection.class);
+			if (!Collection.class.isAssignableFrom(field.getType())) throw new RuntimeException(
+				"@BindCollection can only be used with a field implementing Collection: " + className(field.getType()));
+			CollectionSerializer.BindCollection annotation = field.getAnnotation(CollectionSerializer.BindCollection.class);
 
-				Class elementClass = annotation.elementClass();
-				if (elementClass == Object.class) elementClass = null;
-				Serializer elementSerializer = newSerializer(elementClass, annotation.elementSerializer(),
-					annotation.elementSerializerFactory());
+			Class elementClass = annotation.elementClass();
+			if (elementClass == Object.class) elementClass = null;
+			Serializer elementSerializer = newSerializer(elementClass, annotation.elementSerializer(),
+				annotation.elementSerializerFactory());
 
-				CollectionSerializer serializer = new CollectionSerializer();
-				serializer.setElementsCanBeNull(annotation.elementsCanBeNull());
-				if (elementClass != null) serializer.setElementClass(elementClass);
-				if (elementSerializer != null) serializer.setElementSerializer(elementSerializer);
-				cachedField.setSerializer(serializer);
-			} else {
-				throw new RuntimeException(
-					"CollectionSerialier.Bind should be used only with fields implementing java.util.Collection, but field "
-						+ field.getDeclaringClass().getName() + "." + field.getName() + " does not implement it.");
-			}
+			CollectionSerializer serializer = new CollectionSerializer();
+			serializer.setElementsCanBeNull(annotation.elementsCanBeNull());
+			if (elementClass != null) serializer.setElementClass(elementClass);
+			if (elementSerializer != null) serializer.setElementSerializer(elementSerializer);
+			cachedField.setSerializer(serializer);
 		}
 
 		// Set MapSerializer settings for a map field.
 		if (field.isAnnotationPresent(MapSerializer.BindMap.class)) {
-			if (cachedField.serializer != null) {
-				throw new RuntimeException("MapSerialier.Bind cannot be used with field " + field.getDeclaringClass().getName() + "."
-					+ field.getName() + ", it has a serializer already.");
-			}
-			if (Map.class.isAssignableFrom(field.getType())) {
-				MapSerializer.BindMap annotation = field.getAnnotation(MapSerializer.BindMap.class);
+			if (!Map.class.isAssignableFrom(field.getType())) throw new RuntimeException(
+				"@BindMap can only be used with a field implementing Collection: " + className(field.getType()));
+			MapSerializer.BindMap annotation = field.getAnnotation(MapSerializer.BindMap.class);
 
-				Class valueClass = annotation.valueClass();
-				if (valueClass == Object.class) valueClass = null;
-				Serializer valueSerializer = newSerializer(valueClass, annotation.valueSerializer(),
-					annotation.valueSerializerFactory());
+			Class valueClass = annotation.valueClass();
+			if (valueClass == Object.class) valueClass = null;
+			Serializer valueSerializer = newSerializer(valueClass, annotation.valueSerializer(),
+				annotation.valueSerializerFactory());
 
-				Class keyClass = annotation.keyClass();
-				if (keyClass == Object.class) keyClass = null;
-				Serializer keySerializer = newSerializer(keyClass, annotation.keySerializer(), annotation.keySerializerFactory());
+			Class keyClass = annotation.keyClass();
+			if (keyClass == Object.class) keyClass = null;
+			Serializer keySerializer = newSerializer(keyClass, annotation.keySerializer(), annotation.keySerializerFactory());
 
-				MapSerializer serializer = new MapSerializer();
-				serializer.setKeysCanBeNull(annotation.keysCanBeNull());
-				serializer.setValuesCanBeNull(annotation.valuesCanBeNull());
-				if (keyClass != null) serializer.setKeyClass(keyClass);
-				if (keySerializer != null) serializer.setKeySerializer(keySerializer);
-				if (valueClass != null) serializer.setValueClass(valueClass);
-				if (valueSerializer != null) serializer.setValueSerializer(valueSerializer);
-				cachedField.setSerializer(serializer);
-			} else {
-				throw new RuntimeException("MapSerialier.Bind should be used only with fields implementing java.util.Map, but field "
-					+ field.getDeclaringClass().getName() + "." + field.getName() + " does not implement it.");
-			}
+			MapSerializer serializer = new MapSerializer();
+			serializer.setKeysCanBeNull(annotation.keysCanBeNull());
+			serializer.setValuesCanBeNull(annotation.valuesCanBeNull());
+			if (keyClass != null) serializer.setKeyClass(keyClass);
+			if (keySerializer != null) serializer.setKeySerializer(keySerializer);
+			if (valueClass != null) serializer.setValueClass(valueClass);
+			if (valueSerializer != null) serializer.setValueSerializer(valueSerializer);
+			cachedField.setSerializer(serializer);
 		}
 	}
 

@@ -256,7 +256,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		return copy;
 	}
 
-	/** Used to annotate a {@link Collection} field with {@link CollectionSerializer} settings for {@link FieldSerializer}. */
+	/** Annotates a {@link Collection} field with {@link CollectionSerializer} settings for {@link FieldSerializer}. */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindCollection {

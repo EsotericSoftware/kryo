@@ -246,7 +246,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		return copy;
 	}
 
-	/** Used to annotate a {@link Map} field with {@link MapSerializer} settings for {@link FieldSerializer}. */
+	/** Annotates a {@link Map} field with {@link MapSerializer} settings for {@link FieldSerializer}. */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindMap {
