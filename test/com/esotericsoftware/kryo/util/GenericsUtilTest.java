@@ -77,7 +77,7 @@ public class GenericsUtilTest extends TestCase {
 			if (fieldType instanceof Class)
 				fieldClassName = ((Class)fieldType).getSimpleName();
 			else //
-				fieldClassName = ((TypeVariable)fieldType).getTypeName();
+				fieldClassName = ((TypeVariable)fieldType).getName();
 
 			Type[] generics = resolveTypeParameters(declaringClass, serializingClass, genericType);
 

@@ -296,7 +296,7 @@ public class Generics {
 					buffer.append('>');
 				}
 			} else
-				buffer.append(type.getTypeName());
+				buffer.append(type.toString()); // Java 8: getTypeName
 			if (array) {
 				for (int i = 0, n = getDimensionCount((Class)type); i < n; i++)
 					buffer.append("[]");

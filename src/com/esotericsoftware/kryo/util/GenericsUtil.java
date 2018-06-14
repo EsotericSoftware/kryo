@@ -88,7 +88,7 @@ public class GenericsUtil {
 			type = resolved; // resolveTypeVariable never returns null when reentrant.
 		}
 
-		String name = type.getTypeName();
+		String name = type.toString(); // Java 8: getTypeName
 		for (int i = 0, n = params.length; i < n; i++) {
 			TypeVariable param = params[i];
 			if (param.getName().equals(name)) {
