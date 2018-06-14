@@ -18,7 +18,7 @@ install:
 script:
   # compile tests with java 8, but with testSource/testTarget 1.7 (disabled java8 profile), so that we can run tests with java 7
   - jdk_switcher use oraclejdk8
-  - mvn -B -f pom-main.xml -P!java8 clean install
+  - mvn -B -f pom.xml -P!java8 clean install
   # test java 7
   - jdk_switcher use openjdk7
   - mvn -B -f pom-modules.xml surefire:test
