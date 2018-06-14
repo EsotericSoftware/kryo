@@ -19,14 +19,17 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializerTest.KeyComparator;
 import com.esotericsoftware.kryo.serializers.MapSerializerTest.KeyThatIsntComparable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -93,6 +96,14 @@ public class CollectionSerializerTest extends KryoTestCase {
 		set.add(34);
 		set.add(45);
 		roundTrip(9, set);
+	}
+
+	public void testCopy () {
+		List objects1 = Collections.singletonList(new Object());
+		Kryo kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		List objects2 = kryo.copy(objects1);
+		assertFalse(objects1.get(0) == objects2.get(0));
 	}
 
 	static public class TreeSetSubclass<E> extends TreeSet<E> {
