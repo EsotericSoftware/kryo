@@ -433,7 +433,7 @@ kryo.register(SomeClass.class, new SomeSerializer());
 kryo.register(AnotherClass.class, new AnotherSerializer());
 ```
 
-If a serializer is not specified or when an unregistered class is encountered, a serializer is chosen automatically from a list of "default serializers" that maps a class to a serializer. Having many default serializers doesn't affect serialization performance, so by default Kryo has 50+ default serializers for various JRE classes. Additional default serializers can be added:
+If a serializer is not specified or when an unregistered class is encountered, a serializer is chosen automatically from a list of "default serializers" that maps a class to a serializer. Having many default serializers doesn't affect serialization performance, so by default Kryo has [50+ default serializers](https://github.com/EsotericSoftware/kryo/blob/master/src/com/esotericsoftware/kryo/Kryo.java#L179) for various JRE classes. Additional default serializers can be added:
 
 ```java
 Kryo kryo = new Kryo();
