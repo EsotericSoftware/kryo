@@ -1,0 +1,122 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>7</version>
+	</parent>
+
+	<groupId>com.esotericsoftware</groupId>
+	<artifactId>kryo-modules</artifactId>
+	<version>5.0.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<name>Kryo Modules</name>
+	<description>Fast, efficient Java serialization. This is the parent POM that defines common settings and lists the modules.</description>
+	<url>https://github.com/EsotericSoftware/kryo</url>
+
+	<licenses>
+		<license>
+			<name>3-Clause BSD License</name>
+			<url>https://opensource.org/licenses/BSD-3-Clause</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<scm>
+		<url>https://github.com/EsotericSoftware/kryo</url>
+		<connection>scm:git:git@github.com:EsotericSoftware/kryo.git</connection>
+		<developerConnection>scm:git:git@github.com:EsotericSoftware/kryo.git</developerConnection>
+	</scm>
+
+	<developers>
+		<developer>
+			<id>nathan.sweet</id>
+			<name>Nathan Sweet</name>
+			<email>admin@esotericsoftware.com</email>
+		</developer>
+	</developers>
+
+	<properties>
+		<javac.target>1.7</javac.target>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<test.exclude>**/Java8*Test.java</test.exclude>
+	</properties>
+
+	<modules>
+		<module>pom.xml</module>
+		<module>benchmarks</module>
+	</modules>
+
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+		<testSourceDirectory>test</testSourceDirectory>
+
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<inherited>true</inherited>
+					<configuration>
+						<source>${javac.target}</source>
+						<target>${javac.target}</target>
+						<encoding>utf-8</encoding>
+						<testExcludes>
+							<testExclude>${test.exclude}</testExclude>
+						</testExcludes>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>2.19.1</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+
+		<plugins>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.5</version>
+				<executions>
+					<!-- Disable resources (project has none). -->
+					<execution>
+						<id>default-resources</id>
+						<phase>none</phase>
+					</execution>
+					<execution>
+						<id>default-testResources</id>
+						<phase>none</phase>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.10.3</version>
+				<configuration>
+					<!-- Required for java8, so that javadoc errors don't fail the build. -->
+					<additionalparam>-Xdoclint:none</additionalparam>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>findbugs-maven-plugin</artifactId>
+				<version>3.0.3</version>
+			</plugin>
+		</plugins>
+	</build>
+
+	<repositories>
+		<repository>
+			<id>sonatype-releases</id>
+			<name>sonatype releases repo</name>
+			<url>https://oss.sonatype.org/content/repositories/releases</url>
+		</repository>
+	</repositories>
+</project>
