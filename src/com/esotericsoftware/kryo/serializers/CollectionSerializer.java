@@ -260,12 +260,12 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindCollection {
-		/** @see CollectionSerializer#setElementClass(Class, Serializer) */
+		/** @see CollectionSerializer#setElementClass(Class) */
 		Class elementClass() default Object.class;
 
 		/** The element serializer class, which will be created using the {@link #elementSerializerFactory()}. Can be omitted if the
 		 * serializer factory knows what type of serializer to create.
-		 * @see CollectionSerializer#setElementClass(Class, Serializer) */
+		 * @see CollectionSerializer#setElementSerializer(Serializer) */
 		Class<? extends Serializer> elementSerializer() default Serializer.class;
 
 		/** The factory used to create the element serializer. */

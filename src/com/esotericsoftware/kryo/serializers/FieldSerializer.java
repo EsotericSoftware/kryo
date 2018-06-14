@@ -253,8 +253,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 			this.serializer = serializer;
 		}
 
-		/** The serializer to be used for this field, or null to use the serializer registered with {@link Kryo} for the type.
-		 * Default is null. */
+		/** The serializer to be used for this field, or null to use the serializer registered with {@link Kryo} for the type. Some
+		 * serializers require the {@link #setValueClass(Class) value class} to also be set. Default is null. */
 		public void setSerializer (Serializer serializer) {
 			this.serializer = serializer;
 		}
@@ -333,15 +333,25 @@ public class FieldSerializer<T> extends Serializer<T> {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface Bind {
-		/** The concrete class to use for all values of this field. */
+		/** @see CachedField#setValueClass(Class) */
 		Class valueClass() default Object.class;
 
 		/** The serializer class to serialize the annotated field, which will be created by the {@link #serializerFactory()}. Can be
-		 * omitted if the serializer factory knows what type of serializer to create. */
+		 * omitted if the serializer factory knows what type of serializer to create.
+		 * @see CachedField#setSerializer(Serializer) */
 		Class<? extends Serializer> serializer() default Serializer.class;
 
 		/** The factory used to create the serializer. */
 		Class<? extends SerializerFactory> serializerFactory() default SerializerFactory.class;
+
+		/** @see CachedField#setCanBeNull(boolean) */
+		boolean canBeNull() default true;
+
+		/** @see CachedField#setVariableLengthEncoding(boolean) */
+		boolean variableLengthEncoding() default true;
+
+		/** @see CachedField#setOptimizePositive(boolean) */
+		boolean optimizePositive() default false;
 	}
 
 	/** Indicates a field can never be null when it is being serialized and deserialized. Some serializers use this to save space.

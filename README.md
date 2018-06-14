@@ -924,7 +924,7 @@ Annotations can be used to configure the serializers for each field.
 
 Annotation | Description
 --- | ---
-`@Bind` | Sets the serializer and/or value class for any field. Some serializers required the value class to be set.
+`@Bind` | Sets the CachedField settings for any field. If the serializer is set, some serializers required the value class to also be set.
 `@CollectionBind` | Sets the CollectionSerializer settings for Collection fields.
 `@MapBind` | Sets the MapSerializer settings for Map fields.
 `@NotNull` | Marks a field as never being null.
@@ -932,9 +932,12 @@ Annotation | Description
 ```java
 public class SomeClass {
    @NotNull
-   @Bind(serializer = StringSerializer.class, valueClass = String.class) 
+   @Bind(serializer = StringSerializer.class, valueClass = String.class, canBeNull = false) 
    Object stringField;
-   
+
+   @Bind(variableLengthEncoding = false)
+   int intField;
+
    @BindMap(
       keySerializer = StringSerializer.class, 
       valueSerializer = IntArraySerializer.class, 
@@ -943,8 +946,6 @@ public class SomeClass {
       keysCanBeNull = false)
    Map map;
    
-   // Use a CollectionSerializer for this field.
-   // Elements are serialized using LongArraySerializer.
    @BindCollection(
       elementSerializer = LongArraySerializer.class,
       elementClass = long[].class, 

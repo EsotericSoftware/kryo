@@ -250,23 +250,23 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindMap {
-		/** @see MapSerializer#setKeyClass(Class, Serializer) */
+		/** @see MapSerializer#setKeyClass(Class) */
 		Class keyClass() default Object.class;
 
 		/** The key serializer class, which will be created using the {@link #keySerializerFactory()}. Can be omitted if the
 		 * serializer factory knows what type of serializer to create.
-		 * @see MapSerializer#setKeyClass(Class, Serializer) */
+		 * @see MapSerializer#setKeySerializer(Serializer) */
 		Class<? extends Serializer> keySerializer() default Serializer.class;
 
 		/** The factory used to create the key serializer. */
 		Class<? extends SerializerFactory> keySerializerFactory() default SerializerFactory.class;
 
-		/** @see MapSerializer#setValueClass(Class, Serializer) */
+		/** @see MapSerializer#setValueClass(Class) */
 		Class valueClass() default Object.class;
 
 		/** The value serializer class, which will be created using the {@link #valueSerializerFactory()}. Can be omitted if the
 		 * serializer factory knows what type of serializer to create.
-		 * @see MapSerializer#setValueClass(Class, Serializer) */
+		 * @see MapSerializer#setValueSerializer(Serializer) */
 		Class<? extends Serializer> valueSerializer() default Serializer.class;
 
 		/** The factory used to create the value serializer. */
