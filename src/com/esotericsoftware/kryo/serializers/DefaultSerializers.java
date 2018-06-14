@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
@@ -680,6 +681,39 @@ public class DefaultSerializers {
 					}
 				}
 				return (TreeSet)constructor.newInstance(comparator);
+			} catch (Exception ex) {
+				throw new KryoException(ex);
+			}
+		}
+	}
+
+	/** Serializer for {@link PriorityQueue} and any subclass.
+	 * @author Nathan Sweet */
+	static public class PriorityQueueSerializer extends CollectionSerializer<PriorityQueue> {
+		protected void writeHeader (Kryo kryo, Output output, PriorityQueue queue) {
+			kryo.writeClassAndObject(output, queue.comparator());
+		}
+
+		protected PriorityQueue create (Kryo kryo, Input input, Class<? extends PriorityQueue> type, int size) {
+			return createPriorityQueue(type, (Comparator)kryo.readClassAndObject(input));
+		}
+
+		protected PriorityQueue createCopy (Kryo kryo, PriorityQueue original) {
+			return createPriorityQueue(original.getClass(), ((PriorityQueue)original).comparator());
+		}
+
+		private PriorityQueue createPriorityQueue (Class<? extends Collection> type, Comparator comparator) {
+			if (type == PriorityQueue.class || type == null) return new PriorityQueue(comparator);
+			// Use reflection for subclasses.
+			try {
+				Constructor constructor = type.getConstructor(Comparator.class);
+				if (!constructor.isAccessible()) {
+					try {
+						constructor.setAccessible(true);
+					} catch (SecurityException ignored) {
+					}
+				}
+				return (PriorityQueue)constructor.newInstance(comparator);
 			} catch (Exception ex) {
 				throw new KryoException(ex);
 			}
