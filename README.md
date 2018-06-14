@@ -914,7 +914,7 @@ Setting | Description | Default value
 --- | --- | ---
 `canBeNull` | When false it is assumed the field value is never null, which can save 0-1 byte. | true
 `valueClass` | Sets the concrete class and serializer to use for the field value. This removes the need to write the class ID for the value. If the field value's class is a primitive, primitive wrapper, or final, this setting defaults to the field's class. | null
-`serializer` | Sets the serializer to use for the field value. If null, the serializer registered with Kryo for the field value's class will be used. | null
+`serializer` | Sets the serializer to use for the field value. If the serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for the field value's class will be used. | null
 `variableLengthEncoding` | If true, variable length values are used. This only applies to int or long fields. | true
 `optimizePositive` | If true, positive values are optimized for variable length values. This only applies to int or long fields when variable length encoding is used. | true
 
@@ -924,7 +924,7 @@ Annotations can be used to configure the serializers for each field.
 
 Annotation | Description
 --- | ---
-`@Bind` | Sets the CachedField settings for any field. If the serializer is set, some serializers required the value class to also be set.
+`@Bind` | Sets the CachedField settings for any field.
 `@CollectionBind` | Sets the CollectionSerializer settings for Collection fields.
 `@MapBind` | Sets the MapSerializer settings for Map fields.
 `@NotNull` | Marks a field as never being null.
@@ -1020,7 +1020,7 @@ Setting | Description | Default value
 --- | --- | ---
 `elementsCanBeNull` | When false it is assumed that no elements in the collection are null, which can save 0-1 byte per element. | true
 `elementClass` | Sets the concrete class to use for each element in the collection. This removes the need to write the class ID for each element. If the element class is known (eg through generics) and a primitive, primitive wrapper, or final, then CollectionSerializer won't write the class ID even when this setting is null. | null
-`elementSerializer` | Sets the serializer to use for every element in the collection. If null, the serializer registered with Kryo for each element's class will be used. | null
+`elementSerializer` | Sets the serializer to use for every element in the collection. If the serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for each element's class will be used. | null
 
 ### MapSerializer
 
@@ -1034,8 +1034,8 @@ Setting | Description | Default value
 `valuesCanBeNull` | When false it is assumed that no values in the map are null, which can save 0-1 byte per entry. | true
 `keyClass` | Sets the concrete class to use for every key in the map. This removes the need to write the class ID for each key. | null
 `valueClass` | Sets the concrete class to use for every value in the map. This removes the need to write the class ID for each value. | null
-`keySerializer` | Sets the serializer to use for every key in the map. If null, the serializer registered with Kryo for each key's class will be used. | null
-`valueSerializer` | Sets the serializer to use for every value in the map. If null, the serializer registered with Kryo for each value's class will be used. | null
+`keySerializer` | Sets the serializer to use for every key in the map. If the value serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for each key's class will be used. | null
+`valueSerializer` | Sets the serializer to use for every value in the map. If the key serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for each value's class will be used. | null
 
 ### JavaSerializer and ExternalizableSerializer
 
