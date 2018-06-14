@@ -33,10 +33,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.PriorityQueue;
 import java.util.TimeZone;
 
 import org.junit.Assert;
@@ -294,6 +296,18 @@ public class DefaultSerializersTest extends KryoTestCase {
 		Assert.assertNotEquals(kryo.copy(Collections.singleton(contents)).iterator().next(), contents);
 		Assert.assertNotEquals(kryo.copy(Collections.singletonList(contents)).iterator().next(), contents);
 		Assert.assertNotEquals(kryo.copy(Collections.singletonMap(contents, contents)).values().iterator().next(), contents);
+	}
+
+	public void testPriorityQueueCopy () {
+		List<Double> values = Arrays.asList(7d, 0d, 5d, 123d, 432d);
+		PriorityQueue<Double> queue = new PriorityQueue(3, Comparator.reverseOrder());
+		queue.addAll(values);
+
+		kryo.register(PriorityQueue.class);
+		PriorityQueue<Double> copy = kryo.copy(queue);
+		System.out.println(queue);
+		System.out.println(copy);
+		assertEquals(queue.peek(), copy.peek());
 	}
 
 	public void testCalendar () {

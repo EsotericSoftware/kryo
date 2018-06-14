@@ -99,7 +99,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Installation
 
-Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](http://search.maven.org/#browse|1975274176). The latest snapshots of Kryo, including snapshot builds of master, are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/kryo).
+Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](https://search.maven.org/#search|gav|1|g%3Acom.esotericsoftware%20a%3Akryo). The latest snapshots of Kryo, including snapshot builds of master, are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/).
 
 ### With Maven
 
@@ -131,7 +131,7 @@ To use the latest Kryo snapshot, use:
 
 ### Without Maven
 
-Not everyone is a Maven fan. Using Kryo without Maven requires placing the Kryo JAR on your classpath along with the dependency JARs found in [lib](https://github.com/EsotericSoftware/kryo/tree/master/lib).
+Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#Installation) on your classpath along with the dependency JARs found in [lib](https://github.com/EsotericSoftware/kryo/tree/master/lib).
 
 ## Quickstart
 
@@ -331,7 +331,9 @@ SomeClass copy2 = kryo.copyShallow(object);
 
 All the serializers being used need to support [copying](#Serializer-copying). All serializers provided with Kryo support copying.
 
-Like with serialization, multiple references to the same object and circular references are handled by Kryo automatically if references are enabled.
+Like with serialization, when copying, multiple references to the same object and circular references are handled by Kryo automatically if references are enabled.
+
+If using Kryo only for copying, registration can be safely disabled.
 
 Kryo `getOriginalToCopyMap` can be used after an object graph is copied to obtain a map of old to new objects. The map is cleared automatically by Kryo `reset`, so is only useful when Kryo `setAutoReset` is false.
 
@@ -423,6 +425,10 @@ Use of registered and unregistered classes can be mixed. Unregistered classes ha
 1. There are security implications because it allows deserialization to create instances of any class. Classes with side effects during construction or finalization could be used for malicious purposes.
 2. Instead of writing a varint class ID (often 1-2 bytes), the fully qualified class name is written the first time an unregistered class appears in the object graph. Subsequent appearances of that class within the same object graph are written using a varint. Short package names could be considered to reduce the serialized size.
 
+If using Kryo only for copying, registration can be safely disabled.
+
+When registration is not required, Kryo `setWarnUnregisteredClasses` can be enabled to log a message when an unregistered class is encountered. This can be used to easily obtain a list of all unregistered classes. Kryo `unregisteredClassMessage` can be overridden to customize the log message or take other actions.
+
 ### Default serializers
 
 When a class is registered, a serializer instance can optionally be specified:
@@ -433,7 +439,7 @@ kryo.register(SomeClass.class, new SomeSerializer());
 kryo.register(AnotherClass.class, new AnotherSerializer());
 ```
 
-If a serializer is not specified or when an unregistered class is encountered, a serializer is chosen automatically from a list of "default serializers" that maps a class to a serializer. Having many default serializers doesn't affect serialization performance, so by default Kryo has 50+ default serializers for various JRE classes. Additional default serializers can be added:
+If a serializer is not specified or when an unregistered class is encountered, a serializer is chosen automatically from a list of "default serializers" that maps a class to a serializer. Having many default serializers doesn't affect serialization performance, so by default Kryo has [50+ default serializers](https://github.com/EsotericSoftware/kryo/blob/master/src/com/esotericsoftware/kryo/Kryo.java#L179) for various JRE classes. Additional default serializers can be added:
 
 ```java
 Kryo kryo = new Kryo();
