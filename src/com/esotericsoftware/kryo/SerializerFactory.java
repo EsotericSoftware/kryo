@@ -30,30 +30,28 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSe
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.VersionFieldSerializerConfig;
 
-/** A serializer factory that allows the creation of serializers. This factory will be called when a {@link Kryo} serializer
- * discovers a new type for which no serializer is yet known. For example, when a factory is registered via
- * {@link Kryo#setDefaultSerializer(SerializerFactory)} a different serializer can be created dependent on the type of a class.
+/** Creates and configures serializers.
  * @author Rafael Winterhalter <rafael.wth@web.de> */
 public interface SerializerFactory<T extends Serializer> {
-	/** Creates a new serializer
-	 * @param kryo The serializer instance requesting the new serializer.
-	 * @param type The type of the object that is to be serialized.
-	 * @return An implementation of a serializer that is able to serialize an object of type {@code type}. */
+	/** Creates and configures a new serializer.
+	 * @param kryo The Kryo instance that will be used with the new serializer.
+	 * @param type The type of the object that the serializer will serialize. */
 	public T newSerializer (Kryo kryo, Class type);
 
 	/** Returns true if this factory can create a serializer for the specified type. */
 	public boolean isSupported (Class type);
 
+	/** A serializer factory which always returns true for {@link #isSupported(Class)}. */
 	static public abstract class BaseSerializerFactory<T extends Serializer> implements SerializerFactory<T> {
 		public boolean isSupported (Class type) {
 			return true;
 		}
 	}
 
-	/** This factory instantiates new serializers of a given class via reflection. The constructors of the given
-	 * {@code serializerClass} must either take an instance of {@link Kryo} and an instance of {@link Class} as its parameter, take
-	 * only a {@link Kryo} or {@link Class} as its only argument or take no arguments. If several of the described constructors are
-	 * found, the first found constructor is used, in the order as they were just described.
+	/** This factory instantiates new serializers of a given class via reflection. The constructors of the given serializer class
+	 * must either take an instance of {@link Kryo} and an instance of {@link Class} as its parameter, take only a {@link Kryo} or
+	 * {@link Class} as its only argument, or take no arguments. If several of the described constructors are found, the first
+	 * found constructor is used, in the order they were just described.
 	 * @author Rafael Winterhalter <rafael.wth@web.de> */
 	static public class ReflectionSerializerFactory<T extends Serializer> extends BaseSerializerFactory<T> {
 		private final Class<T> serializerClass;
@@ -91,8 +89,7 @@ public interface SerializerFactory<T extends Serializer> {
 	}
 
 	/** A serializer factory that always returns a given serializer instance rather than creating new serializer instances. It can
-	 * be used when multiple types should be serialized by the same serializer. This also allows serializers to be shared among
-	 * different {@link Kryo} instances.
+	 * be used when multiple types should be serialized by the same serializer.
 	 * @author Rafael Winterhalter <rafael.wth@web.de> */
 	static public class SingletonSerializerFactory<T extends Serializer> extends BaseSerializerFactory<T> {
 		private final T serializer;

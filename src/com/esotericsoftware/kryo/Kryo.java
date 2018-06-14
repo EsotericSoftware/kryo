@@ -80,6 +80,8 @@ import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.Generics;
+import com.esotericsoftware.kryo.util.Generics.GenericType;
+import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
 import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
@@ -1160,7 +1162,21 @@ public class Kryo {
 		return type.getName().indexOf('/') >= 0;
 	}
 
-	/** Tracks the generic type arguments and actual classes for type variables in the object graph during seralization. */
+	/** Tracks the generic type arguments and actual classes for type variables in the object graph during seralization.
+	 * <p>
+	 * When serializing a type with a single type parameter, {@link Generics#nextGenericClass() nextGenericClass} will return the
+	 * generic class (or null) and must be followed by {@link Generics#popGenericType() popGenericType}. See
+	 * {@link CollectionSerializer} for an example.
+	 * <p>
+	 * When serializing a type with multiple type parameters, {@link Generics#nextGenericTypes() nextGenericTypes} will return an
+	 * array of {@link GenericType}, then for each of those {@link GenericType#resolve(Generics) resolve} returns the generic
+	 * class. This must be followed by {@link Generics#popGenericType() popGenericType}. See {@link MapSerializer} for an example.
+	 * <p>
+	 * {@link GenericsHierarchy} stores the type parameters for a class.
+	 * {@link Generics#pushTypeVariables(GenericsHierarchy, GenericType[]) pushTypeVariables} can be called before generic types
+	 * are {@link GenericType#resolve(Generics) resolved} so the type parameters are tracked as serialization moved through the
+	 * object graph. If >0 is returned, this must be followed by {@link Generics#popTypeVariables(int) popTypeVariables}. See
+	 * {@link FieldSerializer} for an example. */
 	public Generics getGenerics () {
 		return generics;
 	}

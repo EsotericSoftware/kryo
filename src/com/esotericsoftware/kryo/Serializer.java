@@ -84,10 +84,10 @@ public abstract class Serializer<T> {
 	}
 
 	/** Returns a copy of the specified object. The default implementation returns the original if {@link #isImmutable()} is true,
-	 * else throws {@link KryoException}. Subclasses should override this method if needed to support {@link Kryo#copy(Object)}.
+	 * else throws {@link KryoException}. Subclasses can optionall override this method to support {@link Kryo#copy(Object)}.
 	 * <p>
 	 * Before Kryo can be used to copy child objects, {@link Kryo#reference(Object)} must be called with the copy to ensure it can
-	 * be referenced by the child objects. Any serializer that uses {@link Kryo} to copy a child object may need to be reentrant.
+	 * be referenced by the child objects. A serializer that uses {@link Kryo} to copy a child object may need to be reentrant.
 	 * <p>
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} copy methods that accept a
 	 * serialier. */

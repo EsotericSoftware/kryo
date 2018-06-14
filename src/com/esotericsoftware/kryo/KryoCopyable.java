@@ -21,7 +21,7 @@ package com.esotericsoftware.kryo;
 
 /** Allows implementing classes to perform their own copying. Hand written copying can be more efficient in some cases.
  * <p>
- * This method is used instead of the registered serializer {@link Serializer#copy(Kryo, Object)} method.
+ * This method is used instead of the registered serializer's {@link Serializer#copy(Kryo, Object)} method.
  * @author Nathan Sweet */
 public interface KryoCopyable<T> {
 	/** Returns a copy that has the same values as this object. Before Kryo can be used to copy child objects,
