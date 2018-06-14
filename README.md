@@ -229,8 +229,6 @@ input.nextChunks();
 input.close();
 ```
 
-Chunked encoding
-
 ### Buffer performance
 
 Generally Output and Input provide good performance. Unsafe buffers perform as well or better, especially for primitive arrays, if their crossplatform incompatibilities are acceptable. ByteBufferOutput and ByteBufferInput provide slightly worse performance, but this may be acceptable if the final destination of the bytes must be a ByteBuffer.
@@ -243,7 +241,7 @@ Variable length encoding is slower than fixed values, especially when there is a
 
 ![](http://n4te.com/x/4340-variableEncoding.png)
 
-Chunked encoding adds an additional copy of all the bytes. This alone may be acceptable, however when used in a reentrant serializer, the serializer needs to create an OutputChunked or InputChunked for each object. Allocating and garbage collecting those buffers during serialization can have a negative impact on performance.
+Chunked encoding uses an intermediary buffer so it adds one additional copy of all the bytes. This alone may be acceptable, however when used in a reentrant serializer, the serializer must create an OutputChunked or InputChunked for each object. Allocating and garbage collecting those buffers during serialization can have a negative impact on performance.
 
 ![](http://n4te.com/x/4338-fieldSerializer.png)
 
@@ -922,7 +920,14 @@ Setting | Description | Default value
 
 #### FieldSerializer annotations
 
-Annotations can be used to configure the serializers for each field. `@Bind` sets the serializer and/or value class for any field (some serializers required the class to be set). `@CollectionBind` sets the CollectionSerializer settings for Collection fields. `@MapBind` sets the MapSerializer settings for Map fields. `@NotNull` marks a field as never being null.
+Annotations can be used to configure the serializers for each field.
+
+Annotation | Description
+--- | ---
+`@Bind` | Sets the serializer and/or value class for any field. Some serializers required the value class to be set.
+`@CollectionBind` | Sets the CollectionSerializer settings for Collection fields.
+`@MapBind` | Sets the MapSerializer settings for Map fields.
+`@NotNull` | Marks a field as never being null.
 
 ```java
 public class SomeClass {
