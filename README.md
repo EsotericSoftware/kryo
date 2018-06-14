@@ -329,7 +329,7 @@ The reference resolver determines the maximum number of references in a single o
 
 Kryo `getContext` returns a map for storing user data. The Kryo instance is available to all serializers, so this data is easily accessible to all serializers.
 
-Kryo `getGraphContext` is similar, but is cleared after each object graph is serialized or deserialized. This makes it easy to manage state that is only relevant for the current object graph. For example, this can be used to write some schema data the first time a class is encountered in an object graph (CompatibleFieldSerializer does exactly that).
+Kryo `getGraphContext` is similar, but is cleared after each object graph is serialized or deserialized. This makes it easy to manage state that is only relevant for the current object graph. For example, this can be used to write some schema data the first time a class is encountered in an object graph. See CompatibleFieldSerializer for an example.
 
 ### Reset
 
@@ -409,7 +409,7 @@ This will cause a SomeSerializer instance to be created when SomeClass or any cl
 
 Default serializers are sorted so more specific classes are matched first, but are otherwise matched in the order they are added. The order they are added can be relevant for interfaces.
 
-If no default serializers match a class, then the global default serializer is used. The global default serializer is set to [FieldSerializer](#FieldSerializer) by default but can be changed. Usually the global serializer is one that can handle many different types.
+If no default serializers match a class, then the global default serializer is used. The global default serializer is set to [FieldSerializer](#FieldSerializer) by default, but can be changed. Usually the global serializer is one that can handle many different types.
 
 ```java
     Kryo kryo = new Kryo();
@@ -428,7 +428,7 @@ A class can also use the DefaultSerializer annotation, which will be used instea
     }
 ```
 
-For maximum flexibility, Kryo `getDefaultSerializer` can be overridden to implement custom logic for choosing a serializer.
+For maximum flexibility, Kryo `getDefaultSerializer` can be overridden to implement custom logic for choosing and instantiating a serializer.
 
 #### Serializer factories
 
@@ -611,7 +611,7 @@ By default, serializers will never receive a null, instead Kryo will write a byt
 
 Kryo `getGenerics` provides generic type information so serializers can be more efficient. This is most commonly used to avoid writing the class when the type parameter class is final.
 
-If the class has a single type parameter, `nextGenericClass` returns the type parameter class, or null if none. After reading or writing any nested objects, `popGenericType` must be called.
+If the class has a single type parameter, `nextGenericClass` returns the type parameter class, or null if none. After reading or writing any nested objects, `popGenericType` must be called. See CollectionSerializer for an example.
 
 ```java
     public class SomeClass<T> {
@@ -648,7 +648,7 @@ If the class has a single type parameter, `nextGenericClass` returns the type pa
     }
 ```
 
-For a class with multiple type parameters, it's slightly more involved. `nextGenericTypes` returns an array of GenericType instances and `resolve` is used to obtain the class for each GenericType. After reading or writing any nested objects, `popGenericType` must be called.
+For a class with multiple type parameters, `nextGenericTypes` returns an array of GenericType instances and `resolve` is used to obtain the class for each GenericType. After reading or writing any nested objects, `popGenericType` must be called. See MapSerializer for an example.
 
 ```java
 public class SomeClass<K, V> {
@@ -706,6 +706,70 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
 		return object;
 	}
 }
+```
+
+For serializers which pass type parameter information for nested objects in the object graph (somewhat advanced usage), first GenericsHierarchy is used to store the type parameters for a class. During serialization, Generics `pushTypeVariables` is called before generic types are resolved (if any). If >0 is returned, this must be followed by Generics `popTypeVariables`. See FieldSerializer for an example.
+
+```java
+    static public class SomeClass<T> {
+       T value;
+       List<T> list;
+    }
+    public class SomeClassSerializer extends Serializer<SomeClass> {
+       private final GenericsHierarchy genericsHierarchy;
+    
+       public SomeClassSerializer () {
+          genericsHierarchy = new GenericsHierarchy(SomeClass.class);
+       }
+    
+       public void write (Kryo kryo, Output output, SomeClass object) {
+          Class valueClass = null;
+          Generics generics = kryo.getGenerics();
+          int pop = 0;
+          GenericType[] genericTypes = generics.nextGenericTypes();
+          if (genericTypes != null) {
+             pop = generics.pushTypeVariables(genericsHierarchy, genericTypes);
+             valueClass = genericTypes[0].resolve(generics);
+          }
+    
+          if (valueClass != null && kryo.isFinal(valueClass)) {
+             Serializer serializer = kryo.getSerializer(valueClass);
+             kryo.writeObjectOrNull(output, object.value, serializer);
+          } else
+             kryo.writeClassAndObject(output, object.value);
+    
+          kryo.writeClassAndObject(output, object.list);
+    
+          if (pop > 0) generics.popTypeVariables(pop);
+          generics.popGenericType();
+       }
+    
+       public SomeClass read (Kryo kryo, Input input, Class<? extends SomeClass> type) {
+          Class valueClass = null;
+          Generics generics = kryo.getGenerics();
+          int pop = 0;
+          GenericType[] genericTypes = generics.nextGenericTypes();
+          if (genericTypes != null) {
+             pop = generics.pushTypeVariables(genericsHierarchy, genericTypes);
+             valueClass = genericTypes[0].resolve(generics);
+          }
+    
+          SomeClass object = new SomeClass();
+          kryo.reference(object);
+    
+          if (valueClass != null && kryo.isFinal(valueClass)) {
+             Serializer serializer = kryo.getSerializer(valueClass);
+             object.value = kryo.readObjectOrNull(input, valueClass, serializer);
+          } else
+             object.value = kryo.readClassAndObject(input);
+    
+          object.list = (List)kryo.readClassAndObject(input);
+    
+          if (pop > 0) generics.popTypeVariables(pop);
+          generics.popGenericType();
+          return object;
+       }
+    }
 ```
 
 ### KryoSerializable
