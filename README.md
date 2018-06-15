@@ -125,7 +125,7 @@ To use the latest Kryo snapshot, use:
 
 ### Without Maven
 
-Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#Installation) on your classpath along with the dependency JARs found in [lib](https://github.com/EsotericSoftware/kryo/tree/master/lib).
+Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#installation) on your classpath along with the dependency JARs found in [lib](https://github.com/EsotericSoftware/kryo/tree/master/lib).
 
 ## Quickstart
 
@@ -323,7 +323,7 @@ SomeClass copy1 = kryo.copy(object);
 SomeClass copy2 = kryo.copyShallow(object);
 ```
 
-All the serializers being used need to support [copying](#Serializer-copying). All serializers provided with Kryo support copying.
+All the serializers being used need to support [copying](#serializer-copying). All serializers provided with Kryo support copying.
 
 Like with serialization, when copying, multiple references to the same object and circular references are handled by Kryo automatically if references are enabled.
 
@@ -335,7 +335,7 @@ Kryo `getOriginalToCopyMap` can be used after an object graph is copied to obtai
 
 By default references are not enabled. This means if an object appears in an object graph multiple times, it will be written multiple times and will be deserialized as multiple, different objects. When references are disabled, circular references will cause serialization to fail. References are enabled or disabled with Kryo `setReferences` for serialization and `setCopyReferences` for copying.
 
-When references are enabled, a varint is written before each object the first time it appears in the object graph. For subsequent appearances of that class within the same object graph, only a varint is written. After deserialization the object references are restored, including any circular references. The serializers in use must [support references](#Serializer-references) by calling Kryo `reference` in Serializer `read`.
+When references are enabled, a varint is written before each object the first time it appears in the object graph. For subsequent appearances of that class within the same object graph, only a varint is written. After deserialization the object references are restored, including any circular references. The serializers in use must [support references](#serializer-references) by calling Kryo `reference` in Serializer `read`.
 
 Enabling references impacts performance because every object that is read or written needs to be tracked.
 
@@ -369,7 +369,7 @@ Kryo `getGraphContext` is similar, but is cleared after each object graph is ser
 
 ### Reset
 
-By default, Kryo `reset` is called after each entire object graph is serialized. This resets unregistered class names in the [class resolver](#ClassResolver), references to previously serialized or deserialized objects in the [reference resolver](#ReferenceResolver), and clears the graph context. Kryo `setAutoReset(false)` can be used to disable calling `reset` automatically, allowing that state to span multiple object graphs.
+By default, Kryo `reset` is called after each entire object graph is serialized. This resets unregistered class names in the [class resolver](#classresolver), references to previously serialized or deserialized objects in the [reference resolver](#referenceresolver), and clears the graph context. Kryo `setAutoReset(false)` can be used to disable calling `reset` automatically, allowing that state to span multiple object graphs.
 
 ## Serializer framework
 
@@ -449,7 +449,7 @@ This will cause a SomeSerializer instance to be created when SomeClass or any cl
 
 Default serializers are sorted so more specific classes are matched first, but are otherwise matched in the order they are added. The order they are added can be relevant for interfaces.
 
-If no default serializers match a class, then the global default serializer is used. The global default serializer is set to [FieldSerializer](#FieldSerializer) by default, but can be changed. Usually the global serializer is one that can handle many different types.
+If no default serializers match a class, then the global default serializer is used. The global default serializer is set to [FieldSerializer](#fieldserializer) by default, but can be changed. Usually the global serializer is one that can handle many different types.
 
 ```java
 Kryo kryo = new Kryo();
@@ -937,7 +937,7 @@ For some needs, such as long term storage of serialized bytes, it can be importa
 
 ## Serializers
 
-Kryo provides many serializers with various configuration options and levels of compatibility. Additional serializers can be found in the [kryo-serializers](https://github.com/magro/kryo-serializers) sister project, which hosts serializers that access private APIs or are otherwise not perfectly safe on all JVMs. More serializers can be found in the [links section](#Links).
+Kryo provides many serializers with various configuration options and levels of compatibility. Additional serializers can be found in the [kryo-serializers](https://github.com/magro/kryo-serializers) sister project, which hosts serializers that access private APIs or are otherwise not perfectly safe on all JVMs. More serializers can be found in the [links section](#links).
 
 ### FieldSerializer
 
