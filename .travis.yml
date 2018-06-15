@@ -27,7 +27,7 @@ script:
   # is documented in https://docs.travis-ci.com/user/customizing-the-build#Breaking-the-Build
   - jdk_switcher use oraclejdk8
   - if [ $TRAVIS_BRANCH = "master" ] && [ $TRAVIS_PULL_REQUEST = "false" ] && [ $IS_SNAPSHOT ]; then
-      mvn -B -P requireSnapshot -DskipTests=true deploy --settings .settings.xml;
+      mvn -B -P requireSnapshot -DskipTests=true deploy --settings build/settings-sonatype.xml;
     else
       echo "Skipping deployment...";
     fi
