@@ -189,8 +189,8 @@ abstract public class KryoTestCase extends TestCase {
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
 		if (checkLength) {
-			assertEquals("Incorrect number of bytes read.", length, input.total());
-			assertEquals("Incorrect number of bytes written.", length, output.total());
+			Assert.assertEquals("Incorrect number of bytes read.", length, input.total());
+			Assert.assertEquals("Incorrect number of bytes written.", length, output.total());
 		}
 
 		if (debug) return (T)object2;
@@ -205,7 +205,7 @@ abstract public class KryoTestCase extends TestCase {
 		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
-		if (checkLength) assertEquals("Incorrect number of bytes read.", length, input.total());
+		if (checkLength) Assert.assertEquals("Incorrect number of bytes read.", length, input.total());
 
 		if (object1 != null) {
 			// Test null with serializer.
@@ -217,10 +217,10 @@ abstract public class KryoTestCase extends TestCase {
 
 			// Test null from byte array with and without serializer.
 			input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
-			assertEquals(null, kryo.readObjectOrNull(input, object1.getClass(), serializer));
+			Assert.assertEquals(null, kryo.readObjectOrNull(input, object1.getClass(), serializer));
 
 			input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
-			assertEquals(null, kryo.readObjectOrNull(input, object1.getClass()));
+			Assert.assertEquals(null, kryo.readObjectOrNull(input, object1.getClass()));
 		}
 
 		// Test output to byte array.
@@ -233,8 +233,8 @@ abstract public class KryoTestCase extends TestCase {
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
 		if (checkLength) {
-			assertEquals("Incorrect length.", length, output.total());
-			assertEquals("Incorrect number of bytes read.", length, input.total());
+			Assert.assertEquals("Incorrect length.", length, output.total());
+			Assert.assertEquals("Incorrect number of bytes read.", length, input.total());
 		}
 		input.rewind();
 
@@ -250,10 +250,6 @@ abstract public class KryoTestCase extends TestCase {
 	}
 
 	protected void doAssertEquals (Object object1, Object object2) {
-		Assert.assertEquals(arrayToList(object1), arrayToList(object2));
-	}
-
-	static public void assertEquals (Object object1, Object object2) {
 		Assert.assertEquals(arrayToList(object1), arrayToList(object2));
 	}
 

@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.util;
 
 import static com.esotericsoftware.kryo.util.GenericsUtil.*;
+import static org.junit.Assert.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -27,10 +28,11 @@ import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 /** @author Nathan Sweet */
-public class GenericsUtilTest extends TestCase {
+public class GenericsUtilTest {
+	@Test
 	public void testGenerics () throws Exception {
 		String[] names = { //
 			"ArrayList<String> fromField1", //

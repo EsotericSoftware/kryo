@@ -21,12 +21,17 @@ package com.esotericsoftware.kryo;
 
 import java.util.ArrayList;
 
+import org.junit.Before;
+import org.junit.Test;
+
 public class CopyTest extends KryoTestCase {
+	@Before
 	public void setUp () throws Exception {
 		super.setUp();
 		kryo.setRegistrationRequired(false);
 	}
 
+	@Test
 	public void testBasic () {
 		ArrayList test = new ArrayList();
 		test.add("one");
@@ -38,6 +43,7 @@ public class CopyTest extends KryoTestCase {
 		assertEquals(test, copy);
 	}
 
+	@Test
 	public void testNested () {
 		ArrayList test = new ArrayList();
 		test.add("one");
@@ -64,6 +70,7 @@ public class CopyTest extends KryoTestCase {
 		assertEquals(test, copy);
 	}
 
+	@Test
 	public void testReferences () {
 		ArrayList test = new ArrayList();
 		test.add("one");
@@ -96,6 +103,7 @@ public class CopyTest extends KryoTestCase {
 		assertTrue(copy.get(3) != copy.get(5));
 	}
 
+	@Test
 	public void testCircularReferences () {
 		ArrayList test = new ArrayList();
 		test.add("one");
@@ -128,6 +136,7 @@ public class CopyTest extends KryoTestCase {
 		assertTrue(root2.moo.moo.moo.moo == root2);
 	}
 
+	@Test
 	public void testShallow () {
 		ArrayList test = new ArrayList();
 		test.add("one");
