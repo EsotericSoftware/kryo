@@ -343,13 +343,13 @@ Enabling references impacts performance because every object that is read or wri
 
 #### ReferenceResolver
 
-Under the covers, a ReferenceResolver handles tracking objects that have been read or written and provides int reference IDs. Multiple default implementations are provided:
+Under the covers, a ReferenceResolver handles tracking objects that have been read or written and provides int reference IDs. Multiple implementations are provided:
 
 1. MapReferenceResolver is used by default if a reference resolver is not specified. It uses Kryo's IdentityObjectIntMap (a [cuckoo hashmap](https://en.wikipedia.org/wiki/Cuckoo%5Fhashing)) to track written objects. This kind of map has very fast gets and does not allocate for put, but puts for very large numbers of objects can be somewhat slow.
 2. HashMapReferenceResolver uses a HashMap to track written objects. This kind of map allocates for put but may provide better performance for object graphs with a very high number of objects.
-3. ListReferenceResolver uses an ArrayList to track written objects. For object graphs with relatively few objects, this can be faster than using a map. This should not be used for graphs with many objects because it has a linear look up to find objects that have already been written.
+3. ListReferenceResolver uses an ArrayList to track written objects. For object graphs with relatively few objects, this can be faster than using a map (~15% faster in some tests). This should not be used for graphs with many objects because it has a linear look up to find objects that have already been written.
 
-The `useReferences(Class)` method returns a boolean to decide if references are supported for a class. If a class doesn't support references, the varint reference ID is not written before objects of that type. If a class does not need references and objects of that type appear in the object graph many times, the serialized size can be greatly reduced by disabling references for that class. The default reference resolver returns false for all primitive wrappers and enums. It is common to also return false for String and other classes, depending on the object graphs being serialized.
+ReferenceResolver `useReferences(Class)` can be overridden. It returns a boolean to decide if references are supported for a class. If a class doesn't support references, the varint reference ID is not written before objects of that type. If a class does not need references and objects of that type appear in the object graph many times, the serialized size can be greatly reduced by disabling references for that class. The default reference resolver returns false for all primitive wrappers and enums. It is common to also return false for String and other classes, depending on the object graphs being serialized.
 
 ```java
 public boolean useReferences (Class type) {
@@ -359,7 +359,7 @@ public boolean useReferences (Class type) {
 
 #### Reference limits
 
-The reference resolver determines the maximum number of references in a single object graph. Java array indices are limited to `Integer.MAX_VALUE`, so reference resolvers that use data structures based on arrays may result in a `java.lang.NegativeArraySizeException` when serializing large object graphs (eg, >1 billion objects). Kryo uses int class IDs, so the maximum number of references in a single object graph is limited to the full range of positive and negative numbers in an int.
+The reference resolver determines the maximum number of references in a single object graph. Java array indices are limited to `Integer.MAX_VALUE`, so reference resolvers that use data structures based on arrays may result in a `java.lang.NegativeArraySizeException` when serializing more than ~2 billion objects. Kryo uses int class IDs, so the maximum number of references in a single object graph is limited to the full range of positive and negative numbers in an int (~4 billion).
 
 ### Context
 
@@ -373,11 +373,11 @@ By default, Kryo `reset` is called after each entire object graph is serialized.
 
 ## Serializer framework
 
-Kryo is a framework to facilitate serialization. The framework itself doesn't enforce a schema or care what or how data is written or read. Serializers are pluggable and make the decisions about what to read and write. Many serializers are provided out of the box to read and write data in various ways. While the provided serializers can read and write most objects, if necessary they can be replaced partially or completely with your own serializers.
+Kryo is a framework to facilitate serialization. The framework itself doesn't enforce a schema or care what or how data is written or read. Serializers are pluggable and make the decisions about what to read and write. Many serializers are provided out of the box to read and write data in various ways. While the provided serializers can read and write most objects, they can easily be replaced partially or completely with your own serializers.
 
 ### Registration
 
-When Kryo goes to write an instance of an object, first it may need to write something that identifies the object's class. By default, all classes that Kryo will read or write must be registered beforehand. Registration provides an int class ID, the serializer to use for the class, and the object instantiator used to create instances of the class.
+When Kryo goes to write an instance of an object, first it may need to write something that identifies the object's class. By default, all classes that Kryo will read or write must be registered beforehand. Registration provides an int class ID, the serializer to use for the class, and the [object instantiator](#object-creation) used to create instances of the class.
 
 ```java
 Kryo kryo = new Kryo();
@@ -425,7 +425,7 @@ When registration is not required, Kryo `setWarnUnregisteredClasses` can be enab
 
 ### Default serializers
 
-When a class is registered, a serializer instance can optionally be specified:
+When a class is registered, a serializer instance can optionally be specified. During deserialization, the registered classes must have the exact same serializers and serializer configurations they had during serialization.
 
 ```java
 Kryo kryo = new Kryo();
