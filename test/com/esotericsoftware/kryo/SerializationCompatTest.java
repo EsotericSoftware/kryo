@@ -143,7 +143,9 @@ public class SerializationCompatTest extends KryoTestCase {
 
 	private void runTest (TestDataDescription description, String variant, Function1<File, Input> inputFactory,
 		Function1<File, Output> outputFactory) throws Exception {
-		File file = new File("test/resources/" + description.classSimpleName() + "-" + variant + ".ser");
+		File testDir = new File("test");
+		if (!testDir.exists()) testDir = new File("../test"); // Could be running in Eclipse subdirectory.
+		File file = new File(testDir, "resources/" + description.classSimpleName() + "-" + variant + ".ser");
 		file.getParentFile().mkdirs();
 
 		if (file.exists()) {
