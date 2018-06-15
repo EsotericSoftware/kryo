@@ -62,7 +62,7 @@ import java.util.Comparator;
 public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	static private final Comparator<CachedField> tagComparator = new Comparator<CachedField>() {
 		public int compare (CachedField o1, CachedField o2) {
-			return o1.getField().getAnnotation(Tag.class).value() - o2.getField().getAnnotation(Tag.class).value();
+			return o1.field.getAnnotation(Tag.class).value() - o2.field.getAnnotation(Tag.class).value();
 		}
 	};
 
@@ -85,7 +85,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		CachedField[] fields = cachedFields.fields;
 		// Remove untagged fields.
 		for (int i = 0, n = fields.length; i < n; i++) {
-			Field field = fields[i].getField();
+			Field field = fields[i].field;
 			if (field.getAnnotation(Tag.class) == null) {
 				if (TRACE) trace("kryo", "Ignoring field without tag: " + fields[i]);
 				super.removeField(fields[i]);
@@ -100,10 +100,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		tags = new int[n];
 		deprecated = new boolean[n];
 		for (int i = 0; i < n; i++) {
-			Field field = fields[i].getField();
+			Field field = fields[i].field;
 			tags[i] = field.getAnnotation(Tag.class).value();
 			if (i > 0 && tags[i] == tags[i - 1]) // Relies on fields having been sorted.
-				throw new KryoException("Duplicate tag " + tags[i] + " on fields: " + field + " and " + fields[i - 1].getField());
+				throw new KryoException("Duplicate tag " + tags[i] + " on fields: " + field + " and " + fields[i - 1].field);
 			if (field.getAnnotation(Deprecated.class) != null) {
 				deprecated[i] = true;
 				writeFieldCount--;
@@ -155,7 +155,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				Class valueClass = null;
 				try {
 					if (object != null) {
-						Object value = cachedField.getField().get(object);
+						Object value = cachedField.field.get(object);
 						if (value != null) valueClass = value.getClass();
 					}
 				} catch (IllegalAccessException ex) {

@@ -65,7 +65,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		CachedField[] fields = cachedFields.fields;
 		fieldVersion = new int[fields.length];
 		for (int i = 0, n = fields.length; i < n; i++) {
-			Field field = fields[i].getField();
+			Field field = fields[i].field;
 			Since since = field.getAnnotation(Since.class);
 			if (since != null) {
 				fieldVersion[i] = since.value();
@@ -124,7 +124,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		for (int i = 0, n = fields.length; i < n; i++) {
 			// Field is not present in input, skip it.
 			if (fieldVersion[i] > version) {
-				if (DEBUG) debug("Skip field: " + fields[i].getField().getName());
+				if (DEBUG) debug("Skip field: " + fields[i].field.getName());
 				continue;
 			}
 			if (TRACE) log("Read", fields[i], input.position());

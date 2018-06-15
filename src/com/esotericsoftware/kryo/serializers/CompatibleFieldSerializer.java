@@ -88,7 +88,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				Class valueClass = null;
 				try {
 					if (object != null) {
-						Object value = cachedField.getField().get(object);
+						Object value = cachedField.field.get(object);
 						if (value != null) valueClass = value.getClass();
 					}
 				} catch (IllegalAccessException ex) {

@@ -318,9 +318,9 @@ class CachedFields implements Comparator<CachedField> {
 
 		// Set the CachedField settings for any field.
 		if (field.isAnnotationPresent(FieldSerializer.Bind.class)) {
-			if (cachedField.getSerializer() != null) {
+			if (cachedField.serializer != null) {
 				throw new KryoException("@Bind applied to a field that already has a serializer: "
-					+ cachedField.getField().getDeclaringClass().getName() + "." + cachedField.getField().getName());
+					+ cachedField.field.getDeclaringClass().getName() + "." + cachedField.field.getName());
 			}
 			Bind annotation = field.getAnnotation(FieldSerializer.Bind.class);
 
@@ -338,9 +338,9 @@ class CachedFields implements Comparator<CachedField> {
 
 		// Set CollectionSerializer settings for a collection field.
 		if (field.isAnnotationPresent(CollectionSerializer.BindCollection.class)) {
-			if (cachedField.getSerializer() != null) {
+			if (cachedField.serializer != null) {
 				throw new KryoException("@BindCollection applied to a field that already has a serializer: "
-					+ cachedField.getField().getDeclaringClass().getName() + "." + cachedField.getField().getName());
+					+ cachedField.field.getDeclaringClass().getName() + "." + cachedField.field.getName());
 			}
 			if (!Collection.class.isAssignableFrom(field.getType())) throw new KryoException(
 				"@BindCollection can only be used with a field implementing Collection: " + className(field.getType()));
@@ -360,9 +360,9 @@ class CachedFields implements Comparator<CachedField> {
 
 		// Set MapSerializer settings for a map field.
 		if (field.isAnnotationPresent(MapSerializer.BindMap.class)) {
-			if (cachedField.getSerializer() != null) {
+			if (cachedField.serializer != null) {
 				throw new KryoException("@BindMap applied to a field that already has a serializer: "
-					+ cachedField.getField().getDeclaringClass().getName() + "." + cachedField.getField().getName());
+					+ cachedField.field.getDeclaringClass().getName() + "." + cachedField.field.getName());
 			}
 			if (!Map.class.isAssignableFrom(field.getType()))
 				throw new KryoException("@BindMap can only be used with a field implementing Map: " + className(field.getType()));
