@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
@@ -101,7 +100,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		Field defaultSerializersField = Kryo.class.getDeclaredField("defaultSerializers");
 		defaultSerializersField.setAccessible(true);
 		List defaultSerializers = (List)defaultSerializersField.get(kryo);
-		Assert.assertEquals("The registered default serializers have changed.\n" //
+		assertEquals("The registered default serializers have changed.\n" //
 			+ "Because serialization compatibility shall be checked for default serializers, you must extend " //
 			+ "SerializationCompatTestData.TestData to have a field for the type of the new default serializer.\n" //
 			+ "After that's done, you must create new versions of 'test/resources/data*' because the new TestData instance will " //

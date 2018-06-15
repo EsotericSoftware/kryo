@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
@@ -41,7 +43,6 @@ import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.TimeZone;
 
-import org.junit.Assert;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet */
@@ -293,9 +294,9 @@ public class DefaultSerializersTest extends KryoTestCase {
 	public void testDeepCollectionCloning () {
 		kryo.setRegistrationRequired(false);
 		Object contents = new Object();
-		Assert.assertNotEquals(kryo.copy(Collections.singleton(contents)).iterator().next(), contents);
-		Assert.assertNotEquals(kryo.copy(Collections.singletonList(contents)).iterator().next(), contents);
-		Assert.assertNotEquals(kryo.copy(Collections.singletonMap(contents, contents)).values().iterator().next(), contents);
+		assertNotEquals(kryo.copy(Collections.singleton(contents)).iterator().next(), contents);
+		assertNotEquals(kryo.copy(Collections.singletonList(contents)).iterator().next(), contents);
+		assertNotEquals(kryo.copy(Collections.singletonMap(contents, contents)).values().iterator().next(), contents);
 	}
 
 	public void testPriorityQueueCopy () {

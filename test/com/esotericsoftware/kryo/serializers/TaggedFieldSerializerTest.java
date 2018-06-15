@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
@@ -29,8 +31,6 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
-
-import org.junit.Assert;
 
 @SuppressWarnings("synthetic-access")
 public class TaggedFieldSerializerTest extends KryoTestCase {
@@ -127,7 +127,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		input = new Input(inStream);
 		Object[] presentArray = (Object[])kryo.readClassAndObject(input);
 		FutureClass presentObject = (FutureClass)presentArray[0];
-		Assert.assertNotEquals(futureObject, presentObject);
+		assertNotEquals(futureObject, presentObject);
 		assertTrue(presentObject.pastEquals(futureObject));
 		assertEquals(futureArray[1], presentArray[1]);
 	}

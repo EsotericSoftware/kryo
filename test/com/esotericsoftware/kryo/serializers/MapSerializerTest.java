@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
@@ -38,7 +40,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
-import org.junit.Assert;
 
 /** @author Nathan Sweet */
 @SuppressWarnings("synthetic-access")
@@ -109,7 +110,7 @@ public class MapSerializerTest extends KryoTestCase {
 
 		input = new Input(output.toBytes());
 		HasGenerics test2 = (HasGenerics)kryo.readClassAndObject(input);
-		Assert.assertArrayEquals(test.map.get("moo"), test2.map.get("moo"));
+		assertArrayEquals(test.map.get("moo"), test2.map.get("moo"));
 	}
 
 	private void execute (Map<Object, Object> map, int inserts) {
@@ -129,7 +130,7 @@ public class MapSerializerTest extends KryoTestCase {
 		Object deserialized = kryo.readClassAndObject(input);
 		input.close();
 
-		Assert.assertEquals(map, deserialized);
+		assertEquals(map, deserialized);
 	}
 
 	public void testTreeMap () {

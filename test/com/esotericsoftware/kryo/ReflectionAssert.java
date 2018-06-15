@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo;
 
+import static org.junit.Assert.*;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Calendar;
@@ -34,10 +36,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang.StringUtils;
-import org.junit.Assert;
 
 /** An assertion utility that provides reflection based assertion, with improvements compared to commons-lang's
- * EqualsBuilder#reflectionEquals and unitils' ReflectionAssert.assertReflectionEquals. */
+ * EqualsBuilder#reflectionEquals and unitils' ReflectionassertReflectionEquals. */
 class ReflectionAssert {
 
 	/** Checks both objects for equality using reflection. There are special equal checks implemented for some types like
@@ -46,7 +47,7 @@ class ReflectionAssert {
 	 * implementation, basically {@link #assertReflectionEquals(Object, Object, boolean)} is invoked with <code>true</code> for
 	 * param <code>requireMatchingCollectionClasses</code>.
 	 *
-	 * Also unitils' ReflectionAssert.assertReflectionEquals seems to not properly support StringBuffer/StringBuilder.
+	 * Also unitils' ReflectionassertReflectionEquals seems to not properly support StringBuffer/StringBuilder.
 	 *
 	 * @param one one of both objects to compare.
 	 * @param another one of both objects to compare. */
@@ -75,7 +76,7 @@ class ReflectionAssert {
 		}
 		// If one == null we know another != null (because of previous 'one == another')...
 		if (one == null || another == null) {
-			Assert.fail("One of both is null on path: '" + (StringUtils.isEmpty(path) ? "." : path) + "': " + one + ", " + another);
+			fail("One of both is null on path: '" + (StringUtils.isEmpty(path) ? "." : path) + "': " + one + ", " + another);
 		}
 		if (alreadyChecked.containsKey(one)) {
 			return;
@@ -84,37 +85,37 @@ class ReflectionAssert {
 
 		if (!requireMatchingCollectionClasses && oneIsAssignable(one, another, List.class, Set.class, Map.class)) {
 			if (isOnlyOneAssignable(List.class, one, another)) {
-				Assert.fail("One of both collections on path '" + (StringUtils.isEmpty(path) ? "." : path)
-					+ "' is not a java.util.List: " + one.getClass() + ", " + another.getClass());
+				fail("One of both collections on path '" + (StringUtils.isEmpty(path) ? "." : path) + "' is not a java.util.List: "
+					+ one.getClass() + ", " + another.getClass());
 			}
 			if (isOnlyOneAssignable(Set.class, one, another)) {
-				Assert.fail("One of both collections on path '" + (StringUtils.isEmpty(path) ? "." : path)
-					+ "' is not a java.util.Set: " + one.getClass() + ", " + another.getClass());
+				fail("One of both collections on path '" + (StringUtils.isEmpty(path) ? "." : path) + "' is not a java.util.Set: "
+					+ one.getClass() + ", " + another.getClass());
 			}
 			if (isOnlyOneAssignable(Map.class, one, another)) {
-				Assert.fail("One of both collections on path '" + (StringUtils.isEmpty(path) ? "." : path)
-					+ "' is not a java.util.Map: " + one.getClass() + ", " + another.getClass());
+				fail("One of both collections on path '" + (StringUtils.isEmpty(path) ? "." : path) + "' is not a java.util.Map: "
+					+ one.getClass() + ", " + another.getClass());
 			}
 		} else {
-			Assert.assertEquals("Classes don't match on path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ", one.getClass(),
+			assertEquals("Classes don't match on path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ", one.getClass(),
 				another.getClass());
 		}
 
 		if (one instanceof AtomicInteger || one instanceof AtomicLong) {
-			Assert.assertEquals("Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ",
+			assertEquals("Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ",
 				((Number)one).longValue(), ((Number)another).longValue());
 			return;
 		}
 
 		if (one instanceof Calendar) {
-			Assert.assertEquals("Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - \n"
+			assertEquals("Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - \n"
 				+ ((Calendar)one).getTimeInMillis() + "\n" + ((Calendar)another).getTimeInMillis() + "\n", one, another);
 			return;
 		}
 
 		if (one.getClass().isPrimitive() || one instanceof String || one instanceof Character || one instanceof Boolean
 			|| one instanceof Number || one instanceof Date) {
-			Assert.assertEquals("Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ", one, another);
+			assertEquals("Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ", one, another);
 			return;
 		}
 
@@ -133,10 +134,9 @@ class ReflectionAssert {
 			// correctly (that was issue #34)
 			final Currency currency1 = (Currency)one;
 			final Currency currency2 = (Currency)another;
-			Assert.assertEquals(
-				"Currency code does not match for currency on path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ",
+			assertEquals("Currency code does not match for currency on path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ",
 				currency1.getCurrencyCode(), currency2.getCurrencyCode());
-			Assert.assertEquals("Currency default fraction digits do not match for currency on path '"
+			assertEquals("Currency default fraction digits do not match for currency on path '"
 				+ (StringUtils.isEmpty(path) ? "." : path) + "' - ", currency1.getDefaultFractionDigits(),
 				currency2.getDefaultFractionDigits());
 			return;
@@ -170,8 +170,8 @@ class ReflectionAssert {
 	 */
 	static private void assertCollectionEquals (final Collection m1, final Collection m2, final boolean requireMatchingClasses,
 		final Map<Object, Object> alreadyChecked, final String path) {
-		Assert.assertEquals("Collection size does not match for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ",
-			m1.size(), m2.size());
+		assertEquals("Collection size does not match for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ", m1.size(),
+			m2.size());
 		final Iterator iter1 = m1.iterator();
 		final Iterator iter2 = m2.iterator();
 		int i = 0;
@@ -182,7 +182,7 @@ class ReflectionAssert {
 
 	static private void assertMapEquals (final Map<?, ?> m1, final Map<?, ?> m2, final boolean requireMatchingClasses,
 		final Map<Object, Object> alreadyChecked, final String path) {
-		Assert.assertEquals("Map size does not match for path '" + (StringUtils.isEmpty(path) ? "." : path) + "', map contents:"
+		assertEquals("Map size does not match for path '" + (StringUtils.isEmpty(path) ? "." : path) + "', map contents:"
 			+ "\nmap1: " + m1 + "\nmap2: " + m2 + "\n", m1.size(), m2.size());
 		for (final Map.Entry<?, ?> entry : m1.entrySet()) {
 			assertReflectionEquals(entry.getValue(), m2.get(entry.getKey()), requireMatchingClasses, alreadyChecked,
