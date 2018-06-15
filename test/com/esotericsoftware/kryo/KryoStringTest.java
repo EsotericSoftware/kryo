@@ -23,6 +23,8 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
 
+import org.junit.Test;
+
 public class KryoStringTest extends KryoTestCase {
 	static KryoFactory factory = new KryoFactory() {
 		public Kryo create () {
@@ -31,6 +33,7 @@ public class KryoStringTest extends KryoTestCase {
 		}
 	};
 
+	@Test
 	public void testSerialize () {
 		String reason = "node/read";
 		long localTimestamp = 1;

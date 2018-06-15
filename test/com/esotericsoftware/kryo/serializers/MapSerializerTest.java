@@ -109,7 +109,7 @@ public class MapSerializerTest extends KryoTestCase {
 
 		input = new Input(output.toBytes());
 		HasGenerics test2 = (HasGenerics)kryo.readClassAndObject(input);
-		assertEquals(test.map.get("moo"), test2.map.get("moo"));
+		Assert.assertArrayEquals(test.map.get("moo"), test2.map.get("moo"));
 	}
 
 	private void execute (Map<Object, Object> map, int inserts) {

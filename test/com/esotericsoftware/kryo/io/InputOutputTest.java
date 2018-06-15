@@ -31,6 +31,8 @@ import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
+import org.junit.Assert;
+
 /** @author Nathan Sweet */
 public class InputOutputTest extends KryoTestCase {
 	public void testByteBufferInputEnd () {
@@ -49,7 +51,7 @@ public class InputOutputTest extends KryoTestCase {
 		output.writeBytes(new byte[] {61, 62, 63, 64, 65});
 		output.flush();
 
-		assertEquals(new byte[] { //
+		Assert.assertArrayEquals(new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
@@ -69,14 +71,14 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(bytes.length, count);
 		byte[] temp2 = new byte[count];
 		System.arraycopy(temp, 512, temp2, 0, count);
-		assertEquals(bytes, temp2);
+		Assert.assertArrayEquals(bytes, temp2);
 
 		input = new Input(bytes);
 		count = input.read(temp, 512, 512);
 		assertEquals(bytes.length, count);
 		temp2 = new byte[count];
 		System.arraycopy(temp, 512, temp2, 0, count);
-		assertEquals(bytes, temp2);
+		Assert.assertArrayEquals(bytes, temp2);
 	}
 
 	public void testWriteBytes () throws IOException {
@@ -92,7 +94,7 @@ public class InputOutputTest extends KryoTestCase {
 		buffer.writeByte(65);
 		buffer.flush();
 
-		assertEquals(new byte[] { //
+		Assert.assertArrayEquals(new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
@@ -883,7 +885,7 @@ public class InputOutputTest extends KryoTestCase {
 			out2.writeVarInt(92, false);
 		}
 
-		assertEquals(out1.toBytes(), out2.toBytes());
+		Assert.assertArrayEquals(out1.toBytes(), out2.toBytes());
 	}
 
 	public void testZeroLengthOutputs () throws Exception {

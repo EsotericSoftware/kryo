@@ -40,6 +40,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** Test for serialization compatibility: data serialized with an older version (same major version) must be deserializable with
@@ -80,6 +83,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("5.0.0", new TestDataJava8(), 2047));
 	};
 
+	@Before
 	public void setUp () throws Exception {
 		super.setUp();
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
@@ -92,11 +96,12 @@ public class SerializationCompatTest extends KryoTestCase {
 		kryo.register(EnumSet.class);
 	}
 
+	@Test
 	public void testDefaultSerializers () throws Exception {
 		Field defaultSerializersField = Kryo.class.getDeclaredField("defaultSerializers");
 		defaultSerializersField.setAccessible(true);
 		List defaultSerializers = (List)defaultSerializersField.get(kryo);
-		assertEquals("The registered default serializers have changed.\n" //
+		Assert.assertEquals("The registered default serializers have changed.\n" //
 			+ "Because serialization compatibility shall be checked for default serializers, you must extend " //
 			+ "SerializationCompatTestData.TestData to have a field for the type of the new default serializer.\n" //
 			+ "After that's done, you must create new versions of 'test/resources/data*' because the new TestData instance will " //
@@ -104,6 +109,7 @@ public class SerializationCompatTest extends KryoTestCase {
 			defaultSerializers.size());
 	}
 
+	@Test
 	public void testStandard () throws Exception {
 		runTests("standard", new Function1<File, Input>() {
 			public Input apply (File file) throws FileNotFoundException {
@@ -116,6 +122,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		});
 	}
 
+	@Test
 	public void testByteBuffer () throws Exception {
 		runTests("bytebuffer", new Function1<File, Input>() {
 			public Input apply (File file) throws FileNotFoundException {

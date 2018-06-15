@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.minlog.Log;
 import com.esotericsoftware.minlog.Log.Logger;
@@ -27,19 +29,21 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import junit.framework.TestCase;
+import org.junit.Before;
+import org.junit.Test;
 
 /** @author Tiago Albineli Motta <timotta@gmail.com> */
-public class WarnUnregisteredClassesTest extends TestCase {
+public class WarnUnregisteredClassesTest {
 	LoggerStub log;
 
-	protected void setUp () throws Exception {
-		super.setUp();
+	@Before
+	public void setUp () throws Exception {
 		log = new LoggerStub();
 		Log.setLogger(log);
 		Log.INFO();
 	}
 
+	@Test
 	public void testLogOnlyOneTimePerClass () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
@@ -58,6 +62,7 @@ public class WarnUnregisteredClassesTest extends TestCase {
 		assertEquals(2, log.messages.size());
 	}
 
+	@Test
 	public void testDontLogIfNotRequired () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
@@ -70,6 +75,7 @@ public class WarnUnregisteredClassesTest extends TestCase {
 		assertEquals(0, log.messages.size());
 	}
 
+	@Test
 	public void testDontLogClassIsRegistered () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
@@ -80,6 +86,7 @@ public class WarnUnregisteredClassesTest extends TestCase {
 		assertEquals(0, log.messages.size());
 	}
 
+	@Test
 	public void testLogShouldBeWarn () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
@@ -89,6 +96,7 @@ public class WarnUnregisteredClassesTest extends TestCase {
 		assertEquals(Log.LEVEL_WARN, log.levels.get(0).intValue());
 	}
 
+	@Test
 	public void testLogMessageShouldContainsClassName () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);

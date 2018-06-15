@@ -1,6 +1,8 @@
 
 package com.esotericsoftware.kryo;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
@@ -8,9 +10,10 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class RegistrationTest extends TestCase {
+public class RegistrationTest {
+	@Test
 	public void testDefaultSerializerOrder () {
 		Kryo kryo = new Kryo();
 		kryo.addDefaultSerializer(Fruit.class, new FieldSerializer(kryo, Fruit.class));
@@ -19,6 +22,7 @@ public class RegistrationTest extends TestCase {
 		assertSame(appleSerializer, kryo.getDefaultSerializer(Apple.class));
 	}
 
+	@Test
 	public void testReplaceRegistration () throws IOException {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(true);

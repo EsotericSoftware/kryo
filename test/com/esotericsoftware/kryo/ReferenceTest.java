@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 
+import org.junit.Test;
+
 public class ReferenceTest extends KryoTestCase {
 	static public class Ordering {
 		public String order;
@@ -41,6 +43,7 @@ public class ReferenceTest extends KryoTestCase {
 		}
 	}
 
+	@Test
 	public void testChildObjectBeforeReference () {
 		Ordering ordering = new Ordering();
 		ordering.order = "assbackwards";
@@ -75,6 +78,7 @@ public class ReferenceTest extends KryoTestCase {
 		assertTrue(stuff2.get("self") == stuff2);
 	}
 
+	@Test
 	public void testReadingNestedObjectsFirst () {
 		ArrayList list = new ArrayList();
 		list.add("1");
