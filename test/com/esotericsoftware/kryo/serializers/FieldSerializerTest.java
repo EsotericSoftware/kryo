@@ -655,6 +655,18 @@ public class FieldSerializerTest extends KryoTestCase {
 		assertFalse("Exception was expected", true);
 	}
 
+	public void testDeep () {
+		kryo.register(Deep.class);
+		Deep root = new Deep();
+		Deep current = root;
+		for (int i = 1; i <= 500; i++) {
+			current.i = i;
+			current.deep = new Deep();
+			current = current.deep;
+		}
+		roundTrip(1440, root);
+	}
+
 	static public class DefaultTypes {
 		// Primitives.
 		public boolean booleanField;
@@ -1202,6 +1214,27 @@ public class FieldSerializerTest extends KryoTestCase {
 			if (z != isGeneric.z) return false;
 			if (item != null ? !item.equals(isGeneric.item) : isGeneric.item != null) return false;
 
+			return true;
+		}
+	}
+
+	static public class Deep {
+		public int i;
+		public Deep deep;
+
+		public int hashCode () {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + i;
+			return result;
+		}
+
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			Deep other = (Deep)obj;
+			if (i != other.i) return false;
 			return true;
 		}
 	}
