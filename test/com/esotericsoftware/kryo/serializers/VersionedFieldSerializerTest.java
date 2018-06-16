@@ -24,11 +24,14 @@ import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 
 import java.io.FileNotFoundException;
 
+import org.junit.Test;
+
 public class VersionedFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
+	@Test
 	public void testVersionFieldSerializer () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.moo = 2;

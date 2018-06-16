@@ -22,12 +22,15 @@ package com.esotericsoftware.kryo.serializers;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
 
+import org.junit.Test;
+
 /** @author Nathan Sweet */
 public class ArraySerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
+	@Test
 	public void testArrays () {
 		kryo.register(int[].class);
 		kryo.register(int[][].class);

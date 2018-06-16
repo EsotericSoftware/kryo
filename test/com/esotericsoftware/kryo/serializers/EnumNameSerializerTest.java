@@ -26,8 +26,11 @@ import com.esotericsoftware.kryo.io.Output;
 
 import java.util.EnumSet;
 
+import org.junit.Test;
+
 /** @author KwonNam Son <kwon37xi@gmail.com> */
 public class EnumNameSerializerTest extends KryoTestCase {
+	@Test
 	public void testEnumNameSerializer () {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.register(TestNameEnum.class);
@@ -49,6 +52,7 @@ public class EnumNameSerializerTest extends KryoTestCase {
 		roundTrip(88, TestAnotherNameEnum.MONDAY);
 	}
 
+	@Test
 	public void testEnumSetSerializerWithEnumNameSerializer () throws Exception {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.register(EnumSet.class);
@@ -71,6 +75,7 @@ public class EnumNameSerializerTest extends KryoTestCase {
 		roundTrip(3, EnumSet.noneOf(TestNameEnum.class));
 	}
 
+	@Test
 	public void testEnumNameSerializerWithMethods () {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 

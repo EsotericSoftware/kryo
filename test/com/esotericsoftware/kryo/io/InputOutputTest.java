@@ -37,6 +37,7 @@ import org.junit.Test;
 
 /** @author Nathan Sweet */
 public class InputOutputTest extends KryoTestCase {
+	@Test
 	public void testByteBufferInputEnd () {
 		Input in = new Input(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
 		assertEquals(false, in.end());
@@ -44,6 +45,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(true, in.end());
 	}
 
+	@Test
 	public void testOutputStream () throws IOException {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 		Output output = new Output(buffer, 2);
@@ -60,6 +62,7 @@ public class InputOutputTest extends KryoTestCase {
 			61, 62, 63, 64, 65}, buffer.toByteArray());
 	}
 
+	@Test
 	public void testInputStream () throws IOException {
 		byte[] bytes = new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
@@ -83,6 +86,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertArrayEquals(bytes, temp2);
 	}
 
+	@Test
 	public void testWriteBytes () throws IOException {
 		Output buffer = new Output(512);
 		buffer.writeBytes(new byte[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26});
@@ -103,6 +107,7 @@ public class InputOutputTest extends KryoTestCase {
 			61, 62, 63, 64, 65}, buffer.toBytes());
 	}
 
+	@Test
 	public void testStrings () throws IOException {
 		runStringTest(new Output(4096));
 		runStringTest(new Output(897));
@@ -141,7 +146,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals("node/read", new Input(output.getBuffer(), 0, output.position).readString());
 	}
 
-	public void runStringTest (int length) throws IOException {
+	private void runStringTest (int length) throws IOException {
 		Output write = new Output(1024, -1);
 		StringBuilder buffer = new StringBuilder();
 		for (int i = 0; i < length; i++)
@@ -171,7 +176,7 @@ public class InputOutputTest extends KryoTestCase {
 		}
 	}
 
-	public void runStringTest (Output write) throws IOException {
+	private void runStringTest (Output write) throws IOException {
 		String value1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*";
 		String value2 = "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234";
 
@@ -220,6 +225,7 @@ public class InputOutputTest extends KryoTestCase {
 			assertEquals(String.valueOf((char)i) + "abc", read.readStringBuilder().toString());
 	}
 
+	@Test
 	public void testCanReadInt () throws IOException {
 		Output write = new Output(new ByteArrayOutputStream());
 
@@ -234,19 +240,21 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(false, read.canReadVarInt());
 	}
 
+	@Test
 	public void testVarIntFlagOutput () throws IOException {
 		Output output = new Output(4096);
 		Input input = new Input(output.getBuffer());
 		runVarIntFlagsTest(output, input);
 	}
 
+	@Test
 	public void testVarIntFlagByteBufferOutput () throws IOException {
 		ByteBufferOutput output = new ByteBufferOutput(4096);
 		ByteBufferInput input = new ByteBufferInput(output.getByteBuffer());
 		runVarIntFlagsTest(output, input);
 	}
 
-	public void runVarIntFlagsTest (Output output, Input input) throws IOException {
+	private void runVarIntFlagsTest (Output output, Input input) throws IOException {
 		assertEquals(1, output.writeVarIntFlag(true, 63, true));
 		assertEquals(2, output.writeVarIntFlag(true, 64, true));
 
@@ -282,6 +290,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(32, input.readVarIntFlag(false));
 	}
 
+	@Test
 	public void testInts () throws IOException {
 		runIntTest(new Output(4096));
 		runIntTest(new Output(new ByteArrayOutputStream()));
@@ -814,6 +823,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(1.23456d, read.readDouble());
 	}
 
+	@Test
 	public void testBooleans () throws IOException {
 		runBooleanTest(new Output(4096));
 		runBooleanTest(new Output(new ByteArrayOutputStream()));
@@ -832,6 +842,7 @@ public class InputOutputTest extends KryoTestCase {
 		}
 	}
 
+	@Test
 	public void testChars () throws IOException {
 		runCharTest(new Output(4096));
 		runCharTest(new Output(new ByteArrayOutputStream()));
@@ -860,12 +871,14 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(65535, read.readChar());
 	}
 
+	@Test
 	public void testInputWithOffset () throws Exception {
 		final byte[] buf = new byte[30];
 		final Input in = new Input(buf, 10, 10);
 		assertEquals(10, in.available());
 	}
 
+	@Test
 	public void testSmallBuffers () throws Exception {
 		ByteBuffer buf = ByteBuffer.allocate(1024);
 		ByteBufferOutputStream byteBufferOutputStream = new ByteBufferOutputStream(buf);
@@ -884,6 +897,7 @@ public class InputOutputTest extends KryoTestCase {
 		input.readBytes(toRead);
 	}
 
+	@Test
 	public void testVerySmallBuffers () throws Exception {
 		Output out1 = new Output(4, -1);
 		Output out2 = new ByteBufferOutput(4, -1);
@@ -899,6 +913,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertArrayEquals(out1.toBytes(), out2.toBytes());
 	}
 
+	@Test
 	public void testZeroLengthOutputs () throws Exception {
 		Output output = new Output(0, 10000);
 		kryo.writeClassAndObject(output, "Test string");
@@ -907,6 +922,7 @@ public class InputOutputTest extends KryoTestCase {
 		kryo.writeClassAndObject(byteBufferOutput, "Test string");
 	}
 
+	@Test
 	public void testFlushRoundTrip () throws Exception {
 
 		Kryo kryo = new Kryo();
@@ -936,6 +952,7 @@ public class InputOutputTest extends KryoTestCase {
 
 	}
 
+	@Test
 	public void testNewOutputMaxBufferSizeLessThanBufferSize () {
 		int bufferSize = 2;
 		int maxBufferSize = 1;
@@ -947,6 +964,7 @@ public class InputOutputTest extends KryoTestCase {
 		}
 	}
 
+	@Test
 	public void testSetOutputMaxBufferSizeLessThanBufferSize () {
 		int bufferSize = 2;
 		int maxBufferSize = 1;
@@ -962,6 +980,7 @@ public class InputOutputTest extends KryoTestCase {
 
 	}
 
+	@Test
 	public void testNewOutputMaxBufferSizeIsMinusOne () {
 		int bufferSize = 2;
 		int maxBufferSize = -1;
@@ -971,6 +990,7 @@ public class InputOutputTest extends KryoTestCase {
 		// This test should pass as long as no exception thrown
 	}
 
+	@Test
 	public void testSetOutputMaxBufferSizeIsMinusOne () {
 		int bufferSize = 2;
 		int maxBufferSize = -1;

@@ -24,8 +24,11 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer
 
 import javax.crypto.KeyGenerator;
 
+import org.junit.Test;
+
 /** @author Nathan Sweet */
 public class BlowfishSerializerTest extends KryoTestCase {
+	@Test
 	public void testZip () throws Exception {
 		byte[] key = KeyGenerator.getInstance("Blowfish").generateKey().getEncoded();
 		kryo.register(String.class, new BlowfishSerializer(new StringSerializer(), key));

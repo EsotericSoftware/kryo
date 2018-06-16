@@ -24,7 +24,10 @@ import com.esotericsoftware.kryo.KryoTestCase;
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 
+import org.junit.Test;
+
 public class ByteBufferInputOutputTest extends KryoTestCase {
+	@Test
 	public void testByteBufferInputEnd () {
 		ByteBufferInput in = new ByteBufferInput(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
 		assertEquals(false, in.end());
@@ -32,6 +35,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(true, in.end());
 	}
 
+	@Test
 	public void testByteBufferInputPosition () {
 		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
 		ByteBufferInput inputBuffer = new ByteBufferInput(byteBuffer);
@@ -42,6 +46,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(5, inputBuffer.getByteBuffer().position());
 	}
 
+	@Test
 	public void testByteBufferInputLimit () {
 		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
 		ByteBufferInput inputBuffer = new ByteBufferInput(byteBuffer);
@@ -52,6 +57,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(1000, inputBuffer.getByteBuffer().limit());
 	}
 
+	@Test
 	public void testByteBufferInputSkip () {
 		ByteBuffer buffer = ByteBuffer.allocateDirect(4096);
 		ByteBufferInput inputBuffer = new ByteBufferInput(buffer);
@@ -60,6 +66,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(5, inputBuffer.getByteBuffer().position());
 	}
 
+	@Test
 	public void testByteBufferOutputPosition () {
 		ByteBufferOutput outputBuffer = new ByteBufferOutput(4096);
 		assertEquals(0, outputBuffer.position());

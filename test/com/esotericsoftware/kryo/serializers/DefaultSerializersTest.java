@@ -43,6 +43,7 @@ import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.TimeZone;
 
+import org.junit.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet */
@@ -51,34 +52,40 @@ public class DefaultSerializersTest extends KryoTestCase {
 		supportsCopy = true;
 	}
 
+	@Test
 	public void testBoolean () {
 		roundTrip(2, true);
 		roundTrip(2, false);
 	}
 
+	@Test
 	public void testByte () {
 		roundTrip(2, (byte)1);
 		roundTrip(2, (byte)125);
 		roundTrip(2, (byte)-125);
 	}
 
+	@Test
 	public void testChar () {
 		roundTrip(3, 'a');
 		roundTrip(3, 'z');
 	}
 
+	@Test
 	public void testDouble () {
 		roundTrip(9, 0d);
 		roundTrip(9, 1234d);
 		roundTrip(9, 1234.5678d);
 	}
 
+	@Test
 	public void testFloat () {
 		roundTrip(5, 0f);
 		roundTrip(5, 123f);
 		roundTrip(5, 123.456f);
 	}
 
+	@Test
 	public void testInt () {
 		roundTrip(2, 0);
 		roundTrip(2, 63);
@@ -103,6 +110,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(6, -134217729);
 	}
 
+	@Test
 	public void testLong () {
 		roundTrip(2, 0l);
 		roundTrip(2, 63l);
@@ -129,6 +137,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(10, -2368365495612416452l);
 	}
 
+	@Test
 	public void testShort () {
 		roundTrip(3, (short)0);
 		roundTrip(3, (short)123);
@@ -139,6 +148,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(3, (short)400);
 	}
 
+	@Test
 	public void testString () {
 		kryo = new Kryo();
 		roundTrip(6, "meow");
@@ -155,10 +165,12 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(21, "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u7C9F");
 	}
 
+	@Test
 	public void testVoid () throws InstantiationException, IllegalAccessException {
 		roundTrip(1, (Void)null);
 	}
 
+	@Test
 	public void testNull () {
 		kryo = new Kryo();
 		kryo.register(ArrayList.class);
@@ -208,6 +220,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(10, new java.sql.Timestamp(-1234567));
 	}
 
+	@Test
 	public void testBigDecimalSerializer () {
 		kryo.register(BigDecimal.class);
 		kryo.register(BigDecimalSubclass.class);
@@ -220,6 +233,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(7, new BigDecimalSubclass("12345.12345"));
 	}
 
+	@Test
 	public void testBigIntegerSerializer () {
 		kryo.register(BigInteger.class);
 		kryo.register(BigIntegerSubclass.class);
@@ -230,6 +244,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(8, new BigIntegerSubclass("1270507903945"));
 	}
 
+	@Test
 	public void testEnumSerializer () {
 		kryo.register(TestEnum.class);
 		roundTrip(2, TestEnum.a);
@@ -241,6 +256,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(72, TestEnum.c);
 	}
 
+	@Test
 	public void testEnumSetSerializer () {
 		kryo.register(EnumSet.class);
 		kryo.register(TestEnum.class);
@@ -256,6 +272,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(101, EnumSet.of(TestEnum.a, TestEnum.c));
 	}
 
+	@Test
 	public void testEnumSerializerWithMethods () {
 		kryo.register(TestEnumWithMethods.class);
 		roundTrip(2, TestEnumWithMethods.a);
@@ -267,6 +284,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(85, TestEnumWithMethods.c);
 	}
 
+	@Test
 	public void testCollectionsMethods () {
 		kryo.setRegistrationRequired(false);
 		ArrayList test = new ArrayList();
@@ -279,18 +297,21 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(249, test);
 	}
 
+	@Test
 	public void testArraysAsListUnregistered () {
 		kryo.setRegistrationRequired(false);
 		roundTrip(29, Arrays.asList());
 		roundTrip(37, Arrays.asList(new String[] {"A", "B", "C"}));
 	}
 
+	@Test
 	public void testArraysAsList () {
 		kryo.register(Arrays.asList().getClass());
 		roundTrip(2, Arrays.asList());
 		roundTrip(10, Arrays.asList(new String[] {"A", "B", "C"}));
 	}
 
+	@Test
 	public void testDeepCollectionCloning () {
 		kryo.setRegistrationRequired(false);
 		Object contents = new Object();
@@ -299,6 +320,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		assertNotEquals(kryo.copy(Collections.singletonMap(contents, contents)).values().iterator().next(), contents);
 	}
 
+	@Test
 	public void testPriorityQueueCopy () {
 		List<Integer> values = Arrays.asList(7, 0, 5, 123, 432);
 		PriorityQueue<Integer> queue = new PriorityQueue(3, new Comparator<Integer>() {
@@ -313,6 +335,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(queue.peek(), copy.peek());
 	}
 
+	@Test
 	public void testCalendar () {
 		kryo.setRegistrationRequired(false);
 		Calendar calendar = Calendar.getInstance();
@@ -321,6 +344,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(64, calendar);
 	}
 
+	@Test
 	public void testClassSerializer () {
 		kryo.register(Class.class);
 		kryo.register(ArrayList.class);
@@ -374,6 +398,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(Enum.class, kryo.readObject(in, Class.class));
 	}
 
+	@Test
 	public void testLocaleSerializer () {
 		kryo.register(Locale.class);
 
@@ -384,6 +409,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(16, new Locale("es", "ES", "\u00E1\u00E9\u00ED\u00F3\u00FA"));
 	}
 
+	@Test
 	public void testCharset () {
 		List<String> css = Arrays.asList("ISO-8859-1", "US-ASCII", "UTF-8", "UTF-16", "UTF-16BE", "UTF-16LE");
 
@@ -404,6 +430,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		}
 	}
 
+	@Test
 	public void testURLSerializer () throws Exception {
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.register(URL.class);

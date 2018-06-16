@@ -22,8 +22,11 @@ package com.esotericsoftware.kryo.serializers;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 
+import org.junit.Test;
+
 /** Created by phamrak on 8.6.2016. */
 public class FieldSerializerInheritanceTest extends KryoTestCase {
+	@Test
 	public void testDefaultStrategyForDefaultClass () {
 		TestDefault testDefault = new TestDefault();
 		testDefault.a = "someDefaultValue";
@@ -38,6 +41,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		assertFieldRemoved(serializer, "a");
 	}
 
+	@Test
 	public void testDefaultStrategyForExtendedClass () {
 		TestExtended testExtended = new TestExtended();
 		((TestDefault)testExtended).a = "someDefaultValue";
@@ -58,6 +62,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		assertFieldRemoved(serializer, "a");
 	}
 
+	@Test
 	public void testExtendedStrategyForExtendedClass () {
 		TestExtended testExtended = new TestExtended();
 		((TestDefault)testExtended).a = "someDefaultValue";
@@ -80,7 +85,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		assertFieldRemoved(serializer, "TestExtended.a");
 	}
 
-	protected void assertFieldRemoved (FieldSerializer serializer, String fieldName) {
+	private void assertFieldRemoved (FieldSerializer serializer, String fieldName) {
 		try {
 			assertNull(serializer.getField(fieldName));
 			fail("Expected IllegalArgumentException to be thrown for serializer.getField(" + fieldName + ")");

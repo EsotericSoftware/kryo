@@ -40,6 +40,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
+import org.junit.Test;
 
 /** @author Nathan Sweet */
 @SuppressWarnings("synthetic-access")
@@ -48,6 +49,7 @@ public class MapSerializerTest extends KryoTestCase {
 		supportsCopy = true;
 	}
 
+	@Test
 	public void testMaps () {
 		kryo.register(HashMap.class);
 		kryo.register(LinkedHashMap.class);
@@ -69,6 +71,7 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(14, map);
 	}
 
+	@Test
 	public void testEnumMap () {
 		kryo.register(SomeEnum.class);
 		kryo.register(EnumMap.class, new EnumMapSerializer(SomeEnum.class));
@@ -80,22 +83,27 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(7, map);
 	}
 
+	@Test
 	public void testEmptyHashMap () {
 		execute(new HashMap(), 0);
 	}
 
+	@Test
 	public void testNotEmptyHashMap () {
 		execute(new HashMap(), 1000);
 	}
 
+	@Test
 	public void testEmptyConcurrentHashMap () {
 		execute(new ConcurrentHashMap(), 0);
 	}
 
+	@Test
 	public void testNotEmptyConcurrentHashMap () {
 		execute(new ConcurrentHashMap(), 1000);
 	}
 
+	@Test
 	public void testGenerics () {
 		kryo.register(HasGenerics.class);
 		kryo.register(Integer[].class);
@@ -133,6 +141,7 @@ public class MapSerializerTest extends KryoTestCase {
 		assertEquals(map, deserialized);
 	}
 
+	@Test
 	public void testTreeMap () {
 		kryo.register(TreeMap.class);
 		TreeMap map = new TreeMap();
@@ -160,6 +169,7 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(24, map);
 	}
 
+	@Test
 	public void testTreeMapWithReferences () {
 		kryo.setReferences(true);
 		kryo.register(TreeMap.class);
@@ -188,6 +198,7 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(29, map);
 	}
 
+	@Test
 	public void testSerializingMapAfterDeserializingMultipleReferencesToSameMap () throws Exception {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
@@ -198,7 +209,7 @@ public class MapSerializerTest extends KryoTestCase {
 		output.reset();
 
 		Map<Integer, List<String>> mapOfLists = new HashMap();
-		mapOfLists.put(1, new java.util.ArrayList());
+		mapOfLists.put(1, new ArrayList());
 		kryo.writeClassAndObject(output, mapOfLists);
 
 		Map<Integer, List<String>> deserializedMap = (Map<Integer, List<String>>)kryo
@@ -206,6 +217,7 @@ public class MapSerializerTest extends KryoTestCase {
 		assertEquals(1, deserializedMap.size());
 	}
 
+	@Test
 	public void testArrayListKeys () {
 		CollectionSerializer collectionSerializer = new CollectionSerializer();
 		// Increase generics savings so difference is more easily seen.

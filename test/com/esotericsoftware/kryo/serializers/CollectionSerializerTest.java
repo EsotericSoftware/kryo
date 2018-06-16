@@ -33,12 +33,15 @@ import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.junit.Test;
+
 /** @author Nathan Sweet */
 public class CollectionSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
+	@Test
 	public void testCollections () {
 		kryo.register(ArrayList.class);
 		kryo.register(LinkedList.class);
