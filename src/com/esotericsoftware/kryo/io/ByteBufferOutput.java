@@ -90,15 +90,6 @@ public class ByteBufferOutput extends Output {
 		return outputStream;
 	}
 
-	/** Sets a new OutputStream. The position and total are reset, discarding any buffered bytes.
-	 * @param outputStream May be null. */
-	public void setOutputStream (OutputStream outputStream) {
-		this.outputStream = outputStream;
-		byteBuffer.position(0);
-		position = 0;
-		total = 0;
-	}
-
 	/** Allocates a new direct ByteBuffer with the specified bytes and sets it as the new buffer.
 	 * @see #setBuffer(ByteBuffer) */
 	public void setBuffer (byte[] bytes, int offset, int count) {
@@ -148,10 +139,9 @@ public class ByteBufferOutput extends Output {
 		this.byteBuffer.position(position);
 	}
 
-	public void clear () {
-		byteBuffer.clear();
-		position = 0;
-		total = 0;
+	public void reset () {
+		super.reset();
+		byteBuffer.position(0);
 	}
 
 	protected boolean require (int required) throws KryoException {

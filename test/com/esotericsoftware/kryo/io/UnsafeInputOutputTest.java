@@ -124,7 +124,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(value, read.readString());
 		assertEquals(value, read.readStringBuilder().toString());
 
-		write.clear();
+		write.reset();
 		write.writeString(buffer.toString());
 		write.writeString(buffer.toString());
 		read = new UnsafeInput(write.toBytes());
@@ -132,7 +132,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		assertEquals(value, read.readString());
 
 		if (length <= 127) {
-			write.clear();
+			write.reset();
 			write.writeAscii(value);
 			write.writeAscii(value);
 			read = new UnsafeInput(write.toBytes());
@@ -174,7 +174,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		for (int i = 0; i < 127; i++)
 			assertEquals(String.valueOf((char)i) + "abc", read.readString());
 
-		read.rewind();
+		read.reset();
 		assertEquals("", read.readStringBuilder().toString());
 		assertEquals("1", read.readStringBuilder().toString());
 		assertEquals("22", read.readStringBuilder().toString());
@@ -358,7 +358,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		Random random = new Random();
 		for (int i = 0; i < 10000; i++) {
 			int value = random.nextInt();
-			write.clear();
+			write.reset();
 			write.writeInt(value);
 			write.writeVarInt(value, true);
 			write.writeVarInt(value, false);
@@ -507,7 +507,7 @@ public class UnsafeInputOutputTest extends KryoTestCase {
 		Random random = new Random();
 		for (int i = 0; i < 10000; i++) {
 			long value = random.nextLong();
-			write.clear();
+			write.reset();
 			write.writeLong(value);
 			write.writeVarLong(value, true);
 			write.writeVarLong(value, false);

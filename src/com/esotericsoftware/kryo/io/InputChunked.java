@@ -61,8 +61,8 @@ public class InputChunked extends Input {
 		chunkSize = -1;
 	}
 
-	public void rewind () {
-		super.rewind();
+	public void reset () {
+		super.reset();
 		chunkSize = -1;
 	}
 

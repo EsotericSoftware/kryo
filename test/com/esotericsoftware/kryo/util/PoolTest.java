@@ -17,47 +17,73 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo.pool;
+package com.esotericsoftware.kryo.util;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.util.Pool;
 
-import java.util.Queue;
+import java.util.Arrays;
+import java.util.Collection;
 
-/** A simple {@link Queue} based {@link KryoPool} implementation, should be built using the KryoPool.Builder.
- * @author Martin Grotzke */
-class KryoPoolQueueImpl implements KryoPool {
-	private final Queue queue;
-	private final KryoFactory factory;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-	KryoPoolQueueImpl (KryoFactory factory, Queue queue) {
-		this.factory = factory;
-		this.queue = queue;
+@RunWith(Parameterized.class)
+public class PoolTest extends KryoTestCase {
+	@Parameters
+	static public Collection<Object[]> data () {
+		return Arrays.asList(new Object[][] {{new Pool<Kryo>(true, false, 16) {
+			protected Kryo create () {
+				return new Kryo();
+			}
+		}}, {new Pool<Kryo>(true, true, 16) {
+			protected Kryo create () {
+				return new Kryo();
+			}
+		}}});
 	}
 
-	public int size () {
-		return queue.size();
+	private final Pool<Kryo> pool;
+
+	public PoolTest (Pool<Kryo> pool) {
+		this.pool = pool;
 	}
 
-	public Kryo borrow () {
-		Object kryo = queue.poll();
-		if (kryo != null) return (Kryo)kryo;
-		return factory.create();
+	@Before
+	public void beforeMethod () {
+		// clear the pool's queue
+		pool.clear();
 	}
 
-	public void release (Kryo kryo) {
-		queue.offer(kryo);
+	@Test
+	public void getShouldReturnAvailableInstance () {
+		Kryo kryo = pool.obtain();
+		pool.free(kryo);
+		assertTrue(kryo == pool.obtain());
 	}
 
-	public <T> T run (KryoCallback<T> callback) {
-		Kryo kryo = borrow();
-		try {
-			return callback.execute(kryo);
-		} finally {
-			release(kryo);
-		}
+	@Test
+	public void releaseShouldAddKryoToPool () {
+		assertEquals(0, pool.getFree());
+		Kryo kryo = pool.obtain();
+		pool.free(kryo);
+		assertEquals(1, pool.getFree());
 	}
 
-	public void clear () {
-		queue.clear();
+	@Test
+	public void testSize () {
+		assertEquals(0, pool.getFree());
+		Kryo kryo1 = pool.obtain();
+		assertEquals(0, pool.getFree());
+		Kryo kryo2 = pool.obtain();
+		assertFalse(kryo1 == kryo2);
+		pool.free(kryo1);
+		assertEquals(1, pool.getFree());
+		pool.free(kryo2);
+		assertEquals(2, pool.getFree());
 	}
 }

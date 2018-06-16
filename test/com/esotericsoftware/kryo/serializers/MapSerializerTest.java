@@ -195,7 +195,7 @@ public class MapSerializerTest extends KryoTestCase {
 
 		kryo.writeClassAndObject(output, new HasMultipleReferenceToSameMap());
 		kryo.readClassAndObject(new Input(new ByteArrayInputStream(output.getBuffer())));
-		output.clear();
+		output.reset();
 
 		Map<Integer, List<String>> mapOfLists = new HashMap();
 		mapOfLists.put(1, new java.util.ArrayList());

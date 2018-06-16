@@ -33,6 +33,8 @@ import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
+import org.junit.Test;
+
 /** @author Nathan Sweet */
 public class InputOutputTest extends KryoTestCase {
 	public void testByteBufferInputEnd () {
@@ -112,7 +114,7 @@ public class InputOutputTest extends KryoTestCase {
 		Input read = new Input(write.toBytes());
 		assertEquals(value, read.readString());
 
-		write.clear();
+		write.reset();
 		write.writeString(null);
 		read = new Input(write.toBytes());
 		assertEquals(null, read.readString());
@@ -130,6 +132,15 @@ public class InputOutputTest extends KryoTestCase {
 		runStringTest(1024 * 1024 * 2);
 	}
 
+	@Test
+	public void testGrowingBufferForAscii () {
+		// Initial size of 0.
+		final Output output = new Output(0, 1024);
+		// Check that it is possible to write an ASCII string into the output buffer.
+		output.writeString("node/read");
+		assertEquals("node/read", new Input(output.getBuffer(), 0, output.position).readString());
+	}
+
 	public void runStringTest (int length) throws IOException {
 		Output write = new Output(1024, -1);
 		StringBuilder buffer = new StringBuilder();
@@ -143,7 +154,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(value, read.readString());
 		assertEquals(value, read.readStringBuilder().toString());
 
-		write.clear();
+		write.reset();
 		write.writeString(buffer.toString());
 		write.writeString(buffer.toString());
 		read = new Input(write.toBytes());
@@ -151,7 +162,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(value, read.readString());
 
 		if (length <= 127) {
-			write.clear();
+			write.reset();
 			write.writeAscii(value);
 			write.writeAscii(value);
 			read = new Input(write.toBytes());
@@ -193,7 +204,7 @@ public class InputOutputTest extends KryoTestCase {
 		for (int i = 0; i < 127; i++)
 			assertEquals(String.valueOf((char)i) + "abc", read.readString());
 
-		read.rewind();
+		read.reset();
 		assertEquals("", read.readStringBuilder().toString());
 		assertEquals("1", read.readStringBuilder().toString());
 		assertEquals("22", read.readStringBuilder().toString());
@@ -421,7 +432,7 @@ public class InputOutputTest extends KryoTestCase {
 		Random random = new Random();
 		for (int i = 0; i < 10000; i++) {
 			int value = random.nextInt();
-			write.clear();
+			write.reset();
 			write.writeInt(value);
 			write.writeVarInt(value, true);
 			write.writeVarInt(value, false);
@@ -566,7 +577,7 @@ public class InputOutputTest extends KryoTestCase {
 		Random random = new Random();
 		for (int i = 0; i < 10000; i++) {
 			long value = random.nextLong();
-			write.clear();
+			write.reset();
 			write.writeLong(value);
 			write.writeVarLong(value, true);
 			write.writeVarLong(value, false);
