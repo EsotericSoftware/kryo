@@ -671,16 +671,16 @@ When a serialization fails, a KryoException can be thrown with serialization tra
 Object object = ...
 Field[] fields = ...
 for (Field field : fields) {
-	try {
-		// Use other serializers to serialize each field.
-	} catch (KryoException ex) {
-		ex.addTrace(field.getName() + " (" + object.getClass().getName() + ")");
-		throw ex;
-	} catch (Throwable t) {
-		KryoException ex = new KryoException(t);
-		ex.addTrace(field.getName() + " (" + object.getClass().getName() + ")");
-		throw ex;
-	}
+   try {
+      // Use other serializers to serialize each field.
+   } catch (KryoException ex) {
+      ex.addTrace(field.getName() + " (" + object.getClass().getName() + ")");
+      throw ex;
+   } catch (Throwable t) {
+      KryoException ex = new KryoException(t);
+      ex.addTrace(field.getName() + " (" + object.getClass().getName() + ")");
+      throw ex;
+   }
 }
 ```
 
@@ -1159,27 +1159,58 @@ static private final ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
 Kryo kryo = kryos.get();
 ```
 
-For pooling, Kryo provides the `KryoFactory` and `KryoPool` classes.
+For pooling, Kryo provides the Pool class which can pool Kryo, Input, Output, or instances of any other class.
 
 ```java
-KryoFactory factory = new KryoFactory() {
-   public Kryo create () {
+// Pool constructor arguments: thread safe, soft references, maximum capacity
+Pool<Kryo> kryoPool = new Pool<Kryo>(true, false, 8) {
+   protected Kryo create () {
       Kryo kryo = new Kryo();
       // Configure the Kryo instance.
       return kryo;
    }
 };
-KryoPool pool = new KryoPool.Builder(factory).build();
-Kryo kryo = pool.borrow();
-// Use the Kryo instance here.
-pool.release(kryo);
-```
 
-The KryoPool.Builder allows soft references to be enabled, so the Kryo instance can be garbage collected if memory pressure on the JVM is high.
+Kryo kryo = kryoPool.obtain();
+// Use the Kryo instance here.
+kryoPool.free(kryo);
+```
 
 ```java
-KryoPool pool = new KryoPool.Builder(factory).softReferences().build();
+Pool<Output> outputPool = new Pool<Output>(true, false, 16) {
+   protected Output create () {
+      return new Output(1024, -1);
+   }
+};
+
+Output output = outputPool.obtain();
+// Use the Output instance here.
+outputPool.free(output);
 ```
+
+```java
+Pool<Input> inputPool = new Pool<Input>(true, false, 16) {
+   protected Input create () {
+      return new Input(1024, -1);
+   }
+};
+
+Input input = inputPool.obtain();
+// Use the Input instance here.
+inputPool.free(input);
+```
+
+If `true` is passed as the first argument to the Pool constructor, the Pool uses synchronization internally and can be accessed by multiple threads concurrently.
+
+If `true` is passed as the second argument to the Pool constructor, the Pool stores objects using java.lang.ref.SoftReference. This allows objects in the pool to be garbage collected when memory pressure on the JVM is high. Pool `clean` removes all soft references whose object has been garbage collected. This can reduce the size of the pool when no maximum capacity has been set. When the pool has a maximum capacity, it is not necessary to call `clean` because Pool `free` will try to remove an empty reference if the maximum capacity has been reached.
+
+The third Pool parameter is the maximum capacity. If an object is freed and the pool already contains the maximum number of free objects, the specified object is reset but not added to the pool. The maximum capacity may be omitted for no limit.
+
+If an object implement Pool.Poolable then Poolable `reset` is called when the object is freed. This gives the object a chance to reset its state for reuse in the future. Alternatively, Pool `reset` can be overridden to reset objects. Input and Output implement Poolable to set their `position` and `total` to 0. Kryo implements Poolable to reset its object graph state.
+
+Pool `getFree` returns the number of objects available to be obtained. If using soft references, this number may include objects that have been garbage collected. `clean` may be used first to remove empty soft references.
+
+Pool `getPeak` returns the all-time highest number of free objects. This can help determine if a pool's maximum capacity is set appropriately. It can be reset any time with `resetPeak`.
 
 ## Benchmarks
 

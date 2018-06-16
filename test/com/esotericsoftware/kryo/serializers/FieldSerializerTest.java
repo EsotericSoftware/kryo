@@ -274,7 +274,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(E.class);
 		kryo.register(F.class);
 
-		output.clear();
+		output.reset();
 		kryo.writeClassAndObject(output, c);
 		output.flush();
 		assertEquals(14, output.total());

@@ -209,7 +209,7 @@ abstract public class KryoTestCase extends TestCase {
 		if (object1 != null) {
 			// Test null with serializer.
 			Serializer serializer = kryo.getRegistration(object1.getClass()).getSerializer();
-			output.clear();
+			output.reset();
 			outStream.reset();
 			kryo.writeObjectOrNull(output, null, serializer);
 			output.flush();
@@ -235,7 +235,7 @@ abstract public class KryoTestCase extends TestCase {
 			assertEquals("Incorrect length.", length, output.total());
 			assertEquals("Incorrect number of bytes read.", length, input.total());
 		}
-		input.rewind();
+		input.reset();
 
 		if (supportsCopy) {
 			// Test copy.

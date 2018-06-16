@@ -108,11 +108,11 @@ public class ByteBufferInput extends Input {
 	public void setInputStream (InputStream inputStream) {
 		this.inputStream = inputStream;
 		limit = 0;
-		rewind();
+		reset();
 	}
 
-	public void rewind () {
-		super.rewind();
+	public void reset () {
+		super.reset();
 		byteBuffer.position(0);
 	}
 

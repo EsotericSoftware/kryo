@@ -20,6 +20,8 @@
 package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.Pool;
+import com.esotericsoftware.kryo.util.Pool.Poolable;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.IOException;
@@ -28,7 +30,7 @@ import java.io.InputStream;
 /** An InputStream that reads data from a byte[] and optionally fills the byte[] from another InputStream as needed. Utility
  * methods are provided for efficiently reading primitive types and strings.
  * @author Nathan Sweet */
-public class Input extends InputStream implements AutoCloseable {
+public class Input extends InputStream implements AutoCloseable, Poolable {
 	protected byte[] buffer;
 	protected int position;
 	protected int capacity;
@@ -111,7 +113,7 @@ public class Input extends InputStream implements AutoCloseable {
 	public void setInputStream (InputStream inputStream) {
 		this.inputStream = inputStream;
 		limit = 0;
-		rewind();
+		reset();
 	}
 
 	public boolean getVariableLengthEncoding () {
@@ -155,7 +157,7 @@ public class Input extends InputStream implements AutoCloseable {
 	}
 
 	/** Sets the position and total to zero. */
-	public void rewind () {
+	public void reset () {
 		position = 0;
 		total = 0;
 	}

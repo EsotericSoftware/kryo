@@ -20,6 +20,8 @@
 package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.Pool.Poolable;
+import com.esotericsoftware.kryo.util.Pool;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.IOException;
@@ -28,7 +30,7 @@ import java.io.OutputStream;
 /** An OutputStream that writes data to a byte[] and optionally flushes to another OutputStream. Utility methods are provided for
  * efficiently writing primitive types and strings using big endian.
  * @author Nathan Sweet */
-public class Output extends OutputStream implements AutoCloseable {
+public class Output extends OutputStream implements AutoCloseable, Poolable {
 	protected int maxCapacity;
 	protected long total;
 	protected int position;
@@ -97,8 +99,7 @@ public class Output extends OutputStream implements AutoCloseable {
 	 * @param outputStream May be null. */
 	public void setOutputStream (OutputStream outputStream) {
 		this.outputStream = outputStream;
-		position = 0;
-		total = 0;
+		reset();
 	}
 
 	/** Sets a new buffer to write to. The max size is the buffer's length.
@@ -169,7 +170,7 @@ public class Output extends OutputStream implements AutoCloseable {
 	}
 
 	/** Sets the position and total to 0. */
-	public void clear () {
+	public void reset () {
 		position = 0;
 		total = 0;
 	}
