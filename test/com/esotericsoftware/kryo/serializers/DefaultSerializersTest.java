@@ -381,7 +381,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(6, Locale.US);
 		roundTrip(6, Locale.SIMPLIFIED_CHINESE);
 		roundTrip(5, new Locale("es"));
-		roundTrip(16, new Locale("es", "ES", "áéíóú"));
+		roundTrip(16, new Locale("es", "ES", "\u00E1\u00E9\u00ED\u00F3\u00FA"));
 	}
 
 	public void testCharset () {
