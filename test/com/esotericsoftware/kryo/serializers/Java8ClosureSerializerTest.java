@@ -59,7 +59,6 @@ public class Java8ClosureSerializerTest extends KryoTestCase {
 		doAssertEquals(closure1, closure2);
 	}
 
-	@Override
 	protected void doAssertEquals (Object object1, Object object2) {
 		try {
 			assertEquals(((Callable)object1).call(), ((Callable)object2).call());
