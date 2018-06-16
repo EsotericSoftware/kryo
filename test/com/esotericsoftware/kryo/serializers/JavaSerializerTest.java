@@ -23,8 +23,11 @@ import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.io.Serializable;
 
+import org.junit.Test;
+
 /** @author Nathan Sweet */
 public class JavaSerializerTest extends KryoTestCase {
+	@Test
 	public void testJavaSerializer () {
 		kryo.register(String.class, new JavaSerializer());
 		roundTrip(50, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");

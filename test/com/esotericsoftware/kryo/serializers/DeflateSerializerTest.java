@@ -22,13 +22,17 @@ package com.esotericsoftware.kryo.serializers;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 
+import org.junit.Test;
+
 /** @author Nathan Sweet */
 public class DeflateSerializerTest extends KryoTestCase {
+	@Test
 	public void testString () {
 		kryo.register(String.class, new DeflateSerializer(new StringSerializer()));
 		roundTrip(14, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 	}
 
+	@Test
 	public void testGraph () {
 		kryo.register(Message.class);
 		kryo.register(MessageType.class);

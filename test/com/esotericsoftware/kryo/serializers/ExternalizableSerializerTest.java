@@ -31,8 +31,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.junit.Test;
+
 /** @author Robert DiFalco <robert.difalco@gmail.com> */
 public class ExternalizableSerializerTest extends KryoTestCase {
+	@Test
 	public void testRegister () {
 		kryo.register(TestClass.class, new ExternalizableSerializer());
 		kryo.register(String.class, new DefaultSerializers.StringSerializer());
@@ -45,6 +48,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		roundTrip(11, test);
 	}
 
+	@Test
 	public void testDefault () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, new ExternalizableSerializer());
@@ -56,6 +60,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		roundTrip(88, test);
 	}
 
+	@Test
 	public void testReadResolve () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, ExternalizableSerializer.class);
@@ -74,6 +79,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		assertEquals(test.value, result);
 	}
 
+	@Test
 	public void testTwoClasses () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, ExternalizableSerializer.class);

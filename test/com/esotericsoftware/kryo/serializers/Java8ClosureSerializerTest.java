@@ -26,9 +26,13 @@ import com.esotericsoftware.kryo.io.Output;
 import java.lang.invoke.SerializedLambda;
 import java.util.concurrent.Callable;
 
+import org.junit.Before;
+import org.junit.Test;
+
 /** Test for java 8 closures. For JDK < 1.8 exclude from the surefire tests via the "until-java8" profile in pom.xml (which
  * excludes "Java8*Tests"). */
 public class Java8ClosureSerializerTest extends KryoTestCase {
+	@Before
 	public void setUp () throws Exception {
 		super.setUp();
 		// kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
@@ -39,6 +43,7 @@ public class Java8ClosureSerializerTest extends KryoTestCase {
 		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
 	}
 
+	@Test
 	public void testSerializableClosure () throws Exception {
 		Callable<Integer> closure1 = (Callable<Integer> & java.io.Serializable)( () -> 72363);
 
@@ -54,6 +59,7 @@ public class Java8ClosureSerializerTest extends KryoTestCase {
 		doAssertEquals(closure1, closure2);
 	}
 
+	@Override
 	protected void doAssertEquals (Object object1, Object object2) {
 		try {
 			assertEquals(((Callable)object1).call(), ((Callable)object2).call());

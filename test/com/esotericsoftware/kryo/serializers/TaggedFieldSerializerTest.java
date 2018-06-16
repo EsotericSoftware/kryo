@@ -32,12 +32,15 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 
+import org.junit.Test;
+
 @SuppressWarnings("synthetic-access")
 public class TaggedFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
+	@Test
 	public void testTaggedFieldSerializer () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.moo = 2;
@@ -53,6 +56,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		assertTrue(object2.ignored == 0);
 	}
 
+	@Test
 	public void testAddedField () throws FileNotFoundException {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();
@@ -73,6 +77,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 	/** Serializes an array with a Class with two tagged fields. Then deserializes it using a serializer that has removed some
 	 * fields to simulate a past version of the compiled application. An array is used to ensure subsequent bytes in the stream are
 	 * unaffected. */
+	@Test
 	public void testForwardCompatibility () {
 		FutureClass futureObject = new FutureClass();
 		futureObject.value = 3;
@@ -134,6 +139,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 
 	/** Attempts to register a class with a field tagged with a value already used in its superclass. Should receive
 	 * IllegalArgumentException. */
+	@Test
 	public void testInvalidTagValue () {
 		Kryo newKryo = new Kryo();
 		newKryo.setReferences(true);

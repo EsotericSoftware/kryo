@@ -19,10 +19,13 @@
 
 package com.esotericsoftware.kryo.io;
 
-import com.esotericsoftware.kryo.KryoTestCase;
+import static org.junit.Assert.*;
+
+import org.junit.Test;
 
 /** @author Nathan Sweet */
-public class ChunkedTest extends KryoTestCase {
+public class ChunkedTest {
+	@Test
 	public void testChunks () {
 		Output output = new Output(512);
 		output.writeInt(1234);
