@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.Assert.assertTrue;
+
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 

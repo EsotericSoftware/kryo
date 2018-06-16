@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.MapSerializer;

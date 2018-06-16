@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.minlog.Log.*;
+import static org.junit.Assert.assertEquals;
 
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
@@ -43,7 +44,7 @@ import junit.framework.TestCase;
 
 /** Convenience methods for round tripping objects.
  * @author Nathan Sweet */
-abstract public class KryoTestCase extends TestCase {
+abstract public class KryoTestCase {
 	// When true, roundTrip will only do a single write/read to make debugging easier (breaks some tests).
 	static private final boolean debug = false;
 

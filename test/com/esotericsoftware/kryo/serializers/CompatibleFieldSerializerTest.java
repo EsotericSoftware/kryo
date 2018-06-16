@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
@@ -42,8 +44,6 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	private void testCompatibleFieldSerializer (int length, boolean references, final boolean chunked) {
 		kryo.setReferences(references);
-
-		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
 		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory() {
 			public CompatibleFieldSerializer newSerializer (Kryo kryo, Class type) {
 				CompatibleFieldSerializer serializer = super.newSerializer(kryo, type);

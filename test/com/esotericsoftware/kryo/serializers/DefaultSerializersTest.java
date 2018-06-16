@@ -191,6 +191,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 		assertNull(object);
 	}
 
+	@Test
 	public void testDateSerializer () {
 		kryo.register(Date.class);
 		roundTrip(10, new Date(-1234567));

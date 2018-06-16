@@ -19,6 +19,7 @@
 
 package com.esotericsoftware.kryo.io;
 
+import static com.esotericsoftware.kryo.KryoAssert.*;
 import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -452,6 +453,7 @@ public class InputOutputTest extends KryoTestCase {
 		}
 	}
 
+	@Test
 	public void testLongs () throws IOException {
 		runLongTest(new Output(4096));
 		runLongTest(new Output(new ByteArrayOutputStream()));
@@ -597,6 +599,7 @@ public class InputOutputTest extends KryoTestCase {
 		}
 	}
 
+	@Test
 	public void testShorts () throws IOException {
 		runShortTest(new Output(4096));
 		runShortTest(new Output(new ByteArrayOutputStream()));
@@ -637,6 +640,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(-32768, read.readShort());
 	}
 
+	@Test
 	public void testFloats () throws IOException {
 		runFloatTest(new Output(4096));
 		runFloatTest(new Output(new ByteArrayOutputStream()));
@@ -686,49 +690,50 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(5, write.writeVarFloat(-8192, 1000, true));
 
 		Input read = new Input(write.toBytes());
-		assertEquals(read.readFloat(), 0f);
-		assertEquals(read.readFloat(), 63f);
-		assertEquals(read.readFloat(), 64f);
-		assertEquals(read.readFloat(), 127f);
-		assertEquals(read.readFloat(), 128f);
-		assertEquals(read.readFloat(), 8192f);
-		assertEquals(read.readFloat(), 16384f);
-		assertEquals(read.readFloat(), 32767f);
-		assertEquals(read.readFloat(), -63f);
-		assertEquals(read.readFloat(), -64f);
-		assertEquals(read.readFloat(), -127f);
-		assertEquals(read.readFloat(), -128f);
-		assertEquals(read.readFloat(), -8192f);
-		assertEquals(read.readFloat(), -16384f);
-		assertEquals(read.readFloat(), -32768f);
-		assertEquals(read.readVarFloat(1000, true), 0f);
-		assertEquals(read.readVarFloat(1000, false), 0f);
-		assertEquals(read.readVarFloat(1000, true), 63f);
-		assertEquals(read.readVarFloat(1000, false), 63f);
-		assertEquals(read.readVarFloat(1000, true), 64f);
-		assertEquals(read.readVarFloat(1000, false), 64f);
-		assertEquals(read.readVarFloat(1000, true), 127f);
-		assertEquals(read.readVarFloat(1000, false), 127f);
-		assertEquals(read.readVarFloat(1000, true), 128f);
-		assertEquals(read.readVarFloat(1000, false), 128f);
-		assertEquals(read.readVarFloat(1000, true), 8191f);
-		assertEquals(read.readVarFloat(1000, false), 8191f);
-		assertEquals(read.readVarFloat(1000, true), 8192f);
-		assertEquals(read.readVarFloat(1000, false), 8192f);
-		assertEquals(read.readVarFloat(1000, true), 16383f);
-		assertEquals(read.readVarFloat(1000, false), 16383f);
-		assertEquals(read.readVarFloat(1000, true), 16384f);
-		assertEquals(read.readVarFloat(1000, false), 16384f);
-		assertEquals(read.readVarFloat(1000, true), 32767f);
-		assertEquals(read.readVarFloat(1000, false), 32767f);
-		assertEquals(read.readVarFloat(1000, false), -64f);
-		assertEquals(read.readVarFloat(1000, true), -64f);
-		assertEquals(read.readVarFloat(1000, false), -65f);
-		assertEquals(read.readVarFloat(1000, true), -65f);
-		assertEquals(read.readVarFloat(1000, false), -8192f);
-		assertEquals(read.readVarFloat(1000, true), -8192f);
+		assertFloatEquals(read.readFloat(), 0f);
+		assertFloatEquals(read.readFloat(), 63f);
+		assertFloatEquals(read.readFloat(), 64f);
+		assertFloatEquals(read.readFloat(), 127f);
+		assertFloatEquals(read.readFloat(), 128f);
+		assertFloatEquals(read.readFloat(), 8192f);
+		assertFloatEquals(read.readFloat(), 16384f);
+		assertFloatEquals(read.readFloat(), 32767f);
+		assertFloatEquals(read.readFloat(), -63f);
+		assertFloatEquals(read.readFloat(), -64f);
+		assertFloatEquals(read.readFloat(), -127f);
+		assertFloatEquals(read.readFloat(), -128f);
+		assertFloatEquals(read.readFloat(), -8192f);
+		assertFloatEquals(read.readFloat(), -16384f);
+		assertFloatEquals(read.readFloat(), -32768f);
+		assertFloatEquals(read.readVarFloat(1000, true), 0f);
+		assertFloatEquals(read.readVarFloat(1000, false), 0f);
+		assertFloatEquals(read.readVarFloat(1000, true), 63f);
+		assertFloatEquals(read.readVarFloat(1000, false), 63f);
+		assertFloatEquals(read.readVarFloat(1000, true), 64f);
+		assertFloatEquals(read.readVarFloat(1000, false), 64f);
+		assertFloatEquals(read.readVarFloat(1000, true), 127f);
+		assertFloatEquals(read.readVarFloat(1000, false), 127f);
+		assertFloatEquals(read.readVarFloat(1000, true), 128f);
+		assertFloatEquals(read.readVarFloat(1000, false), 128f);
+		assertFloatEquals(read.readVarFloat(1000, true), 8191f);
+		assertFloatEquals(read.readVarFloat(1000, false), 8191f);
+		assertFloatEquals(read.readVarFloat(1000, true), 8192f);
+		assertFloatEquals(read.readVarFloat(1000, false), 8192f);
+		assertFloatEquals(read.readVarFloat(1000, true), 16383f);
+		assertFloatEquals(read.readVarFloat(1000, false), 16383f);
+		assertFloatEquals(read.readVarFloat(1000, true), 16384f);
+		assertFloatEquals(read.readVarFloat(1000, false), 16384f);
+		assertFloatEquals(read.readVarFloat(1000, true), 32767f);
+		assertFloatEquals(read.readVarFloat(1000, false), 32767f);
+		assertFloatEquals(read.readVarFloat(1000, false), -64f);
+		assertFloatEquals(read.readVarFloat(1000, true), -64f);
+		assertFloatEquals(read.readVarFloat(1000, false), -65f);
+		assertFloatEquals(read.readVarFloat(1000, true), -65f);
+		assertFloatEquals(read.readVarFloat(1000, false), -8192f);
+		assertFloatEquals(read.readVarFloat(1000, true), -8192f);
 	}
 
+	@Test
 	public void testDoubles () throws IOException {
 		runDoubleTest(new Output(4096));
 		runDoubleTest(new Output(new ByteArrayOutputStream()));
@@ -779,48 +784,48 @@ public class InputOutputTest extends KryoTestCase {
 		write.writeDouble(1.23456d);
 
 		Input read = new Input(write.toBytes());
-		assertEquals(read.readDouble(), 0d);
-		assertEquals(read.readDouble(), 63d);
-		assertEquals(read.readDouble(), 64d);
-		assertEquals(read.readDouble(), 127d);
-		assertEquals(read.readDouble(), 128d);
-		assertEquals(read.readDouble(), 8192d);
-		assertEquals(read.readDouble(), 16384d);
-		assertEquals(read.readDouble(), 32767d);
-		assertEquals(read.readDouble(), -63d);
-		assertEquals(read.readDouble(), -64d);
-		assertEquals(read.readDouble(), -127d);
-		assertEquals(read.readDouble(), -128d);
-		assertEquals(read.readDouble(), -8192d);
-		assertEquals(read.readDouble(), -16384d);
-		assertEquals(read.readDouble(), -32768d);
-		assertEquals(read.readVarDouble(1000, true), 0d);
-		assertEquals(read.readVarDouble(1000, false), 0d);
-		assertEquals(read.readVarDouble(1000, true), 63d);
-		assertEquals(read.readVarDouble(1000, false), 63d);
-		assertEquals(read.readVarDouble(1000, true), 64d);
-		assertEquals(read.readVarDouble(1000, false), 64d);
-		assertEquals(read.readVarDouble(1000, true), 127d);
-		assertEquals(read.readVarDouble(1000, false), 127d);
-		assertEquals(read.readVarDouble(1000, true), 128d);
-		assertEquals(read.readVarDouble(1000, false), 128d);
-		assertEquals(read.readVarDouble(1000, true), 8191d);
-		assertEquals(read.readVarDouble(1000, false), 8191d);
-		assertEquals(read.readVarDouble(1000, true), 8192d);
-		assertEquals(read.readVarDouble(1000, false), 8192d);
-		assertEquals(read.readVarDouble(1000, true), 16383d);
-		assertEquals(read.readVarDouble(1000, false), 16383d);
-		assertEquals(read.readVarDouble(1000, true), 16384d);
-		assertEquals(read.readVarDouble(1000, false), 16384d);
-		assertEquals(read.readVarDouble(1000, true), 32767d);
-		assertEquals(read.readVarDouble(1000, false), 32767d);
-		assertEquals(read.readVarDouble(1000, false), -64d);
-		assertEquals(read.readVarDouble(1000, true), -64d);
-		assertEquals(read.readVarDouble(1000, false), -65d);
-		assertEquals(read.readVarDouble(1000, true), -65d);
-		assertEquals(read.readVarDouble(1000, false), -8192d);
-		assertEquals(read.readVarDouble(1000, true), -8192d);
-		assertEquals(1.23456d, read.readDouble());
+		assertDoubleEquals(read.readDouble(), 0d);
+		assertDoubleEquals(read.readDouble(), 63d);
+		assertDoubleEquals(read.readDouble(), 64d);
+		assertDoubleEquals(read.readDouble(), 127d);
+		assertDoubleEquals(read.readDouble(), 128d);
+		assertDoubleEquals(read.readDouble(), 8192d);
+		assertDoubleEquals(read.readDouble(), 16384d);
+		assertDoubleEquals(read.readDouble(), 32767d);
+		assertDoubleEquals(read.readDouble(), -63d);
+		assertDoubleEquals(read.readDouble(), -64d);
+		assertDoubleEquals(read.readDouble(), -127d);
+		assertDoubleEquals(read.readDouble(), -128d);
+		assertDoubleEquals(read.readDouble(), -8192d);
+		assertDoubleEquals(read.readDouble(), -16384d);
+		assertDoubleEquals(read.readDouble(), -32768d);
+		assertDoubleEquals(read.readVarDouble(1000, true), 0d);
+		assertDoubleEquals(read.readVarDouble(1000, false), 0d);
+		assertDoubleEquals(read.readVarDouble(1000, true), 63d);
+		assertDoubleEquals(read.readVarDouble(1000, false), 63d);
+		assertDoubleEquals(read.readVarDouble(1000, true), 64d);
+		assertDoubleEquals(read.readVarDouble(1000, false), 64d);
+		assertDoubleEquals(read.readVarDouble(1000, true), 127d);
+		assertDoubleEquals(read.readVarDouble(1000, false), 127d);
+		assertDoubleEquals(read.readVarDouble(1000, true), 128d);
+		assertDoubleEquals(read.readVarDouble(1000, false), 128d);
+		assertDoubleEquals(read.readVarDouble(1000, true), 8191d);
+		assertDoubleEquals(read.readVarDouble(1000, false), 8191d);
+		assertDoubleEquals(read.readVarDouble(1000, true), 8192d);
+		assertDoubleEquals(read.readVarDouble(1000, false), 8192d);
+		assertDoubleEquals(read.readVarDouble(1000, true), 16383d);
+		assertDoubleEquals(read.readVarDouble(1000, false), 16383d);
+		assertDoubleEquals(read.readVarDouble(1000, true), 16384d);
+		assertDoubleEquals(read.readVarDouble(1000, false), 16384d);
+		assertDoubleEquals(read.readVarDouble(1000, true), 32767d);
+		assertDoubleEquals(read.readVarDouble(1000, false), 32767d);
+		assertDoubleEquals(read.readVarDouble(1000, false), -64d);
+		assertDoubleEquals(read.readVarDouble(1000, true), -64d);
+		assertDoubleEquals(read.readVarDouble(1000, false), -65d);
+		assertDoubleEquals(read.readVarDouble(1000, true), -65d);
+		assertDoubleEquals(read.readVarDouble(1000, false), -8192d);
+		assertDoubleEquals(read.readVarDouble(1000, true), -8192d);
+		assertDoubleEquals(1.23456d, read.readDouble());
 	}
 
 	@Test

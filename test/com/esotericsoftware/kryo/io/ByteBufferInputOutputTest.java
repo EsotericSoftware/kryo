@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.io;
 
+import static org.junit.Assert.assertEquals;
+
 import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.io.ByteArrayInputStream;

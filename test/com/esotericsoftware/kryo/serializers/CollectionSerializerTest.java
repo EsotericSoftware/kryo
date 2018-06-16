@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.Assert.assertFalse;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
@@ -101,6 +103,7 @@ public class CollectionSerializerTest extends KryoTestCase {
 		roundTrip(9, set);
 	}
 
+	@Test
 	public void testCopy () {
 		List objects1 = Collections.singletonList(new Object());
 		Kryo kryo = new Kryo();

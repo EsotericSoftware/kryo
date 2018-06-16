@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.util;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.util.Pool;
