@@ -82,9 +82,6 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
    * [Clojure](#clojure)
    * [Objective-C](#objective-c)
 
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
-
-
 ## Recent releases
 
 [5.0.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0) fixes many issues and makes many long awaited improvements.
