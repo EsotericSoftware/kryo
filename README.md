@@ -87,7 +87,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
-[5.0.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0) is a heavy refactoring of the library, making many long awaited improvements.
+[5.0.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0) fixes many issues and makes many long awaited improvements.
 
 [4.0.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.2) brings several incremental fixes and improvements.
 
