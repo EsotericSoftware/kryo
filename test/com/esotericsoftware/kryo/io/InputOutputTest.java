@@ -958,19 +958,15 @@ public class InputOutputTest extends KryoTestCase {
 
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testNewOutputMaxBufferSizeLessThanBufferSize () {
 		int bufferSize = 2;
 		int maxBufferSize = 1;
 
-		try {
-			new Output(bufferSize, maxBufferSize);
-			fail("Expecting IllegalArgumentException not thrown");
-		} catch (IllegalArgumentException expected) {
-		}
+		new Output(bufferSize, maxBufferSize);
 	}
 
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void testSetOutputMaxBufferSizeLessThanBufferSize () {
 		int bufferSize = 2;
 		int maxBufferSize = 1;
@@ -978,12 +974,7 @@ public class InputOutputTest extends KryoTestCase {
 		Output output = new Output(bufferSize, bufferSize);
 		assertNotNull(output);
 
-		try {
-			output.setBuffer(new byte[bufferSize], maxBufferSize);
-			fail("Expecting IllegalArgumentException not thrown");
-		} catch (IllegalArgumentException expected) {
-		}
-
+		output.setBuffer(new byte[bufferSize], maxBufferSize);
 	}
 
 	@Test

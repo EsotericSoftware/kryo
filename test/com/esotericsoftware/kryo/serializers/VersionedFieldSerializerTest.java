@@ -24,8 +24,6 @@ import static org.junit.Assert.*;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 
-import java.io.FileNotFoundException;
-
 import org.junit.Test;
 
 public class VersionedFieldSerializerTest extends KryoTestCase {
