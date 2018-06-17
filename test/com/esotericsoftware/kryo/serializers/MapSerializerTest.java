@@ -199,7 +199,7 @@ public class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testSerializingMapAfterDeserializingMultipleReferencesToSameMap () throws Exception {
+	public void testSerializingMapAfterDeserializingMultipleReferencesToSameMap () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		Output output = new Output(4096);

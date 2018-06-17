@@ -166,7 +166,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testVoid () throws InstantiationException, IllegalAccessException {
+	public void testVoid () {
 		roundTrip(1, (Void)null);
 	}
 

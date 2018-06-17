@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
@@ -109,7 +109,7 @@ public class CollectionSerializerTest extends KryoTestCase {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		List objects2 = kryo.copy(objects1);
-		assertFalse(objects1.get(0) == objects2.get(0));
+		assertNotSame(objects1.get(0), objects2.get(0));
 	}
 
 	static public class TreeSetSubclass<E> extends TreeSet<E> {

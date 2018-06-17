@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
@@ -46,7 +46,7 @@ public class Java8ClosureSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testSerializableClosure () throws Exception {
+	public void testSerializableClosure () {
 		Callable<Integer> closure1 = (Callable<Integer> & java.io.Serializable)( () -> 72363);
 
 		// The length cannot be checked reliable, as it can vary based on the JVM.

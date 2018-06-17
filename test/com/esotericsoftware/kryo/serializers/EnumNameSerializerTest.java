@@ -55,7 +55,7 @@ public class EnumNameSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testEnumSetSerializerWithEnumNameSerializer () throws Exception {
+	public void testEnumSetSerializerWithEnumNameSerializer () {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.register(EnumSet.class);
 		kryo.register(TestNameEnum.class);
