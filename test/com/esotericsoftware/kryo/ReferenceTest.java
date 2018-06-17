@@ -76,8 +76,8 @@ public class ReferenceTest extends KryoTestCase {
 		assertEquals(stuff.ordering.order, stuff2.ordering.order);
 		assertEquals(stuff.get("key"), stuff2.get("key"));
 		assertEquals(stuff.get("something"), stuff2.get("something"));
-		assertTrue(stuff.get("self") == stuff);
-		assertTrue(stuff2.get("self") == stuff2);
+		assertSame(stuff.get("self"), stuff);
+		assertSame(stuff2.get("self"), stuff2);
 	}
 
 	@Test
