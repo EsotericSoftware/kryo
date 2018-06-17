@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.io;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 
@@ -32,9 +32,9 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 	@Test
 	public void testByteBufferInputEnd () {
 		ByteBufferInput in = new ByteBufferInput(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
-		assertEquals(false, in.end());
+		assertFalse(in.end());
 		in.setPosition(4);
-		assertEquals(true, in.end());
+		assertTrue(in.end());
 	}
 
 	@Test

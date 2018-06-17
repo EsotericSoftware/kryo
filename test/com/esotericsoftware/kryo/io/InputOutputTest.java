@@ -37,13 +37,14 @@ import java.util.Random;
 import org.junit.Test;
 
 /** @author Nathan Sweet */
+@SuppressWarnings("ALL")
 public class InputOutputTest extends KryoTestCase {
 	@Test
 	public void testByteBufferInputEnd () {
 		Input in = new Input(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
-		assertEquals(false, in.end());
+		assertFalse(in.end());
 		in.setPosition(4);
-		assertEquals(true, in.end());
+		assertTrue(in.end());
 	}
 
 	@Test
@@ -123,7 +124,7 @@ public class InputOutputTest extends KryoTestCase {
 		write.reset();
 		write.writeString(null);
 		read = new Input(write.toBytes());
-		assertEquals(null, read.readString());
+		assertNull(read.readString());
 
 		for (int i = 0; i <= 258; i++)
 			runStringTest(i);
@@ -202,7 +203,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals("uno", read.readString());
 		assertEquals("dos", read.readString());
 		assertEquals("tres", read.readString());
-		assertEquals(null, read.readString());
+		assertNull(read.readString());
 		assertEquals(value1, read.readString());
 		assertEquals(value2, read.readString());
 		for (int i = 0; i < 127; i++)
@@ -217,7 +218,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals("uno", read.readStringBuilder().toString());
 		assertEquals("dos", read.readStringBuilder().toString());
 		assertEquals("tres", read.readStringBuilder().toString());
-		assertEquals(null, read.readStringBuilder());
+		assertNull(read.readStringBuilder());
 		assertEquals(value1, read.readStringBuilder().toString());
 		assertEquals(value2, read.readStringBuilder().toString());
 		for (int i = 0; i < 127; i++)
@@ -231,14 +232,14 @@ public class InputOutputTest extends KryoTestCase {
 		Output write = new Output(new ByteArrayOutputStream());
 
 		Input read = new Input(write.toBytes());
-		assertEquals(false, read.canReadVarInt());
+		assertFalse(read.canReadVarInt());
 
 		write.writeVarInt(400, true);
 
 		read = new Input(write.toBytes());
-		assertEquals(true, read.canReadVarInt());
+		assertTrue(read.canReadVarInt());
 		read.setLimit(read.limit() - 1);
-		assertEquals(false, read.canReadVarInt());
+		assertFalse(read.canReadVarInt());
 	}
 
 	@Test
@@ -270,24 +271,24 @@ public class InputOutputTest extends KryoTestCase {
 
 		input.setPosition(0);
 		input.setLimit(output.position());
-		assertEquals(true, input.readVarIntFlag());
+		assertTrue(input.readVarIntFlag());
 		assertEquals(63, input.readVarIntFlag(true));
-		assertEquals(true, input.readVarIntFlag());
+		assertTrue(input.readVarIntFlag());
 		assertEquals(64, input.readVarIntFlag(true));
 
-		assertEquals(false, input.readVarIntFlag());
+		assertFalse(input.readVarIntFlag());
 		assertEquals(63, input.readVarIntFlag(true));
-		assertEquals(false, input.readVarIntFlag());
+		assertFalse(input.readVarIntFlag());
 		assertEquals(64, input.readVarIntFlag(true));
 
-		assertEquals(true, input.readVarIntFlag());
+		assertTrue(input.readVarIntFlag());
 		assertEquals(31, input.readVarIntFlag(false));
-		assertEquals(true, input.readVarIntFlag());
+		assertTrue(input.readVarIntFlag());
 		assertEquals(32, input.readVarIntFlag(false));
 
-		assertEquals(false, input.readVarIntFlag());
+		assertFalse(input.readVarIntFlag());
 		assertEquals(31, input.readVarIntFlag(false));
-		assertEquals(false, input.readVarIntFlag());
+		assertFalse(input.readVarIntFlag());
 		assertEquals(32, input.readVarIntFlag(false));
 	}
 
@@ -386,9 +387,9 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(-268435455, read.readInt());
 		assertEquals(-134217728, read.readInt());
 		assertEquals(-268435456, read.readInt());
-		assertEquals(true, read.canReadVarInt());
-		assertEquals(true, read.canReadVarInt());
-		assertEquals(true, read.canReadVarInt());
+		assertTrue(read.canReadVarInt());
+		assertTrue(read.canReadVarInt());
+		assertTrue(read.canReadVarInt());
 		assertEquals(0, read.readVarInt(true));
 		assertEquals(0, read.readVarInt(false));
 		assertEquals(63, read.readVarInt(true));
@@ -437,7 +438,7 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(Integer.MAX_VALUE - 1, read.readVarInt(true));
 		assertEquals(Integer.MAX_VALUE, read.readVarInt(false));
 		assertEquals(Integer.MAX_VALUE, read.readVarInt(true));
-		assertEquals(false, read.canReadVarInt());
+		assertFalse(read.canReadVarInt());
 
 		Random random = new Random();
 		for (int i = 0; i < 10000; i++) {
@@ -503,12 +504,12 @@ public class InputOutputTest extends KryoTestCase {
 		assertEquals(3, write.writeVarLong(1048575, false));
 		assertEquals(4, write.writeVarLong(134217727, true));
 		assertEquals(4, write.writeVarLong(134217727, false));
-		assertEquals(4, write.writeVarLong(268435455l, true));
-		assertEquals(5, write.writeVarLong(268435455l, false));
-		assertEquals(4, write.writeVarLong(134217728l, true));
-		assertEquals(5, write.writeVarLong(134217728l, false));
-		assertEquals(5, write.writeVarLong(268435456l, true));
-		assertEquals(5, write.writeVarLong(268435456l, false));
+		assertEquals(4, write.writeVarLong(268435455L, true));
+		assertEquals(5, write.writeVarLong(268435455L, false));
+		assertEquals(4, write.writeVarLong(134217728L, true));
+		assertEquals(5, write.writeVarLong(134217728L, false));
+		assertEquals(5, write.writeVarLong(268435456L, true));
+		assertEquals(5, write.writeVarLong(268435456L, false));
 		assertEquals(1, write.writeVarLong(-64, false));
 		assertEquals(9, write.writeVarLong(-64, true));
 		assertEquals(2, write.writeVarLong(-65, false));
@@ -842,8 +843,8 @@ public class InputOutputTest extends KryoTestCase {
 
 		Input read = new Input(write.toBytes());
 		for (int i = 0; i < 100; i++) {
-			assertEquals(true, read.readBoolean());
-			assertEquals(false, read.readBoolean());
+			assertTrue(read.readBoolean());
+			assertFalse(read.readBoolean());
 		}
 	}
 

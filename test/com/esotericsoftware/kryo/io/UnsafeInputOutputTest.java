@@ -27,7 +27,6 @@ import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Random;
 
 import org.junit.Test;
@@ -35,7 +34,7 @@ import org.junit.Test;
 /** @author Nathan Sweet <misc@n4te.com> */
 public class UnsafeInputOutputTest {
 	@Test
-	public void testOutputStream () throws IOException {
+	public void testOutputStream () {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 		UnsafeOutput output = new UnsafeOutput(buffer, 2);
 		output.writeBytes(new byte[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26});
@@ -52,7 +51,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testInputStream () throws IOException {
+	public void testInputStream () {
 		byte[] bytes = new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
@@ -76,7 +75,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testWriteBytes () throws IOException {
+	public void testWriteBytes () {
 		UnsafeOutput buffer = new UnsafeOutput(512);
 		buffer.writeBytes(new byte[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26});
 		buffer.writeBytes(new byte[] {31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46});
@@ -97,7 +96,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testStrings () throws IOException {
+	public void testStrings () {
 		runStringTest(new UnsafeOutput(4096));
 		runStringTest(new UnsafeOutput(897));
 		runStringTest(new UnsafeOutput(new ByteArrayOutputStream()));
@@ -117,7 +116,7 @@ public class UnsafeInputOutputTest {
 		runStringTest(1024 * 1024 * 2);
 	}
 
-	private void runStringTest (int length) throws IOException {
+	private void runStringTest (int length) {
 		UnsafeOutput write = new UnsafeOutput(1024, -1);
 		StringBuilder buffer = new StringBuilder();
 		for (int i = 0; i < length; i++)
@@ -147,7 +146,7 @@ public class UnsafeInputOutputTest {
 		}
 	}
 
-	private void runStringTest (UnsafeOutput write) throws IOException {
+	private void runStringTest (UnsafeOutput write) {
 		String value1 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\rabcdefghijklmnopqrstuvwxyz\n1234567890\t\"!`?'.,;:()[]{}<>|/@\\^$-%+=#_&~*";
 		String value2 = "abcdef\u00E1\u00E9\u00ED\u00F3\u00FA\u1234";
 
@@ -172,7 +171,7 @@ public class UnsafeInputOutputTest {
 		assertEquals("uno", read.readString());
 		assertEquals("dos", read.readString());
 		assertEquals("tres", read.readString());
-		assertEquals(null, read.readString());
+		assertNull(read.readString());
 		assertEquals(value1, read.readString());
 		assertEquals(value2, read.readString());
 		for (int i = 0; i < 127; i++)
@@ -187,7 +186,7 @@ public class UnsafeInputOutputTest {
 		assertEquals("uno", read.readStringBuilder().toString());
 		assertEquals("dos", read.readStringBuilder().toString());
 		assertEquals("tres", read.readStringBuilder().toString());
-		assertEquals(null, read.readStringBuilder());
+		assertNull(read.readStringBuilder());
 		assertEquals(value1, read.readStringBuilder().toString());
 		assertEquals(value2, read.readStringBuilder().toString());
 		for (int i = 0; i < 127; i++)
@@ -197,27 +196,27 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testCanReadInt () throws IOException {
+	public void testCanReadInt () {
 		UnsafeOutput write = new UnsafeOutput(new ByteArrayOutputStream());
 
 		Input read = new UnsafeInput(write.toBytes());
-		assertEquals(false, read.canReadVarInt());
+		assertFalse(read.canReadVarInt());
 
 		write.writeVarInt(400, true);
 
 		read = new UnsafeInput(write.toBytes());
-		assertEquals(true, read.canReadVarInt());
+		assertTrue(read.canReadVarInt());
 		read.setLimit(read.limit() - 1);
-		assertEquals(false, read.canReadVarInt());
+		assertFalse(read.canReadVarInt());
 	}
 
 	@Test
-	public void testInts () throws IOException {
+	public void testInts () {
 		runIntTest(new UnsafeOutput(4096));
 		runIntTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
 
-	private void runIntTest (UnsafeOutput write) throws IOException {
+	private void runIntTest (UnsafeOutput write) {
 		write.writeInt(0);
 		write.writeInt(63);
 		write.writeInt(64);
@@ -308,9 +307,9 @@ public class UnsafeInputOutputTest {
 		assertEquals(-268435455, read.readInt());
 		assertEquals(-134217728, read.readInt());
 		assertEquals(-268435456, read.readInt());
-		assertEquals(true, read.canReadInt());
-		assertEquals(true, read.canReadInt());
-		assertEquals(true, read.canReadInt());
+		assertTrue(read.canReadInt());
+		assertTrue(read.canReadInt());
+		assertTrue(read.canReadInt());
 
 		read.setVariableLengthEncoding(false);
 		assertEquals(0, read.readInt(true));
@@ -361,7 +360,7 @@ public class UnsafeInputOutputTest {
 		assertEquals(Integer.MAX_VALUE - 1, read.readInt(true));
 		assertEquals(Integer.MAX_VALUE, read.readInt(false));
 		assertEquals(Integer.MAX_VALUE, read.readInt(true));
-		assertEquals(false, read.canReadInt());
+		assertFalse(read.canReadInt());
 
 		Random random = new Random();
 		for (int i = 0; i < 10000; i++) {
@@ -378,12 +377,12 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testLongs () throws IOException {
+	public void testLongs () {
 		runLongTest(new UnsafeOutput(4096));
 		runLongTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
 
-	private void runLongTest (UnsafeOutput write) throws IOException {
+	private void runLongTest (UnsafeOutput write) {
 		write.writeLong(0);
 		write.writeLong(63);
 		write.writeLong(64);
@@ -429,12 +428,12 @@ public class UnsafeInputOutputTest {
 		assertEquals(8, write.writeLong(1048575, false));
 		assertEquals(8, write.writeLong(134217727, true));
 		assertEquals(8, write.writeLong(134217727, false));
-		assertEquals(8, write.writeLong(268435455l, true));
-		assertEquals(8, write.writeLong(268435455l, false));
-		assertEquals(8, write.writeLong(134217728l, true));
-		assertEquals(8, write.writeLong(134217728l, false));
-		assertEquals(8, write.writeLong(268435456l, true));
-		assertEquals(8, write.writeLong(268435456l, false));
+		assertEquals(8, write.writeLong(268435455L, true));
+		assertEquals(8, write.writeLong(268435455L, false));
+		assertEquals(8, write.writeLong(134217728L, true));
+		assertEquals(8, write.writeLong(134217728L, false));
+		assertEquals(8, write.writeLong(268435456L, true));
+		assertEquals(8, write.writeLong(268435456L, false));
 		assertEquals(8, write.writeLong(-64, false));
 		assertEquals(8, write.writeLong(-64, true));
 		assertEquals(8, write.writeLong(-65, false));
@@ -528,12 +527,12 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testShorts () throws IOException {
+	public void testShorts () {
 		runShortTest(new UnsafeOutput(4096));
 		runShortTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
 
-	private void runShortTest (UnsafeOutput write) throws IOException {
+	private void runShortTest (UnsafeOutput write) {
 		write.writeShort(0);
 		write.writeShort(63);
 		write.writeShort(64);
@@ -569,12 +568,12 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testFloats () throws IOException {
+	public void testFloats () {
 		runFloatTest(new UnsafeOutput(4096));
 		runFloatTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
 
-	private void runFloatTest (UnsafeOutput write) throws IOException {
+	private void runFloatTest (UnsafeOutput write) {
 		write.writeFloat(0);
 		write.writeFloat(63);
 		write.writeFloat(64);
@@ -663,12 +662,12 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testDoubles () throws IOException {
+	public void testDoubles () {
 		runDoubleTest(new UnsafeOutput(4096));
 		runDoubleTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
 
-	private void runDoubleTest (UnsafeOutput write) throws IOException {
+	private void runDoubleTest (UnsafeOutput write) {
 		write.writeDouble(0);
 		write.writeDouble(63);
 		write.writeDouble(64);
@@ -760,12 +759,12 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testBooleans () throws IOException {
+	public void testBooleans () {
 		runBooleanTest(new UnsafeOutput(4096));
 		runBooleanTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
 
-	private void runBooleanTest (UnsafeOutput write) throws IOException {
+	private void runBooleanTest (UnsafeOutput write) {
 		for (int i = 0; i < 100; i++) {
 			write.writeBoolean(true);
 			write.writeBoolean(false);
@@ -773,18 +772,18 @@ public class UnsafeInputOutputTest {
 
 		Input read = new UnsafeInput(write.toBytes());
 		for (int i = 0; i < 100; i++) {
-			assertEquals(true, read.readBoolean());
-			assertEquals(false, read.readBoolean());
+			assertTrue(read.readBoolean());
+			assertFalse(read.readBoolean());
 		}
 	}
 
 	@Test
-	public void testChars () throws IOException {
+	public void testChars () {
 		runCharTest(new UnsafeOutput(4096));
 		runCharTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
 
-	private void runCharTest (UnsafeOutput write) throws IOException {
+	private void runCharTest (UnsafeOutput write) {
 		write.writeChar((char)0);
 		write.writeChar((char)63);
 		write.writeChar((char)64);
@@ -809,12 +808,12 @@ public class UnsafeInputOutputTest {
 
 	// Check if writing varInts may produce more bytes than expected
 	@Test
-	public void testWriteTooManyBytes () throws IOException {
+	public void testWriteTooManyBytes () {
 		ByteArrayOutputStream os = new ByteArrayOutputStream(1);
 		runIntTest(new UnsafeOutput(os, 4), os);
 	}
 
-	private void runIntTest (UnsafeOutput write, ByteArrayOutputStream os) throws IOException {
+	private void runIntTest (UnsafeOutput write, ByteArrayOutputStream os) {
 		write.setVariableLengthEncoding(false);
 		write.writeInt(0, true);
 		write.writeInt(63, true);
@@ -830,6 +829,6 @@ public class UnsafeInputOutputTest {
 		assertEquals(63, read.readInt(true));
 		assertEquals(64, read.readInt(true));
 		assertEquals(65535, read.readInt(true));
-		assertEquals(true, read.end());
+		assertTrue(read.end());
 	}
 }
