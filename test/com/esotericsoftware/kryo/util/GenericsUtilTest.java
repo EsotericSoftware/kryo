@@ -67,7 +67,7 @@ public class GenericsUtilTest {
 		// names = new String[] {"ArrayList<ArrayList<String>> fromFieldNested"};
 		for (String value1 : names) {
 			int index = value1.lastIndexOf(' ');
-			String type = value1.substring(0, index), name = value1.substring(index + 1);
+			String name = value1.substring(index + 1);
 
 			Field field = Test4.class.getField(name);
 			Class declaringClass = field.getDeclaringClass();

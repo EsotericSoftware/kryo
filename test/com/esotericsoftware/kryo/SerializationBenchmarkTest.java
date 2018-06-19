@@ -74,7 +74,6 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 
 	@Test
 	public void testOutput () throws Exception {
-		byte[] out = new byte[OUTPUT_BUFFER_SIZE];
 		Output output = new Output(OUTPUT_BUFFER_SIZE);
 		Input input = new Input(output.getBuffer());
 		run("Output", 1, WARMUP_ITERATIONS, output, input, false);
@@ -83,7 +82,6 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 
 	@Test
 	public void testOutputFixed () throws Exception {
-		byte[] out = new byte[OUTPUT_BUFFER_SIZE];
 		Output output = new Output(OUTPUT_BUFFER_SIZE);
 		Input input = new Input(output.getBuffer());
 		input.setVariableLengthEncoding(false);
@@ -94,7 +92,6 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 
 	@Test
 	public void testByteBufferOutput () throws Exception {
-		byte[] out = new byte[OUTPUT_BUFFER_SIZE];
 		ByteBufferOutput output = new ByteBufferOutput(OUTPUT_BUFFER_SIZE);
 		ByteBufferInput input = new ByteBufferInput(output.getByteBuffer());
 		run("ByteBufferOutput", 1, WARMUP_ITERATIONS, output, input, false);
@@ -103,7 +100,6 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 
 	@Test
 	public void testByteBufferOutputFixed () throws Exception {
-		byte[] out = new byte[OUTPUT_BUFFER_SIZE];
 		ByteBufferOutput output = new ByteBufferOutput(OUTPUT_BUFFER_SIZE);
 		ByteBufferInput input = new ByteBufferInput(output.getByteBuffer());
 		input.setVariableLengthEncoding(false);

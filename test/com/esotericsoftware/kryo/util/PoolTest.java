@@ -19,9 +19,10 @@
 
 package com.esotericsoftware.kryo.util;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.util.Pool;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -63,7 +64,7 @@ public class PoolTest extends KryoTestCase {
 	public void getShouldReturnAvailableInstance () {
 		Kryo kryo = pool.obtain();
 		pool.free(kryo);
-		assertTrue(kryo == pool.obtain());
+		assertSame(kryo, pool.obtain());
 	}
 
 	@Test
@@ -80,7 +81,7 @@ public class PoolTest extends KryoTestCase {
 		Kryo kryo1 = pool.obtain();
 		assertEquals(0, pool.getFree());
 		Kryo kryo2 = pool.obtain();
-		assertFalse(kryo1 == kryo2);
+		assertNotSame(kryo1, kryo2);
 		pool.free(kryo1);
 		assertEquals(1, pool.getFree());
 		pool.free(kryo2);

@@ -19,10 +19,10 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
-
-import java.io.FileNotFoundException;
 
 import org.junit.Test;
 
@@ -32,7 +32,7 @@ public class VersionedFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testVersionFieldSerializer () throws FileNotFoundException {
+	public void testVersionFieldSerializer () {
 		TestClass object1 = new TestClass();
 		object1.moo = 2;
 		object1.child = null;
@@ -49,8 +49,8 @@ public class VersionedFieldSerializerTest extends KryoTestCase {
 
 		TestClass object2 = roundTrip(25, object1);
 
-		assertTrue(object2.moo == object1.moo);
-		assertTrue(object2.other.value.equals(object1.other.value));
+		assertEquals(object2.moo, object1.moo);
+		assertEquals(object2.other.value, object1.other.value);
 	}
 
 	static public class TestClass {

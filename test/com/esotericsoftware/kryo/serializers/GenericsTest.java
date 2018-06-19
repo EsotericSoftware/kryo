@@ -41,7 +41,7 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testGenericClassWithGenericFields () throws Exception {
+	public void testGenericClassWithGenericFields () {
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
 		kryo.register(BaseGeneric.class);
@@ -54,7 +54,7 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testNonGenericClassWithGenericSuperclass () throws Exception {
+	public void testNonGenericClassWithGenericSuperclass () {
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
 		kryo.register(BaseGeneric.class);
@@ -69,7 +69,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for/from https://github.com/EsotericSoftware/kryo/issues/377
 	@Test
-	public void testDifferentTypeArguments () throws Exception {
+	public void testDifferentTypeArguments () {
 		LongHolder o1 = new LongHolder(1L);
 		LongListHolder o2 = new LongListHolder(Arrays.asList(1L));
 

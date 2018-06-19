@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.minlog.Log.*;
+import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
@@ -39,11 +40,9 @@ import java.util.ArrayList;
 
 import org.junit.Before;
 
-import junit.framework.TestCase;
-
 /** Convenience methods for round tripping objects.
  * @author Nathan Sweet */
-abstract public class KryoTestCase extends TestCase {
+abstract public class KryoTestCase {
 	// When true, roundTrip will only do a single write/read to make debugging easier (breaks some tests).
 	static private final boolean debug = false;
 
@@ -97,7 +96,7 @@ abstract public class KryoTestCase extends TestCase {
 			}
 		});
 
-		if (debug) return (T)object2;
+		if (debug) return object2;
 
 		roundTripWithBufferFactory(length, object1, new BufferFactory() {
 			public Output createOutput (OutputStream os) {
@@ -216,10 +215,10 @@ abstract public class KryoTestCase extends TestCase {
 
 			// Test null from byte array with and without serializer.
 			input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
-			assertEquals(null, kryo.readObjectOrNull(input, object1.getClass(), serializer));
+			assertNull(kryo.readObjectOrNull(input, object1.getClass(), serializer));
 
 			input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
-			assertEquals(null, kryo.readObjectOrNull(input, object1.getClass()));
+			assertNull(kryo.readObjectOrNull(input, object1.getClass()));
 		}
 
 		// Test output to byte array.

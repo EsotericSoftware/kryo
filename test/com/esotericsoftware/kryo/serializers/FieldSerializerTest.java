@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -210,12 +212,12 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		roundTrip(75, c);
 		C c2 = (C)object2;
-		assertTrue(c2.d == c2.d.e.f.d);
+		assertSame(c2.d, c2.d.e.f.d);
 
 		// Test reset clears unregistered class names.
 		roundTrip(75, c);
 		c2 = (C)object2;
-		assertTrue(c2.d == c2.d.e.f.d);
+		assertSame(c2.d, c2.d.e.f.d);
 
 		kryo = new Kryo();
 		kryo.register(A.class);
@@ -226,7 +228,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(F.class);
 		roundTrip(15, c);
 		c2 = (C)object2;
-		assertTrue(c2.d == c2.d.e.f.d);
+		assertSame(c2.d, c2.d.e.f.d);
 	}
 
 	@Test
@@ -365,7 +367,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testCyclicGrgaph () throws Exception {
+	public void testCyclicGrgaph () {
 		kryo = new Kryo();
 		kryo.register(DefaultTypes.class);
 		kryo.register(byte[].class);
@@ -486,7 +488,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		HasTransients objectWithTransients3 = kryo.copy(objectWithTransients1);
 		assertTrue("Objects should be different if copy does not include transient fields",
 			!objectWithTransients3.equals(objectWithTransients1));
-		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
+		assertNull("transient fields should be null", objectWithTransients3.transientField1);
 
 		ser.getFieldSerializerConfig().setCopyTransient(true);
 		ser.updateFields();
@@ -509,7 +511,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		HasTransients objectWithTransients3 = kryo.copy(objectWithTransients1);
 		assertTrue("Objects should be different if copy does not include transient fields",
 			!objectWithTransients3.equals(objectWithTransients1));
-		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
+		assertNull("transient fields should be null", objectWithTransients3.transientField1);
 
 		ser.getFieldSerializerConfig().setCopyTransient(true);
 		ser.updateFields();
@@ -544,7 +546,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		HasTransients objectWithTransients3 = ser.read(kryo, input, HasTransients.class);
 		assertTrue("Objects should be different if write does not include transient fields",
 			!objectWithTransients3.equals(objectWithTransients1));
-		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
+		assertNull("transient fields should be null", objectWithTransients3.transientField1);
 
 		ser.getFieldSerializerConfig().setSerializeTransient(true);
 		ser.updateFields();
@@ -557,8 +559,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		outBytes = outputStream.toByteArray();
 		input = new Input(outBytes);
 		HasTransients objectWithTransients2 = ser.read(kryo, input, HasTransients.class);
-		assertTrue("Objects should be equal if write includes transient fields",
-			objectWithTransients2.equals(objectWithTransients1));
+		assertEquals("Objects should be equal if write includes transient fields", objectWithTransients2, objectWithTransients1);
 	}
 
 	@Test
@@ -588,7 +589,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		HasTransients objectWithTransients3 = ser.read(kryo, input, HasTransients.class);
 		assertTrue("Objects should be different if write does not include transient fields",
 			!objectWithTransients3.equals(objectWithTransients1));
-		assertEquals("transient fields should be null", objectWithTransients3.transientField1, null);
+		assertNull("transient fields should be null", objectWithTransients3.transientField1);
 
 		ser.getFieldSerializerConfig().setSerializeTransient(true);
 		ser.updateFields();
@@ -601,8 +602,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		outBytes = outputStream.toByteArray();
 		input = new Input(outBytes);
 		HasTransients objectWithTransients2 = ser.read(kryo, input, HasTransients.class);
-		assertTrue("Objects should be equal if write includes transient fields",
-			objectWithTransients2.equals(objectWithTransients1));
+		assertEquals("Objects should be equal if write includes transient fields", objectWithTransients2, objectWithTransients1);
 	}
 
 	@Test
@@ -648,7 +648,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			return;
 		}
 
-		assertFalse("Exception was expected", true);
+		fail("Exception was expected");
 	}
 
 	@Test
@@ -663,7 +663,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			return;
 		}
 
-		assertFalse("Exception was expected", true);
+		fail("Exception was expected");
 	}
 
 	@Test
@@ -678,7 +678,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			return;
 		}
 
-		assertFalse("Exception was expected", true);
+		fail("Exception was expected");
 	}
 
 	@Test

@@ -30,7 +30,6 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 
 import org.junit.Test;
 
@@ -41,7 +40,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testTaggedFieldSerializer () throws FileNotFoundException {
+	public void testTaggedFieldSerializer () {
 		TestClass object1 = new TestClass();
 		object1.moo = 2;
 		object1.child = new TestClass();
@@ -53,11 +52,11 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		kryo.register(TestClass.class);
 		kryo.register(AnotherClass.class);
 		TestClass object2 = roundTrip(57, object1);
-		assertTrue(object2.ignored == 0);
+		assertEquals(0, object2.ignored);
 	}
 
 	@Test
-	public void testAddedField () throws FileNotFoundException {
+	public void testAddedField () {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();
 		object1.other = new AnotherClass();
