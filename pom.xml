@@ -18,7 +18,7 @@
 		<dependency>
 			<groupId>com.esotericsoftware</groupId>
 			<artifactId>reflectasm</artifactId>
-			<version>1.11.6</version>
+			<version>1.11.7</version>
 		</dependency>
 		<dependency>
 			<groupId>org.objenesis</groupId>
