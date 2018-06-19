@@ -1203,7 +1203,7 @@ If `true` is passed as the second argument to the Pool constructor, the Pool sto
 
 The third Pool parameter is the maximum capacity. If an object is freed and the pool already contains the maximum number of free objects, the specified object is reset but not added to the pool. The maximum capacity may be omitted for no limit.
 
-If an object implement Pool.Poolable then Poolable `reset` is called when the object is freed. This gives the object a chance to reset its state for reuse in the future. Alternatively, Pool `reset` can be overridden to reset objects. Input and Output implement Poolable to set their `position` and `total` to 0. Kryo implements Poolable to reset its object graph state.
+If an object implements Pool.Poolable then Poolable `reset` is called when the object is freed. This gives the object a chance to reset its state for reuse in the future. Alternatively, Pool `reset` can be overridden to reset objects. Input and Output implement Poolable to set their `position` and `total` to 0. Kryo implements Poolable to reset its object graph state.
 
 Pool `getFree` returns the number of objects available to be obtained. If using soft references, this number may include objects that have been garbage collected. `clean` may be used first to remove empty soft references.
 
