@@ -863,7 +863,7 @@ public class Kryo implements Poolable {
 	 * completely serialized or deserialized. If overridden, the super method must be called. */
 	public void reset () {
 		depth = 0;
-		if (graphContext != null) graphContext.clear();
+		if (graphContext != null) graphContext.clear(2048);
 		classResolver.reset();
 		if (references) {
 			referenceResolver.reset();
