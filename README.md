@@ -84,7 +84,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
-[5.0.0-RC1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC1) fixes many issues and makes many long awaited improvements. See [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-from-v4-to-v5).
+[5.0.0-RC1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC1) fixes many issues and makes many long awaited improvements. See [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5).
 
 [4.0.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.2) brings several incremental fixes and improvements.
 
