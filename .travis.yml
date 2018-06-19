@@ -13,15 +13,15 @@ jdk:
 
 install:
   # compile and test java 8
-  - mvn -B -V -f pom-modules.xml clean test
+  - mvn -B -V clean test
 
 script:
   # compile tests with java 8, but with testSource/testTarget 1.7 (disabled java8 profile), so that we can run tests with java 7
   - jdk_switcher use oraclejdk8
-  - mvn -B -f pom-modules.xml -P!java8 clean install
+  - mvn -B -P!java8 clean install
   # test java 7
   - jdk_switcher use openjdk7
-  - mvn -B -f pom-modules.xml test
+  - mvn -B test
   # install and publish snapshot with java 8
   # not via `after_success` but directly in `script`, since a failure would be silently ignored in `after_success`, which
   # is documented in https://docs.travis-ci.com/user/customizing-the-build#Breaking-the-Build
