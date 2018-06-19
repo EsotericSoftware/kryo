@@ -4,9 +4,9 @@
 
 	<parent>
 		<groupId>com.esotericsoftware</groupId>
-		<artifactId>kryo-modules</artifactId>
+		<artifactId>kryo-parent</artifactId>
 		<version>5.0.0-SNAPSHOT</version>
-		<relativePath>../pom-modules.xml</relativePath>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<artifactId>kryo-benchmarks</artifactId>
