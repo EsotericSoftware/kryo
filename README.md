@@ -74,7 +74,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
    * [JavaSerializer and ExternalizableSerializer](#javaserializer-and-externalizableserializer)
 - [Logging](#logging)
 - [Thread safety](#thread-safety)
-- [Pooling](#pooling)
+   * [Pooling](#pooling)
 - [Benchmarks](#benchmarks)
 - [Links](#links)
    * [Projects using Kryo](#projects-using-kryo)
@@ -1140,7 +1140,7 @@ MinLog supports a fixed logging level, which causes the Java compiler to remove 
 
 Kryo is not thread safe. Each thread should have its own Kryo, Input, and Output instances.
 
-## Pooling
+### Pooling
 
 Because Kryo is not thread safe and constructing and configuring a Kryo instance is relatively expensive, in a multithreaded environment ThreadLocal or pooling might be considered.
 
