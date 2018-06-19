@@ -1050,7 +1050,12 @@ public class Kryo implements Poolable {
 	 * typically adds overhead of one byte per object. Default is true.
 	 * @return The previous value. */
 	public boolean setReferences (boolean references) {
-		if (references == this.references) return references;
+		boolean old = this.references;
+		if (references == old) return references;
+		if (old) {
+			referenceResolver.reset();
+			readObject = null;
+		}
 		this.references = references;
 		if (references && referenceResolver == null) referenceResolver = new MapReferenceResolver();
 		if (TRACE) trace("kryo", "References: " + references);
