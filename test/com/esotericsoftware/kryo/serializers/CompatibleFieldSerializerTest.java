@@ -37,23 +37,23 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	@Test
 	public void testCompatibleFieldSerializer () {
 		testCompatibleFieldSerializer(83, false, false);
-		testCompatibleFieldSerializer(83, false, true);
-		testCompatibleFieldSerializer(86, true, false);
-		testCompatibleFieldSerializer(86, true, true);
+		testCompatibleFieldSerializer(116, false, true);
+		testCompatibleFieldSerializer(80, true, false);
+		testCompatibleFieldSerializer(113, true, true);
 	}
 
 	private void testCompatibleFieldSerializer (int length, boolean references, final boolean chunked) {
 		kryo.setReferences(references);
-		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory() {
+
+		CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory() {
 			public CompatibleFieldSerializer newSerializer (Kryo kryo, Class type) {
 				CompatibleFieldSerializer serializer = super.newSerializer(kryo, type);
 				serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 				return serializer;
 			}
-		});
-
-		kryo.register(TestClass.class);
-		kryo.register(AnotherClass.class);
+		};
+		kryo.register(TestClass.class, factory.newSerializer(kryo, TestClass.class));
+		kryo.register(AnotherClass.class, factory.newSerializer(kryo, AnotherClass.class));
 
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();

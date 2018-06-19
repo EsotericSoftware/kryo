@@ -37,7 +37,7 @@ import java.util.Random;
 import org.junit.Test;
 
 /** @author Nathan Sweet */
-@SuppressWarnings("ALL")
+@SuppressWarnings("all")
 public class InputOutputTest extends KryoTestCase {
 	@Test
 	public void testByteBufferInputEnd () {
