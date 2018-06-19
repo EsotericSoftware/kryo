@@ -84,7 +84,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
-[5.0.0-RC1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC1) fixes many issues and makes many long awaited improvements.
+[5.0.0-RC1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC1) fixes many issues and makes many long awaited improvements. See [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-from-v4-to-v5).
 
 [4.0.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.2) brings several incremental fixes and improvements.
 
@@ -186,11 +186,11 @@ The UnsafeOutput, UnsafeInput, UnsafeByteBufferOutput, and UnsafeByteBufferInput
 
 The downside to using unsafe buffers is that the native endianness and representation of numeric types of the system performing the serialization affects the serialized data. For example, deserialization will fail if the data is written on X86 and read on SPARC. Also, if data is written with an unsafe buffer, it must be read with an unsafe buffer.
 
-The biggest performance difference with unsafe buffers is with [large primitive arrays](http://n4te.com/x/4341-array.png) when variable length encoding is not used. Variable length encoding can be disabled for the unsafe buffers or only for specific fields (when using FieldSerializer).
+The biggest performance difference with unsafe buffers is with [large primitive arrays](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/array.png) when variable length encoding is not used. Variable length encoding can be disabled for the unsafe buffers or only for specific fields (when using FieldSerializer).
 
 ### Variable length encoding
 
-The IO classes provide methods to read and write variable length int (varint) and long (varlong) values. This is done by using the 8th bit of each byte to indicate if more bytes follow, which means a varint uses 1-5 bytes and a varlong uses 1-9 bytes. Using variable length encoding is [more expensive](http://n4te.com/x/4340-variableEncoding.png) but makes the serialized data much smaller.
+The IO classes provide methods to read and write variable length int (varint) and long (varlong) values. This is done by using the 8th bit of each byte to indicate if more bytes follow, which means a varint uses 1-5 bytes and a varlong uses 1-9 bytes. Using variable length encoding is [more expensive](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/variableEncoding.png) but makes the serialized data much smaller.
 
 When writing a variable length value, the value can be optimized either for positive values or for both negative and positive values. For example, when optimized for positive values, 0 to 127 is written in one byte, 128 to 16383 in two bytes, etc. However, small negative numbers are the worst case at 5 bytes. When not optimized for positive, these ranges are shifted down by half. For example, -64 to 63 is written in one byte, 64 to 8191 and -65 to -8192 in two bytes, etc.
 
@@ -243,17 +243,17 @@ input.close();
 
 Generally Output and Input provide good performance. Unsafe buffers perform as well or better, especially for primitive arrays, if their crossplatform incompatibilities are acceptable. ByteBufferOutput and ByteBufferInput provide slightly worse performance, but this may be acceptable if the final destination of the bytes must be a ByteBuffer.
 
-![](http://n4te.com/x/4339-string.png)
+![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/string.png)
 
-![](http://n4te.com/x/4341-array.png)
+![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/array.png)
 
 Variable length encoding is slower than fixed values, especially when there is a lot of data using it.
 
-![](http://n4te.com/x/4340-variableEncoding.png)
+![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/variableEncoding.png)
 
 Chunked encoding uses an intermediary buffer so it adds one additional copy of all the bytes. This alone may be acceptable, however when used in a reentrant serializer, the serializer must create an OutputChunked or InputChunked for each object. Allocating and garbage collecting those buffers during serialization can have a negative impact on performance.
 
-![](http://n4te.com/x/4338-fieldSerializer.png)
+![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png)
 
 ## Reading and writing objects
 
@@ -336,7 +336,7 @@ When references are enabled, a varint is written before each object the first ti
 
 Enabling references impacts performance because every object that is read or written needs to be tracked.
 
-![](http://n4te.com/x/4338-fieldSerializer.png)
+![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png)
 
 #### ReferenceResolver
 
@@ -1039,7 +1039,7 @@ TaggedFieldSerializer extends FieldSerializer to provide backward compatibility 
 
 Only fields that have a <code>@Tag(int)</code> annotation are serialized. Field tag values must be unique, both within a class and all its super classes. An exception is thrown if duplicate tag values are encountered.
 
-The forward and backward compatibility and serialization [performance](http://n4te.com/x/4338-fieldSerializer.png) depends on the `readUnknownTagData` and `chunkedEncoding` settings. Additionally, a varint is written before each field for the tag value.
+The forward and backward compatibility and serialization [performance](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png) depends on the `readUnknownTagData` and `chunkedEncoding` settings. Additionally, a varint is written before each field for the tag value.
 
 When `readUnknownTagData` and `chunkedEncoding` are false, fields must not be removed but the `@Deprecated` annotation can be applied. Deprecated fields are read when reading old bytes but aren't written to new bytes. Classes can evolve by reading the values of deprecated fields and writing them elsewhere. Fields can be renamed and/or made private to reduce clutter in the class (eg, `ignored1`, `ignored2`).
 
@@ -1057,7 +1057,7 @@ TaggedFieldSerializer also inherits all the settings of FieldSerializer.
 
 CompatibleFieldSerializer extends FieldSerializer to provided both forward and backward compatibility. This means fields can be added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported. Like FieldSerializer, it can serialize most classes without needing annotations.
 
-The forward and backward compatibility and serialization [performance](http://n4te.com/x/4338-fieldSerializer.png) depends on the `readUnknownTagData` and `chunkedEncoding` settings. Additionally, the first time the class is encountered in the serialized bytes, a simple schema is written containing the field name strings. Because field data is identified by name, if a super class has a field with the same name as a subclass, `extendedFieldNames` must be true.
+The forward and backward compatibility and serialization [performance](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png) depends on the `readUnknownTagData` and `chunkedEncoding` settings. Additionally, the first time the class is encountered in the serialized bytes, a simple schema is written containing the field name strings. Because field data is identified by name, if a super class has a field with the same name as a subclass, `extendedFieldNames` must be true.
 
 #### CompatibleFieldSerializer settings
 
@@ -1213,10 +1213,10 @@ Pool `getPeak` returns the all-time highest number of free objects. This can hel
 
 Kryo provides a number of [JMH](http://openjdk.java.net/projects/code-tools/jmh/)-based [benchmarks and R/ggplot2 files](https://github.com/EsotericSoftware/kryo/tree/master/benchmarks).
 
-![](http://n4te.com/x/4338-fieldSerializer.png)
-![](http://n4te.com/x/4339-string.png)
-![](http://n4te.com/x/4340-variableEncoding.png)
-![](http://n4te.com/x/4341-array.png)
+![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png)
+![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/string.png)
+![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/variableEncoding.png)
+![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/array.png)
 
 Kryo can be compared to many other serialization libraries in the [JVM Serializers](https://github.com/eishay/jvm-serializers/wiki) project. The benchmarks are small, dated, and homegrown rather than using JMH, so are less trustworthy. Also, it is very difficult to thoroughly compare serialization libraries using a benchmark. Libraries have many different features and often have different goals, so they may excel at solving completely different problems. To understand these benchmarks, the code being run and data being serialized should be analyzed and contrasted with your specific needs. Some serializers are highly optimized and use pages of code, others use only a few lines. This is good to show what is possible, but may not be a relevant comparison for many situations.
 
