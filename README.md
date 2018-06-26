@@ -722,6 +722,7 @@ There are a number of projects using Kryo. A few are listed below. Please submit
 - [Jive](http://www.jivesoftware.com/jivespace/blogs/jivespace/2010/07/29/the-jive-sbs-cache-redesign-part-3)
 - [DestroyAllHumans](https://code.google.com/p/destroyallhumans/) (controls a [robot](http://www.youtube.com/watch?v=ZeZ3R38d3Cg)!)
 - [kryo-serializers](https://github.com/magro/kryo-serializers) (additional serializers)
+- [Mybatis Redis-Cache](https://github.com/mybatis/redis-cache) (MyBatis Redis Cache adapter)
 
 ## Contact / Mailing list
 
