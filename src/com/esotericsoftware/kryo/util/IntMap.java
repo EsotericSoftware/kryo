@@ -109,7 +109,6 @@ public class IntMap<V> {
 			return oldValue;
 		}
 
-		// avoid getfield opcode
 		int[] keyTable = this.keyTable;
 		int mask = this.mask;
 
@@ -189,7 +188,7 @@ public class IntMap<V> {
 		}
 
 		push(key, value, index1, key1, index2, key2, index3, key3, index4, key4);
-		;
+
 		return null;
 	}
 
@@ -252,7 +251,6 @@ public class IntMap<V> {
 
 	private void push (int insertKey, V insertValue, int index1, int key1, int index2, int key2, int index3, int key3, int index4,
 		int key4) {
-		// avoid getfield opcode
 		int[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
 		int mask = this.mask;
@@ -344,7 +342,7 @@ public class IntMap<V> {
 		if (stashSize == stashCapacity) {
 			// Too many pushes occurred and the stash is full, increase the table size.
 			resize(capacity << 1);
-			put(key, value);
+			putResize(key, value);
 			return;
 		}
 		// Store key in the stash.

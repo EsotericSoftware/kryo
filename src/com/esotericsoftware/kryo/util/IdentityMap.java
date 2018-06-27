@@ -91,7 +91,6 @@ public class IdentityMap<K, V> {
 
 	public V put (K key, V value) {
 		if (key == null) throw new IllegalArgumentException("key cannot be null.");
-		// avoid getfield opcode
 		K[] keyTable = this.keyTable;
 		int mask = this.mask;
 
@@ -224,7 +223,6 @@ public class IdentityMap<K, V> {
 
 	private void push (K insertKey, V insertValue, int index1, K key1, int index2, K key2, int index3, K key3, int index4,
 		K key4) {
-		// avoid getfield opcode
 		K[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
 		int mask = this.mask;
@@ -317,7 +315,7 @@ public class IdentityMap<K, V> {
 		if (stashSize == stashCapacity) {
 			// Too many pushes occurred and the stash is full, increase the table size.
 			resize(capacity << 1);
-			put(key, value);
+			putResize(key, value);
 			return;
 		}
 		// Store key in the stash.
