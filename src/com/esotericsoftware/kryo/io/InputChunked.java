@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -21,31 +21,32 @@ package com.esotericsoftware.kryo.io;
 
 import static com.esotericsoftware.minlog.Log.*;
 
+import com.esotericsoftware.kryo.KryoException;
+
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.esotericsoftware.kryo.KryoException;
-
-/** An InputStream that reads lengths and chunks of data from another OutputStream, allowing chunks to be skipped.
- * @author Nathan Sweet <misc@n4te.com> */
+/** An {@link Input} that reads lengths and chunks of data from another OutputStream, allowing chunks to be skipped.
+ * @author Nathan Sweet */
 public class InputChunked extends Input {
 	private int chunkSize = -1;
 
-	/** Creates an uninitialized InputChunked with a buffer size of 2048. The InputStream must be set before it can be used. */
+	/** @see Input#Input() */
 	public InputChunked () {
-		super(2048);
+		super();
 	}
 
-	/** Creates an uninitialized InputChunked. The InputStream must be set before it can be used. */
+	/** @see Input#Input(int) */
 	public InputChunked (int bufferSize) {
 		super(bufferSize);
 	}
 
-	/** Creates an InputChunked with a buffer size of 2048. */
+	/** @see Input#Input(InputStream) */
 	public InputChunked (InputStream inputStream) {
-		super(inputStream, 2048);
+		super(inputStream);
 	}
 
+	/** @see Input#Input(InputStream, int) */
 	public InputChunked (InputStream inputStream, int bufferSize) {
 		super(inputStream, bufferSize);
 	}
@@ -60,15 +61,15 @@ public class InputChunked extends Input {
 		chunkSize = -1;
 	}
 
-	public void rewind () {
-		super.rewind();
+	public void reset () {
+		super.reset();
 		chunkSize = -1;
 	}
 
 	protected int fill (byte[] buffer, int offset, int count) throws KryoException {
 		if (chunkSize == -1) // No current chunk, expect a new chunk.
 			readChunkSize();
-		else if (chunkSize == 0) // End of chunks.
+		else if (chunkSize == 0) // End of chunk.
 			return -1;
 		int actual = super.fill(buffer, offset, Math.min(chunkSize, count));
 		chunkSize -= actual;
@@ -85,7 +86,7 @@ public class InputChunked extends Input {
 				result |= (b & 0x7F) << offset;
 				if ((b & 0x80) == 0) {
 					chunkSize = result;
-					if (TRACE) trace("kryo", "Read chunk: " + chunkSize);
+					if (TRACE && chunkSize > 0) trace("kryo", "Read chunk: " + chunkSize);
 					return;
 				}
 			}
@@ -95,13 +96,12 @@ public class InputChunked extends Input {
 		throw new KryoException("Malformed integer.");
 	}
 
-	/** Advances the stream to the next set of chunks. InputChunked will appear to hit the end of the data until this method is
-	 * called. */
-	public void nextChunks () {
+	/** Advances the stream to the next chunk. InputChunked will appear to hit the end of the data until this method is called. */
+	public void nextChunk () {
 		if (chunkSize == -1) readChunkSize(); // No current chunk, expect a new chunk.
 		while (chunkSize > 0)
 			skip(chunkSize);
 		chunkSize = -1;
-		if (TRACE) trace("kryo", "Next chunks.");
+		if (TRACE) trace("kryo", "Next chunk.");
 	}
 }

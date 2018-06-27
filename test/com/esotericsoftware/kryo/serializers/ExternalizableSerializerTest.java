@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,6 +19,12 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.Assert.*;
+
+import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -27,12 +33,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
+import org.junit.Test;
 
 /** @author Robert DiFalco <robert.difalco@gmail.com> */
 public class ExternalizableSerializerTest extends KryoTestCase {
+	@Test
 	public void testRegister () {
 		kryo.register(TestClass.class, new ExternalizableSerializer());
 		kryo.register(String.class, new DefaultSerializers.StringSerializer());
@@ -40,22 +45,24 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		test.stringField = "fubar";
 		test.intField = 54321;
 
-		roundTrip(11, 11, test);
-		roundTrip(11, 11, test);
-		roundTrip(11, 11, test);
+		roundTrip(11, test);
+		roundTrip(11, test);
+		roundTrip(11, test);
 	}
 
+	@Test
 	public void testDefault () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, new ExternalizableSerializer());
 		TestClass test = new TestClass();
 		test.stringField = "fubar";
 		test.intField = 54321;
-		roundTrip(90, 90, test);
-		roundTrip(90, 90, test);
-		roundTrip(90, 90, test);
+		roundTrip(88, test);
+		roundTrip(88, test);
+		roundTrip(88, test);
 	}
 
+	@Test
 	public void testReadResolve () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, ExternalizableSerializer.class);
@@ -74,6 +81,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		assertEquals(test.value, result);
 	}
 
+	@Test
 	public void testTwoClasses () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, ExternalizableSerializer.class);
@@ -99,7 +107,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		assertEquals(result.get(1), test2);
 	}
 
-	public static class TestClass implements Externalizable {
+	static public class TestClass implements Externalizable {
 		String stringField;
 		int intField;
 
@@ -138,7 +146,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		}
 	}
 
-	public static class AnotherTestClass implements Externalizable {
+	static public class AnotherTestClass implements Externalizable {
 		private Date dateField;
 		private long longField;
 
@@ -177,7 +185,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		}
 	}
 
-	public static class ReadResolvable implements Externalizable {
+	static public class ReadResolvable implements Externalizable {
 		String value;
 		private Object makeSureNullWorks;
 

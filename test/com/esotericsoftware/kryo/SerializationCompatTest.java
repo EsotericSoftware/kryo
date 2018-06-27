@@ -1,15 +1,15 @@
-/* Copyright (c) 2016, Martin Grotzke
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
- *
+ * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
  * conditions are met:
- *
+ * 
  * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
  * disclaimer in the documentation and/or other materials provided with the distribution.
  * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
  * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
  * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
@@ -20,6 +20,16 @@
 package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.kryo.ReflectionAssert.*;
+import static org.junit.Assert.*;
+
+import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
+import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava8;
+import com.esotericsoftware.kryo.io.ByteBufferInput;
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import com.esotericsoftware.minlog.Log;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,21 +41,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
+import org.junit.Before;
+import org.junit.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
-
-import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
-import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava8;
-import com.esotericsoftware.kryo.io.ByteBufferInput;
-import com.esotericsoftware.kryo.io.ByteBufferOutput;
-import com.esotericsoftware.kryo.io.FastInput;
-import com.esotericsoftware.kryo.io.FastOutput;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.UnsafeInput;
-import com.esotericsoftware.kryo.io.UnsafeMemoryInput;
-import com.esotericsoftware.kryo.io.UnsafeMemoryOutput;
-import com.esotericsoftware.kryo.io.UnsafeOutput;
-import com.esotericsoftware.minlog.Log;
 
 /** Test for serialization compatibility: data serialized with an older version (same major version) must be deserializable with
  * this newer (same major) version. Serialization compatibility is checked for each type that has a default serializer
@@ -71,42 +69,47 @@ import com.esotericsoftware.minlog.Log;
  * version (e.g. for 3.1.4 this is 3.0.0) - to do this just save this test and the {@link SerializationCompatTest}, go back to the
  * related tag and run the test (there's nothing here to automate creation of test files for a different version). */
 public class SerializationCompatTest extends KryoTestCase {
+	// Set to true to delete failed test files, then set back to false, set expected bytes, and run again to generate new files.
+	static private final boolean DELETE_FAILED_TEST_FILES = false;
 
-	private static final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
-	private static final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
-	private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 35 : 53;
-	private static final List<TestDataDescription<?>> TEST_DATAS = new ArrayList<TestDataDescription<?>>();
+	static private final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
+	static private final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
+	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 38 : 56; // Also change
+																															// Kryo#defaultSerializers.
+	static private final List<TestDataDescription> TEST_DATAS = new ArrayList();
 
 	static {
-		TEST_DATAS.add(new TestDataDescription<TestData>("3.0.0", new TestData(), 1865, 1882, 1973, 1990));
-		if (JAVA_VERSION >= 8)
-			TEST_DATAS.add(new TestDataDescription<TestDataJava8>("3.1.0", new TestDataJava8(), 2025, 2042, 2177, 2194));
+		TEST_DATAS.add(new TestDataDescription<TestData>("5.0.0", new TestData(), 1889));
+		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("5.0.0", new TestDataJava8(), 2047));
 	};
 
-	private void setUp (boolean optimizedGenerics) throws Exception {
+	@Before
+	public void setUp () throws Exception {
 		super.setUp();
-		kryo.getFieldSerializerConfig().setOptimizedGenerics(optimizedGenerics);
-		kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
-		// we register EnumSet so that the EnumSet implementation class name is not written: EnumSet implementations
+		// We register EnumSet so that the EnumSet implementation class name is not written: EnumSet implementations
 		// have different names e.g. in oracle and ibm jdks (RegularEnumSet vs. MiniEnumSet), therefore the implementation class
 		// could not be loaded by a different name. However, with the registered EnumSet, the serializer is used directly according
 		// to the registered id.
 		kryo.register(EnumSet.class);
 	}
 
+	@Test
 	public void testDefaultSerializers () throws Exception {
 		Field defaultSerializersField = Kryo.class.getDeclaredField("defaultSerializers");
 		defaultSerializersField.setAccessible(true);
-		List<?> defaultSerializers = (List<?>)defaultSerializersField.get(kryo);
-		assertEquals("The registered default serializers changed.\n" + "Because serialization compatibility shall be checked"
-			+ " for default serializers, you must extend SerializationCompatTestData.TestData to have a field for the"
-			+ " type of the new default serializer.\n" + "After that's done, you must create new versions of 'test/resources/data*'"
-			+ " because the new TestData instance will no longer be equals the formerly written/serialized one.",
-			EXPECTED_DEFAULT_SERIALIZER_COUNT, defaultSerializers.size());
+		List defaultSerializers = (List)defaultSerializersField.get(kryo);
+		assertEquals("The registered default serializers have changed.\n" //
+			+ "Because serialization compatibility shall be checked for default serializers, you must extend " //
+			+ "SerializationCompatTestData.TestData to have a field for the type of the new default serializer.\n" //
+			+ "After that's done, you must create new versions of 'test/resources/data*' because the new TestData instance will " //
+			+ "no longer be equals the formerly written/serialized one.", EXPECTED_DEFAULT_SERIALIZER_COUNT,
+			defaultSerializers.size());
 	}
 
+	@Test
 	public void testStandard () throws Exception {
 		runTests("standard", new Function1<File, Input>() {
 			public Input apply (File file) throws FileNotFoundException {
@@ -119,6 +122,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		});
 	}
 
+	@Test
 	public void testByteBuffer () throws Exception {
 		runTests("bytebuffer", new Function1<File, Input>() {
 			public Input apply (File file) throws FileNotFoundException {
@@ -131,73 +135,41 @@ public class SerializationCompatTest extends KryoTestCase {
 		});
 	}
 
-	public void testFast () throws Exception {
-		runTests("fast", new Function1<File, Input>() {
-			public Input apply (File file) throws FileNotFoundException {
-				return new FastInput(new FileInputStream(file));
-			}
-		}, new Function1<File, Output>() {
-			public Output apply (File file) throws Exception {
-				return new FastOutput(new FileOutputStream(file));
-			}
-		});
-	}
-
-	public void testUnsafe () throws Exception {
-		runTests("unsafe-" + ENDIANNESS, new Function1<File, Input>() {
-			public Input apply (File file) throws FileNotFoundException {
-				return new UnsafeInput(new FileInputStream(file));
-			}
-		}, new Function1<File, Output>() {
-			public Output apply (File file) throws Exception {
-				return new UnsafeOutput(new FileOutputStream(file));
-			}
-		});
-	}
-
-	public void testUnsafeMemory () throws Exception {
-		runTests("unsafeMemory-" + ENDIANNESS, new Function1<File, Input>() {
-			public Input apply (File file) throws FileNotFoundException {
-				return new UnsafeMemoryInput(new FileInputStream(file));
-			}
-		}, new Function1<File, Output>() {
-			public Output apply (File file) throws Exception {
-				return new UnsafeMemoryOutput(new FileOutputStream(file));
-			}
-		});
-	}
-
 	private void runTests (String variant, Function1<File, Input> inputFactory, Function1<File, Output> outputFactory)
 		throws Exception {
-		runTests(true, variant + "-opt-generics", inputFactory, outputFactory);
-		runTests(false, variant + "-nonopt-generics", inputFactory, outputFactory);
+		setUp();
+		for (TestDataDescription description : TEST_DATAS)
+			runTest(description, variant, inputFactory, outputFactory);
 	}
 
-	private void runTests (boolean optimizedGenerics, String variant, Function1<File, Input> inputFactory,
+	private void runTest (TestDataDescription description, String variant, Function1<File, Input> inputFactory,
 		Function1<File, Output> outputFactory) throws Exception {
-		setUp(optimizedGenerics);
-		for (TestDataDescription description : TEST_DATAS) {
-			runTest(description, optimizedGenerics, variant, inputFactory, outputFactory);
-		}
-	}
-
-	private void runTest (TestDataDescription description, boolean optimizedGenerics, String variant,
-		Function1<File, Input> inputFactory, Function1<File, Output> outputFactory) throws Exception {
-		File file = new File("test/resources/" + description.classSimpleName() + "-" + variant + ".ser");
+		File testDir = new File("test");
+		if (!testDir.exists()) testDir = new File("../test"); // Could be running in Eclipse subdirectory.
+		File file = new File(testDir, "resources/" + description.classSimpleName() + "-" + variant + ".ser");
 		file.getParentFile().mkdirs();
 
 		if (file.exists()) {
 			Log.info("Reading and testing " + description.classSimpleName() + " with mode '" + variant + "' from file "
 				+ file.getAbsolutePath());
 			Input in = inputFactory.apply(file);
-			readAndRunTest(description, optimizedGenerics, in);
+			try {
+				readAndRunTest(description, in);
+			} catch (Throwable ex) {
+				if (DELETE_FAILED_TEST_FILES) {
+					System.out.println("Failed: " + file.getAbsolutePath());
+					in.close();
+					file.delete();
+				} else
+					throw ex;
+			}
 			in.close();
 		} else {
 			Log.info("Testing and writing " + description.classSimpleName() + " with mode '" + variant + "' to file "
 				+ file.getAbsolutePath());
 			Output out = outputFactory.apply(file);
 			try {
-				runTestAndWrite(description, optimizedGenerics, out);
+				runTestAndWrite(description, out);
 				out.close();
 			} catch (Exception e) {
 				// if anything failed (e.g. the initial test), we should delete the file as it may be empty or corruped
@@ -208,11 +180,9 @@ public class SerializationCompatTest extends KryoTestCase {
 		}
 	}
 
-	private void readAndRunTest (TestDataDescription<?> description, boolean optimizedGenerics, Input in)
-		throws FileNotFoundException {
+	private void readAndRunTest (TestDataDescription<?> description, Input in) throws FileNotFoundException {
 		TestData actual = kryo.readObject(in, description.testDataClass());
-		roundTrip(optimizedGenerics ? description.lengthOptGenerics : description.lengthNonOptGenerics,
-			optimizedGenerics ? description.unsafeLengthOptGenerics : description.unsafeLengthNonOptGenerics, actual);
+		roundTrip(description.length, actual);
 		try {
 			assertReflectionEquals(actual, description.testData);
 		} catch (AssertionError e) {
@@ -222,14 +192,11 @@ public class SerializationCompatTest extends KryoTestCase {
 		}
 	}
 
-	private void runTestAndWrite (TestDataDescription<?> description, boolean optimizedGenerics, Output out)
-		throws FileNotFoundException {
-		roundTrip(optimizedGenerics ? description.lengthOptGenerics : description.lengthNonOptGenerics,
-			optimizedGenerics ? description.unsafeLengthOptGenerics : description.unsafeLengthNonOptGenerics, description.testData);
+	private void runTestAndWrite (TestDataDescription description, Output out) throws FileNotFoundException {
+		roundTrip(description.length, description.testData);
 		kryo.writeObject(out, description.testData);
 	}
 
-	@Override
 	protected void doAssertEquals (final Object one, final Object another) {
 		try {
 			assertReflectionEquals(one, another);
@@ -242,22 +209,15 @@ public class SerializationCompatTest extends KryoTestCase {
 		B apply (A input) throws Exception;
 	}
 
-	private static class TestDataDescription<T extends TestData> {
+	static private class TestDataDescription<T extends TestData> {
 		private final String kryoVersion;
-		private final T testData;
-		private final int lengthOptGenerics;
-		private final int lengthNonOptGenerics;
-		private final int unsafeLengthOptGenerics;
-		private final int unsafeLengthNonOptGenerics;
+		final T testData;
+		final int length;
 
-		TestDataDescription (String kryoVersion, T testData, int lengthOptGenerics, int lengthNonOptGenerics,
-			int unsafeLengthOptGenerics, int unsafeLengthNonOptGenerics) {
+		TestDataDescription (String kryoVersion, T testData, int length) {
 			this.kryoVersion = kryoVersion;
 			this.testData = testData;
-			this.lengthOptGenerics = lengthOptGenerics;
-			this.lengthNonOptGenerics = lengthNonOptGenerics;
-			this.unsafeLengthOptGenerics = unsafeLengthOptGenerics;
-			this.unsafeLengthNonOptGenerics = unsafeLengthNonOptGenerics;
+			this.length = length;
 		}
 
 		Class<T> testDataClass () {
@@ -267,7 +227,5 @@ public class SerializationCompatTest extends KryoTestCase {
 		String classSimpleName () {
 			return testData.getClass().getSimpleName();
 		}
-
 	}
-
 }

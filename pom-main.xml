@@ -1,20 +1,34 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
 	<parent>
 		<groupId>com.esotericsoftware</groupId>
 		<artifactId>kryo-parent</artifactId>
-		<version>4.0.2-SNAPSHOT</version>
+		<version>5.0.0-RC2-SNAPSHOT</version>
 		<relativePath>./pom.xml</relativePath>
 	</parent>
+
 	<artifactId>kryo</artifactId>
 	<packaging>bundle</packaging>
+
 	<name>Kryo</name>
-	<description>Fast, efficient Java serialization. This is the "main" kryo artifact, with a regular dependency on reflectasm.</description>
+	<description>Fast, efficient Java serialization. This is the main Kryo artifact.</description>
 
 	<dependencies>
 		<dependency>
 			<groupId>com.esotericsoftware</groupId>
 			<artifactId>reflectasm</artifactId>
+			<version>1.11.7</version>
+		</dependency>
+		<dependency>
+			<groupId>org.objenesis</groupId>
+			<artifactId>objenesis</artifactId>
+			<version>2.6</version>
+		</dependency>
+		<dependency>
+			<groupId>com.esotericsoftware</groupId>
+			<artifactId>minlog</artifactId>
+			<version>1.3.0</version>
 		</dependency>
 	</dependencies>
 
@@ -37,15 +51,16 @@
 						*
 						]]>
 						</Import-Package>
-						<Export-Package>com.esotericsoftware.kryo*</Export-Package>
+						<Export-Package>com.esotericsoftware.kryo.*</Export-Package>
 					</instructions>
 				</configuration>
 			</plugin>
+
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<version>2.4</version>
 				<configuration>
-					<descriptor>etc/assembly-all.xml</descriptor>
+					<descriptor>build/assembly-all.xml</descriptor>
 				</configuration>
 				<!--
 					According to http://stackoverflow.com/questions/2244344/deploying-assembly-package-with-maven-release-plugin
@@ -61,6 +76,7 @@
 					</execution>
 				</executions>
 			</plugin>
+
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>clirr-maven-plugin</artifactId>
@@ -77,50 +93,19 @@
 				</executions>
 				<!-- See http://mojo.codehaus.org/clirr-maven-plugin/check-mojo.html -->
 				<configuration>
-					<skip>false</skip>
+					<skip>true</skip>
 					<logResults>true</logResults>
 					<minSeverity>warning</minSeverity>
-					<!-- Configure ignored differences: http://mojo.codehaus.org/clirr-maven-plugin/examples/ignored-differences.html -->
-					<ignored>
+					<excludes>
 						<!-- Internal APIs -->
-						<difference>
-							<className>com/esotericsoftware/kryo/Kryo</className>
-							<method>*GenericsScope*</method>
-							<differenceType>7002</differenceType>
-						</difference>
-						<difference>
-							<className>com/esotericsoftware/kryo/serializers/FieldSerializer</className>
-							<method>*getGenericsScope*</method>
-							<differenceType>7006</differenceType>
-							<to>*</to>
-						</difference>
-						<difference>
-							<className>com/esotericsoftware/kryo/serializers/FieldSerializer</className>
-							<method>*getGenericsScope*</method>
-							<differenceType>7009</differenceType>
-							<to>*</to>
-						</difference>
-						<difference>
-							<className>com/esotericsoftware/kryo/Generics</className>
-							<differenceType>8001</differenceType>
-						</difference>
-						<!-- reflectasm classes are reported to be removed (as they're added by shade/bundle plugin during packaging) -->
-						<difference>
-							<className>com/esotericsoftware/reflectasm/**</className>
-							<differenceType>8001</differenceType>
-						</difference>
-						<difference>
-							<className>com/esotericsoftware/kryo/Kryo</className>
-							<method>*isClousre*</method>
-							<differenceType>7002</differenceType>
-						</difference>
-						<!-- Nonbreaking (adding a method with default value to an annotation) -->
-						<difference>
-							<className>com/esotericsoftware/kryo/serializers/TaggedFieldSerializer$Tag</className>
-							<method>boolean annexed()</method>
-							<differenceType>7012</differenceType>
-						</difference>
-					</ignored>
+						<exclude>com/esotericsoftware/kryo/util/GenericsUtil</exclude>
+						<exclude>com/esotericsoftware/kryo/util/IdentityMap</exclude>
+						<exclude>com/esotericsoftware/kryo/util/IdentityObjectIntMap</exclude>
+						<exclude>com/esotericsoftware/kryo/util/IntArray</exclude>
+						<exclude>com/esotericsoftware/kryo/util/IntMap</exclude>
+						<exclude>com/esotericsoftware/kryo/util/ObjectMap</exclude>
+						<exclude>com/esotericsoftware/kryo/unsafe/UnsafeUtil</exclude>
+					</excludes>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -128,7 +113,7 @@
 
 	<reporting>
 		<plugins>
-			<!-- Generate compatibility report with `mvn clirr:clirr` -->
+			<!-- Generate compatibility report with: mvn clirr:clirr -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>clirr-maven-plugin</artifactId>
@@ -136,5 +121,4 @@
 			</plugin>
 		</plugins>
 	</reporting>
-
 </project>

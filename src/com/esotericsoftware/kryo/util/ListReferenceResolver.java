@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,16 +19,16 @@
 
 package com.esotericsoftware.kryo.util;
 
-import java.util.ArrayList;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.ReferenceResolver;
+
+import java.util.ArrayList;
 
 /** Uses an {@link ArrayList} to track objects that have already been written. This is more efficient than
  * {@link MapReferenceResolver} for graphs with few objects, providing an approximate 15% increase in deserialization speed. This
  * should not be used for graphs with many objects because it uses a linear look up to find objects that have already been
  * written.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class ListReferenceResolver implements ReferenceResolver {
 	protected Kryo kryo;
 	protected final ArrayList seenObjects = new ArrayList();
@@ -67,8 +67,8 @@ public class ListReferenceResolver implements ReferenceResolver {
 		seenObjects.clear();
 	}
 
-	/** Returns false for Boolean, Byte, Character, and Short. */
+	/** Returns false for all primitive wrappers and enums. */
 	public boolean useReferences (Class type) {
-		return !Util.isWrapperClass(type);
+		return !Util.isWrapperClass(type) && !Util.isEnum(type);
 	}
 }

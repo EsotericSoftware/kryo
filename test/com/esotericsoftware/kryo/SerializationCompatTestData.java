@@ -1,15 +1,15 @@
-/* Copyright (c) 2016, Martin Grotzke
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
- *
+ * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
  * conditions are met:
- *
+ * 
  * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
  * disclaimer in the documentation and/or other materials provided with the distribution.
  * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- *
+ * 
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
  * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
  * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
@@ -18,6 +18,8 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 package com.esotericsoftware.kryo;
+
+import com.esotericsoftware.kryo.SerializationCompatTestData.Person.Gender;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -66,10 +68,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import com.esotericsoftware.kryo.SerializationCompatTestData.Person.Gender;
-
 /** Testdata for serialization compatibility check. */
-class SerializationCompatTestData {
+public class SerializationCompatTestData {
 
 	static class TestDataJava8 extends TestData {
 		private Optional<String> optionalString;
@@ -113,8 +113,7 @@ class SerializationCompatTestData {
 		}
 	}
 
-	public static class TestData implements Serializable {
-
+	static public class TestData implements Serializable {
 		private boolean _boolean;
 		private char _char;
 		private byte _byte;
@@ -143,7 +142,7 @@ class SerializationCompatTestData {
 		private StringBuilder _stringBuilder;
 		private StringBuffer _stringBuffer;
 
-		private Class<?> _class;
+		private Class _class;
 		private Integer[] _integerArray;
 		private Date _date;
 		private TimeZone _timeZone;
@@ -167,6 +166,7 @@ class SerializationCompatTestData {
 		private List<String> _arrayList;
 		private Set<String> _hashSet;
 		private Map<String, Integer> _hashMap;
+		private List<Integer> _asList = Arrays.asList(1, 2, 3);
 		private int[] _intArray;
 		private long[] _longArray;
 		private short[] _shortArray;
@@ -183,7 +183,6 @@ class SerializationCompatTestData {
 		private PublicClass _public;
 
 		public TestData () {
-
 			_boolean = true;
 			_char = 'c';
 			_byte = "b".getBytes()[0];
@@ -223,7 +222,7 @@ class SerializationCompatTestData {
 
 			_timeZone = TimeZone.getTimeZone("America/Los_Angeles");
 			_locale = Locale.ENGLISH;
-			_charsets = new ArrayList<Charset>(Arrays.asList(Charset.forName("ISO-8859-1"), Charset.forName("US-ASCII"),
+			_charsets = new ArrayList(Arrays.asList(Charset.forName("ISO-8859-1"), Charset.forName("US-ASCII"),
 				Charset.forName("UTF-8"), Charset.forName("UTF-16"), Charset.forName("UTF-16BE"), Charset.forName("UTF-16LE")));
 			try {
 				_url = new java.net.URL("https://github.com/EsotericSoftware/kryo");
@@ -242,14 +241,14 @@ class SerializationCompatTestData {
 			_singletonList = Collections.singletonList("foo");
 			_singletonSet = Collections.singleton("foo");
 			_singletonMap = Collections.singletonMap("foo", "bar");
-			_treeSet = new TreeSet<String>(Arrays.asList("foo", "bar"));
-			_treeMap = new TreeMap<String, Integer>();
+			_treeSet = new TreeSet(Arrays.asList("foo", "bar"));
+			_treeMap = new TreeMap();
 			_treeMap.put("foo", 23);
 			_treeMap.put("bar", 42);
-			_arrayList = new ArrayList<String>(Arrays.asList("foo", "bar"));
-			_hashSet = new HashSet<String>();
+			_arrayList = new ArrayList(Arrays.asList("foo", "bar"));
+			_hashSet = new HashSet();
 			_hashSet.add("14");
-			_hashMap = new HashMap<String, Integer>();
+			_hashMap = new HashMap();
 			_hashMap.put("foo", 23);
 			_hashMap.put("bar", 42);
 
@@ -267,20 +266,17 @@ class SerializationCompatTestData {
 			_personArray[0].addFriend(_personArray[1]);
 			_personArray[1].addFriend(_personArray[0]);
 
-			_generic = new Generic<String>("foo");
-			_genericList = new GenericList<String>(
-				new ArrayList(Arrays.asList(new Generic<String>("foo"), new Generic<String>("bar"))));
-			_genericArray = new GenericArray<String>(new Generic<String>("foo"), new Generic<String>("bar"));
+			_generic = new Generic("foo");
+			_genericList = new GenericList(new ArrayList(Arrays.asList(new Generic("foo"), new Generic("bar"))));
+			_genericArray = new GenericArray(new Generic("foo"), new Generic("bar"));
 			_public = new PublicClass(new PrivateClass("foo"));
 
 		}
 
-		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -294,17 +290,14 @@ class SerializationCompatTestData {
 			this.item = item;
 		}
 
-		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
 
-		@Override
 		public String toString () {
 			return "Generic [item=" + item + "]";
 		}
@@ -317,12 +310,10 @@ class SerializationCompatTestData {
 			this.generics = holders;
 		}
 
-		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -335,12 +326,10 @@ class SerializationCompatTestData {
 			this.holders = holders;
 		}
 
-		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -351,7 +340,7 @@ class SerializationCompatTestData {
 		person.setName(name);
 		person.setGender(gender);
 		person.setAge(age);
-		final HashMap<String, Object> props = new HashMap<String, Object>();
+		final HashMap<String, Object> props = new HashMap();
 		for (int i = 0; i < emailAddresses.length; i++) {
 			final String emailAddress = emailAddresses[i];
 			props.put("email" + i, new Email(name, emailAddress));
@@ -360,7 +349,7 @@ class SerializationCompatTestData {
 		return person;
 	}
 
-	public static class Person {
+	static public class Person {
 
 		static enum Gender {
 			MALE, FEMALE
@@ -370,7 +359,7 @@ class SerializationCompatTestData {
 		private Gender _gender;
 		private Integer _age;
 		private Map<String, Object> _props;
-		private final Collection<Person> _friends = new ArrayList<Person>();
+		private final Collection<Person> _friends = new ArrayList();
 
 		public String getName () {
 			return _name;
@@ -412,23 +401,21 @@ class SerializationCompatTestData {
 			return _friends;
 		}
 
-		private boolean flatEquals (final Collection<?> c1, final Collection<?> c2) {
+		private boolean flatEquals (final Collection c1, final Collection c2) {
 			return c1 == c2 || c1 != null && c2 != null && c1.size() == c2.size();
 		}
 
-		@Override
 		public int hashCode () {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + ((_age == null) ? 0 : _age.hashCode());
-			result = prime * result + ((_friends == null) ? 0 : _friends.size());
-			result = prime * result + ((_gender == null) ? 0 : _gender.hashCode());
-			result = prime * result + ((_name == null) ? 0 : _name.hashCode());
-			result = prime * result + ((_props == null) ? 0 : _props.hashCode());
+			result = prime * result + (_age == null ? 0 : _age.hashCode());
+			result = prime * result + (_friends == null ? 0 : _friends.size());
+			result = prime * result + (_gender == null ? 0 : _gender.hashCode());
+			result = prime * result + (_name == null ? 0 : _name.hashCode());
+			result = prime * result + (_props == null ? 0 : _props.hashCode());
 			return result;
 		}
 
-		@Override
 		public boolean equals (final Object obj) {
 			if (this == obj) {
 				return true;
@@ -478,7 +465,6 @@ class SerializationCompatTestData {
 			return true;
 		}
 
-		@Override
 		public String toString () {
 			return "Person [_age=" + _age + ", _friends.size=" + _friends.size() + ", _gender=" + _gender + ", _name=" + _name
 				+ ", _props=" + _props + "]";
@@ -486,9 +472,9 @@ class SerializationCompatTestData {
 
 	}
 
-	public static class Email implements Serializable {
+	static public class Email implements Serializable {
 
-		private static final long serialVersionUID = 1L;
+		static private final long serialVersionUID = 1L;
 
 		private String _name;
 		private String _email;
@@ -518,16 +504,14 @@ class SerializationCompatTestData {
 			_email = email;
 		}
 
-		@Override
 		public int hashCode () {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + ((_email == null) ? 0 : _email.hashCode());
-			result = prime * result + ((_name == null) ? 0 : _name.hashCode());
+			result = prime * result + (_email == null ? 0 : _email.hashCode());
+			result = prime * result + (_name == null ? 0 : _name.hashCode());
 			return result;
 		}
 
-		@Override
 		public boolean equals (final Object obj) {
 			if (this == obj) {
 				return true;
@@ -556,14 +540,13 @@ class SerializationCompatTestData {
 			return true;
 		}
 
-		@Override
 		public String toString () {
 			return "Email [_email=" + _email + ", _name=" + _name + "]";
 		}
 
 	}
 
-	public static class PublicClass {
+	static public class PublicClass {
 		PrivateClass privateClass;
 
 		public PublicClass () {
@@ -573,30 +556,26 @@ class SerializationCompatTestData {
 			this.privateClass = protectedClass;
 		}
 
-		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
 	}
 
-	private static class PrivateClass {
+	static private class PrivateClass {
 		String foo;
 
 		public PrivateClass (String foo) {
 			this.foo = foo;
 		}
 
-		@Override
 		public int hashCode () {
 			return HashCodeBuilder.reflectionHashCode(this);
 		}
 
-		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}

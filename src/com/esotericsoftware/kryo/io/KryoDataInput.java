@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,22 +19,20 @@
 
 package com.esotericsoftware.kryo.io;
 
+import com.esotericsoftware.kryo.KryoException;
+
 import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
 
-import com.esotericsoftware.kryo.KryoException;
-
-/** Best attempt adapter for {@link DataInput}. Currently only {@link #readLine()} is unsupported. Other methods behave slightly
- * differently. For example, {@link #readUTF()} may return a null string.
- *
+/** A {@link DataInput} which reads from an {@link Input}. {@link #readLine()} is unsupported. Other methods behave slightly
+ * differently, eg {@link #readUTF()} may return a null string.
  * @author Robert DiFalco <robert.difalco@gmail.com> */
-public class KryoDataInput implements DataInput {
-
+public class KryoDataInput implements DataInput, AutoCloseable {
 	protected Input input;
 
 	public KryoDataInput (Input input) {
-		setInput(input);
+		this.input = input;
 	}
 
 	public void setInput (Input input) {
@@ -48,8 +46,8 @@ public class KryoDataInput implements DataInput {
 	public void readFully (byte[] b, int off, int len) throws IOException {
 		try {
 			input.readBytes(b, off, len);
-		} catch (KryoException e) {
-			throw new EOFException(e.getMessage());
+		} catch (KryoException ex) {
+			throw new EOFException(ex.getMessage());
 		}
 	}
 
@@ -97,9 +95,7 @@ public class KryoDataInput implements DataInput {
 		return input.readDouble();
 	}
 
-	/** This is not currently implemented. The method will currently throw an {@link java.lang.UnsupportedOperationException}
-	 * whenever it is called.
-	 *
+	/** Not implemented.
 	 * @throws UnsupportedOperationException when called.
 	 * @deprecated this method is not supported in this implementation. */
 	public String readLine () throws UnsupportedOperationException {
@@ -107,12 +103,14 @@ public class KryoDataInput implements DataInput {
 	}
 
 	/** Reads the length and string of UTF8 characters, or null. This can read strings written by
-	 * {@link KryoDataOutput#writeUTF(String)}, {@link com.esotericsoftware.kryo.io.Output#writeString(String)},
-	 * {@link com.esotericsoftware.kryo.io.Output#writeString(CharSequence)}, and
+	 * {@link KryoDataOutput#writeUTF(String)}, {@link com.esotericsoftware.kryo.io.Output#writeString(String)}, and
 	 * {@link com.esotericsoftware.kryo.io.Output#writeAscii(String)}.
-	 *
 	 * @return May be null. */
 	public String readUTF () throws IOException {
 		return input.readString();
+	}
+
+	public void close () throws Exception {
+		input.close();
 	}
 }

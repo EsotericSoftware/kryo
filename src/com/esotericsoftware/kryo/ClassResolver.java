@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -23,7 +23,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 /** Handles class registration, writing class identifiers to bytes, and reading class identifiers from bytes.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public interface ClassResolver {
 	/** Sets the Kryo instance that this ClassResolver will be used for. This is called automatically by Kryo. */
 	public void setKryo (Kryo kryo);
@@ -31,6 +31,10 @@ public interface ClassResolver {
 	/** Stores the specified registration.
 	 * @see Kryo#register(Registration) */
 	public Registration register (Registration registration);
+
+	/** Removes the registration for the specified ID.
+	 * @return May be null if the class ID was not registered. */
+	public Registration unregister (int classID);
 
 	/** Called when an unregistered type is encountered and {@link Kryo#setRegistrationRequired(boolean)} is false. */
 	public Registration registerImplicit (Class type);

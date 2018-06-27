@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -22,15 +22,13 @@ package com.esotericsoftware.kryo.io;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/** A kryo implementation of {@link java.io.DataOutput}.
- *
+/** A {@link DataOutput} which writes data to an {@link Output}.
  * @author Robert DiFalco <robert.difalco@gmail.com> */
-public class KryoDataOutput implements DataOutput {
-
+public class KryoDataOutput implements DataOutput, AutoCloseable {
 	protected Output output;
 
 	public KryoDataOutput (Output output) {
-		setOutput(output);
+		this.output = output;
 	}
 
 	public void setOutput (Output output) {
@@ -92,12 +90,16 @@ public class KryoDataOutput implements DataOutput {
 		int len = s.length();
 		for (int i = 0; i < len; i++) {
 			int v = s.charAt(i);
+			output.write(v & 0xFF);
 			output.write((v >>> 8) & 0xFF);
-			output.write((v >>> 0) & 0xFF);
 		}
 	}
 
 	public void writeUTF (String s) throws IOException {
 		output.writeString(s);
+	}
+
+	public void close () throws Exception {
+		output.close();
 	}
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,35 +19,33 @@
 
 package com.esotericsoftware.kryo.io;
 
+import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
+
+import com.esotericsoftware.kryo.KryoException;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
-import com.esotericsoftware.kryo.KryoException;
-
-/** An OutputStream that buffers data in a byte array and flushes to another OutputStream, writing the length before each flush.
- * The length allows the chunks to be skipped when reading.
- * @author Nathan Sweet <misc@n4te.com> */
+/** An {@link Output} that writes the length before each flush. The length allows the chunks to be skipped when reading.
+ * @author Nathan Sweet */
 public class OutputChunked extends Output {
-	/** Creates an uninitialized OutputChunked with a maximum chunk size of 2048. The OutputStream must be set before it can be
-	 * used. */
+	/** @see Output#Output() */
 	public OutputChunked () {
-		super(2048);
+		super();
 	}
 
-	/** Creates an uninitialized OutputChunked. The OutputStream must be set before it can be used.
-	 * @param bufferSize The maximum size of a chunk. */
+	/** @see Output#Output(int) */
 	public OutputChunked (int bufferSize) {
 		super(bufferSize);
 	}
 
-	/** Creates an OutputChunked with a maximum chunk size of 2048. */
+	/** @see Output#Output(OutputStream) */
 	public OutputChunked (OutputStream outputStream) {
-		super(outputStream, 2048);
+		super(outputStream);
 	}
 
-	/** @param bufferSize The maximum size of a chunk. */
+	/** @see Output#Output(OutputStream, int) */
 	public OutputChunked (OutputStream outputStream, int bufferSize) {
 		super(outputStream, bufferSize);
 	}
@@ -66,7 +64,7 @@ public class OutputChunked extends Output {
 
 	private void writeChunkSize () throws IOException {
 		int size = position();
-		if (TRACE) trace("kryo", "Write chunk: " + size);
+		if (TRACE) trace("kryo", "Write chunk: " + size + pos(size));
 		OutputStream outputStream = getOutputStream();
 		if ((size & ~0x7F) == 0) {
 			outputStream.write(size);
@@ -95,11 +93,10 @@ public class OutputChunked extends Output {
 		outputStream.write(size);
 	}
 
-	/** Marks the end of some data that may have been written by any number of chunks. These chunks can then be skipped when
-	 * reading. */
-	public void endChunks () {
-		flush(); // Flush any partial chunk.
-		if (TRACE) trace("kryo", "End chunks.");
+	/** Marks the curent written data as the end of a chunk. This chunk can then be skipped when reading. */
+	public void endChunk () {
+		flush();
+		if (TRACE) trace("kryo", "End chunk.");
 		try {
 			getOutputStream().write(0); // Zero length chunk.
 		} catch (IOException ex) {

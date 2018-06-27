@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 
 /** An OutputStream whose target is a {@link ByteBuffer}. If bytes would be written that would overflow the buffer,
  * {@link #flush()} is called. Subclasses can override flush to empty the buffer.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class ByteBufferOutputStream extends OutputStream {
 	private ByteBuffer byteBuffer;
 
