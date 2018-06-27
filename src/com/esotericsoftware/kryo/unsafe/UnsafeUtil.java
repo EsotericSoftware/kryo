@@ -28,7 +28,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 
-import sun.misc.Cleaner;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
@@ -128,6 +127,11 @@ public class UnsafeUtil {
 	static public void dispose (ByteBuffer buffer) {
 		if (!(buffer instanceof DirectBuffer)) return;
 		Object cleaner = ((DirectBuffer)buffer).cleaner();
-		if (cleaner != null) ((Cleaner)cleaner).clean();
+		if (cleaner != null) {
+			try {
+				cleaner.getClass().getMethod("clean").invoke(cleaner);
+			} catch (Throwable ignored) {
+			}
+		}
 	}
 }
