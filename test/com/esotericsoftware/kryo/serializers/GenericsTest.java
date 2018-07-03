@@ -80,31 +80,6 @@ public class GenericsTest extends KryoTestCase {
 		kryo.writeClassAndObject(buffer, o2);
 	}
 
-	@Test
-	public void testClassValue () {
-		kryo.setReferences(true);
-		kryo.setRegistrationRequired(false);
-		kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
-		roundTrip(Integer.MIN_VALUE, new SomeClassValue());
-	}
-
-	@Test
-	public void testClassValueAnon () {
-		kryo.setReferences(true);
-		kryo.setRegistrationRequired(false);
-		kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
-		ClassValue<Boolean> value = new ClassValue<Boolean>() {
-			protected Boolean computeValue (Class type) {
-				return true;
-			}
-
-			public boolean equals (Object obj) {
-				return true;
-			}
-		};
-		roundTrip(Integer.MIN_VALUE, value);
-	}
-
 	private interface Holder<V> {
 		V getValue ();
 	}
@@ -229,16 +204,6 @@ public class GenericsTest extends KryoTestCase {
 
 		public ConcreteClass (final List listPayload) {
 			super(listPayload);
-		}
-	}
-
-	static public class SomeClassValue extends ClassValue<Boolean> {
-		protected Boolean computeValue (Class type) {
-			return true;
-		}
-
-		public boolean equals (Object obj) {
-			return true;
 		}
 	}
 }
