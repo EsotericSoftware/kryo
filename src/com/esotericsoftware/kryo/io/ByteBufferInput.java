@@ -37,6 +37,7 @@ public class ByteBufferInput extends Input {
 	static private final ByteOrder nativeOrder = ByteOrder.nativeOrder();
 
 	protected ByteBuffer byteBuffer;
+	private byte[] tempBuffer;
 
 	/** Creates an uninitialized Input, {@link #setBuffer(ByteBuffer)} must be called before the Input is used. */
 	public ByteBufferInput () {
@@ -121,14 +122,21 @@ public class ByteBufferInput extends Input {
 	protected int fill (ByteBuffer buffer, int offset, int count) throws KryoException {
 		if (inputStream == null) return -1;
 		try {
-			byte[] tmp = new byte[count];
-			int result = inputStream.read(tmp, 0, count);
+			if (tempBuffer == null) tempBuffer = new byte[2048];
 			buffer.position(offset);
-			if (result >= 0) {
-				buffer.put(tmp, 0, result);
-				buffer.position(offset);
+			int total = 0;
+			while (count > 0) {
+				int read = inputStream.read(tempBuffer, 0, Math.min(tempBuffer.length, count));
+				if (read == -1) {
+					if (total == 0) return -1;
+					break;
+				}
+				buffer.put(tempBuffer, 0, read);
+				count -= read;
+				total += read;
 			}
-			return result;
+			buffer.position(offset);
+			return total;
 		} catch (IOException ex) {
 			throw new KryoException(ex);
 		}
