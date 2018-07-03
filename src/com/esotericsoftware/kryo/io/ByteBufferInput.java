@@ -102,10 +102,6 @@ public class ByteBufferInput extends Input {
 		return byteBuffer;
 	}
 
-	public InputStream getInputStream () {
-		return inputStream;
-	}
-
 	public void setInputStream (InputStream inputStream) {
 		this.inputStream = inputStream;
 		limit = 0;
@@ -298,10 +294,6 @@ public class ByteBufferInput extends Input {
 		byte[] bytes = new byte[length];
 		readBytes(bytes, 0, length);
 		return bytes;
-	}
-
-	public void readBytes (byte[] bytes) throws KryoException {
-		readBytes(bytes, 0, bytes.length);
 	}
 
 	public void readBytes (byte[] bytes, int offset, int count) throws KryoException {
@@ -613,7 +605,7 @@ public class ByteBufferInput extends Input {
 
 	public float readFloat () throws KryoException {
 		require(4);
-		byte[] buffer = this.buffer;
+		ByteBuffer byteBuffer = this.byteBuffer;
 		int p = this.position;
 		this.position = p + 4;
 		return Float.intBitsToFloat(byteBuffer.get() & 0xFF //
@@ -626,7 +618,7 @@ public class ByteBufferInput extends Input {
 
 	public double readDouble () throws KryoException {
 		require(8);
-		byte[] buffer = this.buffer;
+		ByteBuffer byteBuffer = this.byteBuffer;
 		int p = position;
 		position = p + 8;
 		return Double.longBitsToDouble(byteBuffer.get() & 0xFF //
