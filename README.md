@@ -130,20 +130,30 @@ Jumping ahead to show how the library can be used:
 
 ```java
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import java.io.*;
 
-Kryo kryo = new Kryo();
+public class HelloKryo {
+   static public void main (String[] args) throws Exception {
+      Kryo kryo = new Kryo();
+      kryo.register(SomeClass.class);
 
-SomeClass object = ...
+      SomeClass object = new SomeClass();
+      object.value = "Hello Kryo!";
 
-Output output = new Output(new FileOutputStream("file.bin"));
-kryo.writeObject(output, object);
-output.close();
+      Output output = new Output(new FileOutputStream("file.bin"));
+      kryo.writeObject(output, object);
+      output.close();
 
-Input input = new Input(new FileInputStream("file.bin"));
-SomeClass object = kryo.readObject(input, SomeClass.class);
-input.close();
+      Input input = new Input(new FileInputStream("file.bin"));
+      SomeClass object2 = kryo.readObject(input, SomeClass.class);
+      input.close();   
+   }
+   static public class SomeClass {
+      String value;
+   }
+}
 ```
 
 The Kryo class performs the serialization automatically. The Output and Input classes handle buffering bytes and optionally flushing to a stream.
