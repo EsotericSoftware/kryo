@@ -97,7 +97,10 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	protected boolean require (int required) throws KryoException {
 		ByteBuffer oldBuffer = byteBuffer;
 		boolean result = super.require(required);
-		if (byteBuffer != oldBuffer) UnsafeUtil.dispose(oldBuffer);
+		if (byteBuffer != oldBuffer) {
+			UnsafeUtil.dispose(oldBuffer);
+			updateBufferAddress();
+		}
 		return result;
 	}
 
