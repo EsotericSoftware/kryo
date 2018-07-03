@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
 import sun.misc.Unsafe;
@@ -47,7 +48,6 @@ public class UnsafeUtil {
 	static public final long shortArrayBaseOffset;
 	static public final long charArrayBaseOffset;
 	static public final long booleanArrayBaseOffset;
-
 	static {
 		Unsafe tempUnsafe = null;
 		long tempByteArrayBaseOffset = 0;
@@ -91,8 +91,7 @@ public class UnsafeUtil {
 	}
 
 	// Constructor to be used for creation of ByteBuffers that use preallocated memory regions.
-	static Constructor<? extends ByteBuffer> directByteBufferConstructor;
-
+	static private Constructor<? extends ByteBuffer> directByteBufferConstructor;
 	static {
 		ByteBuffer buffer = ByteBuffer.allocateDirect(1);
 		try {
@@ -101,6 +100,18 @@ public class UnsafeUtil {
 		} catch (Exception ex) {
 			if (DEBUG) debug("kryo", "No direct ByteBuffer constructor is available.", ex);
 			directByteBufferConstructor = null;
+		}
+	}
+
+	static private Method cleanerMethod, cleanMethod;
+	static {
+		try {
+			cleanerMethod = DirectBuffer.class.getMethod("cleaner");
+			cleanerMethod.setAccessible(true);
+			cleanMethod = cleanerMethod.getReturnType().getMethod("clean");
+		} catch (Exception ex) {
+			if (DEBUG) debug("kryo", "No direct ByteBuffer clean method is available.", ex);
+			cleanerMethod = null;
 		}
 	}
 
@@ -126,10 +137,9 @@ public class UnsafeUtil {
 	/** Release a direct buffer immediately rather than waiting for GC. */
 	static public void dispose (ByteBuffer buffer) {
 		if (!(buffer instanceof DirectBuffer)) return;
-		Object cleaner = ((DirectBuffer)buffer).cleaner();
-		if (cleaner != null) {
+		if (cleanerMethod != null) {
 			try {
-				cleaner.getClass().getMethod("clean").invoke(cleaner);
+				cleanMethod.invoke(cleanerMethod.invoke(buffer));
 			} catch (Throwable ignored) {
 			}
 		}
