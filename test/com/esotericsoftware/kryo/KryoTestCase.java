@@ -36,6 +36,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import org.junit.Before;
@@ -116,7 +117,9 @@ abstract public class KryoTestCase {
 			}
 
 			public Input createInput (byte[] buffer) {
-				return new ByteBufferInput(buffer);
+				ByteBuffer byteBuffer = ByteBuffer.allocateDirect(buffer.length);
+				byteBuffer.put(buffer).flip();
+				return new ByteBufferInput(byteBuffer);
 			}
 		});
 
@@ -160,7 +163,9 @@ abstract public class KryoTestCase {
 			}
 
 			public Input createInput (byte[] buffer) {
-				return new UnsafeByteBufferInput(buffer);
+				ByteBuffer byteBuffer = ByteBuffer.allocateDirect(buffer.length);
+				byteBuffer.put(buffer).flip();
+				return new UnsafeByteBufferInput(byteBuffer);
 			}
 		});
 

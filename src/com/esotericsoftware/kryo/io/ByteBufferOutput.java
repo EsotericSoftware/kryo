@@ -90,6 +90,27 @@ public class ByteBufferOutput extends Output {
 		return outputStream;
 	}
 
+	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
+	 * @deprecated
+	 * @see #getByteBuffer() */
+	public byte[] getBuffer () {
+		throw new UnsupportedOperationException("This buffer does not used a byte[], see #getByteBuffer().");
+	}
+
+	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
+	 * @deprecated
+	 * @see #getByteBuffer() */
+	public void setBuffer (byte[] buffer) {
+		throw new UnsupportedOperationException("This buffer does not used a byte[], see #setByteBuffer(ByteBuffer).");
+	}
+
+	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
+	 * @deprecated
+	 * @see #getByteBuffer() */
+	public void setBuffer (byte[] buffer, int maxBufferSize) {
+		throw new UnsupportedOperationException("This buffer does not used a byte[], see #setByteBuffer(ByteBuffer).");
+	}
+
 	/** Allocates a new direct ByteBuffer with the specified bytes and sets it as the new buffer.
 	 * @see #setBuffer(ByteBuffer) */
 	public void setBuffer (byte[] bytes, int offset, int count) {

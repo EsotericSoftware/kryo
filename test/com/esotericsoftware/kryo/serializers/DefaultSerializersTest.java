@@ -186,7 +186,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 	private void testNull (Class type) {
 		kryo.writeObjectOrNull(output, null, type);
-		input.setBuffer(output.toBytes());
+		input = new Input(output.toBytes());
 		Object object = kryo.readObjectOrNull(input, type);
 		assertNull(object);
 	}

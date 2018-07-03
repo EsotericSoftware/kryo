@@ -55,8 +55,14 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 	}
 
 	/** Creates a new Input for reading from a {@link ByteBuffer} which is filled with the specified bytes. */
-	public UnsafeByteBufferInput (byte[] buffer) {
-		super(buffer);
+	public UnsafeByteBufferInput (byte[] bytes) {
+		super(bytes);
+		updateBufferAddress();
+	}
+
+	/** Creates a new Input for reading from a {@link ByteBuffer} which is filled with the specified bytes. */
+	public UnsafeByteBufferInput (byte[] bytes, int offset, int count) {
+		super(bytes, offset, count);
 		updateBufferAddress();
 	}
 

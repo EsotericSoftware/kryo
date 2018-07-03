@@ -53,7 +53,16 @@ public class ByteBufferInput extends Input {
 
 	/** Creates a new Input for reading from a {@link ByteBuffer} which is filled with the specified bytes. */
 	public ByteBufferInput (byte[] bytes) {
-		setBuffer(bytes);
+		this(bytes, 0, bytes.length);
+	}
+
+	/** Creates a new Input for reading from a {@link ByteBuffer} which is filled with the specified bytes.
+	 * @see #setBuffer(byte[], int, int) */
+	public ByteBufferInput (byte[] bytes, int offset, int count) {
+		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
+		ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
+		buffer.put(bytes).flip();
+		setBuffer(buffer);
 	}
 
 	/** Creates a new Input for reading from a ByteBuffer. */
@@ -75,14 +84,25 @@ public class ByteBufferInput extends Input {
 		this.inputStream = inputStream;
 	}
 
-	/** Allocates a new direct ByteBuffer with the specified bytes and sets it as the new buffer.
+	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
+	 * @deprecated
+	 * @see #getByteBuffer() */
+	public byte[] getBuffer () {
+		throw new UnsupportedOperationException("This input does not used a byte[], see #getByteBuffer().");
+	}
+
+	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
+	 * @deprecated
+	 * @see #setBuffer(ByteBuffer) */
+	public void setBuffer (byte[] bytes) {
+		throw new UnsupportedOperationException("This input does not used a byte[], see #setByteBuffer(ByteBuffer).");
+	}
+
+	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
+	 * @deprecated
 	 * @see #setBuffer(ByteBuffer) */
 	public void setBuffer (byte[] bytes, int offset, int count) {
-		ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
-		buffer.put(bytes, offset, count);
-		buffer.position(0);
-		buffer.limit(bytes.length);
-		setBuffer(buffer);
+		throw new UnsupportedOperationException("This input does not used a byte[], see #setByteBufferByteBuffer().");
 	}
 
 	/** Sets a new buffer to read from. The bytes are not copied, the old buffer is discarded and the new buffer used in its place.

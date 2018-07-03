@@ -28,6 +28,7 @@ import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 import org.junit.Test;
@@ -400,7 +401,8 @@ public class UnsafeByteBufferInputOutputTest {
 			write.writeInt(value);
 			write.writeVarInt(value, true);
 			write.writeVarInt(value, false);
-			read.setBuffer(write.toBytes());
+
+			read = new UnsafeByteBufferInput(write.toBytes());
 			assertEquals(value, read.readInt());
 			assertEquals(value, read.readVarInt(true));
 			assertEquals(value, read.readVarInt(false));
@@ -550,7 +552,8 @@ public class UnsafeByteBufferInputOutputTest {
 			write.writeLong(value);
 			write.writeVarLong(value, true);
 			write.writeVarLong(value, false);
-			read.setBuffer(write.toBytes());
+
+			read = new UnsafeByteBufferInput(write.toBytes());
 			assertEquals("Element " + i, value, read.readLong());
 			assertEquals("Element " + i, value, read.readVarLong(true));
 			assertEquals("Element " + i, value, read.readVarLong(false));

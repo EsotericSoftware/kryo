@@ -447,6 +447,7 @@ public class InputOutputTest extends KryoTestCase {
 			write.writeInt(value);
 			write.writeVarInt(value, true);
 			write.writeVarInt(value, false);
+
 			read.setBuffer(write.toBytes());
 			assertEquals(value, read.readInt());
 			assertEquals(value, read.readVarInt(true));
@@ -593,6 +594,7 @@ public class InputOutputTest extends KryoTestCase {
 			write.writeLong(value);
 			write.writeVarLong(value, true);
 			write.writeVarLong(value, false);
+
 			read.setBuffer(write.toBytes());
 			assertEquals(value, read.readLong());
 			assertEquals(value, read.readVarLong(true));
