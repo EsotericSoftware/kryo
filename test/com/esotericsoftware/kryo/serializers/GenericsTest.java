@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 public class GenericsTest extends KryoTestCase {
 	{
@@ -77,6 +78,31 @@ public class GenericsTest extends KryoTestCase {
 		Output buffer = new Output(512, 4048);
 		kryo.writeClassAndObject(buffer, o1);
 		kryo.writeClassAndObject(buffer, o2);
+	}
+
+	@Test
+	public void testClassValue () {
+		kryo.setReferences(true);
+		kryo.setRegistrationRequired(false);
+		kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+		roundTrip(Integer.MIN_VALUE, new SomeClassValue());
+	}
+
+	@Test
+	public void testClassValueAnon () {
+		kryo.setReferences(true);
+		kryo.setRegistrationRequired(false);
+		kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+		ClassValue<Boolean> value = new ClassValue<Boolean>() {
+			protected Boolean computeValue (Class type) {
+				return true;
+			}
+
+			public boolean equals (Object obj) {
+				return true;
+			}
+		};
+		roundTrip(Integer.MIN_VALUE, value);
 	}
 
 	private interface Holder<V> {
@@ -203,6 +229,16 @@ public class GenericsTest extends KryoTestCase {
 
 		public ConcreteClass (final List listPayload) {
 			super(listPayload);
+		}
+	}
+
+	static public class SomeClassValue extends ClassValue<Boolean> {
+		protected Boolean computeValue (Class type) {
+			return true;
+		}
+
+		public boolean equals (Object obj) {
+			return true;
 		}
 	}
 }
