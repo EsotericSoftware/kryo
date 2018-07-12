@@ -25,6 +25,7 @@ import com.esotericsoftware.kryo.Kryo;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.GenericDeclaration;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -182,40 +183,68 @@ public class Generics {
 		final TypeVariable[] parameters;
 
 		public GenericsHierarchy (Class type) {
-			ArrayList<TypeVariable> temp = new ArrayList();
+			IntArray counts = new IntArray();
+			ArrayList<TypeVariable> parameters = new ArrayList();
 
-			TypeVariable[] params = type.getTypeParameters();
-			counts = new int[params.length];
 			int total = 0;
-			for (int i = 0, n = params.length; i < n; i++) {
-				TypeVariable param = params[i];
-				temp.add(param);
-				counts[i] = 1;
+			Class current = type;
+			do {
+				TypeVariable[] params = current.getTypeParameters();
+				for (int i = 0, n = params.length; i < n; i++) {
+					TypeVariable param = params[i];
+					parameters.add(param);
+					counts.add(1);
 
-				// If the parameter is passed to a super class, also store the super class type variable, recursively.
-				Class current = type;
-				while (true) {
-					Type genericSuper = current.getGenericSuperclass();
-					current = current.getSuperclass();
-					if (!(genericSuper instanceof ParameterizedType)) break;
-					TypeVariable[] superParams = current.getTypeParameters();
-					Type[] superArgs = ((ParameterizedType)genericSuper).getActualTypeArguments();
-					for (int ii = 0, nn = superArgs.length; ii < nn; ii++) {
-						Type superArg = superArgs[ii];
-						if (superArg == param) {
-							// We could skip if the super class doesn't use the type in a field.
-							param = superParams[ii];
-							temp.add(param);
-							counts[i]++;
+					// If the parameter is passed to a super class, also store the super class type variable, recursively.
+					Class currentSuper = current;
+					while (true) {
+						Type genericSuper = currentSuper.getGenericSuperclass();
+						currentSuper = currentSuper.getSuperclass();
+						if (!(genericSuper instanceof ParameterizedType)) break;
+						TypeVariable[] superParams = currentSuper.getTypeParameters();
+						Type[] superArgs = ((ParameterizedType)genericSuper).getActualTypeArguments();
+						for (int ii = 0, nn = superArgs.length; ii < nn; ii++) {
+							Type superArg = superArgs[ii];
+							if (superArg == param) {
+								// We could skip if the super class doesn't use the type in a field.
+								param = superParams[ii];
+								parameters.add(param);
+								counts.incr(counts.size - 1, 1);
+							}
 						}
 					}
-				}
 
-				total += counts[i];
-			}
+					total += counts.peek();
+				}
+				current = current.getSuperclass();
+			} while (current != null);
 
 			this.total = total;
-			parameters = temp.toArray(new TypeVariable[temp.size()]);
+			this.counts = counts.toArray();
+			this.parameters = parameters.toArray(new TypeVariable[parameters.size()]);
+		}
+
+		public String toString () {
+			StringBuilder buffer = new StringBuilder();
+			buffer.append("[");
+			int[] counts = this.counts;
+			TypeVariable[] parameters = this.parameters;
+			for (int i = 0, p = 0, n = counts.length; i < n; i++) {
+				int count = counts[i];
+				for (int nn = p + count; p < nn; p++) {
+					if (buffer.length() > 1) buffer.append(", ");
+					GenericDeclaration declaration = parameters[p].getGenericDeclaration();
+					if (declaration instanceof Class)
+						buffer.append(((Class)declaration).getSimpleName());
+					else
+						buffer.append(declaration);
+					buffer.append('<');
+					buffer.append(parameters[p].getName());
+					buffer.append('>');
+				}
+			}
+			buffer.append("]");
+			return buffer.toString();
 		}
 	}
 

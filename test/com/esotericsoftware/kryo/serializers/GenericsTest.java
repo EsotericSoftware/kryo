@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import java.io.Serializable;
@@ -29,7 +30,6 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
 
 public class GenericsTest extends KryoTestCase {
 	{
@@ -78,6 +78,24 @@ public class GenericsTest extends KryoTestCase {
 		Output buffer = new Output(512, 4048);
 		kryo.writeClassAndObject(buffer, o1);
 		kryo.writeClassAndObject(buffer, o2);
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/611
+	@Test
+	public void testSuperGenerics () {
+		kryo.setReferences(false);
+		kryo.register(SuperGenerics.Root.class);
+		kryo.register(SuperGenerics.Value.class);
+
+		Output output = new Output(2048, -1);
+
+		SuperGenerics.Root root = new SuperGenerics.Root();
+		root.rootSuperField = new SuperGenerics.Value();
+		kryo.writeObject(output, root);
+		output.flush();
+
+		Input input = new Input(output.getBuffer(), 0, output.position());
+		SuperGenerics.Root root2 = kryo.readObject(input, SuperGenerics.Root.class);
 	}
 
 	private interface Holder<V> {
@@ -139,7 +157,6 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	static private class BaseGeneric<T extends Serializable> {
-
 		// The type of this field cannot be derived from the context.
 		// Therefore, Kryo should consider it to be Object.
 		private final List<T> listPayload;
@@ -204,6 +221,26 @@ public class GenericsTest extends KryoTestCase {
 
 		public ConcreteClass (final List listPayload) {
 			super(listPayload);
+		}
+	}
+
+	static public class SuperGenerics {
+		static public class RootSuper<RS> {
+			public ValueSuper<RS> rootSuperField;
+		}
+
+		static public class Root extends RootSuper<String> {
+		}
+
+		static public class ValueSuper<VS> extends ValueSuperSuper<Integer> {
+			VS superField;
+		}
+
+		static public class ValueSuperSuper<VSS> {
+			VSS superSuperField;
+		}
+
+		static public class Value extends ValueSuper<String> {
 		}
 	}
 }
