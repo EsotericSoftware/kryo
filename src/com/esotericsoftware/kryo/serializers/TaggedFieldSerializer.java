@@ -30,14 +30,14 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
+import com.esotericsoftware.kryo.util.IntMap;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.ArrayList;
 
 /** Serializes objects using direct field assignment for fields that have a <code>@Tag(int)</code> annotation, providing backward
  * compatibility and optional forward compatibility. This means fields can be added or renamed and optionally removed without
@@ -60,15 +60,8 @@ import java.util.Comparator;
  * flexibility for classes to evolve. This comes at the cost of one varint per field.
  * @author Nathan Sweet */
 public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
-	static private final Comparator<CachedField> tagComparator = new Comparator<CachedField>() {
-		public int compare (CachedField o1, CachedField o2) {
-			return o1.field.getAnnotation(Tag.class).value() - o2.field.getAnnotation(Tag.class).value();
-		}
-	};
-
-	private int[] tags;
-	private int writeFieldCount;
-	private boolean[] deprecated;
+	private CachedField[] writeTags;
+	private IntMap<CachedField> readTags;
 	private final TaggedFieldSerializerConfig config;
 
 	public TaggedFieldSerializer (Kryo kryo, Class type) {
@@ -92,23 +85,20 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			}
 		}
 		fields = cachedFields.fields; // removeField changes cached field array.
-		Arrays.sort(fields, tagComparator); // fields are sorted to easily check for reused tag values
 
 		// Cache tag values.
-		int n = fields.length;
-		writeFieldCount = n;
-		tags = new int[n];
-		deprecated = new boolean[n];
-		for (int i = 0; i < n; i++) {
-			Field field = fields[i].field;
-			tags[i] = field.getAnnotation(Tag.class).value();
-			if (i > 0 && tags[i] == tags[i - 1]) // Relies on fields having been sorted.
-				throw new KryoException("Duplicate tag " + tags[i] + " on fields: " + field + " and " + fields[i - 1].field);
-			if (field.getAnnotation(Deprecated.class) != null) {
-				deprecated[i] = true;
-				writeFieldCount--;
-			}
+		ArrayList writeTags = new ArrayList(fields.length);
+		readTags = new IntMap((int)(fields.length / 0.8f));
+		for (CachedField cachedField : fields) {
+			Field field = cachedField.field;
+			int tag = field.getAnnotation(Tag.class).value();
+			if (readTags.containsKey(tag))
+				throw new KryoException(String.format("Duplicate tag %d on fields: %s and %s", tag, field, writeTags.get(tag)));
+			readTags.put(tag, cachedField);
+			if (field.getAnnotation(Deprecated.class) == null) writeTags.add(cachedField);
+			cachedField.tag = tag;
 		}
+		this.writeTags = (CachedField[])writeTags.toArray(new CachedField[writeTags.size()]);
 	}
 
 	public void removeField (String fieldName) {
@@ -129,10 +119,9 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		int pop = pushTypeVariables();
 
-		output.writeVarInt(writeFieldCount + 1, true);
+		CachedField[] writeTags = this.writeTags;
+		output.writeVarInt(writeTags.length + 1, true);
 		writeHeader(kryo, output, object);
-
-		CachedField[] fields = cachedFields.fields;
 
 		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownTagData;
 		Output fieldOutput;
@@ -141,14 +130,11 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			fieldOutput = outputChunked = new OutputChunked(output, config.chunkSize);
 		else
 			fieldOutput = output;
-		int[] tags = this.tags;
-		boolean[] deprecated = this.deprecated;
-		for (int i = 0, n = fields.length; i < n; i++) {
-			if (deprecated[i]) continue;
-			CachedField cachedField = fields[i];
 
-			if (TRACE) log("Write", fields[i], output.position());
-			output.writeVarInt(tags[i], true);
+		for (int i = 0, n = writeTags.length; i < n; i++) {
+			CachedField cachedField = writeTags[i];
+			if (TRACE) log("Write", cachedField, output.position());
+			output.writeVarInt(cachedField.tag, true);
 
 			// Write the value class so the field data can be read even if the field is removed.
 			if (readUnknownTagData) {
@@ -190,8 +176,6 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		T object = create(kryo, input, type);
 		kryo.reference(object);
 
-		CachedField[] fields = cachedFields.fields;
-
 		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownTagData;
 		Input fieldInput;
 		InputChunked inputChunked = null;
@@ -199,16 +183,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			fieldInput = inputChunked = new InputChunked(input, config.chunkSize);
 		else
 			fieldInput = input;
-		int[] tags = this.tags;
-		for (int i = 0, n = fieldCount; i < n; i++) {
+		IntMap<CachedField> readTags = this.readTags;
+		for (int i = 0; i < fieldCount; i++) {
 			int tag = input.readVarInt(true);
-			CachedField cachedField = null;
-			for (int ii = 0, nn = tags.length; ii < nn; ii++) {
-				if (tags[ii] == tag) {
-					cachedField = fields[ii];
-					break;
-				}
-			}
+			CachedField cachedField = readTags.get(tag);
 
 			if (readUnknownTagData) {
 				Registration registration;

@@ -232,6 +232,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		// For UnsafeField.
 		long offset;
 
+		// For TaggedFieldSerializer.
+		int tag;
+
 		public CachedField (Field field) {
 			this.field = field;
 		}
