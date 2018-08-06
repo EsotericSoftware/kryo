@@ -256,8 +256,9 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		/** When false and encountering an unknown tag, an exception is thrown or, if {@link #setChunkedEncoding(boolean) chunked
-		 * encoding} is enabled, the data is skipped. If {@link Kryo#setReferences(boolean) references} are enabled, then any other
-		 * values in the object graph referencing that data cannot be deserialized. Default is false.
+		 * encoding} is enabled, the data is skipped. If the data is skipped and {@link Kryo#setReferences(boolean) references} are
+		 * enabled, then any references in the skipped data are not read and further deserialization receive the wrong references
+		 * and fail. Default is false.
 		 * <p>
 		 * When true, the type of each field value is written before the value. When an unknown tag is encountered, an attempt to
 		 * read the data is made. This is used to skip the data and, if {@link Kryo#setReferences(boolean) references} are enabled,
