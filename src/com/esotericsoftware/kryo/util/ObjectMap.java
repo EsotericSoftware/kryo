@@ -182,9 +182,9 @@ public class ObjectMap<K, V> {
 		return null;
 	}
 
-	public void putAll (ObjectMap<K, V> map) {
+	public void putAll (ObjectMap<? extends K, ? extends V> map) {
 		ensureCapacity(map.size);
-		for (Entry<K, V> entry : map.entries())
+		for (Entry<? extends K, ? extends V> entry : map.entries())
 			put(entry.key, entry.value);
 	}
 

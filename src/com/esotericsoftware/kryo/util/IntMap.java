@@ -192,8 +192,8 @@ public class IntMap<V> {
 		return null;
 	}
 
-	public void putAll (IntMap<V> map) {
-		for (Entry<V> entry : map.entries())
+	public void putAll (IntMap<? extends V> map) {
+		for (Entry<? extends V> entry : map.entries())
 			put(entry.key, entry.value);
 	}
 
