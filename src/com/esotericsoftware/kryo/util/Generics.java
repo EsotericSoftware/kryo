@@ -38,7 +38,7 @@ public class Generics {
 
 	private int genericTypesSize;
 	private GenericType[] genericTypes = new GenericType[16];
-	private final int[] depths = new int[16];
+	private int[] depths = new int[16];
 
 	private int argumentsSize;
 	private Type[] arguments = new Type[16];
@@ -53,12 +53,15 @@ public class Generics {
 	public void pushGenericType (GenericType fieldType) {
 		if (fieldType.arguments == null) return;
 
-		// Ensure genericTypes capacity.
+		// Ensure genericTypes and depths capacity.
 		int size = genericTypesSize;
 		if (size + 1 == genericTypes.length) {
-			GenericType[] newArray = new GenericType[genericTypes.length << 1];
-			System.arraycopy(genericTypes, 0, newArray, 0, size);
-			genericTypes = newArray;
+			GenericType[] genericTypesNew = new GenericType[genericTypes.length << 1];
+			System.arraycopy(genericTypes, 0, genericTypesNew, 0, size);
+			genericTypes = genericTypesNew;
+			int[] depthsNew = new int[depths.length << 1];
+			System.arraycopy(depths, 0, depthsNew, 0, size);
+			depths = depthsNew;
 		}
 
 		genericTypesSize = size + 1;
