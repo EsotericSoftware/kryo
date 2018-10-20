@@ -12,7 +12,7 @@ loadLibrary = function (name) {
 loadLibrary("ggplot2")
 loadLibrary("gridExtra")
 
-jmhCSV  = function (path) {
+jmhCSV = function (path) {
 	data = read.csv(path, sep=",", header=T)
 
 	# delete all before last dot in benchmark names
