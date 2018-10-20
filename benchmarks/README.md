@@ -36,7 +36,7 @@ Running without parameters is equivalent to:
 
 The standard parameters to obtain reasonable results are:
 ```
--f 4 -wi 5 -i 3 -t 2 -w 2s -r 2s"
+-f 4 -wi 5 -i 3 -t 2 -w 2s -r 2s
 ```
 
 To run only specific benchmarks, specify the benchmark class name(s):
