@@ -41,8 +41,7 @@ public class Util {
 			found = Class.forName("com.esotericsoftware.kryo.unsafe.UnsafeUtil", true, FieldSerializer.class.getClassLoader())
 				.getField("unsafe").get(null) != null;
 		} catch (Throwable ex) {
-			ex.printStackTrace();
-			if (TRACE) trace("kryo", "Unsafe is unavailable.");
+			if (TRACE) trace("kryo", "Unsafe is unavailable.", ex);
 		}
 		unsafe = found;
 	}
