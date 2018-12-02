@@ -582,7 +582,7 @@ Kryo can serialize Java 8+ closures that implement java.io.Serializable, with so
 
 Kryo `isClosure` is used to determine if a class is a closure. If so, then ClosureSerializer.Closure is used to find the class registration instead of the closure's class. To serialize closures, the following classes must be registered: ClosureSerializer.Closure, SerializedLambda, Object[], and Class. Additionally, the closure's capturing class must be registered.
 
-```
+```java
 kryo.register(Object[].class);
 kryo.register(Class.class);
 kryo.register(SerializedLambda.class);
