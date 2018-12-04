@@ -54,7 +54,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public VersionFieldSerializer (Kryo kryo, Class type, VersionFieldSerializerConfig config) {
-		super(kryo, type);
+		super(kryo, type, config);
 		this.config = config;
 		setAcceptsNull(true);
 		// Make sure this is done before any read/write operations.
