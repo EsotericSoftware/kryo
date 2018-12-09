@@ -54,6 +54,8 @@ public class DefaultClassResolver implements ClassResolver {
 	}
 
 	public Registration register (Registration registration) {
+		memoizedClassId = -1;
+		memoizedClass = null;
 		if (registration == null) throw new IllegalArgumentException("registration cannot be null.");
 		if (registration.getId() != NAME) {
 			if (TRACE) {
