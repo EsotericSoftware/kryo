@@ -1,3 +1,5 @@
+# use container
+sudo: false
 language: java
 
 env:
@@ -11,6 +13,11 @@ jdk:
   #- openjdk7
   - oraclejdk8
 
+before_install:
+  # required for testing jdk 11
+  - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh -O $TRAVIS_BUILD_DIR/install-jdk.sh
+  - chmod u+x $TRAVIS_BUILD_DIR/install-jdk.sh
+
 install:
   # compile and test java 8
   - mvn -B -V clean test
@@ -21,13 +28,22 @@ script:
   - mvn -B -P!java8 clean install
   # test java 7
   - jdk_switcher use openjdk7
-  - mvn -B test
+  - mvn -v && mvn -B test
+  # test java 9 (only available via oraclejdk9)
+  - jdk_switcher use oraclejdk9
+  - mvn -v && mvn -B test
+  # test java 11
+  # see also https://docs.travis-ci.com/user/languages/java/#using-java-10-and-later
+  # and https://github.com/sormuras/bach#install-jdksh (because default travis docs didn't work)
+  - export JAVA_HOME=$HOME/openjdk11
+  - $TRAVIS_BUILD_DIR/install-jdk.sh --feature 11 --target $JAVA_HOME
+  - mvn -v && mvn -B test
   # install and publish snapshot with java 8
   # not via `after_success` but directly in `script`, since a failure would be silently ignored in `after_success`, which
   # is documented in https://docs.travis-ci.com/user/customizing-the-build#Breaking-the-Build
   - jdk_switcher use oraclejdk8
   - if [ $TRAVIS_BRANCH = "master" ] && [ $TRAVIS_PULL_REQUEST = "false" ] && [ $IS_SNAPSHOT ]; then
-      mvn -B -P requireSnapshot -DskipTests=true deploy --settings build/settings-sonatype.xml;
+      mvn -v && mvn -B -P requireSnapshot -DskipTests=true deploy --settings build/settings-sonatype.xml;
     else
       echo "Skipping deployment...";
     fi
@@ -36,6 +52,3 @@ script:
 cache:
   directories:
     - $HOME/.m2
-
-# use container
-sudo: false

@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.kryo.ReflectionAssert.*;
+import static java.lang.Integer.parseInt;
 import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
@@ -73,10 +74,16 @@ public class SerializationCompatTest extends KryoTestCase {
 	static private final boolean DELETE_FAILED_TEST_FILES = false;
 
 	static private final String ENDIANNESS = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? "le" : "be";
-	static private final int JAVA_VERSION = Integer.parseInt(System.getProperty("java.version").split("\\.")[1]);
+	static private final int JAVA_VERSION;
+	static {
+		// java.version is e.g. 1.8.0 or 9.0.4
+		String[] strVersions = System.getProperty("java.version").split("\\.");
+		int[] versions = new int[] { parseInt(strVersions[0]), parseInt(strVersions[1]) };
+		JAVA_VERSION = versions[0] > 1 ? versions[0] : versions[1];
+	}
 	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 38 : 56; // Also change
 																															// Kryo#defaultSerializers.
-	static private final List<TestDataDescription> TEST_DATAS = new ArrayList();
+	static private final List<TestDataDescription> TEST_DATAS = new ArrayList<>();
 
 	static {
 		TEST_DATAS.add(new TestDataDescription<TestData>("5.0.0", new TestData(), 1889));
