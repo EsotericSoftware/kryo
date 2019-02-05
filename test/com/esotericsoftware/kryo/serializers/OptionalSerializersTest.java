@@ -30,9 +30,8 @@ import java.util.OptionalLong;
 import org.junit.Before;
 import org.junit.Test;
 
-/** Test for java 8 Optional* serializers. Excluded from surefire tests via the "until-java8" profile in pom.xml which excludes
- * "Java8*Tests". */
-public class Java8OptionalSerializersTest extends KryoTestCase {
+/** Test for java 8 Optional* serializers. */
+public class OptionalSerializersTest extends KryoTestCase {
 
 	{
 		supportsCopy = true;
