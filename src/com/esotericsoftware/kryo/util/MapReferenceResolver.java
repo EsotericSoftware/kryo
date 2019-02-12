@@ -26,8 +26,8 @@ import java.util.ArrayList;
 
 /** Uses an {@link IdentityObjectIntMap} to track objects that have already been written. This can handle a graph with any number
  * of objects, but is slightly slower than {@link ListReferenceResolver} for graphs with few objects. Compared to
- * {@link HashMapReferenceResolver}, this may provide better performance for most object graphs since the IdentityObjectIntMap
- * does not normally allocate for get or put.
+ * {@link HashMapReferenceResolver}, this may provide better performance for object graphs with a moderate number of objects since
+ * the IdentityObjectIntMap does not normally allocate for get or put, though put can require more effort.
  * @author Nathan Sweet */
 public class MapReferenceResolver implements ReferenceResolver {
 	protected Kryo kryo;

@@ -23,15 +23,16 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.ReferenceResolver;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 
-/** Uses an {@link IdentityMap} to track objects that have already been written. This can handle a graph with any number of
+/** Uses an {@link IdentityHashMap} to track objects that have already been written. This can handle a graph with any number of
  * objects, but is slightly slower than {@link ListReferenceResolver} for graphs with few objects. Compared to
  * {@link MapReferenceResolver}, this may provide better performance for object graphs with a very high number of objects since
- * the IdentityMap does less work for put, even though put allocates.
+ * the IdentityHashMap does less work for put, even though put allocates.
  * @author Nathan Sweet */
 public class HashMapReferenceResolver implements ReferenceResolver {
 	protected Kryo kryo;
-	protected final IdentityObjectIntMap writtenObjects = new IdentityObjectIntMap();
+	protected final IdentityHashMap<Object, Integer> writtenObjects = new IdentityHashMap();
 	protected final ArrayList readObjects = new ArrayList();
 
 	public void setKryo (Kryo kryo) {
@@ -39,13 +40,15 @@ public class HashMapReferenceResolver implements ReferenceResolver {
 	}
 
 	public int addWrittenObject (Object object) {
-		int id = writtenObjects.size;
+		int id = writtenObjects.size();
 		writtenObjects.put(object, id);
 		return id;
 	}
 
 	public int getWrittenId (Object object) {
-		return writtenObjects.get(object, -1);
+		Integer id = writtenObjects.get(object);
+		if (id == null) return -1;
+		return id;
 	}
 
 	public int nextReadId (Class type) {
@@ -64,7 +67,7 @@ public class HashMapReferenceResolver implements ReferenceResolver {
 
 	public void reset () {
 		readObjects.clear();
-		writtenObjects.clear(2048);
+		writtenObjects.clear();
 	}
 
 	/** Returns false for all primitive wrappers and enums. */
