@@ -33,15 +33,19 @@ import java.lang.reflect.Type;
 public class Util {
 	static public final boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
 
-	/** True if Unsafe is available. */
+	/** True if Unsafe is available. Unsafe can be disabled by setting the system property "kryo.unsafe" to "false". */
 	static public final boolean unsafe;
 	static {
 		boolean found = false;
-		try {
-			found = Class.forName("com.esotericsoftware.kryo.unsafe.UnsafeUtil", true, FieldSerializer.class.getClassLoader())
-				.getField("unsafe").get(null) != null;
-		} catch (Throwable ex) {
-			if (TRACE) trace("kryo", "Unsafe is unavailable.", ex);
+		if ("false".equals(System.getProperty("kryo.unsafe"))) {
+			if (TRACE) trace("kryo", "Unsafe is disabled.");
+		} else {
+			try {
+				found = Class.forName("com.esotericsoftware.kryo.unsafe.UnsafeUtil", true, FieldSerializer.class.getClassLoader())
+					.getField("unsafe").get(null) != null;
+			} catch (Throwable ex) {
+				if (TRACE) trace("kryo", "Unsafe is unavailable.", ex);
+			}
 		}
 		unsafe = found;
 	}
