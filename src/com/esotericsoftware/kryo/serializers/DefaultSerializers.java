@@ -40,6 +40,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -824,6 +825,27 @@ public class DefaultSerializers {
 
 		public List copy (Kryo kryo, List original) {
 			return Arrays.asList(original.toArray());
+		}
+	}
+
+	static public class BitSetSerializer extends Serializer<BitSet> {
+		public void write (Kryo kryo, Output output, BitSet set) {
+			long[] values = set.toLongArray();
+			output.writeVarInt(values.length, true);
+			output.writeLongs(values, 0, values.length);
+			System.out.println("write " + Arrays.toString(values));
+		}
+
+		public BitSet read (Kryo kryo, Input input, Class type) {
+			int length = input.readVarInt(true);
+			long[] values = input.readLongs(length);
+			BitSet set = BitSet.valueOf(values);
+			System.out.println("read  " + Arrays.toString(values));
+			return set;
+		}
+
+		public BitSet copy (Kryo kryo, BitSet original) {
+			return BitSet.valueOf(original.toLongArray());
 		}
 	}
 }

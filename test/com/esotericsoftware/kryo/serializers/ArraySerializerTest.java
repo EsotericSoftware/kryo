@@ -24,6 +24,8 @@ import static org.junit.Assert.*;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
 
+import java.util.BitSet;
+
 import org.junit.Test;
 
 /** @author Nathan Sweet */
@@ -94,5 +96,12 @@ public class ArraySerializerTest extends KryoTestCase {
 
 		kryo.setReferences(true);
 		roundTrip(28, array);
+	}
+
+	@Test
+	public void testBitSet () {
+		kryo.register(BitSet.class);
+		BitSet set = BitSet.valueOf(new long[] {1L, 2L, 99999L, 2345678987654L});
+		roundTrip(34, set);
 	}
 }

@@ -43,6 +43,7 @@ import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.StringArray
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ArraysAsListSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigIntegerSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.BitSetSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BooleanSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ByteSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CalendarSerializer;
@@ -100,6 +101,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -217,6 +219,7 @@ public class Kryo implements Poolable {
 		addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer.class);
 		addDefaultSerializer(void.class, new VoidSerializer());
 		addDefaultSerializer(PriorityQueue.class, new PriorityQueueSerializer());
+		addDefaultSerializer(BitSet.class, new BitSetSerializer());
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
