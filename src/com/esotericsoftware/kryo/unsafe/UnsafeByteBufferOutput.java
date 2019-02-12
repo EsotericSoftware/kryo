@@ -39,6 +39,7 @@ import sun.nio.ch.DirectBuffer;
  * This class may be much faster when {@link #setVariableLengthEncoding(boolean)} is false.
  * @author Roman Levenstein <romixlev@gmail.com>
  * @author Nathan Sweet */
+@SuppressWarnings("restriction")
 public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	/** Start address of the memory buffer. It must be non-movable, which normally means that is is allocated off-heap. */
 	private long bufferAddress;

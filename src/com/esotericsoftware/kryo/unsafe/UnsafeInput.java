@@ -35,6 +35,7 @@ import java.io.InputStream;
  * This class may be much faster when {@link #setVariableLengthEncoding(boolean)} is false.
  * @author Roman Levenstein <romixlev@gmail.com>
  * @author Nathan Sweet */
+@SuppressWarnings("restriction")
 public class UnsafeInput extends Input {
 	/** Creates an uninitialized Input, {@link #setBuffer(byte[])} must be called before the Input is used. */
 	public UnsafeInput () {

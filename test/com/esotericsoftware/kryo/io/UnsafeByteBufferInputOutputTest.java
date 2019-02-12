@@ -34,6 +34,7 @@ import java.util.Random;
 import org.junit.Test;
 
 /** @author Roman Levenstein <romixlev@gmail.com> */
+@SuppressWarnings("restriction")
 public class UnsafeByteBufferInputOutputTest {
 
 	@Test

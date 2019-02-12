@@ -35,6 +35,7 @@ import java.io.OutputStream;
  * This class may be much faster when {@link #setVariableLengthEncoding(boolean)} is false.
  * @author Roman Levenstein <romixlev@gmail.com>
  * @author Nathan Sweet */
+@SuppressWarnings("restriction")
 public class UnsafeOutput extends Output {
 	/** Creates an uninitialized Output, {@link #setBuffer(byte[], int)} must be called before the Output is used. */
 	public UnsafeOutput () {

@@ -31,6 +31,7 @@ import java.lang.reflect.Field;
 
 /** Read and write a non-primitive field using Unsafe.
  * @author Nathan Sweet */
+@SuppressWarnings("restriction")
 class UnsafeField extends ReflectField {
 	public UnsafeField (Field field, FieldSerializer serializer, GenericType genericType) {
 		super(field, serializer, genericType);
