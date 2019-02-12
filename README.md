@@ -1075,8 +1075,7 @@ The forward and backward compatibility and serialization [performance](https://r
 
 Setting | Description | Default value
 --- | --- | ---
-`readUnknownTagData` | 
-When false and an unknown tag is encountered, an exception is thrown or, if `chunkedEncoding` is true, the data is skipped. If the data is skipped and references are enabled, then any references in the data are not read and deserializing further data will fail.<br><br>When true, the class for each field value is written before the value. When an unknown field is encountered, an attempt to read the data is made. This is used to skip the data and, if references are enabled, any other values in the object graph referencing that data can still be deserialized. If reading the data fails (eg the class is unknown or has been removed) then an exception is thrown or, if `chunkedEncoding` is true, the data is skipped.
+`readUnknownTagData` | When false and an unknown tag is encountered, an exception is thrown or, if `chunkedEncoding` is true, the data is skipped. If the data is skipped and references are enabled, then any references in the data are not read and deserializing further data will fail.<br><br>When true, the class for each field value is written before the value. When an unknown field is encountered, an attempt to read the data is made. This is used to skip the data and, if references are enabled, any other values in the object graph referencing that data can still be deserialized. If reading the data fails (eg the class is unknown or has been removed) then an exception is thrown or, if `chunkedEncoding` is true, the data is skipped.
 `chunkedEncoding` | When true, fields are written with chunked encoding to allow unknown field data to be skipped. This impacts performance. | false
 `chunkSize` | The maximum size of each chunk for chunked encoding. | 1024
 
