@@ -78,16 +78,16 @@ public class SerializationCompatTest extends KryoTestCase {
 	static {
 		// java.version is e.g. 1.8.0 or 9.0.4
 		String[] strVersions = System.getProperty("java.version").split("\\.");
-		int[] versions = new int[] { parseInt(strVersions[0]), parseInt(strVersions[1]) };
+		int[] versions = new int[] {parseInt(strVersions[0]), parseInt(strVersions[1])};
 		JAVA_VERSION = versions[0] > 1 ? versions[0] : versions[1];
 	}
-	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 38 : 56; // Also change
+	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 8 ? 39 : 57; // Also change
 																															// Kryo#defaultSerializers.
 	static private final List<TestDataDescription> TEST_DATAS = new ArrayList<>();
 
 	static {
-		TEST_DATAS.add(new TestDataDescription<TestData>("5.0.0", new TestData(), 1889));
-		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("5.0.0", new TestDataJava8(), 2047));
+		TEST_DATAS.add(new TestDataDescription<TestData>("5.0.0", new TestData(), 1941));
+		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<TestDataJava8>("5.0.0", new TestDataJava8(), 2099));
 	};
 
 	@Before

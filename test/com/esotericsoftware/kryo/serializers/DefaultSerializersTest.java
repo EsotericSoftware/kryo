@@ -33,6 +33,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
@@ -346,6 +347,13 @@ public class DefaultSerializersTest extends KryoTestCase {
 		calendar.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
 		calendar.set(1980, 7, 26, 12, 22, 46);
 		roundTrip(64, calendar);
+	}
+
+	@Test
+	public void testBitSet () {
+		kryo.register(BitSet.class);
+		BitSet set = BitSet.valueOf(new long[] {1L, 2L, 99999L, 2345678987654L});
+		roundTrip(34, set);
 	}
 
 	@Test

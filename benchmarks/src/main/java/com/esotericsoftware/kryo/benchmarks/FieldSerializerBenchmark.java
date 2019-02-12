@@ -137,7 +137,7 @@ public class FieldSerializerBenchmark {
 		public void setup () {
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
 			factory.getConfig().setChunkedEncoding(chunked);
-			factory.getConfig().setReadUnknownTagData(true); // Typical to always use.
+			factory.getConfig().setReadUnknownFieldData(true); // Typical to always use.
 			kryo.setDefaultSerializer(factory);
 			super.setup();
 		}

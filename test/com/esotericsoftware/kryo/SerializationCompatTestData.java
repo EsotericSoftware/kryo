@@ -43,6 +43,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -176,6 +177,7 @@ public class SerializationCompatTestData {
 		private char[] _charArray;
 		private String[] _stringArray;
 		private Person[] _personArray;
+		private BitSet _bitSet;
 
 		private Generic<String> _generic;
 		private GenericList<String> _genericList;
@@ -266,11 +268,12 @@ public class SerializationCompatTestData {
 			_personArray[0].addFriend(_personArray[1]);
 			_personArray[1].addFriend(_personArray[0]);
 
+			_bitSet = BitSet.valueOf(new long[] {1, 2, 99999, 2345678987654l});
+
 			_generic = new Generic("foo");
 			_genericList = new GenericList(new ArrayList(Arrays.asList(new Generic("foo"), new Generic("bar"))));
 			_genericArray = new GenericArray(new Generic("foo"), new Generic("bar"));
 			_public = new PublicClass(new PrivateClass("foo"));
-
 		}
 
 		public int hashCode () {

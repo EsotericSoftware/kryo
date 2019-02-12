@@ -114,7 +114,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
-		serializer.getCompatibleFieldSerializerConfig().setReadUnknownTagData(readUnknownTagData);
+		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownTagData);
 		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(ClassWithManyFields.class, serializer);
 
@@ -225,7 +225,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
-		serializer.getCompatibleFieldSerializerConfig().setReadUnknownTagData(readUnknownTagData);
+		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownTagData);
 		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(ClassWithManyFields.class, serializer);
 
@@ -302,7 +302,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
-		serializer.getCompatibleFieldSerializerConfig().setReadUnknownTagData(readUnknownTagData);
+		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownTagData);
 		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(ClassWithManyFields.class, serializer);
 

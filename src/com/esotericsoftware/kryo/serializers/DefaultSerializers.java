@@ -833,14 +833,12 @@ public class DefaultSerializers {
 			long[] values = set.toLongArray();
 			output.writeVarInt(values.length, true);
 			output.writeLongs(values, 0, values.length);
-			System.out.println("write " + Arrays.toString(values));
 		}
 
 		public BitSet read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			long[] values = input.readLongs(length);
 			BitSet set = BitSet.valueOf(values);
-			System.out.println("read  " + Arrays.toString(values));
 			return set;
 		}
 
