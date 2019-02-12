@@ -133,8 +133,8 @@ public class ByteBufferInput extends Input {
 		byteBuffer.position(0);
 	}
 
-	/** Fills the buffer with more bytes. The default implementation reads from the {@link #getInputStream() InputStream}, if set.
-	 * Can be overridden to fill the bytes from another source. */
+	/** Fills the buffer with more bytes. May leave the buffer position changed. The default implementation reads from the
+	 * {@link #getInputStream() InputStream}, if set. Can be overridden to fill the bytes from another source. */
 	protected int fill (ByteBuffer buffer, int offset, int count) throws KryoException {
 		if (inputStream == null) return -1;
 		try {
@@ -151,7 +151,6 @@ public class ByteBufferInput extends Input {
 				count -= read;
 				total += read;
 			}
-			buffer.position(offset);
 			return total;
 		} catch (IOException ex) {
 			throw new KryoException(ex);
@@ -164,10 +163,12 @@ public class ByteBufferInput extends Input {
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
 
 		int count;
+
 		// Try to fill the buffer.
 		if (remaining > 0) {
 			count = fill(byteBuffer, limit, capacity - limit);
 			if (count == -1) throw new KryoException("Buffer underflow.");
+			byteBuffer.position(position);
 			remaining += count;
 			if (remaining >= required) {
 				limit += count;
@@ -175,12 +176,12 @@ public class ByteBufferInput extends Input {
 			}
 		}
 
-		// Compact. Position after compaction can be non-zero.
-		byteBuffer.position(position);
-		byteBuffer.compact();
+		// Compact.
+		byteBuffer.compact(); // Buffer's position is at end of compacted bytes.
 		total += position;
 		position = 0;
 
+		// Try to fill again.
 		while (true) {
 			count = fill(byteBuffer, remaining, capacity - remaining);
 			if (count == -1) {
@@ -206,6 +207,7 @@ public class ByteBufferInput extends Input {
 
 		// Try to fill the buffer.
 		int count = fill(byteBuffer, limit, capacity - limit);
+		byteBuffer.position(position);
 		if (count == -1) return remaining == 0 ? -1 : Math.min(remaining, optional);
 		remaining += count;
 		if (remaining >= optional) {
@@ -214,10 +216,11 @@ public class ByteBufferInput extends Input {
 		}
 
 		// Compact.
-		byteBuffer.compact();
+		byteBuffer.compact(); // Buffer's position is at end of compacted bytes.
 		total += position;
 		position = 0;
 
+		// Try to fill again.
 		while (true) {
 			count = fill(byteBuffer, remaining, capacity - remaining);
 			if (count == -1) break;
