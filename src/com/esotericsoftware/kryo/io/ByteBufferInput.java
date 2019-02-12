@@ -225,7 +225,7 @@ public class ByteBufferInput extends Input {
 			if (remaining >= optional) break; // Enough has been read.
 		}
 		limit = remaining;
-		byteBuffer.position(position);
+		byteBuffer.position(0);
 		return remaining == 0 ? -1 : Math.min(remaining, optional);
 	}
 
