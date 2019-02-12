@@ -82,9 +82,9 @@ abstract public class Pool<T> {
 	 * been garbage collected is discarded to make room. */
 	public void free (T object) {
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
-		if (!freeObjects.add(object) && freeObjects instanceof SoftReferenceQueue) {
+		if (!freeObjects.offer(object) && freeObjects instanceof SoftReferenceQueue) {
 			((SoftReferenceQueue)freeObjects).cleanOne();
-			freeObjects.add(object);
+			freeObjects.offer(object);
 		}
 		peak = Math.max(peak, freeObjects.size());
 		reset(object);
@@ -153,7 +153,7 @@ abstract public class Pool<T> {
 			}
 		}
 
-		public boolean add (T e) {
+		public boolean offer (T e) {
 			return delegate.add(new SoftReference(e));
 		}
 
@@ -179,7 +179,7 @@ abstract public class Pool<T> {
 				if (((SoftReference)iter.next()).get() == null) iter.remove();
 		}
 
-		public boolean offer (T e) {
+		public boolean add (T e) {
 			return false;
 		}
 
