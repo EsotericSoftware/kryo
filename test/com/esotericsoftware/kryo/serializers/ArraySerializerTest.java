@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.Assert.*;
+
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
 
@@ -72,5 +74,25 @@ public class ArraySerializerTest extends KryoTestCase {
 		array[2] = new Float[] {2.0f, 3.0f};
 		array[3] = new Float[] {3.0f};
 		roundTrip(31, array);
+	}
+
+	@Test
+	public void testRecursiveArray () {
+		Object[] array = new Object[1];
+		array[0] = array;
+		kryo.register(Object[].class);
+		Object[] copy = kryo.copy(array);
+		assertTrue(copy == copy[0]);
+	}
+
+	@Test
+	public void testStringArray () {
+		String moo = "moooooooooooooooooo";
+		String[] array = {moo, "dog", moo};
+		kryo.register(String[].class);
+		roundTrip(43, array);
+
+		kryo.setReferences(true);
+		roundTrip(28, array);
 	}
 }

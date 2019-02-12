@@ -280,9 +280,8 @@ public class DefaultArraySerializers {
 			String[] array = new String[--length];
 			if (kryo.getReferences() && kryo.getReferenceResolver().useReferences(String.class)) {
 				Serializer serializer = kryo.getSerializer(String.class);
-				for (int i = 0; i < length; i++) {
+				for (int i = 0; i < length; i++)
 					array[i] = kryo.readObjectOrNull(input, String.class, serializer);
-				}
 			} else {
 				for (int i = 0; i < length; i++)
 					array[i] = input.readString();
@@ -362,6 +361,7 @@ public class DefaultArraySerializers {
 		public Object[] copy (Kryo kryo, Object[] original) {
 			int n = original.length;
 			Object[] copy = (Object[])Array.newInstance(original.getClass().getComponentType(), n);
+			kryo.reference(copy);
 			for (int i = 0; i < n; i++)
 				copy[i] = kryo.copy(original[i]);
 			return copy;
