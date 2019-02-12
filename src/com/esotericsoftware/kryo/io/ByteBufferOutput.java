@@ -644,7 +644,8 @@ public class ByteBufferOutput extends Output {
 	// Primitive arrays:
 
 	public void writeInts (int[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2 && require(count << 2)) {
+		if (capacity >= count << 2) {
+			require(count << 2);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];
@@ -661,7 +662,8 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeLongs (long[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3 && require(count << 3)) {
+		if (capacity >= count << 3) {
+			require(count << 3);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
 				long value = array[offset];
@@ -682,7 +684,8 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeFloats (float[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2 && require(count << 2)) {
+		if (capacity >= count << 2) {
+			require(count << 2);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
 				int value = Float.floatToIntBits(array[offset]);
@@ -699,7 +702,8 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3 && require(count << 3)) {
+		if (capacity >= count << 3) {
+			require(count << 3);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
 				long value = Double.doubleToLongBits(array[offset]);
@@ -720,7 +724,8 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeShorts (short[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1 && require(count << 1)) {
+		if (capacity >= count << 1) {
+			require(count << 1);
 			byte[] buffer = this.buffer;
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];
@@ -735,7 +740,8 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeChars (char[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1 && require(count << 1)) {
+		if (capacity >= count << 1) {
+			require(count << 1);
 			byte[] buffer = this.buffer;
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];
@@ -750,7 +756,8 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeBooleans (boolean[] array, int offset, int count) throws KryoException {
-		if (capacity >= count && require(count)) {
+		if (capacity >= count) {
+			require(count);
 			byte[] buffer = this.buffer;
 			for (int n = offset + count; offset < n; offset++)
 				byteBuffer.put(array[offset] ? (byte)1 : 0);

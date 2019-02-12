@@ -756,7 +756,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes an int array in bulk. This may be more efficient than writing them individually. */
 	public void writeInts (int[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2 && require(count << 2)) {
+		if (capacity >= count << 2) {
+			require(count << 2);
 			byte[] buffer = this.buffer;
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 4) {
@@ -785,7 +786,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes a long array in bulk. This may be more efficient than writing them individually. */
 	public void writeLongs (long[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3 && require(count << 3)) {
+		if (capacity >= count << 3) {
+			require(count << 3);
 			byte[] buffer = this.buffer;
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 8) {
@@ -818,7 +820,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes a float array in bulk. This may be more efficient than writing them individually. */
 	public void writeFloats (float[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2 && require(count << 2)) {
+		if (capacity >= count << 2) {
+			require(count << 2);
 			byte[] buffer = this.buffer;
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 4) {
@@ -837,7 +840,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes a double array in bulk. This may be more efficient than writing them individually. */
 	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3 && require(count << 3)) {
+		if (capacity >= count << 3) {
+			require(count << 3);
 			byte[] buffer = this.buffer;
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 8) {
@@ -860,7 +864,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes a short array in bulk. This may be more efficient than writing them individually. */
 	public void writeShorts (short[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1 && require(count << 1)) {
+		if (capacity >= count << 1) {
+			require(count << 1);
 			byte[] buffer = this.buffer;
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 2) {
@@ -877,7 +882,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes a char array in bulk. This may be more efficient than writing them individually. */
 	public void writeChars (char[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1 && require(count << 1)) {
+		if (capacity >= count << 1) {
+			require(count << 1);
 			byte[] buffer = this.buffer;
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p += 2) {
@@ -894,7 +900,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes a boolean array in bulk. This may be more efficient than writing them individually. */
 	public void writeBooleans (boolean[] array, int offset, int count) throws KryoException {
-		if (capacity >= count && require(count)) {
+		if (capacity >= count) {
+			require(count);
 			byte[] buffer = this.buffer;
 			int p = position;
 			for (int n = offset + count; offset < n; offset++, p++)
