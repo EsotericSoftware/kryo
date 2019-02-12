@@ -151,6 +151,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	@Test
 	public void testString () {
 		kryo = new Kryo();
+		kryo.setReferences(true);
 		roundTrip(6, "meow");
 		roundTrip(70, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 
@@ -174,6 +175,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	public void testNull () {
 		kryo = new Kryo();
 		kryo.register(ArrayList.class);
+		kryo.setReferences(true);
 		roundTrip(1, null);
 		testNull(Long.class);
 		testNull(ArrayList.class);
@@ -270,6 +272,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
 		roundTrip(101, EnumSet.of(TestEnum.a, TestEnum.c));
 	}
 
@@ -423,6 +426,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
 
 		for (String cs : css) {
 			Charset charset = Charset.forName(cs);

@@ -83,7 +83,6 @@ public class GenericsTest extends KryoTestCase {
 	// https://github.com/EsotericSoftware/kryo/issues/611
 	@Test
 	public void testSuperGenerics () {
-		kryo.setReferences(false);
 		kryo.register(SuperGenerics.Root.class);
 		kryo.register(SuperGenerics.Value.class);
 

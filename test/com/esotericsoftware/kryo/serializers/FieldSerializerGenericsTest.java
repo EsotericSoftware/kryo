@@ -47,6 +47,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		foos.add(genFoo1);
 		new FooContainer(foos);
 		Kryo kryo = new Kryo();
+		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -63,6 +64,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		bars.add(genBar1);
 		new GenericBarContainer<GenericBar>(new BarContainer(bars));
 		Kryo kryo = new Kryo();
+		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 

@@ -155,6 +155,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		kryo.register(long[].class);
 		kryo.register(double[].class);
 		kryo.register(SampleObject.class);
+		kryo.setReferences(true);
 
 		long average = 0;
 		long best = Long.MAX_VALUE;

@@ -57,6 +57,7 @@ public class ReferenceTest extends KryoTestCase {
 
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
 		kryo.addDefaultSerializer(Stuff.class, new MapSerializer<Stuff>() {
 			protected void writeHeader (Kryo kryo, Output output, Stuff map) {
 				kryo.writeObjectOrNull(output, map.ordering, Ordering.class);

@@ -25,7 +25,6 @@ public class RegistrationTest {
 	@Test
 	public void testReplaceRegistration () throws IOException {
 		Kryo kryo = new Kryo();
-		kryo.setRegistrationRequired(true);
 		kryo.register(double[].class, 7); // Replace long with double[].
 		kryo.register(Some.class);
 		kryo.register(long.class, new LongSerializer());

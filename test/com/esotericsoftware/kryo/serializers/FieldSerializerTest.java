@@ -183,6 +183,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
 		roundTrip(152, test);
 
 		C c = new C();
@@ -210,6 +211,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
 		roundTrip(75, c);
 		C c2 = (C)object2;
 		assertSame(c2.d, c2.d.e.f.d);
@@ -226,6 +228,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo.register(D.class);
 		kryo.register(E.class);
 		kryo.register(F.class);
+		kryo.setReferences(true);
 		roundTrip(15, c);
 		c2 = (C)object2;
 		assertSame(c2.d, c2.d.e.f.d);
@@ -245,7 +248,6 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(10, a);
 
 		kryo = new Kryo();
-		kryo.setReferences(false);
 		kryo.register(B.class);
 		kryo.register(A.class);
 		roundTrip(10, a);
@@ -263,7 +265,6 @@ public class FieldSerializerTest extends KryoTestCase {
 		c.d.e.f = new F();
 
 		Kryo kryoWithoutF = new Kryo();
-		kryoWithoutF.setReferences(false);
 		kryoWithoutF.register(A.class);
 		kryoWithoutF.register(B.class);
 		kryoWithoutF.register(C.class);
@@ -352,6 +353,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	public void testDefaultSerializerAnnotation () {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
 		roundTrip(92, new HasDefaultSerializerAnnotation(123));
 	}
 
@@ -359,9 +361,11 @@ public class FieldSerializerTest extends KryoTestCase {
 	public void testOptionalAnnotation () {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
 		roundTrip(82, new HasOptionalAnnotation());
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
 		kryo.getContext().put("smurf", null);
 		roundTrip(83, new HasOptionalAnnotation());
 	}
@@ -371,6 +375,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		kryo = new Kryo();
 		kryo.register(DefaultTypes.class);
 		kryo.register(byte[].class);
+		kryo.setReferences(true);
 		DefaultTypes test = new DefaultTypes();
 		test.child = test;
 		roundTrip(35, test);

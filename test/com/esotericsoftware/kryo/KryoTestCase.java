@@ -70,7 +70,6 @@ abstract public class KryoTestCase {
 		if (debug && WARN) warn("*** DEBUG TEST ***");
 
 		kryo = new Kryo();
-		kryo.setReferences(false);
 	}
 
 	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
