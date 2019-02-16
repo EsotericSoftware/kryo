@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
 import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
 
 import java.io.Serializable;
@@ -120,6 +121,13 @@ public class GenericsTest extends KryoTestCase {
 		kryo.register(HashSet.class);
 
 		roundTrip(18, hasMap);
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/622
+	@Test
+	public void testNotPassingToSuper () {
+		kryo.register(DontPassToSuper.class);
+		kryo.copy(new DontPassToSuper());
 	}
 
 	private interface Holder<V> {
@@ -288,6 +296,15 @@ public class GenericsTest extends KryoTestCase {
 			public String toString () {
 				return field1 + ":" + field2;
 			}
+		}
+	}
+
+	static public class A<X> {
+		static public class B<Y> extends A {
+		}
+
+		static public class DontPassToSuper<Z> extends B {
+			B<Z> b;
 		}
 	}
 }

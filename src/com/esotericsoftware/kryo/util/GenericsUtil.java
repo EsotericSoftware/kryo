@@ -77,35 +77,33 @@ public class GenericsUtil {
 	 * @return A Class if the type variable was resolved, else a TypeVariable to continue searching or if the type could not be
 	 *         resolved. */
 	static private Type resolveTypeVariable (Class fromClass, Class current, Type type, boolean first) {
+		Type genericSuper = current.getGenericSuperclass();
+		if (!(genericSuper instanceof ParameterizedType)) return type; // No type arguments passed to super class.
+
 		// Search fromClass to current inclusive, using the call stack to traverse the class hierarchy in super class first order.
 		Class superClass = current.getSuperclass();
-		TypeVariable[] params = superClass.getTypeParameters();
-		if (params.length == 0) return type; // The super class has no type parameters.
 		if (superClass != fromClass) {
-			if (superClass == null) return type;
 			Type resolved = resolveTypeVariable(fromClass, superClass, type, false);
 			if (resolved instanceof Class) return (Class)resolved; // Resolved in a super class.
-			type = resolved; // resolveTypeVariable never returns null when reentrant.
+			type = resolved;
 		}
 
+		// Match the type variable name to the super class parameter.
 		String name = type.toString(); // Java 8: getTypeName
+		TypeVariable[] params = superClass.getTypeParameters();
 		for (int i = 0, n = params.length; i < n; i++) {
 			TypeVariable param = params[i];
 			if (param.getName().equals(name)) {
-				// Use the super class type variable index to find the actual class in the sub class declaration.
-				Type genericSuper = current.getGenericSuperclass();
-				if (genericSuper instanceof ParameterizedType) {
-					Type arg = ((ParameterizedType)genericSuper).getActualTypeArguments()[i];
+				// Use the super class' type variable index to find the actual class in the sub class declaration.
+				Type arg = ((ParameterizedType)genericSuper).getActualTypeArguments()[i];
 
-					// Success, the type variable was explicitly declared.
-					if (arg instanceof Class) return (Class)arg;
-					if (arg instanceof ParameterizedType) return resolveType(fromClass, current, arg);
+				// Success, the type variable was explicitly declared.
+				if (arg instanceof Class) return (Class)arg;
+				if (arg instanceof ParameterizedType) return resolveType(fromClass, current, arg);
 
-					if (arg instanceof TypeVariable) {
-						if (first) return type; // Failure, no more sub classes.
-						return arg; // Look for the new type variable in the next sub class.
-					}
-					break;
+				if (arg instanceof TypeVariable) {
+					if (first) return type; // Failure, no more sub classes.
+					return arg; // Look for the new type variable in the next sub class.
 				}
 			}
 		}
