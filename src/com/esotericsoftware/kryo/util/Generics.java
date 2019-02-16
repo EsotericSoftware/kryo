@@ -51,8 +51,6 @@ public class Generics {
 	 * {@link GenericType#getTypeParameters() type parameters} are returned by {@link #nextGenericTypes()} and
 	 * {@link #nextGenericClass()}. */
 	public void pushGenericType (GenericType fieldType) {
-		if (fieldType.arguments == null) return;
-
 		// Ensure genericTypes and depths capacity.
 		int size = genericTypesSize;
 		if (size + 1 == genericTypes.length) {
@@ -92,6 +90,7 @@ public class Generics {
 		if (index > 0) {
 			index--;
 			GenericType genericType = genericTypes[index];
+			if (genericType.arguments == null) return null;
 			// The depth must match to prevent the types being wrong if a serializer doesn't call nextGenericTypes.
 			if (depths[index] == kryo.getDepth() - 1) {
 				pushGenericType(genericType.arguments[genericType.arguments.length - 1]);
