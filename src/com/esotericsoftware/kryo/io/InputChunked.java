@@ -67,33 +67,34 @@ public class InputChunked extends Input {
 	}
 
 	protected int fill (byte[] buffer, int offset, int count) throws KryoException {
-		if (chunkSize == -1) // No current chunk, expect a new chunk.
-			readChunkSize();
-		else if (chunkSize == 0) // End of chunk.
+		if (chunkSize == -1) { // No current chunk, expect a new chunk.
+			if (!readChunkSize()) return -1;
+		} else if (chunkSize == 0) // End of chunk.
 			return -1;
 		int actual = super.fill(buffer, offset, Math.min(chunkSize, count));
 		chunkSize -= actual;
-		if (chunkSize == 0) readChunkSize(); // Read next chunk size.
+		if (chunkSize == 0 && !readChunkSize()) return -1;
 		return actual;
 	}
 
-	private void readChunkSize () {
+	/** @return false if the end of the stream was reached. */
+	private boolean readChunkSize () {
 		try {
 			InputStream inputStream = getInputStream();
 			for (int offset = 0, result = 0; offset < 32; offset += 7) {
 				int b = inputStream.read();
-				if (b == -1) throw new KryoException("Buffer underflow.");
+				if (b == -1) return false;
 				result |= (b & 0x7F) << offset;
 				if ((b & 0x80) == 0) {
 					chunkSize = result;
 					if (TRACE && chunkSize > 0) trace("kryo", "Read chunk: " + chunkSize);
-					return;
+					return true;
 				}
 			}
 		} catch (IOException ex) {
-			throw new KryoException(ex);
+			throw new KryoException("Unable to read chunk size.", ex);
 		}
-		throw new KryoException("Malformed integer.");
+		throw new KryoException("Unable to read chunk size: malformed integer");
 	}
 
 	/** Advances the stream to the next chunk. InputChunked will appear to hit the end of the data until this method is called. */
