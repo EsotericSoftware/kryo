@@ -39,6 +39,7 @@
 	</developers>
 
 	<properties>
+		<kryo.major.version>5</kryo.major.version>
 		<javac.target>1.7</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<test.exclude>**/Java8*Test.java</test.exclude>
@@ -46,6 +47,7 @@
 
 	<modules>
 		<module>pom-main.xml</module>
+		<module>pom-versioned.xml</module>
 		<module>benchmarks</module>
 	</modules>
 
@@ -83,6 +85,12 @@
 							<testExclude>${test.exclude}</testExclude>
 						</testExcludes>
 					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.1.1</version>
 				</plugin>
 
 				<plugin>
