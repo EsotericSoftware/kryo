@@ -115,6 +115,8 @@ import java.util.PriorityQueue;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.Set;
+import java.util.HashSet;
 
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
@@ -1209,7 +1211,9 @@ public class Kryo implements Poolable {
 	}
 
 	private final void registerAllGlobals() {
-		GLOBAL_REGISTER.stream().forEach(this::register);
+		for(Class globalRegistree : GLOBAL_REGISTER) {
+			this.register(globalRegistree);
+		}
 	}
 
 	static final class DefaultSerializerEntry {
