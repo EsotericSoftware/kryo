@@ -21,7 +21,6 @@ package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.util.Pool.Poolable;
-import com.esotericsoftware.kryo.util.Pool;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.IOException;
@@ -266,9 +265,10 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			System.arraycopy(bytes, offset, buffer, position, copyCount);
 			position += copyCount;
 			count -= copyCount;
+			System.out.println(copyCount);
 			if (count == 0) return;
 			offset += copyCount;
-			copyCount = Math.min(capacity, count);
+			copyCount = Math.min(Math.max(capacity, 1), count);
 			require(copyCount);
 		}
 	}
