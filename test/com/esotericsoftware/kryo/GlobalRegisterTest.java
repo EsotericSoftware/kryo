@@ -28,4 +28,9 @@ public class GlobalRegisterTest {
 
         kryo.getRegistration(SomeClass.class);
     }
+
+    @Test
+    public void testUnregisterForMissing() {
+        Kryo.unregisterGlobal(SomeClass.class);
+    }
 }
