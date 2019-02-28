@@ -21,7 +21,7 @@ public class GlobalRegisterTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testGlovalUnregister() {
+    public void testGlobalUnregister() {
         Kryo.unregisterGlobal(SomeClass.class);
 
         Kryo kryo = new Kryo();
