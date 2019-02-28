@@ -132,7 +132,7 @@ public class Kryo implements Poolable {
 	static private final int REF = -1;
 	static private final int NO_REF = -2;
 
-	static private final Set<Class> GLOBAL_REGISTER = new HashSet<>();
+	static private final Set<Class> GLOBAL_REGISTER = Collections.synchronizedSet(new HashSet<Class>());
 
 	private SerializerFactory defaultSerializer = new FieldSerializerFactory();
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(53);
