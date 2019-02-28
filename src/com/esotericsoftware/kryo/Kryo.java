@@ -99,22 +99,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.Currency;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.TimeZone;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
@@ -129,6 +114,8 @@ public class Kryo implements Poolable {
 
 	static private final int REF = -1;
 	static private final int NO_REF = -2;
+
+	static private final Set<Class> GLOBAL_REGISTER = new HashSet<>();
 
 	private SerializerFactory defaultSerializer = new FieldSerializerFactory();
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(53);
@@ -234,6 +221,8 @@ public class Kryo implements Poolable {
 		register(short.class, new ShortSerializer());
 		register(long.class, new LongSerializer());
 		register(double.class, new DoubleSerializer());
+
+		registerAllGlobals();
 	}
 
 	// --- Default serializers ---
@@ -1195,6 +1184,17 @@ public class Kryo implements Poolable {
 	 * {@link FieldSerializer} for an example. */
 	public Generics getGenerics () {
 		return generics;
+	}
+
+	/**
+	 * Registers a class globally to {@link Kryo} which will be registered with each new instance of {@link Kryo}.
+	 * */
+	public static final void registerGlobal(Class clazz) {
+		GLOBAL_REGISTER.add(clazz);
+	}
+
+	private final void registerAllGlobals() {
+		GLOBAL_REGISTER.stream().forEach(this::register);
 	}
 
 	static final class DefaultSerializerEntry {
