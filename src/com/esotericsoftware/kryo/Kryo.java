@@ -1210,6 +1210,13 @@ public class Kryo implements Poolable {
 		GLOBAL_REGISTER.add(clazz);
 	}
 
+	/**
+	 * Unregisters a global class registered using {@link Kryo#registerGlobal}.
+	 * */
+	public static final void unregisterGlobal(Class clazz) {
+		GLOBAL_REGISTER.remove(clazz);
+	}
+
 	private final void registerAllGlobals() {
 		for(Class globalRegistree : GLOBAL_REGISTER) {
 			this.register(globalRegistree);
