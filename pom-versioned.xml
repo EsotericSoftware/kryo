@@ -8,6 +8,7 @@
 		<relativePath>./pom.xml</relativePath>
 	</parent>
 
+	<groupId>com.esotericsoftware.kryo</groupId>
 	<artifactId>kryo${kryo.major.version}</artifactId>
 	<packaging>bundle</packaging>
 
@@ -30,7 +31,7 @@
 				<configuration>
 					<archive>
 						<manifestEntries>
-							<Automatic-Module-Name>com.esotericsoftware.kryo${kryo.major.version}</Automatic-Module-Name>
+							<Automatic-Module-Name>com.esotericsoftware.kryo.kryo${kryo.major.version}</Automatic-Module-Name>
 						</manifestEntries>
 					</archive>
 				</configuration>
@@ -55,23 +56,23 @@
 							<relocations>
 								<relocation>
 									<pattern>com.esotericsoftware.kryo</pattern>
-									<shadedPattern>com.esotericsoftware.kryo${kryo.major.version}</shadedPattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>com.esotericsoftware.minlog</pattern>
-									<shadedPattern>com.esotericsoftware.kryo${kryo.major.version}.minlog</shadedPattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.minlog</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>com.esotericsoftware.reflectasm</pattern>
-									<shadedPattern>com.esotericsoftware.kryo${kryo.major.version}.reflectasm</shadedPattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.reflectasm</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>com.esotericsoftware.asm</pattern>
-									<shadedPattern>com.esotericsoftware.kryo${kryo.major.version}.asm</shadedPattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.asm</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.objenesis</pattern>
-									<shadedPattern>com.esotericsoftware.kryo${kryo.major.version}.objenesis</shadedPattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis</shadedPattern>
 								</relocation>
 							</relocations>
 						</configuration>
@@ -95,7 +96,7 @@
 						*
 						]]>
 						</Import-Package>
-						<Export-Package>com.esotericsoftware.kryo${kryo.major.version}.*</Export-Package>
+						<Export-Package>com.esotericsoftware.kryo.kryo${kryo.major.version}.*</Export-Package>
 					</instructions>
 				</configuration>
 			</plugin>
