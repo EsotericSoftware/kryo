@@ -92,16 +92,30 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Installation
 
+Kryo publishes two kinds of artifacts/jars:
+* the default jar (with the usual library dependencies) which is meant for direct usage in applications (not libraries)
+* a dependency-free, "versioned" jar which should be used by other libraries. Different libraries shall be able to use different major versions of Kryo.
+
 Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](https://search.maven.org/#search|gav|1|g%3Acom.esotericsoftware%20a%3Akryo). The latest snapshots of Kryo, including snapshot builds of master, are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/).
 
 ### With Maven
 
-To use the latest Kryo release, use this dependency entry in your `pom.xml`:
+To use the latest Kryo release in your application, use this dependency entry in your `pom.xml`:
 
 ```xml
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
+   <version>5.0.0-RC2</version>
+</dependency>
+```
+
+To use the latest Kryo release in a library you want to publish, use this dependency entry in your `pom.xml`:
+
+```xml
+<dependency>
+   <groupId>com.esotericsoftware.kryo</groupId>
+   <artifactId>kryo5</artifactId>
    <version>5.0.0-RC2</version>
 </dependency>
 ```
@@ -115,9 +129,16 @@ To use the latest Kryo snapshot, use:
    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
 </repository>
 
+<!-- for usage in an application: -->
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
+   <version>5.0.0-RC3-SNAPSHOT</version>
+</dependency>
+<!-- for usage in a library that should be published: -->
+<dependency>
+   <groupId>com.esotericsoftware.kryo</groupId>
+   <artifactId>kryo5</artifactId>
    <version>5.0.0-RC3-SNAPSHOT</version>
 </dependency>
 ```
