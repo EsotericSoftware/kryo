@@ -82,12 +82,14 @@ abstract public class Pool<T> {
 	 * been garbage collected is discarded to make room. */
 	public void free (T object) {
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
+
+		reset(object);
+
 		if (!freeObjects.offer(object) && freeObjects instanceof SoftReferenceQueue) {
 			((SoftReferenceQueue)freeObjects).cleanOne();
 			freeObjects.offer(object);
 		}
 		peak = Math.max(peak, freeObjects.size());
-		reset(object);
 	}
 
 	/** Called when an object is freed to clear the state of the object for possible later reuse. The default implementation calls
