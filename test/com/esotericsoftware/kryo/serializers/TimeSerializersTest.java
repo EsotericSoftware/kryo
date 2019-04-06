@@ -40,9 +40,8 @@ import java.time.ZonedDateTime;
 import org.junit.Before;
 import org.junit.Test;
 
-/** Test for java 8 java.time.* serializers. Excluded from surefire tests via the "until-java8" profile in pom.xml which excludes
- * "Java8*Tests". */
-public class Java8TimeSerializersTest extends KryoTestCase {
+/** Test for java 8 java.time.* serializers. */
+public class TimeSerializersTest extends KryoTestCase {
 
 	@Before
 	public void setUp () throws Exception {

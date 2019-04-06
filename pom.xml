@@ -39,9 +39,8 @@
 	</developers>
 
 	<properties>
-		<javac.target>1.7</javac.target>
+		<javac.target>1.8</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<test.exclude>**/Java8*Test.java</test.exclude>
 	</properties>
 
 	<modules>
@@ -79,9 +78,6 @@
 						<source>${javac.target}</source>
 						<target>${javac.target}</target>
 						<encoding>utf-8</encoding>
-						<testExcludes>
-							<testExclude>${test.exclude}</testExclude>
-						</testExcludes>
 					</configuration>
 				</plugin>
 
@@ -156,42 +152,6 @@
 			</build>
 		</profile>
 
-		<profile>
-			<id>until-java8</id>
-			<activation>
-				<!-- Use exclusive 1.8 range instead of inclusive 1.7, because an upper bound ",1.7]" is likely not to include most releases of 1.7,
-				   since they will have an additional "patch" release such as _05 that is not taken into consideration in the above range.
-				   See also: http://maven.apache.org/guides/introduction/introduction-to-profiles.html#Details_on_profile_activation -->
-				<jdk>[1.5,1.8)</jdk>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<version>2.22.0</version>
-						<configuration>
-							<excludes>
-								<exclude>**/Java8*Test.java</exclude>
-							</excludes>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-
-		<profile>
-			<id>java8</id>
-			<!-- To disable this profile run mvn with '-P !java8' (maybe escape the exclamation mark). -->
-			<activation><jdk>[1.8,)</jdk></activation>
-			<!-- Use properties to change compiler configuration because overriding build/plugin config just did not work. -->
-			<properties>
-				<!-- Setting an empty values does not override/set the property. -->
-				<test.exclude>someValueWhichDoesNotExist</test.exclude>
-				<maven.compiler.testSource>1.8</maven.compiler.testSource>
-				<maven.compiler.testTarget>1.8</maven.compiler.testTarget>
-			</properties>
-		</profile>
 	</profiles>
 
 	<repositories>
