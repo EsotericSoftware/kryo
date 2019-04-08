@@ -84,7 +84,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
-[5.0.0-RC2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC2) second release candidate with improvements over RC1 based on feedback. See [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5).
+[5.0.0-RC3](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC3) third release candidate with improvements over RC2 based on feedback. See [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5) for migration from kryo 4.x.
 
 [5.0.0-RC1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC1) fixes many issues and makes many long awaited improvements.
 
@@ -102,7 +102,7 @@ To use the latest Kryo release, use this dependency entry in your `pom.xml`:
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.0.0-RC2</version>
+   <version>5.0.0-RC3</version>
 </dependency>
 ```
 
@@ -118,7 +118,7 @@ To use the latest Kryo snapshot, use:
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.0.0-RC3-SNAPSHOT</version>
+   <version>5.0.0-RC4-SNAPSHOT</version>
 </dependency>
 ```
 
