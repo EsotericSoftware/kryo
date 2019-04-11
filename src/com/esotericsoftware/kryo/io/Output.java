@@ -265,7 +265,6 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			System.arraycopy(bytes, offset, buffer, position, copyCount);
 			position += copyCount;
 			count -= copyCount;
-			System.out.println(copyCount);
 			if (count == 0) return;
 			offset += copyCount;
 			copyCount = Math.min(Math.max(capacity, 1), count);
