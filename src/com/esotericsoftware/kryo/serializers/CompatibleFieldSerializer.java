@@ -88,6 +88,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				Class valueClass = null;
 				try {
 					if (object != null) {
+						// This breaks primitives; it boxes them. As such we need to
+						// specifically handle the primitive output to avoid cache
+						// corruption.
 						Object value = cachedField.field.get(object);
 						if (value != null) valueClass = value.getClass();
 					}
@@ -98,8 +101,13 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					if (chunked) outputChunked.endChunk();
 					continue;
 				}
+
 				cachedField.setCanBeNull(false);
-				cachedField.setValueClass(valueClass);
+				if (cachedField.getValueClass() == null || !cachedField.getValueClass().isPrimitive()) {
+					// This should be safe to do now that we've confirmed it isn't a
+					// primitive type.
+					cachedField.setValueClass(valueClass);
+				}
 			}
 
 			cachedField.write(fieldOutput, object);
@@ -157,6 +165,19 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					if (chunked) inputChunked.nextChunk();
 					continue;
 				}
+
+				// This avoids the JVM SIGSEGV crash by ensuring we don't don't
+				// point something like an int64_t at a char*.
+				// Issue #663; reported by HiwayChe; patched by isaki
+				final Class cachedValueClass = cachedField.getValueClass();
+				if (cachedValueClass != null && !cachedValueClass.isAssignableFrom(valueClass)) {
+					final String error = className(valueClass) + " found in data where " + className(cachedValueClass) + " found in bytecode";
+					if (!chunked) throw new KryoException(error);
+					if (DEBUG) debug("kryo", error);
+					inputChunked.nextChunk();
+					continue;
+				}
+
 				cachedField.setCanBeNull(false);
 				cachedField.setValueClass(valueClass);
 			} else if (cachedField == null) {
