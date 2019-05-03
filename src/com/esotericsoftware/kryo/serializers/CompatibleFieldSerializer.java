@@ -158,6 +158,17 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					if (chunked) inputChunked.nextChunk();
 					continue;
 				}
+
+				// Ensure the type in the data is compatible with the field type.
+				if (cachedField.valueClass != null && !cachedField.valueClass.isAssignableFrom(valueClass)) {
+					String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
+						+ className(cachedField.valueClass) + " (" + getType().getName() + "#" + cachedField + ")";
+					if (!chunked) throw new KryoException(message);
+					if (DEBUG) debug("kryo", message);
+					inputChunked.nextChunk();
+					continue;
+				}
+
 				cachedField.setCanBeNull(false);
 				cachedField.setValueClass(valueClass);
 			} else if (cachedField == null) {
