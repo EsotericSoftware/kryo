@@ -133,9 +133,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				try {
 					registration = kryo.readClass(fieldInput);
 				} catch (KryoException ex) {
-					if (!chunked)
-						throw new KryoException("Unable to read unknown data (unknown type). (" + getType().getName() + ")", ex);
-					if (DEBUG) debug("kryo", "Unable to read unknown data (unknown type).", ex);
+					String message = "Unable to read unknown data (unknown type). (" + getType().getName() + "#" + cachedField + ")";
+					if (!chunked) throw new KryoException(message, ex);
+					if (DEBUG) debug("kryo", message, ex);
 					inputChunked.nextChunk();
 					continue;
 				}
@@ -150,9 +150,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					try {
 						kryo.readObject(fieldInput, valueClass);
 					} catch (KryoException ex) {
-						if (!chunked) throw new KryoException(
-							"Unable to read unknown data, type: " + className(valueClass) + " (" + getType().getName() + ")", ex);
-						if (DEBUG) debug("kryo", "Unable to read unknown data, type: " + className(valueClass), ex);
+						String message = "Unable to read unknown data, type: " + className(valueClass) + " (" + getType().getName()
+							+ "#" + cachedField + ")";
+						if (!chunked) throw new KryoException(message, ex);
+						if (DEBUG) debug("kryo", message, ex);
 					}
 					if (chunked) inputChunked.nextChunk();
 					continue;

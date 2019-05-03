@@ -82,9 +82,7 @@ abstract public class Pool<T> {
 	 * been garbage collected is discarded to make room. */
 	public void free (T object) {
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
-
 		reset(object);
-
 		if (!freeObjects.offer(object) && freeObjects instanceof SoftReferenceQueue) {
 			((SoftReferenceQueue)freeObjects).cleanOne();
 			freeObjects.offer(object);

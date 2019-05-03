@@ -75,7 +75,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 				fieldVersion[i] = 0;
 			}
 		}
-		if (DEBUG) debug("Version for type " + getType().getName() + " is " + typeVersion);
+		if (DEBUG) debug("Version for type " + getType().getName() + ": " + typeVersion);
 	}
 
 	public void removeField (String fieldName) {

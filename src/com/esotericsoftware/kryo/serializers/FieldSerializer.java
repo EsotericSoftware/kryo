@@ -247,6 +247,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			this.valueClass = valueClass;
 		}
 
+		/** @return May be null. */
 		public Class getValueClass () {
 			return valueClass;
 		}
@@ -263,6 +264,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			this.serializer = serializer;
 		}
 
+		/** @return May be null. */
 		public Serializer getSerializer () {
 			return this.serializer;
 		}
