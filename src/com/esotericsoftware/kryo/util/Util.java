@@ -63,8 +63,7 @@ public class Util {
 		}
 	}
 
-	/** Returns the primitive wrapper class for a primitive class.
-	 * @param type Must be a primitive class. */
+	/** Returns the primitive wrapper class for a primitive class, or the specified class if it is not primitive. */
 	static public Class getWrapperClass (Class type) {
 		if (type == int.class) return Integer.class;
 		if (type == float.class) return Float.class;
@@ -74,7 +73,7 @@ public class Util {
 		if (type == char.class) return Character.class;
 		if (type == double.class) return Double.class;
 		if (type == short.class) return Short.class;
-		return Void.class;
+		return type;
 	}
 
 	/** Returns the primitive class for a primitive wrapper class. Otherwise returns the type parameter.

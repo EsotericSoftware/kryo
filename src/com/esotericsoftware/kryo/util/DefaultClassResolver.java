@@ -68,7 +68,8 @@ public class DefaultClassResolver implements ClassResolver {
 				+ registration.getSerializer().getClass().getName() + ")");
 		}
 		classToRegistration.put(registration.getType(), registration);
-		if (registration.getType().isPrimitive()) classToRegistration.put(getWrapperClass(registration.getType()), registration);
+		Class wrapperClass = getWrapperClass(registration.getType());
+		if (wrapperClass != registration.getType()) classToRegistration.put(wrapperClass, registration);
 		return registration;
 	}
 
@@ -78,7 +79,8 @@ public class DefaultClassResolver implements ClassResolver {
 			classToRegistration.remove(registration.getType());
 			memoizedClassId = -1;
 			memoizedClass = null;
-			if (registration.getType().isPrimitive()) classToRegistration.remove(getWrapperClass(registration.getType()));
+			Class wrapperClass = getWrapperClass(registration.getType());
+			if (wrapperClass != registration.getType()) classToRegistration.remove(wrapperClass);
 		}
 		return registration;
 	}
