@@ -284,17 +284,17 @@ public class DefaultSerializers {
 			setAcceptsNull(true);
 		}
 
-		public void write (Kryo kryo, Output output, Class object) {
-			kryo.writeClass(output, object);
-			output.writeByte(object != null && object.isPrimitive() ? 1 : 0);
+		public void write (Kryo kryo, Output output, Class type) {
+			kryo.writeClass(output, type);
+			if (type != null && (type.isPrimitive() || isWrapperClass(type))) output.writeBoolean(type.isPrimitive());
 		}
 
-		public Class read (Kryo kryo, Input input, Class<? extends Class> type) {
+		public Class read (Kryo kryo, Input input, Class<? extends Class> ignored) {
 			Registration registration = kryo.readClass(input);
-			int isPrimitive = input.read();
-			Class typ = registration != null ? registration.getType() : null;
-			if (typ == null || !typ.isPrimitive()) return typ;
-			return isPrimitive == 1 ? typ : getWrapperClass(typ);
+			if (registration == null) return null;
+			Class type = registration.getType();
+			if (!type.isPrimitive() || input.readBoolean()) return type;
+			return getWrapperClass(type);
 		}
 	}
 
