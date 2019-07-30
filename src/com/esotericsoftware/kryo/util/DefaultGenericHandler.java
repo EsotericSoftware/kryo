@@ -49,8 +49,6 @@ public class DefaultGenericHandler implements GenericHandler {
 
 	@Override
 	public void pushGenericType (GenericType fieldType) {
-		if (!kryo.isOptimizeGenerics())
-			return;
 		// Ensure genericTypes and depths capacity.
 		int size = genericTypesSize;
 		if (size + 1 == genericTypes.length) {
@@ -69,8 +67,6 @@ public class DefaultGenericHandler implements GenericHandler {
 
 	@Override
 	public void popGenericType () {
-		if (!kryo.isOptimizeGenerics())
-			return;
 		int size = genericTypesSize;
 		if (size == 0) return;
 		size--;
@@ -97,8 +93,6 @@ public class DefaultGenericHandler implements GenericHandler {
 
 	@Override
 	public Class nextGenericClass () {
-		if (!kryo.isOptimizeGenerics())
-			return null;
 		GenericType[] arguments = nextGenericTypes();
 		if (arguments == null) return null;
 		return arguments[0].resolve(this);
@@ -106,8 +100,6 @@ public class DefaultGenericHandler implements GenericHandler {
 
 	@Override
 	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args) {
-		if (!kryo.isOptimizeGenerics())
-			return 0;
 		int startSize = this.argumentsSize;
 
 		// Ensure arguments capacity.
