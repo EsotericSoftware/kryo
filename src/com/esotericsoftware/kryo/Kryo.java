@@ -158,7 +158,6 @@ public class Kryo implements Poolable {
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
 	private GenericHandler generics = new DefaultGenericHandler(this);
-	private boolean optimizeGenerics = true;
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and references disabled. */
 	public Kryo () {
@@ -1212,13 +1211,5 @@ public class Kryo implements Poolable {
 			this.type = type;
 			this.serializerFactory = serializerFactory;
 		}
-	}
-
-	public boolean isOptimizeGenerics () {
-		return optimizeGenerics;
-	}
-
-	public void setOptimizeGenerics (boolean value) {
-		optimizeGenerics = value;
 	}
 }
