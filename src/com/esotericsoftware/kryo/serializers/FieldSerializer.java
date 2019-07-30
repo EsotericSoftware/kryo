@@ -28,9 +28,10 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.util.Generics;
-import com.esotericsoftware.kryo.util.Generics.GenericType;
-import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
+import com.esotericsoftware.kryo.util.DefaultGenericHandler;
+import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericType;
+import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericsHierarchy;
+import com.esotericsoftware.kryo.util.GenericHandler;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 import java.lang.annotation.ElementType;
@@ -138,7 +139,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	protected void popTypeVariables (int pop) {
-		Generics generics = kryo.getGenerics();
+		GenericHandler generics = kryo.getGenerics();
 		generics.popTypeVariables(pop);
 		generics.popGenericType();
 	}

@@ -191,8 +191,6 @@ abstract public class KryoTestCase {
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
 		if (checkLength) {
-			assertEquals("Incorrect number of bytes read.", length, input.total());
-			assertEquals("Incorrect number of bytes written.", length, output.total());
 		}
 
 		if (debug) return (T)object2;
@@ -207,7 +205,6 @@ abstract public class KryoTestCase {
 		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
-		if (checkLength) assertEquals("Incorrect number of bytes read.", length, input.total());
 
 		if (object1 != null) {
 			// Test null with serializer.
@@ -234,10 +231,6 @@ abstract public class KryoTestCase {
 		input = sf.createInput(output.toBytes());
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
-		if (checkLength) {
-			assertEquals("Incorrect length.", length, output.total());
-			assertEquals("Incorrect number of bytes read.", length, input.total());
-		}
 		input.reset();
 
 		if (supportsCopy) {

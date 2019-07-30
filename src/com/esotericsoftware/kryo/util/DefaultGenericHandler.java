@@ -33,7 +33,7 @@ import java.util.ArrayList;
 
 /** Stores the generic type arguments and actual classes for type variables in the current location in the object graph.
  * @author Nathan Sweet */
-public class Generics {
+public class DefaultGenericHandler implements GenericHandler {
 	private final Kryo kryo;
 
 	private int genericTypesSize;
@@ -43,14 +43,14 @@ public class Generics {
 	private int argumentsSize;
 	private Type[] arguments = new Type[16];
 
-	public Generics (Kryo kryo) {
+	public DefaultGenericHandler (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
-	/** Sets the type that is currently being serialized. Must be balanced by {@link #popGenericType()}. Between those calls, the
-	 * {@link GenericType#getTypeParameters() type parameters} are returned by {@link #nextGenericTypes()} and
-	 * {@link #nextGenericClass()}. */
+	@Override
 	public void pushGenericType (GenericType fieldType) {
+		if (!kryo.isOptimizeGenerics())
+			return;
 		// Ensure genericTypes and depths capacity.
 		int size = genericTypesSize;
 		if (size + 1 == genericTypes.length) {
@@ -67,9 +67,10 @@ public class Generics {
 		depths[size] = kryo.getDepth();
 	}
 
-	/** Removes the generic types being tracked since the corresponding {@link #pushGenericType(GenericType)}. This is safe to call
-	 * even if {@link #pushGenericType(GenericType)} was not called. */
+	@Override
 	public void popGenericType () {
+		if (!kryo.isOptimizeGenerics())
+			return;
 		int size = genericTypesSize;
 		if (size == 0) return;
 		size--;
@@ -78,13 +79,7 @@ public class Generics {
 		genericTypesSize = size;
 	}
 
-	/** Returns the current type parameters and {@link #pushGenericType(GenericType) pushes} the next level of type parameters for
-	 * subsquent calls. Must be balanced by {@link #popGenericType()} (optional if null is returned). If multiple type parameters
-	 * are returned, the last is used to advance to the next level of type parameters.
-	 * <p>
-	 * {@link #nextGenericClass()} is easier to use when a class has a single type parameter. When a class has multiple type
-	 * parameters, {@link #pushGenericType(GenericType)} must be used for all except the last parameter.
-	 * @return May be null. */
+	@Override
 	public GenericType[] nextGenericTypes () {
 		int index = genericTypesSize;
 		if (index > 0) {
@@ -100,23 +95,19 @@ public class Generics {
 		return null;
 	}
 
-	/** Resolves the first type parameter and returns the class, or null if it could not be resolved or there are no type
-	 * parameters. Uses {@link #nextGenericTypes()}, so must be balanced by {@link #popGenericType()} (optional if null is
-	 * returned).
-	 * <p>
-	 * This method is intended for ease of use when a class has a single type parameter.
-	 * @return May be null. */
+	@Override
 	public Class nextGenericClass () {
+		if (!kryo.isOptimizeGenerics())
+			return null;
 		GenericType[] arguments = nextGenericTypes();
 		if (arguments == null) return null;
 		return arguments[0].resolve(this);
 	}
 
-	/** Stores the types of the type parameters for the specified class hierarchy. Must be balanced by
-	 * {@link #popTypeVariables(int)} if >0 is returned.
-	 * @param args May contain null for type arguments that aren't known.
-	 * @return The number of entries that were pushed. */
+	@Override
 	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args) {
+		if (!kryo.isOptimizeGenerics())
+			return 0;
 		int startSize = this.argumentsSize;
 
 		// Ensure arguments capacity.
@@ -149,8 +140,7 @@ public class Generics {
 		return argumentsSize - startSize;
 	}
 
-	/** Removes the number of entries that were pushed by {@link #pushTypeVariables(GenericsHierarchy, GenericType[])}.
-	 * @param count Must be even. */
+	@Override
 	public void popTypeVariables (int count) {
 		int n = argumentsSize, i = n - count;
 		argumentsSize = i;
@@ -158,8 +148,7 @@ public class Generics {
 			arguments[i++] = null;
 	}
 
-	/** Returns the class for the specified type variable, or null if it is not known.
-	 * @return May be null. */
+	@Override
 	public Class resolveTypeVariable (TypeVariable typeVariable) {
 		for (int i = argumentsSize - 2; i >= 0; i -= 2)
 			if (arguments[i] == typeVariable) return (Class)arguments[i + 1];
@@ -297,7 +286,7 @@ public class Generics {
 
 		/** If this type is a type variable, resolve it to a class.
 		 * @return May be null. */
-		public Class resolve (Generics generics) {
+		public Class resolve (GenericHandler generics) {
 			if (type instanceof Class) return (Class)type;
 			return generics.resolveTypeVariable((TypeVariable)type);
 		}
