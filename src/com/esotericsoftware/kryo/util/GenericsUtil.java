@@ -105,6 +105,8 @@ public class GenericsUtil {
 					if (first) return type; // Failure, no more sub classes.
 					return arg; // Look for the new type variable in the next sub class.
 				}
+
+                if (arg instanceof GenericArrayType) return resolveType(fromClass, current, arg);
 			}
 		}
 
