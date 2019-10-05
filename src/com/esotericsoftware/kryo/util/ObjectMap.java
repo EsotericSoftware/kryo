@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -34,9 +34,9 @@ import java.util.Random;
  * @author Nathan Sweet */
 public class ObjectMap<K, V> {
 	// primes for hash functions 2, 3, and 4
-	private static final int PRIME2 = 0xbe1f14b1;
-	private static final int PRIME3 = 0xb4b82e39;
-	private static final int PRIME4 = 0xced1c241;
+	static private final int PRIME2 = 0xbe1f14b1;
+	static private final int PRIME3 = 0xb4b82e39;
+	static private final int PRIME4 = 0xced1c241;
 
 	static Random random = new Random();
 
@@ -50,7 +50,7 @@ public class ObjectMap<K, V> {
 	private int hashShift, mask, threshold;
 	private int stashCapacity;
 	private int pushIterations;
-	private boolean isBigTable;
+	private boolean bigTable;
 
 	/** Creates a new map with an initial capacity of 32 and a load factor of 0.8. This map will hold 25 items before growing the
 	 * backing table. */
@@ -75,7 +75,7 @@ public class ObjectMap<K, V> {
 		this.loadFactor = loadFactor;
 
 		// big table is when capacity >= 2^16
-		isBigTable = (capacity >>> 16) != 0 ? true : false;
+		bigTable = (capacity >>> 16) != 0 ? true : false;
 
 		threshold = (int)(capacity * loadFactor);
 		mask = capacity - 1;
@@ -99,14 +99,8 @@ public class ObjectMap<K, V> {
 	/** Returns the old value associated with the specified key, or null. */
 	public V put (K key, V value) {
 		if (key == null) throw new IllegalArgumentException("key cannot be null.");
-		return put_internal(key, value);
-	}
-
-	private V put_internal (K key, V value) {
-		// avoid getfield opcode
 		K[] keyTable = this.keyTable;
 		int mask = this.mask;
-		boolean isBigTable = this.isBigTable;
 
 		// Check for existing keys.
 		int hashCode = key.hashCode();
@@ -136,7 +130,7 @@ public class ObjectMap<K, V> {
 
 		int index4 = -1;
 		K key4 = null;
-		if (isBigTable) {
+		if (bigTable) {
 			index4 = hash4(hashCode);
 			key4 = keyTable[index4];
 			if (key.equals(key4)) {
@@ -177,7 +171,7 @@ public class ObjectMap<K, V> {
 			return null;
 		}
 
-		if (isBigTable && key4 == null) {
+		if (bigTable && key4 == null) {
 			keyTable[index4] = key;
 			valueTable[index4] = value;
 			if (size++ >= threshold) resize(capacity << 1);
@@ -188,9 +182,9 @@ public class ObjectMap<K, V> {
 		return null;
 	}
 
-	public void putAll (ObjectMap<K, V> map) {
+	public void putAll (ObjectMap<? extends K, ? extends V> map) {
 		ensureCapacity(map.size);
-		for (Entry<K, V> entry : map.entries())
+		for (Entry<? extends K, ? extends V> entry : map.entries())
 			put(entry.key, entry.value);
 	}
 
@@ -227,7 +221,7 @@ public class ObjectMap<K, V> {
 
 		int index4 = -1;
 		K key4 = null;
-		if (isBigTable) {
+		if (bigTable) {
 			index4 = hash4(hashCode);
 			key4 = keyTable[index4];
 			if (key4 == null) {
@@ -243,17 +237,16 @@ public class ObjectMap<K, V> {
 
 	private void push (K insertKey, V insertValue, int index1, K key1, int index2, K key2, int index3, K key3, int index4,
 		K key4) {
-		// avoid getfield opcode
 		K[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
 		int mask = this.mask;
-		boolean isBigTable = this.isBigTable;
+		boolean bigTable = this.bigTable;
 
 		// Push keys until an empty bucket is found.
 		K evictedKey;
 		V evictedValue;
 		int i = 0, pushIterations = this.pushIterations;
-		int n = isBigTable ? 4 : 3;
+		int n = bigTable ? 4 : 3;
 		do {
 			// Replace the key and value for one of the hashes.
 			switch (random.nextInt(n)) {
@@ -312,7 +305,7 @@ public class ObjectMap<K, V> {
 				return;
 			}
 
-			if (isBigTable) {
+			if (bigTable) {
 				index4 = hash4(hashCode);
 				key4 = keyTable[index4];
 				if (key4 == null) {
@@ -336,7 +329,7 @@ public class ObjectMap<K, V> {
 		if (stashSize == stashCapacity) {
 			// Too many pushes occurred and the stash is full, increase the table size.
 			resize(capacity << 1);
-			put_internal(key, value);
+			putResize(key, value);
 			return;
 		}
 		// Store key in the stash.
@@ -355,7 +348,7 @@ public class ObjectMap<K, V> {
 			if (!key.equals(keyTable[index])) {
 				index = hash3(hashCode);
 				if (!key.equals(keyTable[index])) {
-					if (isBigTable) {
+					if (bigTable) {
 						index = hash4(hashCode);
 						if (!key.equals(keyTable[index])) return getStash(key);
 					} else {
@@ -383,7 +376,7 @@ public class ObjectMap<K, V> {
 			if (!key.equals(keyTable[index])) {
 				index = hash3(hashCode);
 				if (!key.equals(keyTable[index])) {
-					if (isBigTable) {
+					if (bigTable) {
 						index = hash4(hashCode);
 						if (!key.equals(keyTable[index])) return getStash(key, defaultValue);
 					} else {
@@ -402,6 +395,7 @@ public class ObjectMap<K, V> {
 		return defaultValue;
 	}
 
+	/** Returns the value associated with the key, or null. */
 	public V remove (K key) {
 		int hashCode = key.hashCode();
 		int index = hashCode & mask;
@@ -431,7 +425,7 @@ public class ObjectMap<K, V> {
 			return oldValue;
 		}
 
-		if (isBigTable) {
+		if (bigTable) {
 			index = hash4(hashCode);
 			if (key.equals(keyTable[index])) {
 				keyTable[index] = null;
@@ -465,9 +459,17 @@ public class ObjectMap<K, V> {
 		if (index < lastIndex) {
 			keyTable[index] = keyTable[lastIndex];
 			valueTable[index] = valueTable[lastIndex];
+			keyTable[lastIndex] = null;
 			valueTable[lastIndex] = null;
-		} else
+		} else {
+			keyTable[index] = null;
 			valueTable[index] = null;
+		}
+	}
+
+	/** Returns true if the map is empty. */
+	public boolean isEmpty () {
+		return size == 0;
 	}
 
 	/** Reduces the size of the backing arrays to be the specified capacity or less. If the capacity is already less, nothing is
@@ -480,7 +482,8 @@ public class ObjectMap<K, V> {
 		resize(maximumCapacity);
 	}
 
-	/** Clears the map and reduces the size of the backing arrays to be the specified capacity if they are larger. */
+	/** Clears the map and reduces the size of the backing arrays to be the specified capacity, if they are larger. The reduction
+	 * is done by allocating new arrays, though for large arrays this can be faster than clearing the existing array. */
 	public void clear (int maximumCapacity) {
 		if (capacity <= maximumCapacity) {
 			clear();
@@ -490,7 +493,10 @@ public class ObjectMap<K, V> {
 		resize(maximumCapacity);
 	}
 
+	/** Clears the map, leaving the backing arrays at the current capacity. When the capacity is high and the population is low,
+	 * iteration can be unnecessarily slow. {@link #clear(int)} can be used to reduce the capacity. */
 	public void clear () {
+		if (size == 0) return;
 		K[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
 		for (int i = capacity + stashSize; i-- > 0;) {
@@ -529,7 +535,7 @@ public class ObjectMap<K, V> {
 			if (!key.equals(keyTable[index])) {
 				index = hash3(hashCode);
 				if (!key.equals(keyTable[index])) {
-					if (isBigTable) {
+					if (bigTable) {
 						index = hash4(hashCode);
 						if (!key.equals(keyTable[index])) return containsKeyStash(key);
 					} else {
@@ -571,6 +577,7 @@ public class ObjectMap<K, V> {
 	/** Increases the size of the backing array to acommodate the specified number of additional items. Useful before adding many
 	 * items to avoid multiple backing array resizes. */
 	public void ensureCapacity (int additionalCapacity) {
+		if (additionalCapacity < 0) throw new IllegalArgumentException("additionalCapacity must be >= 0: " + additionalCapacity);
 		int sizeNeeded = size + additionalCapacity;
 		if (sizeNeeded >= threshold) resize(nextPowerOfTwo((int)(sizeNeeded / loadFactor)));
 	}
@@ -586,7 +593,7 @@ public class ObjectMap<K, V> {
 		pushIterations = Math.max(Math.min(newSize, 8), (int)Math.sqrt(newSize) / 8);
 
 		// big table is when capacity >= 2^16
-		isBigTable = (capacity >>> 16) != 0 ? true : false;
+		bigTable = (capacity >>> 16) != 0 ? true : false;
 
 		K[] oldKeyTable = keyTable;
 		V[] oldValueTable = valueTable;

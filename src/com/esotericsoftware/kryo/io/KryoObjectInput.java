@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,21 +19,21 @@
 
 package com.esotericsoftware.kryo.io;
 
+import com.esotericsoftware.kryo.Kryo;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 
-import com.esotericsoftware.kryo.Kryo;
-
-/** A kryo implementation of {@link ObjectInput}. Note that this is not an implementation of {@link java.io.ObjectInputStream}
- * which has special handling for serialization in Java such as support for readResolve.
- *
+/** An {@link ObjectInput} which reads data from an {@link Input}.
+ * <p>
+ * Note this is not an implementation of {@link java.io.ObjectInputStream} which has special handling for Java serialization, such
+ * as support for readResolve.
  * @author Robert DiFalco <robert.difalco@gmail.com> */
 public class KryoObjectInput extends KryoDataInput implements ObjectInput {
-
 	private final Kryo kryo;
 
-	public KryoObjectInput (Kryo kryo, Input in) {
-		super(in);
+	public KryoObjectInput (Kryo kryo, Input input) {
+		super(input);
 		this.kryo = kryo;
 	}
 

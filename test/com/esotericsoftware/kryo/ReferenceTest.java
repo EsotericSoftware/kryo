@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,15 +19,19 @@
 
 package com.esotericsoftware.kryo;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.TreeMap;
+
+import org.junit.Test;
 
 public class ReferenceTest extends KryoTestCase {
 	static public class Ordering {
@@ -42,6 +46,7 @@ public class ReferenceTest extends KryoTestCase {
 		}
 	}
 
+	@Test
 	public void testChildObjectBeforeReference () {
 		Ordering ordering = new Ordering();
 		ordering.order = "assbackwards";
@@ -51,13 +56,14 @@ public class ReferenceTest extends KryoTestCase {
 		stuff.put("self", stuff);
 
 		Kryo kryo = new Kryo();
-		kryo.addDefaultSerializer(Stuff.class, new MapSerializer() {
-			public void write (Kryo kryo, Output output, Map object) {
-				kryo.writeObjectOrNull(output, ((Stuff)object).ordering, Ordering.class);
-				super.write(kryo, output, object);
+		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
+		kryo.addDefaultSerializer(Stuff.class, new MapSerializer<Stuff>() {
+			protected void writeHeader (Kryo kryo, Output output, Stuff map) {
+				kryo.writeObjectOrNull(output, map.ordering, Ordering.class);
 			}
 
-			protected Map create (Kryo kryo, Input input, Class<Map> type) {
+			protected Stuff create (Kryo kryo, Input input, Class<? extends Stuff> type, int size) {
 				Ordering ordering = kryo.readObjectOrNull(input, Ordering.class);
 				return new Stuff(ordering);
 			}
@@ -72,10 +78,11 @@ public class ReferenceTest extends KryoTestCase {
 		assertEquals(stuff.ordering.order, stuff2.ordering.order);
 		assertEquals(stuff.get("key"), stuff2.get("key"));
 		assertEquals(stuff.get("something"), stuff2.get("something"));
-		assertTrue(stuff.get("self") == stuff);
-		assertTrue(stuff2.get("self") == stuff2);
+		assertSame(stuff.get("self"), stuff);
+		assertSame(stuff2.get("self"), stuff2);
 	}
 
+	@Test
 	public void testReadingNestedObjectsFirst () {
 		ArrayList list = new ArrayList();
 		list.add("1");
@@ -95,7 +102,7 @@ public class ReferenceTest extends KryoTestCase {
 			kryo.register(subList.getClass(), new SubListSerializer());
 
 		}
-		roundTrip(26, 26, subList);
+		roundTrip(23, subList);
 	}
 
 	static public class SubListSerializer extends Serializer<List> {
@@ -127,7 +134,7 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
-		public List read (Kryo kryo, Input input, Class<List> type) {
+		public List read (Kryo kryo, Input input, Class<? extends List> type) {
 			List list = (List)kryo.readClassAndObject(input);
 			int fromIndex = input.readInt();
 			int count = input.readInt();
@@ -141,7 +148,7 @@ public class ReferenceTest extends KryoTestCase {
 		public ArraySubListSerializer () {
 			try {
 				Class sublistClass = Class.forName("java.util.ArrayList$SubList");
-				parentField = sublistClass.getDeclaredField("parent");
+				parentField = getParentField(sublistClass);
 				offsetField = sublistClass.getDeclaredField("offset");
 				sizeField = sublistClass.getDeclaredField("size");
 				parentField.setAccessible(true);
@@ -149,6 +156,15 @@ public class ReferenceTest extends KryoTestCase {
 				sizeField.setAccessible(true);
 			} catch (Exception ex) {
 				throw new RuntimeException(ex);
+			}
+		}
+
+		private Field getParentField(Class sublistClass) throws NoSuchFieldException {
+			try {
+				// java 9+
+				return sublistClass.getDeclaredField("root");
+			} catch(NoSuchFieldException e) {
+				return sublistClass.getDeclaredField("parent");
 			}
 		}
 
@@ -164,7 +180,7 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
-		public List read (Kryo kryo, Input input, Class<List> type) {
+		public List read (Kryo kryo, Input input, Class<? extends List> type) {
 			List list = (List)kryo.readClassAndObject(input);
 			int offset = input.readInt();
 			int size = input.readInt();

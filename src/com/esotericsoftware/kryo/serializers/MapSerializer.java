@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,28 +19,34 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Generics.GenericType;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-
 /** Serializes objects that implement the {@link Map} interface.
  * <p>
  * With the default constructor, a map requires a 1-3 byte header and an extra 4 bytes is written for each key/value pair.
- * @author Nathan Sweet <misc@n4te.com> */
-public class MapSerializer extends Serializer<Map> {
+ * @author Nathan Sweet */
+public class MapSerializer<T extends Map> extends Serializer<T> {
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
 	private boolean keysCanBeNull = true, valuesCanBeNull = true;
-	private Class keyGenericType, valueGenericType;
+
+	public MapSerializer () {
+		setAcceptsNull(true);
+	}
 
 	/** @param keysCanBeNull False if all keys are not null. This saves 1 byte per key if keyClass is set. True if it is not known
 	 *           (default). */
@@ -48,20 +54,56 @@ public class MapSerializer extends Serializer<Map> {
 		this.keysCanBeNull = keysCanBeNull;
 	}
 
-	/** @param keyClass The concrete class of each key. This saves 1 byte per key. Set to null if the class is not known or varies
-	 *           per key (default).
-	 * @param keySerializer The serializer to use for each key. */
+	/** The concrete class of the keys for this map, or null if it is not known. This saves 1-2 bytes. Only set to a non-null value
+	 * if the keys for this map are known to be of the specified type (or null). */
+	public void setKeyClass (Class keyClass) {
+		this.keyClass = keyClass;
+	}
+
+	public Class getKeyClass () {
+		return keyClass;
+	}
+
+	/** Sets both {@link #setKeyClass(Class)} and {@link #setKeySerializer(Serializer)}. */
 	public void setKeyClass (Class keyClass, Serializer keySerializer) {
 		this.keyClass = keyClass;
 		this.keySerializer = keySerializer;
 	}
 
-	/** @param valueClass The concrete class of each value. This saves 1 byte per value. Set to null if the class is not known or
-	 *           varies per value (default).
-	 * @param valueSerializer The serializer to use for each value. */
+	/** The serializer to be used for the keys in this map, or null to use the serializer registered with {@link Kryo} for the
+	 * type. Default is null. */
+	public void setKeySerializer (Serializer keySerializer) {
+		this.keySerializer = keySerializer;
+	}
+
+	public Serializer getKeySerializer () {
+		return this.keySerializer;
+	}
+
+	/** The concrete class of the values for this map, or null if it is not known. This saves 1-2 bytes. Only set to a non-null
+	 * value if the values for this map are known to be of the specified type (or null). */
+	public void setValueClass (Class valueClass) {
+		this.valueClass = valueClass;
+	}
+
+	public Class getValueClass () {
+		return valueClass;
+	}
+
+	/** Sets both {@link #setValueClass(Class)} and {@link #setValueSerializer(Serializer)}. */
 	public void setValueClass (Class valueClass, Serializer valueSerializer) {
 		this.valueClass = valueClass;
 		this.valueSerializer = valueSerializer;
+	}
+
+	/** The serializer to be used for this field, or null to use the serializer registered with {@link Kryo} for the type. Default
+	 * is null. */
+	public void setValueSerializer (Serializer valueSerializer) {
+		this.valueSerializer = valueSerializer;
+	}
+
+	public Serializer getValueSerializer () {
+		return this.valueSerializer;
 	}
 
 	/** @param valuesCanBeNull True if values are not null. This saves 1 byte per value if keyClass is set. False if it is not
@@ -70,33 +112,39 @@ public class MapSerializer extends Serializer<Map> {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
 
-	public void setGenerics (Kryo kryo, Class[] generics) {
-		keyGenericType = null;
-		valueGenericType = null;
-
-		if (generics != null && generics.length > 0) {
-			if (generics[0] != null && kryo.isFinal(generics[0])) keyGenericType = generics[0];
-			if (generics.length > 1 && generics[1] != null && kryo.isFinal(generics[1])) valueGenericType = generics[1];
+	public void write (Kryo kryo, Output output, T map) {
+		if (map == null) {
+			output.writeByte(0);
+			return;
 		}
-	}
 
-	public void write (Kryo kryo, Output output, Map map) {
-		int length = map.size();
-		output.writeInt(length, true);
-
-		Serializer keySerializer = this.keySerializer;
-		if (keyGenericType != null) {
-			if (keySerializer == null) keySerializer = kryo.getSerializer(keyGenericType);
-			keyGenericType = null;
+		int size = map.size();
+		if (size == 0) {
+			output.writeByte(1);
+			writeHeader(kryo, output, map);
+			return;
 		}
-		Serializer valueSerializer = this.valueSerializer;
-		if (valueGenericType != null) {
-			if (valueSerializer == null) valueSerializer = kryo.getSerializer(valueGenericType);
-			valueGenericType = null;
+
+		output.writeVarInt(size + 1, true);
+		writeHeader(kryo, output, map);
+
+		Serializer keySerializer = this.keySerializer, valueSerializer = this.valueSerializer;
+
+		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
+		if (genericTypes != null) {
+			if (keySerializer == null) {
+				Class keyType = genericTypes[0].resolve(kryo.getGenerics());
+				if (keyType != null && kryo.isFinal(keyType)) keySerializer = kryo.getSerializer(keyType);
+			}
+			if (valueSerializer == null) {
+				Class valueType = genericTypes[1].resolve(kryo.getGenerics());
+				if (valueType != null && kryo.isFinal(valueType)) valueSerializer = kryo.getSerializer(valueType);
+			}
 		}
 
 		for (Iterator iter = map.entrySet().iterator(); iter.hasNext();) {
 			Entry entry = (Entry)iter.next();
+			if (genericTypes != null) kryo.getGenerics().pushGenericType(genericTypes[0]);
 			if (keySerializer != null) {
 				if (keysCanBeNull)
 					kryo.writeObjectOrNull(output, entry.getKey(), keySerializer);
@@ -104,6 +152,7 @@ public class MapSerializer extends Serializer<Map> {
 					kryo.writeObject(output, entry.getKey(), keySerializer);
 			} else
 				kryo.writeClassAndObject(output, entry.getKey());
+			if (genericTypes != null) kryo.getGenerics().popGenericType();
 			if (valueSerializer != null) {
 				if (valuesCanBeNull)
 					kryo.writeObjectOrNull(output, entry.getValue(), valueSerializer);
@@ -112,38 +161,62 @@ public class MapSerializer extends Serializer<Map> {
 			} else
 				kryo.writeClassAndObject(output, entry.getValue());
 		}
+		kryo.getGenerics().popGenericType();
+	}
+
+	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class, int)}. The default implementation does
+	 * nothing. */
+	protected void writeHeader (Kryo kryo, Output output, T map) {
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
-	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
-	protected Map create (Kryo kryo, Input input, Class<Map> type) {
+	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)} with a special case
+	 * for HashMap. */
+	protected T create (Kryo kryo, Input input, Class<? extends T> type, int size) {
+		if (type == HashMap.class) {
+			if (size < 3)
+				size++;
+			else if (size < 1073741824) // Max POT.
+				size = (int)((float)size / 0.75f + 1); // 0.75 is the default load factor.
+			return (T)new HashMap(size);
+		}
 		return kryo.newInstance(type);
 	}
 
-	public Map read (Kryo kryo, Input input, Class<Map> type) {
-		Map map = create(kryo, input, type);
-		int length = input.readInt(true);
+	public T read (Kryo kryo, Input input, Class<? extends T> type) {
+		int length = input.readVarInt(true);
+		if (length == 0) return null;
+		length--;
+
+		T map = create(kryo, input, type, length);
+		kryo.reference(map);
+		if (length == 0) return map;
 
 		Class keyClass = this.keyClass;
 		Class valueClass = this.valueClass;
+		Serializer keySerializer = this.keySerializer, valueSerializer = this.valueSerializer;
 
-		Serializer keySerializer = this.keySerializer;
-		if (keyGenericType != null) {
-			keyClass = keyGenericType;
-			if (keySerializer == null) keySerializer = kryo.getSerializer(keyClass);
-			keyGenericType = null;
+		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
+		if (genericTypes != null) {
+			if (keySerializer == null) {
+				Class genericClass = genericTypes[0].resolve(kryo.getGenerics());
+				if (genericClass != null && kryo.isFinal(genericClass)) {
+					keySerializer = kryo.getSerializer(genericClass);
+					keyClass = genericClass;
+				}
+			}
+			if (valueSerializer == null) {
+				Class genericClass = genericTypes[1].resolve(kryo.getGenerics());
+				if (genericClass != null && kryo.isFinal(genericClass)) {
+					valueSerializer = kryo.getSerializer(genericClass);
+					valueClass = genericClass;
+				}
+			}
 		}
-		Serializer valueSerializer = this.valueSerializer;
-		if (valueGenericType != null) {
-			valueClass = valueGenericType;
-			if (valueSerializer == null) valueSerializer = kryo.getSerializer(valueClass);
-			valueGenericType = null;
-		}
-
-		kryo.reference(map);
 
 		for (int i = 0; i < length; i++) {
 			Object key;
+			if (genericTypes != null) kryo.getGenerics().pushGenericType(genericTypes[0]);
 			if (keySerializer != null) {
 				if (keysCanBeNull)
 					key = kryo.readObjectOrNull(input, keyClass, keySerializer);
@@ -151,6 +224,7 @@ public class MapSerializer extends Serializer<Map> {
 					key = kryo.readObject(input, keyClass, keySerializer);
 			} else
 				key = kryo.readClassAndObject(input);
+			if (genericTypes != null) kryo.getGenerics().popGenericType();
 			Object value;
 			if (valueSerializer != null) {
 				if (valuesCanBeNull)
@@ -161,15 +235,16 @@ public class MapSerializer extends Serializer<Map> {
 				value = kryo.readClassAndObject(input);
 			map.put(key, value);
 		}
+		kryo.getGenerics().popGenericType();
 		return map;
 	}
 
-	protected Map createCopy (Kryo kryo, Map original) {
-		return kryo.newInstance(original.getClass());
+	protected T createCopy (Kryo kryo, T original) {
+		return (T)kryo.newInstance(original.getClass());
 	}
 
-	public Map copy (Kryo kryo, Map original) {
-		Map copy = createCopy(kryo, original);
+	public T copy (Kryo kryo, T original) {
+		T copy = createCopy(kryo, original);
 		for (Iterator iter = original.entrySet().iterator(); iter.hasNext();) {
 			Entry entry = (Entry)iter.next();
 			copy.put(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));
@@ -177,40 +252,37 @@ public class MapSerializer extends Serializer<Map> {
 		return copy;
 	}
 
-	/** Used to annotate fields that are maps with specific Kryo serializers for their keys or values. */
+	/** Annotates a {@link Map} field with {@link MapSerializer} settings for {@link FieldSerializer}. */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
 	public @interface BindMap {
+		/** @see MapSerializer#setKeyClass(Class) */
+		Class keyClass() default Object.class;
 
-		/** Serializer to be used for keys
-		 * 
-		 * @return the class<? extends serializer> used for keys serialization */
-		@SuppressWarnings("rawtypes")
+		/** The key serializer class, which will be created using the {@link #keySerializerFactory()}. Can be omitted if the
+		 * serializer factory knows what type of serializer to create.
+		 * @see MapSerializer#setKeySerializer(Serializer) */
 		Class<? extends Serializer> keySerializer() default Serializer.class;
 
-		/** Serializer to be used for values
-		 * 
-		 * @return the class<? extends serializer> used for values serialization */
-		@SuppressWarnings("rawtypes")
+		/** The factory used to create the key serializer. */
+		Class<? extends SerializerFactory> keySerializerFactory() default SerializerFactory.class;
+
+		/** @see MapSerializer#setValueClass(Class) */
+		Class valueClass() default Object.class;
+
+		/** The value serializer class, which will be created using the {@link #valueSerializerFactory()}. Can be omitted if the
+		 * serializer factory knows what type of serializer to create.
+		 * @see MapSerializer#setValueSerializer(Serializer) */
 		Class<? extends Serializer> valueSerializer() default Serializer.class;
 
-		/** Class used for keys
-		 * 
-		 * @return the class used for keys */
-		Class<?> keyClass() default Object.class;
-
-		/** Class used for values
-		 * 
-		 * @return the class used for values */
-		Class<?> valueClass() default Object.class;
+		/** The factory used to create the value serializer. */
+		Class<? extends SerializerFactory> valueSerializerFactory() default SerializerFactory.class;
 
 		/** Indicates if keys can be null
-		 * 
 		 * @return true, if keys can be null */
 		boolean keysCanBeNull() default true;
 
 		/** Indicates if values can be null
-		 * 
 		 * @return true, if values can be null */
 		boolean valuesCanBeNull() default true;
 	}

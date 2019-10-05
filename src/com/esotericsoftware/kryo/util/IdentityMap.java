@@ -1,18 +1,21 @@
-/*******************************************************************************
- * Copyright 2011 See AUTHORS file.
+/* Copyright (c) 2008-2018, Nathan Sweet
+ * All rights reserved.
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
+ * conditions are met:
  * 
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+ * disclaimer in the documentation and/or other materials provided with the distribution.
+ * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
+ * from this software without specific prior written permission.
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- ******************************************************************************/
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+ * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 package com.esotericsoftware.kryo.util;
 
@@ -24,16 +27,16 @@ import java.util.NoSuchElementException;
  * size is less than 2^16) or 4 hashes (if table size is greater than or equal to 2^16), random walking, and a small stash for
  * problematic keys Null keys are not allowed. Null values are allowed. No allocation is done except when growing the table size.
  * <br>
- * <br>
+ * 4 <br>
  * This map performs very fast get, containsKey, and remove (typically O(1), worst case O(log(n))). Put may be a bit slower,
  * depending on hash collisions. Load factors greater than 0.91 greatly increase the chances the map will have to rehash to the
  * next higher POT size.
  * @author Nathan Sweet */
 public class IdentityMap<K, V> {
 	// primes for hash functions 2, 3, and 4
-	private static final int PRIME2 = 0xbe1f14b1;
-	private static final int PRIME3 = 0xb4b82e39;
-	private static final int PRIME4 = 0xced1c241;
+	static private final int PRIME2 = 0xbe1f14b1;
+	static private final int PRIME3 = 0xb4b82e39;
+	static private final int PRIME4 = 0xced1c241;
 
 	public int size;
 
@@ -45,7 +48,7 @@ public class IdentityMap<K, V> {
 	private int hashShift, mask, threshold;
 	private int stashCapacity;
 	private int pushIterations;
-	private boolean isBigTable;
+	private boolean bigTable;
 
 	private Entries entries;
 	private Values values;
@@ -74,7 +77,7 @@ public class IdentityMap<K, V> {
 		this.loadFactor = loadFactor;
 
 		// big table is when capacity >= 2^16
-		isBigTable = (capacity >>> 16) != 0 ? true : false;
+		bigTable = (capacity >>> 16) != 0 ? true : false;
 
 		threshold = (int)(capacity * loadFactor);
 		mask = capacity - 1;
@@ -88,10 +91,8 @@ public class IdentityMap<K, V> {
 
 	public V put (K key, V value) {
 		if (key == null) throw new IllegalArgumentException("key cannot be null.");
-		// avoid getfield opcode
 		K[] keyTable = this.keyTable;
 		int mask = this.mask;
-		boolean isBigTable = this.isBigTable;
 
 		// Check for existing keys.
 		int hashCode = System.identityHashCode(key);
@@ -121,7 +122,7 @@ public class IdentityMap<K, V> {
 
 		int index4 = -1;
 		K key4 = null;
-		if (isBigTable) {
+		if (bigTable) {
 			index4 = hash4(hashCode);
 			key4 = keyTable[index4];
 			if (key4 == key) {
@@ -162,7 +163,7 @@ public class IdentityMap<K, V> {
 			return null;
 		}
 
-		if (isBigTable && key4 == null) {
+		if (bigTable && key4 == null) {
 			keyTable[index4] = key;
 			valueTable[index4] = value;
 			if (size++ >= threshold) resize(capacity << 1);
@@ -206,7 +207,7 @@ public class IdentityMap<K, V> {
 
 		int index4 = -1;
 		K key4 = null;
-		if (isBigTable) {
+		if (bigTable) {
 			index4 = hash4(hashCode);
 			key4 = keyTable[index4];
 			if (key4 == null) {
@@ -222,17 +223,16 @@ public class IdentityMap<K, V> {
 
 	private void push (K insertKey, V insertValue, int index1, K key1, int index2, K key2, int index3, K key3, int index4,
 		K key4) {
-		// avoid getfield opcode
 		K[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
 		int mask = this.mask;
-		boolean isBigTable = this.isBigTable;
+		boolean bigTable = this.bigTable;
 
 		// Push keys until an empty bucket is found.
 		K evictedKey;
 		V evictedValue;
 		int i = 0, pushIterations = this.pushIterations;
-		int n = isBigTable ? 4 : 3;
+		int n = bigTable ? 4 : 3;
 		do {
 			// Replace the key and value for one of the hashes.
 			switch (ObjectMap.random.nextInt(n)) {
@@ -291,7 +291,7 @@ public class IdentityMap<K, V> {
 				return;
 			}
 
-			if (isBigTable) {
+			if (bigTable) {
 				index4 = hash4(hashCode);
 				key4 = keyTable[index4];
 				if (key4 == null) {
@@ -315,7 +315,7 @@ public class IdentityMap<K, V> {
 		if (stashSize == stashCapacity) {
 			// Too many pushes occurred and the stash is full, increase the table size.
 			resize(capacity << 1);
-			put(key, value);
+			putResize(key, value);
 			return;
 		}
 		// Store key in the stash.
@@ -334,7 +334,7 @@ public class IdentityMap<K, V> {
 			if (key != keyTable[index]) {
 				index = hash3(hashCode);
 				if (key != keyTable[index]) {
-					if (isBigTable) {
+					if (bigTable) {
 						index = hash4(hashCode);
 						if (key != keyTable[index]) return getStash(key, null);
 					} else {
@@ -354,7 +354,7 @@ public class IdentityMap<K, V> {
 			if (key != keyTable[index]) {
 				index = hash3(hashCode);
 				if (key != keyTable[index]) {
-					if (isBigTable) {
+					if (bigTable) {
 						index = hash4(hashCode);
 						if (key != keyTable[index]) return getStash(key, defaultValue);
 					} else {
@@ -402,7 +402,7 @@ public class IdentityMap<K, V> {
 			return oldValue;
 		}
 
-		if (isBigTable) {
+		if (bigTable) {
 			index = hash4(hashCode);
 			if (keyTable[index] == key) {
 				keyTable[index] = null;
@@ -436,9 +436,12 @@ public class IdentityMap<K, V> {
 		if (index < lastIndex) {
 			keyTable[index] = keyTable[lastIndex];
 			valueTable[index] = valueTable[lastIndex];
+			keyTable[lastIndex] = null;
 			valueTable[lastIndex] = null;
-		} else
+		} else {
+			keyTable[index] = null;
 			valueTable[index] = null;
+		}
 	}
 
 	/** Reduces the size of the backing arrays to be the specified capacity or less. If the capacity is already less, nothing is
@@ -462,6 +465,7 @@ public class IdentityMap<K, V> {
 	}
 
 	public void clear () {
+		if (size == 0) return;
 		K[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
 		for (int i = capacity + stashSize; i-- > 0;) {
@@ -500,7 +504,7 @@ public class IdentityMap<K, V> {
 			if (key != keyTable[index]) {
 				index = hash3(hashCode);
 				if (key != keyTable[index]) {
-					if (isBigTable) {
+					if (bigTable) {
 						index = hash4(hashCode);
 						if (key != keyTable[index]) return containsKeyStash(key);
 					} else {
@@ -542,6 +546,7 @@ public class IdentityMap<K, V> {
 	/** Increases the size of the backing array to acommodate the specified number of additional items. Useful before adding many
 	 * items to avoid multiple backing array resizes. */
 	public void ensureCapacity (int additionalCapacity) {
+		if (additionalCapacity < 0) throw new IllegalArgumentException("additionalCapacity must be >= 0: " + additionalCapacity);
 		int sizeNeeded = size + additionalCapacity;
 		if (sizeNeeded >= threshold) resize(ObjectMap.nextPowerOfTwo((int)(sizeNeeded / loadFactor)));
 	}
@@ -557,7 +562,7 @@ public class IdentityMap<K, V> {
 		pushIterations = Math.max(Math.min(newSize, 8), (int)Math.sqrt(newSize) / 8);
 
 		// big table is when capacity >= 2^16
-		isBigTable = (capacity >>> 16) != 0 ? true : false;
+		bigTable = (capacity >>> 16) != 0 ? true : false;
 
 		K[] oldKeyTable = keyTable;
 		V[] oldValueTable = valueTable;

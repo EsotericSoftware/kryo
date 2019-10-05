@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,14 +19,16 @@
 
 package com.esotericsoftware.kryo.util;
 
-import java.util.ArrayList;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.ReferenceResolver;
 
-/** Uses an {@link IdentityObjectIntMap} to track objects that have already been written. This can handle graph with any number of
- * objects, but is slightly slower than {@link ListReferenceResolver} for graphs with few objects.
- * @author Nathan Sweet <misc@n4te.com> */
+import java.util.ArrayList;
+
+/** Uses an {@link IdentityObjectIntMap} to track objects that have already been written. This can handle a graph with any number
+ * of objects, but is slightly slower than {@link ListReferenceResolver} for graphs with few objects. Compared to
+ * {@link HashMapReferenceResolver}, this may provide better performance for object graphs with a moderate number of objects since
+ * the IdentityObjectIntMap does not normally allocate for get or put, though put can require more effort.
+ * @author Nathan Sweet */
 public class MapReferenceResolver implements ReferenceResolver {
 	protected Kryo kryo;
 	protected final IdentityObjectIntMap writtenObjects = new IdentityObjectIntMap();
@@ -62,11 +64,11 @@ public class MapReferenceResolver implements ReferenceResolver {
 
 	public void reset () {
 		readObjects.clear();
-		writtenObjects.clear();
+		writtenObjects.clear(2048);
 	}
 
-	/** Returns false for all primitive wrappers. */
+	/** Returns false for all primitive wrappers and enums. */
 	public boolean useReferences (Class type) {
-		return !Util.isWrapperClass(type);
+		return !Util.isWrapperClass(type) && !Util.isEnum(type);
 	}
 }

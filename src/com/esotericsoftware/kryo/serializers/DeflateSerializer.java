@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,12 +19,6 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import java.io.IOException;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
@@ -32,6 +26,12 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
+
+import java.io.IOException;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 public class DeflateSerializer extends Serializer {
 	private final Serializer serializer;
@@ -56,7 +56,7 @@ public class DeflateSerializer extends Serializer {
 		} finally {
 			deflater.end();
 		}
-		outputChunked.endChunks();
+		outputChunked.endChunk();
 	}
 
 	public Object read (Kryo kryo, Input input, Class type) {

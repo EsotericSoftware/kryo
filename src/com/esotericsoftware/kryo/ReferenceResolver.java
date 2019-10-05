@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -21,7 +21,7 @@ package com.esotericsoftware.kryo;
 
 /** When references are enabled, this tracks objects that have already been read or written, provides an ID for objects that are
  * written, and looks up by ID objects that have been read.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public interface ReferenceResolver {
 	/** Sets the Kryo instance that this ClassResolver will be used for. This is called automatically by Kryo. */
 	public void setKryo (Kryo kryo);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -60,23 +60,50 @@ public class IntArray {
 	/** Creates a new ordered array containing the elements in the specified array. The capacity is set to the number of elements,
 	 * so any subsequent elements added will cause the backing array to be grown. */
 	public IntArray (int[] array) {
-		this(true, array);
+		this(true, array, 0, array.length);
 	}
 
 	/** Creates a new array containing the elements in the specified array. The capacity is set to the number of elements, so any
 	 * subsequent elements added will cause the backing array to be grown.
 	 * @param ordered If false, methods that remove elements may change the order of other elements in the array, which avoids a
 	 *           memory copy. */
-	public IntArray (boolean ordered, int[] array) {
-		this(ordered, array.length);
-		size = array.length;
-		System.arraycopy(array, 0, items, 0, size);
+	public IntArray (boolean ordered, int[] array, int startIndex, int count) {
+		this(ordered, count);
+		size = count;
+		System.arraycopy(array, startIndex, items, 0, count);
 	}
 
 	public void add (int value) {
 		int[] items = this.items;
 		if (size == items.length) items = resize(Math.max(8, (int)(size * 1.75f)));
 		items[size++] = value;
+	}
+
+	public void add (int value1, int value2) {
+		int[] items = this.items;
+		if (size + 1 >= items.length) items = resize(Math.max(8, (int)(size * 1.75f)));
+		items[size] = value1;
+		items[size + 1] = value2;
+		size += 2;
+	}
+
+	public void add (int value1, int value2, int value3) {
+		int[] items = this.items;
+		if (size + 2 >= items.length) items = resize(Math.max(8, (int)(size * 1.75f)));
+		items[size] = value1;
+		items[size + 1] = value2;
+		items[size + 2] = value3;
+		size += 3;
+	}
+
+	public void add (int value1, int value2, int value3, int value4) {
+		int[] items = this.items;
+		if (size + 3 >= items.length) items = resize(Math.max(8, (int)(size * 1.8f))); // 1.75 isn't enough when size=5.
+		items[size] = value1;
+		items[size + 1] = value2;
+		items[size + 2] = value3;
+		items[size + 3] = value4;
+		size += 4;
 	}
 
 	public void addAll (IntArray array) {
@@ -89,29 +116,40 @@ public class IntArray {
 		addAll(array.items, offset, length);
 	}
 
-	public void addAll (int[] array) {
+	public void addAll (int... array) {
 		addAll(array, 0, array.length);
 	}
 
 	public void addAll (int[] array, int offset, int length) {
 		int[] items = this.items;
-		int sizeNeeded = size + length - offset;
-		if (sizeNeeded >= items.length) items = resize(Math.max(8, (int)(sizeNeeded * 1.75f)));
+		int sizeNeeded = size + length;
+		if (sizeNeeded > items.length) items = resize(Math.max(8, (int)(sizeNeeded * 1.75f)));
 		System.arraycopy(array, offset, items, size, length);
 		size += length;
 	}
 
 	public int get (int index) {
-		if (index >= size) throw new IndexOutOfBoundsException(String.valueOf(index));
+		if (index >= size) throw new IndexOutOfBoundsException("index can't be >= size: " + index + " >= " + size);
 		return items[index];
 	}
 
 	public void set (int index, int value) {
-		if (index >= size) throw new IndexOutOfBoundsException(String.valueOf(index));
+		if (index >= size) throw new IndexOutOfBoundsException("index can't be >= size: " + index + " >= " + size);
 		items[index] = value;
 	}
 
+	public void incr (int index, int value) {
+		if (index >= size) throw new IndexOutOfBoundsException("index can't be >= size: " + index + " >= " + size);
+		items[index] += value;
+	}
+
+	public void mul (int index, int value) {
+		if (index >= size) throw new IndexOutOfBoundsException("index can't be >= size: " + index + " >= " + size);
+		items[index] *= value;
+	}
+
 	public void insert (int index, int value) {
+		if (index > size) throw new IndexOutOfBoundsException("index can't be > size: " + index + " > " + size);
 		int[] items = this.items;
 		if (size == items.length) items = resize(Math.max(8, (int)(size * 1.75f)));
 		if (ordered)
@@ -123,8 +161,8 @@ public class IntArray {
 	}
 
 	public void swap (int first, int second) {
-		if (first >= size) throw new IndexOutOfBoundsException(String.valueOf(first));
-		if (second >= size) throw new IndexOutOfBoundsException(String.valueOf(second));
+		if (first >= size) throw new IndexOutOfBoundsException("first can't be >= size: " + first + " >= " + size);
+		if (second >= size) throw new IndexOutOfBoundsException("second can't be >= size: " + second + " >= " + size);
 		int[] items = this.items;
 		int firstValue = items[first];
 		items[first] = items[second];
@@ -146,6 +184,13 @@ public class IntArray {
 		return -1;
 	}
 
+	public int lastIndexOf (int value) {
+		int[] items = this.items;
+		for (int i = size - 1; i >= 0; i--)
+			if (items[i] == value) return i;
+		return -1;
+	}
+
 	public boolean removeValue (int value) {
 		int[] items = this.items;
 		for (int i = 0, n = size; i < n; i++) {
@@ -159,7 +204,7 @@ public class IntArray {
 
 	/** Removes and returns the item at the specified index. */
 	public int removeIndex (int index) {
-		if (index >= size) throw new IndexOutOfBoundsException(String.valueOf(index));
+		if (index >= size) throw new IndexOutOfBoundsException("index can't be >= size: " + index + " >= " + size);
 		int[] items = this.items;
 		int value = items[index];
 		size--;
@@ -168,6 +213,40 @@ public class IntArray {
 		else
 			items[index] = items[size];
 		return value;
+	}
+
+	/** Removes the items between the specified indices, inclusive. */
+	public void removeRange (int start, int end) {
+		int n = size;
+		if (end >= n) throw new IndexOutOfBoundsException("end can't be >= size: " + end + " >= " + size);
+		if (start > end) throw new IndexOutOfBoundsException("start can't be > end: " + start + " > " + end);
+		int count = end - start + 1, lastIndex = n - count;
+		if (ordered)
+			System.arraycopy(items, start + count, items, start, n - (start + count));
+		else {
+			int i = Math.max(lastIndex, end + 1);
+			System.arraycopy(items, i, items, start, n - i);
+		}
+		size = n - count;
+	}
+
+	/** Removes from this array all of elements contained in the specified array.
+	 * @return true if this array was modified. */
+	public boolean removeAll (IntArray array) {
+		int size = this.size;
+		int startSize = size;
+		int[] items = this.items;
+		for (int i = 0, n = array.size; i < n; i++) {
+			int item = array.get(i);
+			for (int ii = 0; ii < size; ii++) {
+				if (item == items[ii]) {
+					removeIndex(ii);
+					size--;
+					break;
+				}
+			}
+		}
+		return size != startSize;
 	}
 
 	/** Removes and returns the last item. */
@@ -180,29 +259,47 @@ public class IntArray {
 		return items[size - 1];
 	}
 
+	/** Returns the first item. */
+	public int first () {
+		if (size == 0) throw new IllegalStateException("Array is empty.");
+		return items[0];
+	}
+
 	public void clear () {
 		size = 0;
 	}
 
 	/** Reduces the size of the backing array to the size of the actual items. This is useful to release memory when many items
-	 * have been removed, or if it is known that more items will not be added. */
-	public void shrink () {
-		resize(size);
+	 * have been removed, or if it is known that more items will not be added.
+	 * @return {@link #items} */
+	public int[] shrink () {
+		if (items.length != size) resize(size);
+		return items;
 	}
 
-	/** Increases the size of the backing array to acommodate the specified number of additional items. Useful before adding many
+	/** Increases the size of the backing array to accommodate the specified number of additional items. Useful before adding many
 	 * items to avoid multiple backing array resizes.
 	 * @return {@link #items} */
 	public int[] ensureCapacity (int additionalCapacity) {
+		if (additionalCapacity < 0) throw new IllegalArgumentException("additionalCapacity must be >= 0: " + additionalCapacity);
 		int sizeNeeded = size + additionalCapacity;
-		if (sizeNeeded >= items.length) resize(Math.max(8, sizeNeeded));
+		if (sizeNeeded > items.length) resize(Math.max(8, sizeNeeded));
+		return items;
+	}
+
+	/** Sets the array size, leaving any values beyond the current size undefined.
+	 * @return {@link #items} */
+	public int[] setSize (int newSize) {
+		if (newSize < 0) throw new IllegalArgumentException("newSize must be >= 0: " + newSize);
+		if (newSize > items.length) resize(Math.max(8, newSize));
+		size = newSize;
 		return items;
 	}
 
 	protected int[] resize (int newSize) {
 		int[] newItems = new int[newSize];
 		int[] items = this.items;
-		System.arraycopy(items, 0, newItems, 0, Math.min(items.length, newItems.length));
+		System.arraycopy(items, 0, newItems, 0, Math.min(size, newItems.length));
 		this.items = newItems;
 		return newItems;
 	}
@@ -212,6 +309,7 @@ public class IntArray {
 	}
 
 	public void reverse () {
+		int[] items = this.items;
 		for (int i = 0, lastIndex = size - 1, n = size / 2; i < n; i++) {
 			int ii = lastIndex - i;
 			int temp = items[i];
@@ -230,6 +328,30 @@ public class IntArray {
 		int[] array = new int[size];
 		System.arraycopy(items, 0, array, 0, size);
 		return array;
+	}
+
+	public int hashCode () {
+		if (!ordered) return super.hashCode();
+		int[] items = this.items;
+		int h = 1;
+		for (int i = 0, n = size; i < n; i++)
+			h = h * 31 + items[i];
+		return h;
+	}
+
+	public boolean equals (Object object) {
+		if (object == this) return true;
+		if (!ordered) return false;
+		if (!(object instanceof IntArray)) return false;
+		IntArray array = (IntArray)object;
+		if (!array.ordered) return false;
+		int n = size;
+		if (n != array.size) return false;
+		int[] items1 = this.items;
+		int[] items2 = array.items;
+		for (int i = 0; i < n; i++)
+			if (items[i] != array.items[i]) return false;
+		return true;
 	}
 
 	public String toString () {
@@ -256,5 +378,10 @@ public class IntArray {
 			buffer.append(items[i]);
 		}
 		return buffer.toString();
+	}
+
+	/** @see #IntArray(int[]) */
+	static public IntArray with (int... array) {
+		return new IntArray(array);
 	}
 }

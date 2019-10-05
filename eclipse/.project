@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>kryo</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>benchmarks</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/benchmarks</locationURI>
+		</link>
+		<link>
+			<name>build</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/build</locationURI>
+		</link>
+		<link>
+			<name>lib</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/lib</locationURI>
+		</link>
+		<link>
+			<name>src</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src</locationURI>
+		</link>
+		<link>
+			<name>test</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/test</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>

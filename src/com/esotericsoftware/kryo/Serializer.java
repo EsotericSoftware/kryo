@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -23,7 +23,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 /** Reads and writes objects to and from bytes.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public abstract class Serializer<T> {
 	private boolean acceptsNull, immutable;
 
@@ -58,7 +58,7 @@ public abstract class Serializer<T> {
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} read methods that accept a
 	 * serialier.
 	 * @return May be null if {@link #getAcceptsNull()} is true. */
-	abstract public T read (Kryo kryo, Input input, Class<T> type);
+	abstract public T read (Kryo kryo, Input input, Class<? extends T> type);
 
 	public boolean getAcceptsNull () {
 		return acceptsNull;
@@ -83,24 +83,16 @@ public abstract class Serializer<T> {
 		this.immutable = immutable;
 	}
 
-	/** Sets the generic types of the field or method this serializer will be used for on the next call to read or write.
-	 * Subsequent calls to read and write must not use this generic type information. The default implementation does nothing.
-	 * Subclasses may use the information provided to this method for more efficient serialization, eg to use the same type for all
-	 * items in a list.
-	 * @param generics Some (but never all) elements may be null if there is no generic type information at that index. */
-	public void setGenerics (Kryo kryo, Class[] generics) {
-	}
-
 	/** Returns a copy of the specified object. The default implementation returns the original if {@link #isImmutable()} is true,
-	 * else throws {@link KryoException}. Subclasses should override this method if needed to support {@link Kryo#copy(Object)}.
+	 * else throws {@link KryoException}. Subclasses can optionall override this method to support {@link Kryo#copy(Object)}.
 	 * <p>
 	 * Before Kryo can be used to copy child objects, {@link Kryo#reference(Object)} must be called with the copy to ensure it can
-	 * be referenced by the child objects. Any serializer that uses {@link Kryo} to copy a child object may need to be reentrant.
+	 * be referenced by the child objects. A serializer that uses {@link Kryo} to copy a child object may need to be reentrant.
 	 * <p>
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} copy methods that accept a
 	 * serialier. */
 	public T copy (Kryo kryo, T original) {
-		if (immutable) return original;
+		if (isImmutable()) return original;
 		throw new KryoException("Serializer does not support copy: " + getClass().getName());
 	}
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -21,8 +21,8 @@ package com.esotericsoftware.kryo;
 
 /** Allows implementing classes to perform their own copying. Hand written copying can be more efficient in some cases.
  * <p>
- * This method is used instead of the registered serializer {@link Serializer#copy(Kryo, Object)} method.
- * @author Nathan Sweet <misc@n4te.com> */
+ * This method is used instead of the registered serializer's {@link Serializer#copy(Kryo, Object)} method.
+ * @author Nathan Sweet */
 public interface KryoCopyable<T> {
 	/** Returns a copy that has the same values as this object. Before Kryo can be used to copy child objects,
 	 * {@link Kryo#reference(Object)} must be called with the copy to ensure it can be referenced by the child objects.

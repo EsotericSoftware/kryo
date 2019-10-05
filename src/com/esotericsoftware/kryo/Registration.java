@@ -1,4 +1,4 @@
-/* Copyright (c) 2008, Nathan Sweet
+/* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -25,9 +25,10 @@ import static com.esotericsoftware.minlog.Log.*;
 import org.objenesis.instantiator.ObjectInstantiator;
 
 /** Describes the {@link Serializer} and class ID to use for a class.
- * @author Nathan Sweet <misc@n4te.com> */
+ * @author Nathan Sweet */
 public class Registration {
 	private final Class type;
+	private final boolean typeNameAscii;
 	private final int id;
 	private Serializer serializer;
 	private ObjectInstantiator instantiator;
@@ -38,10 +39,15 @@ public class Registration {
 		this.type = type;
 		this.serializer = serializer;
 		this.id = id;
+		typeNameAscii = isAscii(type.getName());
 	}
 
 	public Class getType () {
 		return type;
+	}
+
+	public boolean isTypeNameAscii () {
+		return typeNameAscii;
 	}
 
 	/** Returns the registered class ID.
