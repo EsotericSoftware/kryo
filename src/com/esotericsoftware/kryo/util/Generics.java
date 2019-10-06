@@ -132,12 +132,12 @@ public class Generics {
 		TypeVariable[] params = hierarchy.parameters;
 		for (int i = 0, p = 0, n = args.length; i < n; i++) {
 			GenericType arg = args[i];
-			Class resolved = arg.resolve(this);
-			if (resolved == null) continue;
 			int count = counts[i];
 			if (arg == null)
 				p += count;
 			else {
+				Class resolved = arg.resolve(this);
+				if (resolved == null) continue;
 				for (int nn = p + count; p < nn; p++) {
 					arguments[argumentsSize] = params[p];
 					arguments[argumentsSize + 1] = resolved;
