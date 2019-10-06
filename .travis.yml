@@ -11,7 +11,7 @@ env:
   
 jdk:
   #- openjdk7
-  - oraclejdk8
+  - openjdk8
 
 before_install:
   # required for testing jdk 11
