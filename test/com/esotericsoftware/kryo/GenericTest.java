@@ -35,6 +35,21 @@ public class GenericTest extends KryoTestCase {
 		public void setVal(T val) {
 			this.val = val;
 		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+
+			TestGenerics1<?> that = (TestGenerics1<?>) o;
+
+			return val != null ? val.equals(that.val) : that.val == null;
+		}
+
+		@Override
+		public int hashCode() {
+			return val != null ? val.hashCode() : 0;
+		}
 	}
 
 	static class TestGenerics2<BT extends Object & Serializable, OT> extends TestGenerics1<OT> {
@@ -50,6 +65,24 @@ public class GenericTest extends KryoTestCase {
 
 		public Class<? extends BT> getType() {
 			return (Class<BT>) value.getClass();
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			if (!super.equals(o)) return false;
+
+			TestGenerics2<?, ?> that = (TestGenerics2<?, ?>) o;
+
+			return value != null ? value.equals(that.value) : that.value == null;
+		}
+
+		@Override
+		public int hashCode() {
+			int result = super.hashCode();
+			result = 31 * result + (value != null ? value.hashCode() : 0);
+			return result;
 		}
 	}
 
