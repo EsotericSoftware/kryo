@@ -265,7 +265,6 @@ public class Generics {
 				ParameterizedType paramType = (ParameterizedType)context;
 				Class rawType = (Class)paramType.getRawType();
 				type = rawType;
-				TypeVariable[] params = rawType.getTypeParameters();
 				Type[] actualArgs = paramType.getActualTypeArguments();
 				int n = actualArgs.length;
 				arguments = new GenericType[n];

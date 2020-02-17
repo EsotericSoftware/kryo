@@ -70,6 +70,7 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /** Testdata for serialization compatibility check. */
+@SuppressWarnings("unused")
 public class SerializationCompatTestData {
 
 	static class TestDataJava8 extends TestData {

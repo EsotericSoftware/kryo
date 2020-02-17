@@ -100,7 +100,7 @@ public class GenericsTest extends KryoTestCase {
 		output.flush();
 
 		Input input = new Input(output.getBuffer(), 0, output.position());
-		SuperGenerics.Root root2 = kryo.readObject(input, SuperGenerics.Root.class);
+		kryo.readObject(input, SuperGenerics.Root.class);
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/648

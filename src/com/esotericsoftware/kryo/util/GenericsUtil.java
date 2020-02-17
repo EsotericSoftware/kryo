@@ -35,13 +35,13 @@ public class GenericsUtil {
 	 * @param toClass Must be a sub class of fromClass. */
 	static public Type resolveType (Class fromClass, Class toClass, Type type) {
 		// Explicit type, eg String.
-		if (type instanceof Class) return (Class)type;
+		if (type instanceof Class) return type;
 
 		// Type variable, eg T.
 		if (type instanceof TypeVariable) return resolveTypeVariable(fromClass, toClass, type, true);
 
 		// Type which has a type parameter, eg ArrayList<T> or ArrayList<ArrayList<T>>.
-		if (type instanceof ParameterizedType) return (Class)((ParameterizedType)type).getRawType();
+		if (type instanceof ParameterizedType) return ((ParameterizedType)type).getRawType();
 
 		// Array which has a type variable, eg T[] or T[][], and also arrays with a type parameter, eg ArrayList<T>[].
 		if (type instanceof GenericArrayType) {
@@ -84,7 +84,7 @@ public class GenericsUtil {
 		Class superClass = current.getSuperclass();
 		if (superClass != fromClass) {
 			Type resolved = resolveTypeVariable(fromClass, superClass, type, false);
-			if (resolved instanceof Class) return (Class)resolved; // Resolved in a super class.
+			if (resolved instanceof Class) return resolved; // Resolved in a super class.
 			type = resolved;
 		}
 
@@ -98,7 +98,7 @@ public class GenericsUtil {
 				Type arg = ((ParameterizedType)genericSuper).getActualTypeArguments()[i];
 
 				// Success, the type variable was explicitly declared.
-				if (arg instanceof Class) return (Class)arg;
+				if (arg instanceof Class) return arg;
 				if (arg instanceof ParameterizedType) return resolveType(fromClass, current, arg);
 
 				if (arg instanceof TypeVariable) {
