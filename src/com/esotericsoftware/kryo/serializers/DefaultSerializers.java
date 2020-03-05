@@ -178,15 +178,14 @@ public class DefaultSerializers {
 				output.writeByte(NULL);
 				return;
 			}
-			BigInteger value = (BigInteger)object;
 			// fast-path optimizations for BigInteger.ZERO constant
-			if (value == BigInteger.ZERO) {
+			if (object == BigInteger.ZERO) {
 				output.writeByte(2);
 				output.writeByte(0);
 				return;
 			}
 			// default behaviour
-			byte[] bytes = value.toByteArray();
+			byte[] bytes = object.toByteArray();
 			output.writeVarInt(bytes.length + 1, true);
 			output.writeBytes(bytes);
 		}
@@ -239,16 +238,15 @@ public class DefaultSerializers {
 				output.writeByte(NULL);
 				return;
 			}
-			BigDecimal value = (BigDecimal)object;
 			// fast-path optimizations for BigDecimal constants
-			if (value == BigDecimal.ZERO) {
+			if (object == BigDecimal.ZERO) {
 				bigIntegerSerializer.write(kryo, output, BigInteger.ZERO);
 				output.writeInt(0, false); // for backwards compatibility
 				return;
 			}
 			// default behaviour
-			bigIntegerSerializer.write(kryo, output, value.unscaledValue());
-			output.writeInt(value.scale(), false);
+			bigIntegerSerializer.write(kryo, output, object.unscaledValue());
+			output.writeInt(object.scale(), false);
 		}
 
 		public BigDecimal read (Kryo kryo, Input input, Class<? extends BigDecimal> type) {
@@ -284,17 +282,17 @@ public class DefaultSerializers {
 			setAcceptsNull(true);
 		}
 
-		public void write (Kryo kryo, Output output, Class object) {
-			kryo.writeClass(output, object);
-			output.writeByte(object != null && object.isPrimitive() ? 1 : 0);
+		public void write (Kryo kryo, Output output, Class type) {
+			kryo.writeClass(output, type);
+			if (type != null && (type.isPrimitive() || isWrapperClass(type))) output.writeBoolean(type.isPrimitive());
 		}
 
-		public Class read (Kryo kryo, Input input, Class<? extends Class> type) {
+		public Class read (Kryo kryo, Input input, Class<? extends Class> ignored) {
 			Registration registration = kryo.readClass(input);
-			int isPrimitive = input.read();
-			Class typ = registration != null ? registration.getType() : null;
-			if (typ == null || !typ.isPrimitive()) return typ;
-			return isPrimitive == 1 ? typ : getWrapperClass(typ);
+			if (registration == null) return null;
+			Class type = registration.getType();
+			if (!type.isPrimitive() || input.readBoolean()) return type;
+			return getWrapperClass(type);
 		}
 	}
 
@@ -328,7 +326,7 @@ public class DefaultSerializers {
 				return constructor.newInstance(time);
 			} catch (Exception ex) {
 				// default strategy
-				Date d = (Date)kryo.newInstance(type);
+				Date d = kryo.newInstance(type);
 				d.setTime(time);
 				return d;
 			}
@@ -438,7 +436,7 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, StringBuffer object) {
-			output.writeString(object.toString());
+			output.writeString(object == null ? null : object.toString());
 		}
 
 		public StringBuffer read (Kryo kryo, Input input, Class<? extends StringBuffer> type) {
@@ -459,7 +457,7 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, StringBuilder object) {
-			output.writeString(object.toString());
+			output.writeString(object == null ? null : object.toString());
 		}
 
 		public StringBuilder read (Kryo kryo, Input input, Class<? extends StringBuilder> type) {

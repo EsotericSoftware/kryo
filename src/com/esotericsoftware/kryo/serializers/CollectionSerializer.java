@@ -21,19 +21,19 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.Kryo.*;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Registration;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.SerializerFactory;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Collection;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 /** Serializes objects that implement the {@link Collection} interface.
  * <p>
@@ -100,63 +100,66 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 			Class genericClass = kryo.getGenerics().nextGenericClass();
 			if (genericClass != null && kryo.isFinal(genericClass)) elementSerializer = kryo.getSerializer(genericClass);
 		}
-		outer:
-		if (elementSerializer != null) {
-			inner:
-			if (elementsCanBeNull) {
+		try {
+			outer:
+			if (elementSerializer != null) {
+				inner:
+				if (elementsCanBeNull) {
+					for (Object element : collection) {
+						if (element == null) {
+							output.writeVarIntFlag(true, length + 1, true);
+							break inner;
+						}
+					}
+					output.writeVarIntFlag(false, length + 1, true);
+					elementsCanBeNull = false;
+				} else
+					output.writeVarInt(length + 1, true);
+				writeHeader(kryo, output, collection);
+			} else { // Serializer is unknown, check if all elements are the same type.
+				Class elementType = null;
+				boolean hasNull = false;
 				for (Object element : collection) {
-					if (element == null) {
-						output.writeVarIntFlag(true, length + 1, true);
-						break inner;
+					if (element == null)
+						hasNull = true;
+					else if (elementType == null)
+						elementType = element.getClass();
+					else if (element.getClass() != elementType) { // Elements are different types.
+						output.writeVarIntFlag(false, length + 1, true);
+						writeHeader(kryo, output, collection);
+						break outer;
 					}
 				}
-				output.writeVarIntFlag(false, length + 1, true);
-				elementsCanBeNull = false;
-			} else
-				output.writeVarInt(length + 1, true);
-			writeHeader(kryo, output, collection);
-		} else { // Serializer is unknown, check if all elements are the same type.
-			Class elementType = null;
-			boolean hasNull = false;
-			for (Object element : collection) {
-				if (element == null)
-					hasNull = true;
-				else if (elementType == null)
-					elementType = element.getClass();
-				else if (element.getClass() != elementType) { // Elements are different types.
-					output.writeVarIntFlag(false, length + 1, true);
-					writeHeader(kryo, output, collection);
-					break outer;
+				output.writeVarIntFlag(true, length + 1, true);
+				writeHeader(kryo, output, collection);
+				if (elementType == null) { // All elements are null.
+					output.writeByte(NULL);
+					return;
+				}
+				// All elements are the same class.
+				kryo.writeClass(output, elementType);
+				elementSerializer = kryo.getSerializer(elementType);
+				if (elementsCanBeNull) {
+					output.writeBoolean(hasNull);
+					elementsCanBeNull = hasNull;
 				}
 			}
-			output.writeVarIntFlag(true, length + 1, true);
-			writeHeader(kryo, output, collection);
-			if (elementType == null) { // All elements are null.
-				output.writeByte(NULL);
-				return;
-			}
-			// All elements are the same class.
-			kryo.writeClass(output, elementType);
-			elementSerializer = kryo.getSerializer(elementType);
-			if (elementsCanBeNull) {
-				output.writeBoolean(hasNull);
-				elementsCanBeNull = hasNull;
-			}
-		}
 
-		if (elementSerializer != null) {
-			if (elementsCanBeNull) {
-				for (Object element : collection)
-					kryo.writeObjectOrNull(output, element, elementSerializer);
+			if (elementSerializer != null) {
+				if (elementsCanBeNull) {
+					for (Object element : collection)
+						kryo.writeObjectOrNull(output, element, elementSerializer);
+				} else {
+					for (Object element : collection)
+						kryo.writeObject(output, element, elementSerializer);
+				}
 			} else {
 				for (Object element : collection)
-					kryo.writeObject(output, element, elementSerializer);
+					kryo.writeClassAndObject(output, element);
 			}
-		} else {
-			for (Object element : collection)
-				kryo.writeClassAndObject(output, element);
+		} finally {
+			kryo.getGenerics().popGenericType();
 		}
-		kryo.getGenerics().popGenericType();
 	}
 
 	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class, int)}. The default implementation does
@@ -185,61 +188,64 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 			}
 		}
 
-		T collection;
-		int length;
-		boolean elementsCanBeNull = this.elementsCanBeNull;
-		if (elementSerializer != null) {
-			if (elementsCanBeNull) {
-				elementsCanBeNull = input.readVarIntFlag();
+		try {
+			T collection;
+			int length;
+			boolean elementsCanBeNull = this.elementsCanBeNull;
+			if (elementSerializer != null) {
+				if (elementsCanBeNull) {
+					elementsCanBeNull = input.readVarIntFlag();
+					length = input.readVarIntFlag(true);
+				} else
+					length = input.readVarInt(true);
+				if (length == 0) return null;
+
+				length--;
+				collection = create(kryo, input, type, length);
+				kryo.reference(collection);
+
+				if (length == 0) return collection;
+			} else {
+				boolean sameType = input.readVarIntFlag();
 				length = input.readVarIntFlag(true);
-			} else
-				length = input.readVarInt(true);
-			if (length == 0) return null;
+				if (length == 0) return null;
 
-			length--;
-			collection = create(kryo, input, type, length);
-			kryo.reference(collection);
+				length--;
+				collection = create(kryo, input, type, length);
+				kryo.reference(collection);
 
-			if (length == 0) return collection;
-		} else {
-			boolean sameType = input.readVarIntFlag();
-			length = input.readVarIntFlag(true);
-			if (length == 0) return null;
+				if (length == 0) return collection;
 
-			length--;
-			collection = create(kryo, input, type, length);
-			kryo.reference(collection);
-
-			if (length == 0) return collection;
-
-			if (sameType) {
-				Registration registration = kryo.readClass(input);
-				if (registration == null) { // All elements are null.
-					for (int i = 0; i < length; i++)
-						collection.add(null);
-					kryo.getGenerics().popGenericType();
-					return collection;
+				if (sameType) {
+					Registration registration = kryo.readClass(input);
+					if (registration == null) { // All elements are null.
+						for (int i = 0; i < length; i++)
+							collection.add(null);
+						kryo.getGenerics().popGenericType();
+						return collection;
+					}
+					elementClass = registration.getType();
+					elementSerializer = kryo.getSerializer(elementClass);
+					if (elementsCanBeNull) elementsCanBeNull = input.readBoolean();
 				}
-				elementClass = registration.getType();
-				elementSerializer = kryo.getSerializer(elementClass);
-				if (elementsCanBeNull) elementsCanBeNull = input.readBoolean();
 			}
-		}
 
-		if (elementSerializer != null) {
-			if (elementsCanBeNull) {
-				for (int i = 0; i < length; i++)
-					collection.add(kryo.readObjectOrNull(input, elementClass, elementSerializer));
+			if (elementSerializer != null) {
+				if (elementsCanBeNull) {
+					for (int i = 0; i < length; i++)
+						collection.add(kryo.readObjectOrNull(input, elementClass, elementSerializer));
+				} else {
+					for (int i = 0; i < length; i++)
+						collection.add(kryo.readObject(input, elementClass, elementSerializer));
+				}
 			} else {
 				for (int i = 0; i < length; i++)
-					collection.add(kryo.readObject(input, elementClass, elementSerializer));
+					collection.add(kryo.readClassAndObject(input));
 			}
-		} else {
-			for (int i = 0; i < length; i++)
-				collection.add(kryo.readClassAndObject(input));
+			return collection;
+		} finally {
+			kryo.getGenerics().popGenericType();
 		}
-		kryo.getGenerics().popGenericType();
-		return collection;
 	}
 
 	/** Used by {@link #copy(Kryo, Collection)} to create the new object. This can be overridden to customize object creation, eg

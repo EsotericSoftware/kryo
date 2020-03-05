@@ -84,7 +84,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
-[5.0.0-RC2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC2) second release candidate with improvements over RC1 based on feedback. See [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5).
+[5.0.0-RC4](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC4) fourth release candidate with improvements over previous RCs based on feedback. See also [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5) for migration from kryo 4.x.
 
 [5.0.0-RC1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC1) fixes many issues and makes many long awaited improvements.
 
@@ -106,7 +106,7 @@ To use the latest Kryo release in your application, use this dependency entry in
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.0.0-RC2</version>
+   <version>5.0.0-RC4</version>
 </dependency>
 ```
 
@@ -133,7 +133,7 @@ To use the latest Kryo snapshot, use:
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.0.0-RC3-SNAPSHOT</version>
+   <version>5.0.0-RC5-SNAPSHOT</version>
 </dependency>
 <!-- for usage in a library that should be published: -->
 <dependency>
@@ -1273,7 +1273,7 @@ There are a number of projects using Kryo. A few are listed below. Please submit
 - [Cascalog](https://github.com/nathanmarz/cascalog) (Clojure/Java data processing and querying [details](https://groups.google.com/d/msg/cascalog-user/qgwO2vbkRa0/UeClnLL5OsgJ))
 - [memcached-session-manager](https://code.google.com/p/memcached-session-manager/) (Tomcat high-availability sessions)
 - [Mobility-RPC](http://code.google.com/p/mobility-rpc/) (RPC enabling distributed applications)
-- [akka-kryo-serialization](https://github.com/romix/akka-kryo-serialization) (Kryo serializers for Akka)
+- [akka-kryo-serialization](https://github.com/altoo-ag/akka-kryo-serialization) (Kryo serializers for Akka)
 - [Groupon](https://code.google.com/p/kryo/issues/detail?id=67)
 - [Jive](http://www.jivesoftware.com/jivespace/blogs/jivespace/2010/07/29/the-jive-sbs-cache-redesign-part-3)
 - [DestroyAllHumans](https://code.google.com/p/destroyallhumans/) (controls a [robot](http://www.youtube.com/watch?v=ZeZ3R38d3Cg)!)
@@ -1283,7 +1283,7 @@ There are a number of projects using Kryo. A few are listed below. Please submit
 ### Scala
 
 - [Twitter's Chill](https://github.com/twitter/chill) (Kryo serializers for Scala)
-- [akka-kryo-serialization](https://github.com/romix/akka-kryo-serialization) (Kryo serializers for Scala and Akka)
+- [akka-kryo-serialization](https://github.com/altoo-ag/akka-kryo-serialization) (Kryo serializers for Scala and Akka)
 - [Twitter's Scalding](https://github.com/twitter/scalding) (Scala API for Cascading)
 - [Kryo Serializers](https://github.com/magro/kryo-serializers) (Additional serializers for Java)
 - [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) (Scala macros for compile-time generation of Kryo serializers)

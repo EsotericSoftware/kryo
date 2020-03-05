@@ -31,9 +31,8 @@ import java.util.concurrent.Callable;
 import org.junit.Before;
 import org.junit.Test;
 
-/** Test for java 8 closures. For JDK < 1.8 exclude from the surefire tests via the "until-java8" profile in pom.xml (which
- * excludes "Java8*Tests"). */
-public class Java8ClosureSerializerTest extends KryoTestCase {
+/** Test for java 8 closures. */
+public class ClosureSerializerTest extends KryoTestCase {
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();

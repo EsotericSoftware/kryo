@@ -40,7 +40,7 @@ class AsmField extends ReflectField {
 	}
 
 	public void set (Object object, Object value) throws IllegalAccessException {
-		((FieldAccess)access).set(object, accessIndex, value);
+		access.set(object, accessIndex, value);
 	}
 
 	public void copy (Object original, Object copy) {

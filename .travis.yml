@@ -23,14 +23,16 @@ install:
   - mvn -B -V clean test
 
 script:
-  # compile tests with java 8, but with testSource/testTarget 1.7 (disabled java8 profile), so that we can run tests with java 7
+  # compile tests with java 8
   - jdk_switcher use oraclejdk8
+
   # separate "clean" from "install" because "clean install" would fail the pom-versioned module
   - mvn clean
   - mvn -B -P!java8 install
   # test java 7
   - jdk_switcher use openjdk7
   - mvn -v && mvn -B test
+
   # test java 9 (only available via oraclejdk9)
   - jdk_switcher use oraclejdk9
   - mvn -v && mvn -B test

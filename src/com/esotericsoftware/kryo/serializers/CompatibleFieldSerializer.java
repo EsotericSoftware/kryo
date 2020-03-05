@@ -89,7 +89,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				try {
 					if (object != null) {
 						Object value = cachedField.field.get(object);
-						if (value != null) valueClass = value.getClass();
+						if (value != null) valueClass = cachedField.field.getType();
 					}
 				} catch (IllegalAccessException ex) {
 				}
@@ -133,9 +133,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				try {
 					registration = kryo.readClass(fieldInput);
 				} catch (KryoException ex) {
-					if (!chunked)
-						throw new KryoException("Unable to read unknown data (unknown type). (" + getType().getName() + ")", ex);
-					if (DEBUG) debug("kryo", "Unable to read unknown data (unknown type).", ex);
+					String message = "Unable to read unknown data (unknown type). (" + getType().getName() + "#" + cachedField + ")";
+					if (!chunked) throw new KryoException(message, ex);
+					if (DEBUG) debug("kryo", message, ex);
 					inputChunked.nextChunk();
 					continue;
 				}
@@ -150,13 +150,25 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					try {
 						kryo.readObject(fieldInput, valueClass);
 					} catch (KryoException ex) {
-						if (!chunked) throw new KryoException(
-							"Unable to read unknown data, type: " + className(valueClass) + " (" + getType().getName() + ")", ex);
-						if (DEBUG) debug("kryo", "Unable to read unknown data, type: " + className(valueClass), ex);
+						String message = "Unable to read unknown data, type: " + className(valueClass) + " (" + getType().getName()
+							+ "#" + cachedField + ")";
+						if (!chunked) throw new KryoException(message, ex);
+						if (DEBUG) debug("kryo", message, ex);
 					}
 					if (chunked) inputChunked.nextChunk();
 					continue;
 				}
+
+				// Ensure the type in the data is compatible with the field type.
+				if (cachedField.valueClass != null && !cachedField.valueClass.isAssignableFrom(valueClass)) {
+					String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
+						+ className(cachedField.valueClass) + " (" + getType().getName() + "#" + cachedField + ")";
+					if (!chunked) throw new KryoException(message);
+					if (DEBUG) debug("kryo", message);
+					inputChunked.nextChunk();
+					continue;
+				}
+
 				cachedField.setCanBeNull(false);
 				cachedField.setValueClass(valueClass);
 			} else if (cachedField == null) {

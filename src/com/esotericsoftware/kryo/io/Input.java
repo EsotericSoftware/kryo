@@ -30,7 +30,7 @@ import java.io.InputStream;
 /** An InputStream that reads data from a byte[] and optionally fills the byte[] from another InputStream as needed. Utility
  * methods are provided for efficiently reading primitive types and strings.
  * @author Nathan Sweet */
-public class Input extends InputStream implements AutoCloseable, Poolable {
+public class Input extends InputStream implements Poolable {
 	protected byte[] buffer;
 	protected int position;
 	protected int capacity;
@@ -157,6 +157,7 @@ public class Input extends InputStream implements AutoCloseable, Poolable {
 	}
 
 	/** Sets the position and total to zero. */
+	@SuppressWarnings("sync-override")
 	public void reset () {
 		position = 0;
 		total = 0;
@@ -704,7 +705,7 @@ public class Input extends InputStream implements AutoCloseable, Poolable {
 
 	/** Reads a 1-5 byte float with reduced precision. */
 	public float readVarFloat (float precision, boolean optimizePositive) throws KryoException {
-		return readVarInt(optimizePositive) / (float)precision;
+		return readVarInt(optimizePositive) / precision;
 	}
 
 	// double:
@@ -727,7 +728,7 @@ public class Input extends InputStream implements AutoCloseable, Poolable {
 
 	/** Reads a 1-9 byte double with reduced precision. */
 	public double readVarDouble (double precision, boolean optimizePositive) throws KryoException {
-		return readVarLong(optimizePositive) / (double)precision;
+		return readVarLong(optimizePositive) / precision;
 	}
 
 	// short:
