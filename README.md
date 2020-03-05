@@ -1252,7 +1252,7 @@ There are a number of projects using Kryo. A few are listed below. Please submit
 - [Cascalog](https://github.com/nathanmarz/cascalog) (Clojure/Java data processing and querying [details](https://groups.google.com/d/msg/cascalog-user/qgwO2vbkRa0/UeClnLL5OsgJ))
 - [memcached-session-manager](https://code.google.com/p/memcached-session-manager/) (Tomcat high-availability sessions)
 - [Mobility-RPC](http://code.google.com/p/mobility-rpc/) (RPC enabling distributed applications)
-- [akka-kryo-serialization](https://github.com/romix/akka-kryo-serialization) (Kryo serializers for Akka)
+- [akka-kryo-serialization](https://github.com/altoo-ag/akka-kryo-serialization) (Kryo serializers for Akka)
 - [Groupon](https://code.google.com/p/kryo/issues/detail?id=67)
 - [Jive](http://www.jivesoftware.com/jivespace/blogs/jivespace/2010/07/29/the-jive-sbs-cache-redesign-part-3)
 - [DestroyAllHumans](https://code.google.com/p/destroyallhumans/) (controls a [robot](http://www.youtube.com/watch?v=ZeZ3R38d3Cg)!)
@@ -1262,7 +1262,7 @@ There are a number of projects using Kryo. A few are listed below. Please submit
 ### Scala
 
 - [Twitter's Chill](https://github.com/twitter/chill) (Kryo serializers for Scala)
-- [akka-kryo-serialization](https://github.com/romix/akka-kryo-serialization) (Kryo serializers for Scala and Akka)
+- [akka-kryo-serialization](https://github.com/altoo-ag/akka-kryo-serialization) (Kryo serializers for Scala and Akka)
 - [Twitter's Scalding](https://github.com/twitter/scalding) (Scala API for Cascading)
 - [Kryo Serializers](https://github.com/magro/kryo-serializers) (Additional serializers for Java)
 - [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) (Scala macros for compile-time generation of Kryo serializers)
