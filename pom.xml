@@ -39,12 +39,14 @@
 	</developers>
 
 	<properties>
+		<kryo.major.version>5</kryo.major.version>
 		<javac.target>1.8</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
 	<modules>
 		<module>pom-main.xml</module>
+		<module>pom-versioned.xml</module>
 		<module>benchmarks</module>
 	</modules>
 
@@ -79,6 +81,12 @@
 						<target>${javac.target}</target>
 						<encoding>utf-8</encoding>
 					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.1.1</version>
 				</plugin>
 
 				<plugin>
