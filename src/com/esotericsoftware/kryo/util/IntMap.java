@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import com.esotericsoftware.kryo.KryoException;
+
 /** An unordered map where the keys are unboxed ints and values are objects. No allocation is done except when growing the table
  * size.
  * <p>
@@ -67,10 +69,6 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 	 * minus 1. If {@link #place(int)} is overriden, this can be used instead of {@link #shift} to isolate usable bits of a
 	 * hash. */
 	protected int mask;
-
-	private Entries entries1, entries2;
-	private Values values1, values2;
-	private Keys keys1, keys2;
 
 	/** Creates a new map with an initial capacity of 51 and a load factor of 0.8. */
 	public IntMap () {
@@ -215,11 +213,14 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		int[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
 		V oldValue = valueTable[i];
-		int next = i + 1 & mask;
-		while ((key = keyTable[next]) != 0 && next != place(key)) {
-			keyTable[i] = key;
-			valueTable[i] = valueTable[next];
-			i = next;
+		int mask = this.mask, next = i + 1 & mask;
+		while ((key = keyTable[next]) != 0) {
+			int placement = place(key);
+			if ((next - placement & mask) > (i - placement & mask)) {
+				keyTable[i] = key;
+				valueTable[i] = valueTable[next];
+				i = next;
+			}
 			next = next + 1 & mask;
 		}
 		keyTable[i] = 0;
@@ -277,15 +278,15 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		if (value == null) {
 			if (hasZeroValue && zeroValue == null) return true;
 			int[] keyTable = this.keyTable;
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (keyTable[i] != 0 && valueTable[i] == null) return true;
 		} else if (identity) {
 			if (value == zeroValue) return true;
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (valueTable[i] == value) return true;
 		} else {
 			if (hasZeroValue && value.equals(zeroValue)) return true;
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (value.equals(valueTable[i])) return true;
 		}
 		return false;
@@ -306,15 +307,15 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		if (value == null) {
 			if (hasZeroValue && zeroValue == null) return 0;
 			int[] keyTable = this.keyTable;
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (keyTable[i] != 0 && valueTable[i] == null) return keyTable[i];
 		} else if (identity) {
 			if (value == zeroValue) return 0;
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (valueTable[i] == value) return keyTable[i];
 		} else {
 			if (hasZeroValue && value.equals(zeroValue)) return 0;
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (value.equals(valueTable[i])) return keyTable[i];
 		}
 		return notFound;
@@ -477,6 +478,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 
 		final IntMap<V> map;
 		int nextIndex, currentIndex;
+		boolean valid = true;
 
 		public MapIterator (IntMap<V> map) {
 			this.map = map;
@@ -513,10 +515,13 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 				int[] keyTable = map.keyTable;
 				V[] valueTable = map.valueTable;
 				int mask = map.mask, next = i + 1 & mask, key;
-				while ((key = keyTable[next]) != 0 && next != map.place(key)) {
-					keyTable[i] = key;
-					valueTable[i] = valueTable[next];
-					i = next;
+				while ((key = keyTable[next]) != 0) {
+					int placement = map.place(key);
+					if ((next - placement & mask) > (i - placement & mask)) {
+						keyTable[i] = key;
+						valueTable[i] = valueTable[next];
+						i = next;
+					}
 					next = next + 1 & mask;
 				}
 				keyTable[i] = 0;
@@ -537,6 +542,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		/** Note the same entry instance is returned each time this method is called. */
 		public Entry<V> next () {
 			if (!hasNext) throw new NoSuchElementException();
+			if (!valid) throw new KryoException("#iterator() cannot be used nested.");
 			int[] keyTable = map.keyTable;
 			if (nextIndex == INDEX_ZERO) {
 				entry.key = 0;
@@ -551,6 +557,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		}
 
 		public boolean hasNext () {
+			if (!valid) throw new KryoException("#iterator() cannot be used nested.");
 			return hasNext;
 		}
 

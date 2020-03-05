@@ -66,10 +66,6 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 	 * hash. */
 	protected int mask;
 
-	Entries entries1, entries2;
-	Values values1, values2;
-	Keys keys1, keys2;
-
 	/** Creates a new map with an initial capacity of 51 and a load factor of 0.8. */
 	public ObjectMap () {
 		this(51, 0.8f);
@@ -195,11 +191,14 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		K[] keyTable = this.keyTable;
 		V[] valueTable = this.valueTable;
 		V oldValue = valueTable[i];
-		int next = i + 1 & mask;
-		while ((key = keyTable[next]) != null && next != place(key)) {
-			keyTable[i] = key;
-			valueTable[i] = valueTable[next];
-			i = next;
+		int mask = this.mask, next = i + 1 & mask;
+		while ((key = keyTable[next]) != null) {
+			int placement = place(key);
+			if ((next - placement & mask) > (i - placement & mask)) {
+				keyTable[i] = key;
+				valueTable[i] = valueTable[next];
+				i = next;
+			}
 			next = next + 1 & mask;
 		}
 		keyTable[i] = null;
@@ -253,13 +252,13 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		V[] valueTable = this.valueTable;
 		if (value == null) {
 			K[] keyTable = this.keyTable;
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (keyTable[i] != null && valueTable[i] == null) return true;
 		} else if (identity) {
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (valueTable[i] == value) return true;
 		} else {
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (value.equals(valueTable[i])) return true;
 		}
 		return false;
@@ -278,13 +277,13 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		V[] valueTable = this.valueTable;
 		if (value == null) {
 			K[] keyTable = this.keyTable;
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (keyTable[i] != null && valueTable[i] == null) return keyTable[i];
 		} else if (identity) {
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (valueTable[i] == value) return keyTable[i];
 		} else {
-			for (int i = valueTable.length - 1; i > 0; i--)
+			for (int i = valueTable.length - 1; i >= 0; i--)
 				if (value.equals(valueTable[i])) return keyTable[i];
 		}
 		return null;
@@ -424,7 +423,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		return new Keys(this);
 	}
 
-	static int tableSize (int capacity, float loadFactor) {
+	static public int tableSize (int capacity, float loadFactor) {
 		if (capacity < 0) throw new IllegalArgumentException("capacity must be >= 0: " + capacity);
 		int tableSize = nextPowerOfTwo(Math.max(2, (int)Math.ceil(capacity / loadFactor)));
 		if (tableSize > 1 << 30) throw new IllegalArgumentException("The required capacity is too large: " + capacity);
@@ -456,6 +455,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 
 		final ObjectMap<K, V> map;
 		int nextIndex, currentIndex;
+		boolean valid = true;
 
 		public MapIterator (ObjectMap<K, V> map) {
 			this.map = map;
@@ -486,10 +486,13 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 			V[] valueTable = map.valueTable;
 			int mask = map.mask, next = i + 1 & mask;
 			K key;
-			while ((key = keyTable[next]) != null && next != map.place(key)) {
-				keyTable[i] = key;
-				valueTable[i] = valueTable[next];
-				i = next;
+			while ((key = keyTable[next]) != null) {
+				int placement = map.place(key);
+				if ((next - placement & mask) > (i - placement & mask)) {
+					keyTable[i] = key;
+					valueTable[i] = valueTable[next];
+					i = next;
+				}
 				next = next + 1 & mask;
 			}
 			keyTable[i] = null;
