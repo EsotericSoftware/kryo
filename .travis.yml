@@ -1,3 +1,8 @@
+# needed for jdk8:
+# https://travis-ci.community/t/solved-oraclejdk8-installation-failing-still-again/3428
+# https://blog.travis-ci.com/2019-04-15-xenial-default-build-environment
+dist: trusty
+
 # use container
 sudo: false
 language: java
@@ -11,7 +16,7 @@ env:
   
 jdk:
   #- openjdk7
-  - oraclejdk8
+  - openjdk8
 
 before_install:
   # required for testing jdk 11
@@ -24,15 +29,10 @@ install:
 
 script:
   # compile tests with java 8
-  - jdk_switcher use oraclejdk8
-
+  - jdk_switcher use openjdk8
   # separate "clean" from "install" because "clean install" would fail the pom-versioned module
   - mvn clean
-  - mvn -B -P!java8 install
-  # test java 7
-  - jdk_switcher use openjdk7
-  - mvn -v && mvn -B test
-
+  - mvn -B install
   # test java 9 (only available via oraclejdk9)
   - jdk_switcher use oraclejdk9
   - mvn -v && mvn -B test
@@ -45,7 +45,7 @@ script:
   # install and publish snapshot with java 8
   # not via `after_success` but directly in `script`, since a failure would be silently ignored in `after_success`, which
   # is documented in https://docs.travis-ci.com/user/customizing-the-build#Breaking-the-Build
-  - jdk_switcher use oraclejdk8
+  - jdk_switcher use openjdk8
   - if [ $TRAVIS_BRANCH = "master" ] && [ $TRAVIS_PULL_REQUEST = "false" ] && [ $IS_SNAPSHOT ]; then
       mvn -v && mvn -B -P requireSnapshot -DskipTests=true deploy --settings build/settings-sonatype.xml;
     else
