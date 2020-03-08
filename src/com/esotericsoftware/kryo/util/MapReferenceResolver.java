@@ -30,9 +30,21 @@ import java.util.ArrayList;
  * for get or put.
  * @author Nathan Sweet */
 public class MapReferenceResolver implements ReferenceResolver {
+	private static final int CAPACITY = 2048;
+	private static final int MAXIMUM_CAPACITY = 8192;
+
 	protected Kryo kryo;
-	protected final IdentityObjectIntMap writtenObjects = new IdentityObjectIntMap();
-	protected final ArrayList readObjects = new ArrayList();
+	protected final IdentityObjectIntMap<Object> writtenObjects = new IdentityObjectIntMap<>(CAPACITY);
+	protected final ArrayList<Object> readObjects = new ArrayList<>(CAPACITY);
+	private final int maximumCapacity;
+
+	public MapReferenceResolver () {
+		this(MAXIMUM_CAPACITY);
+	}
+
+	public MapReferenceResolver (int maximumCapacity) {
+		this.maximumCapacity = maximumCapacity;
+	}
 
 	public void setKryo (Kryo kryo) {
 		this.kryo = kryo;
@@ -63,8 +75,13 @@ public class MapReferenceResolver implements ReferenceResolver {
 	}
 
 	public void reset () {
+		final int size = readObjects.size();
 		readObjects.clear();
-		writtenObjects.clear(2048);
+		if (size > maximumCapacity) {
+			readObjects.trimToSize();
+			readObjects.ensureCapacity(CAPACITY);
+		}
+		writtenObjects.clear(CAPACITY);
 	}
 
 	/** Returns false for all primitive wrappers and enums. */
