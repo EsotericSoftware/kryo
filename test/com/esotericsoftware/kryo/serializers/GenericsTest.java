@@ -26,15 +26,11 @@ import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
 import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.lang.invoke.SerializedLambda;
+import java.util.*;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class GenericsTest extends KryoTestCase {
@@ -130,6 +126,46 @@ public class GenericsTest extends KryoTestCase {
 		kryo.copy(new DontPassToSuper());
 	}
 
+	// Test for https://github.com/EsotericSoftware/kryo/issues/654
+	@Test
+	@Ignore("Currently failing")
+	public void testFieldWithGenericInterface () {
+		ClassWithGenericInterfaceField o = new ClassWithGenericInterfaceField();
+
+		kryo.setRegistrationRequired(false);
+		kryo.register(SerializedLambda.class);
+		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
+
+		Output buffer = new Output(512, 4048);
+		kryo.writeClassAndObject(buffer, o);
+		buffer.flush();
+
+		Input input = new Input(buffer.getBuffer(), 0, buffer.position());
+		kryo.readObject(input, ClassWithGenericInterfaceField.class);
+	}
+
+	// Test for https://github.com/EsotericSoftware/kryo/issues/655
+	@Test
+	@Ignore("Currently failing")
+	public void testFieldWithGenericArrayType() {
+		final ClassArrayHolder o = new ClassArrayHolder(new Class[]{});
+
+		kryo.setRegistrationRequired(false);
+		Output buffer = new Output(512, 4048);
+		kryo.writeClassAndObject(buffer, o);
+	}
+
+	// Test for https://github.com/EsotericSoftware/kryo/issues/655
+	@Test
+	@Ignore("Currently failing")
+	public void testClassWithMultipleGenericTypes() {
+		final HolderWithAdditionalGenericType<String, Integer> o = new HolderWithAdditionalGenericType<>(1);
+
+		kryo.setRegistrationRequired(false);
+		Output buffer = new Output(512, 4048);
+		kryo.writeClassAndObject(buffer, o);
+	}
+
 	private interface Holder<V> {
 		V getValue ();
 	}
@@ -160,6 +196,20 @@ public class GenericsTest extends KryoTestCase {
 
 	static private class LongListHolder extends AbstractValueListHolder<Long> {
 		LongListHolder (java.util.List<Long> value) {
+			super(value);
+		}
+	}
+
+	static class ClassArrayHolder extends AbstractValueHolder<Class<?>[]> {
+		public ClassArrayHolder(Class<?>[] value) {
+			super(value);
+		}
+	}
+
+	static class HolderWithAdditionalGenericType<BT, OT> extends AbstractValueHolder<OT> {
+		private BT value;
+
+		HolderWithAdditionalGenericType(OT value) {
 			super(value);
 		}
 	}
@@ -307,4 +357,11 @@ public class GenericsTest extends KryoTestCase {
 			B<Z> b;
 		}
 	}
+
+	static class ClassWithGenericInterfaceField {
+
+		private final Holder<?> input = (Holder<?> & Serializable) () -> null;
+
+	}
+
 }
