@@ -145,7 +145,6 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
-	@Ignore("Currently failing")
 	public void testFieldWithGenericArrayType() {
 		final ClassArrayHolder o = new ClassArrayHolder(new Class[]{});
 

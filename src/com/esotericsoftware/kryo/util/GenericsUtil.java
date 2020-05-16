@@ -100,6 +100,7 @@ public class GenericsUtil {
 				// Success, the type variable was explicitly declared.
 				if (arg instanceof Class) return arg;
 				if (arg instanceof ParameterizedType) return resolveType(fromClass, current, arg);
+				if (arg instanceof GenericArrayType) return resolveType(fromClass, current, arg);
 
 				if (arg instanceof TypeVariable) {
 					if (first) return type; // Failure, no more sub classes.
