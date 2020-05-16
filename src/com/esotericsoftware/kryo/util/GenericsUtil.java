@@ -109,6 +109,10 @@ public class GenericsUtil {
 			}
 		}
 
+		// We have exhausted looking through superclasses for a concrete generic type
+		// definition, so the current type must have been defined on the first class.
+		if (first) return type;
+
 		// If this happens, there is a case we need to handle.
 		throw new KryoException("Unable to resolve type variable: " + type);
 	}
