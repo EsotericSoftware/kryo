@@ -128,7 +128,6 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/654
 	@Test
-	@Ignore("Currently failing")
 	public void testFieldWithGenericInterface () {
 		ClassWithGenericInterfaceField o = new ClassWithGenericInterfaceField();
 
@@ -146,7 +145,6 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
-	@Ignore("Currently failing")
 	public void testFieldWithGenericArrayType() {
 		final ClassArrayHolder o = new ClassArrayHolder(new Class[]{});
 
@@ -157,7 +155,6 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
-	@Ignore("Currently failing")
 	public void testClassWithMultipleGenericTypes() {
 		final HolderWithAdditionalGenericType<String, Integer> o = new HolderWithAdditionalGenericType<>(1);
 

@@ -100,6 +100,7 @@ public class GenericsUtil {
 				// Success, the type variable was explicitly declared.
 				if (arg instanceof Class) return arg;
 				if (arg instanceof ParameterizedType) return resolveType(fromClass, current, arg);
+				if (arg instanceof GenericArrayType) return resolveType(fromClass, current, arg);
 
 				if (arg instanceof TypeVariable) {
 					if (first) return type; // Failure, no more sub classes.
@@ -107,6 +108,10 @@ public class GenericsUtil {
 				}
 			}
 		}
+
+		// We have exhausted looking through superclasses for a concrete generic type
+		// definition, so the current type must have been defined on the first class.
+		if (first) return type;
 
 		// If this happens, there is a case we need to handle.
 		throw new KryoException("Unable to resolve type variable: " + type);
