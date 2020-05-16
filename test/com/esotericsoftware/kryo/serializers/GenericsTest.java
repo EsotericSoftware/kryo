@@ -128,7 +128,6 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/654
 	@Test
-	@Ignore("Currently failing")
 	public void testFieldWithGenericInterface () {
 		ClassWithGenericInterfaceField o = new ClassWithGenericInterfaceField();
 

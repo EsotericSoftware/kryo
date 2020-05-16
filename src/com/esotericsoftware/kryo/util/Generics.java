@@ -248,6 +248,10 @@ public class Generics {
 			buffer.append("]");
 			return buffer.toString();
 		}
+
+		public boolean isEmpty() {
+			return total == 0;
+		}
 	}
 
 	/** Stores a type and its type parameters, recursively. */
