@@ -175,6 +175,19 @@ public class GenericsTest extends KryoTestCase {
 		roundTrip(110, o);
 	}
 
+	// Test for https://github.com/EsotericSoftware/kryo/issues/721
+	@Test
+	@Ignore("Currently fails")
+	public void testClassHierarchyWithConflictingTypeVariables () {
+		ClassWithConflictingTypeArguments.A o = new ClassWithConflictingTypeArguments.A(
+				new ClassWithConflictingTypeArguments.B<>(1));
+
+		kryo.setRegistrationRequired(false);
+
+		Output buffer = new Output(512, 4048);
+		kryo.writeClassAndObject(buffer, o);
+	}
+
 	private interface Holder<V> {
 		V getValue ();
 	}
@@ -483,6 +496,27 @@ public class GenericsTest extends KryoTestCase {
 		}
 
 		public static class C<T> {
+		}
+	}
+
+	static class ClassWithConflictingTypeArguments {
+		static final class A {
+			C<String> c;
+
+			public A (C<String> c) {
+				this.c = c;
+			}
+		}
+
+		static class B<R, V> implements C<V> {
+			R r;
+
+			public B (R r) {
+				this.r = r;
+			}
+		}
+
+		interface C<T> {
 		}
 	}
 
