@@ -1206,6 +1206,20 @@ public class Kryo implements Poolable {
 		return generics;
 	}
 
+	/**
+	 * <p>
+	 * Sets the strategy used to serialize and deserialize generics. Note that the handler affects the (de)serialization stream,
+	 * i.e. the serializer and the deserializer need to use the same handler to be compatible.
+	 * </p>
+	 * <p>
+	 * There are currently two generic handlers bundled with kryo:
+	 * <ul>
+	 * <li>{@link DefaultGenericHandler} The default generic handler, which tries to save space of the serialization output at the
+	 * expense of performance and reliability</li>
+	 * <li>{@linkplain NoGenericsHandler} This generic handler is a bit faster, but leads to slightly larger serializations, since
+	 * no generic types are inferred automatically</li>
+	 * </ul>
+	 * @param newHandler the new handler to use. */
 	public void setGenerics (GenericHandler newHandler) {
 		generics = newHandler;
 	}
