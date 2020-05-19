@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.io;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 /** An InputStream whose source is a {@link ByteBuffer}.
@@ -35,7 +36,7 @@ public class ByteBufferInputStream extends InputStream {
 	/** Creates a stream with a new non-direct buffer of the specified size. The position and limit of the buffer is zero. */
 	public ByteBufferInputStream (int bufferSize) {
 		this(ByteBuffer.allocate(bufferSize));
-		byteBuffer.flip();
+		flipBuffer(byteBuffer);
 	}
 
 	public ByteBufferInputStream (ByteBuffer byteBuffer) {
@@ -66,4 +67,9 @@ public class ByteBufferInputStream extends InputStream {
 	public int available () throws IOException {
 		return byteBuffer.remaining();
 	}
+
+	private void flipBuffer (Buffer buffer) {
+		buffer.flip();
+	}
+
 }

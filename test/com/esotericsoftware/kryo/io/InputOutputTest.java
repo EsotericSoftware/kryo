@@ -31,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
@@ -896,7 +897,7 @@ public class InputOutputTest extends KryoTestCase {
 		testOutput.flush();
 
 		ByteBufferInputStream testInputs = new ByteBufferInputStream();
-		buf.flip();
+		((Buffer) buf).flip();
 		testInputs.setByteBuffer(buf);
 		Input input = new Input(testInputs, 512);
 		byte[] toRead = new byte[512];
