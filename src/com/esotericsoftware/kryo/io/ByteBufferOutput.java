@@ -24,6 +24,7 @@ import com.esotericsoftware.kryo.util.Util;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -116,8 +117,8 @@ public class ByteBufferOutput extends Output {
 	public void setBuffer (byte[] bytes, int offset, int count) {
 		ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
 		buffer.put(bytes, offset, count);
-		buffer.position(0);
-		buffer.limit(bytes.length);
+		setBufferPosition(buffer, 0);
+		limitBuffer(buffer, bytes.length);
 		setBuffer(buffer);
 	}
 
@@ -150,19 +151,31 @@ public class ByteBufferOutput extends Output {
 
 	public byte[] toBytes () {
 		byte[] newBuffer = new byte[position];
-		byteBuffer.position(0);
+		setBufferPosition(byteBuffer, 0);
 		byteBuffer.get(newBuffer, 0, position);
 		return newBuffer;
 	}
 
 	public void setPosition (int position) {
 		this.position = position;
-		this.byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 
 	public void reset () {
 		super.reset();
-		byteBuffer.position(0);
+		setBufferPosition(byteBuffer, 0);
+	}
+
+	private int getBufferPosition(Buffer byteBuffer) {
+		return byteBuffer.position();
+	}
+
+	private void setBufferPosition(Buffer byteBuffer, int newPosition) {
+		byteBuffer.position(newPosition);
+	}
+
+	private void limitBuffer(Buffer buffer, int length) {
+		buffer.limit(length);
 	}
 
 	protected boolean require (int required) throws KryoException {
@@ -179,8 +192,8 @@ public class ByteBufferOutput extends Output {
 			capacity = Math.min(capacity * 2, maxCapacity);
 		} while (capacity - position < required);
 		ByteBuffer newBuffer = !byteBuffer.isDirect() ? ByteBuffer.allocate(capacity) : ByteBuffer.allocateDirect(capacity);
-		byteBuffer.position(0);
-		byteBuffer.limit(position);
+		setBufferPosition(byteBuffer, 0);
+		limitBuffer(byteBuffer, position);
 		newBuffer.put(byteBuffer);
 		newBuffer.order(byteBuffer.order());
 		byteBuffer = newBuffer;
@@ -193,9 +206,9 @@ public class ByteBufferOutput extends Output {
 		if (outputStream == null) return;
 		try {
 			byte[] tmp = new byte[position];
-			byteBuffer.position(0);
+			setBufferPosition(byteBuffer, 0);
 			byteBuffer.get(tmp);
-			byteBuffer.position(0);
+			setBufferPosition(byteBuffer, 0);
 			outputStream.write(tmp, 0, position);
 		} catch (IOException ex) {
 			throw new KryoException(ex);
@@ -574,11 +587,11 @@ public class ByteBufferOutput extends Output {
 				byteBuffer.put((byte)c);
 				charIndex++;
 				if (charIndex == charCount) {
-					position = byteBuffer.position();
+					position = getBufferPosition(byteBuffer);
 					return;
 				}
 			}
-			position = byteBuffer.position();
+			position = getBufferPosition(byteBuffer);
 		}
 		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
@@ -654,7 +667,7 @@ public class ByteBufferOutput extends Output {
 				byteBuffer.put((byte)(value >> 16));
 				byteBuffer.put((byte)(value >> 24));
 			}
-			position = byteBuffer.position();
+			position = getBufferPosition(byteBuffer);
 		} else {
 			for (int n = offset + count; offset < n; offset++)
 				writeInt(array[offset]);
@@ -676,7 +689,7 @@ public class ByteBufferOutput extends Output {
 				byteBuffer.put((byte)(value >>> 48));
 				byteBuffer.put((byte)(value >>> 56));
 			}
-			position = byteBuffer.position();
+			position = getBufferPosition(byteBuffer);
 		} else {
 			for (int n = offset + count; offset < n; offset++)
 				writeLong(array[offset]);
@@ -694,7 +707,7 @@ public class ByteBufferOutput extends Output {
 				byteBuffer.put((byte)(value >> 16));
 				byteBuffer.put((byte)(value >> 24));
 			}
-			position = byteBuffer.position();
+			position = getBufferPosition(byteBuffer);
 		} else {
 			for (int n = offset + count; offset < n; offset++)
 				writeFloat(array[offset]);
@@ -716,7 +729,7 @@ public class ByteBufferOutput extends Output {
 				byteBuffer.put((byte)(value >>> 48));
 				byteBuffer.put((byte)(value >>> 56));
 			}
-			position = byteBuffer.position();
+			position = getBufferPosition(byteBuffer);
 		} else {
 			for (int n = offset + count; offset < n; offset++)
 				writeDouble(array[offset]);
@@ -731,7 +744,7 @@ public class ByteBufferOutput extends Output {
 				byteBuffer.put((byte)value);
 				byteBuffer.put((byte)(value >>> 8));
 			}
-			position = byteBuffer.position();
+			position = getBufferPosition(byteBuffer);
 		} else {
 			for (int n = offset + count; offset < n; offset++)
 				writeShort(array[offset]);
@@ -746,7 +759,7 @@ public class ByteBufferOutput extends Output {
 				byteBuffer.put((byte)value);
 				byteBuffer.put((byte)(value >>> 8));
 			}
-			position = byteBuffer.position();
+			position = getBufferPosition(byteBuffer);
 		} else {
 			for (int n = offset + count; offset < n; offset++)
 				writeChar(array[offset]);
@@ -758,7 +771,7 @@ public class ByteBufferOutput extends Output {
 			require(count);
 			for (int n = offset + count; offset < n; offset++)
 				byteBuffer.put(array[offset] ? (byte)1 : 0);
-			position = byteBuffer.position();
+			position = getBufferPosition(byteBuffer);
 		} else {
 			for (int n = offset + count; offset < n; offset++)
 				writeBoolean(array[offset]);

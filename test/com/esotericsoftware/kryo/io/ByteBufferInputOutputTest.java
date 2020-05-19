@@ -24,6 +24,7 @@ import static org.junit.Assert.*;
 import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.io.ByteArrayInputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 import org.junit.Test;
@@ -78,7 +79,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		outputBuffer.writeInt(10);
 
 		ByteBuffer byteBuffer = outputBuffer.getByteBuffer().duplicate();
-		byteBuffer.flip();
+		((Buffer) byteBuffer).flip();
 
 		ByteBufferInput inputBuffer = new ByteBufferInput(byteBuffer);
 		inputBuffer.skip(5);
