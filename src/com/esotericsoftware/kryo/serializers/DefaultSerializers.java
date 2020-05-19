@@ -178,15 +178,14 @@ public class DefaultSerializers {
 				output.writeByte(NULL);
 				return;
 			}
-			BigInteger value = (BigInteger)object;
 			// fast-path optimizations for BigInteger.ZERO constant
-			if (value == BigInteger.ZERO) {
+			if (object == BigInteger.ZERO) {
 				output.writeByte(2);
 				output.writeByte(0);
 				return;
 			}
 			// default behaviour
-			byte[] bytes = value.toByteArray();
+			byte[] bytes = object.toByteArray();
 			output.writeVarInt(bytes.length + 1, true);
 			output.writeBytes(bytes);
 		}
@@ -239,16 +238,15 @@ public class DefaultSerializers {
 				output.writeByte(NULL);
 				return;
 			}
-			BigDecimal value = (BigDecimal)object;
 			// fast-path optimizations for BigDecimal constants
-			if (value == BigDecimal.ZERO) {
+			if (object == BigDecimal.ZERO) {
 				bigIntegerSerializer.write(kryo, output, BigInteger.ZERO);
 				output.writeInt(0, false); // for backwards compatibility
 				return;
 			}
 			// default behaviour
-			bigIntegerSerializer.write(kryo, output, value.unscaledValue());
-			output.writeInt(value.scale(), false);
+			bigIntegerSerializer.write(kryo, output, object.unscaledValue());
+			output.writeInt(object.scale(), false);
 		}
 
 		public BigDecimal read (Kryo kryo, Input input, Class<? extends BigDecimal> type) {
@@ -328,7 +326,7 @@ public class DefaultSerializers {
 				return constructor.newInstance(time);
 			} catch (Exception ex) {
 				// default strategy
-				Date d = (Date)kryo.newInstance(type);
+				Date d = kryo.newInstance(type);
 				d.setTime(time);
 				return d;
 			}

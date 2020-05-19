@@ -66,7 +66,7 @@ public class ClosureSerializer extends Serializer {
 		int count = serializedLambda.getCapturedArgCount();
 		output.writeVarInt(count, true);
 		for (int i = 0; i < count; i++)
-			kryo.writeObject(output, serializedLambda.getCapturedArg(i));
+			kryo.writeClassAndObject(output, serializedLambda.getCapturedArg(i));
 		try {
 			kryo.writeClass(output, Class.forName(serializedLambda.getCapturingClass().replace('/', '.')));
 		} catch (ClassNotFoundException ex) {

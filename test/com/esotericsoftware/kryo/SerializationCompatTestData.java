@@ -70,6 +70,7 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /** Testdata for serialization compatibility check. */
+@SuppressWarnings("unused")
 public class SerializationCompatTestData {
 
 	static class TestDataJava8 extends TestData {
@@ -217,7 +218,7 @@ public class SerializationCompatTestData {
 			_integerArray = new Integer[] {13};
 
 			_date = new Date(42);
-			_calendar = Calendar.getInstance();
+			_calendar = Calendar.getInstance(Locale.ENGLISH);
 			_calendar.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
 			_calendar.set(2009, Calendar.JANUARY, 25, 10, 29, 0);
 			_calendar.set(Calendar.MILLISECOND, 0);

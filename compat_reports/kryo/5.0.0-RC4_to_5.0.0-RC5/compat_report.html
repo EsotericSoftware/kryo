@@ -1,0 +1,2684 @@
+<!-- kind:binary;verdict:incompatible;affected:20.7;added:87;removed:27;type_problems_high:13;type_problems_medium:3;type_problems_low:27;method_problems_high:0;method_problems_medium:0;method_problems_low:0;checked_methods:1499;checked_types:163;tool_version:2.1 -->
+<!-- kind:source;verdict:incompatible;affected:20.7;added:87;removed:27;type_problems_high:13;type_problems_medium:3;type_problems_low:0;method_problems_high:0;method_problems_medium:0;method_problems_low:0;checked_methods:1499;checked_types:163;tool_version:2.1 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="keywords" content="kryo, compatibility" />
+<meta name="description" content="Compatibility report for the kryo library between 5.0.0-RC4 and 5.0.0-RC5 versions" />
+<title>kryo: 5.0.0-RC4 to 5.0.0-RC5 compatibility report</title>
+<style type="text/css">
+body {
+    font-family:Arial, sans-serif;
+    background-color:White;
+    color:Black;
+}
+hr {
+    color:Black;
+    background-color:Black;
+    height:1px;
+    border:0;
+}
+h1 {
+    margin-bottom:0px;
+    padding-bottom:0px;
+    font-size:1.625em;
+}
+h2 {
+    margin-bottom:0px;
+    padding-bottom:0px;
+    font-size:1.25em;
+    white-space:nowrap;
+}
+div.symbols {
+    color:#003E69;
+}
+div.symbols i {
+    color:Brown;
+}
+span.section {
+    font-weight:bold;
+    cursor:pointer;
+    color:#003E69;
+    white-space:nowrap;
+    margin-left:0.3125em;
+}
+span:hover.section {
+    color:#336699;
+}
+span.sect_aff {
+    cursor:pointer;
+    padding-left:1.55em;
+    font-size:0.875em;
+    color:#cc3300;
+}
+span.ext {
+    font-weight:100;
+}
+span.jar {
+    color:#cc3300;
+    font-size:0.875em;
+    font-weight:bold;
+}
+div.jar_list {
+    padding-left:0.4em;
+    font-size:0.94em;
+}
+span.pkg_t {
+    color:#408080;
+    font-size:0.875em;
+}
+span.pkg {
+    color:#408080;
+    font-size:0.875em;
+    font-weight:bold;
+}
+span.cname {
+    color:Green;
+    font-size:0.875em;
+    font-weight:bold;
+}
+span.iname_b {
+    font-weight:bold;
+}
+span.iname_a {
+    color:#333333;
+    font-weight:bold;
+    font-size:0.94em;
+}
+span.sym_p {
+    font-weight:normal;
+    white-space:normal;
+}
+span.sym_pd {
+    white-space:normal;
+}
+span.sym_p span, span.sym_pd span {
+    white-space:nowrap;
+}
+span.attr {
+    color:Black;
+    font-weight:100;
+}
+span.deprecated {
+    color:Red;
+    font-weight:bold;
+    font-family:Monaco, monospace;
+}
+div.affect {
+    padding-left:1em;
+    padding-bottom:10px;
+    font-size:0.87em;
+    font-style:italic;
+    line-height:0.9em;
+}
+div.affected {
+    padding-left:2em;
+    padding-top:10px;
+}
+table.ptable {
+    border-collapse:collapse;
+    border:1px outset black;
+    margin-left:0.95em;
+    margin-top:3px;
+    margin-bottom:3px;
+    width:56.25em;
+}
+table.ptable td {
+    border:1px solid Gray;
+    padding:3px;
+    font-size:0.875em;
+    text-align:left;
+    vertical-align:top;
+    max-width:28em;
+    word-wrap:break-word;
+}
+table.ptable th {
+    background-color:#eeeeee;
+    font-weight:bold;
+    color:#333333;
+    font-family:Verdana, Arial;
+    font-size:0.875em;
+    border:1px solid Gray;
+    text-align:center;
+    vertical-align:top;
+    white-space:nowrap;
+    padding:3px;
+}
+table.summary {
+    border-collapse:collapse;
+    border:1px outset black;
+}
+table.summary th {
+    background-color:#eeeeee;
+    font-weight:100;
+    text-align:left;
+    font-size:0.94em;
+    white-space:nowrap;
+    border:1px inset Gray;
+    padding:3px;
+}
+table.summary td {
+    text-align:right;
+    white-space:nowrap;
+    border:1px inset Gray;
+    padding:3px 5px 3px 10px;
+}
+span.mngl {
+    padding-left:1em;
+    font-size:0.875em;
+    cursor:text;
+    color:#444444;
+    font-weight:bold;
+}
+span.pleft {
+    padding-left:2.5em;
+}
+span.color_p {
+    font-style:italic;
+    color:Brown;
+}
+span.param {
+    font-style:italic;
+}
+span.focus_p {
+    font-style:italic;
+    background-color:#DCDCDC;
+}
+span.ttype {
+    font-weight:100;
+}
+span.nowrap {
+    white-space:nowrap;
+}
+span.value {
+    white-space:nowrap;
+    font-weight:bold;
+}
+.passed {
+    background-color:#CCFFCC;
+    font-weight:100;
+}
+.warning {
+    background-color:#F4F4AF;
+    font-weight:100;
+}
+.failed {
+    background-color:#FFCCCC;
+    font-weight:100;
+}
+.new {
+    background-color:#C6DEFF;
+    font-weight:100;
+}
+
+.compatible {
+    background-color:#CCFFCC;
+    font-weight:100;
+}
+.almost_compatible {
+    background-color:#FFDAA3;
+    font-weight:100;
+}
+.incompatible {
+    background-color:#FFCCCC;
+    font-weight:100;
+}
+.gray {
+    background-color:#DCDCDC;
+    font-weight:100;
+}
+
+.top_ref {
+    font-size:0.69em;
+}
+.footer {
+    font-size:0.8125em;
+}
+.tabset {
+    float:left;
+}
+a.tab {
+    border:1px solid Black;
+    float:left;
+    margin:0px 5px -1px 0px;
+    padding:3px 5px 3px 5px;
+    position:relative;
+    font-size:0.875em;
+    background-color:#DDD;
+    text-decoration:none;
+    color:Black;
+}
+a.disabled:hover
+{
+    color:Black;
+    background:#EEE;
+}
+a.active:hover
+{
+    color:Black;
+    background:White;
+}
+a.active {
+    border-bottom-color:White;
+    background-color:White;
+}
+div.tab {
+    border-top:1px solid Black;
+    padding:0px;
+    width:100%;
+    clear:both;
+}
+
+</style>
+<script type="text/javascript" language="JavaScript">
+<!--
+function sC(header, id)
+{
+    e = document.getElementById(id);
+    if(e.style.display == 'none')
+    {
+        e.style.display = 'block';
+        e.style.visibility = 'visible';
+        header.innerHTML = header.innerHTML.replace(/\[[^0-9 ]\]/gi, "[&minus;]");
+    }
+    else
+    {
+        e.style.display = 'none';
+        e.style.visibility = 'hidden';
+        header.innerHTML = header.innerHTML.replace(/\[[^0-9 ]\]/gi, "[+]");
+    }
+}
+function initTabs()
+{
+    var url = window.location.href;
+    if(url.indexOf('_Source_')!=-1 || url.indexOf('#Source')!=-1)
+    {
+        var tab1 = document.getElementById('BinaryID');
+        var tab2 = document.getElementById('SourceID');
+        tab1.className='tab disabled';
+        tab2.className='tab active';
+    }
+    
+    var sets = document.getElementsByTagName('div');
+    for (var i = 0; i < sets.length; i++)
+    {
+        if (sets[i].className.indexOf('tabset') != -1)
+        {
+            var tabs = [];
+            var links = sets[i].getElementsByTagName('a');
+            for (var j = 0; j < links.length; j++)
+            {
+                if (links[j].className.indexOf('tab') != -1)
+                {
+                    tabs.push(links[j]);
+                    links[j].tabs = tabs;
+                    var tab = document.getElementById(links[j].href.substr(links[j].href.indexOf('#') + 1));
+                    //reset all tabs on start
+                    if (tab)
+                    {
+                        if (links[j].className.indexOf('active')!=-1) {
+                            tab.style.display = 'block';
+                        }
+                        else {
+                            tab.style.display = 'none';
+                        }
+                    }
+                    links[j].onclick = function()
+                    {
+                        var tab = document.getElementById(this.href.substr(this.href.indexOf('#') + 1));
+                        if (tab)
+                        {
+                            //reset all tabs before change
+                            for (var k = 0; k < this.tabs.length; k++)
+                            {
+                                document.getElementById(this.tabs[k].href.substr(this.tabs[k].href.indexOf('#') + 1)).style.display = 'none';
+                                this.tabs[k].className = this.tabs[k].className.replace('active', 'disabled');
+                            }
+                            this.className = 'tab active';
+                            tab.style.display = 'block';
+                            // window.location.hash = this.id.replace('ID', '');
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    if(url.indexOf('#')!=-1) {
+        location.href=location.href;
+    }
+}
+
+if (window.addEventListener) window.addEventListener('load', initTabs, false);
+else if (window.attachEvent) window.attachEvent('onload', initTabs);
+
+-->
+</script>
+</head>
+<body><a name='Source'></a><a name='Binary'></a><a name='Top'></a><h1>API compatibility report for the <span style='color:Blue;'>kryo</span> library between <span style='color:Red;'>5.0.0-RC4</span> and <span style='color:Red;'>5.0.0-RC5</span> versions</h1>
+<br/><div class='tabset'>
+<a id='BinaryID' href='#BinaryTab' class='tab active'>Binary<br/>Compatibility</a>
+<a id='SourceID' href='#SourceTab' style='margin-left:3px' class='tab disabled'>Source<br/>Compatibility</a>
+</div>
+<div id='BinaryTab' class='tab'>
+<h2>Test Info</h2><hr/>
+<table class='summary'>
+<tr><th>Library Name</th><td>kryo</td></tr>
+<tr><th>Version #1</th><td>5.0.0-RC4</td></tr>
+<tr><th>Version #2</th><td>5.0.0-RC5</td></tr>
+<tr><th>Subject</th><td width='150px'>Binary Compatibility</td></tr>
+</table>
+<h2>Test Results</h2><hr/>
+<table class='summary'>
+<tr><th>Total JARs</th><td><a href='#Checked_Archives' style='color:Blue;'>1</a></td></tr>
+<tr><th>Total Methods / Classes</th><td>1499 / 163</td></tr>
+<tr><th>Compatibility</th>
+<td class='incompatible'>79.3%</td>
+</tr>
+</table>
+<h2>Problem Summary</h2><hr/>
+<table class='summary'>
+<tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr>
+<tr><th>Added Methods</th><td>-</td><td class='new'><a href='#Binary_Added' style='color:Blue;'>87</a></td></tr>
+<tr><th>Removed Methods</th><td>High</td><td class='failed'><a href='#Binary_Removed' style='color:Blue;'>27</a></td></tr>
+<tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td class='failed'><a href='#Type_Binary_Problems_High' style='color:Blue;'>13</a></td></tr>
+<tr><td>Medium</td><td class='failed'><a href='#Type_Binary_Problems_Medium' style='color:Blue;'>3</a></td></tr>
+<tr><td>Low</td><td class='warning'><a href='#Type_Binary_Problems_Low' style='color:Blue;'>27</a></td></tr>
+<tr><th rowspan='3'>Problems with<br/>Methods</th><td>High</td><td>0</td></tr>
+<tr><td>Medium</td><td>0</td></tr>
+<tr><td>Low</td><td>0</td></tr>
+</table>
+
+<a name='Binary_Added'></a><h2>Added Methods <span class='new'>&nbsp;87&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Entries.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_1')">
+ObjectMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectMap.Entries&lt;K,V&gt;</span></span>
+<br/>
+<div id="c_1" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Entries&lt;K,V&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectMap$Entries;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Entries.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_2')">
+ObjectIntMap.Entries&lt;K&gt;.ObjectIntMap.Entries&#160;<span class='sym_p'><span>(&#160;ObjectIntMap&lt;K&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_2" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap.Entries:(Lcom/esotericsoftware/kryo/util/ObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_3')">
+ObjectIntMap.Entries&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_3" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_4')">
+ObjectIntMap.Entries&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator</span></span>
+<br/>
+<div id="c_4" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_5')">
+ObjectIntMap.Entries&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Entries&lt;K&gt;</span></span>
+<br/>
+<div id="c_5" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Entries;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_6')">
+ObjectIntMap.Entries&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_6" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_7')">
+ObjectIntMap.Entries&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Entry&lt;K&gt;</span></span>
+<br/>
+<div id="c_7" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.next:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Entry;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_8')">
+ObjectIntMap.Entries&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_8" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_9')">
+ObjectIntMap.Entries&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_9" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.reset:()V</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Entry.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_10')">
+ObjectIntMap.Entry&lt;K&gt;.ObjectIntMap.Entry&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_10" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entry&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap.Entry:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_11')">
+ObjectIntMap.Entry&lt;K&gt;.toString&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_11" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entry&lt;K&gt;.toString:()Ljava/lang/String;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>IdentityMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_12')">
+IdentityMap&lt;K,V&gt;.IdentityMap&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;K,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_12" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap&lt;K,V&gt;.com.esotericsoftware.kryo.util.IdentityMap:(Lcom/esotericsoftware/kryo/util/IdentityMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_13')">
+IdentityMap&lt;K,V&gt;.hashCode&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_13" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap&lt;K,V&gt;.hashCode:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_14')">
+IdentityMap&lt;K,V&gt;.place&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>item</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_14" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap&lt;K,V&gt;.place:(Ljava/lang/Object;)I</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>IdentityObjectIntMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_15')">
+IdentityObjectIntMap&lt;K&gt;.IdentityObjectIntMap&#160;<span class='sym_p'><span>(&#160;IdentityObjectIntMap&lt;K&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_15" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityObjectIntMap&lt;K&gt;.com.esotericsoftware.kryo.util.IdentityObjectIntMap:(Lcom/esotericsoftware/kryo/util/IdentityObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_16')">
+IdentityObjectIntMap&lt;K&gt;.hashCode&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_16" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityObjectIntMap&lt;K&gt;.hashCode:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_17')">
+IdentityObjectIntMap&lt;K&gt;.place&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>item</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_17" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityObjectIntMap&lt;K&gt;.place:(Ljava/lang/Object;)I</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>IntMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_18')">
+IntMap&lt;V&gt;.equals&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>obj</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_18" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.equals:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_19')">
+IntMap&lt;V&gt;.equalsIdentity&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>obj</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_19" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.equalsIdentity:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_20')">
+IntMap&lt;V&gt;.hashCode&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_20" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.hashCode:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_21')">
+IntMap&lt;V&gt;.isEmpty&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_21" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.isEmpty:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_22')">
+IntMap&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;IntMap.Entry&lt;V&gt;&gt;</span></span>
+<br/>
+<div id="c_22" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_23')">
+IntMap&lt;V&gt;.notEmpty&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_23" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.notEmpty:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_24')">
+IntMap&lt;V&gt;.place&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>item</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_24" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.place:(I)I</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Keys.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_25')">
+IntMap.Keys.toArray&#160;<span class='sym_p'><span>(&#160;IntArray <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntArray</span></span>
+<br/>
+<div id="c_25" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap.Keys.toArray:(Lcom/esotericsoftware/kryo/util/IntArray;)Lcom/esotericsoftware/kryo/util/IntArray;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Keys.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_26')">
+ObjectIntMap.Keys&lt;K&gt;.ObjectIntMap.Keys&#160;<span class='sym_p'><span>(&#160;ObjectIntMap&lt;K&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_26" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap.Keys:(Lcom/esotericsoftware/kryo/util/ObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_27')">
+ObjectIntMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_27" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_28')">
+ObjectIntMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator</span></span>
+<br/>
+<div id="c_28" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_29')">
+ObjectIntMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Keys&lt;K&gt;</span></span>
+<br/>
+<div id="c_29" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Keys;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_30')">
+ObjectIntMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;K</span></span>
+<br/>
+<div id="c_30" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_31')">
+ObjectIntMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_31" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_32')">
+ObjectIntMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_32" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_33')">
+ObjectIntMap.Keys&lt;K&gt;.toList&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;K&gt;</span></span>
+<br/>
+<div id="c_33" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.toList:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_34')">
+ObjectIntMap.Keys&lt;K&gt;.toList&#160;<span class='sym_p'><span>(&#160;T <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;T</span></span>
+<br/>
+<div id="c_34" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.toList:(Ljava/util/List;)Ljava/util/List;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_35')">
+ObjectMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectMap.Keys&lt;K&gt;</span></span>
+<br/>
+<div id="c_35" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Keys&lt;K&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectMap$Keys;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_36')">
+ObjectMap.Keys&lt;K&gt;.toList&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;K&gt;</span></span>
+<br/>
+<div id="c_36" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Keys&lt;K&gt;.toList:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_37')">
+ObjectMap.Keys&lt;K&gt;.toList&#160;<span class='sym_p'><span>(&#160;T <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;T</span></span>
+<br/>
+<div id="c_37" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Keys&lt;K&gt;.toList:(Ljava/util/List;)Ljava/util/List;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>MapReferenceResolver.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_38')">
+MapReferenceResolver.MapReferenceResolver&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>maximumCapacity</span></span>&#160;)</span></span>
+<br/>
+<div id="c_38" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/MapReferenceResolver.&quot;&lt;init&gt;&quot;:(I)V</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>ObjectIntMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_39')">
+ObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_39" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.clear:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_40')">
+ObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>maximumCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_40" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.clear:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_41')">
+ObjectIntMap&lt;K&gt;.ObjectIntMap&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_41" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_42')">
+ObjectIntMap&lt;K&gt;.ObjectIntMap&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>initialCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_42" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_43')">
+ObjectIntMap&lt;K&gt;.ObjectIntMap&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>initialCapacity</span></span>, <span>float <span class='color_p'>loadFactor</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_43" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap:(IF)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_44')">
+ObjectIntMap&lt;K&gt;.ObjectIntMap&#160;<span class='sym_p'><span>(&#160;ObjectIntMap&lt;?&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_44" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap:(Lcom/esotericsoftware/kryo/util/ObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_45')">
+ObjectIntMap&lt;K&gt;.containsKey&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_45" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.containsKey:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_46')">
+ObjectIntMap&lt;K&gt;.containsValue&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>value</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_46" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.containsValue:(I)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_47')">
+ObjectIntMap&lt;K&gt;.ensureCapacity&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>additionalCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_47" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.ensureCapacity:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_48')">
+ObjectIntMap&lt;K&gt;.entries&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Entries&lt;K&gt;</span></span>
+<br/>
+<div id="c_48" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.entries:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Entries;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_49')">
+ObjectIntMap&lt;K&gt;.equals&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>obj</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_49" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.equals:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_50')">
+ObjectIntMap&lt;K&gt;.findKey&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>value</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;K</span></span>
+<br/>
+<div id="c_50" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.findKey:(I)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_51')">
+ObjectIntMap&lt;K&gt;.get&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>int <span class='color_p'>defaultValue</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_51" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.get:(Ljava/lang/Object;I)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_52')">
+ObjectIntMap&lt;K&gt;.getAndIncrement&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>int <span class='color_p'>defaultValue</span></span>, <span>int <span class='color_p'>increment</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_52" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.getAndIncrement:(Ljava/lang/Object;II)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_53')">
+ObjectIntMap&lt;K&gt;.hashCode&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_53" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.hashCode:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_54')">
+ObjectIntMap&lt;K&gt;.isEmpty&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_54" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.isEmpty:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_55')">
+ObjectIntMap&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator</span></span>
+<br/>
+<div id="c_55" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_56')">
+ObjectIntMap&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Entries&lt;K&gt;</span></span>
+<br/>
+<div id="c_56" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Entries;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_57')">
+ObjectIntMap&lt;K&gt;.keys&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Keys&lt;K&gt;</span></span>
+<br/>
+<div id="c_57" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.keys:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Keys;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_58')">
+ObjectIntMap&lt;K&gt;.notEmpty&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_58" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.notEmpty:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_59')">
+ObjectIntMap&lt;K&gt;.place&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>item</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_59" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.place:(Ljava/lang/Object;)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_60')">
+ObjectIntMap&lt;K&gt;.put&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>int <span class='color_p'>value</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_60" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.put:(Ljava/lang/Object;I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_61')">
+ObjectIntMap&lt;K&gt;.putAll&#160;<span class='sym_p'><span>(&#160;ObjectIntMap&lt;?&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_61" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.putAll:(Lcom/esotericsoftware/kryo/util/ObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_62')">
+ObjectIntMap&lt;K&gt;.remove&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>int <span class='color_p'>defaultValue</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_62" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.remove:(Ljava/lang/Object;I)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_63')">
+ObjectIntMap&lt;K&gt;.shrink&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>maximumCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_63" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.shrink:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_64')">
+ObjectIntMap&lt;K&gt;.toString&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_64" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.toString:()Ljava/lang/String;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_65')">
+ObjectIntMap&lt;K&gt;.toString&#160;<span class='sym_p'><span>(&#160;String <span class='color_p'>separator</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_65" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.toString:(Ljava/lang/String;)Ljava/lang/String;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_66')">
+ObjectIntMap&lt;K&gt;.values&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Values</span></span>
+<br/>
+<div id="c_66" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.values:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Values;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>ObjectMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_67')">
+ObjectMap&lt;K,V&gt;.equals&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>obj</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_67" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.equals:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_68')">
+ObjectMap&lt;K,V&gt;.equalsIdentity&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>obj</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_68" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.equalsIdentity:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_69')">
+ObjectMap&lt;K,V&gt;.hashCode&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_69" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.hashCode:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_70')">
+ObjectMap&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator</span></span>
+<br/>
+<div id="c_70" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_71')">
+ObjectMap&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectMap.Entries&lt;K,V&gt;</span></span>
+<br/>
+<div id="c_71" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectMap$Entries;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_72')">
+ObjectMap&lt;K,V&gt;.notEmpty&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_72" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.notEmpty:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_73')">
+ObjectMap&lt;K,V&gt;.place&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>item</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_73" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.place:(Ljava/lang/Object;)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_74')">
+ObjectMap&lt;K,V&gt;.tableSize&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>capacity</span></span>, <span>float <span class='color_p'>loadFactor</span></span>&#160;)</span> <span class='attr'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_74" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.tableSize:(IF)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_75')">
+ObjectMap&lt;K,V&gt;.toString&#160;<span class='sym_p'><span>(&#160;String <span class='color_p'>separator</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_75" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.toString:(Ljava/lang/String;)Ljava/lang/String;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Values.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_76')">
+ObjectIntMap.Values.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_76" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_77')">
+ObjectIntMap.Values.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Values</span></span>
+<br/>
+<div id="c_77" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.iterator:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Values;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_78')">
+ObjectIntMap.Values.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_78" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.next:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_79')">
+ObjectIntMap.Values.ObjectIntMap.Values&#160;<span class='sym_p'><span>(&#160;ObjectIntMap&lt;?&gt; <span class='color_p'>map</span></span>&#160;)</span></span>
+<br/>
+<div id="c_79" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/util/ObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_80')">
+ObjectIntMap.Values.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_80" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_81')">
+ObjectIntMap.Values.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_81" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_82')">
+ObjectIntMap.Values.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntArray</span></span>
+<br/>
+<div id="c_82" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.toArray:()Lcom/esotericsoftware/kryo/util/IntArray;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_83')">
+ObjectIntMap.Values.toArray&#160;<span class='sym_p'><span>(&#160;IntArray <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntArray</span></span>
+<br/>
+<div id="c_83" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.toArray:(Lcom/esotericsoftware/kryo/util/IntArray;)Lcom/esotericsoftware/kryo/util/IntArray;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Values.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_84')">
+IntMap.Values&lt;V&gt;.toList&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_84" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.toList:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_85')">
+ObjectMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectMap.Values&lt;V&gt;</span></span>
+<br/>
+<div id="c_85" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Values&lt;V&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectMap$Values;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_86')">
+ObjectMap.Values&lt;V&gt;.toList&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_86" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Values&lt;V&gt;.toList:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_87')">
+ObjectMap.Values&lt;V&gt;.toList&#160;<span class='sym_p'><span>(&#160;T <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;T</span></span>
+<br/>
+<div id="c_87" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Values&lt;V&gt;.toList:(Ljava/util/List;)Ljava/util/List;</span><br/><br/></div>
+
+<br/>
+<a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='Binary_Removed'></a><a name='Binary_Withdrawn'></a><h2>Removed Methods <span class='failed'>&nbsp;27&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span>, <span class='cname'>Entries.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_88')">
+IdentityMap.Entries&lt;K,V&gt;.IdentityMap.Entries&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;K,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_88" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.com.esotericsoftware.kryo.util.IdentityMap.Entries:(Lcom/esotericsoftware/kryo/util/IdentityMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_89')">
+IdentityMap.Entries&lt;K,V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_89" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_90')">
+IdentityMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;IdentityMap.Entry&lt;K,V&gt;&gt;</span></span>
+<br/>
+<div id="c_90" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_91')">
+IdentityMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IdentityMap.Entry&lt;K,V&gt;</span></span>
+<br/>
+<div id="c_91" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.next:()Lcom/esotericsoftware/kryo/util/IdentityMap$Entry;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_92')">
+IdentityMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_92" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_93')">
+IdentityMap.Entries&lt;K,V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_93" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_94')">
+IdentityMap.Entries&lt;K,V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_94" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.reset:()V</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span>, <span class='cname'>Entry.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_95')">
+IdentityMap.Entry&lt;K,V&gt;.IdentityMap.Entry&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_95" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entry&lt;K,V&gt;.com.esotericsoftware.kryo.util.IdentityMap.Entry:()V</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span>, <span class='cname'>Keys.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_96')">
+IdentityMap.Keys&lt;K&gt;.IdentityMap.Keys&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;K,?&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_96" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.com.esotericsoftware.kryo.util.IdentityMap.Keys:(Lcom/esotericsoftware/kryo/util/IdentityMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_97')">
+IdentityMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_97" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_98')">
+IdentityMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;K&gt;</span></span>
+<br/>
+<div id="c_98" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_99')">
+IdentityMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;K</span></span>
+<br/>
+<div id="c_99" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_100')">
+IdentityMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_100" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_101')">
+IdentityMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_101" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_102')">
+IdentityMap.Keys&lt;K&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;K&gt;</span></span>
+<br/>
+<div id="c_102" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_103')">
+ObjectMap.Keys&lt;K&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;K&gt;</span></span>
+<br/>
+<div id="c_103" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Keys&lt;K&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span>, <span class='cname'>Values.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_104')">
+IdentityMap.Values&lt;V&gt;.IdentityMap.Values&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;?,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_104" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.com.esotericsoftware.kryo.util.IdentityMap.Values:(Lcom/esotericsoftware/kryo/util/IdentityMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_105')">
+IdentityMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_105" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_106')">
+IdentityMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;V&gt;</span></span>
+<br/>
+<div id="c_106" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_107')">
+IdentityMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_107" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_108')">
+IdentityMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_108" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_109')">
+IdentityMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_109" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_110')">
+IdentityMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_110" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_111')">
+IdentityMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'><span>(&#160;ArrayList&lt;V&gt; <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_111" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.toArray:(Ljava/util/ArrayList;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_112')">
+IntMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_112" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_113')">
+ObjectMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_113" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Values&lt;V&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_114')">
+ObjectMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'><span>(&#160;ArrayList&lt;V&gt; <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_114" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Values&lt;V&gt;.toArray:(Ljava/util/ArrayList;)V</span><br/><br/></div>
+
+<br/>
+<a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='High_Risk_Binary_Problems'></a><a name='Type_Binary_Problems_High'></a>
+<h2>Problems with Data Types, High Severity <span class='failed'>&nbsp;13&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="sC(this, 'c_115')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> Input <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_115" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Removed super-interface <b>java.lang.AutoCloseable</b>.</td>
+<td>A client program may be interrupted by <b>NoSuchMethodError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_116')">
+[+] affected methods: 236 (15.7%)</span>
+<div id="c_116" style="display:none;">
+<div class='affected'><span class='iname_a'>com.esotericsoftware.kryo.ClassResolver.readClass&#160;<span class='sym_p'><span>(&#160;Input <span class='focus_p'>p1</span></span>&#160;)</span></span><br/><div class='affect'>1st parameter 'p1'  of this abstract method is of type 'Input'.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'><span>(&#160;byte[&#160;] <i>buffer</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'><span>(&#160;byte[&#160;] <i>buffer</i></span>, <span>int <i>offset</i></span>, <span>int <i>count</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'><span>(&#160;int <i>bufferSize</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'><span>(&#160;InputStream <i>inputStream</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'><span>(&#160;InputStream <i>inputStream</i></span>, <span>int <i>bufferSize</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.available&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Input' class.</div>
+<span class='iname_a'>Input.canReadInt&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Input' class.</div>
+<span class='iname_a'>Input.canReadLong&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Input' class.</div>
+ <b>...</b>
+<br/>
+</div></div>
+<br/><br/></div>
+
+<br/><span class='jar'>kryo-5.0.0-RC4.jar</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_117')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> IdentityMap.Entries&lt;K,V&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_117" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>This class has been removed.</td>
+<td>A client program may be interrupted by <b>NoClassDefFoundError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_118')">
+[+] affected methods: 7 (0.5%)</span>
+<div id="c_118" style="display:none;">
+<div class='affected'><span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.IdentityMap.Entries&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;K,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_119')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> IdentityMap.Entry&lt;K,V&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_119" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>This class has been removed.</td>
+<td>A client program may be interrupted by <b>NoClassDefFoundError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_120')">
+[+] affected methods: 2 (0.1%)</span>
+<div id="c_120" style="display:none;">
+<div class='affected'><span class='iname_a'>IdentityMap.Entry&lt;K,V&gt;.IdentityMap.Entry&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entry&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entry&lt;K,V&gt;.toString&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entry&lt;K,V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_121')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> IdentityMap.Keys&lt;K&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_121" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>This class has been removed.</td>
+<td>A client program may be interrupted by <b>NoClassDefFoundError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_122')">
+[+] affected methods: 7 (0.5%)</span>
+<div id="c_122" style="display:none;">
+<div class='affected'><span class='iname_a'>IdentityMap.Keys&lt;K&gt;.IdentityMap.Keys&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;K,?&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_123')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> IdentityMap.Values&lt;V&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_123" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>This class has been removed.</td>
+<td>A client program may be interrupted by <b>NoClassDefFoundError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_124')">
+[+] affected methods: 8 (0.5%)</span>
+<div id="c_124" style="display:none;">
+<div class='affected'><span class='iname_a'>IdentityMap.Values&lt;V&gt;.IdentityMap.Values&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;?,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'><span>(&#160;ArrayList&lt;V&gt; <i>array</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_125')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> MapReferenceResolver <span class='failed'>&nbsp;2&nbsp;</span></span>
+<br/>
+<div id="c_125" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Type of field <b>readObjects</b> has been changed from <b>java.util.ArrayList</b> to <b>java.util.ArrayList&lt;java.lang.Object&gt;</b>.</td>
+<td>A client program may be interrupted by <b>NoSuchFieldError</b> exception.</td>
+</tr>
+<tr>
+<th>2</th>
+<td>Type of field <b>writtenObjects</b> has been changed from <b>IdentityObjectIntMap</b> to <b>IdentityObjectIntMap&lt;java.lang.Object&gt;</b>.</td>
+<td>A client program may be interrupted by <b>NoSuchFieldError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_126')">
+[+] affected methods: 9 (0.6%)</span>
+<div id="c_126" style="display:none;">
+<div class='affected'><span class='iname_a'>MapReferenceResolver.MapReferenceResolver&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.addWrittenObject&#160;<span class='sym_p'><span>(&#160;Object <i>object</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.getReadObject&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>, <span>int <i>id</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.getWrittenId&#160;<span class='sym_p'><span>(&#160;Object <i>object</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.nextReadId&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.setKryo&#160;<span class='sym_p'><span>(&#160;Kryo <i>kryo</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.setReadObject&#160;<span class='sym_p'><span>(&#160;int <i>id</i></span>, <span>Object <i>object</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.useReferences&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_127')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Entries&lt;K,V&gt; <span class='failed'>&nbsp;2&nbsp;</span></span>
+<br/>
+<div id="c_127" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Removed super-interface <b>java.lang.Iterable&lt;ObjectMap.Entry&lt;K,V&gt;&gt;</b>.</td>
+<td>A client program may be interrupted by <b>NoSuchMethodError</b> exception.</td>
+</tr>
+<tr>
+<th>2</th>
+<td>Removed super-interface <b>java.util.Iterator&lt;ObjectMap.Entry&lt;K,V&gt;&gt;</b>.</td>
+<td>A client program may be interrupted by <b>NoSuchMethodError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_128')">
+[+] affected methods: 7 (0.5%)</span>
+<div id="c_128" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.ObjectMap.Entries&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;K,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_129')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Keys&lt;K&gt; <span class='failed'>&nbsp;2&nbsp;</span></span>
+<br/>
+<div id="c_129" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Removed super-interface <b>java.lang.Iterable&lt;K&gt;</b>.</td>
+<td>A client program may be interrupted by <b>NoSuchMethodError</b> exception.</td>
+</tr>
+<tr>
+<th>2</th>
+<td>Removed super-interface <b>java.util.Iterator&lt;K&gt;</b>.</td>
+<td>A client program may be interrupted by <b>NoSuchMethodError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_130')">
+[+] affected methods: 6 (0.4%)</span>
+<div id="c_130" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Keys&lt;K&gt;.ObjectMap.Keys&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;K,?&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_131')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Values&lt;V&gt; <span class='failed'>&nbsp;2&nbsp;</span></span>
+<br/>
+<div id="c_131" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Removed super-interface <b>java.lang.Iterable&lt;V&gt;</b>.</td>
+<td>A client program may be interrupted by <b>NoSuchMethodError</b> exception.</td>
+</tr>
+<tr>
+<th>2</th>
+<td>Removed super-interface <b>java.util.Iterator&lt;V&gt;</b>.</td>
+<td>A client program may be interrupted by <b>NoSuchMethodError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_132')">
+[+] affected methods: 6 (0.4%)</span>
+<div id="c_132" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Values&lt;V&gt;.ObjectMap.Values&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;?,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<br/><a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='Medium_Risk_Binary_Problems'></a><a name='Type_Binary_Problems_Medium'></a>
+<h2>Problems with Data Types, Medium Severity <span class='failed'>&nbsp;3&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_133')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Entries&lt;K,V&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_133" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Superclass has been changed from <b>ObjectMap.MapIterator&lt;K,V&gt;</b> to <b>ObjectMap.MapIterator&lt;K,V,ObjectMap.Entry&lt;K,V&gt;&gt;</b>.</td>
+<td>1) Access of a client program to the fields or methods of the old super-class may be interrupted by <b>NoSuchFieldError</b> or <b>NoSuchMethodError</b> exceptions.<br/>2) A static field from a super-interface of a client class may hide a field (with the same name) inherited from new super-class and cause <b>IncompatibleClassChangeError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_134')">
+[+] affected methods: 7 (0.5%)</span>
+<div id="c_134" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.ObjectMap.Entries&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;K,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_135')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Keys&lt;K&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_135" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Superclass has been changed from <b>ObjectMap.MapIterator&lt;K,java.lang.Object&gt;</b> to <b>ObjectMap.MapIterator&lt;K,java.lang.Object,K&gt;</b>.</td>
+<td>1) Access of a client program to the fields or methods of the old super-class may be interrupted by <b>NoSuchFieldError</b> or <b>NoSuchMethodError</b> exceptions.<br/>2) A static field from a super-interface of a client class may hide a field (with the same name) inherited from new super-class and cause <b>IncompatibleClassChangeError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_136')">
+[+] affected methods: 6 (0.4%)</span>
+<div id="c_136" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Keys&lt;K&gt;.ObjectMap.Keys&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;K,?&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_137')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Values&lt;V&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_137" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Superclass has been changed from <b>ObjectMap.MapIterator&lt;java.lang.Object,V&gt;</b> to <b>ObjectMap.MapIterator&lt;java.lang.Object,V,V&gt;</b>.</td>
+<td>1) Access of a client program to the fields or methods of the old super-class may be interrupted by <b>NoSuchFieldError</b> or <b>NoSuchMethodError</b> exceptions.<br/>2) A static field from a super-interface of a client class may hide a field (with the same name) inherited from new super-class and cause <b>IncompatibleClassChangeError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_138')">
+[+] affected methods: 6 (0.4%)</span>
+<div id="c_138" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Values&lt;V&gt;.ObjectMap.Values&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;?,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<br/><a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='Low_Risk_Binary_Problems'></a><a name='Type_Binary_Problems_Low'></a>
+<h2>Problems with Data Types, Low Severity <span class='warning'>&nbsp;27&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_139')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> IdentityMap&lt;K,V&gt; <span class='warning'>&nbsp;15&nbsp;</span></span>
+<br/>
+<div id="c_139" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.clear&#160;<span class='sym_pd'>(&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.clear&#160;<span class='sym_pd'>(&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.clear&#160;<span class='sym_pd'>(&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.clear&#160;<span class='sym_pd'>(&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>2</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.clear&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.clear&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.clear&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.clear&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>3</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.containsKey&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.containsKey&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.containsKey&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.containsKey&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>4</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.containsValue&#160;<span class='sym_pd'><span>(&#160;Object</span>, <span>boolean</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.containsValue&#160;<span class='sym_pd'><span>(&#160;Object</span>, <span>boolean</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.containsValue&#160;<span class='sym_pd'><span>(&#160;Object</span>, <span>boolean</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.containsValue&#160;<span class='sym_pd'><span>(&#160;Object</span>, <span>boolean</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>5</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.ensureCapacity&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.ensureCapacity&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.ensureCapacity&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.ensureCapacity&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>6</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.entries&#160;<span class='sym_pd'>(&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.entries&#160;<span class='sym_pd'>(&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.entries&#160;<span class='sym_pd'>(&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.entries&#160;<span class='sym_pd'>(&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>7</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.findKey&#160;<span class='sym_pd'><span>(&#160;Object</span>, <span>boolean</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.findKey&#160;<span class='sym_pd'><span>(&#160;Object</span>, <span>boolean</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.findKey&#160;<span class='sym_pd'><span>(&#160;Object</span>, <span>boolean</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.findKey&#160;<span class='sym_pd'><span>(&#160;Object</span>, <span>boolean</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>8</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>9</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>V</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>V</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>V</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>V</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>10</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.keys&#160;<span class='sym_pd'>(&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.keys&#160;<span class='sym_pd'>(&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.keys&#160;<span class='sym_pd'>(&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.keys&#160;<span class='sym_pd'>(&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>11</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.put&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>V</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.put&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>V</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.put&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>V</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.put&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>V</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>12</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.remove&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.remove&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.remove&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.remove&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>13</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.shrink&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.shrink&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.shrink&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.shrink&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>14</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.toString&#160;<span class='sym_pd'>(&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.toString&#160;<span class='sym_pd'>(&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.toString&#160;<span class='sym_pd'>(&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.toString&#160;<span class='sym_pd'>(&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>15</th>
+<td>Method <span class='iname_b'>IdentityMap&lt;K,V&gt;.values&#160;<span class='sym_pd'>(&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectMap&lt;K,V&gt;.values&#160;<span class='sym_pd'>(&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectMap&lt;K,V&gt;.values&#160;<span class='sym_pd'>(&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityMap&lt;K,V&gt;.values&#160;<span class='sym_pd'>(&#160;)</span></span> in a client program.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_140')">
+[+] affected methods: 15 (1%)</span>
+<div id="c_140" style="display:none;">
+<div class='affected'><span class='iname_a'>IdentityMap&lt;K,V&gt;.clear&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>Method 'ObjectMap&lt;K,V&gt;.clear&#160;<span class='sym_p'>(&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityMap&lt;K,V&gt;.clear&#160;<span class='sym_p'><span>(&#160;int <i>maximumCapacity</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectMap&lt;K,V&gt;.clear&#160;<span class='sym_p'><span>(&#160;int</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityMap&lt;K,V&gt;.containsKey&#160;<span class='sym_p'><span>(&#160;K <i>key</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectMap&lt;K,V&gt;.containsKey&#160;<span class='sym_p'><span>(&#160;K</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityMap&lt;K,V&gt;.containsValue&#160;<span class='sym_p'><span>(&#160;Object <i>value</i></span>, <span>boolean <i>identity</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectMap&lt;K,V&gt;.containsValue&#160;<span class='sym_p'><span>(&#160;Object</span>, <span>boolean</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityMap&lt;K,V&gt;.ensureCapacity&#160;<span class='sym_p'><span>(&#160;int <i>additionalCapacity</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectMap&lt;K,V&gt;.ensureCapacity&#160;<span class='sym_p'><span>(&#160;int</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityMap&lt;K,V&gt;.entries&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>Method 'ObjectMap&lt;K,V&gt;.entries&#160;<span class='sym_p'>(&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityMap&lt;K,V&gt;.findKey&#160;<span class='sym_p'><span>(&#160;Object <i>value</i></span>, <span>boolean <i>identity</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectMap&lt;K,V&gt;.findKey&#160;<span class='sym_p'><span>(&#160;Object</span>, <span>boolean</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityMap&lt;K,V&gt;.get&#160;<span class='sym_p'><span>(&#160;K <i>key</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectMap&lt;K,V&gt;.get&#160;<span class='sym_p'><span>(&#160;T</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityMap&lt;K,V&gt;.get&#160;<span class='sym_p'><span>(&#160;K <i>key</i></span>, <span>V <i>defaultValue</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectMap&lt;K,V&gt;.get&#160;<span class='sym_p'><span>(&#160;K</span>, <span>V</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityMap&lt;K,V&gt;.keys&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>Method 'ObjectMap&lt;K,V&gt;.keys&#160;<span class='sym_p'>(&#160;)</span>' will be called instead of this method in a client program.</div>
+ <b>...</b>
+<br/>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_141')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> IdentityObjectIntMap&lt;K&gt; <span class='warning'>&nbsp;12&nbsp;</span></span>
+<br/>
+<div id="c_141" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_pd'>(&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_pd'>(&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_pd'>(&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_pd'>(&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>2</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>3</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.containsKey&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.containsKey&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.containsKey&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.containsKey&#160;<span class='sym_pd'><span>(&#160;K</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>4</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.containsValue&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.containsValue&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.containsValue&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.containsValue&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>5</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.ensureCapacity&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.ensureCapacity&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.ensureCapacity&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.ensureCapacity&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>6</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.findKey&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.findKey&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.findKey&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.findKey&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>7</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.get&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>8</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.getAndIncrement&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>, <span>int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.getAndIncrement&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>, <span>int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.getAndIncrement&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>, <span>int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.getAndIncrement&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>, <span>int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>9</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.put&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.put&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.put&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.put&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>10</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.remove&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.remove&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.remove&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.remove&#160;<span class='sym_pd'><span>(&#160;K</span>, <span>int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>11</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.shrink&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.shrink&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.shrink&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.shrink&#160;<span class='sym_pd'><span>(&#160;int</span>&#160;)</span></span> in a client program.</td>
+</tr>
+<tr>
+<th>12</th>
+<td>Method <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.toString&#160;<span class='sym_pd'>(&#160;)</span></span> has been moved up type hierarchy to <span class='iname_b'>ObjectIntMap&lt;K&gt;.toString&#160;<span class='sym_pd'>(&#160;)</span></span>.</td>
+<td>Method <span class='iname_b'>ObjectIntMap&lt;K&gt;.toString&#160;<span class='sym_pd'>(&#160;)</span></span> will be called instead of <span class='iname_b'>IdentityObjectIntMap&lt;K&gt;.toString&#160;<span class='sym_pd'>(&#160;)</span></span> in a client program.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_142')">
+[+] affected methods: 12 (0.8%)</span>
+<div id="c_142" style="display:none;">
+<div class='affected'><span class='iname_a'>IdentityObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>Method 'ObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_p'>(&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_p'><span>(&#160;int <i>maximumCapacity</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_p'><span>(&#160;int</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityObjectIntMap&lt;K&gt;.containsKey&#160;<span class='sym_p'><span>(&#160;K <i>key</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectIntMap&lt;K&gt;.containsKey&#160;<span class='sym_p'><span>(&#160;K</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityObjectIntMap&lt;K&gt;.containsValue&#160;<span class='sym_p'><span>(&#160;int <i>value</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectIntMap&lt;K&gt;.containsValue&#160;<span class='sym_p'><span>(&#160;int</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityObjectIntMap&lt;K&gt;.ensureCapacity&#160;<span class='sym_p'><span>(&#160;int <i>additionalCapacity</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectIntMap&lt;K&gt;.ensureCapacity&#160;<span class='sym_p'><span>(&#160;int</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityObjectIntMap&lt;K&gt;.findKey&#160;<span class='sym_p'><span>(&#160;int <i>value</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectIntMap&lt;K&gt;.findKey&#160;<span class='sym_p'><span>(&#160;int</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityObjectIntMap&lt;K&gt;.get&#160;<span class='sym_p'><span>(&#160;K <i>key</i></span>, <span>int <i>defaultValue</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectIntMap&lt;K&gt;.get&#160;<span class='sym_p'><span>(&#160;K</span>, <span>int</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityObjectIntMap&lt;K&gt;.getAndIncrement&#160;<span class='sym_p'><span>(&#160;K <i>key</i></span>, <span>int <i>defaultValue</i></span>, <span>int <i>increment</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectIntMap&lt;K&gt;.getAndIncrement&#160;<span class='sym_p'><span>(&#160;K</span>, <span>int</span>, <span>int</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityObjectIntMap&lt;K&gt;.put&#160;<span class='sym_p'><span>(&#160;K <i>key</i></span>, <span>int <i>value</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectIntMap&lt;K&gt;.put&#160;<span class='sym_p'><span>(&#160;K</span>, <span>int</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+<span class='iname_a'>IdentityObjectIntMap&lt;K&gt;.remove&#160;<span class='sym_p'><span>(&#160;K <i>key</i></span>, <span>int <i>defaultValue</i></span>&#160;)</span></span><br/><div class='affect'>Method 'ObjectIntMap&lt;K&gt;.remove&#160;<span class='sym_p'><span>(&#160;K</span>, <span>int</span>&#160;)</span>' will be called instead of this method in a client program.</div>
+ <b>...</b>
+<br/>
+</div></div>
+<br/><br/></div>
+
+<br/><a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='Checked_Archives'></a><h2>Java Archives <span class='gray'>&nbsp;1&nbsp;</span></h2>
+<hr/><div class='jar_list'>
+kryo-5.0.0-RC4.jar<br/>
+</div><br/><a class='top_ref' href='#Top'>to the top</a><br/>
+<br/><br/><br/></div><div id='SourceTab' class='tab'>
+<h2>Test Info</h2><hr/>
+<table class='summary'>
+<tr><th>Library Name</th><td>kryo</td></tr>
+<tr><th>Version #1</th><td>5.0.0-RC4</td></tr>
+<tr><th>Version #2</th><td>5.0.0-RC5</td></tr>
+<tr><th>Subject</th><td width='150px'>Source Compatibility</td></tr>
+</table>
+<h2>Test Results</h2><hr/>
+<table class='summary'>
+<tr><th>Total JARs</th><td><a href='#Checked_Archives' style='color:Blue;'>1</a></td></tr>
+<tr><th>Total Methods / Classes</th><td>1499 / 163</td></tr>
+<tr><th>Compatibility</th>
+<td class='incompatible'>79.3%</td>
+</tr>
+</table>
+<h2>Problem Summary</h2><hr/>
+<table class='summary'>
+<tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr>
+<tr><th>Added Methods</th><td>-</td><td class='new'><a href='#Source_Added' style='color:Blue;'>87</a></td></tr>
+<tr><th>Removed Methods</th><td>High</td><td class='failed'><a href='#Source_Removed' style='color:Blue;'>27</a></td></tr>
+<tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td class='failed'><a href='#Type_Source_Problems_High' style='color:Blue;'>13</a></td></tr>
+<tr><td>Medium</td><td class='failed'><a href='#Type_Source_Problems_Medium' style='color:Blue;'>3</a></td></tr>
+<tr><td>Low</td><td>0</td></tr>
+<tr><th rowspan='3'>Problems with<br/>Methods</th><td>High</td><td>0</td></tr>
+<tr><td>Medium</td><td>0</td></tr>
+<tr><td>Low</td><td>0</td></tr>
+</table>
+
+<a name='Source_Added'></a><h2>Added Methods <span class='new'>&nbsp;87&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Entries.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_143')">
+ObjectMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectMap.Entries&lt;K,V&gt;</span></span>
+<br/>
+<div id="c_143" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Entries&lt;K,V&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectMap$Entries;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Entries.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_144')">
+ObjectIntMap.Entries&lt;K&gt;.ObjectIntMap.Entries&#160;<span class='sym_p'><span>(&#160;ObjectIntMap&lt;K&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_144" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap.Entries:(Lcom/esotericsoftware/kryo/util/ObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_145')">
+ObjectIntMap.Entries&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_145" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_146')">
+ObjectIntMap.Entries&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator</span></span>
+<br/>
+<div id="c_146" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_147')">
+ObjectIntMap.Entries&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Entries&lt;K&gt;</span></span>
+<br/>
+<div id="c_147" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Entries;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_148')">
+ObjectIntMap.Entries&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_148" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_149')">
+ObjectIntMap.Entries&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Entry&lt;K&gt;</span></span>
+<br/>
+<div id="c_149" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.next:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Entry;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_150')">
+ObjectIntMap.Entries&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_150" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_151')">
+ObjectIntMap.Entries&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_151" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entries&lt;K&gt;.reset:()V</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Entry.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_152')">
+ObjectIntMap.Entry&lt;K&gt;.ObjectIntMap.Entry&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_152" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entry&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap.Entry:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_153')">
+ObjectIntMap.Entry&lt;K&gt;.toString&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_153" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Entry&lt;K&gt;.toString:()Ljava/lang/String;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>IdentityMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_154')">
+IdentityMap&lt;K,V&gt;.IdentityMap&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;K,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_154" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap&lt;K,V&gt;.com.esotericsoftware.kryo.util.IdentityMap:(Lcom/esotericsoftware/kryo/util/IdentityMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_155')">
+IdentityMap&lt;K,V&gt;.hashCode&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_155" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap&lt;K,V&gt;.hashCode:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_156')">
+IdentityMap&lt;K,V&gt;.place&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>item</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_156" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap&lt;K,V&gt;.place:(Ljava/lang/Object;)I</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>IdentityObjectIntMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_157')">
+IdentityObjectIntMap&lt;K&gt;.IdentityObjectIntMap&#160;<span class='sym_p'><span>(&#160;IdentityObjectIntMap&lt;K&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_157" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityObjectIntMap&lt;K&gt;.com.esotericsoftware.kryo.util.IdentityObjectIntMap:(Lcom/esotericsoftware/kryo/util/IdentityObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_158')">
+IdentityObjectIntMap&lt;K&gt;.hashCode&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_158" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityObjectIntMap&lt;K&gt;.hashCode:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_159')">
+IdentityObjectIntMap&lt;K&gt;.place&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>item</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_159" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityObjectIntMap&lt;K&gt;.place:(Ljava/lang/Object;)I</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>IntMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_160')">
+IntMap&lt;V&gt;.equals&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>obj</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_160" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.equals:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_161')">
+IntMap&lt;V&gt;.equalsIdentity&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>obj</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_161" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.equalsIdentity:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_162')">
+IntMap&lt;V&gt;.hashCode&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_162" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.hashCode:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_163')">
+IntMap&lt;V&gt;.isEmpty&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_163" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.isEmpty:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_164')">
+IntMap&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;IntMap.Entry&lt;V&gt;&gt;</span></span>
+<br/>
+<div id="c_164" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_165')">
+IntMap&lt;V&gt;.notEmpty&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_165" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.notEmpty:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_166')">
+IntMap&lt;V&gt;.place&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>item</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_166" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap&lt;V&gt;.place:(I)I</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Keys.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_167')">
+IntMap.Keys.toArray&#160;<span class='sym_p'><span>(&#160;IntArray <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntArray</span></span>
+<br/>
+<div id="c_167" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap.Keys.toArray:(Lcom/esotericsoftware/kryo/util/IntArray;)Lcom/esotericsoftware/kryo/util/IntArray;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Keys.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_168')">
+ObjectIntMap.Keys&lt;K&gt;.ObjectIntMap.Keys&#160;<span class='sym_p'><span>(&#160;ObjectIntMap&lt;K&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_168" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap.Keys:(Lcom/esotericsoftware/kryo/util/ObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_169')">
+ObjectIntMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_169" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_170')">
+ObjectIntMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator</span></span>
+<br/>
+<div id="c_170" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_171')">
+ObjectIntMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Keys&lt;K&gt;</span></span>
+<br/>
+<div id="c_171" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Keys;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_172')">
+ObjectIntMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;K</span></span>
+<br/>
+<div id="c_172" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_173')">
+ObjectIntMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_173" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_174')">
+ObjectIntMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_174" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_175')">
+ObjectIntMap.Keys&lt;K&gt;.toList&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;K&gt;</span></span>
+<br/>
+<div id="c_175" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.toList:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_176')">
+ObjectIntMap.Keys&lt;K&gt;.toList&#160;<span class='sym_p'><span>(&#160;T <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;T</span></span>
+<br/>
+<div id="c_176" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Keys&lt;K&gt;.toList:(Ljava/util/List;)Ljava/util/List;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_177')">
+ObjectMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectMap.Keys&lt;K&gt;</span></span>
+<br/>
+<div id="c_177" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Keys&lt;K&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectMap$Keys;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_178')">
+ObjectMap.Keys&lt;K&gt;.toList&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;K&gt;</span></span>
+<br/>
+<div id="c_178" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Keys&lt;K&gt;.toList:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_179')">
+ObjectMap.Keys&lt;K&gt;.toList&#160;<span class='sym_p'><span>(&#160;T <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;T</span></span>
+<br/>
+<div id="c_179" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Keys&lt;K&gt;.toList:(Ljava/util/List;)Ljava/util/List;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>MapReferenceResolver.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_180')">
+MapReferenceResolver.MapReferenceResolver&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>maximumCapacity</span></span>&#160;)</span></span>
+<br/>
+<div id="c_180" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/MapReferenceResolver.&quot;&lt;init&gt;&quot;:(I)V</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>ObjectIntMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_181')">
+ObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_181" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.clear:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_182')">
+ObjectIntMap&lt;K&gt;.clear&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>maximumCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_182" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.clear:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_183')">
+ObjectIntMap&lt;K&gt;.ObjectIntMap&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_183" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_184')">
+ObjectIntMap&lt;K&gt;.ObjectIntMap&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>initialCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_184" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_185')">
+ObjectIntMap&lt;K&gt;.ObjectIntMap&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>initialCapacity</span></span>, <span>float <span class='color_p'>loadFactor</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_185" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap:(IF)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_186')">
+ObjectIntMap&lt;K&gt;.ObjectIntMap&#160;<span class='sym_p'><span>(&#160;ObjectIntMap&lt;?&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_186" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.com.esotericsoftware.kryo.util.ObjectIntMap:(Lcom/esotericsoftware/kryo/util/ObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_187')">
+ObjectIntMap&lt;K&gt;.containsKey&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_187" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.containsKey:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_188')">
+ObjectIntMap&lt;K&gt;.containsValue&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>value</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_188" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.containsValue:(I)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_189')">
+ObjectIntMap&lt;K&gt;.ensureCapacity&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>additionalCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_189" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.ensureCapacity:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_190')">
+ObjectIntMap&lt;K&gt;.entries&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Entries&lt;K&gt;</span></span>
+<br/>
+<div id="c_190" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.entries:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Entries;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_191')">
+ObjectIntMap&lt;K&gt;.equals&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>obj</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_191" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.equals:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_192')">
+ObjectIntMap&lt;K&gt;.findKey&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>value</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;K</span></span>
+<br/>
+<div id="c_192" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.findKey:(I)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_193')">
+ObjectIntMap&lt;K&gt;.get&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>int <span class='color_p'>defaultValue</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_193" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.get:(Ljava/lang/Object;I)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_194')">
+ObjectIntMap&lt;K&gt;.getAndIncrement&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>int <span class='color_p'>defaultValue</span></span>, <span>int <span class='color_p'>increment</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_194" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.getAndIncrement:(Ljava/lang/Object;II)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_195')">
+ObjectIntMap&lt;K&gt;.hashCode&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_195" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.hashCode:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_196')">
+ObjectIntMap&lt;K&gt;.isEmpty&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_196" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.isEmpty:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_197')">
+ObjectIntMap&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator</span></span>
+<br/>
+<div id="c_197" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_198')">
+ObjectIntMap&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Entries&lt;K&gt;</span></span>
+<br/>
+<div id="c_198" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Entries;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_199')">
+ObjectIntMap&lt;K&gt;.keys&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Keys&lt;K&gt;</span></span>
+<br/>
+<div id="c_199" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.keys:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Keys;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_200')">
+ObjectIntMap&lt;K&gt;.notEmpty&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_200" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.notEmpty:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_201')">
+ObjectIntMap&lt;K&gt;.place&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>item</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_201" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.place:(Ljava/lang/Object;)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_202')">
+ObjectIntMap&lt;K&gt;.put&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>int <span class='color_p'>value</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_202" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.put:(Ljava/lang/Object;I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_203')">
+ObjectIntMap&lt;K&gt;.putAll&#160;<span class='sym_p'><span>(&#160;ObjectIntMap&lt;?&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_203" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.putAll:(Lcom/esotericsoftware/kryo/util/ObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_204')">
+ObjectIntMap&lt;K&gt;.remove&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>int <span class='color_p'>defaultValue</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_204" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.remove:(Ljava/lang/Object;I)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_205')">
+ObjectIntMap&lt;K&gt;.shrink&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>maximumCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_205" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.shrink:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_206')">
+ObjectIntMap&lt;K&gt;.toString&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_206" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.toString:()Ljava/lang/String;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_207')">
+ObjectIntMap&lt;K&gt;.toString&#160;<span class='sym_p'><span>(&#160;String <span class='color_p'>separator</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_207" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.toString:(Ljava/lang/String;)Ljava/lang/String;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_208')">
+ObjectIntMap&lt;K&gt;.values&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Values</span></span>
+<br/>
+<div id="c_208" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap&lt;K&gt;.values:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Values;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>ObjectMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_209')">
+ObjectMap&lt;K,V&gt;.equals&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>obj</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_209" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.equals:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_210')">
+ObjectMap&lt;K,V&gt;.equalsIdentity&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>obj</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_210" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.equalsIdentity:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_211')">
+ObjectMap&lt;K,V&gt;.hashCode&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_211" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.hashCode:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_212')">
+ObjectMap&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator</span></span>
+<br/>
+<div id="c_212" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_213')">
+ObjectMap&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectMap.Entries&lt;K,V&gt;</span></span>
+<br/>
+<div id="c_213" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectMap$Entries;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_214')">
+ObjectMap&lt;K,V&gt;.notEmpty&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_214" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.notEmpty:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_215')">
+ObjectMap&lt;K,V&gt;.place&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>item</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_215" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.place:(Ljava/lang/Object;)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_216')">
+ObjectMap&lt;K,V&gt;.tableSize&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>capacity</span></span>, <span>float <span class='color_p'>loadFactor</span></span>&#160;)</span> <span class='attr'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_216" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.tableSize:(IF)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_217')">
+ObjectMap&lt;K,V&gt;.toString&#160;<span class='sym_p'><span>(&#160;String <span class='color_p'>separator</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_217" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap&lt;K,V&gt;.toString:(Ljava/lang/String;)Ljava/lang/String;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Values.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_218')">
+ObjectIntMap.Values.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_218" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_219')">
+ObjectIntMap.Values.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectIntMap.Values</span></span>
+<br/>
+<div id="c_219" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.iterator:()Lcom/esotericsoftware/kryo/util/ObjectIntMap$Values;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_220')">
+ObjectIntMap.Values.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_220" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.next:()I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_221')">
+ObjectIntMap.Values.ObjectIntMap.Values&#160;<span class='sym_p'><span>(&#160;ObjectIntMap&lt;?&gt; <span class='color_p'>map</span></span>&#160;)</span></span>
+<br/>
+<div id="c_221" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.&quot;&lt;init&gt;&quot;:(Lcom/esotericsoftware/kryo/util/ObjectIntMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_222')">
+ObjectIntMap.Values.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_222" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_223')">
+ObjectIntMap.Values.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_223" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_224')">
+ObjectIntMap.Values.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntArray</span></span>
+<br/>
+<div id="c_224" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.toArray:()Lcom/esotericsoftware/kryo/util/IntArray;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_225')">
+ObjectIntMap.Values.toArray&#160;<span class='sym_p'><span>(&#160;IntArray <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IntArray</span></span>
+<br/>
+<div id="c_225" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectIntMap.Values.toArray:(Lcom/esotericsoftware/kryo/util/IntArray;)Lcom/esotericsoftware/kryo/util/IntArray;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC5.jar</span>, <span class='cname'>Values.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_226')">
+IntMap.Values&lt;V&gt;.toList&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_226" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.toList:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_227')">
+ObjectMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ObjectMap.Values&lt;V&gt;</span></span>
+<br/>
+<div id="c_227" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Values&lt;V&gt;.iterator:()Lcom/esotericsoftware/kryo/util/ObjectMap$Values;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_228')">
+ObjectMap.Values&lt;V&gt;.toList&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_228" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Values&lt;V&gt;.toList:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_229')">
+ObjectMap.Values&lt;V&gt;.toList&#160;<span class='sym_p'><span>(&#160;T <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;T</span></span>
+<br/>
+<div id="c_229" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Values&lt;V&gt;.toList:(Ljava/util/List;)Ljava/util/List;</span><br/><br/></div>
+
+<br/>
+<a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='Source_Removed'></a><a name='Source_Withdrawn'></a><h2>Removed Methods <span class='failed'>&nbsp;27&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span>, <span class='cname'>Entries.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_230')">
+IdentityMap.Entries&lt;K,V&gt;.IdentityMap.Entries&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;K,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_230" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.com.esotericsoftware.kryo.util.IdentityMap.Entries:(Lcom/esotericsoftware/kryo/util/IdentityMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_231')">
+IdentityMap.Entries&lt;K,V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_231" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_232')">
+IdentityMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;IdentityMap.Entry&lt;K,V&gt;&gt;</span></span>
+<br/>
+<div id="c_232" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_233')">
+IdentityMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;IdentityMap.Entry&lt;K,V&gt;</span></span>
+<br/>
+<div id="c_233" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.next:()Lcom/esotericsoftware/kryo/util/IdentityMap$Entry;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_234')">
+IdentityMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_234" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_235')">
+IdentityMap.Entries&lt;K,V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_235" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_236')">
+IdentityMap.Entries&lt;K,V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_236" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entries&lt;K,V&gt;.reset:()V</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span>, <span class='cname'>Entry.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_237')">
+IdentityMap.Entry&lt;K,V&gt;.IdentityMap.Entry&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_237" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Entry&lt;K,V&gt;.com.esotericsoftware.kryo.util.IdentityMap.Entry:()V</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span>, <span class='cname'>Keys.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_238')">
+IdentityMap.Keys&lt;K&gt;.IdentityMap.Keys&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;K,?&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_238" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.com.esotericsoftware.kryo.util.IdentityMap.Keys:(Lcom/esotericsoftware/kryo/util/IdentityMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_239')">
+IdentityMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_239" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_240')">
+IdentityMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;K&gt;</span></span>
+<br/>
+<div id="c_240" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_241')">
+IdentityMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;K</span></span>
+<br/>
+<div id="c_241" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_242')">
+IdentityMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_242" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_243')">
+IdentityMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_243" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_244')">
+IdentityMap.Keys&lt;K&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;K&gt;</span></span>
+<br/>
+<div id="c_244" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Keys&lt;K&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_245')">
+ObjectMap.Keys&lt;K&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;K&gt;</span></span>
+<br/>
+<div id="c_245" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Keys&lt;K&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span>, <span class='cname'>Values.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_246')">
+IdentityMap.Values&lt;V&gt;.IdentityMap.Values&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;?,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_246" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.com.esotericsoftware.kryo.util.IdentityMap.Values:(Lcom/esotericsoftware/kryo/util/IdentityMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_247')">
+IdentityMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_247" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_248')">
+IdentityMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;V&gt;</span></span>
+<br/>
+<div id="c_248" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_249')">
+IdentityMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_249" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_250')">
+IdentityMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_250" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_251')">
+IdentityMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_251" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_252')">
+IdentityMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_252" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_253')">
+IdentityMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'><span>(&#160;ArrayList&lt;V&gt; <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_253" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IdentityMap.Values&lt;V&gt;.toArray:(Ljava/util/ArrayList;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_254')">
+IntMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_254" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/IntMap.Values&lt;V&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_255')">
+ObjectMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_255" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Values&lt;V&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_256')">
+ObjectMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'><span>(&#160;ArrayList&lt;V&gt; <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_256" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/ObjectMap.Values&lt;V&gt;.toArray:(Ljava/util/ArrayList;)V</span><br/><br/></div>
+
+<br/>
+<a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='High_Risk_Source_Problems'></a><a name='Type_Source_Problems_High'></a>
+<h2>Problems with Data Types, High Severity <span class='failed'>&nbsp;13&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.io</span><br/>
+<span class="section" onclick="sC(this, 'c_257')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> Input <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_257" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Removed super-interface <b>java.lang.AutoCloseable</b>.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find method in class <b>Input</b>.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_258')">
+[+] affected methods: 236 (15.7%)</span>
+<div id="c_258" style="display:none;">
+<div class='affected'><span class='iname_a'>com.esotericsoftware.kryo.ClassResolver.readClass&#160;<span class='sym_p'><span>(&#160;Input <span class='focus_p'>p1</span></span>&#160;)</span></span><br/><div class='affect'>1st parameter 'p1'  of this abstract method is of type 'Input'.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'><span>(&#160;byte[&#160;] <i>buffer</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'><span>(&#160;byte[&#160;] <i>buffer</i></span>, <span>int <i>offset</i></span>, <span>int <i>count</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'><span>(&#160;int <i>bufferSize</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'><span>(&#160;InputStream <i>inputStream</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.Input&#160;<span class='sym_p'><span>(&#160;InputStream <i>inputStream</i></span>, <span>int <i>bufferSize</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Input' class.</div>
+<span class='iname_a'>Input.available&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Input' class.</div>
+<span class='iname_a'>Input.canReadInt&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Input' class.</div>
+<span class='iname_a'>Input.canReadLong&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'Input' class.</div>
+ <b>...</b>
+<br/>
+</div></div>
+<br/><br/></div>
+
+<br/><span class='jar'>kryo-5.0.0-RC4.jar</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_259')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> IdentityMap.Entries&lt;K,V&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_259" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>This class has been removed.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find class <b>IdentityMap.Entries&lt;K,V&gt;</b>.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_260')">
+[+] affected methods: 7 (0.5%)</span>
+<div id="c_260" style="display:none;">
+<div class='affected'><span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.IdentityMap.Entries&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;K,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entries&lt;K,V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entries&lt;K,V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_261')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> IdentityMap.Entry&lt;K,V&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_261" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>This class has been removed.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find class <b>IdentityMap.Entry&lt;K,V&gt;</b>.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_262')">
+[+] affected methods: 2 (0.1%)</span>
+<div id="c_262" style="display:none;">
+<div class='affected'><span class='iname_a'>IdentityMap.Entry&lt;K,V&gt;.IdentityMap.Entry&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entry&lt;K,V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Entry&lt;K,V&gt;.toString&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Entry&lt;K,V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_263')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> IdentityMap.Keys&lt;K&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_263" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>This class has been removed.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find class <b>IdentityMap.Keys&lt;K&gt;</b>.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_264')">
+[+] affected methods: 7 (0.5%)</span>
+<div id="c_264" style="display:none;">
+<div class='affected'><span class='iname_a'>IdentityMap.Keys&lt;K&gt;.IdentityMap.Keys&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;K,?&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Keys&lt;K&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Keys&lt;K&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_265')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> IdentityMap.Values&lt;V&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_265" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>This class has been removed.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find class <b>IdentityMap.Values&lt;V&gt;</b>.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_266')">
+[+] affected methods: 8 (0.5%)</span>
+<div id="c_266" style="display:none;">
+<div class='affected'><span class='iname_a'>IdentityMap.Values&lt;V&gt;.IdentityMap.Values&#160;<span class='sym_p'><span>(&#160;IdentityMap&lt;?,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>IdentityMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'><span>(&#160;ArrayList&lt;V&gt; <i>array</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'IdentityMap.Values&lt;V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_267')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> MapReferenceResolver <span class='failed'>&nbsp;2&nbsp;</span></span>
+<br/>
+<div id="c_267" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Type of field <b>readObjects</b> has been changed from <b>java.util.ArrayList</b> to <b>java.util.ArrayList&lt;java.lang.Object&gt;</b>.</td>
+<td>Recompilation of a client program may be terminated with the message: incompatible types, found: <b>java.util.ArrayList</b>, required: <b>java.util.ArrayList&lt;java.lang.Object&gt;</b>.</td>
+</tr>
+<tr>
+<th>2</th>
+<td>Type of field <b>writtenObjects</b> has been changed from <b>IdentityObjectIntMap</b> to <b>IdentityObjectIntMap&lt;java.lang.Object&gt;</b>.</td>
+<td>Recompilation of a client program may be terminated with the message: incompatible types, found: <b>IdentityObjectIntMap</b>, required: <b>IdentityObjectIntMap&lt;java.lang.Object&gt;</b>.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_268')">
+[+] affected methods: 9 (0.6%)</span>
+<div id="c_268" style="display:none;">
+<div class='affected'><span class='iname_a'>MapReferenceResolver.MapReferenceResolver&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.addWrittenObject&#160;<span class='sym_p'><span>(&#160;Object <i>object</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.getReadObject&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>, <span>int <i>id</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.getWrittenId&#160;<span class='sym_p'><span>(&#160;Object <i>object</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.nextReadId&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.setKryo&#160;<span class='sym_p'><span>(&#160;Kryo <i>kryo</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.setReadObject&#160;<span class='sym_p'><span>(&#160;int <i>id</i></span>, <span>Object <i>object</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+<span class='iname_a'>MapReferenceResolver.useReferences&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'MapReferenceResolver' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_269')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Entries&lt;K,V&gt; <span class='failed'>&nbsp;2&nbsp;</span></span>
+<br/>
+<div id="c_269" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Removed super-interface <b>java.lang.Iterable&lt;ObjectMap.Entry&lt;K,V&gt;&gt;</b>.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find method in class <b>ObjectMap.Entries&lt;K,V&gt;</b>.</td>
+</tr>
+<tr>
+<th>2</th>
+<td>Removed super-interface <b>java.util.Iterator&lt;ObjectMap.Entry&lt;K,V&gt;&gt;</b>.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find method in class <b>ObjectMap.Entries&lt;K,V&gt;</b>.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_270')">
+[+] affected methods: 7 (0.5%)</span>
+<div id="c_270" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.ObjectMap.Entries&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;K,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_271')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Keys&lt;K&gt; <span class='failed'>&nbsp;2&nbsp;</span></span>
+<br/>
+<div id="c_271" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Removed super-interface <b>java.lang.Iterable&lt;K&gt;</b>.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find method in class <b>ObjectMap.Keys&lt;K&gt;</b>.</td>
+</tr>
+<tr>
+<th>2</th>
+<td>Removed super-interface <b>java.util.Iterator&lt;K&gt;</b>.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find method in class <b>ObjectMap.Keys&lt;K&gt;</b>.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_272')">
+[+] affected methods: 6 (0.4%)</span>
+<div id="c_272" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Keys&lt;K&gt;.ObjectMap.Keys&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;K,?&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_273')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Values&lt;V&gt; <span class='failed'>&nbsp;2&nbsp;</span></span>
+<br/>
+<div id="c_273" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Removed super-interface <b>java.lang.Iterable&lt;V&gt;</b>.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find method in class <b>ObjectMap.Values&lt;V&gt;</b>.</td>
+</tr>
+<tr>
+<th>2</th>
+<td>Removed super-interface <b>java.util.Iterator&lt;V&gt;</b>.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find method in class <b>ObjectMap.Values&lt;V&gt;</b>.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_274')">
+[+] affected methods: 6 (0.4%)</span>
+<div id="c_274" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Values&lt;V&gt;.ObjectMap.Values&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;?,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<br/><a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='Medium_Risk_Source_Problems'></a><a name='Type_Source_Problems_Medium'></a>
+<h2>Problems with Data Types, Medium Severity <span class='failed'>&nbsp;3&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC4.jar</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_275')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Entries&lt;K,V&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_275" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Superclass has been changed from <b>ObjectMap.MapIterator&lt;K,V&gt;</b> to <b>ObjectMap.MapIterator&lt;K,V,ObjectMap.Entry&lt;K,V&gt;&gt;</b>.</td>
+<td>1) Recompilation of a client program may be terminated with the message: cannot find variable (or method) in <b>ObjectMap.Entries&lt;K,V&gt;</b>.<br/>2) A static field from a super-interface of a client class may hide a field (with the same name) inherited from new super-class. Recompilation of a client class may be terminated with the message: reference to variable is ambiguous.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_276')">
+[+] affected methods: 7 (0.5%)</span>
+<div id="c_276" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.ObjectMap.Entries&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;K,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Entries&lt;K,V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Entries&lt;K,V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_277')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Keys&lt;K&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_277" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Superclass has been changed from <b>ObjectMap.MapIterator&lt;K,java.lang.Object&gt;</b> to <b>ObjectMap.MapIterator&lt;K,java.lang.Object,K&gt;</b>.</td>
+<td>1) Recompilation of a client program may be terminated with the message: cannot find variable (or method) in <b>ObjectMap.Keys&lt;K&gt;</b>.<br/>2) A static field from a super-interface of a client class may hide a field (with the same name) inherited from new super-class. Recompilation of a client class may be terminated with the message: reference to variable is ambiguous.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_278')">
+[+] affected methods: 6 (0.4%)</span>
+<div id="c_278" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Keys&lt;K&gt;.ObjectMap.Keys&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;K,?&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Keys&lt;K&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_279')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> ObjectMap.Values&lt;V&gt; <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_279" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Superclass has been changed from <b>ObjectMap.MapIterator&lt;java.lang.Object,V&gt;</b> to <b>ObjectMap.MapIterator&lt;java.lang.Object,V,V&gt;</b>.</td>
+<td>1) Recompilation of a client program may be terminated with the message: cannot find variable (or method) in <b>ObjectMap.Values&lt;V&gt;</b>.<br/>2) A static field from a super-interface of a client class may hide a field (with the same name) inherited from new super-class. Recompilation of a client class may be terminated with the message: reference to variable is ambiguous.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_280')">
+[+] affected methods: 6 (0.4%)</span>
+<div id="c_280" style="display:none;">
+<div class='affected'><span class='iname_a'>ObjectMap.Values&lt;V&gt;.ObjectMap.Values&#160;<span class='sym_p'><span>(&#160;ObjectMap&lt;?,V&gt; <i>map</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+<span class='iname_a'>ObjectMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'ObjectMap.Values&lt;V&gt;' class.</div>
+</div></div>
+<br/><br/></div>
+
+<br/><a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='Checked_Archives'></a><h2>Java Archives <span class='gray'>&nbsp;1&nbsp;</span></h2>
+<hr/><div class='jar_list'>
+kryo-5.0.0-RC4.jar<br/>
+</div><br/><a class='top_ref' href='#Top'>to the top</a><br/>
+<br/><br/><br/></div><hr/><div class='footer' align='right'><i>Generated by <a href='https://github.com/lvc/japi-compliance-checker'>Java API Compliance Checker</a> 2.1 &#160;</i></div><br/>
+</body></html>

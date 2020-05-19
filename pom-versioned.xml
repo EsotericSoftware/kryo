@@ -1,0 +1,85 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.esotericsoftware</groupId>
+		<artifactId>kryo-parent</artifactId>
+		<version>5.0.0-RC7-SNAPSHOT</version>
+		<relativePath>./pom.xml</relativePath>
+	</parent>
+
+	<groupId>com.esotericsoftware.kryo</groupId>
+	<artifactId>kryo${kryo.major.version}</artifactId>
+	<packaging>jar</packaging>
+
+	<name>Kryo ${kryo.major.version}</name>
+	<description>Fast, efficient Java serialization. This is the version specific Kryo artifact.</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.esotericsoftware</groupId>
+			<artifactId>kryo</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Automatic-Module-Name>com.esotericsoftware.kryo.kryo${kryo.major.version}</Automatic-Module-Name>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.2.1</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<!-- remove all classes of dependencies that are not used by the project -->
+							<minimizeJar>false</minimizeJar>
+							<createSourcesJar>true</createSourcesJar>
+							<shadedArtifactAttached>false</shadedArtifactAttached>
+							<createDependencyReducedPom>true</createDependencyReducedPom>
+							<dependencyReducedPomLocation>${project.build.directory}/kryo${kryo.major.version}-${project.version}.pom</dependencyReducedPomLocation>
+							<relocations>
+								<relocation>
+									<pattern>com.esotericsoftware.kryo</pattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.esotericsoftware.minlog</pattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.minlog</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.esotericsoftware.reflectasm</pattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.reflectasm</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.esotericsoftware.asm</pattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.asm</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.objenesis</pattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis</shadedPattern>
+								</relocation>
+							</relocations>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

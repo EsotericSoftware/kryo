@@ -186,7 +186,6 @@ abstract public class KryoTestCase {
 		if (debug) System.out.println();
 
 		// Test input from stream, large buffer.
-		byte[] out = outStream.toByteArray();
 		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 4096);
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);

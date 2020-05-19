@@ -491,7 +491,14 @@ public class Kryo implements Poolable {
 				registration = getRegistration(InvocationHandler.class);
 			} else if (!type.isEnum() && Enum.class.isAssignableFrom(type) && type != Enum.class) {
 				// This handles an enum value that is an inner class, eg: enum A {b{}}
-				registration = getRegistration(type.getEnclosingClass());
+				while (true) {
+					type = type.getSuperclass();
+					if (type == null) break;
+					if (type.isEnum()) {
+						registration = classResolver.getRegistration(type);
+						break;
+					}
+				}
 			} else if (EnumSet.class.isAssignableFrom(type))
 				registration = classResolver.getRegistration(EnumSet.class);
 			else if (isClosure(type)) //

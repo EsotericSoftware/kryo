@@ -229,6 +229,10 @@ public class DefaultGenericHandler implements GenericHandler {
 			buffer.append("]");
 			return buffer.toString();
 		}
+
+		public boolean isEmpty() {
+			return total == 0;
+		}
 	}
 
 	/** Stores a type and its type parameters, recursively. */
@@ -246,7 +250,6 @@ public class DefaultGenericHandler implements GenericHandler {
 				ParameterizedType paramType = (ParameterizedType)context;
 				Class rawType = (Class)paramType.getRawType();
 				type = rawType;
-				TypeVariable[] params = rawType.getTypeParameters();
 				Type[] actualArgs = paramType.getActualTypeArguments();
 				int n = actualArgs.length;
 				arguments = new GenericType[n];
