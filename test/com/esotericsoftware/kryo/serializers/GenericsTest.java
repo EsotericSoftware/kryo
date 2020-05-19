@@ -26,8 +26,8 @@ import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
 import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
 
 import java.io.Serializable;
-import java.lang.invoke.SerializedLambda;
 import java.util.*;
+import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -128,14 +128,11 @@ public class GenericsTest extends KryoTestCase {
 	// Test for https://github.com/EsotericSoftware/kryo/issues/654
 	@Test
 	public void testFieldWithGenericInterface () {
-		final Holder<?> holder = new ClassArrayHolder(new Class[] {});
-		ClassWithGenericInterfaceField o = new ClassWithGenericInterfaceField(holder);
+		ClassWithGenericInterfaceField.A o = new ClassWithGenericInterfaceField.A();
 
 		kryo.setRegistrationRequired(false);
-		kryo.register(SerializedLambda.class);
-		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
 
-		roundTrip(153, o);
+		roundTrip(170, o);
 	}
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
@@ -398,22 +395,38 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	static class ClassWithGenericInterfaceField {
-		Holder<?> input;
-
-		/** Kryo Constructor */
-		ClassWithGenericInterfaceField () {
+		static class A extends B<String> {
+			A () {
+				super(new C());
+			}
 		}
 
-		ClassWithGenericInterfaceField (Holder<?> holder) {
-			input = holder;
+		static class B<T> {
+			Supplier<T> s;
+
+			B (Supplier<T> s) {
+				this.s = s;
+			}
+
+			@Override
+			public boolean equals(Object o) {
+				if (this == o) return true;
+				if (o == null || getClass() != o.getClass()) return false;
+				final B<?> b = (B<?>) o;
+				return Objects.equals(s.get(), b.s.get());
+			}
+
+			@Override
+			public int hashCode() {
+				return Objects.hash(s);
+			}
 		}
 
-		@Override
-		public boolean equals (Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
-			final ClassWithGenericInterfaceField that = (ClassWithGenericInterfaceField)o;
-			return Objects.equals(input, that.input);
+		static class C implements Supplier<String>, Serializable {
+			@Override
+			public String get () {
+				return null;
+			}
 		}
 	}
 
