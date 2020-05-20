@@ -159,11 +159,11 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
-		private Field getParentField(Class sublistClass) throws NoSuchFieldException {
+		private Field getParentField (Class sublistClass) throws NoSuchFieldException {
 			try {
 				// java 9+
 				return sublistClass.getDeclaredField("root");
-			} catch(NoSuchFieldException e) {
+			} catch (NoSuchFieldException e) {
 				return sublistClass.getDeclaredField("parent");
 			}
 		}

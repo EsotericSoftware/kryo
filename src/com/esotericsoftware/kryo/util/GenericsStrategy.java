@@ -1,3 +1,4 @@
+
 package com.esotericsoftware.kryo.util;
 
 import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
@@ -27,14 +28,14 @@ import java.lang.reflect.TypeVariable;
 /** Provides an interface on how generics are handled. */
 public interface GenericsStrategy {
 	/** Sets the type that is currently being serialized. Must be balanced by {@link #popGenericType()}. Between those calls, the
-	 * {@link GenericType#getTypeParameters() type parameters} are returned by {@link #nextGenericTypes()} and	
+	 * {@link GenericType#getTypeParameters() type parameters} are returned by {@link #nextGenericTypes()} and
 	 * {@link #nextGenericClass()}. */
 	public void pushGenericType (GenericType fieldType);
-	
+
 	/** Removes the generic types being tracked since the corresponding {@link #pushGenericType(GenericType)}. This is safe to call
 	 * even if {@link #pushGenericType(GenericType)} was not called. */
 	public void popGenericType ();
-	
+
 	/** Returns the current type parameters and {@link #pushGenericType(GenericType) pushes} the next level of type parameters for
 	 * subsquent calls. Must be balanced by {@link #popGenericType()} (optional if null is returned). If multiple type parameters
 	 * are returned, the last is used to advance to the next level of type parameters.
@@ -43,7 +44,7 @@ public interface GenericsStrategy {
 	 * parameters, {@link #pushGenericType(GenericType)} must be used for all except the last parameter.
 	 * @return May be null. */
 	public GenericType[] nextGenericTypes ();
-	
+
 	/** Resolves the first type parameter and returns the class, or null if it could not be resolved or there are no type
 	 * parameters. Uses {@link #nextGenericTypes()}, so must be balanced by {@link #popGenericType()} (optional if null is
 	 * returned).
@@ -51,18 +52,17 @@ public interface GenericsStrategy {
 	 * This method is intended for ease of use when a class has a single type parameter.
 	 * @return May be null. */
 	public Class nextGenericClass ();
-	
+
 	/** Stores the types of the type parameters for the specified class hierarchy. Must be balanced by
 	 * {@link #popTypeVariables(int)} if >0 is returned.
 	 * @param args May contain null for type arguments that aren't known.
 	 * @return The number of entries that were pushed. */
 	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args);
-	
 
 	/** Removes the number of entries that were pushed by {@link #pushTypeVariables(GenericsHierarchy, GenericType[])}.
 	 * @param count Must be even. */
 	public void popTypeVariables (int count);
-	
+
 	/** Returns the class for the specified type variable, or null if it is not known.
 	 * @return May be null. */
 	public Class resolveTypeVariable (TypeVariable typeVariable);
