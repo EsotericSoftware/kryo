@@ -171,7 +171,29 @@
 				</plugins>
 			</build>
 		</profile>
-
+		<profile>
+			<id>until-java11</id>
+			<activation>
+				<!-- Use exclusive 11 range instead of inclusive 10, because an upper bound ",10]" is likely not to include most releases of 10,
+				   since they will have an additional "patch" release such as _05 that is not taken into consideration in the above range.
+				   See also http://maven.apache.org/guides/introduction/introduction-to-profiles.html#Details_on_profile_activation -->
+				<jdk>[1.5,11)</jdk>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<version>2.22.0</version>
+						<configuration>
+							<excludes>
+								<exclude>**/java11/*Test.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 	</profiles>
 
 	<repositories>
