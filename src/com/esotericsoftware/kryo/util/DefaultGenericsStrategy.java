@@ -34,7 +34,7 @@ import com.esotericsoftware.kryo.Kryo;
 
 /** Stores the generic type arguments and actual classes for type variables in the current location in the object graph.
  * @author Nathan Sweet */
-class DefaultGenericsStrategy implements GenericsStrategy {
+public class DefaultGenericsStrategy implements GenericsStrategy {
 	private final Kryo kryo;
 
 	private int genericTypesSize;
