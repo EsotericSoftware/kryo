@@ -42,9 +42,6 @@ import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
 import com.esotericsoftware.kryo.unsafe.UnsafeInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy;
-import com.esotericsoftware.kryo.util.GenericsStrategy;
-import com.esotericsoftware.kryo.util.NoGenericsStrategy;
 
 /** Convenience methods for round tripping objects.
  * @author Nathan Sweet */
@@ -79,18 +76,17 @@ abstract public class KryoTestCase {
 
 	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
 	public <T> T roundTrip (int lengthNonGeneric, int lengthGeneric, T object1) {
-		roundTrip(lengthNonGeneric, object1, NoGenericsStrategy.INSTANCE);
-		return roundTrip(lengthGeneric, object1, new DefaultGenericsStrategy(kryo));
+		roundTrip(lengthNonGeneric, object1, false);
+		return roundTrip(lengthGeneric, object1, true);
 	}
 
 	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
-	public <T> T roundTrip (int length, T object1, GenericsStrategy strategy) {
-		GenericsStrategy previousStrategy = kryo.getGenerics();
+	public <T> T roundTrip (int length, T object1, boolean useGenerics) {
 		try {
-			kryo.setGenerics(strategy);
+			kryo.setOptimizedGenerics(useGenerics);
 			return roundTrip(length, object1);
 		} finally {
-			kryo.setGenerics(previousStrategy);
+			kryo.setOptimizedGenerics(true);
 		}
 	}
 
@@ -213,97 +209,96 @@ abstract public class KryoTestCase {
 		return object2;
 	}
 
+	/** @param lengthNonGeneric Pass Integer.MIN_VALUE to disable checking the length. */
+	/** @param lengthGeneric Pass Integer.MIN_VALUE to disable checking the length. */
+	public <T> T roundTripWithBufferFactory (int lengthNonGeneric, int lengthGeneric, T object1, BufferFactory sf) {
+		roundTripWithBufferFactory(lengthNonGeneric, object1, sf, false);
+		return roundTripWithBufferFactory(lengthGeneric, object1, sf, true);
+	}
+
+	public <T> T roundTripWithBufferFactory (int length, T object1, BufferFactory sf, boolean useGenerics) {
+		kryo.setOptimizedGenerics(useGenerics);
+		try {
+			return roundTripWithBufferFactory(length, object1, sf);
+		} finally {
+			// reset to default
+			kryo.setOptimizedGenerics(true);
+		}
+	}
+
 	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
 	public <T> T roundTripWithBufferFactory (int length, T object1, BufferFactory sf) {
-		return roundTripWithBufferFactory(length, object1, sf, kryo.getGenerics());
-	}
-
-	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
-	public <T> T roundTripWithBufferFactory (int lengthNonGeneric, int lengthGeneric, T object1, BufferFactory sf) {
-		roundTripWithBufferFactory(lengthNonGeneric, object1, sf, NoGenericsStrategy.INSTANCE);
-		return roundTripWithBufferFactory(lengthGeneric, object1, sf, new DefaultGenericsStrategy(kryo));
-	}
-
-	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
-	public <T> T roundTripWithBufferFactory (int length, T object1, BufferFactory sf, GenericsStrategy genericStrategy) {
 		boolean checkLength = length != Integer.MIN_VALUE;
 
 		this.object1 = object1;
-		GenericsStrategy previousStrategy = kryo.getGenerics();
-		kryo.setGenerics(genericStrategy);
-		try {
+		// Test output to stream, large buffer.
+		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+		output = sf.createOutput(outStream, 4096);
+		kryo.writeClassAndObject(output, object1);
+		output.flush();
 
-			// Test output to stream, large buffer.
-			ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-			output = sf.createOutput(outStream, 4096);
-			kryo.writeClassAndObject(output, object1);
+		if (debug) System.out.println();
+
+		// Test input from stream, large buffer.
+		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 4096);
+		object2 = kryo.readClassAndObject(input);
+		doAssertEquals(object1, object2);
+		if (checkLength) {
+			assertEquals("Incorrect number of bytes read.", length, input.total());
+			assertEquals("Incorrect number of bytes written.", length, output.total());
+		}
+
+		if (debug) return (T)object2;
+
+		// Test output to stream, small buffer.
+		outStream = new ByteArrayOutputStream();
+		output = sf.createOutput(outStream, 10);
+		kryo.writeClassAndObject(output, object1);
+		output.flush();
+
+		// Test input from stream, small buffer.
+		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
+		object2 = kryo.readClassAndObject(input);
+		doAssertEquals(object1, object2);
+		if (checkLength) assertEquals("Incorrect number of bytes read.", length, input.total());
+
+		if (object1 != null) {
+			// Test null with serializer.
+			Serializer serializer = kryo.getRegistration(object1.getClass()).getSerializer();
+			output.reset();
+			outStream.reset();
+			kryo.writeObjectOrNull(output, null, serializer);
 			output.flush();
 
-			if (debug) System.out.println();
-
-			// Test input from stream, large buffer.
-			input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 4096);
-			object2 = kryo.readClassAndObject(input);
-			doAssertEquals(object1, object2);
-			if (checkLength) {
-				assertEquals("Incorrect number of bytes read.", length, input.total());
-				assertEquals("Incorrect number of bytes written.", length, output.total());
-			}
-
-			if (debug) return (T)object2;
-
-			// Test output to stream, small buffer.
-			outStream = new ByteArrayOutputStream();
-			output = sf.createOutput(outStream, 10);
-			kryo.writeClassAndObject(output, object1);
-			output.flush();
-
-			// Test input from stream, small buffer.
+			// Test null from byte array with and without serializer.
 			input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
-			object2 = kryo.readClassAndObject(input);
-			doAssertEquals(object1, object2);
-			if (checkLength) assertEquals("Incorrect number of bytes read.", length, input.total());
+			assertNull(kryo.readObjectOrNull(input, object1.getClass(), serializer));
 
-			if (object1 != null) {
-				// Test null with serializer.
-				Serializer serializer = kryo.getRegistration(object1.getClass()).getSerializer();
-				output.reset();
-				outStream.reset();
-				kryo.writeObjectOrNull(output, null, serializer);
-				output.flush();
+			input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
+			assertNull(kryo.readObjectOrNull(input, object1.getClass()));
+		}
 
-				// Test null from byte array with and without serializer.
-				input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
-				assertNull(kryo.readObjectOrNull(input, object1.getClass(), serializer));
+		// Test output to byte array.
+		output = sf.createOutput(length * 2, -1);
+		kryo.writeClassAndObject(output, object1);
+		output.flush();
 
-				input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
-				assertNull(kryo.readObjectOrNull(input, object1.getClass()));
-			}
+		// Test input from byte array.
+		input = sf.createInput(output.toBytes());
+		object2 = kryo.readClassAndObject(input);
+		doAssertEquals(object1, object2);
+		if (checkLength) {
+			assertEquals("Incorrect length.", length, output.total());
+			assertEquals("Incorrect number of bytes read.", length, input.total());
+		}
+		input.reset();
 
-			// Test output to byte array.
-			output = sf.createOutput(length * 2, -1);
-			kryo.writeClassAndObject(output, object1);
-			output.flush();
-
-			// Test input from byte array.
-			input = sf.createInput(output.toBytes());
-			object2 = kryo.readClassAndObject(input);
-			doAssertEquals(object1, object2);
-			if (checkLength) {
-				assertEquals("Incorrect length.", length, output.total());
-				assertEquals("Incorrect number of bytes read.", length, input.total());
-			}
-			input.reset();
-
-			if (supportsCopy) {
-				// Test copy.
-				T copy = kryo.copy(object1);
-				doAssertEquals(object1, copy);
-				copy = kryo.copyShallow(object1);
-				doAssertEquals(object1, copy);
-			}
-		} finally {
-			kryo.setGenerics(previousStrategy);
+		if (supportsCopy) {
+			// Test copy.
+			T copy = kryo.copy(object1);
+			doAssertEquals(object1, copy);
+			copy = kryo.copyShallow(object1);
+			doAssertEquals(object1, copy);
 		}
 
 		return (T)object2;

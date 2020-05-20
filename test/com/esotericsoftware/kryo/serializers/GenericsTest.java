@@ -38,8 +38,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
 import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
-import com.esotericsoftware.kryo.util.GenericsStrategy;
-import com.esotericsoftware.kryo.util.NoGenericsStrategy;
 
 public class GenericsTest extends KryoTestCase {
 	{
@@ -171,7 +169,7 @@ public class GenericsTest extends KryoTestCase {
 		ClassHierarchyWithChangingTypeVariableNames.A<?> o = new ClassHierarchyWithChangingTypeVariableNames.A<>(Enum.class);
 
 		kryo.setRegistrationRequired(false);
-		roundTrip(131, o, NoGenericsStrategy.INSTANCE);
+		roundTrip(131, o, false);
 	}
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
@@ -190,14 +188,14 @@ public class GenericsTest extends KryoTestCase {
 		ClassWithConflictingTypeArguments.A o = new ClassWithConflictingTypeArguments.A(
 			new ClassWithConflictingTypeArguments.B<>(1));
 
-		GenericsStrategy previousStrategy = kryo.getGenerics();
 		try {
-			kryo.setGenerics(NoGenericsStrategy.INSTANCE);
+			kryo.setOptimizedGenerics(false);
 			kryo.setRegistrationRequired(false);
 			Output buffer = new Output(512, 4048);
 			kryo.writeClassAndObject(buffer, o);
 		} finally {
-			kryo.setGenerics(previousStrategy);
+			// reset default
+			kryo.setOptimizedGenerics(true);
 		}
 	}
 

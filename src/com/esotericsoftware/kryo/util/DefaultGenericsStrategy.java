@@ -19,9 +19,8 @@
 
 package com.esotericsoftware.kryo.util;
 
-import static com.esotericsoftware.kryo.util.Util.*;
-
-import com.esotericsoftware.kryo.Kryo;
+import static com.esotericsoftware.kryo.util.Util.getDimensionCount;
+import static com.esotericsoftware.kryo.util.Util.getElementClass;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
@@ -31,9 +30,11 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 
+import com.esotericsoftware.kryo.Kryo;
+
 /** Stores the generic type arguments and actual classes for type variables in the current location in the object graph.
  * @author Nathan Sweet */
-public class DefaultGenericsStrategy implements GenericsStrategy {
+class DefaultGenericsStrategy implements GenericsStrategy {
 	private final Kryo kryo;
 
 	private int genericTypesSize;
@@ -147,6 +148,7 @@ public class DefaultGenericsStrategy implements GenericsStrategy {
 		return null;
 	}
 
+	@Override
 	public String toString () {
 		StringBuilder buffer = new StringBuilder();
 		for (int i = 0; i < argumentsSize; i += 2) {
@@ -207,6 +209,7 @@ public class DefaultGenericsStrategy implements GenericsStrategy {
 			this.parameters = parameters.toArray(new TypeVariable[parameters.size()]);
 		}
 
+		@Override
 		public String toString () {
 			StringBuilder buffer = new StringBuilder();
 			buffer.append("[");
@@ -230,7 +233,7 @@ public class DefaultGenericsStrategy implements GenericsStrategy {
 			return buffer.toString();
 		}
 
-		public boolean isEmpty() {
+		public boolean isEmpty () {
 			return total == 0;
 		}
 	}
@@ -295,6 +298,7 @@ public class DefaultGenericsStrategy implements GenericsStrategy {
 			return arguments;
 		}
 
+		@Override
 		public String toString () {
 			StringBuilder buffer = new StringBuilder(32);
 			boolean array = false;
