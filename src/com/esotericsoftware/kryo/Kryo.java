@@ -82,14 +82,14 @@ import com.esotericsoftware.kryo.serializers.OptionalSerializers;
 import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-import com.esotericsoftware.kryo.util.GenericHandler;
-import com.esotericsoftware.kryo.util.DefaultGenericHandler;
-import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericType;
-import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericsHierarchy;
+import com.esotericsoftware.kryo.util.GenericsStrategy;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericsHierarchy;
 import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
-import com.esotericsoftware.kryo.util.NoGenericsHandler;
+import com.esotericsoftware.kryo.util.NoGenericsStrategy;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Pool.Poolable;
 import com.esotericsoftware.kryo.util.Util;
@@ -157,7 +157,7 @@ public class Kryo implements Poolable {
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
-	private GenericHandler generics = new DefaultGenericHandler(this);
+	private GenericsStrategy generics = new DefaultGenericsStrategy(this);
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and references disabled. */
 	public Kryo () {
@@ -1189,20 +1189,20 @@ public class Kryo implements Poolable {
 
 	/** Tracks the generic type arguments and actual classes for type variables in the object graph during seralization.
 	 * <p>
-	 * When serializing a type with a single type parameter, {@link DefaultGenericHandler#nextGenericClass() nextGenericClass} will return the
-	 * generic class (or null) and must be followed by {@link DefaultGenericHandler#popGenericType() popGenericType}. See
+	 * When serializing a type with a single type parameter, {@link DefaultGenericsStrategy#nextGenericClass() nextGenericClass} will return the
+	 * generic class (or null) and must be followed by {@link DefaultGenericsStrategy#popGenericType() popGenericType}. See
 	 * {@link CollectionSerializer} for an example.
 	 * <p>
-	 * When serializing a type with multiple type parameters, {@link DefaultGenericHandler#nextGenericTypes() nextGenericTypes} will return an
-	 * array of {@link GenericType}, then for each of those {@link GenericType#resolve(DefaultGenericHandler) resolve} returns the generic
-	 * class. This must be followed by {@link DefaultGenericHandler#popGenericType() popGenericType}. See {@link MapSerializer} for an example.
+	 * When serializing a type with multiple type parameters, {@link DefaultGenericsStrategy#nextGenericTypes() nextGenericTypes} will return an
+	 * array of {@link GenericType}, then for each of those {@link GenericType#resolve(DefaultGenericsStrategy) resolve} returns the generic
+	 * class. This must be followed by {@link DefaultGenericsStrategy#popGenericType() popGenericType}. See {@link MapSerializer} for an example.
 	 * <p>
 	 * {@link GenericsHierarchy} stores the type parameters for a class.
-	 * {@link DefaultGenericHandler#pushTypeVariables(GenericsHierarchy, GenericType[]) pushTypeVariables} can be called before generic types
-	 * are {@link GenericType#resolve(DefaultGenericHandler) resolved} so the type parameters are tracked as serialization moved through the
-	 * object graph. If >0 is returned, this must be followed by {@link DefaultGenericHandler#popTypeVariables(int) popTypeVariables}. See
+	 * {@link DefaultGenericsStrategy#pushTypeVariables(GenericsHierarchy, GenericType[]) pushTypeVariables} can be called before generic types
+	 * are {@link GenericType#resolve(DefaultGenericsStrategy) resolved} so the type parameters are tracked as serialization moved through the
+	 * object graph. If >0 is returned, this must be followed by {@link DefaultGenericsStrategy#popTypeVariables(int) popTypeVariables}. See
 	 * {@link FieldSerializer} for an example. */
-	public GenericHandler getGenerics () {
+	public GenericsStrategy getGenerics () {
 		return generics;
 	}
 
@@ -1212,16 +1212,16 @@ public class Kryo implements Poolable {
 	 * i.e. the serializer and the deserializer need to use the same handler to be compatible.
 	 * </p>
 	 * <p>
-	 * There are currently two generic handlers bundled with kryo:
+	 * There are currently two generics strategies bundled with kryo:
 	 * <ul>
-	 * <li>{@link DefaultGenericHandler} The default generic handler, which tries to save space of the serialization output at the
+	 * <li>{@link DefaultGenericsStrategy} The default generics strategy, which tries to save space of the serialization output at the
 	 * expense of performance and reliability</li>
-	 * <li>{@linkplain NoGenericsHandler} This generic handler is a bit faster, but leads to slightly larger serializations, since
+	 * <li>{@linkplain NoGenericsStrategy} This strategy is a bit faster, but leads to slightly larger serializations, since
 	 * no generic types are inferred automatically</li>
 	 * </ul>
-	 * @param newHandler the new handler to use. */
-	public void setGenerics (GenericHandler newHandler) {
-		generics = newHandler;
+	 * @param newStrategy the new handler to use. */
+	public void setGenerics (GenericsStrategy newStrategy) {
+		generics = newStrategy;
 	}
 
 	static final class DefaultSerializerEntry {

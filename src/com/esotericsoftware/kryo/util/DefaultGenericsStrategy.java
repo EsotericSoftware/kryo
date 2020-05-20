@@ -33,7 +33,7 @@ import java.util.ArrayList;
 
 /** Stores the generic type arguments and actual classes for type variables in the current location in the object graph.
  * @author Nathan Sweet */
-public class DefaultGenericHandler implements GenericHandler {
+public class DefaultGenericsStrategy implements GenericsStrategy {
 	private final Kryo kryo;
 
 	private int genericTypesSize;
@@ -43,7 +43,7 @@ public class DefaultGenericHandler implements GenericHandler {
 	private int argumentsSize;
 	private Type[] arguments = new Type[16];
 
-	public DefaultGenericHandler (Kryo kryo) {
+	public DefaultGenericsStrategy (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
@@ -281,7 +281,7 @@ public class DefaultGenericHandler implements GenericHandler {
 
 		/** If this type is a type variable, resolve it to a class.
 		 * @return May be null. */
-		public Class resolve (GenericHandler generics) {
+		public Class resolve (GenericsStrategy generics) {
 			if (type instanceof Class) return (Class)type;
 			return generics.resolveTypeVariable((TypeVariable)type);
 		}

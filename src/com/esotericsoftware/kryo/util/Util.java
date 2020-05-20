@@ -24,7 +24,7 @@ import static com.esotericsoftware.minlog.Log.*;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericType;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
 
 import java.lang.reflect.Type;
 

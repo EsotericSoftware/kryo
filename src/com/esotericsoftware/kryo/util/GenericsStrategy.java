@@ -1,7 +1,7 @@
 package com.esotericsoftware.kryo.util;
 
-import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericType;
-import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericsHierarchy;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericsHierarchy;
 
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -25,7 +25,7 @@ import java.lang.reflect.TypeVariable;
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 /** Provides an interface on how generics are handled. */
-public interface GenericHandler {
+public interface GenericsStrategy {
 	/** Sets the type that is currently being serialized. Must be balanced by {@link #popGenericType()}. Between those calls, the
 	 * {@link GenericType#getTypeParameters() type parameters} are returned by {@link #nextGenericTypes()} and	
 	 * {@link #nextGenericClass()}. */

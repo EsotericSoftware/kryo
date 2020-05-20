@@ -24,7 +24,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericType;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

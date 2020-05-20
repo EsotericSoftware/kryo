@@ -181,7 +181,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.StringField = "stringvalue";
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
 
-		kryo = new Kryo();
+		kryo = new Kryo();	
 		kryo.setRegistrationRequired(false);
 		kryo.setReferences(true);
 		roundTrip(152, test);
@@ -402,7 +402,8 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		kryo.register(HasPrivateConstructor.class);
 		roundTrip(4, test);
-		assertEquals("Wrong number of constructor invocations", 20, HasPrivateConstructor.invocations);
+		//Multiplied by 2 because we are testing two generics strategies
+		assertEquals("Wrong number of constructor invocations", 20 * 2, HasPrivateConstructor.invocations);
 	}
 
 	/** This test uses StdInstantiatorStrategy and should bypass invocation of no-arg constructor, even if it is provided. **/

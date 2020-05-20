@@ -23,7 +23,7 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
-import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericType;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 import java.lang.reflect.Field;

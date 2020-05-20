@@ -1,7 +1,7 @@
 package com.esotericsoftware.kryo.util;
 
-import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericType;
-import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericsHierarchy;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericsHierarchy;
 
 import java.lang.reflect.TypeVariable;
 
@@ -27,11 +27,11 @@ import java.lang.reflect.TypeVariable;
  * This generic implementation does not infer generics types at all. This leads to a slightly larger serialization output.
  * However, this implementation is slightly faster and more robust.
  */
-public final class NoGenericsHandler implements GenericHandler {
+public final class NoGenericsStrategy implements GenericsStrategy {
 
-	public static final NoGenericsHandler INSTANCE = new NoGenericsHandler();
+	public static final NoGenericsStrategy INSTANCE = new NoGenericsStrategy();
 	
-	private NoGenericsHandler () {
+	private NoGenericsStrategy () {
 	}
 	
 	@Override

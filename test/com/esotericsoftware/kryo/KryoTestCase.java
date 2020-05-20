@@ -21,7 +21,6 @@ package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.minlog.Log.*;
 import static org.junit.Assert.*;
-
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
@@ -30,6 +29,9 @@ import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
 import com.esotericsoftware.kryo.unsafe.UnsafeInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy;
+import com.esotericsoftware.kryo.util.GenericsStrategy;
+import com.esotericsoftware.kryo.util.NoGenericsStrategy;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -173,6 +175,12 @@ abstract public class KryoTestCase {
 
 	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
 	public <T> T roundTripWithBufferFactory (int length, T object1, BufferFactory sf) {
+		roundTripWithBufferFactory(length, object1, sf, NoGenericsStrategy.INSTANCE);
+		return roundTripWithBufferFactory(length, object1, sf, new DefaultGenericsStrategy(kryo));
+	}
+
+	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
+	public <T> T roundTripWithBufferFactory (int length, T object1, BufferFactory sf, GenericsStrategy genericStrategy) {
 		boolean checkLength = length != Integer.MIN_VALUE;
 
 		this.object1 = object1;

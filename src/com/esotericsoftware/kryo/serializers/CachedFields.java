@@ -57,7 +57,7 @@ import com.esotericsoftware.kryo.serializers.UnsafeField.IntUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.LongUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.ShortUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.StringUnsafeField;
-import com.esotericsoftware.kryo.util.DefaultGenericHandler.GenericType;
+import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 import java.lang.reflect.Field;
