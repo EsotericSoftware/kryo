@@ -19,16 +19,11 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
-import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +31,57 @@ import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
+import com.esotericsoftware.kryo.serializers.FieldSerializerTest.HasGenerics;
+import com.esotericsoftware.kryo.serializers.FieldSerializerTest.ListContainer;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+
 public class FieldSerializerGenericsTest extends KryoTestCase {
+
+	@Test
+	public void testGenericTypes () {
+		kryo.setReferences(true);
+		kryo.register(HasGenerics.class);
+		kryo.register(ListContainer.class);
+		kryo.register(ArrayList.class);
+		kryo.register(ArrayList[].class);
+		kryo.register(HashMap.class);
+
+		HasGenerics<Integer> test = new HasGenerics();
+		test.list1 = new ArrayList();
+		test.list1.add(1);
+		test.list1.add(2);
+		test.list1.add(3);
+		test.list1.add(4);
+		test.list1.add(5);
+		test.list1.add(6);
+		test.list1.add(7);
+		test.list1.add(8);
+		test.list2 = new ArrayList();
+		test.list2.add(test.list1);
+		test.map1 = new HashMap();
+		test.map1.put("a", test.list1);
+		test.list3 = new ArrayList();
+		test.list3.add(null);
+		test.list4 = new ArrayList();
+		test.list4.add(null);
+		test.container = new ListContainer();
+		test.container.list = new ArrayList();
+		test.container.list.add("one");
+		test.container.list.add("two");
+		test.container.list.add("three");
+		test.container.list.add("four");
+		test.container.list.add("five");
+		roundTrip(66, test);
+
+		ArrayList[] al = new ArrayList[1];
+		al[0] = new ArrayList(Arrays.asList(new String[] {"A", "B", "S"}));
+		roundTrip(17, al);
+	}
+
 	@Test
 	public void testNoStackOverflowForSimpleGenericsCase () {
 		FooRef fooRef = new FooRef();
@@ -216,6 +261,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 			list.add(value);
 		}
 
+		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -225,6 +271,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		public Value<String> string;
 		public Value<Integer> integer;
 
+		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -235,6 +282,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 	static public class NestedLists {
 		public ArrayList<NestedListValue<Integer>> lists;
 
+		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -247,6 +295,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 			this.value = value;
 		}
 
+		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -258,6 +307,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		public ArrayList<X> list;
 		public X value;
 
+		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
@@ -273,6 +323,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		public PassArgToSupers<Integer> integer;
 		public PassArgToSupers<String> string;
 
+		@Override
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}

@@ -19,7 +19,24 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import org.junit.Test;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.Kryo;
@@ -38,19 +55,6 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
-
-import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import org.junit.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet */
 @SuppressWarnings("synthetic-access")
@@ -181,7 +185,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		test.StringField = "stringvalue";
 		test.byteArrayField = new byte[] {2, 1, 0, -1, -2};
 
-		kryo = new Kryo();	
+		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setReferences(true);
 		roundTrip(152, test);
@@ -304,14 +308,17 @@ public class FieldSerializerTest extends KryoTestCase {
 	@Test
 	public void testNoDefaultConstructor () {
 		kryo.register(SimpleNoDefaultConstructor.class, new Serializer<SimpleNoDefaultConstructor>() {
+			@Override
 			public SimpleNoDefaultConstructor read (Kryo kryo, Input input, Class<? extends SimpleNoDefaultConstructor> type) {
 				return new SimpleNoDefaultConstructor(input.readVarInt(true));
 			}
 
+			@Override
 			public void write (Kryo kryo, Output output, SimpleNoDefaultConstructor object) {
 				output.writeVarInt(object.constructorValue, true);
 			}
 
+			@Override
 			public SimpleNoDefaultConstructor copy (Kryo kryo, SimpleNoDefaultConstructor original) {
 				return new SimpleNoDefaultConstructor(original.constructorValue);
 			}
@@ -321,16 +328,19 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		kryo.register(ComplexNoDefaultConstructor.class,
 			new FieldSerializer<ComplexNoDefaultConstructor>(kryo, ComplexNoDefaultConstructor.class) {
+				@Override
 				public void write (Kryo kryo, Output output, ComplexNoDefaultConstructor object) {
 					output.writeString(object.name);
 					super.write(kryo, output, object);
 				}
 
+				@Override
 				protected ComplexNoDefaultConstructor create (Kryo kryo, Input input, Class type) {
 					String name = input.readString();
 					return new ComplexNoDefaultConstructor(name);
 				}
 
+				@Override
 				protected ComplexNoDefaultConstructor createCopy (Kryo kryo, ComplexNoDefaultConstructor original) {
 					return new ComplexNoDefaultConstructor(original.name);
 				}
@@ -402,8 +412,7 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		kryo.register(HasPrivateConstructor.class);
 		roundTrip(4, test);
-		//Multiplied by 2 because we are testing two generics strategies
-		assertEquals("Wrong number of constructor invocations", 20 * 2, HasPrivateConstructor.invocations);
+		assertEquals("Wrong number of constructor invocations", 20, HasPrivateConstructor.invocations);
 	}
 
 	/** This test uses StdInstantiatorStrategy and should bypass invocation of no-arg constructor, even if it is provided. **/
@@ -418,47 +427,6 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(4, test);
 		assertEquals("Default constructor should not be invoked with StdInstantiatorStrategy strategy", 0,
 			HasPrivateConstructor.invocations);
-	}
-
-	@Test
-	public void testGenericTypes () {
-		kryo.setReferences(true);
-		kryo.register(HasGenerics.class);
-		kryo.register(ListContainer.class);
-		kryo.register(ArrayList.class);
-		kryo.register(ArrayList[].class);
-		kryo.register(HashMap.class);
-
-		HasGenerics<Integer> test = new HasGenerics();
-		test.list1 = new ArrayList();
-		test.list1.add(1);
-		test.list1.add(2);
-		test.list1.add(3);
-		test.list1.add(4);
-		test.list1.add(5);
-		test.list1.add(6);
-		test.list1.add(7);
-		test.list1.add(8);
-		test.list2 = new ArrayList();
-		test.list2.add(test.list1);
-		test.map1 = new HashMap();
-		test.map1.put("a", test.list1);
-		test.list3 = new ArrayList();
-		test.list3.add(null);
-		test.list4 = new ArrayList();
-		test.list4.add(null);
-		test.container = new ListContainer();
-		test.container.list = new ArrayList();
-		test.container.list.add("one");
-		test.container.list.add("two");
-		test.container.list.add("three");
-		test.container.list.add("four");
-		test.container.list.add("five");
-		roundTrip(66, test);
-
-		ArrayList[] al = new ArrayList[1];
-		al[0] = new ArrayList(Arrays.asList(new String[] {"A", "B", "S"}));
-		roundTrip(17, al);
 	}
 
 	@Test
@@ -726,6 +694,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		DefaultTypes child;
 		HasStringField hasStringField;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -787,6 +756,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		public int value;
 		@Bind(valueClass = B.class, serializerFactory = FieldSerializerFactory.class) public B b;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -804,6 +774,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		public int value;
 		@Bind(valueClass = A.class) public A a;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -821,6 +792,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		public A a;
 		@Bind(serializer = FieldSerializer.class, valueClass = D.class) public D d;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -839,6 +811,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	static public final class D {
 		public E e;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -854,6 +827,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	static public final class E {
 		public F f;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -871,6 +845,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		public final int finalValue = 12;
 		public D d;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -893,6 +868,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			return constructorValue;
 		}
 
+		@Override
 		public int hashCode () {
 			final int prime = 31;
 			int result = 1;
@@ -900,6 +876,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			return result;
 		}
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -918,6 +895,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		public HasTransients () {
 		}
 
+		@Override
 		public int hashCode () {
 			final int prime = 31;
 			int result = 1;
@@ -927,6 +905,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			return result;
 		}
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -952,6 +931,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			this.name = name;
 		}
 
+		@Override
 		public int hashCode () {
 			final int prime = 31;
 			int result = 1;
@@ -961,6 +941,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			return result;
 		}
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -981,6 +962,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	static public class HasNonNull {
 		@NotNull public String nonNullText;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -997,6 +979,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	static public class HasStringField {
 		public String text;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -1012,6 +995,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	static public class HasOptionalAnnotation {
 		@Optional("smurf") int moo;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -1030,6 +1014,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			this.time = time;
 		}
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -1041,14 +1026,17 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	static public class HasDefaultSerializerAnnotationSerializer extends Serializer<HasDefaultSerializerAnnotation> {
+		@Override
 		public void write (Kryo kryo, Output output, HasDefaultSerializerAnnotation object) {
 			output.writeVarLong(object.time, true);
 		}
 
+		@Override
 		public HasDefaultSerializerAnnotation read (Kryo kryo, Input input, Class<? extends HasDefaultSerializerAnnotation> type) {
 			return new HasDefaultSerializerAnnotation(input.readVarLong(true));
 		}
 
+		@Override
 		public HasDefaultSerializerAnnotation copy (Kryo kryo, HasDefaultSerializerAnnotation original) {
 			return new HasDefaultSerializerAnnotation(original.time);
 		}
@@ -1061,6 +1049,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			this.moo = moo;
 		}
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -1084,12 +1073,13 @@ public class FieldSerializerTest extends KryoTestCase {
 
 	static public class HasGenerics<T> {
 		public ArrayList<T> list1;
-		private List<List> list2 = new ArrayList();
+		List<List> list2 = new ArrayList();
 		public List list3 = new ArrayList();
 		ArrayList list4 = new ArrayList();
 		public ListContainer<String> container;
 		protected HashMap<String, ArrayList<Integer>> map1;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -1120,6 +1110,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	static public class ListContainer<T> {
 		public ArrayList<T> list;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -1167,6 +1158,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			public int number;
 			public String text;
 
+			@Override
 			public boolean equals (Object obj) {
 				if (this == obj) return true;
 				if (obj == null) return false;
@@ -1197,6 +1189,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			elementsCanBeNull = false) //
 		List listOfHasFields;
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -1238,6 +1231,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		private int y;
 		private int z;
 
+		@Override
 		public boolean equals (Object o) {
 			if (this == o) return true;
 			if (!(o instanceof IsGeneric)) return false;
@@ -1255,6 +1249,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		public int i;
 		public Deep deep;
 
+		@Override
 		public int hashCode () {
 			final int prime = 31;
 			int result = 1;
@@ -1262,6 +1257,7 @@ public class FieldSerializerTest extends KryoTestCase {
 			return result;
 		}
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;

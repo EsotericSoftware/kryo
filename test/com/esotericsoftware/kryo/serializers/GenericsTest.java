@@ -19,24 +19,34 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Supplier;
+
+import org.junit.Before;
+import org.junit.Test;
+
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
 import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.function.Supplier;
-
-import org.junit.Before;
-import org.junit.Test;
+import com.esotericsoftware.kryo.util.GenericsStrategy;
+import com.esotericsoftware.kryo.util.NoGenericsStrategy;
 
 public class GenericsTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
+	@Override
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();
@@ -115,7 +125,7 @@ public class GenericsTest extends KryoTestCase {
 		kryo.register(HashMap.class);
 		kryo.register(HashSet.class);
 
-		roundTrip(18, hasMap);
+		roundTrip(20, 18, hasMap);
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/622
@@ -137,7 +147,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
-	public void testFieldWithGenericArrayType() {
+	public void testFieldWithGenericArrayType () {
 		ClassArrayHolder o = new ClassArrayHolder(new Class[] {});
 
 		kryo.setRegistrationRequired(false);
@@ -147,7 +157,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
-	public void testClassWithMultipleGenericTypes() {
+	public void testClassWithMultipleGenericTypes () {
 		HolderWithAdditionalGenericType<String, Integer> o = new HolderWithAdditionalGenericType<>(1);
 
 		kryo.setRegistrationRequired(false);
@@ -161,8 +171,7 @@ public class GenericsTest extends KryoTestCase {
 		ClassHierarchyWithChangingTypeVariableNames.A<?> o = new ClassHierarchyWithChangingTypeVariableNames.A<>(Enum.class);
 
 		kryo.setRegistrationRequired(false);
-
-		roundTrip(131, o);
+		roundTrip(131, o, NoGenericsStrategy.INSTANCE);
 	}
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
@@ -177,15 +186,19 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/721
 	@Test
-	@Ignore("Currently fails")
 	public void testClassHierarchyWithConflictingTypeVariables () {
 		ClassWithConflictingTypeArguments.A o = new ClassWithConflictingTypeArguments.A(
-				new ClassWithConflictingTypeArguments.B<>(1));
+			new ClassWithConflictingTypeArguments.B<>(1));
 
-		kryo.setRegistrationRequired(false);
-
-		Output buffer = new Output(512, 4048);
-		kryo.writeClassAndObject(buffer, o);
+		GenericsStrategy previousStrategy = kryo.getGenerics();
+		try {
+			kryo.setGenerics(NoGenericsStrategy.INSTANCE);
+			kryo.setRegistrationRequired(false);
+			Output buffer = new Output(512, 4048);
+			kryo.writeClassAndObject(buffer, o);
+		} finally {
+			kryo.setGenerics(previousStrategy);
+		}
 	}
 
 	private interface Holder<V> {
@@ -199,6 +212,7 @@ public class GenericsTest extends KryoTestCase {
 			this.value = value;
 		}
 
+		@Override
 		public V getValue () {
 			return value;
 		}
@@ -249,7 +263,7 @@ public class GenericsTest extends KryoTestCase {
 			super(null);
 		}
 
-		HolderWithAdditionalGenericType(OT value) {
+		HolderWithAdditionalGenericType (OT value) {
 			super(value);
 		}
 
@@ -275,6 +289,7 @@ public class GenericsTest extends KryoTestCase {
 			name = "Default";
 		}
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -308,6 +323,7 @@ public class GenericsTest extends KryoTestCase {
 			return this.listPayload;
 		}
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -378,6 +394,7 @@ public class GenericsTest extends KryoTestCase {
 	static public class ClassWithMap {
 		public final Map<MapKey, Set<String>> values = new HashMap();
 
+		@Override
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
 			if (obj == null) return false;
@@ -392,6 +409,7 @@ public class GenericsTest extends KryoTestCase {
 		static public class MapKey {
 			public String field1, field2;
 
+			@Override
 			public String toString () {
 				return field1 + ":" + field2;
 			}
@@ -422,15 +440,15 @@ public class GenericsTest extends KryoTestCase {
 			}
 
 			@Override
-			public boolean equals(Object o) {
+			public boolean equals (Object o) {
 				if (this == o) return true;
 				if (o == null || getClass() != o.getClass()) return false;
-				final B<?> b = (B<?>) o;
+				final B<?> b = (B<?>)o;
 				return Objects.equals(s.get(), b.s.get());
 			}
 
 			@Override
-			public int hashCode() {
+			public int hashCode () {
 				return Objects.hash(s);
 			}
 		}

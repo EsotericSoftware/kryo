@@ -19,8 +19,21 @@
 
 package com.esotericsoftware.kryo;
 
-import static com.esotericsoftware.minlog.Log.*;
-import static org.junit.Assert.*;
+import static com.esotericsoftware.minlog.Log.WARN;
+import static com.esotericsoftware.minlog.Log.warn;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+
+import org.junit.Before;
+
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
@@ -32,16 +45,6 @@ import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
 import com.esotericsoftware.kryo.util.DefaultGenericsStrategy;
 import com.esotericsoftware.kryo.util.GenericsStrategy;
 import com.esotericsoftware.kryo.util.NoGenericsStrategy;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Array;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-
-import org.junit.Before;
 
 /** Convenience methods for round tripping objects.
  * @author Nathan Sweet */
@@ -75,24 +78,46 @@ abstract public class KryoTestCase {
 	}
 
 	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
+	public <T> T roundTrip (int lengthNonGeneric, int lengthGeneric, T object1) {
+		roundTrip(lengthNonGeneric, object1, NoGenericsStrategy.INSTANCE);
+		return roundTrip(lengthGeneric, object1, new DefaultGenericsStrategy(kryo));
+	}
+
+	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
+	public <T> T roundTrip (int length, T object1, GenericsStrategy strategy) {
+		GenericsStrategy previousStrategy = kryo.getGenerics();
+		try {
+			kryo.setGenerics(strategy);
+			return roundTrip(length, object1);
+		} finally {
+			kryo.setGenerics(previousStrategy);
+		}
+	}
+
+	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
 	public <T> T roundTrip (int length, T object1) {
 		T object2 = roundTripWithBufferFactory(length, object1, new BufferFactory() {
+			@Override
 			public Output createOutput (OutputStream os) {
 				return new Output(os);
 			}
 
+			@Override
 			public Output createOutput (OutputStream os, int size) {
 				return new Output(os, size);
 			}
 
+			@Override
 			public Output createOutput (int size, int limit) {
 				return new Output(size, limit);
 			}
 
+			@Override
 			public Input createInput (InputStream os, int size) {
 				return new Input(os, size);
 			}
 
+			@Override
 			public Input createInput (byte[] buffer) {
 				return new Input(buffer);
 			}
@@ -101,22 +126,27 @@ abstract public class KryoTestCase {
 		if (debug) return object2;
 
 		roundTripWithBufferFactory(length, object1, new BufferFactory() {
+			@Override
 			public Output createOutput (OutputStream os) {
 				return new ByteBufferOutput(os);
 			}
 
+			@Override
 			public Output createOutput (OutputStream os, int size) {
 				return new ByteBufferOutput(os, size);
 			}
 
+			@Override
 			public Output createOutput (int size, int limit) {
 				return new ByteBufferOutput(size, limit);
 			}
 
+			@Override
 			public Input createInput (InputStream os, int size) {
 				return new ByteBufferInput(os, size);
 			}
 
+			@Override
 			public Input createInput (byte[] buffer) {
 				ByteBuffer byteBuffer = ByteBuffer.allocateDirect(buffer.length);
 				byteBuffer.put(buffer).flip();
@@ -125,44 +155,54 @@ abstract public class KryoTestCase {
 		});
 
 		roundTripWithBufferFactory(length, object1, new BufferFactory() {
+			@Override
 			public Output createOutput (OutputStream os) {
 				return new UnsafeOutput(os);
 			}
 
+			@Override
 			public Output createOutput (OutputStream os, int size) {
 				return new UnsafeOutput(os, size);
 			}
 
+			@Override
 			public Output createOutput (int size, int limit) {
 				return new UnsafeOutput(size, limit);
 			}
 
+			@Override
 			public Input createInput (InputStream os, int size) {
 				return new UnsafeInput(os, size);
 			}
 
+			@Override
 			public Input createInput (byte[] buffer) {
 				return new UnsafeInput(buffer);
 			}
 		});
 
 		roundTripWithBufferFactory(length, object1, new BufferFactory() {
+			@Override
 			public Output createOutput (OutputStream os) {
 				return new UnsafeByteBufferOutput(os);
 			}
 
+			@Override
 			public Output createOutput (OutputStream os, int size) {
 				return new UnsafeByteBufferOutput(os, size);
 			}
 
+			@Override
 			public Output createOutput (int size, int limit) {
 				return new UnsafeByteBufferOutput(size, limit);
 			}
 
+			@Override
 			public Input createInput (InputStream os, int size) {
 				return new UnsafeByteBufferInput(os, size);
 			}
 
+			@Override
 			public Input createInput (byte[] buffer) {
 				ByteBuffer byteBuffer = ByteBuffer.allocateDirect(buffer.length);
 				byteBuffer.put(buffer).flip();
@@ -175,8 +215,13 @@ abstract public class KryoTestCase {
 
 	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
 	public <T> T roundTripWithBufferFactory (int length, T object1, BufferFactory sf) {
-		roundTripWithBufferFactory(length, object1, sf, NoGenericsStrategy.INSTANCE);
-		return roundTripWithBufferFactory(length, object1, sf, new DefaultGenericsStrategy(kryo));
+		return roundTripWithBufferFactory(length, object1, sf, kryo.getGenerics());
+	}
+
+	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
+	public <T> T roundTripWithBufferFactory (int lengthNonGeneric, int lengthGeneric, T object1, BufferFactory sf) {
+		roundTripWithBufferFactory(lengthNonGeneric, object1, sf, NoGenericsStrategy.INSTANCE);
+		return roundTripWithBufferFactory(lengthGeneric, object1, sf, new DefaultGenericsStrategy(kryo));
 	}
 
 	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
@@ -184,75 +229,81 @@ abstract public class KryoTestCase {
 		boolean checkLength = length != Integer.MIN_VALUE;
 
 		this.object1 = object1;
+		GenericsStrategy previousStrategy = kryo.getGenerics();
+		kryo.setGenerics(genericStrategy);
+		try {
 
-		// Test output to stream, large buffer.
-		ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-		output = sf.createOutput(outStream, 4096);
-		kryo.writeClassAndObject(output, object1);
-		output.flush();
-
-		if (debug) System.out.println();
-
-		// Test input from stream, large buffer.
-		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 4096);
-		object2 = kryo.readClassAndObject(input);
-		doAssertEquals(object1, object2);
-		if (checkLength) {
-			assertEquals("Incorrect number of bytes read.", length, input.total());
-			assertEquals("Incorrect number of bytes written.", length, output.total());
-		}
-
-		if (debug) return (T)object2;
-
-		// Test output to stream, small buffer.
-		outStream = new ByteArrayOutputStream();
-		output = sf.createOutput(outStream, 10);
-		kryo.writeClassAndObject(output, object1);
-		output.flush();
-
-		// Test input from stream, small buffer.
-		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
-		object2 = kryo.readClassAndObject(input);
-		doAssertEquals(object1, object2);
-		if (checkLength) assertEquals("Incorrect number of bytes read.", length, input.total());
-
-		if (object1 != null) {
-			// Test null with serializer.
-			Serializer serializer = kryo.getRegistration(object1.getClass()).getSerializer();
-			output.reset();
-			outStream.reset();
-			kryo.writeObjectOrNull(output, null, serializer);
+			// Test output to stream, large buffer.
+			ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+			output = sf.createOutput(outStream, 4096);
+			kryo.writeClassAndObject(output, object1);
 			output.flush();
 
-			// Test null from byte array with and without serializer.
+			if (debug) System.out.println();
+
+			// Test input from stream, large buffer.
+			input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 4096);
+			object2 = kryo.readClassAndObject(input);
+			doAssertEquals(object1, object2);
+			if (checkLength) {
+				assertEquals("Incorrect number of bytes read.", length, input.total());
+				assertEquals("Incorrect number of bytes written.", length, output.total());
+			}
+
+			if (debug) return (T)object2;
+
+			// Test output to stream, small buffer.
+			outStream = new ByteArrayOutputStream();
+			output = sf.createOutput(outStream, 10);
+			kryo.writeClassAndObject(output, object1);
+			output.flush();
+
+			// Test input from stream, small buffer.
 			input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
-			assertNull(kryo.readObjectOrNull(input, object1.getClass(), serializer));
+			object2 = kryo.readClassAndObject(input);
+			doAssertEquals(object1, object2);
+			if (checkLength) assertEquals("Incorrect number of bytes read.", length, input.total());
 
-			input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
-			assertNull(kryo.readObjectOrNull(input, object1.getClass()));
-		}
+			if (object1 != null) {
+				// Test null with serializer.
+				Serializer serializer = kryo.getRegistration(object1.getClass()).getSerializer();
+				output.reset();
+				outStream.reset();
+				kryo.writeObjectOrNull(output, null, serializer);
+				output.flush();
 
-		// Test output to byte array.
-		output = sf.createOutput(length * 2, -1);
-		kryo.writeClassAndObject(output, object1);
-		output.flush();
+				// Test null from byte array with and without serializer.
+				input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
+				assertNull(kryo.readObjectOrNull(input, object1.getClass(), serializer));
 
-		// Test input from byte array.
-		input = sf.createInput(output.toBytes());
-		object2 = kryo.readClassAndObject(input);
-		doAssertEquals(object1, object2);
-		if (checkLength) {
-			assertEquals("Incorrect length.", length, output.total());
-			assertEquals("Incorrect number of bytes read.", length, input.total());
-		}
-		input.reset();
+				input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
+				assertNull(kryo.readObjectOrNull(input, object1.getClass()));
+			}
 
-		if (supportsCopy) {
-			// Test copy.
-			T copy = kryo.copy(object1);
-			doAssertEquals(object1, copy);
-			copy = kryo.copyShallow(object1);
-			doAssertEquals(object1, copy);
+			// Test output to byte array.
+			output = sf.createOutput(length * 2, -1);
+			kryo.writeClassAndObject(output, object1);
+			output.flush();
+
+			// Test input from byte array.
+			input = sf.createInput(output.toBytes());
+			object2 = kryo.readClassAndObject(input);
+			doAssertEquals(object1, object2);
+			if (checkLength) {
+				assertEquals("Incorrect length.", length, output.total());
+				assertEquals("Incorrect number of bytes read.", length, input.total());
+			}
+			input.reset();
+
+			if (supportsCopy) {
+				// Test copy.
+				T copy = kryo.copy(object1);
+				doAssertEquals(object1, copy);
+				copy = kryo.copyShallow(object1);
+				doAssertEquals(object1, copy);
+			}
+		} finally {
+			kryo.setGenerics(previousStrategy);
 		}
 
 		return (T)object2;
