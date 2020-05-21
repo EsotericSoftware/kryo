@@ -104,7 +104,7 @@ public final class ImmutableCollectionsSerializers {
 			for (Map.Entry<Object, Object> entry : original.entrySet()) {
 				copy.put(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));
 			}
-			return copy;
+			return Map.copyOf(copy);
 		}
 
 		static void addDefaultSerializers (Kryo kryo) {
