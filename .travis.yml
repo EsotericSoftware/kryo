@@ -28,7 +28,6 @@ script:
   # install and publish snapshot with java 8
   # not via `after_success` but directly in `script`, since a failure would be silently ignored in `after_success`, which
   # is documented in https://docs.travis-ci.com/user/customizing-the-build#Breaking-the-Build
-  - jdk_switcher use openjdk8
   - if [ $TRAVIS_BRANCH = "master" ] && [ $TRAVIS_PULL_REQUEST = "false" ] && [ $IS_SNAPSHOT ]; then
       mvn -v && mvn -B -P requireSnapshot -DskipTests=true deploy --settings build/settings-sonatype.xml;
     else
