@@ -274,7 +274,7 @@ public class ByteBufferInput extends Input {
 
 	public void setLimit (int limit) {
 		this.limit = limit;
-		limitBuffer(byteBuffer, limit);
+		setBufferLimit(byteBuffer, limit);
 	}
 
 	public void skip (int count) throws KryoException {
@@ -301,20 +301,20 @@ public class ByteBufferInput extends Input {
 		}
 	}
 
-	private int getBufferPosition(Buffer byteBuffer) {
-		return byteBuffer.position();
+	private int getBufferPosition(Buffer buffer) {
+		return buffer.position();
 	}
 
-	private void setBufferPosition (Buffer byteBuffer, int position) {
-		byteBuffer.position(position);
+	private void setBufferPosition (Buffer buffer, int position) {
+		buffer.position(position);
 	}
 
-	private void limitBuffer (Buffer byteBuffer, int limit) {
-		byteBuffer.limit(limit);
+	private void setBufferLimit (Buffer buffer, int limit) {
+		buffer.limit(limit);
 	}
 
-	private void flipBuffer(Buffer byteBuffer) {
-		byteBuffer.flip();
+	private void flipBuffer(Buffer buffer) {
+		buffer.flip();
 	}
 
 	// byte:

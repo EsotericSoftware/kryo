@@ -117,9 +117,7 @@ abstract public class KryoTestCase {
 			}
 
 			public Input createInput (byte[] buffer) {
-				ByteBuffer byteBuffer = ByteBuffer.allocateDirect(buffer.length);
-				byteBuffer.put(buffer);
-				((Buffer) byteBuffer).flip();
+				ByteBuffer byteBuffer = allocateByteBuffer(buffer);
 				return new ByteBufferInput(byteBuffer);
 			}
 		});
@@ -164,14 +162,19 @@ abstract public class KryoTestCase {
 			}
 
 			public Input createInput (byte[] buffer) {
-				ByteBuffer byteBuffer = ByteBuffer.allocateDirect(buffer.length);
-				byteBuffer.put(buffer);
-				((Buffer) byteBuffer).flip();
+				ByteBuffer byteBuffer = allocateByteBuffer(buffer);
 				return new UnsafeByteBufferInput(byteBuffer);
 			}
 		});
 
 		return object2;
+	}
+
+	private ByteBuffer allocateByteBuffer(byte[] buffer) {
+		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(buffer.length);
+		byteBuffer.put(buffer);
+		((Buffer) byteBuffer).flip();
+		return byteBuffer;
 	}
 
 	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */

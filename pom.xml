@@ -172,12 +172,12 @@
 			</build>
 		</profile>
 		<profile>
-			<id>until-java9</id>
+			<id>until-java11</id>
 			<activation>
-				<!-- Use exclusive 1.9 range instead of inclusive 1.8, because an upper bound ",1.8]" is likely not to include most releases of 1.8,
+				<!-- Use exclusive 11 range instead of inclusive 10, because an upper bound ",10]" is likely not to include most releases of 10,
 				   since they will have an additional "patch" release such as _05 that is not taken into consideration in the above range.
 				   See also http://maven.apache.org/guides/introduction/introduction-to-profiles.html#Details_on_profile_activation -->
-				<jdk>[1.5,1.9)</jdk>
+				<jdk>[1.5,11)</jdk>
 			</activation>
 			<build>
 				<plugins>

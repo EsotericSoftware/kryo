@@ -118,7 +118,7 @@ public class ByteBufferOutput extends Output {
 		ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
 		buffer.put(bytes, offset, count);
 		setBufferPosition(buffer, 0);
-		limitBuffer(buffer, bytes.length);
+		setBufferLimit(buffer, bytes.length);
 		setBuffer(buffer);
 	}
 
@@ -166,15 +166,15 @@ public class ByteBufferOutput extends Output {
 		setBufferPosition(byteBuffer, 0);
 	}
 
-	private int getBufferPosition(Buffer byteBuffer) {
-		return byteBuffer.position();
+	private int getBufferPosition(Buffer buffer) {
+		return buffer.position();
 	}
 
-	private void setBufferPosition(Buffer byteBuffer, int newPosition) {
-		byteBuffer.position(newPosition);
+	private void setBufferPosition(Buffer buffer, int newPosition) {
+		buffer.position(newPosition);
 	}
 
-	private void limitBuffer(Buffer buffer, int length) {
+	private void setBufferLimit(Buffer buffer, int length) {
 		buffer.limit(length);
 	}
 
@@ -193,7 +193,7 @@ public class ByteBufferOutput extends Output {
 		} while (capacity - position < required);
 		ByteBuffer newBuffer = !byteBuffer.isDirect() ? ByteBuffer.allocate(capacity) : ByteBuffer.allocateDirect(capacity);
 		setBufferPosition(byteBuffer, 0);
-		limitBuffer(byteBuffer, position);
+		setBufferLimit(byteBuffer, position);
 		newBuffer.put(byteBuffer);
 		newBuffer.order(byteBuffer.order());
 		byteBuffer = newBuffer;

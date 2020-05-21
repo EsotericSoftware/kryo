@@ -68,8 +68,8 @@ public class ByteBufferInputStream extends InputStream {
 		return byteBuffer.remaining();
 	}
 
-	private void flipBuffer (Buffer byteBuffer) {
-		byteBuffer.flip();
+	private void flipBuffer (Buffer buffer) {
+		buffer.flip();
 	}
 
 }

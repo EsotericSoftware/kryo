@@ -114,8 +114,8 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		bufferAddress = 0;
 	}
 
-	private void setBufferPosition (Buffer byteBuffer, int position) {
-		byteBuffer.position(position);
+	private void setBufferPosition (Buffer buffer, int position) {
+		buffer.position(position);
 	}
 
 	public void write (int value) throws KryoException {

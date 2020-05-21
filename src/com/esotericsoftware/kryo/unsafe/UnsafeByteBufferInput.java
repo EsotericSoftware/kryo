@@ -104,8 +104,8 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		bufferAddress = ((DirectBuffer)byteBuffer).address();
 	}
 
-	private void setBufferPosition( Buffer byteBuffer,  int position) {
-		byteBuffer.position(position);
+	private void setBufferPosition( Buffer buffer,  int position) {
+		buffer.position(position);
 	}
 
 	public int read () throws KryoException {
