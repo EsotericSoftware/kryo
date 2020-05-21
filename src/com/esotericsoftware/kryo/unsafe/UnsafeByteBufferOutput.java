@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.OutputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 import sun.nio.ch.DirectBuffer;
@@ -113,70 +114,74 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		bufferAddress = 0;
 	}
 
+	private void setBufferPosition (Buffer buffer, int position) {
+		buffer.position(position);
+	}
+
 	public void write (int value) throws KryoException {
 		if (position == capacity) require(1);
 		unsafe.putByte(bufferAddress + position++, (byte)value);
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 
 	public void writeByte (byte value) throws KryoException {
 		if (position == capacity) require(1);
 		unsafe.putByte(bufferAddress + position++, value);
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 
 	public void writeByte (int value) throws KryoException {
 		if (position == capacity) require(1);
 		unsafe.putByte(bufferAddress + position++, (byte)value);
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 
 	public void writeInt (int value) throws KryoException {
 		require(4);
 		unsafe.putInt(bufferAddress + position, value);
 		position += 4;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 
 	public void writeLong (long value) throws KryoException {
 		require(8);
 		unsafe.putLong(bufferAddress + position, value);
 		position += 8;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 
 	public void writeFloat (float value) throws KryoException {
 		require(4);
 		unsafe.putFloat(bufferAddress + position, value);
 		position += 4;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 
 	public void writeDouble (double value) throws KryoException {
 		require(8);
 		unsafe.putDouble(bufferAddress + position, value);
 		position += 8;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 
 	public void writeShort (int value) throws KryoException {
 		require(2);
 		unsafe.putShort(bufferAddress + position, (short)value);
 		position += 2;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 
 	public void writeChar (char value) throws KryoException {
 		require(2);
 		unsafe.putChar(bufferAddress + position, value);
 		position += 2;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 
 	public void writeBoolean (boolean value) throws KryoException {
 		if (position == capacity) require(1);
 		unsafe.putByte(bufferAddress + position++, value ? (byte)1 : 0);
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 
 	public void writeInts (int[] array, int offset, int count) throws KryoException {
@@ -223,6 +228,6 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 			copyCount = Math.min(capacity, count);
 			require(copyCount);
 		}
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
 }
