@@ -24,8 +24,6 @@ import static org.junit.Assert.*;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
 
-import java.util.BitSet;
-
 import org.junit.Test;
 
 /** @author Nathan Sweet */

@@ -28,7 +28,6 @@ import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.util.Random;
 
 import org.junit.Test;
