@@ -17,12 +17,14 @@ env:
 jdk:
   - openjdk11
 
+install:
+  # build with java 11
+  - mvn install -DskipTests=true -B -V
+
 script:
-  # compile tests with java 11
-  # separate "clean" from "install" because "clean install" would fail the pom-versioned module
-  - mvn clean
-  - mvn -B install
-  # test java 8
+  # run tests with java 11
+  - mvn test -B
+  # run tests with java 8
   - jdk_switcher use openjdk8
   - mvn -v && mvn -B test
   # install and publish snapshot with java 8
