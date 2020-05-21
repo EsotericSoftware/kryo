@@ -28,6 +28,9 @@ import org.junit.Test;
 
 /** Test for java >=9 ImmutableCollections serializers. */
 public class ImmutableCollectionsSerializersTest extends KryoTestCase {
+	{
+		supportsCopy = true;
+	}
 
 	@Before
 	public void setUp () throws Exception {

@@ -62,6 +62,16 @@ public final class ImmutableCollectionsSerializers {
 			return List.of(list);
 		}
 
+		@Override
+		public List<Object> copy(Kryo kryo, List<Object> original) {
+			List<Object> copy = new ArrayList<>(original.size());
+			kryo.reference(copy);
+			for (Object element : original) {
+				copy.add(kryo.copy(element));
+			}
+			return List.copyOf(copy);
+		}
+
 		static void addDefaultSerializers (Kryo kryo) {
 			final JdkImmutableListSerializer serializer = new JdkImmutableListSerializer();
 			kryo.addDefaultSerializer(List.of().getClass(), serializer);
@@ -86,6 +96,15 @@ public final class ImmutableCollectionsSerializers {
 		public Map<Object, Object> read (Kryo kryo, Input input, Class<? extends Map<Object, Object>> type) {
 			final Map<?, ?> map = kryo.readObject(input, HashMap.class);
 			return Map.copyOf(map);
+		}
+
+		@Override
+		public Map<Object, Object> copy(Kryo kryo, Map<Object, Object> original) {
+			final HashMap<Object, Object> copy = new HashMap<>(original.size());
+			for (Map.Entry<Object, Object> entry : original.entrySet()) {
+				copy.put(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));
+			}
+			return copy;
 		}
 
 		static void addDefaultSerializers (Kryo kryo) {
@@ -118,6 +137,16 @@ public final class ImmutableCollectionsSerializers {
 				objects[i] = kryo.readClassAndObject(input);
 			}
 			return Set.of(objects);
+		}
+
+		@Override
+		public Set<Object> copy(Kryo kryo, Set<Object> original) {
+			Set<Object> copy = new HashSet<>(original.size());
+			kryo.reference(copy);
+			for (Object element : original) {
+				copy.add(kryo.copy(element));
+			}
+			return Set.copyOf(copy);
 		}
 
 		static void addDefaultSerializers (Kryo kryo) {
