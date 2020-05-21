@@ -17,10 +17,6 @@ env:
 jdk:
   - openjdk11
 
-install:
-  # compile and test java 11
-  - mvn -B -V clean test
-
 script:
   # compile tests with java 11
   # separate "clean" from "install" because "clean install" would fail the pom-versioned module
