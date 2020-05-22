@@ -88,7 +88,7 @@ public class SerializationCompatTest extends KryoTestCase {
 	static {
 		TEST_DATAS.add(new TestDataDescription<>("5.0.0", new TestData(), 1940));
 		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<>("5.0.0", new TestDataJava8(), 2098));
-		if (JAVA_VERSION >= 11) TEST_DATAS.add(new TestDataDescription<>("5.0.0", new TestDataJava11(), 2227));
+		if (JAVA_VERSION >= 11) TEST_DATAS.add(new TestDataDescription<>("5.0.0", new TestDataJava11(), 2210));
 	};
 
 	@Before

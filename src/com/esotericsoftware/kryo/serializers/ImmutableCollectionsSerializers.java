@@ -22,11 +22,14 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /** Serializers for {@link java.util.ImmutableCollections}, Are added as default serializers for java >= 9. */
 public final class ImmutableCollectionsSerializers {
@@ -38,37 +41,34 @@ public final class ImmutableCollectionsSerializers {
 		}
 	}
 
-	static public class JdkImmutableListSerializer extends Serializer<List<Object>> {
+	static class JdkImmutableListSerializer extends CollectionSerializer<List<Object>> {
 
 		private JdkImmutableListSerializer () {
-			super(false, true);
+			setElementsCanBeNull(false);
 		}
 
 		@Override
-		public void write (Kryo kryo, Output output, List<Object> object) {
-			output.writeInt(object.size(), true);
-			for (final Object elm : object) {
-				kryo.writeClassAndObject(output, elm);
-			}
+		protected List<Object> create (Kryo kryo, Input input, Class<? extends List<Object>> type, int size) {
+			return new ArrayList<>(size);
+		}
+
+		@Override
+		protected List<Object> createCopy (Kryo kryo, List<Object> original) {
+			return new ArrayList<>(original.size());
 		}
 
 		@Override
 		public List<Object> read (Kryo kryo, Input input, Class<? extends List<Object>> type) {
-			final int size = input.readInt(true);
-			final Object[] list = new Object[size];
-			for (int i = 0; i < size; ++i) {
-				list[i] = kryo.readClassAndObject(input);
+			List<Object> list = super.read(kryo, input, type);
+			if (list == null) {
+				return null;
 			}
-			return List.of(list);
+			return List.of(list.toArray());
 		}
 
 		@Override
 		public List<Object> copy(Kryo kryo, List<Object> original) {
-			List<Object> copy = new ArrayList<>(original.size());
-			kryo.reference(copy);
-			for (Object element : original) {
-				copy.add(kryo.copy(element));
-			}
+			List<Object> copy = super.copy(kryo, original);
 			return List.copyOf(copy);
 		}
 
@@ -81,29 +81,35 @@ public final class ImmutableCollectionsSerializers {
 		}
 	}
 
-	static public class JdkImmutableMapSerializer extends Serializer<Map<Object, Object>> {
+	static class JdkImmutableMapSerializer extends MapSerializer<Map<Object, Object>> {
 
 		private JdkImmutableMapSerializer () {
-			super(false, true);
+			setKeysCanBeNull(false);
+			setValuesCanBeNull(false);
 		}
 
 		@Override
-		public void write (Kryo kryo, Output output, Map<Object, Object> object) {
-			kryo.writeObject(output, new HashMap<>(object));
+		protected Map<Object, Object> create (Kryo kryo, Input input, Class<? extends Map<Object, Object>> type, int size) {
+			return new HashMap<>();
+		}
+
+		@Override
+		protected Map<Object, Object> createCopy (Kryo kryo, Map<Object, Object> original) {
+			return new HashMap<>();
 		}
 
 		@Override
 		public Map<Object, Object> read (Kryo kryo, Input input, Class<? extends Map<Object, Object>> type) {
-			final Map<?, ?> map = kryo.readObject(input, HashMap.class);
+			Map<Object, Object> map = super.read(kryo, input, type);
+			if (map == null) {
+				return null;
+			}
 			return Map.copyOf(map);
 		}
 
 		@Override
 		public Map<Object, Object> copy(Kryo kryo, Map<Object, Object> original) {
-			final HashMap<Object, Object> copy = new HashMap<>(original.size());
-			for (Map.Entry<Object, Object> entry : original.entrySet()) {
-				copy.put(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));
-			}
+			final Map<Object, Object> copy = super.copy(kryo, original);
 			return Map.copyOf(copy);
 		}
 
@@ -115,37 +121,34 @@ public final class ImmutableCollectionsSerializers {
 		}
 	}
 
-	static public class JdkImmutableSetSerializer extends Serializer<Set<Object>> {
+	static class JdkImmutableSetSerializer extends CollectionSerializer<Set<Object>> {
 
 		private JdkImmutableSetSerializer () {
-			super(false, true);
+			setElementsCanBeNull(false);
 		}
 
 		@Override
-		public void write (Kryo kryo, Output output, Set<Object> object) {
-			output.writeInt(object.size(), true);
-			for (final Object elm : object) {
-				kryo.writeClassAndObject(output, elm);
-			}
+		protected Set<Object> create (Kryo kryo, Input input, Class<? extends Set<Object>> type, int size) {
+			return new HashSet<>();
+		}
+
+		@Override
+		protected Set<Object> createCopy (Kryo kryo, Set<Object> original) {
+			return new HashSet<>();
 		}
 
 		@Override
 		public Set<Object> read(Kryo kryo, Input input, Class<? extends Set<Object>> type) {
-			final int size = input.readInt(true);
-			final Object[] objects = new Object[size];
-			for (int i = 0; i < size; ++i) {
-				objects[i] = kryo.readClassAndObject(input);
+			Set<Object> set = super.read(kryo, input, type);
+			if (set == null) {
+				return null;
 			}
-			return Set.of(objects);
+			return Set.of(set.toArray());
 		}
 
 		@Override
 		public Set<Object> copy(Kryo kryo, Set<Object> original) {
-			Set<Object> copy = new HashSet<>(original.size());
-			kryo.reference(copy);
-			for (Object element : original) {
-				copy.add(kryo.copy(element));
-			}
+			final Set<Object> copy = super.copy(kryo, original);
 			return Set.copyOf(copy);
 		}
 
