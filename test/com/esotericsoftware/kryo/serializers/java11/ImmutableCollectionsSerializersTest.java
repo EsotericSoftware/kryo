@@ -50,16 +50,16 @@ public class ImmutableCollectionsSerializersTest extends KryoTestCase {
 	public void testImmutableCollections () {
 		roundTrip(4, new TestClass(null, null, null));
 		roundTrip(7, new TestClass(List.of(), Map.of(), Set.of()));
-		roundTrip(15, new TestClass(List.of(1), Map.of(1, 2), Set.of(1)));
-		roundTrip(27, new TestClass(List.of(1, 2, 3), Map.of(1, 2, 3, 4), Set.of(1, 2, 3)));
+		roundTrip(11, new TestClass(List.of(1), Map.of(1, 2), Set.of(1)));
+		roundTrip(17, new TestClass(List.of(1, 2, 3), Map.of(1, 2, 3, 4), Set.of(1, 2, 3)));
 	}
 
 	@Test
 	public void testImmutableList () {
 		roundTrip(2, List.of());
 		roundTrip(4, List.of(1));
-		roundTrip(6, List.of(1, 2));
-		roundTrip(8, List.of(1, 2, 3));
+		roundTrip(5, List.of(1, 2));
+		roundTrip(6, List.of(1, 2, 3));
 		roundTrip(4, List.of(1, 2, 3).subList(0, 1));
 	}
 
@@ -74,8 +74,8 @@ public class ImmutableCollectionsSerializersTest extends KryoTestCase {
 	public void testImmutableSet () {
 		roundTrip(2, Set.of());
 		roundTrip(4, Set.of(1));
-		roundTrip(6, Set.of(1, 2));
-		roundTrip(8, Set.of(1, 2, 3));
+		roundTrip(5, Set.of(1, 2));
+		roundTrip(6, Set.of(1, 2, 3));
 	}
 
 	static class TestClass {
