@@ -19,18 +19,20 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.kryo.util.Util.*;
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.kryo.util.Util.className;
+import static com.esotericsoftware.kryo.util.Util.pos;
+import static com.esotericsoftware.kryo.util.Util.simpleName;
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.trace;
 
+import com.esotericsoftware.kryo.GenericType;
+import com.esotericsoftware.kryo.GenericsHierarchy;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy;
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericsHierarchy;
 import com.esotericsoftware.kryo.util.GenericsStrategy;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
@@ -99,6 +101,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		cachedFields.rebuild();
 	}
 
+	@Override
 	public void write (Kryo kryo, Output output, T object) {
 		int pop = pushTypeVariables();
 
@@ -111,6 +114,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		if (pop > 0) popTypeVariables(pop);
 	}
 
+	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int pop = pushTypeVariables();
 
@@ -212,6 +216,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return (T)kryo.newInstance(original.getClass());
 	}
 
+	@Override
 	public T copy (Kryo kryo, T original) {
 		T copy = createCopy(kryo, original);
 		kryo.reference(copy);
@@ -317,6 +322,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return field;
 		}
 
+		@Override
 		public String toString () {
 			return name;
 		}
@@ -384,6 +390,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		boolean varEncoding = true;
 		boolean extendedFieldNames;
 
+		@Override
 		public FieldSerializerConfig clone () {
 			try {
 				return (FieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.

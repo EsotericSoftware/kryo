@@ -19,13 +19,13 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.kryo.unsafe.UnsafeUtil.*;
+import static com.esotericsoftware.kryo.unsafe.UnsafeUtil.unsafe;
 
+import com.esotericsoftware.kryo.GenericType;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
 
 import java.lang.reflect.Field;
 
@@ -38,14 +38,17 @@ class UnsafeField extends ReflectField {
 		offset = unsafe.objectFieldOffset(field);
 	}
 
+	@Override
 	public Object get (Object object) throws IllegalAccessException {
 		return unsafe.getObject(object, offset);
 	}
 
+	@Override
 	public void set (Object object, Object value) throws IllegalAccessException {
 		unsafe.putObject(object, offset, value);
 	}
 
+	@Override
 	public void copy (Object original, Object copy) {
 		try {
 			unsafe.putObject(copy, offset, fieldSerializer.kryo.copy(unsafe.getObject(original, offset)));
@@ -65,6 +68,7 @@ class UnsafeField extends ReflectField {
 			offset = unsafe.objectFieldOffset(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			if (varEncoding)
 				output.writeVarInt(unsafe.getInt(object, offset), false);
@@ -72,6 +76,7 @@ class UnsafeField extends ReflectField {
 				output.writeInt(unsafe.getInt(object, offset));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			if (varEncoding)
 				unsafe.putInt(object, offset, input.readVarInt(false));
@@ -79,6 +84,7 @@ class UnsafeField extends ReflectField {
 				unsafe.putInt(object, offset, input.readInt());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			unsafe.putInt(copy, offset, unsafe.getInt(original, offset));
 		}
@@ -90,14 +96,17 @@ class UnsafeField extends ReflectField {
 			offset = unsafe.objectFieldOffset(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeFloat(unsafe.getFloat(object, offset));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			unsafe.putFloat(object, offset, input.readFloat());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			unsafe.putFloat(copy, offset, unsafe.getFloat(original, offset));
 		}
@@ -109,14 +118,17 @@ class UnsafeField extends ReflectField {
 			offset = unsafe.objectFieldOffset(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeShort(unsafe.getShort(object, offset));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			unsafe.putShort(object, offset, input.readShort());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			unsafe.putShort(copy, offset, unsafe.getShort(original, offset));
 		}
@@ -128,14 +140,17 @@ class UnsafeField extends ReflectField {
 			offset = unsafe.objectFieldOffset(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeByte(unsafe.getByte(object, offset));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			unsafe.putByte(object, offset, input.readByte());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			unsafe.putByte(copy, offset, unsafe.getByte(original, offset));
 		}
@@ -147,14 +162,17 @@ class UnsafeField extends ReflectField {
 			offset = unsafe.objectFieldOffset(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeBoolean(unsafe.getBoolean(object, offset));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			unsafe.putBoolean(object, offset, input.readBoolean());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			unsafe.putBoolean(copy, offset, unsafe.getBoolean(original, offset));
 		}
@@ -166,14 +184,17 @@ class UnsafeField extends ReflectField {
 			offset = unsafe.objectFieldOffset(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeChar(unsafe.getChar(object, offset));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			unsafe.putChar(object, offset, input.readChar());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			unsafe.putChar(copy, offset, unsafe.getChar(original, offset));
 		}
@@ -185,6 +206,7 @@ class UnsafeField extends ReflectField {
 			offset = unsafe.objectFieldOffset(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			if (varEncoding)
 				output.writeVarLong(unsafe.getLong(object, offset), false);
@@ -192,6 +214,7 @@ class UnsafeField extends ReflectField {
 				output.writeLong(unsafe.getLong(object, offset));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			if (varEncoding)
 				unsafe.putLong(object, offset, input.readVarLong(false));
@@ -199,6 +222,7 @@ class UnsafeField extends ReflectField {
 				unsafe.putLong(object, offset, input.readLong());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			unsafe.putLong(copy, offset, unsafe.getLong(original, offset));
 		}
@@ -210,14 +234,17 @@ class UnsafeField extends ReflectField {
 			offset = unsafe.objectFieldOffset(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeDouble(unsafe.getDouble(object, offset));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			unsafe.putDouble(object, offset, input.readDouble());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			unsafe.putDouble(copy, offset, unsafe.getDouble(original, offset));
 		}
@@ -229,14 +256,17 @@ class UnsafeField extends ReflectField {
 			offset = unsafe.objectFieldOffset(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeString((String)unsafe.getObject(object, offset));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			unsafe.putObject(object, offset, input.readString());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			unsafe.putObject(copy, offset, unsafe.getObject(original, offset));
 		}

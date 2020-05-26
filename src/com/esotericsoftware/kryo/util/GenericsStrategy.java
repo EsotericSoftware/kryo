@@ -1,12 +1,3 @@
-
-package com.esotericsoftware.kryo.util;
-
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericsHierarchy;
-
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-
 /* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
  * 
@@ -25,6 +16,14 @@ import java.lang.reflect.TypeVariable;
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+
+package com.esotericsoftware.kryo.util;
+
+import com.esotericsoftware.kryo.GenericType;
+import com.esotericsoftware.kryo.GenericsHierarchy;
+
+import java.lang.reflect.TypeVariable;
+
 /** Provides an interface on how generics are handled. */
 public interface GenericsStrategy {
 	/** Sets the type that is currently being serialized. Must be balanced by {@link #popGenericType()}. Between those calls, the

@@ -19,12 +19,14 @@
 
 package com.esotericsoftware.kryo.util;
 
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.debug;
+import static com.esotericsoftware.minlog.Log.trace;
 
+import com.esotericsoftware.kryo.GenericType;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
 
 import java.lang.reflect.Type;
 
@@ -173,11 +175,12 @@ public class Util {
 	static public String simpleName (Class type, GenericType genericType) {
 		StringBuilder buffer = new StringBuilder(32);
 		buffer.append((type.isArray() ? getElementClass(type) : type).getSimpleName());
-		if (genericType.arguments != null) {
+		GenericType[] args = genericType.getTypeParameters();
+		if (args != null) {
 			buffer.append('<');
-			for (int i = 0, n = genericType.arguments.length; i < n; i++) {
+			for (int i = 0, n = args.length; i < n; i++) {
 				if (i > 0) buffer.append(", ");
-				buffer.append(genericType.arguments[i].toString());
+				buffer.append(args[i].toString());
 			}
 			buffer.append('>');
 		}

@@ -1,10 +1,9 @@
 
-package com.esotericsoftware.kryo.util;
+package com.esotericsoftware.kryo;
+
+import com.esotericsoftware.kryo.util.GenericsStrategy;
 
 import java.lang.reflect.TypeVariable;
-
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericsHierarchy;
 
 /* Copyright (c) 2008-2018, Nathan Sweet
  * All rights reserved.
@@ -26,7 +25,7 @@ import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericsHierarchy;
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 /** This generic implementation does not infer generics types at all. This leads to a slightly larger serialization output.
  * However, this implementation is slightly faster and more robust. */
-public final class NoGenericsStrategy implements GenericsStrategy {
+final class NoGenericsStrategy implements GenericsStrategy {
 
 	public static final NoGenericsStrategy INSTANCE = new NoGenericsStrategy();
 

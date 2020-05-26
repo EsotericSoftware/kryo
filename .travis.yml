@@ -15,37 +15,21 @@ env:
     - secure: kCOLgEveEDprSL3fOBeCc1/nmHVYEcNh/lRRWiJywFehOzKBTBF40pAWX7JtsWUPG8aPKGYFEE4sjYd+DF2DRknbuB2ZfAEgs9Xp9h5Mx1KztJYNiCfEnLciBBRDXA7t1M3TLKyT3ptA+Kk307cH2QHv9sUUnhnf0IofJyQhQvA=
   
 jdk:
-  #- openjdk7
-  - openjdk8
-
-before_install:
-  # required for testing jdk 11
-  - wget https://github.com/sormuras/bach/raw/master/install-jdk.sh -O $TRAVIS_BUILD_DIR/install-jdk.sh
-  - chmod u+x $TRAVIS_BUILD_DIR/install-jdk.sh
+  - openjdk11
 
 install:
-  # compile and test java 8
-  - mvn -B -V clean test
+  # build with java 11
+  - mvn install -DskipTests=true -B -V
 
 script:
-  # compile tests with java 8
+  # run tests with java 11
+  - mvn test -B
+  # run tests with java 8
   - jdk_switcher use openjdk8
-  # separate "clean" from "install" because "clean install" would fail the pom-versioned module
-  - mvn clean
-  - mvn -B install
-  # test java 9 (only available via oraclejdk9)
-  - jdk_switcher use oraclejdk9
-  - mvn -v && mvn -B test
-  # test java 11
-  # see also https://docs.travis-ci.com/user/languages/java/#using-java-10-and-later
-  # and https://github.com/sormuras/bach#install-jdksh (because default travis docs didn't work)
-  - export JAVA_HOME=$HOME/openjdk11
-  - $TRAVIS_BUILD_DIR/install-jdk.sh --feature 11 --target $JAVA_HOME
   - mvn -v && mvn -B test
   # install and publish snapshot with java 8
   # not via `after_success` but directly in `script`, since a failure would be silently ignored in `after_success`, which
   # is documented in https://docs.travis-ci.com/user/customizing-the-build#Breaking-the-Build
-  - jdk_switcher use openjdk8
   - if [ $TRAVIS_BRANCH = "master" ] && [ $TRAVIS_PULL_REQUEST = "false" ] && [ $IS_SNAPSHOT ]; then
       mvn -v && mvn -B -P requireSnapshot -DskipTests=true deploy --settings build/settings-sonatype.xml;
     else

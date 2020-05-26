@@ -19,9 +19,16 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.kryo.util.Util.*;
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.kryo.util.Util.className;
+import static com.esotericsoftware.kryo.util.Util.isAndroid;
+import static com.esotericsoftware.kryo.util.Util.newFactory;
+import static com.esotericsoftware.kryo.util.Util.unsafe;
+import static com.esotericsoftware.minlog.Log.DEBUG;
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.debug;
+import static com.esotericsoftware.minlog.Log.trace;
 
+import com.esotericsoftware.kryo.GenericType;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
@@ -57,7 +64,6 @@ import com.esotericsoftware.kryo.serializers.UnsafeField.IntUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.LongUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.ShortUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.StringUnsafeField;
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 import java.lang.reflect.Field;
@@ -242,6 +248,7 @@ class CachedFields implements Comparator<CachedField> {
 		return new ReflectField(field, serializer, genericType);
 	}
 
+	@Override
 	public int compare (CachedField o1, CachedField o2) {
 		// Fields are sorted by name so the order of the data is known.
 		return o1.name.compareTo(o2.name);

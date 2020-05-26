@@ -19,12 +19,12 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.GenericType;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.util.DefaultGenericsStrategy.GenericType;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -112,6 +112,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
 
+	@Override
 	public void write (Kryo kryo, Output output, T map) {
 		if (map == null) {
 			output.writeByte(0);
@@ -183,6 +184,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		return kryo.newInstance(type);
 	}
 
+	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int length = input.readVarInt(true);
 		if (length == 0) return null;
@@ -243,6 +245,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		return (T)kryo.newInstance(original.getClass());
 	}
 
+	@Override
 	public T copy (Kryo kryo, T original) {
 		T copy = createCopy(kryo, original);
 		for (Iterator iter = original.entrySet().iterator(); iter.hasNext();) {

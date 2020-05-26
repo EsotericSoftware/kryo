@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.InputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 import sun.nio.ch.DirectBuffer;
@@ -103,24 +104,28 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		bufferAddress = ((DirectBuffer)byteBuffer).address();
 	}
 
+	private void setBufferPosition( Buffer buffer,  int position) {
+		buffer.position(position);
+	}
+
 	public int read () throws KryoException {
 		if (optional(1) <= 0) return -1;
 		int result = unsafe.getByte(bufferAddress + position++) & 0xFF;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 		return result;
 	}
 
 	public byte readByte () throws KryoException {
 		if (position == limit) require(1);
 		byte result = unsafe.getByte(bufferAddress + position++);
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 		return result;
 	}
 
 	public int readByteUnsigned () throws KryoException {
 		if (position == limit) require(1);
 		int result = unsafe.getByte(bufferAddress + position++) & 0xFF;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 		return result;
 	}
 
@@ -128,7 +133,7 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		require(4);
 		int result = unsafe.getInt(bufferAddress + position);
 		position += 4;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 		return result;
 	}
 
@@ -136,7 +141,7 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		require(8);
 		long result = unsafe.getLong(bufferAddress + position);
 		position += 8;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 		return result;
 	}
 
@@ -144,7 +149,7 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		require(4);
 		float result = unsafe.getFloat(bufferAddress + position);
 		position += 4;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 		return result;
 	}
 
@@ -152,7 +157,7 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		require(8);
 		double result = unsafe.getDouble(bufferAddress + position);
 		position += 8;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 		return result;
 	}
 
@@ -160,7 +165,7 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		require(2);
 		short result = unsafe.getShort(bufferAddress + position);
 		position += 2;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 		return result;
 	}
 
@@ -168,14 +173,14 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		require(2);
 		char result = unsafe.getChar(bufferAddress + position);
 		position += 2;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 		return result;
 	}
 
 	public boolean readBoolean () throws KryoException {
 		if (position == limit) require(1);
 		boolean result = unsafe.getByte(bufferAddress + position++) != 0;
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 		return result;
 	}
 
@@ -237,6 +242,7 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 			copyCount = Math.min(count, capacity);
 			require(copyCount);
 		}
-		byteBuffer.position(position);
+		setBufferPosition(byteBuffer, position);
 	}
+
 }

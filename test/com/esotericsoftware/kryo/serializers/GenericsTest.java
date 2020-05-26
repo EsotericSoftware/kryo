@@ -19,6 +19,12 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
+import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,12 +38,6 @@ import java.util.function.Supplier;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
-import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
 
 public class GenericsTest extends KryoTestCase {
 	{
