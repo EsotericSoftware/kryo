@@ -75,7 +75,8 @@ abstract public class KryoTestCase {
 		kryo = new Kryo();
 	}
 
-	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
+	/** @param lengthNonGeneric Pass Integer.MIN_VALUE to disable checking the length for the non-generic serialization.
+	 * @param lengthGeneric Pass Integer.MIN_VALUE to disable checking the length for the generic serialization. */
 	public <T> T roundTrip (int lengthNonGeneric, int lengthGeneric, T object1) {
 		roundTrip(lengthNonGeneric, object1, false);
 		return roundTrip(lengthGeneric, object1, true);
@@ -208,8 +209,8 @@ abstract public class KryoTestCase {
 		return object2;
 	}
 
-	/** @param lengthNonGeneric Pass Integer.MIN_VALUE to disable checking the length. */
-	/** @param lengthGeneric Pass Integer.MIN_VALUE to disable checking the length. */
+	/** @param lengthNonGeneric Pass Integer.MIN_VALUE to disable checking the length for the non-generic serialization.
+	 * @param lengthGeneric Pass Integer.MIN_VALUE to disable checking the length for the generic serialization. */
 	public <T> T roundTripWithBufferFactory (int lengthNonGeneric, int lengthGeneric, T object1, BufferFactory sf) {
 		roundTripWithBufferFactory(lengthNonGeneric, object1, sf, false);
 		return roundTripWithBufferFactory(lengthGeneric, object1, sf, true);
