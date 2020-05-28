@@ -47,7 +47,6 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
    * [Final classes](#final-classes)
    * [Closures](#closures)
    * [Compression and encryption](#compression-and-encryption)
-   * [Handling of generics](#handling-of-generics)
 - [Implementing a serializer](#implementing-a-serializer)
    * [Serializer references](#serializer-references)
       + [Nested serializers](#nested-serializers)
@@ -636,9 +635,6 @@ output.close();
 
 If needed, a serializer can be used to compress or encrypt the bytes for only a subset of the bytes for an object graph. For example, see DeflateSerializer or BlowfishSerializer. These serializers wrap another serializer to encode and decode the bytes.
 
-### Handling of generics
-
-By default, Kryo attempts to use generic type information to optimize for smaller size. If an object's generic type can be inferred, serializers do not need to write the object's class. Generics optimization is enabled or disabled with Kryo `setOptimizedGenerics`.
 
 
 ## Implementing a serializer
@@ -730,7 +726,7 @@ By default, serializers will never receive a null, instead Kryo will write a byt
 
 ### Generics
 
-Kryo `getGenerics` provides generic type information so serializers can be more efficient. This is most commonly used to avoid writing the class when the type parameter class is final.
+Kryo `getGenerics` provides generic type information so serializers can be more space efficient. This is most commonly used to avoid writing the class when the type parameter class is final. In such cases, serializers do not need to write the object's class. This kind of generics optimization can be enabled or disabled with Kryo `setOptimizedGenerics`.
 
 If the class has a single type parameter, `nextGenericClass` returns the type parameter class, or null if none. After reading or writing any nested objects, `popGenericType` must be called. See CollectionSerializer for an example.
 
