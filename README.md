@@ -47,6 +47,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
    * [Final classes](#final-classes)
    * [Closures](#closures)
    * [Compression and encryption](#compression-and-encryption)
+   * [Handling of generics](#handling-of-generics)
 - [Implementing a serializer](#implementing-a-serializer)
    * [Serializer references](#serializer-references)
       + [Nested serializers](#nested-serializers)
@@ -634,6 +635,11 @@ output.close();
 ```
 
 If needed, a serializer can be used to compress or encrypt the bytes for only a subset of the bytes for an object graph. For example, see DeflateSerializer or BlowfishSerializer. These serializers wrap another serializer to encode and decode the bytes.
+
+### Handling of generics
+
+By default, Kryo attempts to use generic type information to optimize for smaller size. If an object's generic type can be inferred, serializers do not need to write the object's class. Generics optimization is enabled or disabled with Kryo `setOptimizedGenerics`.
+
 
 ## Implementing a serializer
 
