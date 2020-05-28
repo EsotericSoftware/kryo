@@ -19,6 +19,14 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
+import com.esotericsoftware.kryo.serializers.FieldSerializerTest.HasGenerics;
+import com.esotericsoftware.kryo.serializers.FieldSerializerTest.ListContainer;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,14 +38,6 @@ import java.util.Map;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
-
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
-import com.esotericsoftware.kryo.serializers.FieldSerializerTest.HasGenerics;
-import com.esotericsoftware.kryo.serializers.FieldSerializerTest.ListContainer;
-import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 
 public class FieldSerializerGenericsTest extends KryoTestCase {
 
