@@ -25,19 +25,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import org.junit.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
-
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -55,6 +42,19 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
+
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import org.junit.Test;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet */
 @SuppressWarnings("synthetic-access")
