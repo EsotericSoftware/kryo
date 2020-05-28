@@ -169,7 +169,7 @@ public class GenericsTest extends KryoTestCase {
 		ClassHierarchyWithChangingTypeVariableNames.A<?> o = new ClassHierarchyWithChangingTypeVariableNames.A<>(Enum.class);
 
 		kryo.setRegistrationRequired(false);
-		roundTrip(131, o, false);
+		roundTrip(131, o);
 	}
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
