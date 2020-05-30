@@ -117,6 +117,9 @@ public class Generics {
 	 * @param args May contain null for type arguments that aren't known.
 	 * @return The number of entries that were pushed. */
 	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args) {
+		// Do not store type variables if we do not have arguments for all of them
+		if (args.length < hierarchy.rootTotal) return 0;
+
 		int startSize = this.argumentsSize;
 
 		// Ensure arguments capacity.
@@ -180,7 +183,10 @@ public class Generics {
 	/** Stores the type parameters for a class and, for parameters passed to super classes, the corresponding super class type
 	 * parameters. */
 	static public class GenericsHierarchy {
+		/* total number of type parameters in the hierarchy */
 		final int total;
+		/* total number of type parameters at the root of the hierarchy */
+		final int rootTotal;
 		final int[] counts;
 		final TypeVariable[] parameters;
 
@@ -222,6 +228,7 @@ public class Generics {
 			} while (current != null);
 
 			this.total = total;
+			this.rootTotal = type.getTypeParameters().length;
 			this.counts = counts.toArray();
 			this.parameters = parameters.toArray(new TypeVariable[parameters.size()]);
 		}
