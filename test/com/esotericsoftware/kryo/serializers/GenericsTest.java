@@ -20,8 +20,6 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
 import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
 
@@ -37,7 +35,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class GenericsTest extends KryoTestCase {
@@ -84,9 +81,9 @@ public class GenericsTest extends KryoTestCase {
 		LongListHolder o2 = new LongListHolder(Arrays.asList(1L));
 
 		kryo.setRegistrationRequired(false);
-		Output buffer = new Output(512, 4048);
-		kryo.writeClassAndObject(buffer, o1);
-		kryo.writeClassAndObject(buffer, o2);
+
+		roundTrip(65, o1);
+		roundTrip(99, o2);
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/611
@@ -95,15 +92,10 @@ public class GenericsTest extends KryoTestCase {
 		kryo.register(SuperGenerics.Root.class);
 		kryo.register(SuperGenerics.Value.class);
 
-		Output output = new Output(2048, -1);
-
 		SuperGenerics.Root root = new SuperGenerics.Root();
 		root.rootSuperField = new SuperGenerics.Value();
-		kryo.writeObject(output, root);
-		output.flush();
 
-		Input input = new Input(output.getBuffer(), 0, output.position());
-		kryo.readObject(input, SuperGenerics.Root.class);
+		roundTrip(4, root);
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/648
@@ -130,7 +122,7 @@ public class GenericsTest extends KryoTestCase {
 	@Test
 	public void testNotPassingToSuper () {
 		kryo.register(DontPassToSuper.class);
-		kryo.copy(new DontPassToSuper());
+		kryo.copy(new DontPassToSuper<>());
 	}
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/654
@@ -185,15 +177,13 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/721
 	@Test
-	@Ignore("Currently fails")
-	public void testClassHierarchyWithConflictingTypeVariables () {
-		ClassWithConflictingTypeArguments.A o = new ClassWithConflictingTypeArguments.A(
-				new ClassWithConflictingTypeArguments.B<>(1));
+	public void testClassHierarchyWithMissingTypeVariables () {
+		ClassWithMissingTypeVariable.A o = new ClassWithMissingTypeVariable.A(
+				new ClassWithMissingTypeVariable.B<>(1));
 
 		kryo.setRegistrationRequired(false);
 
-		Output buffer = new Output(512, 4048);
-		kryo.writeClassAndObject(buffer, o);
+		roundTrip(168, o);
 	}
 
 	private interface Holder<V> {
@@ -227,12 +217,22 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	static private class LongHolder extends AbstractValueHolder<Long> {
+		/** Kryo Constructor */
+		LongHolder () {
+			super(null);
+		}
+
 		LongHolder (Long value) {
 			super(value);
 		}
 	}
 
 	static private class LongListHolder extends AbstractValueListHolder<Long> {
+		/** Kryo Constructor */
+		LongListHolder () {
+			super(null);
+		}
+
 		LongListHolder (java.util.List<Long> value) {
 			super(value);
 		}
@@ -366,6 +366,14 @@ public class GenericsTest extends KryoTestCase {
 	static public class SuperGenerics {
 		static public class RootSuper<RS> {
 			public ValueSuper<RS> rootSuperField;
+
+			@Override
+			public boolean equals (Object o) {
+				if (this == o) return true;
+				if (o == null || getClass() != o.getClass()) return false;
+				final RootSuper<?> rootSuper = (RootSuper<?>)o;
+				return Objects.equals(rootSuperField, rootSuper.rootSuperField);
+			}
 		}
 
 		static public class Root extends RootSuper<String> {
@@ -380,6 +388,11 @@ public class GenericsTest extends KryoTestCase {
 		}
 
 		static public class Value extends ValueSuper<String> {
+			@Override
+			public boolean equals (Object o) {
+				if (this == o) return true;
+				return (o != null && getClass() == o.getClass());
+			}
 		}
 	}
 
@@ -507,20 +520,44 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	static class ClassWithConflictingTypeArguments {
+	static class ClassWithMissingTypeVariable {
 		static final class A {
 			C<String> c;
 
-			public A (C<String> c) {
+			/** Kryo Constructor */
+			A () {
+			}
+
+			A (C<String> c) {
 				this.c = c;
+			}
+
+			@Override
+			public boolean equals (Object o) {
+				if (this == o) return true;
+				if (o == null || getClass() != o.getClass()) return false;
+				final A a = (A)o;
+				return Objects.equals(c, a.c);
 			}
 		}
 
 		static class B<R, V> implements C<V> {
 			R r;
 
-			public B (R r) {
+			/** Kryo Constructor */
+			B () {
+			}
+
+			B (R r) {
 				this.r = r;
+			}
+
+			@Override
+			public boolean equals(Object o) {
+				if (this == o) return true;
+				if (o == null || getClass() != o.getClass()) return false;
+				final B<?, ?> b = (B<?, ?>) o;
+				return Objects.equals(r, b.r);
 			}
 		}
 
