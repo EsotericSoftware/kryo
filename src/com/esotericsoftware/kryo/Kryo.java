@@ -82,6 +82,7 @@ import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.serializers.OptionalSerializers;
 import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
+import com.esotericsoftware.kryo.util.DefaultGenerics;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.Generics;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
@@ -89,6 +90,7 @@ import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
 import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
+import com.esotericsoftware.kryo.util.NoGenerics;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Pool.Poolable;
 import com.esotericsoftware.kryo.util.Util;
@@ -156,7 +158,7 @@ public class Kryo implements Poolable {
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
-	private final Generics generics = new Generics(this);
+	private Generics generics = new DefaultGenerics(this);
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and references disabled. */
 	public Kryo () {
@@ -1204,6 +1206,18 @@ public class Kryo implements Poolable {
 	 * {@link FieldSerializer} for an example. */
 	public Generics getGenerics () {
 		return generics;
+	}
+
+	/** If true (the default), Kryo attempts to use generic type information to optimize the serialized size. If an object's
+	 * generic type can be inferred, serializers do not need to write the object's class.
+	 * <p>
+	 * Disabling generics optimization can increase performance at the cost of a larger serialized size.
+	 * <p>
+	 * Note that this setting affects the (de)serialization stream, i.e. the serializer and the deserializer need to use the same
+	 * setting in order to be compatible.
+	 * @param optimizedGenerics whether to optimize generics (default is true) */
+	public void setOptimizedGenerics (boolean optimizedGenerics) {
+		generics = optimizedGenerics ? new DefaultGenerics(this) : NoGenerics.INSTANCE;
 	}
 
 	static final class DefaultSerializerEntry {

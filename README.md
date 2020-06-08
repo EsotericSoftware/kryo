@@ -726,6 +726,8 @@ By default, serializers will never receive a null, instead Kryo will write a byt
 
 Kryo `getGenerics` provides generic type information so serializers can be more efficient. This is most commonly used to avoid writing the class when the type parameter class is final.
 
+Generic type inference is enabled by default and can be disabled with Kryo `setOptimizedGenerics(false)`. Disabling generics optimization can increase performance at the cost of a larger serialized size.
+
 If the class has a single type parameter, `nextGenericClass` returns the type parameter class, or null if none. After reading or writing any nested objects, `popGenericType` must be called. See CollectionSerializer for an example.
 
 ```java
