@@ -77,10 +77,12 @@ public class ClassStructureTest extends KryoTestCase {
     @Test
     public void decode() throws IOException {
         File file = new File("file_y.bin");
-        Input input = new Input(new FileInputStream(file));
-        DataBean dataBean = kryo.readObject(input, DataBean.class);
-        file.delete();
-        input.close();
+        if (file.exists()) {
+            Input input = new Input(new FileInputStream(file));
+            DataBean dataBean = kryo.readObject(input, DataBean.class);
+            file.delete();
+            input.close();
+        }
     }
 
 
