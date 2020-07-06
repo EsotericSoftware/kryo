@@ -423,14 +423,14 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		return new Keys(this);
 	}
 
-	static public int tableSize (int capacity, float loadFactor) {
+	public static int tableSize (int capacity, float loadFactor) {
 		if (capacity < 0) throw new IllegalArgumentException("capacity must be >= 0: " + capacity);
 		int tableSize = nextPowerOfTwo(Math.max(2, (int)Math.ceil(capacity / loadFactor)));
 		if (tableSize > 1 << 30) throw new IllegalArgumentException("The required capacity is too large: " + capacity);
 		return tableSize;
 	}
 
-	static public int nextPowerOfTwo (int value) {
+	public static int nextPowerOfTwo (int value) {
 		if (value == 0) return 1;
 		value--;
 		value |= value >> 1;
@@ -441,7 +441,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		return value + 1;
 	}
 
-	static public class Entry<K, V> {
+	public static class Entry<K, V> {
 		public K key;
 		@Null public V value;
 
@@ -450,7 +450,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		}
 	}
 
-	static private abstract class MapIterator<K, V, I> implements Iterable<I>, Iterator<I> {
+	private abstract static class MapIterator<K, V, I> implements Iterable<I>, Iterator<I> {
 		public boolean hasNext;
 
 		final ObjectMap<K, V> map;
@@ -503,7 +503,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		}
 	}
 
-	static public class Entries<K, V> extends MapIterator<K, V, Entry<K, V>> {
+	public static class Entries<K, V> extends MapIterator<K, V, Entry<K, V>> {
 		Entry<K, V> entry = new Entry<K, V>();
 
 		public Entries (ObjectMap<K, V> map) {
@@ -530,7 +530,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		}
 	}
 
-	static public class Values<V> extends MapIterator<Object, V, V> {
+	public static class Values<V> extends MapIterator<Object, V, V> {
 		public Values (ObjectMap<?, V> map) {
 			super((ObjectMap<Object, V>)map);
 		}
@@ -565,7 +565,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		}
 	}
 
-	static public class Keys<K> extends MapIterator<K, Object, K> {
+	public static class Keys<K> extends MapIterator<K, Object, K> {
 		public Keys (ObjectMap<K, ?> map) {
 			super((ObjectMap<K, Object>)map);
 		}

@@ -915,7 +915,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	//
 
 	/** Returns the number of bytes that would be written with {@link #writeVarInt(int, boolean)}. */
-	static public int varIntLength (int value, boolean optimizePositive) {
+	public static int varIntLength (int value, boolean optimizePositive) {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
 		if (value >>> 7 == 0) return 1;
 		if (value >>> 14 == 0) return 2;
@@ -925,7 +925,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	}
 
 	/** Returns the number of bytes that would be written with {@link #writeVarLong(long, boolean)}. */
-	static public int varLongLength (long value, boolean optimizePositive) {
+	public static int varLongLength (long value, boolean optimizePositive) {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		if (value >>> 7 == 0) return 1;
 		if (value >>> 14 == 0) return 2;

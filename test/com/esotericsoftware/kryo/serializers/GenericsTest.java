@@ -190,7 +190,7 @@ public class GenericsTest extends KryoTestCase {
 		V getValue ();
 	}
 
-	static private abstract class AbstractValueHolder<V> implements Holder<V> {
+	private abstract static class AbstractValueHolder<V> implements Holder<V> {
 		private final V value;
 
 		AbstractValueHolder (V value) {
@@ -210,13 +210,13 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	static private abstract class AbstractValueListHolder<V> extends AbstractValueHolder<List<V>> {
+	private abstract static class AbstractValueListHolder<V> extends AbstractValueHolder<List<V>> {
 		AbstractValueListHolder (List<V> value) {
 			super(value);
 		}
 	}
 
-	static private class LongHolder extends AbstractValueHolder<Long> {
+	private static class LongHolder extends AbstractValueHolder<Long> {
 		/** Kryo Constructor */
 		LongHolder () {
 			super(null);
@@ -227,7 +227,7 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	static private class LongListHolder extends AbstractValueListHolder<Long> {
+	private static class LongListHolder extends AbstractValueListHolder<Long> {
 		/** Kryo Constructor */
 		LongListHolder () {
 			super(null);
@@ -272,7 +272,7 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	// A simple serializable class.
-	static private class SerializableObjectFoo implements Serializable {
+	private static class SerializableObjectFoo implements Serializable {
 		String name;
 
 		SerializableObjectFoo (String name) {
@@ -295,7 +295,7 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	static private class BaseGeneric<T extends Serializable> {
+	private static class BaseGeneric<T extends Serializable> {
 		// The type of this field cannot be derived from the context.
 		// Therefore, Kryo should consider it to be Object.
 		private final List<T> listPayload;
@@ -330,7 +330,7 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	// This is a non-generic class with a generic superclass.
-	static private class ConcreteClass2 extends BaseGeneric<SerializableObjectFoo> {
+	private static class ConcreteClass2 extends BaseGeneric<SerializableObjectFoo> {
 		/** Kryo Constructor */
 		ConcreteClass2 () {
 			super();
@@ -341,7 +341,7 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	static private class ConcreteClass1 extends ConcreteClass2 {
+	private static class ConcreteClass1 extends ConcreteClass2 {
 		/** Kryo Constructor */
 		ConcreteClass1 () {
 			super();
@@ -352,7 +352,7 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	static private class ConcreteClass extends ConcreteClass1 {
+	private static class ConcreteClass extends ConcreteClass1 {
 		/** Kryo Constructor */
 		ConcreteClass () {
 			super();
@@ -363,8 +363,8 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	static public class SuperGenerics {
-		static public class RootSuper<RS> {
+	public static class SuperGenerics {
+		public static class RootSuper<RS> {
 			public ValueSuper<RS> rootSuperField;
 
 			@Override
@@ -376,18 +376,18 @@ public class GenericsTest extends KryoTestCase {
 			}
 		}
 
-		static public class Root extends RootSuper<String> {
+		public static class Root extends RootSuper<String> {
 		}
 
-		static public class ValueSuper<VS> extends ValueSuperSuper<Integer> {
+		public static class ValueSuper<VS> extends ValueSuperSuper<Integer> {
 			VS superField;
 		}
 
-		static public class ValueSuperSuper<VSS> {
+		public static class ValueSuperSuper<VSS> {
 			VSS superSuperField;
 		}
 
-		static public class Value extends ValueSuper<String> {
+		public static class Value extends ValueSuper<String> {
 			@Override
 			public boolean equals (Object o) {
 				if (this == o) return true;
@@ -396,7 +396,7 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	static public class ClassWithMap {
+	public static class ClassWithMap {
 		public final Map<MapKey, Set<String>> values = new HashMap();
 
 		public boolean equals (Object obj) {
@@ -410,7 +410,7 @@ public class GenericsTest extends KryoTestCase {
 			return true;
 		}
 
-		static public class MapKey {
+		public static class MapKey {
 			public String field1, field2;
 
 			public String toString () {
@@ -419,11 +419,11 @@ public class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	static public class A<X> {
-		static public class B<Y> extends A {
+	public static class A<X> {
+		public static class B<Y> extends A {
 		}
 
-		static public class DontPassToSuper<Z> extends B {
+		public static class DontPassToSuper<Z> extends B {
 			B<Z> b;
 		}
 	}

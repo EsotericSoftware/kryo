@@ -31,7 +31,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * soft references.
  * @author Nathan Sweet
  * @author Martin Grotzke */
-abstract public class Pool<T> {
+public abstract class Pool<T> {
 	private final Queue<T> freeObjects;
 	private int peak;
 
@@ -66,7 +66,7 @@ abstract public class Pool<T> {
 		freeObjects = softReferences ? new SoftReferenceQueue(queue) : queue;
 	}
 
-	abstract protected T create ();
+	protected abstract T create ();
 
 	/** Returns an object from this pool. The object may be new (from {@link #create()}) or reused (previously {@link #free(Object)
 	 * freed}). */
@@ -130,7 +130,7 @@ abstract public class Pool<T> {
 	}
 
 	/** Objects implementing this interface will have {@link #reset()} called when passed to {@link Pool#free(Object)}. */
-	static public interface Poolable {
+	public static interface Poolable {
 		/** Resets the object for reuse. Object references should be nulled and fields may be set to default values. */
 		public void reset ();
 	}

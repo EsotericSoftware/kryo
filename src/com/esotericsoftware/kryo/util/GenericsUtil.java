@@ -33,7 +33,7 @@ public class GenericsUtil {
 	/** Returns the class for the specified type after replacing any type variables using the class hierarchy between the specified
 	 * classes.
 	 * @param toClass Must be a sub class of fromClass. */
-	static public Type resolveType (Class fromClass, Class toClass, Type type) {
+	public static Type resolveType (Class fromClass, Class toClass, Type type) {
 		// Explicit type, eg String.
 		if (type instanceof Class) return type;
 
@@ -76,7 +76,7 @@ public class GenericsUtil {
 	 * @param current Must be a sub class of fromClass.
 	 * @return A Class if the type variable was resolved, else a TypeVariable to continue searching or if the type could not be
 	 *         resolved. */
-	static private Type resolveTypeVariable (Class fromClass, Class current, Type type, boolean first) {
+	private static Type resolveTypeVariable (Class fromClass, Class current, Type type, boolean first) {
 		Type genericSuper = current.getGenericSuperclass();
 		if (!(genericSuper instanceof ParameterizedType)) return type; // No type arguments passed to super class.
 
@@ -119,7 +119,7 @@ public class GenericsUtil {
 	 * @param toClass Must be a sub class of fromClass.
 	 * @return Null if the type has no type parameters, else contains Class entries for type parameters that were resolved and
 	 *         TypeVariable entries for type parameters that couldn't be resolved. */
-	static public Type[] resolveTypeParameters (Class fromClass, Class toClass, Type type) {
+	public static Type[] resolveTypeParameters (Class fromClass, Class toClass, Type type) {
 		// Type which has a type parameter, eg ArrayList<T>.
 		if (type instanceof ParameterizedType) {
 			Type[] actualArgs = ((ParameterizedType)type).getActualTypeArguments();

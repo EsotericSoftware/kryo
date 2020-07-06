@@ -72,17 +72,17 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
  * related tag and run the test (there's nothing here to automate creation of test files for a different version). */
 public class SerializationCompatTest extends KryoTestCase {
 	// Set to true to delete failed test files, then set back to false, set expected bytes, and run again to generate new files.
-	static private final boolean DELETE_FAILED_TEST_FILES = false;
+	private static final boolean DELETE_FAILED_TEST_FILES = false;
 
-	static private final int JAVA_VERSION;
+	private static final int JAVA_VERSION;
 	static {
 		// java.version is e.g. 1.8.0 or 9.0.4
 		String[] strVersions = System.getProperty("java.version").split("\\.");
 		int[] versions = new int[] {parseInt(strVersions[0]), parseInt(strVersions[1])};
 		JAVA_VERSION = versions[0] > 1 ? versions[0] : versions[1];
 	}
-	static private final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 11 ? 57 : 67; // Also change Kryo#defaultSerializers.
-	static private final List<TestDataDescription> TEST_DATAS = new ArrayList<>();
+	private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 11 ? 57 : 67; // Also change Kryo#defaultSerializers.
+	private static final List<TestDataDescription> TEST_DATAS = new ArrayList<>();
 
 	static {
 		TEST_DATAS.add(new TestDataDescription<>(new TestData(), 1940, 1958));
@@ -216,7 +216,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		B apply (A input) throws Exception;
 	}
 
-	static private class TestDataDescription<T extends TestData> {
+	private static class TestDataDescription<T extends TestData> {
 		final T testData;
 		final int length;
 		final int noGenericsLength;

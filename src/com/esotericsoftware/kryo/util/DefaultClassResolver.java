@@ -32,7 +32,7 @@ import com.esotericsoftware.kryo.io.Output;
 /** Resolves classes by ID or by fully qualified class name.
  * @author Nathan Sweet */
 public class DefaultClassResolver implements ClassResolver {
-	static public final byte NAME = -1;
+	public static final byte NAME = -1;
 
 	protected Kryo kryo;
 

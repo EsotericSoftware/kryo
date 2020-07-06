@@ -73,7 +73,7 @@ public class JavaSerializer extends Serializer {
 	 * Java issue and is often solved by using a specific class loader. See:
 	 * https://github.com/apache/spark/blob/v1.6.3/streaming/src/main/scala/org/apache/spark/streaming/Checkpoint.scala#L154
 	 * https://issues.apache.org/jira/browse/GROOVY-1627 */
-	static private class ObjectInputStreamWithKryoClassLoader extends ObjectInputStream {
+	private static class ObjectInputStreamWithKryoClassLoader extends ObjectInputStream {
 		private final Kryo kryo;
 
 		ObjectInputStreamWithKryoClassLoader (InputStream in, Kryo kryo) throws IOException {

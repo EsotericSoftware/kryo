@@ -381,7 +381,7 @@ public class IntArray {
 	}
 
 	/** @see #IntArray(int[]) */
-	static public IntArray with (int... array) {
+	public static IntArray with (int... array) {
 		return new IntArray(array);
 	}
 }

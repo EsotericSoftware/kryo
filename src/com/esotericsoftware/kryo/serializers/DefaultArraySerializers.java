@@ -33,7 +33,7 @@ import java.lang.reflect.Modifier;
  * default}.
  * @author Nathan Sweet */
 public class DefaultArraySerializers {
-	static public class ByteArraySerializer extends Serializer<byte[]> {
+	public static class ByteArraySerializer extends Serializer<byte[]> {
 		{
 			setAcceptsNull(true);
 		}
@@ -60,7 +60,7 @@ public class DefaultArraySerializers {
 		}
 	}
 
-	static public class IntArraySerializer extends Serializer<int[]> {
+	public static class IntArraySerializer extends Serializer<int[]> {
 		{
 			setAcceptsNull(true);
 		}
@@ -87,7 +87,7 @@ public class DefaultArraySerializers {
 		}
 	}
 
-	static public class FloatArraySerializer extends Serializer<float[]> {
+	public static class FloatArraySerializer extends Serializer<float[]> {
 		{
 			setAcceptsNull(true);
 		}
@@ -114,7 +114,7 @@ public class DefaultArraySerializers {
 		}
 	}
 
-	static public class LongArraySerializer extends Serializer<long[]> {
+	public static class LongArraySerializer extends Serializer<long[]> {
 		{
 			setAcceptsNull(true);
 		}
@@ -141,7 +141,7 @@ public class DefaultArraySerializers {
 		}
 	}
 
-	static public class ShortArraySerializer extends Serializer<short[]> {
+	public static class ShortArraySerializer extends Serializer<short[]> {
 		{
 			setAcceptsNull(true);
 		}
@@ -168,7 +168,7 @@ public class DefaultArraySerializers {
 		}
 	}
 
-	static public class CharArraySerializer extends Serializer<char[]> {
+	public static class CharArraySerializer extends Serializer<char[]> {
 		{
 			setAcceptsNull(true);
 		}
@@ -195,7 +195,7 @@ public class DefaultArraySerializers {
 		}
 	}
 
-	static public class DoubleArraySerializer extends Serializer<double[]> {
+	public static class DoubleArraySerializer extends Serializer<double[]> {
 		{
 			setAcceptsNull(true);
 		}
@@ -222,7 +222,7 @@ public class DefaultArraySerializers {
 		}
 	}
 
-	static public class BooleanArraySerializer extends Serializer<boolean[]> {
+	public static class BooleanArraySerializer extends Serializer<boolean[]> {
 		{
 			setAcceptsNull(true);
 		}
@@ -253,7 +253,7 @@ public class DefaultArraySerializers {
 		}
 	}
 
-	static public class StringArraySerializer extends Serializer<String[]> {
+	public static class StringArraySerializer extends Serializer<String[]> {
 		{
 			setAcceptsNull(true);
 		}
@@ -296,7 +296,7 @@ public class DefaultArraySerializers {
 		}
 	}
 
-	static public class ObjectArraySerializer extends Serializer<Object[]> {
+	public static class ObjectArraySerializer extends Serializer<Object[]> {
 		private boolean elementsAreSameType;
 		private boolean elementsCanBeNull = true;
 		private final Class type;

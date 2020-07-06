@@ -112,7 +112,7 @@ public class CollectionSerializerTest extends KryoTestCase {
 		assertNotSame(objects1.get(0), objects2.get(0));
 	}
 
-	static public class TreeSetSubclass<E> extends TreeSet<E> {
+	public static class TreeSetSubclass<E> extends TreeSet<E> {
 		public TreeSetSubclass () {
 		}
 

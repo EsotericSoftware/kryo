@@ -246,18 +246,18 @@ public class MapSerializerTest extends KryoTestCase {
 		private Map<Integer, String> mapTwo = this.mapOne;
 	}
 
-	static public class HasGenerics {
+	public static class HasGenerics {
 		public HashMap<String, Integer[]> map = new HashMap();
 		public HashMap<String, ?> map2 = new HashMap();
 	}
 
-	static public class KeyComparator implements Comparator<KeyThatIsntComparable> {
+	public static class KeyComparator implements Comparator<KeyThatIsntComparable> {
 		public int compare (KeyThatIsntComparable o1, KeyThatIsntComparable o2) {
 			return o1.value.compareTo(o2.value);
 		}
 	}
 
-	static public class KeyThatIsntComparable {
+	public static class KeyThatIsntComparable {
 		public String value;
 
 		public KeyThatIsntComparable () {
@@ -268,7 +268,7 @@ public class MapSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class TreeMapSubclass<K, V> extends TreeMap<K, V> {
+	public static class TreeMapSubclass<K, V> extends TreeMap<K, V> {
 		public TreeMapSubclass () {
 		}
 
@@ -277,7 +277,7 @@ public class MapSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public enum SomeEnum {
+	public static enum SomeEnum {
 		a, b, c
 	}
 }

@@ -107,7 +107,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		assertEquals(result.get(1), test2);
 	}
 
-	static public class TestClass implements Externalizable {
+	public static class TestClass implements Externalizable {
 		String stringField;
 		int intField;
 
@@ -146,7 +146,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class AnotherTestClass implements Externalizable {
+	public static class AnotherTestClass implements Externalizable {
 		private Date dateField;
 		private long longField;
 
@@ -185,7 +185,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class ReadResolvable implements Externalizable {
+	public static class ReadResolvable implements Externalizable {
 		String value;
 		private Object makeSureNullWorks;
 

@@ -44,7 +44,7 @@ import com.esotericsoftware.kryo.util.ObjectMap;
  * {@link CompatibleFieldSerializerConfig#setExtendedFieldNames(boolean)} must be true.
  * @author Nathan Sweet */
 public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
-	static private final int binarySearchThreshold = 32;
+	private static final int binarySearchThreshold = 32;
 
 	private CompatibleFieldSerializerConfig config;
 
@@ -244,7 +244,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	/** Configuration for CompatibleFieldSerializer instances. */
-	static public class CompatibleFieldSerializerConfig extends FieldSerializerConfig {
+	public static class CompatibleFieldSerializerConfig extends FieldSerializerConfig {
 		boolean readUnknownFieldData = true, chunked;
 		int chunkSize = 1024;
 

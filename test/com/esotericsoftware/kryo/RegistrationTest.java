@@ -52,7 +52,7 @@ public class RegistrationTest {
 		}
 	}
 
-	static public class Some<T> {
+	public static class Some<T> {
 		public T value;
 
 		public Some () {
@@ -63,9 +63,9 @@ public class RegistrationTest {
 		}
 	}
 
-	static public class Fruit {
+	public static class Fruit {
 	}
 
-	static public class Apple extends Fruit {
+	public static class Apple extends Fruit {
 	}
 }

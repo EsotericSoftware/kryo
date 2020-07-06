@@ -36,7 +36,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class PoolTest extends KryoTestCase {
 	@Parameters
-	static public Collection<Object[]> data () {
+	public static Collection<Object[]> data () {
 		return Arrays.asList(new Object[][] {{new Pool<Kryo>(true, false, 16) {
 			protected Kryo create () {
 				return new Kryo();

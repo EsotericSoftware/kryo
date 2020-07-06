@@ -33,7 +33,7 @@ import java.util.Set;
 
 /** Serializers for {@link java.util.ImmutableCollections}, Are added as default serializers for java >= 9. */
 public final class ImmutableCollectionsSerializers {
-	static public void addDefaultSerializers (Kryo kryo) {
+	public static void addDefaultSerializers (Kryo kryo) {
 		if (isClassAvailable("java.util.ImmutableCollections")) {
 			JdkImmutableListSerializer.addDefaultSerializers(kryo);
 			JdkImmutableMapSerializer.addDefaultSerializers(kryo);

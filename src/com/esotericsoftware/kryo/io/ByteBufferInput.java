@@ -35,7 +35,7 @@ import java.nio.ByteOrder;
  * @author Roman Levenstein <romixlev@gmail.com>
  * @author Nathan Sweet */
 public class ByteBufferInput extends Input {
-	static private final ByteOrder nativeOrder = ByteOrder.nativeOrder();
+	private static final ByteOrder nativeOrder = ByteOrder.nativeOrder();
 
 	protected ByteBuffer byteBuffer;
 	private byte[] tempBuffer;

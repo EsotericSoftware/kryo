@@ -378,7 +378,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals(extendedObject, object2);
 	}
 
-	static public class TestClass {
+	public static class TestClass {
 		public String text = "something";
 		public int moo = 120;
 		public long moo2 = 1234120;
@@ -404,7 +404,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class ExtendedTestClass extends TestClass {
+	public static class ExtendedTestClass extends TestClass {
 		// keep the same names of attributes like TestClass
 		public String text = "extendedSomething";
 		public int moo = 127;
@@ -433,11 +433,11 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class AnotherClass {
+	public static class AnotherClass {
 		String value;
 	}
 
-	static public class ClassWithManyFields {
+	public static class ClassWithManyFields {
 		public String aa;
 		public String bb;
 		public String bAdd;

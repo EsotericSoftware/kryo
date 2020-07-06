@@ -45,22 +45,22 @@ import org.junit.runners.MethodSorters;
  * @author Nathan Sweet */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SerializationBenchmarkTest extends KryoTestCase {
-	static private final int WARMUP_ITERATIONS = 1000;
+	private static final int WARMUP_ITERATIONS = 1000;
 
 	/** Number of runs. */
-	static private final int RUN_CNT = 1;
+	private static final int RUN_CNT = 1;
 
 	/** Number of iterations. Set it to something rather big for obtaining meaningful results */
-	static private final int ITER_CNT = 100;
+	private static final int ITER_CNT = 100;
 	// static private final int ITER_CNT = 20000;
 
-	static private final int SLEEP_BETWEEN_RUNS = 100;
+	private static final int SLEEP_BETWEEN_RUNS = 100;
 
-	static private final int OUTPUT_BUFFER_SIZE = 4096 * 10 * 4;
+	private static final int OUTPUT_BUFFER_SIZE = 4096 * 10 * 4;
 
 	final SampleObject object = createObject();
 
-	static private SampleObject createObject () {
+	private static SampleObject createObject () {
 		long[] longArray = new long[3000];
 		for (int i = 0; i < longArray.length; i++)
 			longArray[i] = i;
@@ -198,7 +198,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		Log.WARN();
 	}
 
-	static private class SampleObject implements Externalizable, KryoSerializable {
+	private static class SampleObject implements Externalizable, KryoSerializable {
 		private int intValue;
 		public float floatValue;
 		protected Short shortValue;

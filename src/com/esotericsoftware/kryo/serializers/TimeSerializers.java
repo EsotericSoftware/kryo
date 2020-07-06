@@ -47,7 +47,7 @@ import java.time.ZonedDateTime;
  *
  * Implementation note: All serialization is inspired by oracles java.time.Ser. */
 public final class TimeSerializers {
-	static public void addDefaultSerializers (Kryo kryo) {
+	public static void addDefaultSerializers (Kryo kryo) {
 		if (isClassAvailable("java.time.Duration")) kryo.addDefaultSerializer(Duration.class, DurationSerializer.class);
 		if (isClassAvailable("java.time.Instant")) kryo.addDefaultSerializer(Instant.class, InstantSerializer.class);
 		if (isClassAvailable("java.time.LocalDate")) kryo.addDefaultSerializer(LocalDate.class, LocalDateSerializer.class);
@@ -67,7 +67,7 @@ public final class TimeSerializers {
 		if (isClassAvailable("java.time.Period")) kryo.addDefaultSerializer(Period.class, PeriodSerializer.class);
 	}
 
-	static public class DurationSerializer extends ImmutableSerializer<Duration> {
+	public static class DurationSerializer extends ImmutableSerializer<Duration> {
 		public void write (Kryo kryo, Output out, Duration duration) {
 			out.writeLong(duration.getSeconds());
 			out.writeInt(duration.getNano(), true);
@@ -80,7 +80,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class InstantSerializer extends ImmutableSerializer<Instant> {
+	public static class InstantSerializer extends ImmutableSerializer<Instant> {
 		public void write (Kryo kryo, Output out, Instant instant) {
 			out.writeVarLong(instant.getEpochSecond(), true);
 			out.writeInt(instant.getNano(), true);
@@ -93,7 +93,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class LocalDateSerializer extends ImmutableSerializer<LocalDate> {
+	public static class LocalDateSerializer extends ImmutableSerializer<LocalDate> {
 		public void write (Kryo kryo, Output out, LocalDate date) {
 			write(out, date);
 		}
@@ -116,7 +116,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class LocalDateTimeSerializer extends ImmutableSerializer<LocalDateTime> {
+	public static class LocalDateTimeSerializer extends ImmutableSerializer<LocalDateTime> {
 		public void write (Kryo kryo, Output out, LocalDateTime dateTime) {
 			LocalDateSerializer.write(out, dateTime.toLocalDate());
 			LocalTimeSerializer.write(out, dateTime.toLocalTime());
@@ -129,7 +129,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class LocalTimeSerializer extends ImmutableSerializer<LocalTime> {
+	public static class LocalTimeSerializer extends ImmutableSerializer<LocalTime> {
 		public void write (Kryo kryo, Output out, LocalTime time) {
 			write(out, time);
 		}
@@ -184,7 +184,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class ZoneOffsetSerializer extends ImmutableSerializer<ZoneOffset> {
+	public static class ZoneOffsetSerializer extends ImmutableSerializer<ZoneOffset> {
 		public void write (Kryo kryo, Output out, ZoneOffset obj) {
 			write(out, obj);
 		}
@@ -208,7 +208,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class ZoneIdSerializer extends ImmutableSerializer<ZoneId> {
+	public static class ZoneIdSerializer extends ImmutableSerializer<ZoneId> {
 		public void write (Kryo kryo, Output out, ZoneId obj) {
 			write(out, obj);
 		}
@@ -227,7 +227,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class OffsetTimeSerializer extends ImmutableSerializer<OffsetTime> {
+	public static class OffsetTimeSerializer extends ImmutableSerializer<OffsetTime> {
 		public void write (Kryo kryo, Output out, OffsetTime obj) {
 			LocalTimeSerializer.write(out, obj.toLocalTime());
 			ZoneOffsetSerializer.write(out, obj.getOffset());
@@ -240,7 +240,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class OffsetDateTimeSerializer extends ImmutableSerializer<OffsetDateTime> {
+	public static class OffsetDateTimeSerializer extends ImmutableSerializer<OffsetDateTime> {
 		public void write (Kryo kryo, Output out, OffsetDateTime obj) {
 			LocalDateSerializer.write(out, obj.toLocalDate());
 			LocalTimeSerializer.write(out, obj.toLocalTime());
@@ -255,7 +255,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class ZonedDateTimeSerializer extends ImmutableSerializer<ZonedDateTime> {
+	public static class ZonedDateTimeSerializer extends ImmutableSerializer<ZonedDateTime> {
 		public void write (Kryo kryo, Output out, ZonedDateTime obj) {
 			LocalDateSerializer.write(out, obj.toLocalDate());
 			LocalTimeSerializer.write(out, obj.toLocalTime());
@@ -270,7 +270,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class YearSerializer extends ImmutableSerializer<Year> {
+	public static class YearSerializer extends ImmutableSerializer<Year> {
 		public void write (Kryo kryo, Output out, Year obj) {
 			out.writeVarInt(obj.getValue(), true);
 		}
@@ -280,7 +280,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class YearMonthSerializer extends ImmutableSerializer<YearMonth> {
+	public static class YearMonthSerializer extends ImmutableSerializer<YearMonth> {
 		public void write (Kryo kryo, Output out, YearMonth obj) {
 			out.writeVarInt(obj.getYear(), true);
 			out.writeByte(obj.getMonthValue());
@@ -293,7 +293,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class MonthDaySerializer extends ImmutableSerializer<MonthDay> {
+	public static class MonthDaySerializer extends ImmutableSerializer<MonthDay> {
 		public void write (Kryo kryo, Output out, MonthDay obj) {
 			out.writeByte(obj.getMonthValue());
 			out.writeByte(obj.getDayOfMonth());
@@ -306,7 +306,7 @@ public final class TimeSerializers {
 		}
 	}
 
-	static public class PeriodSerializer extends ImmutableSerializer<Period> {
+	public static class PeriodSerializer extends ImmutableSerializer<Period> {
 		public void write (Kryo kryo, Output out, Period obj) {
 			out.writeVarInt(obj.getYears(), true);
 			out.writeVarInt(obj.getMonths(), true);

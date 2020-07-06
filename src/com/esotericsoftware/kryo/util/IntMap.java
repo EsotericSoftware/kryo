@@ -461,7 +461,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		return new Keys(this);
 	}
 
-	static public class Entry<V> {
+	public static class Entry<V> {
 		public int key;
 		public @Null V value;
 
@@ -470,8 +470,8 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		}
 	}
 
-	static private class MapIterator<V> {
-		static private final int INDEX_ILLEGAL = -2;
+	private static class MapIterator<V> {
+		private static final int INDEX_ILLEGAL = -2;
 		static final int INDEX_ZERO = -1;
 
 		public boolean hasNext;
@@ -532,7 +532,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		}
 	}
 
-	static public class Entries<V> extends MapIterator<V> implements Iterable<Entry<V>>, Iterator<Entry<V>> {
+	public static class Entries<V> extends MapIterator<V> implements Iterable<Entry<V>>, Iterator<Entry<V>> {
 		private final Entry<V> entry = new Entry();
 
 		public Entries (IntMap map) {
@@ -566,7 +566,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		}
 	}
 
-	static public class Values<V> extends MapIterator<V> implements Iterable<V>, Iterator<V> {
+	public static class Values<V> extends MapIterator<V> implements Iterable<V>, Iterator<V> {
 		public Values (IntMap<V> map) {
 			super(map);
 		}
@@ -601,7 +601,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		}
 	}
 
-	static public class Keys extends MapIterator {
+	public static class Keys extends MapIterator {
 		public Keys (IntMap map) {
 			super(map);
 		}
