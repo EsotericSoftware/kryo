@@ -252,6 +252,7 @@ public class MapSerializerTest extends KryoTestCase {
 	}
 
 	static public class KeyComparator implements Comparator<KeyThatIsntComparable> {
+		@Override
 		public int compare (KeyThatIsntComparable o1, KeyThatIsntComparable o2) {
 			return o1.value.compareTo(o2.value);
 		}

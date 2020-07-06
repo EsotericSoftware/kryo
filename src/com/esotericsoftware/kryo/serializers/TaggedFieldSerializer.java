@@ -74,6 +74,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		setAcceptsNull(true);
 	}
 
+	@Override
 	protected void initializeCachedFields () {
 		CachedField[] fields = cachedFields.fields;
 		// Remove untagged fields.
@@ -101,16 +102,19 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		this.writeTags = (CachedField[])writeTags.toArray(new CachedField[writeTags.size()]);
 	}
 
+	@Override
 	public void removeField (String fieldName) {
 		super.removeField(fieldName);
 		initializeCachedFields();
 	}
 
+	@Override
 	public void removeField (CachedField field) {
 		super.removeField(field);
 		initializeCachedFields();
 	}
 
+	@Override
 	public void write (Kryo kryo, Output output, T object) {
 		if (object == null) {
 			output.writeByte(NULL);
@@ -166,6 +170,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	protected void writeHeader (Kryo kryo, Output output, T object) {
 	}
 
+	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int fieldCount = input.readVarInt(true);
 		if (fieldCount == NULL) return null;
@@ -253,6 +258,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		boolean readUnknownTagData, chunked;
 		int chunkSize = 1024;
 
+		@Override
 		public TaggedFieldSerializerConfig clone () {
 			return (TaggedFieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
 		}

@@ -38,10 +38,12 @@ public class PoolTest extends KryoTestCase {
 	@Parameters
 	static public Collection<Object[]> data () {
 		return Arrays.asList(new Object[][] {{new Pool<Kryo>(true, false, 16) {
+			@Override
 			protected Kryo create () {
 				return new Kryo();
 			}
 		}}, {new Pool<Kryo>(true, true, 16) {
+			@Override
 			protected Kryo create () {
 				return new Kryo();
 			}

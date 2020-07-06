@@ -329,6 +329,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	public void testPriorityQueueCopy () {
 		List<Integer> values = Arrays.asList(7, 0, 5, 123, 432);
 		PriorityQueue<Integer> queue = new PriorityQueue(3, new Comparator<Integer>() {
+			@Override
 			public int compare (Integer o1, Integer o2) {
 				return o2 - o1;
 			}

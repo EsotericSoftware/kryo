@@ -48,6 +48,7 @@ abstract public class Pool<T> {
 			queue = new LinkedBlockingQueue(maximumCapacity);
 		else if (softReferences) {
 			queue = new LinkedList() { // More efficient clean() than ArrayDeque.
+				@Override
 				public boolean add (Object object) {
 					if (size() >= maximumCapacity) return false;
 					super.add(object);
@@ -56,6 +57,7 @@ abstract public class Pool<T> {
 			};
 		} else {
 			queue = new ArrayDeque() {
+				@Override
 				public boolean add (Object object) {
 					if (size() >= maximumCapacity) return false;
 					super.add(object);
@@ -144,6 +146,7 @@ abstract public class Pool<T> {
 			this.delegate = delegate;
 		}
 
+		@Override
 		public T poll () {
 			while (true) {
 				SoftReference<T> reference = (SoftReference<T>)delegate.poll();
@@ -153,14 +156,17 @@ abstract public class Pool<T> {
 			}
 		}
 
+		@Override
 		public boolean offer (T e) {
 			return delegate.add(new SoftReference(e));
 		}
 
+		@Override
 		public int size () {
 			return delegate.size();
 		}
 
+		@Override
 		public void clear () {
 			delegate.clear();
 		}
@@ -179,58 +185,72 @@ abstract public class Pool<T> {
 				if (((SoftReference)iter.next()).get() == null) iter.remove();
 		}
 
+		@Override
 		public boolean add (T e) {
 			return false;
 		}
 
+		@Override
 		public boolean isEmpty () {
 			return false;
 		}
 
+		@Override
 		public boolean contains (Object o) {
 			return false;
 		}
 
+		@Override
 		public Iterator<T> iterator () {
 			return null;
 		}
 
+		@Override
 		public T remove () {
 			return null;
 		}
 
+		@Override
 		public Object[] toArray () {
 			return null;
 		}
 
+		@Override
 		public T element () {
 			return null;
 		}
 
+		@Override
 		public T peek () {
 			return null;
 		}
 
+		@Override
 		public <E> E[] toArray (E[] a) {
 			return null;
 		}
 
+		@Override
 		public boolean remove (Object o) {
 			return false;
 		}
 
+		@Override
 		public boolean containsAll (Collection c) {
 			return false;
 		}
 
+		@Override
 		public boolean addAll (Collection<? extends T> c) {
 			return false;
 		}
 
+		@Override
 		public boolean removeAll (Collection c) {
 			return false;
 		}
 
+		@Override
 		public boolean retainAll (Collection c) {
 			return false;
 		}

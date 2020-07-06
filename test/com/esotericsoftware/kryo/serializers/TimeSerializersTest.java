@@ -43,6 +43,7 @@ import org.junit.Test;
 /** Test for java 8 java.time.* serializers. */
 public class TimeSerializersTest extends KryoTestCase {
 
+	@Override
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();

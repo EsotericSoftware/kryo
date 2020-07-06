@@ -48,6 +48,7 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 		return fallbackStrategy;
 	}
 
+	@Override
 	public ObjectInstantiator newInstantiatorOf (final Class type) {
 		if (!Util.isAndroid) {
 			// Use ReflectASM if the class is not a non-static member class.
@@ -58,6 +59,7 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 				try {
 					final ConstructorAccess access = ConstructorAccess.get(type);
 					return new ObjectInstantiator() {
+						@Override
 						public Object newInstance () {
 							try {
 								return access.newInstance();
@@ -82,6 +84,7 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 			}
 			final Constructor constructor = ctor;
 			return new ObjectInstantiator() {
+				@Override
 				public Object newInstance () {
 					try {
 						return constructor.newInstance();

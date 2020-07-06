@@ -51,6 +51,7 @@ class ReflectField extends CachedField {
 		field.set(object, value);
 	}
 
+	@Override
 	public void write (Output output, Object object) {
 		Kryo kryo = fieldSerializer.kryo;
 		try {
@@ -95,6 +96,7 @@ class ReflectField extends CachedField {
 		}
 	}
 
+	@Override
 	public void read (Input input, Object object) {
 		Kryo kryo = fieldSerializer.kryo;
 		try {
@@ -144,6 +146,7 @@ class ReflectField extends CachedField {
 		return valueClass;
 	}
 
+	@Override
 	public void copy (Object original, Object copy) {
 		try {
 			set(copy, fieldSerializer.kryo.copy(get(original)));
@@ -164,6 +167,7 @@ class ReflectField extends CachedField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			try {
 				if (varEncoding)
@@ -177,6 +181,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			try {
 				if (varEncoding)
@@ -190,6 +195,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			try {
 				field.setInt(copy, field.getInt(original));
@@ -206,6 +212,7 @@ class ReflectField extends CachedField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			try {
 				output.writeFloat(field.getFloat(object));
@@ -216,6 +223,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			try {
 				field.setFloat(object, input.readFloat());
@@ -226,6 +234,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			try {
 				field.setFloat(copy, field.getFloat(original));
@@ -242,6 +251,7 @@ class ReflectField extends CachedField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			try {
 				output.writeShort(field.getShort(object));
@@ -252,6 +262,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			try {
 				field.setShort(object, input.readShort());
@@ -262,6 +273,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			try {
 				field.setShort(copy, field.getShort(original));
@@ -278,6 +290,7 @@ class ReflectField extends CachedField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			try {
 				output.writeByte(field.getByte(object));
@@ -288,6 +301,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			try {
 				field.setByte(object, input.readByte());
@@ -298,6 +312,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			try {
 				field.setByte(copy, field.getByte(original));
@@ -314,6 +329,7 @@ class ReflectField extends CachedField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			try {
 				output.writeBoolean(field.getBoolean(object));
@@ -324,6 +340,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			try {
 				field.setBoolean(object, input.readBoolean());
@@ -334,6 +351,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			try {
 				field.setBoolean(copy, field.getBoolean(original));
@@ -350,6 +368,7 @@ class ReflectField extends CachedField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			try {
 				output.writeChar(field.getChar(object));
@@ -360,6 +379,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			try {
 				field.setChar(object, input.readChar());
@@ -370,6 +390,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			try {
 				field.setChar(copy, field.getChar(original));
@@ -386,6 +407,7 @@ class ReflectField extends CachedField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			try {
 				if (varEncoding)
@@ -399,6 +421,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			try {
 				if (varEncoding)
@@ -412,6 +435,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			try {
 				field.setLong(copy, field.getLong(original));
@@ -428,6 +452,7 @@ class ReflectField extends CachedField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			try {
 				output.writeDouble(field.getDouble(object));
@@ -438,6 +463,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			try {
 				field.setDouble(object, input.readDouble());
@@ -448,6 +474,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			try {
 				field.setDouble(copy, field.getDouble(original));

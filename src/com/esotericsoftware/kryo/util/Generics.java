@@ -124,6 +124,7 @@ public interface Generics {
 			this.parameters = parameters.toArray(new TypeVariable[parameters.size()]);
 		}
 
+		@Override
 		public String toString () {
 			StringBuilder buffer = new StringBuilder();
 			buffer.append("[");

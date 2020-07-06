@@ -38,6 +38,7 @@ public class DefaultArraySerializers {
 			setAcceptsNull(true);
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, byte[] object) {
 			if (object == null) {
 				output.writeByte(NULL);
@@ -47,12 +48,14 @@ public class DefaultArraySerializers {
 			output.writeBytes(object);
 		}
 
+		@Override
 		public byte[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			return input.readBytes(length - 1);
 		}
 
+		@Override
 		public byte[] copy (Kryo kryo, byte[] original) {
 			byte[] copy = new byte[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
@@ -65,6 +68,7 @@ public class DefaultArraySerializers {
 			setAcceptsNull(true);
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, int[] object) {
 			if (object == null) {
 				output.writeByte(NULL);
@@ -74,12 +78,14 @@ public class DefaultArraySerializers {
 			output.writeInts(object, 0, object.length, false);
 		}
 
+		@Override
 		public int[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			return input.readInts(length - 1, false);
 		}
 
+		@Override
 		public int[] copy (Kryo kryo, int[] original) {
 			int[] copy = new int[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
@@ -92,6 +98,7 @@ public class DefaultArraySerializers {
 			setAcceptsNull(true);
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, float[] object) {
 			if (object == null) {
 				output.writeByte(NULL);
@@ -101,12 +108,14 @@ public class DefaultArraySerializers {
 			output.writeFloats(object, 0, object.length);
 		}
 
+		@Override
 		public float[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			return input.readFloats(length - 1);
 		}
 
+		@Override
 		public float[] copy (Kryo kryo, float[] original) {
 			float[] copy = new float[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
@@ -119,6 +128,7 @@ public class DefaultArraySerializers {
 			setAcceptsNull(true);
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, long[] object) {
 			if (object == null) {
 				output.writeByte(NULL);
@@ -128,12 +138,14 @@ public class DefaultArraySerializers {
 			output.writeLongs(object, 0, object.length, false);
 		}
 
+		@Override
 		public long[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			return input.readLongs(length - 1, false);
 		}
 
+		@Override
 		public long[] copy (Kryo kryo, long[] original) {
 			long[] copy = new long[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
@@ -146,6 +158,7 @@ public class DefaultArraySerializers {
 			setAcceptsNull(true);
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, short[] object) {
 			if (object == null) {
 				output.writeByte(NULL);
@@ -155,12 +168,14 @@ public class DefaultArraySerializers {
 			output.writeShorts(object, 0, object.length);
 		}
 
+		@Override
 		public short[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			return input.readShorts(length - 1);
 		}
 
+		@Override
 		public short[] copy (Kryo kryo, short[] original) {
 			short[] copy = new short[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
@@ -173,6 +188,7 @@ public class DefaultArraySerializers {
 			setAcceptsNull(true);
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, char[] object) {
 			if (object == null) {
 				output.writeByte(NULL);
@@ -182,12 +198,14 @@ public class DefaultArraySerializers {
 			output.writeChars(object, 0, object.length);
 		}
 
+		@Override
 		public char[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			return input.readChars(length - 1);
 		}
 
+		@Override
 		public char[] copy (Kryo kryo, char[] original) {
 			char[] copy = new char[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
@@ -200,6 +218,7 @@ public class DefaultArraySerializers {
 			setAcceptsNull(true);
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, double[] object) {
 			if (object == null) {
 				output.writeByte(NULL);
@@ -209,12 +228,14 @@ public class DefaultArraySerializers {
 			output.writeDoubles(object, 0, object.length);
 		}
 
+		@Override
 		public double[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
 			return input.readDoubles(length - 1);
 		}
 
+		@Override
 		public double[] copy (Kryo kryo, double[] original) {
 			double[] copy = new double[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
@@ -227,6 +248,7 @@ public class DefaultArraySerializers {
 			setAcceptsNull(true);
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, boolean[] object) {
 			if (object == null) {
 				output.writeByte(NULL);
@@ -237,6 +259,7 @@ public class DefaultArraySerializers {
 				output.writeBoolean(object[i]);
 		}
 
+		@Override
 		public boolean[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
@@ -246,6 +269,7 @@ public class DefaultArraySerializers {
 			return array;
 		}
 
+		@Override
 		public boolean[] copy (Kryo kryo, boolean[] original) {
 			boolean[] copy = new boolean[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
@@ -258,6 +282,7 @@ public class DefaultArraySerializers {
 			setAcceptsNull(true);
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, String[] object) {
 			if (object == null) {
 				output.writeByte(NULL);
@@ -274,6 +299,7 @@ public class DefaultArraySerializers {
 			}
 		}
 
+		@Override
 		public String[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
@@ -289,6 +315,7 @@ public class DefaultArraySerializers {
 			return array;
 		}
 
+		@Override
 		public String[] copy (Kryo kryo, String[] original) {
 			String[] copy = new String[original.length];
 			System.arraycopy(original, 0, copy, 0, copy.length);
@@ -312,6 +339,7 @@ public class DefaultArraySerializers {
 			if (isFinal) setElementsAreSameType(true);
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, Object[] object) {
 			if (object == null) {
 				output.writeByte(NULL);
@@ -335,6 +363,7 @@ public class DefaultArraySerializers {
 			}
 		}
 
+		@Override
 		public Object[] read (Kryo kryo, Input input, Class type) {
 			int n = input.readVarInt(true);
 			if (n == NULL) return null;
@@ -358,6 +387,7 @@ public class DefaultArraySerializers {
 			return object;
 		}
 
+		@Override
 		public Object[] copy (Kryo kryo, Object[] original) {
 			int n = original.length;
 			Object[] copy = (Object[])Array.newInstance(original.getClass().getComponentType(), n);

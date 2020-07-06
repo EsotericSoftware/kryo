@@ -43,6 +43,7 @@ public interface SerializerFactory<T extends Serializer> {
 
 	/** A serializer factory which always returns true for {@link #isSupported(Class)}. */
 	static public abstract class BaseSerializerFactory<T extends Serializer> implements SerializerFactory<T> {
+		@Override
 		public boolean isSupported (Class type) {
 			return true;
 		}
@@ -60,6 +61,7 @@ public interface SerializerFactory<T extends Serializer> {
 			this.serializerClass = serializerClass;
 		}
 
+		@Override
 		public T newSerializer (Kryo kryo, Class type) {
 			return newSerializer(kryo, serializerClass, type);
 		}
@@ -98,6 +100,7 @@ public interface SerializerFactory<T extends Serializer> {
 			this.serializer = serializer;
 		}
 
+		@Override
 		public T newSerializer (Kryo kryo, Class type) {
 			return serializer;
 		}
@@ -120,6 +123,7 @@ public interface SerializerFactory<T extends Serializer> {
 			return config;
 		}
 
+		@Override
 		public FieldSerializer newSerializer (Kryo kryo, Class type) {
 			return new FieldSerializer(kryo, type, config.clone());
 		}
@@ -142,6 +146,7 @@ public interface SerializerFactory<T extends Serializer> {
 			return config;
 		}
 
+		@Override
 		public TaggedFieldSerializer newSerializer (Kryo kryo, Class type) {
 			return new TaggedFieldSerializer(kryo, type, config.clone());
 		}
@@ -164,6 +169,7 @@ public interface SerializerFactory<T extends Serializer> {
 			return config;
 		}
 
+		@Override
 		public VersionFieldSerializer newSerializer (Kryo kryo, Class type) {
 			return new VersionFieldSerializer(kryo, type, config.clone());
 		}
@@ -186,6 +192,7 @@ public interface SerializerFactory<T extends Serializer> {
 			return config;
 		}
 
+		@Override
 		public CompatibleFieldSerializer newSerializer (Kryo kryo, Class type) {
 			return new CompatibleFieldSerializer(kryo, type, config.clone());
 		}

@@ -33,41 +33,49 @@ public class ListReferenceResolver implements ReferenceResolver {
 	protected Kryo kryo;
 	protected final ArrayList seenObjects = new ArrayList();
 
+	@Override
 	public void setKryo (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
+	@Override
 	public int addWrittenObject (Object object) {
 		int id = seenObjects.size();
 		seenObjects.add(object);
 		return id;
 	}
 
+	@Override
 	public int getWrittenId (Object object) {
 		for (int i = 0, n = seenObjects.size(); i < n; i++)
 			if (seenObjects.get(i) == object) return i;
 		return -1;
 	}
 
+	@Override
 	public int nextReadId (Class type) {
 		int id = seenObjects.size();
 		seenObjects.add(null);
 		return id;
 	}
 
+	@Override
 	public void setReadObject (int id, Object object) {
 		seenObjects.set(id, object);
 	}
 
+	@Override
 	public Object getReadObject (Class type, int id) {
 		return seenObjects.get(id);
 	}
 
+	@Override
 	public void reset () {
 		seenObjects.clear();
 	}
 
 	/** Returns false for all primitive wrappers and enums. */
+	@Override
 	public boolean useReferences (Class type) {
 		return !Util.isWrapperClass(type) && !Util.isEnum(type);
 	}
