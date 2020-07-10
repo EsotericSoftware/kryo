@@ -90,6 +90,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		if (JAVA_VERSION >= 11) TEST_DATAS.add(new TestDataDescription<>(new TestDataJava11(), 2210, 2238));
 	};
 
+	@Override
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();
@@ -119,10 +120,12 @@ public class SerializationCompatTest extends KryoTestCase {
 	@Test
 	public void testStandard () throws Exception {
 		runTests("standard", new Function1<File, Input>() {
+			@Override
 			public Input apply (File file) throws FileNotFoundException {
 				return new Input(new FileInputStream(file));
 			}
 		}, new Function1<File, Output>() {
+			@Override
 			public Output apply (File file) throws Exception {
 				return new Output(new FileOutputStream(file));
 			}
@@ -132,10 +135,12 @@ public class SerializationCompatTest extends KryoTestCase {
 	@Test
 	public void testByteBuffer () throws Exception {
 		runTests("bytebuffer", new Function1<File, Input>() {
+			@Override
 			public Input apply (File file) throws FileNotFoundException {
 				return new ByteBufferInput(new FileInputStream(file));
 			}
 		}, new Function1<File, Output>() {
+			@Override
 			public Output apply (File file) throws Exception {
 				return new ByteBufferOutput(new FileOutputStream(file));
 			}
@@ -204,6 +209,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		kryo.writeObject(out, description.testData);
 	}
 
+	@Override
 	protected void doAssertEquals (final Object one, final Object another) {
 		try {
 			assertReflectionEquals(one, another);

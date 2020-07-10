@@ -242,6 +242,7 @@ class CachedFields implements Comparator<CachedField> {
 		return new ReflectField(field, serializer, genericType);
 	}
 
+	@Override
 	public int compare (CachedField o1, CachedField o2) {
 		// Fields are sorted by name so the order of the data is known.
 		return o1.name.compareTo(o2.name);

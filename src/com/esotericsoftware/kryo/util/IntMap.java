@@ -442,6 +442,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		return buffer.toString();
 	}
 
+	@Override
 	public Iterator<Entry<V>> iterator () {
 		return entries();
 	}
@@ -540,6 +541,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 		}
 
 		/** Note the same entry instance is returned each time this method is called. */
+		@Override
 		public Entry<V> next () {
 			if (!hasNext) throw new NoSuchElementException();
 			if (!valid) throw new KryoException("#iterator() cannot be used nested.");
@@ -556,11 +558,13 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 			return entry;
 		}
 
+		@Override
 		public boolean hasNext () {
 			if (!valid) throw new KryoException("#iterator() cannot be used nested.");
 			return hasNext;
 		}
 
+		@Override
 		public Iterator<Entry<V>> iterator () {
 			return this;
 		}
@@ -571,10 +575,12 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 			super(map);
 		}
 
+		@Override
 		public boolean hasNext () {
 			return hasNext;
 		}
 
+		@Override
 		@Null
 		public V next () {
 			if (!hasNext) throw new NoSuchElementException();
@@ -588,6 +594,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 			return value;
 		}
 
+		@Override
 		public Iterator<V> iterator () {
 			return this;
 		}

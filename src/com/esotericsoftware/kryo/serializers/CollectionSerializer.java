@@ -81,6 +81,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		return this.elementSerializer;
 	}
 
+	@Override
 	public void write (Kryo kryo, Output output, T collection) {
 		if (collection == null) {
 			output.writeByte(NULL);
@@ -177,6 +178,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		return collection;
 	}
 
+	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		Class elementClass = this.elementClass;
 		Serializer elementSerializer = this.elementSerializer;
@@ -254,6 +256,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		return (T)kryo.newInstance(original.getClass());
 	}
 
+	@Override
 	public T copy (Kryo kryo, T original) {
 		T copy = createCopy(kryo, original);
 		kryo.reference(copy);

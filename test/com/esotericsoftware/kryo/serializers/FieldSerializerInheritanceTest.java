@@ -125,10 +125,12 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 	public static class TestExtended extends TestDefault {
 		String a;
 
+		@Override
 		public String getA () {
 			return a;
 		}
 
+		@Override
 		public void setA (String a) {
 			this.a = a;
 		}

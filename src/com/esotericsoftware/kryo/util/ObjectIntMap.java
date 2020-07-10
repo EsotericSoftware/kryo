@@ -350,6 +350,7 @@ public class ObjectIntMap<K> implements Iterable<ObjectIntMap.Entry<K>> {
 		return buffer.toString();
 	}
 
+	@Override
 	public Entries<K> iterator () {
 		return entries();
 	}
@@ -438,6 +439,7 @@ public class ObjectIntMap<K> implements Iterable<ObjectIntMap.Entry<K>> {
 		}
 
 		/** Note the same entry instance is returned each time this method is called. */
+		@Override
 		public Entry<K> next () {
 			if (!hasNext) throw new NoSuchElementException();
 			if (!valid) throw new KryoException("#iterator() cannot be used nested.");
@@ -449,11 +451,13 @@ public class ObjectIntMap<K> implements Iterable<ObjectIntMap.Entry<K>> {
 			return entry;
 		}
 
+		@Override
 		public boolean hasNext () {
 			if (!valid) throw new KryoException("#iterator() cannot be used nested.");
 			return hasNext;
 		}
 
+		@Override
 		public Entries<K> iterator () {
 			return this;
 		}
@@ -503,11 +507,13 @@ public class ObjectIntMap<K> implements Iterable<ObjectIntMap.Entry<K>> {
 			super(map);
 		}
 
+		@Override
 		public boolean hasNext () {
 			if (!valid) throw new KryoException("#iterator() cannot be used nested.");
 			return hasNext;
 		}
 
+		@Override
 		public K next () {
 			if (!hasNext) throw new NoSuchElementException();
 			if (!valid) throw new KryoException("#iterator() cannot be used nested.");
@@ -517,6 +523,7 @@ public class ObjectIntMap<K> implements Iterable<ObjectIntMap.Entry<K>> {
 			return key;
 		}
 
+		@Override
 		public Keys<K> iterator () {
 			return this;
 		}

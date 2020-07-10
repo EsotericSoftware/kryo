@@ -85,6 +85,7 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		updateBufferAddress();
 	}
 
+	@Override
 	public void setBuffer (ByteBuffer buffer, int maxBufferSize) {
 		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
 		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
@@ -96,6 +97,7 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		bufferAddress = ((DirectBuffer)byteBuffer).address();
 	}
 
+	@Override
 	protected boolean require (int required) throws KryoException {
 		ByteBuffer oldBuffer = byteBuffer;
 		boolean result = super.require(required);
@@ -118,24 +120,28 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		buffer.position(position);
 	}
 
+	@Override
 	public void write (int value) throws KryoException {
 		if (position == capacity) require(1);
 		unsafe.putByte(bufferAddress + position++, (byte)value);
 		setBufferPosition(byteBuffer, position);
 	}
 
+	@Override
 	public void writeByte (byte value) throws KryoException {
 		if (position == capacity) require(1);
 		unsafe.putByte(bufferAddress + position++, value);
 		setBufferPosition(byteBuffer, position);
 	}
 
+	@Override
 	public void writeByte (int value) throws KryoException {
 		if (position == capacity) require(1);
 		unsafe.putByte(bufferAddress + position++, (byte)value);
 		setBufferPosition(byteBuffer, position);
 	}
 
+	@Override
 	public void writeInt (int value) throws KryoException {
 		require(4);
 		unsafe.putInt(bufferAddress + position, value);
@@ -143,6 +149,7 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		setBufferPosition(byteBuffer, position);
 	}
 
+	@Override
 	public void writeLong (long value) throws KryoException {
 		require(8);
 		unsafe.putLong(bufferAddress + position, value);
@@ -150,6 +157,7 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		setBufferPosition(byteBuffer, position);
 	}
 
+	@Override
 	public void writeFloat (float value) throws KryoException {
 		require(4);
 		unsafe.putFloat(bufferAddress + position, value);
@@ -157,6 +165,7 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		setBufferPosition(byteBuffer, position);
 	}
 
+	@Override
 	public void writeDouble (double value) throws KryoException {
 		require(8);
 		unsafe.putDouble(bufferAddress + position, value);
@@ -164,6 +173,7 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		setBufferPosition(byteBuffer, position);
 	}
 
+	@Override
 	public void writeShort (int value) throws KryoException {
 		require(2);
 		unsafe.putShort(bufferAddress + position, (short)value);
@@ -171,6 +181,7 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		setBufferPosition(byteBuffer, position);
 	}
 
+	@Override
 	public void writeChar (char value) throws KryoException {
 		require(2);
 		unsafe.putChar(bufferAddress + position, value);
@@ -178,40 +189,49 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		setBufferPosition(byteBuffer, position);
 	}
 
+	@Override
 	public void writeBoolean (boolean value) throws KryoException {
 		if (position == capacity) require(1);
 		unsafe.putByte(bufferAddress + position++, value ? (byte)1 : 0);
 		setBufferPosition(byteBuffer, position);
 	}
 
+	@Override
 	public void writeInts (int[] array, int offset, int count) throws KryoException {
 		writeBytes(array, intArrayBaseOffset, array.length << 2);
 	}
 
+	@Override
 	public void writeLongs (long[] array, int offset, int count) throws KryoException {
 		writeBytes(array, longArrayBaseOffset, array.length << 3);
 	}
 
+	@Override
 	public void writeFloats (float[] array, int offset, int count) throws KryoException {
 		writeBytes(array, floatArrayBaseOffset, array.length << 2);
 	}
 
+	@Override
 	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
 		writeBytes(array, doubleArrayBaseOffset, array.length << 3);
 	}
 
+	@Override
 	public void writeShorts (short[] array, int offset, int count) throws KryoException {
 		writeBytes(array, shortArrayBaseOffset, array.length << 1);
 	}
 
+	@Override
 	public void writeChars (char[] array, int offset, int count) throws KryoException {
 		writeBytes(array, charArrayBaseOffset, array.length << 1);
 	}
 
+	@Override
 	public void writeBooleans (boolean[] array, int offset, int count) throws KryoException {
 		writeBytes(array, booleanArrayBaseOffset, array.length);
 	}
 
+	@Override
 	public void writeBytes (byte[] array, int offset, int count) throws KryoException {
 		writeBytes(array, byteArrayBaseOffset + offset, count);
 	}

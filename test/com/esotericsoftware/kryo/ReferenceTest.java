@@ -58,10 +58,12 @@ public class ReferenceTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		kryo.setReferences(true);
 		kryo.addDefaultSerializer(Stuff.class, new MapSerializer<Stuff>() {
+			@Override
 			protected void writeHeader (Kryo kryo, Output output, Stuff map) {
 				kryo.writeObjectOrNull(output, map.ordering, Ordering.class);
 			}
 
+			@Override
 			protected Stuff create (Kryo kryo, Input input, Class<? extends Stuff> type, int size) {
 				Ordering ordering = kryo.readObjectOrNull(input, Ordering.class);
 				return new Stuff(ordering);
@@ -121,6 +123,7 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, List list) {
 			try {
 				kryo.writeClassAndObject(output, listField.get(list));
@@ -133,6 +136,7 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
+		@Override
 		public List read (Kryo kryo, Input input, Class<? extends List> type) {
 			List list = (List)kryo.readClassAndObject(input);
 			int fromIndex = input.readInt();
@@ -167,6 +171,7 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, List list) {
 			try {
 				kryo.writeClassAndObject(output, parentField.get(list));
@@ -179,6 +184,7 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
+		@Override
 		public List read (Kryo kryo, Input input, Class<? extends List> type) {
 			List list = (List)kryo.readClassAndObject(input);
 			int offset = input.readInt();

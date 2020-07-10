@@ -193,6 +193,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 	}
 
+	@Override
 	public void setUp () throws Exception {
 		super.setUp();
 		Log.WARN();
@@ -229,6 +230,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 
 		// Required by Kryo serialization.
+		@Override
 		public void read (Kryo kryo, Input in) {
 			intValue = kryo.readObject(in, Integer.class);
 			floatValue = kryo.readObject(in, Float.class);
@@ -239,6 +241,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 
 		// Required by Java Externalizable.
+		@Override
 		public void readExternal (ObjectInput in) throws IOException, ClassNotFoundException {
 			intValue = in.readInt();
 			floatValue = in.readFloat();
@@ -249,6 +252,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 
 		// Required by Kryo serialization.
+		@Override
 		public void write (Kryo kryo, Output out) {
 			kryo.writeObject(out, intValue);
 			kryo.writeObject(out, floatValue);
@@ -259,6 +263,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 		}
 
 		// Required by Java Externalizable.
+		@Override
 		public void writeExternal (ObjectOutput out) throws IOException {
 			out.writeInt(intValue);
 			out.writeFloat(floatValue);

@@ -875,6 +875,7 @@ public class Kryo implements Poolable {
 	 * {@link #getOriginalToCopyMap() original to copy map}, and the {@link #getGraphContext() graph context}. If
 	 * {@link #setAutoReset(boolean) auto reset} is true, this method is called automatically when an object graph has been
 	 * completely serialized or deserialized. If overridden, the super method must be called. */
+	@Override
 	public void reset () {
 		depth = 0;
 		if (graphContext != null) graphContext.clear(2048);

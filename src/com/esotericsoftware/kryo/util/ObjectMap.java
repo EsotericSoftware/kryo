@@ -404,6 +404,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		return buffer.toString();
 	}
 
+	@Override
 	public Entries<K, V> iterator () {
 		return entries();
 	}
@@ -479,6 +480,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 			hasNext = false;
 		}
 
+		@Override
 		public void remove () {
 			int i = currentIndex;
 			if (i < 0) throw new IllegalStateException("next must be called before remove.");
@@ -511,6 +513,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		}
 
 		/** Note the same entry instance is returned each time this method is called. */
+		@Override
 		public Entry<K, V> next () {
 			if (!hasNext) throw new NoSuchElementException();
 			K[] keyTable = map.keyTable;
@@ -521,10 +524,12 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 			return entry;
 		}
 
+		@Override
 		public boolean hasNext () {
 			return hasNext;
 		}
 
+		@Override
 		public Entries<K, V> iterator () {
 			return this;
 		}
@@ -535,10 +540,12 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 			super((ObjectMap<Object, V>)map);
 		}
 
+		@Override
 		public boolean hasNext () {
 			return hasNext;
 		}
 
+		@Override
 		@Null
 		public V next () {
 			if (!hasNext) throw new NoSuchElementException();
@@ -548,6 +555,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 			return value;
 		}
 
+		@Override
 		public Values<V> iterator () {
 			return this;
 		}
@@ -570,10 +578,12 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 			super((ObjectMap<K, Object>)map);
 		}
 
+		@Override
 		public boolean hasNext () {
 			return hasNext;
 		}
 
+		@Override
 		public K next () {
 			if (!hasNext) throw new NoSuchElementException();
 			K key = map.keyTable[nextIndex];
@@ -582,6 +592,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 			return key;
 		}
 
+		@Override
 		public Keys<K> iterator () {
 			return this;
 		}

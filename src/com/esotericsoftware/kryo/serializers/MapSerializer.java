@@ -112,6 +112,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
 
+	@Override
 	public void write (Kryo kryo, Output output, T map) {
 		if (map == null) {
 			output.writeByte(0);
@@ -183,6 +184,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		return kryo.newInstance(type);
 	}
 
+	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int length = input.readVarInt(true);
 		if (length == 0) return null;
@@ -243,6 +245,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		return (T)kryo.newInstance(original.getClass());
 	}
 
+	@Override
 	public T copy (Kryo kryo, T original) {
 		T copy = createCopy(kryo, original);
 		for (Iterator iter = original.entrySet().iterator(); iter.hasNext();) {

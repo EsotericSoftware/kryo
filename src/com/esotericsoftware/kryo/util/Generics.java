@@ -124,6 +124,7 @@ public interface Generics {
 			this.parameters = parameters.toArray(new TypeVariable[parameters.size()]);
 		}
 
+		@Override
 		public String toString () {
 			StringBuilder buffer = new StringBuilder();
 			buffer.append("[");
@@ -145,10 +146,6 @@ public interface Generics {
 			}
 			buffer.append("]");
 			return buffer.toString();
-		}
-
-		public boolean isEmpty () {
-			return total == 0;
 		}
 	}
 
