@@ -169,6 +169,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	}
 
 	/** Sets the position and total to 0. */
+	@Override
 	public void reset () {
 		position = 0;
 		total = 0;
@@ -199,6 +200,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Flushes the buffered bytes. The default implementation writes the buffered bytes to the {@link #getOutputStream()
 	 * OutputStream}, if any, and sets the position to 0. Can be overridden to flush the bytes somewhere else. */
+	@Override
 	public void flush () throws KryoException {
 		if (outputStream == null) return;
 		try {
@@ -212,6 +214,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	}
 
 	/** Flushes any buffered bytes and closes the underlying OutputStream, if any. */
+	@Override
 	public void close () throws KryoException {
 		flush();
 		if (outputStream != null) {
@@ -223,18 +226,21 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	}
 
 	/** Writes a byte. */
+	@Override
 	public void write (int value) throws KryoException {
 		if (position == capacity) require(1);
 		buffer[position++] = (byte)value;
 	}
 
 	/** Writes the bytes. Note the number of bytes is not written. */
+	@Override
 	public void write (byte[] bytes) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		writeBytes(bytes, 0, bytes.length);
 	}
 
 	/** Writes the bytes. Note the number of bytes is not written. */
+	@Override
 	public void write (byte[] bytes, int offset, int length) throws KryoException {
 		writeBytes(bytes, offset, length);
 	}

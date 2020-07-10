@@ -40,6 +40,7 @@ public class KryoException extends RuntimeException {
 		super(cause);
 	}
 
+	@Override
 	public String getMessage () {
 		if (trace == null) return super.getMessage();
 		StringBuffer buffer = new StringBuffer(512);

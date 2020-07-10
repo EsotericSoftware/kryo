@@ -58,10 +58,12 @@ public class IdentityMap<K, V> extends ObjectMap<K, V> {
 		super(map);
 	}
 
+	@Override
 	protected int place (K item) {
 		return (int)(System.identityHashCode(item) * 0x9E3779B97F4A7C15L >>> shift);
 	}
 
+	@Override
 	int locateKey (K key) {
 		if (key == null) throw new IllegalArgumentException("key cannot be null.");
 		K[] keyTable = this.keyTable;
@@ -72,6 +74,7 @@ public class IdentityMap<K, V> extends ObjectMap<K, V> {
 		}
 	}
 
+	@Override
 	public int hashCode () {
 		int h = size;
 		K[] keyTable = this.keyTable;

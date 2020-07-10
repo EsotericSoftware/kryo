@@ -35,14 +35,17 @@ class AsmField extends ReflectField {
 		super(field, serializer, genericType);
 	}
 
+	@Override
 	public Object get (Object object) throws IllegalAccessException {
 		return access.get(object, accessIndex);
 	}
 
+	@Override
 	public void set (Object object, Object value) throws IllegalAccessException {
 		access.set(object, accessIndex, value);
 	}
 
+	@Override
 	public void copy (Object original, Object copy) {
 		try {
 			access.set(copy, accessIndex, fieldSerializer.kryo.copy(access.get(original, accessIndex)));
@@ -61,6 +64,7 @@ class AsmField extends ReflectField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			if (varEncoding)
 				output.writeVarInt(access.getInt(object, accessIndex), false);
@@ -68,6 +72,7 @@ class AsmField extends ReflectField {
 				output.writeInt(access.getInt(object, accessIndex));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			if (varEncoding)
 				access.setInt(object, accessIndex, input.readVarInt(false));
@@ -75,6 +80,7 @@ class AsmField extends ReflectField {
 				access.setInt(object, accessIndex, input.readInt());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			access.setInt(copy, accessIndex, access.getInt(original, accessIndex));
 		}
@@ -85,14 +91,17 @@ class AsmField extends ReflectField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeFloat(access.getFloat(object, accessIndex));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			access.setFloat(object, accessIndex, input.readFloat());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			access.setFloat(copy, accessIndex, access.getFloat(original, accessIndex));
 		}
@@ -103,14 +112,17 @@ class AsmField extends ReflectField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeShort(access.getShort(object, accessIndex));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			access.setShort(object, accessIndex, input.readShort());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			access.setShort(copy, accessIndex, access.getShort(original, accessIndex));
 		}
@@ -121,14 +133,17 @@ class AsmField extends ReflectField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeByte(access.getByte(object, accessIndex));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			access.setByte(object, accessIndex, input.readByte());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			access.setByte(copy, accessIndex, access.getByte(original, accessIndex));
 		}
@@ -139,14 +154,17 @@ class AsmField extends ReflectField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeBoolean(access.getBoolean(object, accessIndex));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			access.setBoolean(object, accessIndex, input.readBoolean());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			access.setBoolean(copy, accessIndex, access.getBoolean(original, accessIndex));
 		}
@@ -157,14 +175,17 @@ class AsmField extends ReflectField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeChar(access.getChar(object, accessIndex));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			access.setChar(object, accessIndex, input.readChar());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			access.setChar(copy, accessIndex, access.getChar(original, accessIndex));
 		}
@@ -175,6 +196,7 @@ class AsmField extends ReflectField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			if (varEncoding)
 				output.writeVarLong(access.getLong(object, accessIndex), false);
@@ -182,6 +204,7 @@ class AsmField extends ReflectField {
 				output.writeLong(access.getLong(object, accessIndex));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			if (varEncoding)
 				access.setLong(object, accessIndex, input.readVarLong(false));
@@ -189,6 +212,7 @@ class AsmField extends ReflectField {
 				access.setLong(object, accessIndex, input.readLong());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			access.setLong(copy, accessIndex, access.getLong(original, accessIndex));
 		}
@@ -199,14 +223,17 @@ class AsmField extends ReflectField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeDouble(access.getDouble(object, accessIndex));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			access.setDouble(object, accessIndex, input.readDouble());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			access.setDouble(copy, accessIndex, access.getDouble(original, accessIndex));
 		}
@@ -217,14 +244,17 @@ class AsmField extends ReflectField {
 			super(field);
 		}
 
+		@Override
 		public void write (Output output, Object object) {
 			output.writeString(access.getString(object, accessIndex));
 		}
 
+		@Override
 		public void read (Input input, Object object) {
 			access.set(object, accessIndex, input.readString());
 		}
 
+		@Override
 		public void copy (Object original, Object copy) {
 			access.set(copy, accessIndex, access.getString(original, accessIndex));
 		}

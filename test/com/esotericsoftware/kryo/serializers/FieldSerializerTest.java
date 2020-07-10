@@ -304,14 +304,17 @@ public class FieldSerializerTest extends KryoTestCase {
 	@Test
 	public void testNoDefaultConstructor () {
 		kryo.register(SimpleNoDefaultConstructor.class, new Serializer<SimpleNoDefaultConstructor>() {
+			@Override
 			public SimpleNoDefaultConstructor read (Kryo kryo, Input input, Class<? extends SimpleNoDefaultConstructor> type) {
 				return new SimpleNoDefaultConstructor(input.readVarInt(true));
 			}
 
+			@Override
 			public void write (Kryo kryo, Output output, SimpleNoDefaultConstructor object) {
 				output.writeVarInt(object.constructorValue, true);
 			}
 
+			@Override
 			public SimpleNoDefaultConstructor copy (Kryo kryo, SimpleNoDefaultConstructor original) {
 				return new SimpleNoDefaultConstructor(original.constructorValue);
 			}
@@ -321,16 +324,19 @@ public class FieldSerializerTest extends KryoTestCase {
 
 		kryo.register(ComplexNoDefaultConstructor.class,
 			new FieldSerializer<ComplexNoDefaultConstructor>(kryo, ComplexNoDefaultConstructor.class) {
+				@Override
 				public void write (Kryo kryo, Output output, ComplexNoDefaultConstructor object) {
 					output.writeString(object.name);
 					super.write(kryo, output, object);
 				}
 
+				@Override
 				protected ComplexNoDefaultConstructor create (Kryo kryo, Input input, Class type) {
 					String name = input.readString();
 					return new ComplexNoDefaultConstructor(name);
 				}
 
+				@Override
 				protected ComplexNoDefaultConstructor createCopy (Kryo kryo, ComplexNoDefaultConstructor original) {
 					return new ComplexNoDefaultConstructor(original.name);
 				}
@@ -1040,14 +1046,17 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	static public class HasDefaultSerializerAnnotationSerializer extends Serializer<HasDefaultSerializerAnnotation> {
+		@Override
 		public void write (Kryo kryo, Output output, HasDefaultSerializerAnnotation object) {
 			output.writeVarLong(object.time, true);
 		}
 
+		@Override
 		public HasDefaultSerializerAnnotation read (Kryo kryo, Input input, Class<? extends HasDefaultSerializerAnnotation> type) {
 			return new HasDefaultSerializerAnnotation(input.readVarLong(true));
 		}
 
+		@Override
 		public HasDefaultSerializerAnnotation copy (Kryo kryo, HasDefaultSerializerAnnotation original) {
 			return new HasDefaultSerializerAnnotation(original.time);
 		}

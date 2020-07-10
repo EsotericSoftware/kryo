@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class CopyTest extends KryoTestCase {
+	@Override
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();

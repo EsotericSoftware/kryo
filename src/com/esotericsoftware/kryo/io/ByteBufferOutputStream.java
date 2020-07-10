@@ -50,11 +50,13 @@ public class ByteBufferOutputStream extends OutputStream {
 		this.byteBuffer = byteBuffer;
 	}
 
+	@Override
 	public void write (int b) throws IOException {
 		if (!byteBuffer.hasRemaining()) flush();
 		byteBuffer.put((byte)b);
 	}
 
+	@Override
 	public void write (byte[] bytes, int offset, int length) throws IOException {
 		if (byteBuffer.remaining() < length) flush();
 		byteBuffer.put(bytes, offset, length);

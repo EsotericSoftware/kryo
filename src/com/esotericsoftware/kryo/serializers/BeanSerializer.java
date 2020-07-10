@@ -62,6 +62,7 @@ public class BeanSerializer<T> extends Serializer<T> {
 		// Methods are sorted by alpha so the order of the data is known.
 		PropertyDescriptor[] descriptors = info.getPropertyDescriptors();
 		Arrays.sort(descriptors, new Comparator<PropertyDescriptor>() {
+			@Override
 			public int compare (PropertyDescriptor o1, PropertyDescriptor o2) {
 				return o1.getName().compareTo(o2.getName());
 			}
@@ -105,6 +106,7 @@ public class BeanSerializer<T> extends Serializer<T> {
 		}
 	}
 
+	@Override
 	public void write (Kryo kryo, Output output, T object) {
 		Class type = object.getClass();
 		for (int i = 0, n = properties.length; i < n; i++) {
@@ -132,6 +134,7 @@ public class BeanSerializer<T> extends Serializer<T> {
 		}
 	}
 
+	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		T object = kryo.newInstance(type);
 		kryo.reference(object);
@@ -162,6 +165,7 @@ public class BeanSerializer<T> extends Serializer<T> {
 		return object;
 	}
 
+	@Override
 	public T copy (Kryo kryo, T original) {
 		T copy = (T)kryo.newInstance(original.getClass());
 		for (int i = 0, n = properties.length; i < n; i++) {

@@ -47,15 +47,18 @@ public final class OptionalSerializers {
 			setAcceptsNull(false);
 		}
 
+		@Override
 		public void write (Kryo kryo, Output output, Optional object) {
 			Object nullable = object.isPresent() ? object.get() : null;
 			kryo.writeClassAndObject(output, nullable);
 		}
 
+		@Override
 		public Optional read (Kryo kryo, Input input, Class type) {
 			return Optional.ofNullable(kryo.readClassAndObject(input));
 		}
 
+		@Override
 		public Optional copy (Kryo kryo, Optional original) {
 			if (original.isPresent()) {
 				return Optional.of(kryo.copy(original.get()));
@@ -65,11 +68,13 @@ public final class OptionalSerializers {
 	}
 
 	static public class OptionalIntSerializer extends ImmutableSerializer<OptionalInt> {
+		@Override
 		public void write (Kryo kryo, Output output, OptionalInt object) {
 			output.writeBoolean(object.isPresent());
 			if (object.isPresent()) output.writeInt(object.getAsInt());
 		}
 
+		@Override
 		public OptionalInt read (Kryo kryo, Input input, Class type) {
 			boolean present = input.readBoolean();
 			return present ? OptionalInt.of(input.readInt()) : OptionalInt.empty();
@@ -77,11 +82,13 @@ public final class OptionalSerializers {
 	}
 
 	static public class OptionalLongSerializer extends ImmutableSerializer<OptionalLong> {
+		@Override
 		public void write (Kryo kryo, Output output, OptionalLong object) {
 			output.writeBoolean(object.isPresent());
 			if (object.isPresent()) output.writeLong(object.getAsLong());
 		}
 
+		@Override
 		public OptionalLong read (Kryo kryo, Input input, Class type) {
 			boolean present = input.readBoolean();
 			return present ? OptionalLong.of(input.readLong()) : OptionalLong.empty();
@@ -89,11 +96,13 @@ public final class OptionalSerializers {
 	}
 
 	static public class OptionalDoubleSerializer extends ImmutableSerializer<OptionalDouble> {
+		@Override
 		public void write (Kryo kryo, Output output, OptionalDouble object) {
 			output.writeBoolean(object.isPresent());
 			if (object.isPresent()) output.writeDouble(object.getAsDouble());
 		}
 
+		@Override
 		public OptionalDouble read (Kryo kryo, Input input, Class type) {
 			boolean present = input.readBoolean();
 			return present ? OptionalDouble.of(input.readDouble()) : OptionalDouble.empty();

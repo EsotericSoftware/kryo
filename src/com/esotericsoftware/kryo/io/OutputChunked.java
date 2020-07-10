@@ -50,6 +50,7 @@ public class OutputChunked extends Output {
 		super(outputStream, bufferSize);
 	}
 
+	@Override
 	public void flush () throws KryoException {
 		if (position() > 0) {
 			try {

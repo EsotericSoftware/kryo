@@ -57,6 +57,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		this.config = config;
 	}
 
+	@Override
 	public void write (Kryo kryo, Output output, T object) {
 		int pop = pushTypeVariables();
 
@@ -109,6 +110,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		if (pop > 0) popTypeVariables(pop);
 	}
 
+	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int pop = pushTypeVariables();
 
@@ -248,6 +250,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		boolean readUnknownFieldData = true, chunked;
 		int chunkSize = 1024;
 
+		@Override
 		public CompatibleFieldSerializerConfig clone () {
 			return (CompatibleFieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
 		}

@@ -43,10 +43,12 @@ public class BlowfishSerializer extends Serializer {
 		keySpec = new SecretKeySpec(key, "Blowfish");
 	}
 
+	@Override
 	public void write (Kryo kryo, Output output, Object object) {
 		Cipher cipher = getCipher(Cipher.ENCRYPT_MODE);
 		CipherOutputStream cipherStream = new CipherOutputStream(output, cipher);
 		Output cipherOutput = new Output(cipherStream, 256) {
+			@Override
 			public void close () throws KryoException {
 				// Don't allow the CipherOutputStream to close the output.
 			}
@@ -60,12 +62,14 @@ public class BlowfishSerializer extends Serializer {
 		}
 	}
 
+	@Override
 	public Object read (Kryo kryo, Input input, Class type) {
 		Cipher cipher = getCipher(Cipher.DECRYPT_MODE);
 		CipherInputStream cipherInput = new CipherInputStream(input, cipher);
 		return serializer.read(kryo, new Input(cipherInput, 256), type);
 	}
 
+	@Override
 	public Object copy (Kryo kryo, Object original) {
 		return serializer.copy(kryo, original);
 	}

@@ -42,6 +42,7 @@ public class DeflateSerializer extends Serializer {
 		this.serializer = serializer;
 	}
 
+	@Override
 	public void write (Kryo kryo, Output output, Object object) {
 		OutputChunked outputChunked = new OutputChunked(output, 256);
 		Deflater deflater = new Deflater(compressionLevel, noHeaders);
@@ -59,6 +60,7 @@ public class DeflateSerializer extends Serializer {
 		outputChunked.endChunk();
 	}
 
+	@Override
 	public Object read (Kryo kryo, Input input, Class type) {
 		// The inflater would read from input beyond the compressed bytes if chunked enoding wasn't used.
 		Inflater inflater = new Inflater(noHeaders);
@@ -80,6 +82,7 @@ public class DeflateSerializer extends Serializer {
 		this.compressionLevel = compressionLevel;
 	}
 
+	@Override
 	public Object copy (Kryo kryo, Object original) {
 		return serializer.copy(kryo, original);
 	}
