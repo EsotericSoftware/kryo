@@ -162,7 +162,7 @@ class ReflectField extends CachedField {
 		}
 	}
 
-	final static class IntReflectField extends CachedField {
+	static final class IntReflectField extends CachedField {
 		public IntReflectField (Field field) {
 			super(field);
 		}
@@ -207,7 +207,7 @@ class ReflectField extends CachedField {
 		}
 	}
 
-	final static class FloatReflectField extends CachedField {
+	static final class FloatReflectField extends CachedField {
 		public FloatReflectField (Field field) {
 			super(field);
 		}
@@ -246,7 +246,7 @@ class ReflectField extends CachedField {
 		}
 	}
 
-	final static class ShortReflectField extends CachedField {
+	static final class ShortReflectField extends CachedField {
 		public ShortReflectField (Field field) {
 			super(field);
 		}
@@ -285,7 +285,7 @@ class ReflectField extends CachedField {
 		}
 	}
 
-	final static class ByteReflectField extends CachedField {
+	static final class ByteReflectField extends CachedField {
 		public ByteReflectField (Field field) {
 			super(field);
 		}
@@ -324,7 +324,7 @@ class ReflectField extends CachedField {
 		}
 	}
 
-	final static class BooleanReflectField extends CachedField {
+	static final class BooleanReflectField extends CachedField {
 		public BooleanReflectField (Field field) {
 			super(field);
 		}
@@ -363,7 +363,7 @@ class ReflectField extends CachedField {
 		}
 	}
 
-	final static class CharReflectField extends CachedField {
+	static final class CharReflectField extends CachedField {
 		public CharReflectField (Field field) {
 			super(field);
 		}
@@ -402,7 +402,7 @@ class ReflectField extends CachedField {
 		}
 	}
 
-	final static class LongReflectField extends CachedField {
+	static final class LongReflectField extends CachedField {
 		public LongReflectField (Field field) {
 			super(field);
 		}
@@ -447,7 +447,7 @@ class ReflectField extends CachedField {
 		}
 	}
 
-	final static class DoubleReflectField extends CachedField {
+	static final class DoubleReflectField extends CachedField {
 		public DoubleReflectField (Field field) {
 			super(field);
 		}

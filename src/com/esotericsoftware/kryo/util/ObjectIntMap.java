@@ -370,7 +370,7 @@ public class ObjectIntMap<K> implements Iterable<ObjectIntMap.Entry<K>> {
 		return new Keys(this);
 	}
 
-	static public class Entry<K> {
+	public static class Entry<K> {
 		public K key;
 		public int value;
 
@@ -379,7 +379,7 @@ public class ObjectIntMap<K> implements Iterable<ObjectIntMap.Entry<K>> {
 		}
 	}
 
-	static private class MapIterator<K> {
+	private static class MapIterator<K> {
 		public boolean hasNext;
 
 		final ObjectIntMap<K> map;
@@ -431,7 +431,7 @@ public class ObjectIntMap<K> implements Iterable<ObjectIntMap.Entry<K>> {
 		}
 	}
 
-	static public class Entries<K> extends MapIterator<K> implements Iterable<Entry<K>>, Iterator<Entry<K>> {
+	public static class Entries<K> extends MapIterator<K> implements Iterable<Entry<K>>, Iterator<Entry<K>> {
 		Entry<K> entry = new Entry<K>();
 
 		public Entries (ObjectIntMap<K> map) {
@@ -463,7 +463,7 @@ public class ObjectIntMap<K> implements Iterable<ObjectIntMap.Entry<K>> {
 		}
 	}
 
-	static public class Values extends MapIterator<Object> {
+	public static class Values extends MapIterator<Object> {
 		public Values (ObjectIntMap<?> map) {
 			super((ObjectIntMap<Object>)map);
 		}
@@ -502,7 +502,7 @@ public class ObjectIntMap<K> implements Iterable<ObjectIntMap.Entry<K>> {
 		}
 	}
 
-	static public class Keys<K> extends MapIterator<K> implements Iterable<K>, Iterator<K> {
+	public static class Keys<K> extends MapIterator<K> implements Iterable<K>, Iterator<K> {
 		public Keys (ObjectIntMap<K> map) {
 			super(map);
 		}

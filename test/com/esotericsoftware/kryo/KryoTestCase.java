@@ -44,9 +44,9 @@ import org.junit.Before;
 
 /** Convenience methods for round tripping objects.
  * @author Nathan Sweet */
-abstract public class KryoTestCase {
+public abstract class KryoTestCase {
 	// When true, roundTrip will only do a single write/read to make debugging easier (breaks some tests).
-	static private final boolean debug = false;
+	private static final boolean debug = false;
 
 	protected Kryo kryo;
 	protected Output output;
@@ -297,7 +297,7 @@ abstract public class KryoTestCase {
 		assertEquals(arrayToList(object1), arrayToList(object2));
 	}
 
-	static public Object arrayToList (Object array) {
+	public static Object arrayToList (Object array) {
 		if (array == null || !array.getClass().isArray()) return array;
 		ArrayList list = new ArrayList(Array.getLength(array));
 		for (int i = 0, n = Array.getLength(array); i < n; i++)
@@ -305,7 +305,7 @@ abstract public class KryoTestCase {
 		return list;
 	}
 
-	static public ArrayList list (Object... items) {
+	public static ArrayList list (Object... items) {
 		ArrayList list = new ArrayList();
 		for (Object item : items)
 			list.add(item);

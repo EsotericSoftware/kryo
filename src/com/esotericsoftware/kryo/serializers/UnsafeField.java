@@ -62,7 +62,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
-	final static class IntUnsafeField extends CachedField {
+	static final class IntUnsafeField extends CachedField {
 		public IntUnsafeField (Field field) {
 			super(field);
 			offset = unsafe.objectFieldOffset(field);
@@ -90,7 +90,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
-	final static class FloatUnsafeField extends CachedField {
+	static final class FloatUnsafeField extends CachedField {
 		public FloatUnsafeField (Field field) {
 			super(field);
 			offset = unsafe.objectFieldOffset(field);
@@ -112,7 +112,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
-	final static class ShortUnsafeField extends CachedField {
+	static final class ShortUnsafeField extends CachedField {
 		public ShortUnsafeField (Field field) {
 			super(field);
 			offset = unsafe.objectFieldOffset(field);
@@ -134,7 +134,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
-	final static class ByteUnsafeField extends CachedField {
+	static final class ByteUnsafeField extends CachedField {
 		public ByteUnsafeField (Field field) {
 			super(field);
 			offset = unsafe.objectFieldOffset(field);
@@ -156,7 +156,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
-	final static class BooleanUnsafeField extends CachedField {
+	static final class BooleanUnsafeField extends CachedField {
 		public BooleanUnsafeField (Field field) {
 			super(field);
 			offset = unsafe.objectFieldOffset(field);
@@ -178,7 +178,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
-	final static class CharUnsafeField extends CachedField {
+	static final class CharUnsafeField extends CachedField {
 		public CharUnsafeField (Field field) {
 			super(field);
 			offset = unsafe.objectFieldOffset(field);
@@ -200,7 +200,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
-	final static class LongUnsafeField extends CachedField {
+	static final class LongUnsafeField extends CachedField {
 		public LongUnsafeField (Field field) {
 			super(field);
 			offset = unsafe.objectFieldOffset(field);
@@ -228,7 +228,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
-	final static class DoubleUnsafeField extends CachedField {
+	static final class DoubleUnsafeField extends CachedField {
 		public DoubleUnsafeField (Field field) {
 			super(field);
 			offset = unsafe.objectFieldOffset(field);
@@ -250,7 +250,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
-	final static class StringUnsafeField extends CachedField {
+	static final class StringUnsafeField extends CachedField {
 		public StringUnsafeField (Field field) {
 			super(field);
 			offset = unsafe.objectFieldOffset(field);

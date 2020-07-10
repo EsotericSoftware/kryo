@@ -156,7 +156,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		assertTrue(receivedIAE);
 	}
 
-	static public class TestClass {
+	public static class TestClass {
 		@Tag(0) public String text = "something";
 		@Tag(1) public int moo = 120;
 		@Tag(2) public long moo2 = 1234120;
@@ -183,15 +183,15 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class IncompatibleClass extends TestClass {
+	public static class IncompatibleClass extends TestClass {
 		@Tag(3) public int poorlyTaggedField = 5;
 	}
 
-	static public class AnotherClass {
+	public static class AnotherClass {
 		@Tag(1) String value;
 	}
 
-	static private class FutureClass {
+	private static class FutureClass {
 		@Tag(0) public Integer value;
 		@Tag(1) public FutureClass2 futureClass2;
 		@Tag(value = 2) public String futureString = "unchanged";
@@ -229,7 +229,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static private class FutureClass2 {
+	private static class FutureClass2 {
 		@Tag(0) public String text = "something";
 		@Tag(1) public int moo = 120;
 		@Tag(2) public long moo2 = 1234120;

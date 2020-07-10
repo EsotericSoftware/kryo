@@ -53,7 +53,7 @@ public class VersionedFieldSerializerTest extends KryoTestCase {
 		assertEquals(object2.other.value, object1.other.value);
 	}
 
-	static public class TestClass {
+	public static class TestClass {
 		@Since(1) public String text = "something";
 		@Since(1) public int moo = 120;
 		@Since(2) public long moo2 = 1234120;
@@ -79,11 +79,11 @@ public class VersionedFieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class AnotherClass {
+	public static class AnotherClass {
 		@Since(1) String value;
 	}
 
-	static private class FutureClass {
+	private static class FutureClass {
 		@Since(0) public Integer value;
 		@Since(1) public FutureClass2 futureClass2;
 		@Since(2) public String futureString = "unchanged";
@@ -121,7 +121,7 @@ public class VersionedFieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static private class FutureClass2 {
+	private static class FutureClass2 {
 		@Since(0) public String text = "something";
 		@Since(1) public int moo = 120;
 		@Since(2) public long moo2 = 1234120;

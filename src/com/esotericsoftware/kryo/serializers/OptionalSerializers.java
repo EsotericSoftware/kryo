@@ -34,7 +34,7 @@ import java.util.OptionalLong;
 /** Serializers for {@link Optional}, {@link OptionalInt}, {@link OptionalLong} and {@link OptionalDouble}. Are added as default
  * serializers for java >= 1.8. */
 public final class OptionalSerializers {
-	static public void addDefaultSerializers (Kryo kryo) {
+	public static void addDefaultSerializers (Kryo kryo) {
 		if (isClassAvailable("java.util.Optional")) kryo.addDefaultSerializer(Optional.class, OptionalSerializer.class);
 		if (isClassAvailable("java.util.OptionalInt")) kryo.addDefaultSerializer(OptionalInt.class, OptionalIntSerializer.class);
 		if (isClassAvailable("java.util.OptionalLong")) kryo.addDefaultSerializer(OptionalLong.class, OptionalLongSerializer.class);
@@ -42,7 +42,7 @@ public final class OptionalSerializers {
 			kryo.addDefaultSerializer(OptionalDouble.class, OptionalDoubleSerializer.class);
 	}
 
-	static public class OptionalSerializer extends Serializer<Optional> {
+	public static class OptionalSerializer extends Serializer<Optional> {
 		{
 			setAcceptsNull(false);
 		}
@@ -67,7 +67,7 @@ public final class OptionalSerializers {
 		}
 	}
 
-	static public class OptionalIntSerializer extends ImmutableSerializer<OptionalInt> {
+	public static class OptionalIntSerializer extends ImmutableSerializer<OptionalInt> {
 		@Override
 		public void write (Kryo kryo, Output output, OptionalInt object) {
 			output.writeBoolean(object.isPresent());
@@ -81,7 +81,7 @@ public final class OptionalSerializers {
 		}
 	}
 
-	static public class OptionalLongSerializer extends ImmutableSerializer<OptionalLong> {
+	public static class OptionalLongSerializer extends ImmutableSerializer<OptionalLong> {
 		@Override
 		public void write (Kryo kryo, Output output, OptionalLong object) {
 			output.writeBoolean(object.isPresent());
@@ -95,7 +95,7 @@ public final class OptionalSerializers {
 		}
 	}
 
-	static public class OptionalDoubleSerializer extends ImmutableSerializer<OptionalDouble> {
+	public static class OptionalDoubleSerializer extends ImmutableSerializer<OptionalDouble> {
 		@Override
 		public void write (Kryo kryo, Output output, OptionalDouble object) {
 			output.writeBoolean(object.isPresent());

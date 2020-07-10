@@ -31,10 +31,10 @@ import java.lang.reflect.Type;
 /** A few utility methods, mostly for private use.
  * @author Nathan Sweet */
 public class Util {
-	static public final boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
+	public static final boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
 
 	/** True if Unsafe is available. Unsafe can be disabled by setting the system property "kryo.unsafe" to "false". */
-	static public final boolean unsafe;
+	public static final boolean unsafe;
 	static {
 		boolean found = false;
 		if ("false".equals(System.getProperty("kryo.unsafe"))) {
@@ -51,9 +51,9 @@ public class Util {
 	}
 
 	// Maximum reasonable array length. See: https://stackoverflow.com/questions/3038392/do-java-arrays-have-a-maximum-size
-	static public final int maxArraySize = Integer.MAX_VALUE - 8;
+	public static final int maxArraySize = Integer.MAX_VALUE - 8;
 
-	static public boolean isClassAvailable (String className) {
+	public static boolean isClassAvailable (String className) {
 		try {
 			Class.forName(className);
 			return true;
@@ -64,7 +64,7 @@ public class Util {
 	}
 
 	/** Returns the primitive wrapper class for a primitive class, or the specified class if it is not primitive. */
-	static public Class getWrapperClass (Class type) {
+	public static Class getWrapperClass (Class type) {
 		if (type == int.class) return Integer.class;
 		if (type == float.class) return Float.class;
 		if (type == boolean.class) return Boolean.class;
@@ -78,7 +78,7 @@ public class Util {
 
 	/** Returns the primitive class for a primitive wrapper class. Otherwise returns the type parameter.
 	 * @param type Must be a wrapper class. */
-	static public Class getPrimitiveClass (Class type) {
+	public static Class getPrimitiveClass (Class type) {
 		if (type == Integer.class) return int.class;
 		if (type == Float.class) return float.class;
 		if (type == Boolean.class) return boolean.class;
@@ -91,18 +91,18 @@ public class Util {
 		return type;
 	}
 
-	static public boolean isWrapperClass (Class type) {
+	public static boolean isWrapperClass (Class type) {
 		return type == Integer.class || type == Float.class || type == Boolean.class || type == Byte.class || type == Long.class
 			|| type == Character.class || type == Double.class || type == Short.class;
 	}
 
-	static public boolean isEnum (Class type) {
+	public static boolean isEnum (Class type) {
 		// Use this rather than type.isEnum() to return true for an enum value that is an inner class, eg: enum A {b{}}
 		return Enum.class.isAssignableFrom(type) && type != Enum.class;
 	}
 
 	/** Logs a message about an object. The log level and the string format of the object depend on the object type. */
-	static public void log (String message, Object object, int position) {
+	public static void log (String message, Object object, int position) {
 		if (object == null) {
 			if (TRACE) trace("kryo", message + ": null" + pos(position));
 			return;
@@ -114,13 +114,13 @@ public class Util {
 			debug("kryo", message + ": " + string(object) + pos(position));
 	}
 
-	static public String pos (int position) {
+	public static String pos (int position) {
 		return position == -1 ? "" : " [" + position + "]";
 	}
 
 	/** Returns the object formatted as a string. The format depends on the object's type and whether {@link Object#toString()} has
 	 * been overridden. */
-	static public String string (Object object) {
+	public static String string (Object object) {
 		if (object == null) return "null";
 		Class type = object.getClass();
 		if (type.isArray()) return className(type);
@@ -138,7 +138,7 @@ public class Util {
 	}
 
 	/** Returns the class formatted as a string. The format varies depending on the type. */
-	static public String className (Class type) {
+	public static String className (Class type) {
 		if (type == null) return "null";
 		if (type.isArray()) {
 			Class elementClass = getElementClass(type);
@@ -156,7 +156,7 @@ public class Util {
 	}
 
 	/** Returns the classes formatted as a string. The format varies depending on the type. */
-	static public String classNames (Class[] types) {
+	public static String classNames (Class[] types) {
 		StringBuilder buffer = new StringBuilder(32);
 		for (int i = 0, n = types.length; i < n; i++) {
 			if (i > 0) buffer.append(", ");
@@ -165,12 +165,12 @@ public class Util {
 		return buffer.toString();
 	}
 
-	static public String simpleName (Type type) {
+	public static String simpleName (Type type) {
 		if (type instanceof Class) return ((Class)type).getSimpleName();
 		return type.toString(); // Java 8: getTypeName
 	}
 
-	static public String simpleName (Class type, GenericType genericType) {
+	public static String simpleName (Class type, GenericType genericType) {
 		StringBuilder buffer = new StringBuilder(32);
 		buffer.append((type.isArray() ? getElementClass(type) : type).getSimpleName());
 		if (genericType.arguments != null) {
@@ -189,7 +189,7 @@ public class Util {
 	}
 
 	/** Returns the number of dimensions of an array. */
-	static public int getDimensionCount (Class arrayClass) {
+	public static int getDimensionCount (Class arrayClass) {
 		int depth = 0;
 		Class nextClass = arrayClass.getComponentType();
 		while (nextClass != null) {
@@ -200,14 +200,14 @@ public class Util {
 	}
 
 	/** Returns the base element type of an n-dimensional array class. */
-	static public Class getElementClass (Class arrayClass) {
+	public static Class getElementClass (Class arrayClass) {
 		Class elementClass = arrayClass;
 		while (elementClass.getComponentType() != null)
 			elementClass = elementClass.getComponentType();
 		return elementClass;
 	}
 
-	static public boolean isAscii (String value) {
+	public static boolean isAscii (String value) {
 		for (int i = 0, n = value.length(); i < n; i++)
 			if (value.charAt(i) > 127) return false;
 		return true;
@@ -215,7 +215,7 @@ public class Util {
 
 	/** @param factoryClass Must have a constructor that takes a serializer class, or a zero argument constructor.
 	 * @param serializerClass May be null if the factory already knows the serializer class to create. */
-	static public <T extends SerializerFactory> T newFactory (Class<T> factoryClass, Class<? extends Serializer> serializerClass) {
+	public static <T extends SerializerFactory> T newFactory (Class<T> factoryClass, Class<? extends Serializer> serializerClass) {
 		try {
 			if (serializerClass != null) {
 				try {

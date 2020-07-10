@@ -254,7 +254,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	/** Configuration for TaggedFieldSerializer instances. */
-	static public class TaggedFieldSerializerConfig extends FieldSerializerConfig {
+	public static class TaggedFieldSerializerConfig extends FieldSerializerConfig {
 		boolean readUnknownTagData, chunked;
 		int chunkSize = 1024;
 

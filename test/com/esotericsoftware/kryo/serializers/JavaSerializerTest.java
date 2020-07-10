@@ -42,7 +42,7 @@ public class JavaSerializerTest extends KryoTestCase {
 		roundTrip(146, test);
 	}
 
-	static public class TestClass implements Serializable {
+	public static class TestClass implements Serializable {
 		String stringField;
 		int intField;
 

@@ -120,7 +120,7 @@ public class ExternalizableSerializer extends Serializer {
 	}
 
 	/* find out if there are any pesky serialization extras on this class */
-	static private boolean hasInheritableReplaceMethod (Class type, String methodName) {
+	private static boolean hasInheritableReplaceMethod (Class type, String methodName) {
 		Method method = null;
 		Class current = type;
 		while (current != null) {

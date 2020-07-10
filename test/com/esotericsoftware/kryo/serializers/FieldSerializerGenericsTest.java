@@ -201,7 +201,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 
 	// ---
 
-	static public final class Value<T> {
+	public static final class Value<T> {
 		public T value;
 		public ArrayList<T> list;
 
@@ -221,7 +221,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		}
 	}
 
-	static public final class MultipleValues {
+	public static final class MultipleValues {
 		public Value<String> string;
 		public Value<Integer> integer;
 
@@ -232,7 +232,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 
 	// ---
 
-	static public class NestedLists {
+	public static class NestedLists {
 		public ArrayList<NestedListValue<Integer>> lists;
 
 		public boolean equals (Object obj) {
@@ -240,7 +240,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		}
 	}
 
-	static public final class NestedListValue<T> {
+	public static final class NestedListValue<T> {
 		public T value;
 
 		public NestedListValue (T value) {
@@ -254,7 +254,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 
 	// ---
 
-	static public class Super<X> {
+	public static class Super<X> {
 		public ArrayList<X> list;
 		public X value;
 
@@ -263,13 +263,13 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		}
 	}
 
-	static public class PassArgToSuper<T> extends Super<T> {
+	public static class PassArgToSuper<T> extends Super<T> {
 	}
 
-	static public final class PassArgToSupers<T> extends PassArgToSuper<T> {
+	public static final class PassArgToSupers<T> extends PassArgToSuper<T> {
 	}
 
-	static public final class SuperTest {
+	public static final class SuperTest {
 		public PassArgToSupers<Integer> integer;
 		public PassArgToSupers<String> string;
 

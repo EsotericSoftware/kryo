@@ -47,7 +47,7 @@ public class DeflateSerializerTest extends KryoTestCase {
 		roundTrip(8, message);
 	}
 
-	static public class ServerPhysicsUpdate {
+	public static class ServerPhysicsUpdate {
 		public int value;
 
 		public ServerPhysicsUpdate () {
@@ -70,11 +70,11 @@ public class DeflateSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public enum MessageType {
+	public static enum MessageType {
 		SERVER_UPDATE
 	}
 
-	static public class Message {
+	public static class Message {
 		public MessageType type;
 		public Object data;
 

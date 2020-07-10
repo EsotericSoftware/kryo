@@ -59,7 +59,7 @@ class AsmField extends ReflectField {
 		}
 	}
 
-	final static class IntAsmField extends CachedField {
+	static final class IntAsmField extends CachedField {
 		public IntAsmField (Field field) {
 			super(field);
 		}
@@ -86,7 +86,7 @@ class AsmField extends ReflectField {
 		}
 	}
 
-	final static class FloatAsmField extends CachedField {
+	static final class FloatAsmField extends CachedField {
 		public FloatAsmField (Field field) {
 			super(field);
 		}
@@ -107,7 +107,7 @@ class AsmField extends ReflectField {
 		}
 	}
 
-	final static class ShortAsmField extends CachedField {
+	static final class ShortAsmField extends CachedField {
 		public ShortAsmField (Field field) {
 			super(field);
 		}
@@ -128,7 +128,7 @@ class AsmField extends ReflectField {
 		}
 	}
 
-	final static class ByteAsmField extends CachedField {
+	static final class ByteAsmField extends CachedField {
 		public ByteAsmField (Field field) {
 			super(field);
 		}
@@ -149,7 +149,7 @@ class AsmField extends ReflectField {
 		}
 	}
 
-	final static class BooleanAsmField extends CachedField {
+	static final class BooleanAsmField extends CachedField {
 		public BooleanAsmField (Field field) {
 			super(field);
 		}
@@ -170,7 +170,7 @@ class AsmField extends ReflectField {
 		}
 	}
 
-	final static class CharAsmField extends CachedField {
+	static final class CharAsmField extends CachedField {
 		public CharAsmField (Field field) {
 			super(field);
 		}
@@ -191,7 +191,7 @@ class AsmField extends ReflectField {
 		}
 	}
 
-	final static class LongAsmField extends CachedField {
+	static final class LongAsmField extends CachedField {
 		public LongAsmField (Field field) {
 			super(field);
 		}
@@ -218,7 +218,7 @@ class AsmField extends ReflectField {
 		}
 	}
 
-	final static class DoubleAsmField extends CachedField {
+	static final class DoubleAsmField extends CachedField {
 		public DoubleAsmField (Field field) {
 			super(field);
 		}
@@ -239,7 +239,7 @@ class AsmField extends ReflectField {
 		}
 	}
 
-	final static class StringAsmField extends CachedField {
+	static final class StringAsmField extends CachedField {
 		public StringAsmField (Field field) {
 			super(field);
 		}

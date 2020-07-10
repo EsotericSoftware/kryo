@@ -139,7 +139,7 @@ public class SerializationCompatTestData {
 		}
 	}
 
-	static public class TestData implements Serializable {
+	public static class TestData implements Serializable {
 		private boolean _boolean;
 		private char _char;
 		private byte _byte;
@@ -377,7 +377,7 @@ public class SerializationCompatTestData {
 		return person;
 	}
 
-	static public class Person {
+	public static class Person {
 
 		static enum Gender {
 			MALE, FEMALE
@@ -500,9 +500,9 @@ public class SerializationCompatTestData {
 
 	}
 
-	static public class Email implements Serializable {
+	public static class Email implements Serializable {
 
-		static private final long serialVersionUID = 1L;
+		private static final long serialVersionUID = 1L;
 
 		private String _name;
 		private String _email;
@@ -574,7 +574,7 @@ public class SerializationCompatTestData {
 
 	}
 
-	static public class PublicClass {
+	public static class PublicClass {
 		PrivateClass privateClass;
 
 		public PublicClass () {
@@ -593,7 +593,7 @@ public class SerializationCompatTestData {
 		}
 	}
 
-	static private class PrivateClass {
+	private static class PrivateClass {
 		String foo;
 
 		public PrivateClass (String foo) {

@@ -160,7 +160,7 @@ public class CopyTest extends KryoTestCase {
 		assertEquals(test, copy);
 	}
 
-	static public class Moo {
+	public static class Moo {
 		Moo moo;
 	}
 }

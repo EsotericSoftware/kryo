@@ -705,7 +705,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(1440, root);
 	}
 
-	static public class DefaultTypes {
+	public static class DefaultTypes {
 		// Primitives.
 		public boolean booleanField;
 		public byte byteField;
@@ -788,7 +788,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public final class A {
+	public static final class A {
 		public int value;
 		@Bind(valueClass = B.class, serializerFactory = FieldSerializerFactory.class) public B b;
 
@@ -805,7 +805,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public final class B {
+	public static final class B {
 		public int value;
 		@Bind(valueClass = A.class) public A a;
 
@@ -822,7 +822,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public final class C {
+	public static final class C {
 		public A a;
 		@Bind(serializer = FieldSerializer.class, valueClass = D.class) public D d;
 
@@ -841,7 +841,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public final class D {
+	public static final class D {
 		public E e;
 
 		public boolean equals (Object obj) {
@@ -856,7 +856,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public final class E {
+	public static final class E {
 		public F f;
 
 		public boolean equals (Object obj) {
@@ -871,7 +871,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public final class F {
+	public static final class F {
 		public int value;
 		public final int finalValue = 12;
 		public D d;
@@ -887,7 +887,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class SimpleNoDefaultConstructor {
+	public static class SimpleNoDefaultConstructor {
 		int constructorValue;
 
 		public SimpleNoDefaultConstructor (int constructorValue) {
@@ -915,7 +915,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class HasTransients {
+	public static class HasTransients {
 		public transient String transientField1;
 		public int anotherField2;
 		public String anotherField3;
@@ -948,7 +948,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class ComplexNoDefaultConstructor {
+	public static class ComplexNoDefaultConstructor {
 		public transient String name;
 		public int anotherField1;
 		public String anotherField2;
@@ -983,7 +983,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	@DefaultSerializer(FieldSerializer.class)
-	static public class HasNonNull {
+	public static class HasNonNull {
 		@NotNull public String nonNullText;
 
 		public boolean equals (Object obj) {
@@ -999,7 +999,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	@DefaultSerializer(serializerFactory = FieldSerializerFactory.class)
-	static public class HasStringField {
+	public static class HasStringField {
 		public String text;
 
 		public boolean equals (Object obj) {
@@ -1014,7 +1014,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class HasOptionalAnnotation {
+	public static class HasOptionalAnnotation {
 		@Optional("smurf") int moo;
 
 		public boolean equals (Object obj) {
@@ -1028,7 +1028,7 @@ public class FieldSerializerTest extends KryoTestCase {
 	}
 
 	@DefaultSerializer(HasDefaultSerializerAnnotationSerializer.class)
-	static public class HasDefaultSerializerAnnotation {
+	public static class HasDefaultSerializerAnnotation {
 		long time;
 
 		public HasDefaultSerializerAnnotation (long time) {
@@ -1045,7 +1045,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class HasDefaultSerializerAnnotationSerializer extends Serializer<HasDefaultSerializerAnnotation> {
+	public static class HasDefaultSerializerAnnotationSerializer extends Serializer<HasDefaultSerializerAnnotation> {
 		@Override
 		public void write (Kryo kryo, Output output, HasDefaultSerializerAnnotation object) {
 			output.writeVarLong(object.time, true);
@@ -1062,7 +1062,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class HasArgumentConstructor {
+	public static class HasArgumentConstructor {
 		public String moo;
 
 		public HasArgumentConstructor (String moo) {
@@ -1081,7 +1081,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class HasPrivateConstructor extends HasArgumentConstructor {
+	public static class HasPrivateConstructor extends HasArgumentConstructor {
 		static int invocations;
 
 		private HasPrivateConstructor () {
@@ -1090,7 +1090,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class HasGenerics<T> {
+	public static class HasGenerics<T> {
 		public ArrayList<T> list1;
 		private List<List> list2 = new ArrayList();
 		public List list3 = new ArrayList();
@@ -1125,7 +1125,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class ListContainer<T> {
+	public static class ListContainer<T> {
 		public ArrayList<T> list;
 
 		public boolean equals (Object obj) {
@@ -1140,7 +1140,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class MultipleTimesAnnotatedCollectionFields {
+	public static class MultipleTimesAnnotatedCollectionFields {
 		// This annotation should result in an exception, because
 		// it is applied to a non-collection field
 		@BindCollection(elementSerializer = LongArraySerializer.class, //
@@ -1150,7 +1150,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		Collection collection;
 	}
 
-	static public class WronglyAnnotatedCollectionFields {
+	public static class WronglyAnnotatedCollectionFields {
 		// This annotation should result in an exception, because
 		// it is applied to a non-collection field
 		@BindCollection(elementSerializer = LongArraySerializer.class, //
@@ -1159,7 +1159,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		int collection;
 	}
 
-	static public class WronglyAnnotatedMapFields {
+	public static class WronglyAnnotatedMapFields {
 		// This annotation should result in an exception, because
 		// it is applied to a non-map field
 		@BindMap(valueSerializer = IntArraySerializer.class, //
@@ -1170,8 +1170,8 @@ public class FieldSerializerTest extends KryoTestCase {
 		Object map;
 	}
 
-	static public class AnnotatedFields {
-		static public class HasFields {
+	public static class AnnotatedFields {
+		public static class HasFields {
 			public int number;
 			public String text;
 
@@ -1241,7 +1241,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class IsGeneric<T> {
+	public static class IsGeneric<T> {
 		T item;
 		private int y;
 		private int z;
@@ -1259,7 +1259,7 @@ public class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
-	static public class Deep {
+	public static class Deep {
 		public int i;
 		public Deep deep;
 

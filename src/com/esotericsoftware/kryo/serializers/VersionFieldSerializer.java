@@ -153,7 +153,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	/** Configuration for VersionFieldSerializer instances. */
-	static public class VersionFieldSerializerConfig extends FieldSerializerConfig {
+	public static class VersionFieldSerializerConfig extends FieldSerializerConfig {
 		boolean compatible = true;
 
 		@Override

@@ -39,16 +39,16 @@ import sun.nio.ch.DirectBuffer;
 @SuppressWarnings("restriction")
 public class UnsafeUtil {
 	/** The sun.misc.Unsafe instance, or null if Unsafe is unavailable. */
-	static public final Unsafe unsafe;
+	public static final Unsafe unsafe;
 
-	static public final long byteArrayBaseOffset;
-	static public final long floatArrayBaseOffset;
-	static public final long doubleArrayBaseOffset;
-	static public final long intArrayBaseOffset;
-	static public final long longArrayBaseOffset;
-	static public final long shortArrayBaseOffset;
-	static public final long charArrayBaseOffset;
-	static public final long booleanArrayBaseOffset;
+	public static final long byteArrayBaseOffset;
+	public static final long floatArrayBaseOffset;
+	public static final long doubleArrayBaseOffset;
+	public static final long intArrayBaseOffset;
+	public static final long longArrayBaseOffset;
+	public static final long shortArrayBaseOffset;
+	public static final long charArrayBaseOffset;
+	public static final long booleanArrayBaseOffset;
 	static {
 		Unsafe tempUnsafe = null;
 		long tempByteArrayBaseOffset = 0;
@@ -92,7 +92,7 @@ public class UnsafeUtil {
 	}
 
 	// Constructor to be used for creation of ByteBuffers that use preallocated memory regions.
-	static private Constructor<? extends ByteBuffer> directByteBufferConstructor;
+	private static Constructor<? extends ByteBuffer> directByteBufferConstructor;
 	static {
 		ByteBuffer buffer = ByteBuffer.allocateDirect(1);
 		try {
@@ -104,7 +104,7 @@ public class UnsafeUtil {
 		}
 	}
 
-	static private Method cleanerMethod, cleanMethod;
+	private static Method cleanerMethod, cleanMethod;
 	static {
 		try {
 			cleanerMethod = DirectBuffer.class.getMethod("cleaner");
@@ -120,7 +120,7 @@ public class UnsafeUtil {
 	 * @param address Address of the memory region to be used for a ByteBuffer.
 	 * @param size Size in bytes of the memory region.
 	 * @throws UnsupportedOperationException if creating a ByteBuffer this way is not available. */
-	static public ByteBuffer newDirectBuffer (long address, int size) {
+	public static ByteBuffer newDirectBuffer (long address, int size) {
 		if (directByteBufferConstructor == null)
 			throw new UnsupportedOperationException("No direct ByteBuffer constructor is available.");
 		try {
@@ -131,12 +131,12 @@ public class UnsafeUtil {
 	}
 
 	/** Returns true if {@link #newDirectBuffer(long, int)} can be called. */
-	static public boolean isNewDirectBufferAvailable () {
+	public static boolean isNewDirectBufferAvailable () {
 		return directByteBufferConstructor != null;
 	}
 
 	/** Release a direct buffer immediately rather than waiting for GC. */
-	static public void dispose (ByteBuffer buffer) {
+	public static void dispose (ByteBuffer buffer) {
 		if (!(buffer instanceof DirectBuffer)) return;
 		if (cleanerMethod != null) {
 			try {

@@ -221,7 +221,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Settings for serializing a field. */
-	static public abstract class CachedField {
+	public abstract static class CachedField {
 		final Field field;
 		String name;
 		Class valueClass;
@@ -319,11 +319,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return name;
 		}
 
-		abstract public void write (Output output, Object object);
+		public abstract void write (Output output, Object object);
 
-		abstract public void read (Input input, Object object);
+		public abstract void read (Input input, Object object);
 
-		abstract public void copy (Object original, Object copy);
+		public abstract void copy (Object original, Object copy);
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
@@ -372,7 +372,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Configuration for FieldSerializer instances. */
-	static public class FieldSerializerConfig implements Cloneable {
+	public static class FieldSerializerConfig implements Cloneable {
 		boolean fieldsCanBeNull = true;
 		boolean setFieldsAsAccessible = true;
 		boolean ignoreSyntheticFields = true;

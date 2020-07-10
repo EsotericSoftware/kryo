@@ -47,7 +47,7 @@ public abstract class Serializer<T> {
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} write methods that accept a
 	 * serialier.
 	 * @param object May be null if {@link #getAcceptsNull()} is true. */
-	abstract public void write (Kryo kryo, Output output, T object);
+	public abstract void write (Kryo kryo, Output output, T object);
 
 	/** Reads bytes and returns a new object of the specified concrete type.
 	 * <p>
@@ -58,7 +58,7 @@ public abstract class Serializer<T> {
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} read methods that accept a
 	 * serialier.
 	 * @return May be null if {@link #getAcceptsNull()} is true. */
-	abstract public T read (Kryo kryo, Input input, Class<? extends T> type);
+	public abstract T read (Kryo kryo, Input input, Class<? extends T> type);
 
 	public boolean getAcceptsNull () {
 		return acceptsNull;

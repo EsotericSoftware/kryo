@@ -127,11 +127,11 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 /** Maps classes to serializers so object graphs can be serialized automatically.
  * @author Nathan Sweet */
 public class Kryo implements Poolable {
-	static public final byte NULL = 0;
-	static public final byte NOT_NULL = 1;
+	public static final byte NULL = 0;
+	public static final byte NOT_NULL = 1;
 
-	static private final int REF = -1;
-	static private final int NO_REF = -2;
+	private static final int REF = -1;
+	private static final int NO_REF = -2;
 
 	private SerializerFactory defaultSerializer = new FieldSerializerFactory();
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(67);

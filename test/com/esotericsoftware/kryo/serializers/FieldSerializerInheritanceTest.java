@@ -96,7 +96,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		}
 	}
 
-	static public class TestDefault {
+	public static class TestDefault {
 		String a;
 
 		public String getA () {
@@ -122,7 +122,7 @@ public class FieldSerializerInheritanceTest extends KryoTestCase {
 		}
 	}
 
-	static public class TestExtended extends TestDefault {
+	public static class TestExtended extends TestDefault {
 		String a;
 
 		@Override

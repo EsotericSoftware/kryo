@@ -45,10 +45,10 @@ import java.lang.reflect.Method;
 public class ClosureSerializer extends Serializer {
 	/** Marker class used to find the class {@link Registration} for closure instances.
 	 * @see Kryo#isClosure(Class) */
-	static public class Closure {
+	public static class Closure {
 	}
 
-	static private Method readResolve;
+	private static Method readResolve;
 
 	public ClosureSerializer () {
 		if (readResolve == null) {
