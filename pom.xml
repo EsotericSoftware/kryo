@@ -9,7 +9,7 @@
 
 	<groupId>com.esotericsoftware</groupId>
 	<artifactId>kryo-parent</artifactId>
-	<version>5.0.0-RC7-SNAPSHOT</version>
+	<version>5.0.0-RC7</version>
 	<packaging>pom</packaging>
 
 	<name>Kryo Parent</name>
