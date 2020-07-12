@@ -54,7 +54,7 @@ public class ClassStructureTest extends KryoTestCase {
         subData.message = message; //delete on decode test
 
         DataBean dataBean = new DataBean();
-        dataBean.subData = subData; //delete on decode test
+        dataBean.aSubData = subData; //delete on decode test
         dataBean.message = message;
 
         Output output = new Output(new FileOutputStream("file_y.bin"));
@@ -88,7 +88,7 @@ public class ClassStructureTest extends KryoTestCase {
 
 
     static public class DataBean {
-       SubData subData; //delete on decode test
+       SubData aSubData; //delete on decode test
        String message;
     }
 
