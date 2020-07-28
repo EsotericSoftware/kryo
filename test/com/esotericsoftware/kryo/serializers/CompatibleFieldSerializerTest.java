@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 
@@ -31,13 +32,17 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /** @author Nathan Sweet */
 public class CompatibleFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
+
+	@Rule public ExpectedException exceptionRule = ExpectedException.none();
 
 	@Test
 	public void testCompatibleFieldSerializer () {
@@ -209,6 +214,33 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals("something", object2.text);
 		object2.text = "so much fun";
 		assertEquals(object1, object2);
+	}
+
+	@Test
+	public void testChangeFieldTypeWithChunkedEncodingEnabled () {
+		testChangeFieldType(16, true);
+	}
+
+	@Test
+	public void testChangeFieldTypeWithChunkedEncodingDisabled () {
+		exceptionRule.expect(KryoException.class);
+		exceptionRule.expectMessage("Read type is incompatible with the field type: String -> Long");
+
+		testChangeFieldType(14, false);
+	}
+
+	private void testChangeFieldType(int length, boolean chunked) {
+		CompatibleFieldSerializer<AnotherClass> serializer = new CompatibleFieldSerializer<>(kryo, AnotherClass.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
+		kryo.setReferences(false);
+		kryo.register(AnotherClass.class, serializer);
+
+		roundTrip(length, new AnotherClass("Hacker"));
+
+		serializer.getField("value").setValueClass(Long.class);
+
+		final AnotherClass o = (AnotherClass)kryo.readClassAndObject(input);
+		assertNull(o.value);
 	}
 
 	@Test
@@ -456,6 +488,26 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	public static class AnotherClass {
 		String value;
+
+		public AnotherClass () {
+		}
+
+		public AnotherClass (String value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			final AnotherClass that = (AnotherClass)o;
+			return Objects.equals(value, that.value);
+		}
+
+		@Override
+		public int hashCode () {
+			return Objects.hash(value);
+		}
 	}
 
 	public static class ClassWithManyFields {
