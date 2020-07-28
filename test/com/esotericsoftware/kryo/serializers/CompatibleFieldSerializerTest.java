@@ -25,6 +25,11 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Test;
 
@@ -379,6 +384,21 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals(extendedObject, object2);
 	}
 
+	@Test
+	public void testClassWithSuperTypeFields() {
+		kryo.setReferences(false);
+		kryo.setRegistrationRequired(false);
+
+		CompatibleFieldSerializer<ClassWithSuperTypeFields> serializer = new CompatibleFieldSerializer<>(kryo,
+			ClassWithSuperTypeFields.class);
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = serializer.getCompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setReadUnknownFieldData(true);
+		kryo.register(ClassWithSuperTypeFields.class, serializer);
+
+		roundTrip(71, new ClassWithSuperTypeFields("foo", Arrays.asList("bar"), "baz"));
+	}
+
 	public static class TestClass {
 		public String text = "something";
 		public int moo = 120;
@@ -491,6 +511,35 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 					.append(yy, other.yy).append(zz, other.zz).append(bAdd, other.bAdd).isEquals();
 			}
 			return false;
+		}
+	}
+
+	public static class ClassWithSuperTypeFields {
+		private Object value;
+		private Iterable<?> list;
+		private Serializable serializable;
+
+		public ClassWithSuperTypeFields () {
+		}
+
+		public ClassWithSuperTypeFields (Object value, List<?> list, Serializable serializable) {
+			this.value = value;
+			this.list = list;
+			this.serializable = serializable;
+		}
+
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithSuperTypeFields that = (ClassWithSuperTypeFields)o;
+			return Objects.equals(value, that.value) && Objects.equals(list, that.list)
+				&& Objects.equals(serializable, that.serializable);
+		}
+
+		@Override
+		public int hashCode () {
+			return Objects.hash(value, list, serializable);
 		}
 	}
 }
