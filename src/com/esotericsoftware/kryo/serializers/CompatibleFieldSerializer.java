@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
 import com.esotericsoftware.kryo.util.ObjectMap;
+import com.esotericsoftware.kryo.util.Util;
 
 /** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
  * added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported.
@@ -90,13 +91,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				try {
 					if (object != null) {
 						Object value = cachedField.field.get(object);
-						if (value != null) {
-							final Class<?> fieldType = cachedField.field.getType();
-							if (fieldType.isPrimitive())
-								valueClass = fieldType;
-							else
-								valueClass = value.getClass();
-						}
+						if (value != null) valueClass = value.getClass();
 					}
 				} catch (IllegalAccessException ex) {
 				}
@@ -168,7 +163,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				}
 
 				// Ensure the type in the data is compatible with the field type.
-				if (cachedField.valueClass != null && !cachedField.valueClass.isAssignableFrom(valueClass)) {
+				if (cachedField.valueClass != null && !Util.isAssignableTo(valueClass, cachedField.valueClass)) {
 					String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
 						+ className(cachedField.valueClass) + " (" + getType().getName() + "#" + cachedField + ")";
 					if (!chunked) throw new KryoException(message);

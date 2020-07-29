@@ -244,6 +244,28 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	public void testChangePrimitiveAndWrapperFieldTypes () {
+		testChangePrimitiveAndWrapperFieldTypes(26, true);
+		testChangePrimitiveAndWrapperFieldTypes(22, false);
+	}
+
+	private void testChangePrimitiveAndWrapperFieldTypes (int length, boolean chunked) {
+		CompatibleFieldSerializer<ClassWithPrimitiveAndWrapper> serializer = new CompatibleFieldSerializer<>(kryo, ClassWithPrimitiveAndWrapper.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
+		kryo.setReferences(false);
+		kryo.register(ClassWithPrimitiveAndWrapper.class, serializer);
+
+		roundTrip(length, new ClassWithPrimitiveAndWrapper(1, 1L));
+
+		serializer.getField("primitive").setValueClass(Long.class);
+		serializer.getField("wrapper").setValueClass(long.class);
+
+		ClassWithPrimitiveAndWrapper o = (ClassWithPrimitiveAndWrapper)kryo.readClassAndObject(input);
+		assertEquals(1, o.primitive);
+		assertEquals(1L, o.wrapper, 0);
+	}
+
+	@Test
 	public void testRemovedFieldFromClassWithManyFields () {
 		testRemovedFieldFromClassWithManyFields(198, false, false, true);
 		// testRemovedFieldFromClassWithManyFields(0, false, false, false); // Doesn't support remove.
@@ -563,6 +585,32 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 					.append(yy, other.yy).append(zz, other.zz).append(bAdd, other.bAdd).isEquals();
 			}
 			return false;
+		}
+	}
+
+	public static class ClassWithPrimitiveAndWrapper {
+		long primitive;
+		Long wrapper;
+
+		public ClassWithPrimitiveAndWrapper () {
+		}
+
+		public ClassWithPrimitiveAndWrapper (long primitive, Long wrapper) {
+			this.primitive = primitive;
+			this.wrapper = wrapper;
+		}
+
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			final ClassWithPrimitiveAndWrapper that = (ClassWithPrimitiveAndWrapper)o;
+			return primitive == that.primitive && Objects.equals(wrapper, that.wrapper);
+		}
+
+		@Override
+		public int hashCode () {
+			return Objects.hash(primitive, wrapper);
 		}
 	}
 
