@@ -34,8 +34,8 @@ public class MapReferenceResolver implements ReferenceResolver {
 	private static final int MAXIMUM_CAPACITY = 8192;
 
 	protected Kryo kryo;
-	protected final IdentityObjectIntMap<Object> writtenObjects = new IdentityObjectIntMap<>(CAPACITY);
-	protected final ArrayList<Object> readObjects = new ArrayList<>(CAPACITY);
+	protected final IdentityObjectIntMap<Object> writtenObjects = new IdentityObjectIntMap<>();
+	protected final ArrayList<Object> readObjects = new ArrayList<>();
 	private final int maximumCapacity;
 
 	public MapReferenceResolver () {
