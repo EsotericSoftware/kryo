@@ -70,8 +70,11 @@ class ReflectField extends CachedField {
 				kryo.getGenerics().pushGenericType(genericType);
 				kryo.writeObject(output, value, serializer);
 			} else {
-				// The concrete type of the field is known, always use the same serializer.
-				if (serializer == null) serializer = kryo.getSerializer(concreteType);
+				if (serializer == null) {
+					serializer = kryo.getSerializer(concreteType);
+					// The concrete type of the field is known, always use the same serializer.
+					if (valueClass != null) this.serializer = serializer;
+				}
 				kryo.getGenerics().pushGenericType(genericType);
 				if (canBeNull) {
 					kryo.writeObjectOrNull(output, value, serializer);
@@ -115,8 +118,11 @@ class ReflectField extends CachedField {
 				kryo.getGenerics().pushGenericType(genericType);
 				value = kryo.readObject(input, registration.getType(), serializer);
 			} else {
-				// The concrete type of the field is known, always use the same serializer.
-				if (serializer == null) serializer = kryo.getSerializer(concreteType);
+				if (serializer == null) {
+					serializer = kryo.getSerializer(concreteType);
+					// The concrete type of the field is known, always use the same serializer.
+					if (valueClass != null) this.serializer = serializer;
+				}
 				kryo.getGenerics().pushGenericType(genericType);
 				if (canBeNull)
 					value = kryo.readObjectOrNull(input, concreteType, serializer);
