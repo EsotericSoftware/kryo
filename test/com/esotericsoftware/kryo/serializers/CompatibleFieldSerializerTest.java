@@ -22,17 +22,27 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
 import org.apache.commons.lang.builder.EqualsBuilder;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /** @author Nathan Sweet */
 public class CompatibleFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
+
+	@Rule public ExpectedException exceptionRule = ExpectedException.none();
 
 	@Test
 	public void testCompatibleFieldSerializer () {
@@ -204,6 +214,55 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals("something", object2.text);
 		object2.text = "so much fun";
 		assertEquals(object1, object2);
+	}
+
+	@Test
+	public void testChangeFieldTypeWithChunkedEncodingEnabled () {
+		testChangeFieldType(16, true);
+	}
+
+	@Test
+	public void testChangeFieldTypeWithChunkedEncodingDisabled () {
+		exceptionRule.expect(KryoException.class);
+		exceptionRule.expectMessage("Read type is incompatible with the field type: String -> Long");
+
+		testChangeFieldType(14, false);
+	}
+
+	private void testChangeFieldType(int length, boolean chunked) {
+		CompatibleFieldSerializer<AnotherClass> serializer = new CompatibleFieldSerializer<>(kryo, AnotherClass.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
+		kryo.setReferences(false);
+		kryo.register(AnotherClass.class, serializer);
+
+		roundTrip(length, new AnotherClass("Hacker"));
+
+		serializer.getField("value").setValueClass(Long.class);
+
+		final AnotherClass o = (AnotherClass)kryo.readClassAndObject(input);
+		assertNull(o.value);
+	}
+
+	@Test
+	public void testChangePrimitiveAndWrapperFieldTypes () {
+		testChangePrimitiveAndWrapperFieldTypes(26, true);
+		testChangePrimitiveAndWrapperFieldTypes(22, false);
+	}
+
+	private void testChangePrimitiveAndWrapperFieldTypes (int length, boolean chunked) {
+		CompatibleFieldSerializer<ClassWithPrimitiveAndWrapper> serializer = new CompatibleFieldSerializer<>(kryo, ClassWithPrimitiveAndWrapper.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
+		kryo.setReferences(false);
+		kryo.register(ClassWithPrimitiveAndWrapper.class, serializer);
+
+		roundTrip(length, new ClassWithPrimitiveAndWrapper(1, 1L));
+
+		serializer.getField("primitive").setValueClass(Long.class);
+		serializer.getField("wrapper").setValueClass(long.class);
+
+		ClassWithPrimitiveAndWrapper o = (ClassWithPrimitiveAndWrapper)kryo.readClassAndObject(input);
+		assertEquals(1, o.primitive);
+		assertEquals(1L, o.wrapper, 0);
 	}
 
 	@Test
@@ -379,6 +438,21 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals(extendedObject, object2);
 	}
 
+	@Test
+	public void testClassWithSuperTypeFields() {
+		kryo.setReferences(false);
+		kryo.setRegistrationRequired(false);
+
+		CompatibleFieldSerializer<ClassWithSuperTypeFields> serializer = new CompatibleFieldSerializer<>(kryo,
+			ClassWithSuperTypeFields.class);
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = serializer.getCompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setReadUnknownFieldData(true);
+		kryo.register(ClassWithSuperTypeFields.class, serializer);
+
+		roundTrip(71, new ClassWithSuperTypeFields("foo", Arrays.asList("bar"), "baz"));
+	}
+
 	public static class TestClass {
 		public String text = "something";
 		public int moo = 120;
@@ -436,6 +510,26 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	public static class AnotherClass {
 		String value;
+
+		public AnotherClass () {
+		}
+
+		public AnotherClass (String value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			final AnotherClass that = (AnotherClass)o;
+			return Objects.equals(value, that.value);
+		}
+
+		@Override
+		public int hashCode () {
+			return Objects.hash(value);
+		}
 	}
 
 	public static class ClassWithManyFields {
@@ -491,6 +585,61 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 					.append(yy, other.yy).append(zz, other.zz).append(bAdd, other.bAdd).isEquals();
 			}
 			return false;
+		}
+	}
+
+	public static class ClassWithPrimitiveAndWrapper {
+		long primitive;
+		Long wrapper;
+
+		public ClassWithPrimitiveAndWrapper () {
+		}
+
+		public ClassWithPrimitiveAndWrapper (long primitive, Long wrapper) {
+			this.primitive = primitive;
+			this.wrapper = wrapper;
+		}
+
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			final ClassWithPrimitiveAndWrapper that = (ClassWithPrimitiveAndWrapper)o;
+			return primitive == that.primitive && Objects.equals(wrapper, that.wrapper);
+		}
+
+		@Override
+		public int hashCode () {
+			return Objects.hash(primitive, wrapper);
+		}
+	}
+
+	public static class ClassWithSuperTypeFields {
+		private Object value;
+		private Iterable<?> list;
+		private Serializable serializable;
+
+		public ClassWithSuperTypeFields () {
+		}
+
+		public ClassWithSuperTypeFields (Object value, List<?> list, Serializable serializable) {
+			this.value = value;
+			this.list = list;
+			this.serializable = serializable;
+		}
+
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithSuperTypeFields that = (ClassWithSuperTypeFields)o;
+			return Objects.equals(value, that.value) && Objects.equals(list, that.list)
+				&& Objects.equals(serializable, that.serializable);
+		}
+
+		@Override
+		public int hashCode () {
+			return Objects.hash(value, list, serializable);
 		}
 	}
 }
