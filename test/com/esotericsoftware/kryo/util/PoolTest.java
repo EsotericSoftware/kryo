@@ -26,6 +26,9 @@ import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -35,19 +38,16 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class PoolTest extends KryoTestCase {
+
+	private static final int MAXIMUM_CAPACITY = 4;
+
 	@Parameters
 	public static Collection<Object[]> data () {
-		return Arrays.asList(new Object[][] {{new Pool<Kryo>(true, false, 16) {
-			@Override
-			protected Kryo create () {
-				return new Kryo();
-			}
-		}}, {new Pool<Kryo>(true, true, 16) {
-			@Override
-			protected Kryo create () {
-				return new Kryo();
-			}
-		}}});
+		return Arrays.asList(new Object[][] {
+			{new TestPool(false, false, MAXIMUM_CAPACITY)},
+			{new TestPool(true, false, MAXIMUM_CAPACITY)},
+			{new TestPool(false, true, MAXIMUM_CAPACITY)},
+			{new TestPool(true, true, MAXIMUM_CAPACITY)}});
 	}
 
 	private final Pool<Kryo> pool;
@@ -63,18 +63,29 @@ public class PoolTest extends KryoTestCase {
 	}
 
 	@Test
-	public void getShouldReturnAvailableInstance () {
+	public void obtainShouldReturnAvailableInstance () {
 		Kryo kryo = pool.obtain();
 		pool.free(kryo);
 		assertSame(kryo, pool.obtain());
 	}
 
 	@Test
-	public void releaseShouldAddKryoToPool () {
+	public void freeShouldAddKryoToPool () {
 		assertEquals(0, pool.getFree());
 		Kryo kryo = pool.obtain();
 		pool.free(kryo);
 		assertEquals(1, pool.getFree());
+	}
+
+	@Test
+	public void freeShouldNotAddMoreThanMaximumCapacityToKryoPool () {
+		final List<Kryo> kryos = IntStream.rangeClosed(0, MAXIMUM_CAPACITY + 1)
+			.mapToObj(i -> pool.obtain())
+			.collect(Collectors.toList());
+		for (Kryo kryo : kryos) {
+			pool.free(kryo);
+		}
+		assertEquals(MAXIMUM_CAPACITY, pool.getFree());
 	}
 
 	@Test
@@ -88,5 +99,17 @@ public class PoolTest extends KryoTestCase {
 		assertEquals(1, pool.getFree());
 		pool.free(kryo2);
 		assertEquals(2, pool.getFree());
+	}
+
+	private static class TestPool extends Pool<Kryo> {
+
+		public TestPool (boolean threadSafe, boolean softReferences, int maximumCapacity) {
+			super(threadSafe, softReferences, maximumCapacity);
+		}
+
+		@Override
+		protected Kryo create () {
+			return new Kryo();
+		}
 	}
 }

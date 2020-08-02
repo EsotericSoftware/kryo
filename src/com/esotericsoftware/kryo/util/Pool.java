@@ -45,27 +45,34 @@ public abstract class Pool<T> {
 	public Pool (boolean threadSafe, boolean softReferences, final int maximumCapacity) {
 		Queue<T> queue;
 		if (threadSafe)
-			queue = new LinkedBlockingQueue(maximumCapacity);
-		else if (softReferences) {
-			queue = new LinkedList() { // More efficient clean() than ArrayDeque.
+			queue = new LinkedBlockingQueue<T>(maximumCapacity) {
 				@Override
-				public boolean add (Object object) {
+				public boolean add (T o) {
+					if (size() >= maximumCapacity) return false;
+					super.add(o);
+					return true;
+				}
+			};
+		else if (softReferences) {
+			queue = new LinkedList<T>() { // More efficient clean() than ArrayDeque.
+				@Override
+				public boolean add (T object) {
 					if (size() >= maximumCapacity) return false;
 					super.add(object);
 					return true;
 				}
 			};
 		} else {
-			queue = new ArrayDeque() {
+			queue = new ArrayDeque<T>() {
 				@Override
-				public boolean add (Object object) {
+				public boolean offer (T object) {
 					if (size() >= maximumCapacity) return false;
-					super.add(object);
+					super.offer(object);
 					return true;
 				}
 			};
 		}
-		freeObjects = softReferences ? new SoftReferenceQueue(queue) : queue;
+		freeObjects = softReferences ? new SoftReferenceQueue<>(((Queue<SoftReference<T>>)queue)) : queue;
 	}
 
 	protected abstract T create ();
@@ -86,7 +93,7 @@ public abstract class Pool<T> {
 		if (object == null) throw new IllegalArgumentException("object cannot be null.");
 		reset(object);
 		if (!freeObjects.offer(object) && freeObjects instanceof SoftReferenceQueue) {
-			((SoftReferenceQueue)freeObjects).cleanOne();
+			((SoftReferenceQueue<T>)freeObjects).cleanOne();
 			freeObjects.offer(object);
 		}
 		peak = Math.max(peak, freeObjects.size());
@@ -108,7 +115,7 @@ public abstract class Pool<T> {
 	 * capacity. It is not necessary to call {@link #clean()} before calling {@link #free(Object)}, which will try to remove an
 	 * empty reference if the maximum capacity has been reached. */
 	public void clean () {
-		if (freeObjects instanceof SoftReferenceQueue) ((SoftReferenceQueue)freeObjects).clean();
+		if (freeObjects instanceof SoftReferenceQueue) ((SoftReferenceQueue<T>)freeObjects).clean();
 	}
 
 	/** The number of objects available to be obtained.
@@ -140,16 +147,16 @@ public abstract class Pool<T> {
 	/** Wraps queue values with {@link SoftReference} for {@link Pool}.
 	 * @author Martin Grotzke */
 	static class SoftReferenceQueue<T> implements Queue<T> {
-		private Queue delegate;
+		private final Queue<SoftReference<T>> delegate;
 
-		public SoftReferenceQueue (Queue delegate) {
+		public SoftReferenceQueue (Queue<SoftReference<T>> delegate) {
 			this.delegate = delegate;
 		}
 
 		@Override
 		public T poll () {
 			while (true) {
-				SoftReference<T> reference = (SoftReference<T>)delegate.poll();
+				SoftReference<T> reference = delegate.poll();
 				if (reference == null) return null;
 				T object = reference.get();
 				if (object != null) return object;
@@ -158,7 +165,7 @@ public abstract class Pool<T> {
 
 		@Override
 		public boolean offer (T e) {
-			return delegate.add(new SoftReference(e));
+			return delegate.add(new SoftReference<>(e));
 		}
 
 		@Override
@@ -172,8 +179,8 @@ public abstract class Pool<T> {
 		}
 
 		void cleanOne () {
-			for (Iterator iter = delegate.iterator(); iter.hasNext();) {
-				if (((SoftReference)iter.next()).get() == null) {
+			for (Iterator<SoftReference<T>> iter = delegate.iterator(); iter.hasNext();) {
+				if (iter.next().get() == null) {
 					iter.remove();
 					break;
 				}
@@ -181,8 +188,7 @@ public abstract class Pool<T> {
 		}
 
 		void clean () {
-			for (Iterator iter = delegate.iterator(); iter.hasNext();)
-				if (((SoftReference)iter.next()).get() == null) iter.remove();
+			delegate.removeIf(o -> o.get() == null);
 		}
 
 		@Override
