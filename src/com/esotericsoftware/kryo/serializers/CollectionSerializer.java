@@ -27,6 +27,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Registration;
@@ -170,9 +171,10 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation (eg
 	 * to call a constructor with arguments), optionally reading bytes written in {@link #writeHeader(Kryo, Output, Collection)}.
-	 * The default implementation uses {@link Kryo#newInstance(Class)} with special cases for ArrayList. */
+	 * The default implementation uses {@link Kryo#newInstance(Class)} with special cases for ArrayList and HashSet. */
 	protected T create (Kryo kryo, Input input, Class<? extends T> type, int size) {
-		if (type == ArrayList.class) return (T)new ArrayList(size);
+		if (type == ArrayList.class) return (T)new ArrayList<>(size);
+		if (type == HashSet.class) return (T)new HashSet<>(Math.max((int)(size / 0.75f) + 1, 16));
 		T collection = kryo.newInstance(type);
 		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(size);
 		return collection;
