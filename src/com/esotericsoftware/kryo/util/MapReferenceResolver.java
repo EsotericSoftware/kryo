@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2018, Nathan Sweet
+/* Copyright (c) 2008-2020, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -30,18 +30,21 @@ import java.util.ArrayList;
  * for get or put.
  * @author Nathan Sweet */
 public class MapReferenceResolver implements ReferenceResolver {
-	private static final int CAPACITY = 2048;
-	private static final int MAXIMUM_CAPACITY = 8192;
+	private static final int DEFAULT_CAPACITY = 2048;
 
 	protected Kryo kryo;
 	protected final IdentityObjectIntMap<Object> writtenObjects = new IdentityObjectIntMap<>();
 	protected final ArrayList<Object> readObjects = new ArrayList<>();
 	private final int maximumCapacity;
 
+	/** Creates a reference resolver with a default maximum capacity of 2048 */
 	public MapReferenceResolver () {
-		this(MAXIMUM_CAPACITY);
+		this(DEFAULT_CAPACITY);
 	}
 
+	/** Creates a reference resolver with the specified maximum capacity. The default value of 2048 is good enough in most cases.
+	 * If the average object graph is larger than the default, increasing this value can provide better performance.
+	 * @param maximumCapacity the capacity to trim written and read objects to when {@link #reset()} is called */
 	public MapReferenceResolver (int maximumCapacity) {
 		this.maximumCapacity = maximumCapacity;
 	}
@@ -86,9 +89,9 @@ public class MapReferenceResolver implements ReferenceResolver {
 		readObjects.clear();
 		if (size > maximumCapacity) {
 			readObjects.trimToSize();
-			readObjects.ensureCapacity(CAPACITY);
+			readObjects.ensureCapacity(maximumCapacity);
 		}
-		writtenObjects.clear(CAPACITY);
+		writtenObjects.clear(maximumCapacity);
 	}
 
 	/** Returns false for all primitive wrappers and enums. */
