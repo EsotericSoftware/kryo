@@ -1,0 +1,1128 @@
+<!-- kind:binary;verdict:incompatible;affected:31.3;added:45;removed:0;type_problems_high:2;type_problems_medium:0;type_problems_low:0;method_problems_high:0;method_problems_medium:0;method_problems_low:0;checked_methods:1491;checked_types:167;tool_version:2.1 -->
+<!-- kind:source;verdict:incompatible;affected:31.3;added:45;removed:0;type_problems_high:2;type_problems_medium:0;type_problems_low:0;method_problems_high:0;method_problems_medium:0;method_problems_low:0;checked_methods:1491;checked_types:167;tool_version:2.1 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="keywords" content="kryo, compatibility" />
+<meta name="description" content="Compatibility report for the kryo library between 5.0.0-RC8 and 5.0.0-RC9 versions" />
+<title>kryo: 5.0.0-RC8 to 5.0.0-RC9 compatibility report</title>
+<style type="text/css">
+body {
+    font-family:Arial, sans-serif;
+    background-color:White;
+    color:Black;
+}
+hr {
+    color:Black;
+    background-color:Black;
+    height:1px;
+    border:0;
+}
+h1 {
+    margin-bottom:0px;
+    padding-bottom:0px;
+    font-size:1.625em;
+}
+h2 {
+    margin-bottom:0px;
+    padding-bottom:0px;
+    font-size:1.25em;
+    white-space:nowrap;
+}
+div.symbols {
+    color:#003E69;
+}
+div.symbols i {
+    color:Brown;
+}
+span.section {
+    font-weight:bold;
+    cursor:pointer;
+    color:#003E69;
+    white-space:nowrap;
+    margin-left:0.3125em;
+}
+span:hover.section {
+    color:#336699;
+}
+span.sect_aff {
+    cursor:pointer;
+    padding-left:1.55em;
+    font-size:0.875em;
+    color:#cc3300;
+}
+span.ext {
+    font-weight:100;
+}
+span.jar {
+    color:#cc3300;
+    font-size:0.875em;
+    font-weight:bold;
+}
+div.jar_list {
+    padding-left:0.4em;
+    font-size:0.94em;
+}
+span.pkg_t {
+    color:#408080;
+    font-size:0.875em;
+}
+span.pkg {
+    color:#408080;
+    font-size:0.875em;
+    font-weight:bold;
+}
+span.cname {
+    color:Green;
+    font-size:0.875em;
+    font-weight:bold;
+}
+span.iname_b {
+    font-weight:bold;
+}
+span.iname_a {
+    color:#333333;
+    font-weight:bold;
+    font-size:0.94em;
+}
+span.sym_p {
+    font-weight:normal;
+    white-space:normal;
+}
+span.sym_pd {
+    white-space:normal;
+}
+span.sym_p span, span.sym_pd span {
+    white-space:nowrap;
+}
+span.attr {
+    color:Black;
+    font-weight:100;
+}
+span.deprecated {
+    color:Red;
+    font-weight:bold;
+    font-family:Monaco, monospace;
+}
+div.affect {
+    padding-left:1em;
+    padding-bottom:10px;
+    font-size:0.87em;
+    font-style:italic;
+    line-height:0.9em;
+}
+div.affected {
+    padding-left:2em;
+    padding-top:10px;
+}
+table.ptable {
+    border-collapse:collapse;
+    border:1px outset black;
+    margin-left:0.95em;
+    margin-top:3px;
+    margin-bottom:3px;
+    width:56.25em;
+}
+table.ptable td {
+    border:1px solid Gray;
+    padding:3px;
+    font-size:0.875em;
+    text-align:left;
+    vertical-align:top;
+    max-width:28em;
+    word-wrap:break-word;
+}
+table.ptable th {
+    background-color:#eeeeee;
+    font-weight:bold;
+    color:#333333;
+    font-family:Verdana, Arial;
+    font-size:0.875em;
+    border:1px solid Gray;
+    text-align:center;
+    vertical-align:top;
+    white-space:nowrap;
+    padding:3px;
+}
+table.summary {
+    border-collapse:collapse;
+    border:1px outset black;
+}
+table.summary th {
+    background-color:#eeeeee;
+    font-weight:100;
+    text-align:left;
+    font-size:0.94em;
+    white-space:nowrap;
+    border:1px inset Gray;
+    padding:3px;
+}
+table.summary td {
+    text-align:right;
+    white-space:nowrap;
+    border:1px inset Gray;
+    padding:3px 5px 3px 10px;
+}
+span.mngl {
+    padding-left:1em;
+    font-size:0.875em;
+    cursor:text;
+    color:#444444;
+    font-weight:bold;
+}
+span.pleft {
+    padding-left:2.5em;
+}
+span.color_p {
+    font-style:italic;
+    color:Brown;
+}
+span.param {
+    font-style:italic;
+}
+span.focus_p {
+    font-style:italic;
+    background-color:#DCDCDC;
+}
+span.ttype {
+    font-weight:100;
+}
+span.nowrap {
+    white-space:nowrap;
+}
+span.value {
+    white-space:nowrap;
+    font-weight:bold;
+}
+.passed {
+    background-color:#CCFFCC;
+    font-weight:100;
+}
+.warning {
+    background-color:#F4F4AF;
+    font-weight:100;
+}
+.failed {
+    background-color:#FFCCCC;
+    font-weight:100;
+}
+.new {
+    background-color:#C6DEFF;
+    font-weight:100;
+}
+
+.compatible {
+    background-color:#CCFFCC;
+    font-weight:100;
+}
+.almost_compatible {
+    background-color:#FFDAA3;
+    font-weight:100;
+}
+.incompatible {
+    background-color:#FFCCCC;
+    font-weight:100;
+}
+.gray {
+    background-color:#DCDCDC;
+    font-weight:100;
+}
+
+.top_ref {
+    font-size:0.69em;
+}
+.footer {
+    font-size:0.8125em;
+}
+.tabset {
+    float:left;
+}
+a.tab {
+    border:1px solid Black;
+    float:left;
+    margin:0px 5px -1px 0px;
+    padding:3px 5px 3px 5px;
+    position:relative;
+    font-size:0.875em;
+    background-color:#DDD;
+    text-decoration:none;
+    color:Black;
+}
+a.disabled:hover
+{
+    color:Black;
+    background:#EEE;
+}
+a.active:hover
+{
+    color:Black;
+    background:White;
+}
+a.active {
+    border-bottom-color:White;
+    background-color:White;
+}
+div.tab {
+    border-top:1px solid Black;
+    padding:0px;
+    width:100%;
+    clear:both;
+}
+
+</style>
+<script type="text/javascript" language="JavaScript">
+<!--
+function sC(header, id)
+{
+    e = document.getElementById(id);
+    if(e.style.display == 'none')
+    {
+        e.style.display = 'block';
+        e.style.visibility = 'visible';
+        header.innerHTML = header.innerHTML.replace(/\[[^0-9 ]\]/gi, "[&minus;]");
+    }
+    else
+    {
+        e.style.display = 'none';
+        e.style.visibility = 'hidden';
+        header.innerHTML = header.innerHTML.replace(/\[[^0-9 ]\]/gi, "[+]");
+    }
+}
+function initTabs()
+{
+    var url = window.location.href;
+    if(url.indexOf('_Source_')!=-1 || url.indexOf('#Source')!=-1)
+    {
+        var tab1 = document.getElementById('BinaryID');
+        var tab2 = document.getElementById('SourceID');
+        tab1.className='tab disabled';
+        tab2.className='tab active';
+    }
+    
+    var sets = document.getElementsByTagName('div');
+    for (var i = 0; i < sets.length; i++)
+    {
+        if (sets[i].className.indexOf('tabset') != -1)
+        {
+            var tabs = [];
+            var links = sets[i].getElementsByTagName('a');
+            for (var j = 0; j < links.length; j++)
+            {
+                if (links[j].className.indexOf('tab') != -1)
+                {
+                    tabs.push(links[j]);
+                    links[j].tabs = tabs;
+                    var tab = document.getElementById(links[j].href.substr(links[j].href.indexOf('#') + 1));
+                    //reset all tabs on start
+                    if (tab)
+                    {
+                        if (links[j].className.indexOf('active')!=-1) {
+                            tab.style.display = 'block';
+                        }
+                        else {
+                            tab.style.display = 'none';
+                        }
+                    }
+                    links[j].onclick = function()
+                    {
+                        var tab = document.getElementById(this.href.substr(this.href.indexOf('#') + 1));
+                        if (tab)
+                        {
+                            //reset all tabs before change
+                            for (var k = 0; k < this.tabs.length; k++)
+                            {
+                                document.getElementById(this.tabs[k].href.substr(this.tabs[k].href.indexOf('#') + 1)).style.display = 'none';
+                                this.tabs[k].className = this.tabs[k].className.replace('active', 'disabled');
+                            }
+                            this.className = 'tab active';
+                            tab.style.display = 'block';
+                            // window.location.hash = this.id.replace('ID', '');
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    if(url.indexOf('#')!=-1) {
+        location.href=location.href;
+    }
+}
+
+if (window.addEventListener) window.addEventListener('load', initTabs, false);
+else if (window.attachEvent) window.attachEvent('onload', initTabs);
+
+-->
+</script>
+</head>
+<body><a name='Source'></a><a name='Binary'></a><a name='Top'></a><h1>API compatibility report for the <span style='color:Blue;'>kryo</span> library between <span style='color:Red;'>5.0.0-RC8</span> and <span style='color:Red;'>5.0.0-RC9</span> versions</h1>
+<br/><div class='tabset'>
+<a id='BinaryID' href='#BinaryTab' class='tab active'>Binary<br/>Compatibility</a>
+<a id='SourceID' href='#SourceTab' style='margin-left:3px' class='tab disabled'>Source<br/>Compatibility</a>
+</div>
+<div id='BinaryTab' class='tab'>
+<h2>Test Info</h2><hr/>
+<table class='summary'>
+<tr><th>Library Name</th><td>kryo</td></tr>
+<tr><th>Version #1</th><td>5.0.0-RC8</td></tr>
+<tr><th>Version #2</th><td>5.0.0-RC9</td></tr>
+<tr><th>Subject</th><td width='150px'>Binary Compatibility</td></tr>
+</table>
+<h2>Test Results</h2><hr/>
+<table class='summary'>
+<tr><th>Total JARs</th><td><a href='#Checked_Archives' style='color:Blue;'>1</a></td></tr>
+<tr><th>Total Methods / Classes</th><td>1491 / 167</td></tr>
+<tr><th>Compatibility</th>
+<td class='incompatible'>68.7%</td>
+</tr>
+</table>
+<h2>Problem Summary</h2><hr/>
+<table class='summary'>
+<tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr>
+<tr><th>Added Methods</th><td>-</td><td class='new'><a href='#Binary_Added' style='color:Blue;'>45</a></td></tr>
+<tr><th>Removed Methods</th><td>High</td><td>0</td></tr>
+<tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td class='failed'><a href='#Type_Binary_Problems_High' style='color:Blue;'>2</a></td></tr>
+<tr><td>Medium</td><td>0</td></tr>
+<tr><td>Low</td><td>0</td></tr>
+<tr><th rowspan='3'>Problems with<br/>Methods</th><td>High</td><td>0</td></tr>
+<tr><td>Medium</td><td>0</td></tr>
+<tr><td>Low</td><td>0</td></tr>
+</table>
+
+<a name='Binary_Added'></a><h2>Added Methods <span class='new'>&nbsp;45&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC9.jar</span>, <span class='cname'>CuckooObjectMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_1')">
+CuckooObjectMap&lt;K,V&gt;.clear&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_1" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.clear:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_2')">
+CuckooObjectMap&lt;K,V&gt;.clear&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>maximumCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_2" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.clear:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_3')">
+CuckooObjectMap&lt;K,V&gt;.CuckooObjectMap&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_3" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_4')">
+CuckooObjectMap&lt;K,V&gt;.CuckooObjectMap&#160;<span class='sym_p'><span>(&#160;CuckooObjectMap&lt;?,?&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_4" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap:(Lcom/esotericsoftware/kryo/util/CuckooObjectMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_5')">
+CuckooObjectMap&lt;K,V&gt;.CuckooObjectMap&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>initialCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_5" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_6')">
+CuckooObjectMap&lt;K,V&gt;.CuckooObjectMap&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>initialCapacity</span></span>, <span>float <span class='color_p'>loadFactor</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_6" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap:(IF)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_7')">
+CuckooObjectMap&lt;K,V&gt;.containsKey&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_7" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.containsKey:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_8')">
+CuckooObjectMap&lt;K,V&gt;.containsValue&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>value</span></span>, <span>boolean <span class='color_p'>identity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_8" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.containsValue:(Ljava/lang/Object;Z)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_9')">
+CuckooObjectMap&lt;K,V&gt;.ensureCapacity&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>additionalCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_9" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.ensureCapacity:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_10')">
+CuckooObjectMap&lt;K,V&gt;.entries&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;CuckooObjectMap.Entries&lt;K,V&gt;</span></span>
+<br/>
+<div id="c_10" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.entries:()Lcom/esotericsoftware/kryo/util/CuckooObjectMap$Entries;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_11')">
+CuckooObjectMap&lt;K,V&gt;.findKey&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>value</span></span>, <span>boolean <span class='color_p'>identity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;K</span></span>
+<br/>
+<div id="c_11" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.findKey:(Ljava/lang/Object;Z)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_12')">
+CuckooObjectMap&lt;K,V&gt;.get&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_12" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.get:(Ljava/lang/Object;)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_13')">
+CuckooObjectMap&lt;K,V&gt;.get&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>V <span class='color_p'>defaultValue</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_13" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.get:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_14')">
+CuckooObjectMap&lt;K,V&gt;.keys&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;CuckooObjectMap.Keys&lt;K&gt;</span></span>
+<br/>
+<div id="c_14" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.keys:()Lcom/esotericsoftware/kryo/util/CuckooObjectMap$Keys;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_15')">
+CuckooObjectMap&lt;K,V&gt;.nextPowerOfTwo&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>value</span></span>&#160;)</span> <span class='attr'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_15" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.nextPowerOfTwo:(I)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_16')">
+CuckooObjectMap&lt;K,V&gt;.put&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>V <span class='color_p'>value</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_16" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_17')">
+CuckooObjectMap&lt;K,V&gt;.putAll&#160;<span class='sym_p'><span>(&#160;CuckooObjectMap&lt;K,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_17" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.putAll:(Lcom/esotericsoftware/kryo/util/CuckooObjectMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_18')">
+CuckooObjectMap&lt;K,V&gt;.remove&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_18" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.remove:(Ljava/lang/Object;)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_19')">
+CuckooObjectMap&lt;K,V&gt;.shrink&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>maximumCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_19" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.shrink:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_20')">
+CuckooObjectMap&lt;K,V&gt;.toString&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_20" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.toString:()Ljava/lang/String;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_21')">
+CuckooObjectMap&lt;K,V&gt;.values&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;CuckooObjectMap.Values&lt;V&gt;</span></span>
+<br/>
+<div id="c_21" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.values:()Lcom/esotericsoftware/kryo/util/CuckooObjectMap$Values;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC9.jar</span>, <span class='cname'>Entries.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_22')">
+CuckooObjectMap.Entries&lt;K,V&gt;.CuckooObjectMap.Entries&#160;<span class='sym_p'><span>(&#160;CuckooObjectMap&lt;K,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_22" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap.Entries:(Lcom/esotericsoftware/kryo/util/CuckooObjectMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_23')">
+CuckooObjectMap.Entries&lt;K,V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_23" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_24')">
+CuckooObjectMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;CuckooObjectMap.Entry&lt;K,V&gt;&gt;</span></span>
+<br/>
+<div id="c_24" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_25')">
+CuckooObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;CuckooObjectMap.Entry&lt;K,V&gt;</span></span>
+<br/>
+<div id="c_25" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.next:()Lcom/esotericsoftware/kryo/util/CuckooObjectMap$Entry;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_26')">
+CuckooObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_26" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_27')">
+CuckooObjectMap.Entries&lt;K,V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_27" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_28')">
+CuckooObjectMap.Entries&lt;K,V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_28" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.reset:()V</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC9.jar</span>, <span class='cname'>Entry.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_29')">
+CuckooObjectMap.Entry&lt;K,V&gt;.CuckooObjectMap.Entry&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_29" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entry&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap.Entry:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_30')">
+CuckooObjectMap.Entry&lt;K,V&gt;.toString&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_30" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entry&lt;K,V&gt;.toString:()Ljava/lang/String;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC9.jar</span>, <span class='cname'>Keys.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_31')">
+CuckooObjectMap.Keys&lt;K&gt;.CuckooObjectMap.Keys&#160;<span class='sym_p'><span>(&#160;CuckooObjectMap&lt;K,?&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_31" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap.Keys:(Lcom/esotericsoftware/kryo/util/CuckooObjectMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_32')">
+CuckooObjectMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_32" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_33')">
+CuckooObjectMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;K&gt;</span></span>
+<br/>
+<div id="c_33" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_34')">
+CuckooObjectMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;K</span></span>
+<br/>
+<div id="c_34" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_35')">
+CuckooObjectMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_35" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_36')">
+CuckooObjectMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_36" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_37')">
+CuckooObjectMap.Keys&lt;K&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;K&gt;</span></span>
+<br/>
+<div id="c_37" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC9.jar</span>, <span class='cname'>Values.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_38')">
+CuckooObjectMap.Values&lt;V&gt;.CuckooObjectMap.Values&#160;<span class='sym_p'><span>(&#160;CuckooObjectMap&lt;?,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_38" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap.Values:(Lcom/esotericsoftware/kryo/util/CuckooObjectMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_39')">
+CuckooObjectMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_39" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_40')">
+CuckooObjectMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;V&gt;</span></span>
+<br/>
+<div id="c_40" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_41')">
+CuckooObjectMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_41" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_42')">
+CuckooObjectMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_42" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_43')">
+CuckooObjectMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_43" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_44')">
+CuckooObjectMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_44" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_45')">
+CuckooObjectMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'><span>(&#160;ArrayList&lt;V&gt; <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_45" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.toArray:(Ljava/util/ArrayList;)V</span><br/><br/></div>
+
+<br/>
+<a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='High_Risk_Binary_Problems'></a><a name='Type_Binary_Problems_High'></a>
+<h2>Problems with Data Types, High Severity <span class='failed'>&nbsp;2&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC8.jar</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="sC(this, 'c_46')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> Kryo <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_46" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Removed super-interface <b>util.Pool.Poolable</b>.</td>
+<td>A client program may be interrupted by <b>NoSuchMethodError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_47')">
+[+] affected methods: 453 (30.4%)</span>
+<div id="c_47" style="display:none;">
+<div class='affected'><span class='iname_a'>ClassResolver.setKryo&#160;<span class='sym_p'><span>(&#160;Kryo <span class='focus_p'>p1</span></span>&#160;)</span></span><br/><div class='affect'>1st parameter 'p1'  of this abstract method is of type 'Kryo'.</div>
+<span class='iname_a'>io.KryoObjectInput.KryoObjectInput&#160;<span class='sym_p'><span>(&#160;Kryo <span class='focus_p'>kryo</span></span>, <span>Input <i>input</i></span>&#160;)</span></span><br/><div class='affect'>1st parameter 'kryo'  of this method is of type 'Kryo'.</div>
+<span class='iname_a'>io.KryoObjectOutput.KryoObjectOutput&#160;<span class='sym_p'><span>(&#160;Kryo <span class='focus_p'>kryo</span></span>, <span>Output <i>output</i></span>&#160;)</span></span><br/><div class='affect'>1st parameter 'kryo'  of this method is of type 'Kryo'.</div>
+<span class='iname_a'>Kryo.Kryo&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.Kryo&#160;<span class='sym_p'><span>(&#160;ClassResolver <i>classResolver</i></span>, <span>ReferenceResolver <i>referenceResolver</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.Kryo&#160;<span class='sym_p'><span>(&#160;ReferenceResolver <i>referenceResolver</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.addDefaultSerializer&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>, <span>Serializer <i>serializer</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.addDefaultSerializer&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>, <span>SerializerFactory <i>serializerFactory</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.addDefaultSerializer&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>, <span>Class&lt;?&gt; <i>serializerClass</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.copy&#160;<span class='sym_p'><span>(&#160;T <i>object</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'Kryo' class.</div>
+ <b>...</b>
+<br/>
+</div></div>
+<br/><br/></div>
+
+<br/><span class='jar'>kryo-5.0.0-RC8.jar</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_48')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> DefaultClassResolver <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_48" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Type of field <b>classToRegistration</b> has been changed from <b>ObjectMap&lt;java.lang.Class,com.esotericsoftware.kryo.Registration&gt;</b> to <b>CuckooObjectMap&lt;java.lang.Class,com.esotericsoftware.kryo.Registration&gt;</b>.</td>
+<td>A client program may be interrupted by <b>NoSuchFieldError</b> exception.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_49')">
+[+] affected methods: 13 (0.9%)</span>
+<div id="c_49" style="display:none;">
+<div class='affected'><span class='iname_a'>DefaultClassResolver.DefaultClassResolver&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.getRegistration&#160;<span class='sym_p'><span>(&#160;int <i>classID</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.getRegistration&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.getTypeByName&#160;<span class='sym_p'><span>(&#160;String <i>className</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.readClass&#160;<span class='sym_p'><span>(&#160;Input <i>input</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.readName&#160;<span class='sym_p'><span>(&#160;Input <i>input</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.register&#160;<span class='sym_p'><span>(&#160;Registration <i>registration</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.registerImplicit&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.setKryo&#160;<span class='sym_p'><span>(&#160;Kryo <i>kryo</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+ <b>...</b>
+<br/>
+</div></div>
+<br/><br/></div>
+
+<br/><a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='Checked_Archives'></a><h2>Java Archives <span class='gray'>&nbsp;1&nbsp;</span></h2>
+<hr/><div class='jar_list'>
+kryo-5.0.0-RC8.jar<br/>
+</div><br/><a class='top_ref' href='#Top'>to the top</a><br/>
+<br/><br/><br/></div><div id='SourceTab' class='tab'>
+<h2>Test Info</h2><hr/>
+<table class='summary'>
+<tr><th>Library Name</th><td>kryo</td></tr>
+<tr><th>Version #1</th><td>5.0.0-RC8</td></tr>
+<tr><th>Version #2</th><td>5.0.0-RC9</td></tr>
+<tr><th>Subject</th><td width='150px'>Source Compatibility</td></tr>
+</table>
+<h2>Test Results</h2><hr/>
+<table class='summary'>
+<tr><th>Total JARs</th><td><a href='#Checked_Archives' style='color:Blue;'>1</a></td></tr>
+<tr><th>Total Methods / Classes</th><td>1491 / 167</td></tr>
+<tr><th>Compatibility</th>
+<td class='incompatible'>68.7%</td>
+</tr>
+</table>
+<h2>Problem Summary</h2><hr/>
+<table class='summary'>
+<tr><th></th><th style='text-align:center;'>Severity</th><th style='text-align:center;'>Count</th></tr>
+<tr><th>Added Methods</th><td>-</td><td class='new'><a href='#Source_Added' style='color:Blue;'>45</a></td></tr>
+<tr><th>Removed Methods</th><td>High</td><td>0</td></tr>
+<tr><th rowspan='3'>Problems with<br/>Data Types</th><td>High</td><td class='failed'><a href='#Type_Source_Problems_High' style='color:Blue;'>2</a></td></tr>
+<tr><td>Medium</td><td>0</td></tr>
+<tr><td>Low</td><td>0</td></tr>
+<tr><th rowspan='3'>Problems with<br/>Methods</th><td>High</td><td>0</td></tr>
+<tr><td>Medium</td><td>0</td></tr>
+<tr><td>Low</td><td>0</td></tr>
+</table>
+
+<a name='Source_Added'></a><h2>Added Methods <span class='new'>&nbsp;45&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC9.jar</span>, <span class='cname'>CuckooObjectMap.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_50')">
+CuckooObjectMap&lt;K,V&gt;.clear&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_50" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.clear:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_51')">
+CuckooObjectMap&lt;K,V&gt;.clear&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>maximumCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_51" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.clear:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_52')">
+CuckooObjectMap&lt;K,V&gt;.CuckooObjectMap&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_52" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_53')">
+CuckooObjectMap&lt;K,V&gt;.CuckooObjectMap&#160;<span class='sym_p'><span>(&#160;CuckooObjectMap&lt;?,?&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_53" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap:(Lcom/esotericsoftware/kryo/util/CuckooObjectMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_54')">
+CuckooObjectMap&lt;K,V&gt;.CuckooObjectMap&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>initialCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_54" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_55')">
+CuckooObjectMap&lt;K,V&gt;.CuckooObjectMap&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>initialCapacity</span></span>, <span>float <span class='color_p'>loadFactor</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_55" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap:(IF)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_56')">
+CuckooObjectMap&lt;K,V&gt;.containsKey&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_56" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.containsKey:(Ljava/lang/Object;)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_57')">
+CuckooObjectMap&lt;K,V&gt;.containsValue&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>value</span></span>, <span>boolean <span class='color_p'>identity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_57" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.containsValue:(Ljava/lang/Object;Z)Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_58')">
+CuckooObjectMap&lt;K,V&gt;.ensureCapacity&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>additionalCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_58" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.ensureCapacity:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_59')">
+CuckooObjectMap&lt;K,V&gt;.entries&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;CuckooObjectMap.Entries&lt;K,V&gt;</span></span>
+<br/>
+<div id="c_59" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.entries:()Lcom/esotericsoftware/kryo/util/CuckooObjectMap$Entries;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_60')">
+CuckooObjectMap&lt;K,V&gt;.findKey&#160;<span class='sym_p'><span>(&#160;Object <span class='color_p'>value</span></span>, <span>boolean <span class='color_p'>identity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;K</span></span>
+<br/>
+<div id="c_60" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.findKey:(Ljava/lang/Object;Z)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_61')">
+CuckooObjectMap&lt;K,V&gt;.get&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_61" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.get:(Ljava/lang/Object;)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_62')">
+CuckooObjectMap&lt;K,V&gt;.get&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>V <span class='color_p'>defaultValue</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_62" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.get:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_63')">
+CuckooObjectMap&lt;K,V&gt;.keys&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;CuckooObjectMap.Keys&lt;K&gt;</span></span>
+<br/>
+<div id="c_63" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.keys:()Lcom/esotericsoftware/kryo/util/CuckooObjectMap$Keys;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_64')">
+CuckooObjectMap&lt;K,V&gt;.nextPowerOfTwo&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>value</span></span>&#160;)</span> <span class='attr'>[static]</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;int</span></span>
+<br/>
+<div id="c_64" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.nextPowerOfTwo:(I)I</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_65')">
+CuckooObjectMap&lt;K,V&gt;.put&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>, <span>V <span class='color_p'>value</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_65" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_66')">
+CuckooObjectMap&lt;K,V&gt;.putAll&#160;<span class='sym_p'><span>(&#160;CuckooObjectMap&lt;K,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_66" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.putAll:(Lcom/esotericsoftware/kryo/util/CuckooObjectMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_67')">
+CuckooObjectMap&lt;K,V&gt;.remove&#160;<span class='sym_p'><span>(&#160;K <span class='color_p'>key</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_67" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.remove:(Ljava/lang/Object;)Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_68')">
+CuckooObjectMap&lt;K,V&gt;.shrink&#160;<span class='sym_p'><span>(&#160;int <span class='color_p'>maximumCapacity</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_68" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.shrink:(I)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_69')">
+CuckooObjectMap&lt;K,V&gt;.toString&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_69" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.toString:()Ljava/lang/String;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_70')">
+CuckooObjectMap&lt;K,V&gt;.values&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;CuckooObjectMap.Values&lt;V&gt;</span></span>
+<br/>
+<div id="c_70" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap&lt;K,V&gt;.values:()Lcom/esotericsoftware/kryo/util/CuckooObjectMap$Values;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC9.jar</span>, <span class='cname'>Entries.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_71')">
+CuckooObjectMap.Entries&lt;K,V&gt;.CuckooObjectMap.Entries&#160;<span class='sym_p'><span>(&#160;CuckooObjectMap&lt;K,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_71" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap.Entries:(Lcom/esotericsoftware/kryo/util/CuckooObjectMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_72')">
+CuckooObjectMap.Entries&lt;K,V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_72" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_73')">
+CuckooObjectMap.Entries&lt;K,V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;CuckooObjectMap.Entry&lt;K,V&gt;&gt;</span></span>
+<br/>
+<div id="c_73" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_74')">
+CuckooObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;CuckooObjectMap.Entry&lt;K,V&gt;</span></span>
+<br/>
+<div id="c_74" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.next:()Lcom/esotericsoftware/kryo/util/CuckooObjectMap$Entry;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_75')">
+CuckooObjectMap.Entries&lt;K,V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Object</span></span>
+<br/>
+<div id="c_75" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_76')">
+CuckooObjectMap.Entries&lt;K,V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_76" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_77')">
+CuckooObjectMap.Entries&lt;K,V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_77" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entries&lt;K,V&gt;.reset:()V</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC9.jar</span>, <span class='cname'>Entry.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_78')">
+CuckooObjectMap.Entry&lt;K,V&gt;.CuckooObjectMap.Entry&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_78" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entry&lt;K,V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap.Entry:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_79')">
+CuckooObjectMap.Entry&lt;K,V&gt;.toString&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;String</span></span>
+<br/>
+<div id="c_79" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Entry&lt;K,V&gt;.toString:()Ljava/lang/String;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC9.jar</span>, <span class='cname'>Keys.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_80')">
+CuckooObjectMap.Keys&lt;K&gt;.CuckooObjectMap.Keys&#160;<span class='sym_p'><span>(&#160;CuckooObjectMap&lt;K,?&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_80" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap.Keys:(Lcom/esotericsoftware/kryo/util/CuckooObjectMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_81')">
+CuckooObjectMap.Keys&lt;K&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_81" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_82')">
+CuckooObjectMap.Keys&lt;K&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;K&gt;</span></span>
+<br/>
+<div id="c_82" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_83')">
+CuckooObjectMap.Keys&lt;K&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;K</span></span>
+<br/>
+<div id="c_83" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_84')">
+CuckooObjectMap.Keys&lt;K&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_84" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_85')">
+CuckooObjectMap.Keys&lt;K&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_85" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_86')">
+CuckooObjectMap.Keys&lt;K&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;K&gt;</span></span>
+<br/>
+<div id="c_86" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Keys&lt;K&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<br/>
+<span class='jar'>kryo-5.0.0-RC9.jar</span>, <span class='cname'>Values.class</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_87')">
+CuckooObjectMap.Values&lt;V&gt;.CuckooObjectMap.Values&#160;<span class='sym_p'><span>(&#160;CuckooObjectMap&lt;?,V&gt; <span class='color_p'>map</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;public</span></span>
+<br/>
+<div id="c_87" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.com.esotericsoftware.kryo.util.CuckooObjectMap.Values:(Lcom/esotericsoftware/kryo/util/CuckooObjectMap;)V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_88')">
+CuckooObjectMap.Values&lt;V&gt;.hasNext&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;boolean</span></span>
+<br/>
+<div id="c_88" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.hasNext:()Z</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_89')">
+CuckooObjectMap.Values&lt;V&gt;.iterator&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;Iterator&lt;V&gt;</span></span>
+<br/>
+<div id="c_89" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.iterator:()Ljava/util/Iterator;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_90')">
+CuckooObjectMap.Values&lt;V&gt;.next&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;V</span></span>
+<br/>
+<div id="c_90" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.next:()Ljava/lang/Object;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_91')">
+CuckooObjectMap.Values&lt;V&gt;.remove&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_91" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.remove:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_92')">
+CuckooObjectMap.Values&lt;V&gt;.reset&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_92" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.reset:()V</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_93')">
+CuckooObjectMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'>(&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;ArrayList&lt;V&gt;</span></span>
+<br/>
+<div id="c_93" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.toArray:()Ljava/util/ArrayList;</span><br/><br/></div>
+
+<span class="section" onclick="sC(this, 'c_94')">
+CuckooObjectMap.Values&lt;V&gt;.toArray&#160;<span class='sym_p'><span>(&#160;ArrayList&lt;V&gt; <span class='color_p'>array</span></span>&#160;)</span><span class='sym_p nowrap'> &#160;<b>:</b>&#160;&#160;void</span></span>
+<br/>
+<div id="c_94" style="display:none;">
+<span class='mngl'>com/esotericsoftware/kryo/util/CuckooObjectMap.Values&lt;V&gt;.toArray:(Ljava/util/ArrayList;)V</span><br/><br/></div>
+
+<br/>
+<a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='High_Risk_Source_Problems'></a><a name='Type_Source_Problems_High'></a>
+<h2>Problems with Data Types, High Severity <span class='failed'>&nbsp;2&nbsp;</span></h2><hr/>
+<span class='jar'>kryo-5.0.0-RC8.jar</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo</span><br/>
+<span class="section" onclick="sC(this, 'c_95')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> Kryo <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_95" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Removed super-interface <b>util.Pool.Poolable</b>.</td>
+<td>Recompilation of a client program may be terminated with the message: cannot find method in class <b>Kryo</b>.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_96')">
+[+] affected methods: 453 (30.4%)</span>
+<div id="c_96" style="display:none;">
+<div class='affected'><span class='iname_a'>ClassResolver.setKryo&#160;<span class='sym_p'><span>(&#160;Kryo <span class='focus_p'>p1</span></span>&#160;)</span></span><br/><div class='affect'>1st parameter 'p1'  of this abstract method is of type 'Kryo'.</div>
+<span class='iname_a'>io.KryoObjectInput.KryoObjectInput&#160;<span class='sym_p'><span>(&#160;Kryo <span class='focus_p'>kryo</span></span>, <span>Input <i>input</i></span>&#160;)</span></span><br/><div class='affect'>1st parameter 'kryo'  of this method is of type 'Kryo'.</div>
+<span class='iname_a'>io.KryoObjectOutput.KryoObjectOutput&#160;<span class='sym_p'><span>(&#160;Kryo <span class='focus_p'>kryo</span></span>, <span>Output <i>output</i></span>&#160;)</span></span><br/><div class='affect'>1st parameter 'kryo'  of this method is of type 'Kryo'.</div>
+<span class='iname_a'>Kryo.Kryo&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.Kryo&#160;<span class='sym_p'><span>(&#160;ClassResolver <i>classResolver</i></span>, <span>ReferenceResolver <i>referenceResolver</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.Kryo&#160;<span class='sym_p'><span>(&#160;ReferenceResolver <i>referenceResolver</i></span>&#160;)</span></span><br/><div class='affect'>This constructor is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.addDefaultSerializer&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>, <span>Serializer <i>serializer</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.addDefaultSerializer&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>, <span>SerializerFactory <i>serializerFactory</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.addDefaultSerializer&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>, <span>Class&lt;?&gt; <i>serializerClass</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'Kryo' class.</div>
+<span class='iname_a'>Kryo.copy&#160;<span class='sym_p'><span>(&#160;T <i>object</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'Kryo' class.</div>
+ <b>...</b>
+<br/>
+</div></div>
+<br/><br/></div>
+
+<br/><span class='jar'>kryo-5.0.0-RC8.jar</span><br/>
+<span class='pkg_t'>package</span> <span class='pkg'>com.esotericsoftware.kryo.util</span><br/>
+<span class="section" onclick="sC(this, 'c_97')">
+<span class='ext'>[+]</span> <span class='ttype'>class</span> DefaultClassResolver <span class='failed'>&nbsp;1&nbsp;</span></span>
+<br/>
+<div id="c_97" style="display:none;">
+<table class='ptable'><tr><th width='2%'></th><th width='47%'>Change</th><th>Effect</th></tr><tr>
+<th>1</th>
+<td>Type of field <b>classToRegistration</b> has been changed from <b>ObjectMap&lt;java.lang.Class,com.esotericsoftware.kryo.Registration&gt;</b> to <b>CuckooObjectMap&lt;java.lang.Class,com.esotericsoftware.kryo.Registration&gt;</b>.</td>
+<td>Recompilation of a client program may be terminated with the message: incompatible types, found: <b>ObjectMap&lt;java.lang.Class,com.esotericsoftware.kryo.Registration&gt;</b>, required: <b>CuckooObjectMap&lt;java.lang.Class,com.esotericsoftware.kryo.Registration&gt;</b>.</td>
+</tr>
+</table><span class="sect_aff" onclick="sC(this, 'c_98')">
+[+] affected methods: 13 (0.9%)</span>
+<div id="c_98" style="display:none;">
+<div class='affected'><span class='iname_a'>DefaultClassResolver.DefaultClassResolver&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This constructor is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.getRegistration&#160;<span class='sym_p'><span>(&#160;int <i>classID</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.getRegistration&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.getTypeByName&#160;<span class='sym_p'><span>(&#160;String <i>className</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.readClass&#160;<span class='sym_p'><span>(&#160;Input <i>input</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.readName&#160;<span class='sym_p'><span>(&#160;Input <i>input</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.register&#160;<span class='sym_p'><span>(&#160;Registration <i>registration</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.registerImplicit&#160;<span class='sym_p'><span>(&#160;Class <i>type</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.reset&#160;<span class='sym_p'>(&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+<span class='iname_a'>DefaultClassResolver.setKryo&#160;<span class='sym_p'><span>(&#160;Kryo <i>kryo</i></span>&#160;)</span></span><br/><div class='affect'>This method is from 'DefaultClassResolver' class.</div>
+ <b>...</b>
+<br/>
+</div></div>
+<br/><br/></div>
+
+<br/><a class='top_ref' href='#Top'>to the top</a><br/>
+<a name='Checked_Archives'></a><h2>Java Archives <span class='gray'>&nbsp;1&nbsp;</span></h2>
+<hr/><div class='jar_list'>
+kryo-5.0.0-RC8.jar<br/>
+</div><br/><a class='top_ref' href='#Top'>to the top</a><br/>
+<br/><br/><br/></div><hr/><div class='footer' align='right'><i>Generated by <a href='https://github.com/lvc/japi-compliance-checker'>Java API Compliance Checker</a> 2.1 &#160;</i></div><br/>
+</body></html>
