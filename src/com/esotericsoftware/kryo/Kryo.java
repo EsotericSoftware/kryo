@@ -92,7 +92,6 @@ import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.NoGenerics;
 import com.esotericsoftware.kryo.util.ObjectMap;
-import com.esotericsoftware.kryo.util.Pool.Poolable;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.reflect.InvocationHandler;
@@ -126,7 +125,7 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** Maps classes to serializers so object graphs can be serialized automatically.
  * @author Nathan Sweet */
-public class Kryo implements Poolable {
+public class Kryo {
 	public static final byte NULL = 0;
 	public static final byte NOT_NULL = 1;
 
@@ -875,7 +874,6 @@ public class Kryo implements Poolable {
 	 * {@link #getOriginalToCopyMap() original to copy map}, and the {@link #getGraphContext() graph context}. If
 	 * {@link #setAutoReset(boolean) auto reset} is true, this method is called automatically when an object graph has been
 	 * completely serialized or deserialized. If overridden, the super method must be called. */
-	@Override
 	public void reset () {
 		depth = 0;
 		if (graphContext != null) graphContext.clear(2048);
