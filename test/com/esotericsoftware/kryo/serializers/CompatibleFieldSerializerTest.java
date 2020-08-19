@@ -24,17 +24,28 @@ import static org.junit.Assert.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import org.apache.commons.lang.builder.EqualsBuilder;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.objenesis.strategy.SerializingInstantiatorStrategy;
 
 /** @author Nathan Sweet */
 public class CompatibleFieldSerializerTest extends KryoTestCase {
@@ -640,6 +651,119 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		@Override
 		public int hashCode () {
 			return Objects.hash(value, list, serializable);
+		}
+	}
+	// #699 check ExtendedFieldName for CompatibleFieldSerializer
+	static public class ExtendedFieldNamesTest {
+		@Test(expected = IllegalArgumentException.class)
+		public void setExtendedFieldNamesDefault() throws IOException {
+			final Child child = new Child();
+			child.setCustomNote(true);
+			child.setCid(3);
+			Kryo kryo = getKryo(false);
+			final File outputFile = File.createTempFile("temp_output", "dat");
+			try (final Output output = new Output(new FileOutputStream(outputFile))) {
+				kryo.writeObject(output, child);
+			}
+		}
+
+		@Test
+		public void setExtendedFieldNamesIsTrue() throws IOException {
+			final Child child = new Child();
+			child.setCustomNote(true);
+			child.setCid(3);
+			Kryo kryo = getKryo(true);
+			final File outputFile = File.createTempFile("temp_output", "dat");
+			try (final Output output = new Output(new FileOutputStream(outputFile))) {
+				kryo.writeObject(output, child);
+				final Input input = new Input(new FileInputStream(outputFile));
+				final Child restoreChild = kryo.readObject(input, Child.class);
+				Assert.assertEquals(true, restoreChild.customNote);
+				input.close();
+			}
+		}
+
+		private Kryo getKryo(Boolean isSetExtendedFieldNames) {
+			final Kryo kryo = new Kryo();
+			kryo.setDefaultSerializer(new SerializerFactory.BaseSerializerFactory() {
+				@Override
+				public Serializer newSerializer(Kryo kryo, Class type) {
+					final CompatibleFieldSerializer.CompatibleFieldSerializerConfig config =
+							new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+					config.setChunkedEncoding(true);
+					config.setReadUnknownFieldData(true);
+					if (isSetExtendedFieldNames)
+						config.setExtendedFieldNames(true);
+					final CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, type, config);
+					return serializer;
+				}
+			});
+			kryo.setRegistrationRequired(false);
+			kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new SerializingInstantiatorStrategy()));
+			return kryo;
+		}
+
+		private class Child extends Father {
+			private Integer cid = 1;
+			private Boolean customNote = true;
+
+			public void setCid(Integer cid) {
+				this.cid = cid;
+			}
+
+			public int getCid() {
+				return this.cid;
+			}
+
+			public void setCustomNote(Boolean customNote) {
+				this.customNote = customNote;
+			}
+
+			public Boolean getCustomNote() {
+				return this.customNote;
+			}
+		}
+
+		private class Father extends Grandpa {
+			private Integer fid = 1;
+			private String name = "Alan";
+
+			public void setFid(Integer fid) {
+				this.fid = fid;
+			}
+
+			public int getFid() {
+				return this.fid;
+			}
+
+			public void setName(String name) {
+				this.name = name;
+			}
+
+			public String getName() {
+				return this.name;
+			}
+		}
+
+		private class Grandpa implements Serializable {
+			private Integer gid = 1;
+			private Boolean customNote = false;
+
+			public void setGid(Integer gid) {
+				this.gid = gid;
+			}
+
+			public int getGid() {
+				return this.gid;
+			}
+
+			public void setCustomNote(Boolean customNote) {
+				this.customNote = customNote;
+			}
+
+			public Boolean getCustomNote() {
+				return this.customNote;
+			}
 		}
 	}
 }

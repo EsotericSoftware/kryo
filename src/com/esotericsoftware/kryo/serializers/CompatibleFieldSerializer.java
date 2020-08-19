@@ -31,6 +31,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
+import java.util.ArrayList;
 
 /** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
  * added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported.
@@ -64,11 +65,18 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 		CachedField[] fields = cachedFields.fields;
 		ObjectMap context = kryo.getGraphContext();
+		ArrayList fieldsList = new ArrayList();
 		if (!context.containsKey(this)) {
 			if (TRACE) trace("kryo", "Write fields for class: " + type.getName());
 			context.put(this, null);
 			output.writeVarInt(fields.length, true);
 			for (int i = 0, n = fields.length; i < n; i++) {
+				fieldsList.add(fields[i].name);
+				if (i + 1 < n) {
+					if (fieldsList.contains(fields[i+1].name))
+						throw new IllegalArgumentException(fields[i].field.getDeclaringClass() +
+								" has the same field as the super class, config.ExtendedFieldNames must be true");
+				}
 				if (TRACE) trace("kryo", "Write field name: " + fields[i].name + pos(output.position()));
 				output.writeString(fields[i].name);
 			}
