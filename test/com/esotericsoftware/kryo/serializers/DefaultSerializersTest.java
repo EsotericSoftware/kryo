@@ -445,6 +445,21 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
+	public void testArraysAsListDeepCopy () throws Exception {
+		kryo.register(Arrays.asList().getClass());
+		kryo.register(Date.class);
+
+		List<Date> list = Arrays.asList(new Date(-1234567));
+		List<Date> copiedList = kryo.copy(list);
+
+		assertEquals("List copy should equal the original list", list, copiedList);
+		assertNotSame("List copy should be a different instance", list, copiedList);
+		assertEquals("Class of list copy should be the same as produced by Arrays.asList", copiedList.getClass(), list.getClass());
+		assertEquals("List copy content should equal the original list content", list.get(0), copiedList.get(0));
+		assertNotSame("List copy content should be a different instance", list.get(0), copiedList.get(0));
+	}
+
+	@Test
 	public void testURLSerializer () throws Exception {
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.register(URL.class);
