@@ -34,6 +34,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Test;
+import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 public class FieldSerializerGenericsTest extends KryoTestCase {
@@ -276,5 +277,14 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 		public boolean equals (Object obj) {
 			return EqualsBuilder.reflectionEquals(this, obj);
 		}
+	}
+
+	@Test
+	public void testDefaultInstantiatorStrategy(){
+		final DefaultInstantiatorStrategy defaultInstantiatorStrategy = new DefaultInstantiatorStrategy();
+		defaultInstantiatorStrategy.setFallbackInstantiatorStrategy(new StdInstantiatorStrategy());
+		final InstantiatorStrategy fallback = defaultInstantiatorStrategy.getFallbackInstantiatorStrategy();
+		kryo.setInstantiatorStrategy(fallback);
+		doAssertEquals(fallback,kryo.getInstantiatorStrategy());
 	}
 }

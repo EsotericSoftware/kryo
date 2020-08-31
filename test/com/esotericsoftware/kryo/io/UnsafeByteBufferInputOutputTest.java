@@ -55,6 +55,9 @@ public class UnsafeByteBufferInputOutputTest {
 			inputBuffer = new UnsafeByteBufferInput(outputBuffer.getByteBuffer());
 			inputBuffer.readInt();
 
+			final UnsafeByteBufferInput unsafeByteBufferInput = new UnsafeByteBufferInput(bufAddress, 4096);
+			unsafeByteBufferInput.read();
+
 			UnsafeUtil.dispose(inputBuffer.getByteBuffer());
 			UnsafeUtil.dispose(outputBuffer.getByteBuffer());
 		} catch (Throwable t) {
@@ -91,6 +94,15 @@ public class UnsafeByteBufferInputOutputTest {
 			61, 62, 63, 64, 65};
 		ByteArrayInputStream buffer = new ByteArrayInputStream(bytes);
 		Input input = new UnsafeByteBufferInput(buffer, 2);
+		final Input input1 = new UnsafeByteBufferInput(bytes, 2, 100);
+		final Input input2 = new UnsafeByteBufferInput(buffer);
+		final Input input3 = new UnsafeByteBufferInput(1024);
+		input3.read(bytes);
+		runTestInputStream(input, bytes);
+		runTestInputStream(input1, bytes);
+	}
+
+	static void runTestInputStream(Input input, byte[] bytes) {
 		byte[] temp = new byte[1024];
 		int count = input.read(temp, 512, bytes.length);
 		assertEquals(bytes.length, count);
@@ -125,6 +137,8 @@ public class UnsafeByteBufferInputOutputTest {
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
 			61, 62, 63, 64, 65}, buffer.toBytes());
+		buffer.dispose();
+		assertEquals(null, buffer.getByteBuffer());
 	}
 
 	@Test

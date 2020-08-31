@@ -24,6 +24,7 @@ import static org.junit.Assert.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 
 import java.io.Serializable;
@@ -43,6 +44,19 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Rule public ExpectedException exceptionRule = ExpectedException.none();
+
+	@Test
+    public void testCompatibleFieldSerializerFactoryBuild() {
+        final SerializerFactory.CompatibleFieldSerializerFactory factory = new SerializerFactory.CompatibleFieldSerializerFactory();
+        factory.getConfig().setFieldsCanBeNull(false);
+        factory.getConfig().setFieldsAsAccessible(false);
+        factory.getConfig().setChunkedEncoding(true);
+        final SerializerFactory.CompatibleFieldSerializerFactory factoryBuild = new SerializerFactory.CompatibleFieldSerializerFactory(factory.getConfig());
+        final Boolean chunkedEncoding = factoryBuild.getConfig().getChunkedEncoding();
+        assertEquals(factory.getConfig().fieldsCanBeNull, factoryBuild.getConfig().fieldsCanBeNull);
+        assertEquals(factory.getConfig().getSetFieldsAsAccessible(), factoryBuild.getConfig().getSetFieldsAsAccessible());
+        assertEquals(true, chunkedEncoding);
+	}
 
 	@Test
 	public void testCompatibleFieldSerializer () {
@@ -259,6 +273,10 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 		serializer.getField("primitive").setValueClass(Long.class);
 		serializer.getField("wrapper").setValueClass(long.class);
+		final Class a = serializer.getField("primitive").getValueClass();
+		final Class b = serializer.getField("wrapper").getValueClass();
+		assertEquals(a, Long.class);
+		assertEquals(b, long.class);
 
 		ClassWithPrimitiveAndWrapper o = (ClassWithPrimitiveAndWrapper)kryo.readClassAndObject(input);
 		assertEquals(1, o.primitive);
@@ -428,12 +446,17 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		// this test would fail with DEFAULT field name strategy
 		serializer.getCompatibleFieldSerializerConfig().setExtendedFieldNames(true);
+		serializer.getCompatibleFieldSerializerConfig().setChunkSize(1024);
 		serializer.updateFields();
 		kryo.register(ExtendedTestClass.class, serializer);
 
 		ExtendedTestClass extendedObject = new ExtendedTestClass();
 		roundTrip(length, extendedObject);
-
+		final Boolean chunkedEncoding = serializer.getCompatibleFieldSerializerConfig().getChunkedEncoding();
+		final Boolean readUnknownTagData = serializer.getCompatibleFieldSerializerConfig().getReadUnknownTagData();
+		final int chunkSize = serializer.getCompatibleFieldSerializerConfig().getChunkSize();
+		assertEquals(1024,serializer.getCompatibleFieldSerializerConfig().chunkSize);
+		assertEquals(chunked,chunkedEncoding);
 		ExtendedTestClass object2 = (ExtendedTestClass)kryo.readClassAndObject(input);
 		assertEquals(extendedObject, object2);
 	}

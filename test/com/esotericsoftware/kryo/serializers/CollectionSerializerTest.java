@@ -23,6 +23,7 @@ import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializerTest.KeyComparator;
 import com.esotericsoftware.kryo.serializers.MapSerializerTest.KeyThatIsntComparable;
@@ -101,6 +102,8 @@ public class CollectionSerializerTest extends KryoTestCase {
 		set.add(34);
 		set.add(45);
 		roundTrip(9, set);
+
+		final Serializer testGetElementSerializer = serializer.getElementSerializer();
 	}
 
 	@Test

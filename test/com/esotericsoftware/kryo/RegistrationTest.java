@@ -41,6 +41,15 @@ public class RegistrationTest {
 	}
 
 	@Test
+	public void testDefaultSerializerBuild () {
+		final Kryo kryo = new Kryo();
+		kryo.addDefaultSerializer(Fruit.class, new SerializerFactory.FieldSerializerFactory());
+		final FieldSerializer appleSerializer = new FieldSerializer(kryo, Apple.class);
+		kryo.addDefaultSerializer(Apple.class, appleSerializer);
+		assertSame(appleSerializer, kryo.getDefaultSerializer(Apple.class));
+	}
+
+	@Test
 	public void testReplaceRegistration () throws IOException {
 		Kryo kryo = new Kryo();
 		kryo.register(double[].class, 7); // Replace long with double[].

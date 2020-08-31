@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 
 import org.junit.Test;
@@ -29,6 +30,17 @@ import org.junit.Test;
 public class VersionedFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
+	}
+
+	@Test
+	public void testVersionFieldSerializerFactoryBuild() {
+		final SerializerFactory.VersionFieldSerializerFactory factory = new SerializerFactory.VersionFieldSerializerFactory();
+		factory.getConfig().setFieldsCanBeNull(false);
+		factory.getConfig().setFieldsAsAccessible(false);
+		final SerializerFactory.VersionFieldSerializerFactory factoryBuild = new SerializerFactory.VersionFieldSerializerFactory(factory.getConfig());
+
+		assertEquals(factory.getConfig().fieldsCanBeNull,factoryBuild.getConfig().fieldsCanBeNull);
+		assertEquals(factory.getConfig().getSetFieldsAsAccessible(),factoryBuild.getConfig().getSetFieldsAsAccessible());
 	}
 
 	@Test
@@ -51,6 +63,9 @@ public class VersionedFieldSerializerTest extends KryoTestCase {
 
 		assertEquals(object2.moo, object1.moo);
 		assertEquals(object2.other.value, object1.other.value);
+        serializer.getVersionFieldSerializerConfig().setCompatible(true);
+        final Boolean compatible = serializer.getVersionFieldSerializerConfig().getCompatible();
+        assertEquals(true, compatible);
 	}
 
 	public static class TestClass {

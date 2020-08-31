@@ -23,6 +23,7 @@ import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -69,6 +70,12 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(14, map);
 		serializer.setValuesCanBeNull(false);
 		roundTrip(14, map);
+        final Class keyClass = serializer.getKeyClass();
+        final Serializer keySerializer = serializer.getKeySerializer();
+        final Class valueClass = serializer.getValueClass();
+        final Serializer valueSerializer = serializer.getValueSerializer();
+        assertEquals(String.class, keyClass);
+        assertEquals(String.class, valueClass);
 	}
 
 	@Test

@@ -34,7 +34,7 @@ import java.io.ObjectOutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Random;
-
+import com.esotericsoftware.kryo.unsafe.UnsafeInput;
 import org.junit.Test;
 
 /** @author Nathan Sweet */
@@ -74,6 +74,10 @@ public class InputOutputTest extends KryoTestCase {
 			61, 62, 63, 64, 65};
 		ByteArrayInputStream buffer = new ByteArrayInputStream(bytes);
 		Input input = new Input(buffer, 2);
+		Input input1 = new UnsafeInput(buffer);
+		Input input2 = new UnsafeInput(bytes);
+		Input input3 = new UnsafeInput(bytes.length);
+		Input input4 = new UnsafeInput(bytes, 10 ,100);
 		byte[] temp = new byte[1024];
 		int count = input.read(temp, 512, bytes.length);
 		assertEquals(bytes.length, count);
@@ -108,6 +112,20 @@ public class InputOutputTest extends KryoTestCase {
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
 			61, 62, 63, 64, 65}, buffer.toBytes());
+	}
+
+	@Test
+	public void testAddInputOutputTestCase() {
+		Output write = new Output(200);
+		write.writeBytes(new byte[]{11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26});
+		write.setVariableLengthEncoding(false);
+		final Boolean isEncoding = write.getVariableLengthEncoding();
+		final int maxCapacity = write.getMaxCapacity();
+		Input read = new Input(write.toBytes());
+		final Boolean variableLengthEncoding = read.getVariableLengthEncoding();
+		final Boolean canReadLong = read.canReadLong();
+		assertEquals(false, isEncoding);
+		assertEquals(200, maxCapacity);
 	}
 
 	@Test

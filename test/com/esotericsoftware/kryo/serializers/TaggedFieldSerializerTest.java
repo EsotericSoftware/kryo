@@ -23,6 +23,7 @@ import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -154,6 +155,24 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 			receivedIAE = true;
 		}
 		assertTrue(receivedIAE);
+	}
+
+	@Test
+	public void testTaggedFieldSerializerFactoryBuild() {
+		final SerializerFactory.TaggedFieldSerializerFactory factory = new SerializerFactory.TaggedFieldSerializerFactory();
+		factory.getConfig().setReadUnknownTagData(true);
+		factory.getConfig().setChunkSize(1024);
+		factory.getConfig().setChunkedEncoding(true);
+		final SerializerFactory.TaggedFieldSerializerFactory factoryBuild = new SerializerFactory.TaggedFieldSerializerFactory(factory.getConfig());
+
+		assertEquals(factory.getConfig().readUnknownTagData,factoryBuild.getConfig().readUnknownTagData);
+		assertEquals(factory.getConfig().chunkSize,factoryBuild.getConfig().chunkSize);
+        final Boolean readUnknownTagData = factoryBuild.getConfig().getReadUnknownTagData();
+        final int chunkSize = factoryBuild.getConfig().getChunkSize();
+        final Boolean chunkedEncoding = factoryBuild.getConfig().getChunkedEncoding();
+        assertEquals(true, readUnknownTagData);
+        assertEquals(1024, chunkSize);
+        assertEquals(true, chunkedEncoding);
 	}
 
 	public static class TestClass {

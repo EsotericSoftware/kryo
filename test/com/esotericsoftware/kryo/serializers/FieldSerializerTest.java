@@ -93,6 +93,20 @@ public class FieldSerializerTest extends KryoTestCase {
 		serializer.updateFields();
 		serializer.getField("hasStringField").setCanBeNull(false);
 		roundTrip(78, test);
+        serializer.getFieldSerializerConfig().setIgnoreSyntheticFields(true);
+        serializer.updateFields();
+        final Boolean fixedFieldTypes = serializer.getFieldSerializerConfig().getFixedFieldTypes();
+        final Boolean copyTransient = serializer.getFieldSerializerConfig().getCopyTransient();
+        final Boolean serializeTransient = serializer.getFieldSerializerConfig().getSerializeTransient();
+        final Boolean variableLengthEncoding = serializer.getFieldSerializerConfig().getVariableLengthEncoding();
+        final Boolean extendedFieldNames = serializer.getFieldSerializerConfig().getExtendedFieldNames();
+        final Boolean ignoreSyntheticFields = serializer.getFieldSerializerConfig().getIgnoreSyntheticFields();
+        final Boolean fieldsCanBeNull = serializer.getFieldSerializerConfig().getFieldsCanBeNull();
+        final Boolean canBeNull = serializer.getField("hasStringField").getCanBeNull();
+        final Boolean cacheVariableLengthEncoding = serializer.getField("hasStringField").getVariableLengthEncoding();
+        final Boolean optimizePositive = serializer.getField("hasStringField").getOptimizePositive();
+        assertEquals(true, fixedFieldTypes);
+        assertEquals(true, ignoreSyntheticFields);
 	}
 
 	@Test
@@ -528,6 +542,15 @@ public class FieldSerializerTest extends KryoTestCase {
 		ser.updateFields();
 		HasTransients objectWithTransients2 = kryo.copy(objectWithTransients1);
 		assertEquals("Objects should be equal if copy includes transient fields", objectWithTransients2, objectWithTransients1);
+	}
+
+	@Test
+	public void testFieldSerializerFactoryBuild() {
+		final FieldSerializerFactory factory = new FieldSerializerFactory();
+		factory.getConfig().setCopyTransient(false);
+		final FieldSerializerFactory factoryBuild = new FieldSerializerFactory(factory.getConfig());
+
+		assertEquals(factory.getConfig().copyTransient,factoryBuild.getConfig().copyTransient);
 	}
 
 	@Test

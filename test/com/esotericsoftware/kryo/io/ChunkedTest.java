@@ -30,6 +30,8 @@ public class ChunkedTest {
 		Output output = new Output(512);
 		output.writeInt(1234);
 		OutputChunked outputChunked = new OutputChunked(output);
+		final OutputChunked outputChunked1 = new OutputChunked(512);
+		final OutputChunked outputChunked2 = new OutputChunked();
 		outputChunked.writeInt(1);
 		outputChunked.endChunk();
 		outputChunked.writeInt(2);
