@@ -23,6 +23,9 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+
 /** @author Nathan Sweet */
 public class ChunkedTest {
 	@Test
@@ -56,4 +59,21 @@ public class ChunkedTest {
 		assertEquals(5678, input.readInt());
 		input.close();
 	}
+
+    @Test
+    public void testInputChunked() {
+        final Output output = new Output(512);
+        output.writeInt(1234);
+        final InputStream inputStream = new ByteArrayInputStream(new byte[] {123, 0, 0, 0});
+        final InputChunked inputChunked = new InputChunked();
+        final OutputChunked outputChunked = new OutputChunked(1024);
+        final OutputChunked outputChunked2 = new OutputChunked();
+        inputChunked.setInputStream(inputStream);
+        inputChunked.setBuffer(output.buffer, 0, 10);
+        inputChunked.read();
+        inputChunked.reset();
+        inputChunked.close();
+        outputChunked.close();
+        outputChunked2.close();
+    }
 }

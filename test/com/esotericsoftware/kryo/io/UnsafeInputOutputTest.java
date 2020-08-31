@@ -72,6 +72,9 @@ public class UnsafeInputOutputTest {
 		temp2 = new byte[count];
 		System.arraycopy(temp, 512, temp2, 0, count);
 		assertArrayEquals(bytes, temp2);
+		UnsafeOutput output = new UnsafeOutput(bytes);
+		assertEquals(bytes.length, output.capacity);
+		output.close();
 	}
 
 	@Test

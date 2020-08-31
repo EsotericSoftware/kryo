@@ -30,7 +30,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 
+import com.esotericsoftware.kryo.util.IdentityMap;
+import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import org.junit.Test;
+import org.objenesis.strategy.InstantiatorStrategy;
 
 public class ReferenceTest extends KryoTestCase {
 	public static class Ordering {
@@ -192,4 +195,17 @@ public class ReferenceTest extends KryoTestCase {
 			return list.subList(offset, offset + size);
 		}
 	}
+
+    @Test
+    public void testAddKryoTestCase() {
+        final Kryo kryo = new Kryo();
+        kryo.setReferenceResolver(new MapReferenceResolver());
+        kryo.setAutoReset(true);
+        kryo.setMaxDepth(100);
+        kryo.setWarnUnregisteredClasses(true);
+        final InstantiatorStrategy is = kryo.getInstantiatorStrategy();
+        final IdentityMap im = kryo.getOriginalToCopyMap();
+        final Boolean warnUnregisteredClasses = kryo.getWarnUnregisteredClasses();
+        assertEquals(true, warnUnregisteredClasses);
+    }
 }

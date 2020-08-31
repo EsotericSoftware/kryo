@@ -23,6 +23,7 @@ import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -162,5 +163,45 @@ public class CopyTest extends KryoTestCase {
 
 	public static class Moo {
 		Moo moo;
+	}
+
+	@Test
+	public void testCopyShallow() {
+		final Kryo kryo = new Kryo();
+		kryo.register(CopyData.class);
+		final CopyData copyData = new CopyData();
+		copyData.setCustomNote(true);
+		copyData.setCid(199);
+		final Serializer copySerializer = new FieldSerializer(kryo, CopyData.class);
+		final CopyData serializerCopy = kryo.copyShallow(copyData, copySerializer);
+		final CopyData deepCopy = kryo.copy(copyData, copySerializer);
+		final CopyData copy = kryo.copyShallow(copyData);
+		final ClassLoader conClassLoader = getClass().getClassLoader();
+		final ClassLoader classLoader = kryo.getClassLoader();
+		assertEquals(copy.getCustomNote(), serializerCopy.getCustomNote());
+		assertEquals(copy.getCid(), serializerCopy.getCid());
+		assertEquals(deepCopy.getCustomNote(), serializerCopy.getCustomNote());
+		assertEquals(classLoader, conClassLoader);
+	}
+
+	static class CopyData {
+		private Integer cid = 1;
+		private Boolean customNote = true;
+
+		public void setCid(Integer cid) {
+			this.cid = cid;
+		}
+
+		public int getCid() {
+		return this.cid;
+		}
+
+		public void setCustomNote(Boolean customNote) {
+			this.customNote = customNote;
+		}
+
+		public Boolean getCustomNote() {
+			return this.customNote;
+		}
 	}
 }

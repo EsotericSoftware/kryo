@@ -69,6 +69,10 @@ public class MapSerializerTest extends KryoTestCase {
 		roundTrip(14, map);
 		serializer.setValuesCanBeNull(false);
 		roundTrip(14, map);
+		final Class keyClass = serializer.getKeyClass();
+		final Class valueClass = serializer.getValueClass();
+		assertEquals(String.class, keyClass);
+		assertEquals(String.class, valueClass);
 	}
 
 	@Test
