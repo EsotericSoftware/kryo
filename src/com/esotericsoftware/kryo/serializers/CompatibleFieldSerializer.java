@@ -32,6 +32,9 @@ import com.esotericsoftware.kryo.io.OutputChunked;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 
+import java.lang.reflect.Field;
+import java.util.HashSet;
+
 /** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
  * added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported.
  * Like {@link FieldSerializer}, it can serialize most classes without needing annotations.
@@ -57,6 +60,24 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		super(kryo, type, config);
 		this.config = config;
 	}
+
+    @Override
+    protected void initializeCachedFields() {
+        if (!super.config.extendedFieldNames) {
+            final HashSet hashSet = new HashSet();
+            CachedField[] fields = cachedFields.fields;
+            for (int i = 0, n = fields.length; i < n; i++) {
+                final Field field = fields[i].field;
+                if (!hashSet.add(field.getName())) {
+                    if (WARN)
+                        warn("Detected duplicate field " + field.getName() + " in class hierarchy "
+                            + field.getDeclaringClass()
+                            + ". Consider enabling FieldSerializerConfig.extendedFieldNames");
+                    break;
+                }
+            }
+        }
+    }
 
 	@Override
 	public void write (Kryo kryo, Output output, T object) {
