@@ -904,7 +904,14 @@ public class DefaultSerializers {
 
 		@Override
 		public List copy (Kryo kryo, List original) {
-			return Arrays.asList(original.toArray());
+			Object[] copyArr = new Object[original.size()];
+			List<Object> copy = Arrays.asList(copyArr);
+			kryo.reference(copy);
+			for (int i = 0; i < original.size(); i++)
+			{
+				copyArr[i] = kryo.copy(original.get(i));
+			}
+			return copy;
 		}
 	}
 
