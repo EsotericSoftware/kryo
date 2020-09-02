@@ -1,4 +1,5 @@
 /* Copyright (c) 2008-2020, Nathan Sweet
+ * Copyright (C) 2020, Oracle and/or its affiliates.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -80,6 +81,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.serializers.OptionalSerializers;
+import com.esotericsoftware.kryo.serializers.RecordSerializer;
 import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultGenerics;
@@ -237,6 +239,13 @@ public class Kryo {
 		register(short.class, new ShortSerializer());
 		register(long.class, new LongSerializer());
 		register(double.class, new DoubleSerializer());
+
+		// Add RecordSerializer if JDK 14+ available
+		if (isClassAvailable("java.lang.Record")) {
+			try {
+				addDefaultSerializer(Class.forName("java.lang.Record"), RecordSerializer.class);
+			} catch (ClassNotFoundException ignored) {} // handled in if-clause
+		}
 	}
 
 	// --- Default serializers ---
