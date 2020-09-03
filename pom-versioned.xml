@@ -108,7 +108,7 @@
 		<profile>
 			<id>jdk11ge</id>
 			<activation>
-				<jdk>[11,14)</jdk>
+				<jdk>[1.5,14)</jdk>
 			</activation>
 			<build>
 				<plugins>
