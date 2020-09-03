@@ -104,19 +104,17 @@
 	</build>
 
 	<profiles>
-		<!-- Exclude any tests that require JDK 14+ from compilation and test run-->
+		<!-- Exclude any tests that require JDK 14+ from compilation -->
 		<profile>
-			<id>jdk8ge</id>
+			<id>jdk11ge</id>
 			<activation>
-				<jdk>[1.8,)</jdk>
+				<jdk>[11,14)</jdk>
 			</activation>
 			<build>
 				<plugins>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-compiler-plugin</artifactId>
-						<version>3.8.1</version>
-						<inherited>true</inherited>
 						<executions>
 							<execution>
 								<id>default-testCompile</id>
@@ -132,30 +130,10 @@
 							</execution>
 						</executions>
 					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<version>2.22.0</version>
-						<inherited>true</inherited>
-						<executions>
-							<execution>
-								<id>default-test</id>
-								<phase>test</phase>
-								<goals>
-									<goal>test</goal>
-								</goals>
-								<configuration>
-									<excludes>
-										<exclude>jdk14/**</exclude>
-									</excludes>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
 				</plugins>
 			</build>
 		</profile>
-		<!-- Compile and run only tests that require JDK 14+ -->
+		<!-- Compile all tests with JDK 14+ if available -->
 		<profile>
 			<id>jdk14ge</id>
 			<activation>
@@ -166,8 +144,6 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-compiler-plugin</artifactId>
-						<version>3.8.1</version>
-						<inherited>true</inherited>
 						<executions>
 							<execution>
 								<id>default-testCompile</id>
@@ -180,30 +156,6 @@
 									<compilerArgs>
 										<arg>--enable-preview</arg>
 									</compilerArgs>
-									<testIncludes>
-										<testInclude>jdk14/**</testInclude>
-									</testIncludes>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<version>2.22.0</version>
-						<inherited>true</inherited>
-						<executions>
-							<execution>
-								<id>default-test</id>
-								<phase>test</phase>
-								<goals>
-									<goal>test</goal>
-								</goals>
-								<configuration>
-									<includes>
-										<include>jdk14/**</include>
-									</includes>
-									<argLine>--enable-preview</argLine>
 								</configuration>
 							</execution>
 						</executions>
