@@ -39,6 +39,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.lang.reflect.Field;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -81,8 +82,8 @@ public class SerializationCompatTest extends KryoTestCase {
 		int[] versions = new int[] {parseInt(strVersions[0]), parseInt(strVersions[1])};
 		JAVA_VERSION = versions[0] > 1 ? versions[0] : versions[1];
 	}
-	// Also change Kryo#defaultSerializers.
-	private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 11 ? 57 : JAVA_VERSION < 14 ? 67 : 68;
+	private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 11
+			? 57 : JAVA_VERSION < 14 ? 67 : 68;  // Also change Kryo#defaultSerializers.
 	private static final List<TestDataDescription> TEST_DATAS = new ArrayList<>();
 
 	static {

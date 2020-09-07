@@ -1,4 +1,25 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<!--
+	 Copyright (c) 2008-2020, Nathan Sweet
+	 Copyright (C) 2020, Oracle and/or its affiliates.
+	 All rights reserved.
+
+	 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
+	 conditions are met:
+
+	 - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+	 - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+	 disclaimer in the documentation and/or other materials provided with the distribution.
+	 - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
+	 from this software without specific prior written permission.
+
+	 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+	 BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+	 SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+	 DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+	 INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+	 -->
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -118,7 +139,7 @@
 					<configuration>
 						<!-- Required for java8, so that javadoc errors don't fail the build. -->
 						<additionalparam>-Xdoclint:none</additionalparam>
-						<!-- Required for build with java11, to prevent "error: package sun.nio.ch is not visible" failing javadoc -->
+						<!-- Required for build with jdk11, to prevent "error: package sun.nio.ch is not visible" failing javadoc -->
 						<source>8</source>
 					</configuration>
 				</plugin>
@@ -173,8 +194,10 @@
 				</plugins>
 			</build>
 		</profile>
+		<!-- Exclude any tests that require JDK 11+ from test run -->
+		<!-- Exclude any tests that require JDK 14+ from compilation and test run -->
 		<profile>
-			<id>until-java11</id>
+			<id>until-jdk11</id>
 			<activation>
 				<!-- Use exclusive 11 range instead of inclusive 10, because an upper bound ",10]" is likely not to include most releases of 10,
 				   since they will have an additional "patch" release such as _05 that is not taken into consideration in the above range.
@@ -182,39 +205,79 @@
 				<jdk>[1.5,11)</jdk>
 			</activation>
 			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<version>2.22.0</version>
-						<configuration>
-							<excludes>
-								<exclude>**/java11/*Test.java</exclude>
-								<exclude>jdk14/**</exclude>
-							</excludes>
-						</configuration>
-					</plugin>
-				</plugins>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-compiler-plugin</artifactId>
+							<executions>
+								<execution>
+									<id>default-testCompile</id>
+									<phase>test-compile</phase>
+									<goals>
+										<goal>testCompile</goal>
+									</goals>
+									<configuration>
+										<testExcludes>
+											<testExclude>jdk14/**</testExclude>
+										</testExcludes>
+									</configuration>
+								</execution>
+							</executions>
+						</plugin>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-surefire-plugin</artifactId>
+							<version>2.22.0</version>
+							<configuration>
+								<excludes>
+									<exclude>jdk11/**</exclude>
+									<exclude>jdk14/**</exclude>
+								</excludes>
+							</configuration>
+						</plugin>
+					</plugins>
+				</pluginManagement>
 			</build>
 		</profile>
-		<!-- Exclude any tests that require JDK 14+ from test run-->
+		<!-- Exclude any tests that require JDK 14+ from compilation and test run-->
 		<profile>
 			<id>jdk11ge</id>
 			<activation>
 				<jdk>[11,14)</jdk>
 			</activation>
 			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<configuration>
-							<excludes>
-								<exclude>jdk14/**</exclude>
-							</excludes>
-						</configuration>
-					</plugin>
-				</plugins>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-compiler-plugin</artifactId>
+							<executions>
+								<execution>
+									<id>default-testCompile</id>
+									<phase>test-compile</phase>
+									<goals>
+										<goal>testCompile</goal>
+									</goals>
+									<configuration>
+										<testExcludes>
+											<testExclude>jdk14/**</testExclude>
+										</testExcludes>
+									</configuration>
+								</execution>
+							</executions>
+						</plugin>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-surefire-plugin</artifactId>
+							<configuration>
+								<excludes>
+									<exclude>jdk14/**</exclude>
+								</excludes>
+							</configuration>
+						</plugin>
+					</plugins>
+				</pluginManagement>
 			</build>
 		</profile>
 		<!-- Run all tests with JDK 14+ if available -->
@@ -224,15 +287,36 @@
 				<jdk>[14,)</jdk>
 			</activation>
 			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<configuration>
-								<argLine>--enable-preview</argLine>
-						</configuration>
-					</plugin>
-				</plugins>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-compiler-plugin</artifactId>
+							<executions>
+								<execution>
+									<id>default-testCompile</id>
+									<phase>test-compile</phase>
+									<goals>
+										<goal>testCompile</goal>
+									</goals>
+									<configuration>
+										<release>${java.vm.specification.version}</release>
+										<compilerArgs>
+											<arg>--enable-preview</arg>
+										</compilerArgs>
+									</configuration>
+								</execution>
+							</executions>
+						</plugin>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-surefire-plugin</artifactId>
+							<configuration>
+									<argLine>--enable-preview</argLine>
+							</configuration>
+						</plugin>
+					</plugins>
+				</pluginManagement>
 			</build>
 		</profile>
 	</profiles>
