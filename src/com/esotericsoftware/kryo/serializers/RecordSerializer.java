@@ -146,7 +146,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
     }
 
     /** A record component, which has a name, a type and an index.
-     *  The latter is the index of the record component in the class file's
+     *  The latter is the index of the record components in the class file's
      *  record attribute, required to invoke the record's canonical constructor .*/
     final static class RecordComponent {
         private final String name;
