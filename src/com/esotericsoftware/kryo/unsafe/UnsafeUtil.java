@@ -1,4 +1,5 @@
 /* Copyright (c) 2008-2020, Nathan Sweet
+ * Copyright (C) 2020, Oracle and/or its affiliates.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -96,7 +97,7 @@ public class UnsafeUtil {
 	static {
 		ByteBuffer buffer = ByteBuffer.allocateDirect(1);
 		try {
-			directByteBufferConstructor = buffer.getClass().getDeclaredConstructor(long.class, int.class, Object.class);
+			directByteBufferConstructor = buffer.getClass().getDeclaredConstructor(long.class, int.class);
 			directByteBufferConstructor.setAccessible(true);
 		} catch (Exception ex) {
 			if (DEBUG) debug("kryo", "No direct ByteBuffer constructor is available.", ex);
@@ -124,7 +125,7 @@ public class UnsafeUtil {
 		if (directByteBufferConstructor == null)
 			throw new UnsupportedOperationException("No direct ByteBuffer constructor is available.");
 		try {
-			return directByteBufferConstructor.newInstance(address, size, null);
+			return directByteBufferConstructor.newInstance(address, size);
 		} catch (Exception ex) {
 			throw new KryoException("Error creating a ByteBuffer at address: " + address, ex);
 		}
