@@ -86,7 +86,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
         if (!isRecord(cls)) {
             throw new KryoException(object + " is not a record");
         }
-        for (RecordComponent rc : recordComponents(cls)) {
+        for (RecordComponent rc : recordComponents(cls, Comparator.comparing(RecordComponent::name))) {
             final Class<?> type = rc.type();
             final String name = rc.name();
             try {
@@ -112,7 +112,8 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
         if (!isRecord(type)) {
             throw new KryoException("Not a record (" + type + ")");
         }
-        final RecordComponent[] recordComponents = recordComponents(type);
+        final RecordComponent[] recordComponents =
+                recordComponents(type, Comparator.comparing(RecordComponent::name));
         final Object[] values = new Object[recordComponents.length];
         for (int i = 0; i < recordComponents.length; i++) {
             final RecordComponent rc = recordComponents[i];
@@ -131,6 +132,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
                 throw ex;
             }
         }
+        Arrays.sort(recordComponents, Comparator.comparing(RecordComponent::index));
         return invokeCanonicalConstructor(type, recordComponents, values);
     }
 
@@ -145,7 +147,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 
     /** A record component, which has a name, a type and an index.
      *  The latter is the index of the record component in the class file's
-     *  record attribute, and required to invoke the record's canonical constructor .*/
+     *  record attribute, required to invoke the record's canonical constructor .*/
     final static class RecordComponent {
         private final String name;
         private final Class<?> type;
@@ -164,9 +166,12 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 
     /**
      * Returns an ordered array of the record components for the given record
-     * class. The order is that of the components' names in ascending order.
+     * class. The order is imposed by the given comparator. If the given
+     * comparator is null, the order is that of the record components in the
+     * record attribute of the class file.
      */
-    private static <T> RecordComponent[] recordComponents(Class<T> type) {
+    private static <T> RecordComponent[] recordComponents(Class<T> type,
+                                                          Comparator<RecordComponent> comparator) {
         try {
             Object[] rawComponents = (Object[]) MH_GET_RECORD_COMPONENTS.invokeExact(type);
             RecordComponent[] recordComponents = new RecordComponent[rawComponents.length];
@@ -176,7 +181,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
                         (String) MH_GET_NAME.invokeExact(comp),
                         (Class<?>) MH_GET_TYPE.invokeExact(comp), i);
             }
-            Arrays.sort(recordComponents, Comparator.comparing(RecordComponent::name));
+            if (comparator != null) Arrays.sort(recordComponents, comparator);
             return recordComponents;
         } catch (Throwable t) {
             KryoException ex = new KryoException(t);
@@ -203,14 +208,13 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 
     /**
      * Invokes the canonical constructor of a record class with the
-     * given argument values in the order given in the class file.
+     * given argument values.
      */
     private static <T> T invokeCanonicalConstructor(Class<T> recordType,
                                                 RecordComponent[] recordComponents,
                                                 Object[] args) {
         try {
             Class<?>[] paramTypes = Arrays.stream(recordComponents)
-                    .sorted(Comparator.comparing(RecordComponent::index))
                     .map(RecordComponent::type)
                     .toArray(Class<?>[]::new);
             MethodHandle MH_canonicalConstructor =
