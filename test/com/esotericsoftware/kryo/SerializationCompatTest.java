@@ -90,7 +90,16 @@ public class SerializationCompatTest extends KryoTestCase {
 		TEST_DATAS.add(new TestDataDescription<>(new TestData(), 1940, 1958));
 		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<>(new TestDataJava8(), 2098, 2116));
 		if (JAVA_VERSION >= 11) TEST_DATAS.add(new TestDataDescription<>(new TestDataJava11(), 2210, 2238));
+		if (JAVA_VERSION >= 14) TEST_DATAS.add(new TestDataDescription<>(createTestDataJava14(), 1928, 1946));
 	};
+
+	private static TestData createTestDataJava14() {
+		try {
+			return (TestData) Class.forName("jdk14.TestDataJava14").getConstructor().newInstance();
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException("TestDataJava14 could not be instantiated", e);
+		}
+	}
 
 	@Override
 	@Before

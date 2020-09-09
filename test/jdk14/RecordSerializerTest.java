@@ -312,4 +312,50 @@ public class RecordSerializerTest extends KryoTestCase {
             return throwableClass.cast(cause);
         }
     }
+
+    /** Test where the record parameters are the same but in different order.
+     *  This is supported as record components are sorted by name during
+     *  de/serialization.
+     */
+    public record R (long l, int i, String s) { }
+    public record R1 (int i, long l, String s) { }
+    public record R2 (String s, int i, long l) { }
+
+    @Test
+    public void testRecordWithParametersReordered1() {
+        out.println("testRecordWithParametersReordered1\n");
+        kryo.register(R.class);
+        kryo.register(R1.class);
+
+        final var r = new R(1L, 1, "foo");
+        final var output = new Output(32);
+        kryo.writeObject(output, r);
+        out.println("Serialized record: \n" + Arrays.toString(output.getBuffer()));
+
+        final var input = new Input(output.getBuffer(), 0, output.position());
+        final var r1 = kryo.readObject(input, R1.class);
+        out.println("Deserialized record: \n" + r1);
+
+        roundTrip(6, r1);
+        out.println("------\n");
+    }
+
+    @Test
+    public void testRecordWithParametersReordered2() {
+        out.println("testRecordWithParametersReordered2\n");
+        kryo.register(R.class);
+        kryo.register(R2.class);
+
+        final var r = new R(1L, 1, "foo");
+        final var output = new Output(32);
+        kryo.writeObject(output, r);
+        out.println("Serialized record: \n" + Arrays.toString(output.getBuffer()));
+
+        final var input = new Input(output.getBuffer(), 0, output.position());
+        final var r2 = kryo.readObject(input, R2.class);
+        out.println("Deserialized record: \n" + r2);
+
+        roundTrip(6, r2);
+        out.println("------\n");
+    }
 }

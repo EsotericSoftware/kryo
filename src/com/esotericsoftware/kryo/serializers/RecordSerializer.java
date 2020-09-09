@@ -29,6 +29,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Comparator;
 
 import static com.esotericsoftware.minlog.Log.TRACE;
 import static com.esotericsoftware.minlog.Log.trace;
@@ -118,7 +119,8 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
             final String name = rc.name();
             try {
                 if (TRACE) trace("kryo", "Read property: " + name + " (" + type.getName() + ")");
-                values[i] = rc.type().isPrimitive() ? kryo.readObject(input, rc.type())
+                // Populate values in the order required by the canonical constructor
+                values[rc.index()] = rc.type().isPrimitive() ? kryo.readObject(input, rc.type())
                         : kryo.readObjectOrNull(input, rc.type());
             } catch (KryoException ex) {
                 ex.addTrace(name + " (" + type.getName() + ")");
@@ -141,22 +143,28 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
         }
     }
 
-    /** A record component, which has a name and a type. */
+    /** A record component, which has a name, a type and an index.
+     *  The latter is the index of the record component in the class file's
+     *  record attribute, and required to invoke the record's canonical constructor .*/
     final static class RecordComponent {
         private final String name;
         private final Class<?> type;
-        RecordComponent(String name, Class<?> type) {
+        private final int index;
+
+        RecordComponent(String name, Class<?> type, int index) {
             this.name = name;
             this.type = type;
+            this.index = index;
         }
+
         String name() { return name; }
         Class<?> type() { return type; }
+        int index() { return index; }
     }
 
     /**
      * Returns an ordered array of the record components for the given record
-     * class. The order is that of the components in the record attribute of the
-     * class file.
+     * class. The order is that of the components' names in ascending order.
      */
     private static <T> RecordComponent[] recordComponents(Class<T> type) {
         try {
@@ -166,8 +174,9 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
                 final Object comp = rawComponents[i];
                 recordComponents[i] = new RecordComponent(
                         (String) MH_GET_NAME.invokeExact(comp),
-                        (Class<?>) MH_GET_TYPE.invokeExact(comp));
+                        (Class<?>) MH_GET_TYPE.invokeExact(comp), i);
             }
+            Arrays.sort(recordComponents, Comparator.comparing(RecordComponent::name));
             return recordComponents;
         } catch (Throwable t) {
             KryoException ex = new KryoException(t);
@@ -194,13 +203,14 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 
     /**
      * Invokes the canonical constructor of a record class with the
-     * given argument values.
+     * given argument values in the order given in the class file.
      */
     private static <T> T invokeCanonicalConstructor(Class<T> recordType,
                                                 RecordComponent[] recordComponents,
                                                 Object[] args) {
         try {
             Class<?>[] paramTypes = Arrays.stream(recordComponents)
+                    .sorted(Comparator.comparing(RecordComponent::index))
                     .map(RecordComponent::type)
                     .toArray(Class<?>[]::new);
             MethodHandle MH_canonicalConstructor =
