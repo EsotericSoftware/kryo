@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Test;
@@ -140,6 +141,35 @@ public class MapSerializerTest extends KryoTestCase {
 
 		assertEquals(map, deserialized);
 	}
+
+    @Test
+    public void testConcurrentSkipListMapSerializer() {
+        ConcurrentSkipListMap map = new ConcurrentSkipListMap();
+        kryo.register(ConcurrentSkipListMap.class);
+        map.put(9, "456");
+        map.put(3, "abc");
+        map.put(1, 122);
+        roundTrip(20, map);
+
+        kryo.register(KeyThatIsntComparable.class);
+        kryo.register(KeyComparator.class);
+        ConcurrentSkipListMap cMap = new ConcurrentSkipListMap<>(new KeyComparator());
+        KeyThatIsntComparable key1 = new KeyThatIsntComparable();
+        KeyThatIsntComparable key2 = new KeyThatIsntComparable();
+        key1.value = "311";
+        cMap.put(key1, "257");
+        key2.value = "213";
+        cMap.put(key2, "455");
+        roundTrip(19, cMap);
+
+        kryo.register(ConcurrentSkipListMapSubclass.class);
+        ConcurrentSkipListMapSubclass cSubMap = new ConcurrentSkipListMapSubclass();
+        cSubMap.put("1", 77);
+        cSubMap.put("2", 68);
+        cSubMap.put("3", 63);
+        cSubMap.put("4", 22);
+        roundTrip(25, cSubMap);
+    }
 
 	@Test
 	public void testTreeMap () {
@@ -277,6 +307,14 @@ public class MapSerializerTest extends KryoTestCase {
 			super(comparator);
 		}
 	}
+
+    public static class ConcurrentSkipListMapSubclass<K, V> extends ConcurrentSkipListMap<K, V> {
+        public ConcurrentSkipListMapSubclass() {}
+
+        public ConcurrentSkipListMapSubclass(Comparator<? super K> comparator) {
+            super(comparator);
+        }
+    }
 
 	public static enum SomeEnum {
 		a, b, c
