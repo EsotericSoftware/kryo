@@ -74,9 +74,9 @@ public interface Generics {
 	/** Stores the type parameters for a class and, for parameters passed to super classes, the corresponding super class type
 	 * parameters. */
 	class GenericsHierarchy {
-		/* total number of type parameters in the hierarchy */
+		/* Total number of type parameters in the hierarchy. */
 		final int total;
-		/* total number of type parameters at the root of the hierarchy */
+		/* Total number of type parameters at the root of the hierarchy. */
 		final int rootTotal;
 		final int[] counts;
 		final TypeVariable[] parameters;
