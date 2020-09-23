@@ -20,18 +20,17 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.Assert.assertEquals;
+
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import org.junit.Test;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.stream.IntStream;
 
-import static java.lang.System.out;
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 public class RecordSerializerTest extends KryoTestCase {
     {
@@ -43,21 +42,16 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testBasicRecord() {
-        out.println("testBasicRecord\n");
         kryo.register(RecordRectangle.class);
 
         final var r1 = new RecordRectangle("one", 2, 3L, 4.0);
         final var output = new Output(32);
         kryo.writeObject(output, r1);
-        out.println("Serialized record: \n" + Arrays.toString(output.getBuffer()));
-
         final var input = new Input(output.getBuffer(), 0, output.position());
         final var r2 = kryo.readObject(input, RecordRectangle.class);
-        out.println("Deserialized record: \n" + r2);
 
         doAssertEquals(r1, r2);
         roundTrip(14, r1);
-        out.println("------\n");
     }
 
     /** Test where the single object is an empty record. */
@@ -65,21 +59,16 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testEmptyRecord() {
-        out.println("testEmptyRecord\n");
         kryo.register(EmptyRecord.class);
 
         final var r1 = new EmptyRecord();
         final var output = new Output(32);
         kryo.writeObject(output, r1);
-        out.println("Serialized record: \n" + Arrays.toString(output.getBuffer()));
-
         final var input = new Input(output.getBuffer(), 0, output.position());
         final var r2 = kryo.readObject(input, EmptyRecord.class);
-        out.println("Deserialized record: \n" + r2);
 
         doAssertEquals(r1, r2);
         roundTrip(1, r1);
-        out.println("------\n");
     }
 
     /** Test deserialisation of an empty record where the input provides values.
@@ -87,14 +76,10 @@ public class RecordSerializerTest extends KryoTestCase {
      */
     @Test
     public void testDeserializeEmptyRecordWithValues() {
-        out.println("testDeserializeEmptyRecordWithValues\n");
         kryo.register(EmptyRecord.class);
 
         final var input = new Input(new byte[]{1, 2, -128, 0});  // create bad input
-        out.println("Serialized record: \n" + Arrays.toString(input.getBuffer()));
         final var r = kryo.readObject(input, EmptyRecord.class);
-        out.println("Deserialized record: \n" + r);
-        out.println("------\n");
     }
 
     /** Test deserialisation of a record where the number of input values exceeds
@@ -106,16 +91,13 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testDeserializeWrongNumberOfValues() {
-        out.println("testDeserializeWrongNumberOfValues\n");
         kryo.register(RecordPoint.class);
 
         final var r1 = new RecordPoint(1,1);
         final var input = new Input(new byte[]{2, 2, 2});  // create bad input
-        out.println("Serialized record: \n" + Arrays.toString(input.getBuffer()));
         final var r2 = kryo.readObject(input, RecordPoint.class);
-        out.println("Deserialized record: \n" + r2);
+
         doAssertEquals(r1, r2);
-        out.println("------\n");
     }
 
     /** Test where the record has an explicit constructor.*/
@@ -127,21 +109,16 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testRecordWithConstructor() {
-        out.println("testRecordWithConstructor\n");
         kryo.register(RecordWithConstructor.class);
 
         final var r1 = new RecordWithConstructor("ten");
         final var output = new Output(32);
         kryo.writeObject(output, r1);
-        out.println("Serialized record: \n" + Arrays.toString(output.getBuffer()));
-
         final var input = new Input(output.getBuffer(), 0, output.position());
         final var r2 = kryo.readObject(input, RecordWithConstructor.class);
-        out.println("Deserialized record: \n" + r2);
 
         doAssertEquals(r1, r2);
         roundTrip(14, r1);
-        out.println("------\n");
     }
 
     /** Test where the record component object is a record. */
@@ -149,28 +126,22 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testRecordOfRecord() {
-        out.println("testRecordOfRecord\n");
         kryo.register(RecordOfRecord.class);
         kryo.register(RecordRectangle.class);
 
         final var r1 = new RecordOfRecord(new RecordRectangle("one", 2, 3L, 4.0));
         final var output = new Output(32);
         kryo.writeObject(output, r1);
-        out.println("Serialized record: \n" + Arrays.toString(output.getBuffer()));
-
         final var input = new Input(output.getBuffer(), 0, output.position());
         final var r2 = kryo.readObject(input, RecordOfRecord.class);
-        out.println("Deserialized record: \n" + r2);
 
         doAssertEquals(r1, r2);
         roundTrip(15, r1);
-        out.println("------\n");
     }
 
     /** Test where the single object is an array of records. */
     @Test
     public void testArrayOfRecords() {
-        out.println("testArrayOfRecords\n");
         kryo.register(RecordPoint.class);
         kryo.register(RecordPoint[].class);
 
@@ -185,7 +156,6 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testRecordWithArray() {
-        out.println("testRecordWithArray\n");
         kryo.register(RecordWithArray.class);
         kryo.register(RecordRectangle[].class);
         kryo.register(RecordRectangle.class);
@@ -193,14 +163,10 @@ public class RecordSerializerTest extends KryoTestCase {
         final var r1 = new RecordWithArray(new RecordRectangle[] {new RecordRectangle("one", 2, 3L, 4.0)});
         final var output = new Output(32);
         kryo.writeObject(output, r1);
-        out.println("Serialized record: \n" + Arrays.toString(output.getBuffer()));
-
         final var input = new Input(output.getBuffer(), 0, output.position());
         final var r2 = kryo.readObject(input, RecordWithArray.class);
-        out.println("Deserialized record: \n" + r2);
 
         assertWithArrayEquals(r1, r2);
-        out.println("------\n");
     }
 
     private void assertWithArrayEquals(final RecordWithArray expected,
@@ -221,7 +187,6 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testRecordWithNull() {
-        out.println("testRecordWithNull\n");
         kryo.register(RecordWithNull.class);
         kryo.register(Object.class);
         kryo.register(Number.class);
@@ -230,15 +195,11 @@ public class RecordSerializerTest extends KryoTestCase {
         final var r1 = new RecordWithNull(null, null, null);
         final var output = new Output(32);
         kryo.writeObject(output, r1);
-        out.println("Serialized record: \n" + Arrays.toString(output.getBuffer()));
-
         final var input = new Input(output.getBuffer(), 0, output.position());
         final var r2 = kryo.readObject(input, RecordWithNull.class);
-        out.println("Deserialized record: \n" + r2);
 
         doAssertEquals(r1, r2);
         roundTrip(4, r1);
-        out.println("------\n");
     }
 
     /** Test where record components are primitives with their default values. */
@@ -246,22 +207,17 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testRecordWithPrimitiveDefaultValues() {
-        out.println("testRecordWithPrimitiveDefaultValues\n");
         kryo.register(RecordWithDefaultValues.class);
 
         final var r1 = new RecordWithDefaultValues(
                 (byte)0, (short)0, 0, 0l, 0.0f, 0.0d, '\u0000', false);
         final var output = new Output(32);
         kryo.writeObject(output, r1);
-        out.println("Serialized record: \n" + Arrays.toString(output.getBuffer()));
-
         final var input = new Input(output.getBuffer(), 0, output.position());
         final var r2 = kryo.readObject(input, RecordWithDefaultValues.class);
-        out.println("Deserialized record: \n" + r2);
 
         doAssertEquals(r1, r2);
         roundTrip(21, r1);
-        out.println("------\n");
     }
 
     /** Test where the an exception is thrown in the record constructor. */
@@ -276,28 +232,22 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testDeserializeRecordWithIllegalValue1() {
-        out.println("testDeserializeRecordWithIllegalValue1\n");
         kryo.register(PositivePoint.class);
 
         final var input = new Input(new byte[]{1, 2});  // create bad input of -1, 1
-        out.println("Serialized record: \n" + Arrays.toString(input.getBuffer()));
         var e = expectThrows(IllegalArgumentException.class,
                 () -> kryo.readObject(input, PositivePoint.class));
         assertEquals("negative x:-1", e.getMessage());
-        out.println("------\n");
     }
 
     @Test
     public void testDeserializeRecordWithIllegalValue2() {
-        out.println("testDeserializeRecordWithIllegalValue2\n");
         kryo.register(PositivePoint.class);
 
         final var input = new Input(new byte[]{2, 1});  // create bad input of 1, -1
-        out.println("Serialized record: \n" + Arrays.toString(input.getBuffer()));
         var e = expectThrows(IllegalArgumentException.class,
                 () -> kryo.readObject(input, PositivePoint.class));
         assertEquals("negative y:-1", e.getMessage());
-        out.println("------\n");
     }
 
     static <T extends Throwable> T expectThrows(Class<T> throwableClass, Runnable task) {
@@ -323,39 +273,29 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testRecordWithParametersReordered1() {
-        out.println("testRecordWithParametersReordered1\n");
         kryo.register(R.class);
         kryo.register(R1.class);
 
         final var r = new R(1L, 1, "foo");
         final var output = new Output(32);
         kryo.writeObject(output, r);
-        out.println("Serialized record: \n" + Arrays.toString(output.getBuffer()));
-
         final var input = new Input(output.getBuffer(), 0, output.position());
         final var r1 = kryo.readObject(input, R1.class);
-        out.println("Deserialized record: \n" + r1);
 
         roundTrip(6, r1);
-        out.println("------\n");
     }
 
     @Test
     public void testRecordWithParametersReordered2() {
-        out.println("testRecordWithParametersReordered2\n");
         kryo.register(R.class);
         kryo.register(R2.class);
 
         final var r = new R(1L, 1, "foo");
         final var output = new Output(32);
         kryo.writeObject(output, r);
-        out.println("Serialized record: \n" + Arrays.toString(output.getBuffer()));
-
         final var input = new Input(output.getBuffer(), 0, output.position());
         final var r2 = kryo.readObject(input, R2.class);
-        out.println("Deserialized record: \n" + r2);
 
         roundTrip(6, r2);
-        out.println("------\n");
     }
 }

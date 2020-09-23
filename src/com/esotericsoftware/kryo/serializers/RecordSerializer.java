@@ -20,6 +20,10 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.minlog.Log.TRACE;
+import static com.esotericsoftware.minlog.Log.trace;
+import static java.lang.invoke.MethodType.methodType;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
@@ -30,10 +34,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Comparator;
-
-import static com.esotericsoftware.minlog.Log.TRACE;
-import static com.esotericsoftware.minlog.Log.trace;
-import static java.lang.invoke.MethodType.methodType;
 
 public class RecordSerializer<T> extends ImmutableSerializer<T> {
     private static final MethodHandle MH_IS_RECORD;

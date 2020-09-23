@@ -25,7 +25,6 @@ import static java.lang.Integer.*;
 import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
-import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava11;
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava8;
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
@@ -93,15 +92,15 @@ public class SerializationCompatTest extends KryoTestCase {
 	static {
 		TEST_DATAS.add(new TestDataDescription<>(new TestData(), 1940, 1958));
 		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<>(new TestDataJava8(), 2098, 2116));
-		if (JAVA_VERSION >= 11) TEST_DATAS.add(new TestDataDescription<>(new TestDataJava11(), 2210, 2238));
-		if (JAVA_VERSION >= 14) TEST_DATAS.add(new TestDataDescription<>(createTestDataJava14(), 1948, 1966));
+		if (JAVA_VERSION >= 11) TEST_DATAS.add(new TestDataDescription<>(createTestData(11), 2182, 2210));
+		if (JAVA_VERSION >= 14) TEST_DATAS.add(new TestDataDescription<>(createTestData(14), 1948, 1966));
 	};
 
-	private static TestData createTestDataJava14() {
+	private static TestData createTestData(int version) {
 		try {
-			return (TestData) Class.forName("com.esotericsoftware.kryo.TestDataJava14").getConstructor().newInstance();
+			return (TestData) Class.forName("com.esotericsoftware.kryo.TestDataJava" + version).getConstructor().newInstance();
 		} catch (ReflectiveOperationException e) {
-			throw new RuntimeException("TestDataJava14 could not be instantiated", e);
+			throw new RuntimeException("TestDataJava" + version + " could not be instantiated", e);
 		}
 	}
 
