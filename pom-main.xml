@@ -48,7 +48,7 @@
 			<plugin>
 				<groupId>org.apache.felix</groupId>
 				<artifactId>maven-bundle-plugin</artifactId>
-				<version>3.5.0</version>
+				<version>5.1.1</version>
 				<extensions>true</extensions>
 				<configuration>
 					<instructions>
@@ -69,7 +69,7 @@
 
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
-				<version>3.1.0</version>
+				<version>3.3.0</version>
 				<configuration>
 					<descriptors>
 						<descriptor>build/assembly-all.xml</descriptor>
@@ -112,6 +112,7 @@
 					<excludes>
 						<!-- Internal APIs -->
 						<exclude>com/esotericsoftware/kryo/util/GenericsUtil</exclude>
+						<exclude>com/esotericsoftware/kryo/util/CuckooObjectMap</exclude>
 						<exclude>com/esotericsoftware/kryo/util/IdentityMap</exclude>
 						<exclude>com/esotericsoftware/kryo/util/IdentityObjectIntMap</exclude>
 						<exclude>com/esotericsoftware/kryo/util/IntArray</exclude>

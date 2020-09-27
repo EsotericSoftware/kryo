@@ -67,7 +67,7 @@ public final class ImmutableCollectionsSerializers {
 		}
 
 		@Override
-		public List<Object> copy(Kryo kryo, List<Object> original) {
+		public List<Object> copy (Kryo kryo, List<Object> original) {
 			List<Object> copy = super.copy(kryo, original);
 			return List.copyOf(copy);
 		}
@@ -108,7 +108,7 @@ public final class ImmutableCollectionsSerializers {
 		}
 
 		@Override
-		public Map<Object, Object> copy(Kryo kryo, Map<Object, Object> original) {
+		public Map<Object, Object> copy (Kryo kryo, Map<Object, Object> original) {
 			final Map<Object, Object> copy = super.copy(kryo, original);
 			return Map.copyOf(copy);
 		}
@@ -138,7 +138,7 @@ public final class ImmutableCollectionsSerializers {
 		}
 
 		@Override
-		public Set<Object> read(Kryo kryo, Input input, Class<? extends Set<Object>> type) {
+		public Set<Object> read (Kryo kryo, Input input, Class<? extends Set<Object>> type) {
 			Set<Object> set = super.read(kryo, input, type);
 			if (set == null) {
 				return null;
@@ -147,7 +147,7 @@ public final class ImmutableCollectionsSerializers {
 		}
 
 		@Override
-		public Set<Object> copy(Kryo kryo, Set<Object> original) {
+		public Set<Object> copy (Kryo kryo, Set<Object> original) {
 			final Set<Object> copy = super.copy(kryo, original);
 			return Set.copyOf(copy);
 		}
