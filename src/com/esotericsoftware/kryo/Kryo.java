@@ -193,7 +193,6 @@ public class Kryo {
 		addDefaultSerializer(boolean[].class, BooleanArraySerializer.class);
 		addDefaultSerializer(String[].class, StringArraySerializer.class);
 		addDefaultSerializer(Object[].class, ObjectArraySerializer.class);
-		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
 		addDefaultSerializer(BigInteger.class, BigIntegerSerializer.class);
 		addDefaultSerializer(BigDecimal.class, BigDecimalSerializer.class);
 		addDefaultSerializer(Class.class, ClassSerializer.class);
@@ -222,6 +221,7 @@ public class Kryo {
 		addDefaultSerializer(void.class, new VoidSerializer());
 		addDefaultSerializer(PriorityQueue.class, new PriorityQueueSerializer());
 		addDefaultSerializer(BitSet.class, new BitSetSerializer());
+		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		ImmutableCollectionsSerializers.addDefaultSerializers(this);
