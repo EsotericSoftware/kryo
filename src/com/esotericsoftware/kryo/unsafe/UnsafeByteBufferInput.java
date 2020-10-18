@@ -105,7 +105,7 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		bufferAddress = ((DirectBuffer)byteBuffer).address();
 	}
 
-	private void setBufferPosition( Buffer buffer,  int position) {
+	private void setBufferPosition (Buffer buffer, int position) {
 		buffer.position(position);
 	}
 
