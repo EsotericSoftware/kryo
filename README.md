@@ -84,8 +84,8 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
-* [5.0.0-RC9](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC9) - 9th release candidate with significant performance improvements. Note: For libraries (not applications) using Kryo, there's now a completely self-contained, versioned artifact (for details see [installation](#installation)). For migration from kryo 4.x see also [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5).
-* [5.0.0-RC1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC1) - fixes many issues and makes many long awaited improvements.
+* [5.0.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0) - the final Kryo 5 release fixing many issues and making many long awaited improvements over Kryo 4. Note: For libraries (not applications) using Kryo, there's now a completely self-contained, versioned artifact (for details see [installation](#installation)). For migration from Kryo 4.x see also [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5).
+* [5.0.0-RC9](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC9) - 9th release candidate with significant performance improvements over RC8.
 * [4.0.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.2) - brings several incremental fixes and improvements.
 
 ## Installation
@@ -104,7 +104,7 @@ To use the latest Kryo release in your application, use this dependency entry in
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.0.0-RC9</version>
+   <version>5.0.0</version>
 </dependency>
 ```
 
@@ -114,7 +114,7 @@ To use the latest Kryo release in a library you want to publish, use this depend
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.0.0-RC9</version>
+   <version>5.0.0</version>
 </dependency>
 ```
 
@@ -131,13 +131,13 @@ To use the latest Kryo snapshot, use:
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.0.0-RC10-SNAPSHOT</version>
+   <version>5.0.1-SNAPSHOT</version>
 </dependency>
 <!-- for usage in a library that should be published: -->
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.0.0-RC10-SNAPSHOT</version>
+   <version>5.0.1-SNAPSHOT</version>
 </dependency>
 ```
 
