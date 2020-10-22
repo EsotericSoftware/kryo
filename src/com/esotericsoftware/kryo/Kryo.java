@@ -519,7 +519,7 @@ public class Kryo {
 
 	protected String unregisteredClassMessage (Class type) {
 		return "Class is not registered: " + className(type) + "\nNote: To register this class use: kryo.register("
-			+ className(type) + ".class);";
+			+ canonicalName(type) + ".class);";
 	}
 
 	/** @see ClassResolver#getRegistration(int) */
