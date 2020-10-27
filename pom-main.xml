@@ -18,12 +18,12 @@
 		<dependency>
 			<groupId>com.esotericsoftware</groupId>
 			<artifactId>reflectasm</artifactId>
-			<version>1.11.8</version>
+			<version>1.11.9</version>
 		</dependency>
 		<dependency>
 			<groupId>org.objenesis</groupId>
 			<artifactId>objenesis</artifactId>
-			<version>3.0.1</version>
+			<version>3.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.esotericsoftware</groupId>
