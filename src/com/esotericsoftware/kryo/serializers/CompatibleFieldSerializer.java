@@ -63,7 +63,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
     @Override
     protected void initializeCachedFields() {
-        if (!super.config.extendedFieldNames) {
+        if (config != null && !config.extendedFieldNames) {
             final HashSet hashSet = new HashSet();
             CachedField[] fields = cachedFields.fields;
             for (int i = 0, n = fields.length; i < n; i++) {
@@ -307,6 +307,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		public boolean getChunkedEncoding () {
 			return chunked;
 		}
+
+        @Override
+        public void setExtendedFieldNames(boolean extendedFieldNames) {
+            this.extendedFieldNames = extendedFieldNames;
+            if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig extendedFieldNames: " + extendedFieldNames);
+        }
 
 		/** The maximum size of each chunk for chunked encoding. Default is 1024. */
 		public void setChunkSize (int chunkSize) {

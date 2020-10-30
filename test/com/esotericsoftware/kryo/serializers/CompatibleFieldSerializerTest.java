@@ -667,7 +667,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
         final ClassWithDuplicateField duplicateField = new ClassWithDuplicateField();
         roundTrip(31, duplicateField);
-        assertEquals(2, log.messages.size());
+        assertEquals(1, log.messages.size());
     }
 
     static class ClassWithDuplicateField extends SuperClassWithDuplicateField {
