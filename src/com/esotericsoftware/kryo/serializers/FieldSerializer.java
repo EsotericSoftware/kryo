@@ -108,7 +108,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			fields[i].write(output, object);
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 	}
 
 	@Override
@@ -124,7 +124,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			fields[i].read(input, object);
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 		return object;
 	}
 
@@ -141,7 +141,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	protected void popTypeVariables (int pop) {
 		Generics generics = kryo.getGenerics();
-		generics.popTypeVariables(pop);
+		if (pop > 0) {
+			generics.popTypeVariables(pop);
+		}
 		generics.popGenericType();
 	}
 

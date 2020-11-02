@@ -163,7 +163,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			if (chunked) outputChunked.endChunk();
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 	}
 
 	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class)}. The default implementation does nothing. */
@@ -238,7 +238,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			if (chunked) inputChunked.nextChunk();
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 		return object;
 	}
 

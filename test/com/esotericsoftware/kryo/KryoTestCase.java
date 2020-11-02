@@ -290,6 +290,9 @@ public abstract class KryoTestCase {
 			doAssertEquals(object1, copy);
 		}
 
+		// Ensure generic types are balanced after each round of serialization
+		assertEquals(0, kryo.getGenerics().getGenericTypesSize());
+
 		return (T)object2;
 	}
 

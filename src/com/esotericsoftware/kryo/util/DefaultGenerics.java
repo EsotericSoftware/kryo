@@ -143,7 +143,12 @@ public final class DefaultGenerics implements Generics {
 		return null;
 	}
 
-	public String toString () {
+    @Override
+    public int getGenericTypesSize() {
+        return genericTypesSize;
+    }
+
+    public String toString () {
 		StringBuilder buffer = new StringBuilder();
 		for (int i = 0; i < argumentsSize; i += 2) {
 			if (i != 0) buffer.append(", ");
