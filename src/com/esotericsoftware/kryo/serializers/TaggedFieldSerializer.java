@@ -242,6 +242,11 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		return object;
 	}
 
+	@Override
+	boolean supportsReuse() {
+		return !config.readUnknownTagData;
+	}
+
 	public TaggedFieldSerializerConfig getTaggedFieldSerializerConfig () {
 		return config;
 	}

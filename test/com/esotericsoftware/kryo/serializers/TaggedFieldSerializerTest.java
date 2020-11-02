@@ -23,6 +23,7 @@ import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -30,6 +31,7 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Objects;
 
 import org.junit.Test;
 
@@ -154,6 +156,37 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 			receivedIAE = true;
 		}
 		assertTrue(receivedIAE);
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/774
+	@Test
+	public void testClassWithObjectField() {
+		kryo.setRegistrationRequired(false);
+		final TaggedFieldSerializer.TaggedFieldSerializerConfig config = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+		config.setReadUnknownTagData(true);
+		kryo.setDefaultSerializer(new SerializerFactory.TaggedFieldSerializerFactory(config));
+
+		roundTrip(91, new ClassWithObjectField(123));
+		roundTrip(92, new ClassWithObjectField("foo"));
+	}
+
+	public static class ClassWithObjectField {
+		@Tag(0)
+		Object value;
+
+		public ClassWithObjectField() { }
+
+		public ClassWithObjectField(Object value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithObjectField wrapper = (ClassWithObjectField) o;
+			return Objects.equals(value, wrapper.value);
+		}
 	}
 
 	public static class TestClass {

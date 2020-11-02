@@ -242,6 +242,11 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		return fields;
 	}
 
+	@Override
+	boolean supportsReuse() {
+		return !config.readUnknownFieldData;
+	}
+
 	public CompatibleFieldSerializerConfig getCompatibleFieldSerializerConfig () {
 		return config;
 	}

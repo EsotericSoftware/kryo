@@ -209,6 +209,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return (T)kryo.newInstance(original.getClass());
 	}
 
+	/** If true, the serializer supports re-use of serializers for all instances of a field */
+	boolean supportsReuse() {
+		return true;
+	}
+
 	@Override
 	public T copy (Kryo kryo, T original) {
 		T copy = createCopy(kryo, original);

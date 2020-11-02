@@ -24,6 +24,7 @@ import static org.junit.Assert.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 
 import java.io.Serializable;
@@ -451,6 +452,35 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.register(ClassWithSuperTypeFields.class, serializer);
 
 		roundTrip(71, new ClassWithSuperTypeFields("foo", Arrays.asList("bar"), "baz"));
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/774
+	@Test
+	public void testClassWithObjectField() {
+		kryo.setRegistrationRequired(false);
+		kryo.setDefaultSerializer(new SerializerFactory.CompatibleFieldSerializerFactory(
+				new CompatibleFieldSerializer.CompatibleFieldSerializerConfig()));
+
+		roundTrip(99, new ClassWithObjectField(123));
+		roundTrip(100, new ClassWithObjectField("foo"));
+	}
+
+	public static class ClassWithObjectField {
+		Object value;
+
+		public ClassWithObjectField() { }
+
+		public ClassWithObjectField(Object value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithObjectField wrapper = (ClassWithObjectField) o;
+			return Objects.equals(value, wrapper.value);
+		}
 	}
 
 	public static class TestClass {
