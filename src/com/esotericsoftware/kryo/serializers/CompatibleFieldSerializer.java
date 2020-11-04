@@ -108,7 +108,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			if (chunked) outputChunked.endChunk();
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 	}
 
 	@Override
@@ -186,7 +186,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			if (chunked) inputChunked.nextChunk();
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 		return object;
 	}
 

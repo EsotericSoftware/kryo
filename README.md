@@ -244,16 +244,17 @@ It can be useful to write the length of some data, then the data. When the lengt
 
 Chunked encoding solves this problem by using a small buffer. When the buffer is full, its length is written, then the data. This is one chunk of data. The buffer is cleared and this continues until there is no more data to write. A chunk with a length of zero denotes the end of the chunks.
 
-Kryo provides classes to maked chunked encoding. OutputChunked is used to write chunked data. It extends Output, so has all the convenient methods to write data. When the OutputChunked buffer is full, it flushes the chunk to another OutputStream. The `endChunks` method is used to mark the end of a set of chunks.
+Kryo provides classes to maked chunked encoding. OutputChunked is used to write chunked data. It extends Output, so has all the convenient methods to write data. When the OutputChunked buffer is full, it flushes the chunk to another OutputStream. The `endChunk` method is used to mark the end of a set of chunks.
 
 ```java
 OutputStream outputStream = new FileOutputStream("file.bin");
 OutputChunked output = new OutputChunked(outputStream, 1024);
 // Write data to output...
-output.endChunks();
+output.endChunk();
 // Write more data to output...
-output.endChunks();
+output.endChunk();
 // Write even more data to output...
+output.endChunk();
 output.close();
 ```
 
