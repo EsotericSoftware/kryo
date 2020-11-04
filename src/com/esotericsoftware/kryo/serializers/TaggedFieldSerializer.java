@@ -157,6 +157,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				cachedField.setCanBeNull(false);
 				cachedField.setValueClass(valueClass);
+				cachedField.setReuseSerializer(false);
 			}
 
 			cachedField.write(fieldOutput, object);
@@ -226,6 +227,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				cachedField.setCanBeNull(false);
 				cachedField.setValueClass(valueClass);
+				cachedField.setReuseSerializer(false);
 			} else if (cachedField == null) {
 				if (!chunked) throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
 				if (TRACE) trace("kryo", "Skip unknown field tag: " + tag);
@@ -240,11 +242,6 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		popTypeVariables(pop);
 		return object;
-	}
-
-	@Override
-	boolean supportsReuse() {
-		return !config.readUnknownTagData;
 	}
 
 	public TaggedFieldSerializerConfig getTaggedFieldSerializerConfig () {

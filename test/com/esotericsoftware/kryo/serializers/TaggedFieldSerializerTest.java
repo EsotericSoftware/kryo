@@ -23,7 +23,6 @@ import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -161,13 +160,14 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 	// https://github.com/EsotericSoftware/kryo/issues/774
 	@Test
 	public void testClassWithObjectField() {
-		kryo.setRegistrationRequired(false);
-		final TaggedFieldSerializer.TaggedFieldSerializerConfig config = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+		TaggedFieldSerializer<ClassWithObjectField> serializer = new TaggedFieldSerializer<>(kryo, ClassWithObjectField.class);
+		final TaggedFieldSerializer.TaggedFieldSerializerConfig config = serializer.getTaggedFieldSerializerConfig();
+		config.setChunkedEncoding(true);
 		config.setReadUnknownTagData(true);
-		kryo.setDefaultSerializer(new SerializerFactory.TaggedFieldSerializerFactory(config));
+		kryo.register(ClassWithObjectField.class, serializer);
 
-		roundTrip(91, new ClassWithObjectField(123));
-		roundTrip(92, new ClassWithObjectField("foo"));
+		roundTrip(8, new ClassWithObjectField(123));
+		roundTrip(9, new ClassWithObjectField("foo"));
 	}
 
 	public static class ClassWithObjectField {

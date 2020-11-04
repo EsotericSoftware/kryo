@@ -24,7 +24,6 @@ import static org.junit.Assert.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 
 import java.io.Serializable;
@@ -457,12 +456,15 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	// https://github.com/EsotericSoftware/kryo/issues/774
 	@Test
 	public void testClassWithObjectField() {
-		kryo.setRegistrationRequired(false);
-		kryo.setDefaultSerializer(new SerializerFactory.CompatibleFieldSerializerFactory(
-				new CompatibleFieldSerializer.CompatibleFieldSerializerConfig()));
+		CompatibleFieldSerializer<ClassWithSuperTypeFields> serializer = new CompatibleFieldSerializer<>(kryo,
+				ClassWithObjectField.class);
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = serializer.getCompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setReadUnknownFieldData(true);
+		kryo.register(ClassWithObjectField.class, serializer);
 
-		roundTrip(99, new ClassWithObjectField(123));
-		roundTrip(100, new ClassWithObjectField("foo"));
+		roundTrip(12, new ClassWithObjectField(123));
+		roundTrip(13, new ClassWithObjectField("foo"));
 	}
 
 	public static class ClassWithObjectField {

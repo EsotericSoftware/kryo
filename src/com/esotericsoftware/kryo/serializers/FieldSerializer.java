@@ -211,11 +211,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return (T)kryo.newInstance(original.getClass());
 	}
 
-	/** If true, the serializer supports re-use of serializers for all instances of a field */
-	boolean supportsReuse() {
-		return true;
-	}
-
 	@Override
 	public T copy (Kryo kryo, T original) {
 		T copy = createCopy(kryo, original);
@@ -233,7 +228,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		String name;
 		Class valueClass;
 		Serializer serializer;
-		boolean canBeNull, varEncoding = true, optimizePositive;
+		boolean canBeNull, varEncoding = true, optimizePositive, reuseSerializer = true;
 
 		// For AsmField.
 		FieldAccess access;
@@ -314,6 +309,18 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return optimizePositive;
 		}
 
+		/** When true, serializers are re-used for all instances of the field if the {@link #valueClass} is known. Re-using
+		 * serializers is significantly faster than looking them up for every read/write. However, this only works reliably
+		 * when the {@link #valueClass} of the field never changes. Serializers that do not guarantee this must set the flag to
+		 * false. */
+		void setReuseSerializer(boolean reuseSerializer) {
+			this.reuseSerializer = reuseSerializer;
+		}
+
+		boolean getReuseSerializer() {
+			return reuseSerializer;
+		}
+
 		public String getName () {
 			return name;
 		}
@@ -331,6 +338,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		public abstract void read (Input input, Object object);
 
 		public abstract void copy (Object original, Object copy);
+		
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
