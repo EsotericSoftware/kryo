@@ -92,6 +92,12 @@ class ReflectField extends CachedField {
 		} catch (KryoException ex) {
 			ex.addTrace(name + " (" + object.getClass().getName() + ")");
 			throw ex;
+		} catch (StackOverflowError ex) {
+			throw new KryoException(
+				"A StackOverflow occurred. The most likely cause is that your data has a circular reference resulting in " +
+					"infinite recursion. Try enabling references with Kryo.setReferences(true). If your data structure " +
+					"is really more than " + kryo.getDepth() + " levels deep then try increasing your Java stack size.",
+				ex);
 		} catch (Throwable t) {
 			KryoException ex = new KryoException(t);
 			ex.addTrace(name + " (" + object.getClass().getName() + ")");
