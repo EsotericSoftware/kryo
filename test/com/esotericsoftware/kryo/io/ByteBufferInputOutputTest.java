@@ -24,6 +24,7 @@ import static org.junit.Assert.*;
 import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
@@ -87,4 +88,19 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(10, inputBuffer.readInt());
 		assertEquals(9, byteBuffer.position());
 	}
+
+	@Test
+    public void testByteBufferInputSetInputStream() {
+        final InputStream inputStream = new ByteArrayInputStream(new byte[] {123, 0, 0, 0});
+        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
+        final ByteBufferInput inputBuffer = new ByteBufferInput(byteBuffer);
+        inputBuffer.setInputStream(inputStream);
+        long skipL = inputBuffer.skip(2L);
+        long readByteUnsigned = inputBuffer.readByteUnsigned();
+        Boolean canReadVarLong = inputBuffer.canReadVarLong();
+        assertEquals(inputBuffer.inputStream, inputStream);
+        assertEquals(2L, skipL);
+        assertEquals(0L, readByteUnsigned);
+        assertEquals(true, canReadVarLong);
+    }
 }

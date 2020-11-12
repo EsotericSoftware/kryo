@@ -93,6 +93,12 @@ public class FieldSerializerTest extends KryoTestCase {
 		serializer.updateFields();
 		serializer.getField("hasStringField").setCanBeNull(false);
 		roundTrip(78, test);
+		serializer.getFieldSerializerConfig().setIgnoreSyntheticFields(true);
+		serializer.updateFields();
+		final Boolean fixedFieldTypes = serializer.getFieldSerializerConfig().getFixedFieldTypes();
+		final Boolean ignoreSyntheticFields = serializer.getFieldSerializerConfig().getIgnoreSyntheticFields();
+		assertEquals(true, fixedFieldTypes);
+		assertEquals(true, ignoreSyntheticFields);
 	}
 
 	@Test
@@ -529,6 +535,14 @@ public class FieldSerializerTest extends KryoTestCase {
 		HasTransients objectWithTransients2 = kryo.copy(objectWithTransients1);
 		assertEquals("Objects should be equal if copy includes transient fields", objectWithTransients2, objectWithTransients1);
 	}
+
+	@Test
+	public void testFieldSerializerFactoryBuild() {
+		final FieldSerializerFactory factory = new FieldSerializerFactory();
+		factory.getConfig().setCopyTransient(false);
+		final FieldSerializerFactory factoryBuild = new FieldSerializerFactory(factory.getConfig());
+		assertEquals(factory.getConfig().copyTransient, factoryBuild.getConfig().copyTransient);
+    }
 
 	@Test
 	public void testSerializeTransients () {

@@ -19,6 +19,7 @@
 
 package com.esotericsoftware.kryo;
 
+import static com.esotericsoftware.kryo.util.Util.className;
 import static org.junit.Assert.*;
 
 import com.esotericsoftware.kryo.io.Input;
@@ -39,6 +40,21 @@ public class RegistrationTest {
 		kryo.addDefaultSerializer(Apple.class, appleSerializer);
 		assertSame(appleSerializer, kryo.getDefaultSerializer(Apple.class));
 	}
+
+    @Test
+    public void testDefaultSerializerBuild() {
+        final Kryo kryo = new Kryo();
+        kryo.addDefaultSerializer(Fruit.class, new SerializerFactory.FieldSerializerFactory());
+        final FieldSerializer appleSerializer = new FieldSerializer(kryo, Apple.class);
+        kryo.addDefaultSerializer(Apple.class, appleSerializer);
+        assertSame(appleSerializer, kryo.getDefaultSerializer(Apple.class));
+
+        kryo.register(Apple.class);
+        Registration registration = kryo.getRegistration(Apple.class);
+        Class type = registration.getType ();
+        String registrationString = "[" + registration.getId() + ", " + className(type) + "]";
+        assertEquals(registrationString, registration.toString ());
+    }
 
 	@Test
 	public void testReplaceRegistration () throws IOException {

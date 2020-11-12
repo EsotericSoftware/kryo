@@ -60,6 +60,7 @@ public class PoolTest extends KryoTestCase {
 	public void beforeMethod () {
 		// clear the pool's queue
 		pool.clear();
+		pool.clean();
 	}
 
 	@Test
@@ -100,6 +101,15 @@ public class PoolTest extends KryoTestCase {
 		pool.free(kryo2);
 		assertEquals(2, pool.getFree());
 	}
+
+	@Test
+	public void testPoolPeak() {
+		final int peak = pool.getPeak();
+		pool.resetPeak();
+		final int peak2 = pool.getPeak();
+		assertNotEquals(0, peak);
+		assertEquals(0, peak2);
+    }
 
 	private static class TestPool extends Pool<Kryo> {
 

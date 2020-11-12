@@ -110,6 +110,22 @@ public class InputOutputTest extends KryoTestCase {
 			61, 62, 63, 64, 65}, buffer.toBytes());
 	}
 
+    @Test
+    public void testAddInputOutputTestCase() {
+        Output write = new Output(200);
+        write.writeBytes(new byte[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26});
+        write.setVariableLengthEncoding(false);
+        final Boolean isEncoding = write.getVariableLengthEncoding();
+        final int maxCapacity = write.getMaxCapacity();
+        Input read = new Input(write.toBytes());
+        final Boolean variableLengthEncoding = read.getVariableLengthEncoding();
+        final Boolean canReadLong = read.canReadLong();
+        assertEquals(false, isEncoding);
+        assertEquals(200, maxCapacity);
+        write.close();
+        read.close();
+    }
+
 	@Test
 	public void testStrings () throws IOException {
 		runStringTest(new Output(4096));
@@ -897,14 +913,63 @@ public class InputOutputTest extends KryoTestCase {
 		testOutput.flush();
 
 		ByteBufferInputStream testInputs = new ByteBufferInputStream();
+		final ByteBufferInputStream testInputs2 = new ByteBufferInputStream(512);
 		((Buffer) buf).flip();
 		testInputs.setByteBuffer(buf);
 		Input input = new Input(testInputs, 512);
 		byte[] toRead = new byte[512];
 		input.readBytes(toRead);
 
-		input.readBytes(toRead);
+		int read = testInputs2.read();
+		int available = testInputs2.available();
+		ByteBuffer byteBuffer = testInputs.getByteBuffer();
+		final ByteBufferInputStream testInputs3 = new ByteBufferInputStream(byteBuffer);
+		testInputs2.close();
+		testInputs3.close();
 	}
+
+	@Test
+	public void testKryoObjectInputOutput() throws IOException, ClassNotFoundException {
+		final Kryo kryo = new Kryo();
+        final byte[] byteArray = new byte[] {123, 0, 0, 10, 21};
+        final byte[] byteBuff = new byte[] {1, 2, 0, 3, 12, 33};
+        final Input input = new Input(byteArray);
+        final Output output = new Output(byteArray);
+        output.setOutputStream(new ByteArrayOutputStream());
+        output.setBuffer(byteBuff);
+		final KryoObjectInput kryoObjectInput = new KryoObjectInput(kryo, input);
+		final KryoObjectOutput kryoObjectOutput = new KryoObjectOutput(kryo, output);
+		int readByte = kryoObjectInput.read(new byte[] {1, 2, 3, 4, 5});
+		int readByte2 = kryoObjectInput.read(byteArray, 0, 10);
+		assertEquals(0, kryoObjectInput.available());
+		kryoObjectOutput.flush();
+		kryoObjectInput.close();
+		kryoObjectOutput.close();
+	}
+
+	@Test
+	public void testKryoDataInputOutput() throws Exception {
+        final Kryo kryo = new Kryo();
+        final byte[] byteArray = new byte[] {123, 0, 0, 10, 21};
+        final byte[] testByte = new byte[] {1, 2, 11, 33, 44, 66, 88};
+        final Input input = new Input(byteArray);
+        final Output output = new Output(byteArray);
+        final KryoDataInput kryoDataInput = new KryoDataInput(input);
+        final KryoDataOutput kryoDataOutput = new KryoDataOutput(output);
+        kryoDataInput.close();
+        kryoDataOutput.close();
+	}
+
+    @Test
+	public void testByteBuffOutputStream() throws IOException {
+		final ByteBuffer buffer = ByteBuffer.allocate(512);
+		final ByteBufferOutputStream byteBufferOutputStream = new ByteBufferOutputStream(512);
+		byteBufferOutputStream.setByteBuffer(buffer);
+		final ByteBuffer byteBuffer = byteBufferOutputStream.getByteBuffer();
+		assertEquals(buffer, byteBuffer);
+		byteBufferOutputStream.write(10);
+		byteBufferOutputStream.close();
+    }
 
 	@Test
 	public void testVerySmallBuffers () throws Exception {
