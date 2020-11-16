@@ -453,6 +453,38 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		roundTrip(71, new ClassWithSuperTypeFields("foo", Arrays.asList("bar"), "baz"));
 	}
 
+	// https://github.com/EsotericSoftware/kryo/issues/774
+	@Test
+	public void testClassWithObjectField() {
+		CompatibleFieldSerializer<ClassWithSuperTypeFields> serializer = new CompatibleFieldSerializer<>(kryo,
+				ClassWithObjectField.class);
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = serializer.getCompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setReadUnknownFieldData(true);
+		kryo.register(ClassWithObjectField.class, serializer);
+
+		roundTrip(12, new ClassWithObjectField(123));
+		roundTrip(13, new ClassWithObjectField("foo"));
+	}
+
+	public static class ClassWithObjectField {
+		Object value;
+
+		public ClassWithObjectField() { }
+
+		public ClassWithObjectField(Object value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithObjectField wrapper = (ClassWithObjectField) o;
+			return Objects.equals(value, wrapper.value);
+		}
+	}
+
 	public static class TestClass {
 		public String text = "something";
 		public int moo = 120;
