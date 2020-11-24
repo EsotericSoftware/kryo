@@ -230,6 +230,7 @@ public class Util {
 	}
 
 	public static boolean isAssignableTo (Class<?> from, Class<?> to) {
+		if (to == Object.class) return true;
 		if (to.isAssignableFrom(from)) return true;
 		if (from.isPrimitive()) return isPrimitiveWrapperOf(to, from);
 		if (to.isPrimitive()) return isPrimitiveWrapperOf(from, to);

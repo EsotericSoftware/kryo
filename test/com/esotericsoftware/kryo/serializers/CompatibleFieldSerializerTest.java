@@ -25,6 +25,8 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -230,23 +232,27 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	private void testChangeFieldType(int length, boolean chunked) {
-		CompatibleFieldSerializer<AnotherClass> serializer = new CompatibleFieldSerializer<>(kryo, AnotherClass.class);
+		CompatibleFieldSerializer<ClassWithStringField> serializer = new CompatibleFieldSerializer<>(kryo, ClassWithStringField.class);
 		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.setReferences(false);
-		kryo.register(AnotherClass.class, serializer);
+		kryo.register(ClassWithStringField.class, serializer);
 
-		roundTrip(length, new AnotherClass("Hacker"));
+		roundTrip(length, new ClassWithStringField("Hacker"));
 
-		serializer.getField("value").setValueClass(Long.class);
+		final Kryo otherKryo = new Kryo();
+		CompatibleFieldSerializer<AnotherClass> otherSerializer = new CompatibleFieldSerializer<>(kryo, ClassWithLongField.class);
+		otherSerializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
+		otherKryo.setReferences(false);
+		otherKryo.register(ClassWithLongField.class, otherSerializer);
 
-		final AnotherClass o = (AnotherClass)kryo.readClassAndObject(input);
+		final ClassWithLongField o = (ClassWithLongField) otherKryo.readClassAndObject(input);
 		assertNull(o.value);
 	}
 
 	@Test
 	public void testChangePrimitiveAndWrapperFieldTypes () {
-		testChangePrimitiveAndWrapperFieldTypes(26, true);
-		testChangePrimitiveAndWrapperFieldTypes(22, false);
+		testChangePrimitiveAndWrapperFieldTypes(22, true);
+		testChangePrimitiveAndWrapperFieldTypes(18, false);
 	}
 
 	private void testChangePrimitiveAndWrapperFieldTypes (int length, boolean chunked) {
@@ -257,12 +263,15 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 		roundTrip(length, new ClassWithPrimitiveAndWrapper(1, 1L));
 
-		serializer.getField("primitive").setValueClass(Long.class);
-		serializer.getField("wrapper").setValueClass(long.class);
+		final Kryo otherKryo = new Kryo();
+		CompatibleFieldSerializer<ClassWithWrapperAndPrimitive> otherSerializer = new CompatibleFieldSerializer<>(kryo, ClassWithWrapperAndPrimitive.class);
+		otherSerializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
+		otherKryo.setReferences(false);
+		otherKryo.register(ClassWithWrapperAndPrimitive.class, otherSerializer);
 
-		ClassWithPrimitiveAndWrapper o = (ClassWithPrimitiveAndWrapper)kryo.readClassAndObject(input);
-		assertEquals(1, o.primitive);
-		assertEquals(1L, o.wrapper, 0);
+		ClassWithWrapperAndPrimitive o = (ClassWithWrapperAndPrimitive) otherKryo.readClassAndObject(input);
+		assertEquals(1L, o.value1, 0);
+		assertEquals(1, o.value2);
 	}
 
 	@Test
@@ -456,33 +465,22 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	// https://github.com/EsotericSoftware/kryo/issues/774
 	@Test
 	public void testClassWithObjectField() {
-		CompatibleFieldSerializer<ClassWithSuperTypeFields> serializer = new CompatibleFieldSerializer<>(kryo,
-				ClassWithObjectField.class);
+		CompatibleFieldSerializer<ClassWithObjectField> serializer = new CompatibleFieldSerializer<>(kryo, ClassWithObjectField.class);
 		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = serializer.getCompatibleFieldSerializerConfig();
 		config.setChunkedEncoding(true);
 		config.setReadUnknownFieldData(true);
 		kryo.register(ClassWithObjectField.class, serializer);
 
-		roundTrip(12, new ClassWithObjectField(123));
-		roundTrip(13, new ClassWithObjectField("foo"));
-	}
+		Output output1 = new Output(4096, Integer.MAX_VALUE);
+		final ClassWithObjectField o1 = new ClassWithObjectField(123);
+		kryo.writeClassAndObject(output1, o1);
 
-	public static class ClassWithObjectField {
-		Object value;
+		Output output2 = new Output(4096, Integer.MAX_VALUE);
+		final ClassWithObjectField o2 = new ClassWithObjectField("foo");
+		kryo.writeClassAndObject(output2, o2);
 
-		public ClassWithObjectField() { }
-
-		public ClassWithObjectField(Object value) {
-			this.value = value;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
-			ClassWithObjectField wrapper = (ClassWithObjectField) o;
-			return Objects.equals(value, wrapper.value);
-		}
+		assertEquals(o1, kryo.readClassAndObject(new Input(output1.getBuffer())));
+		assertEquals(o2, kryo.readClassAndObject(new Input(output2.getBuffer())));
 	}
 
 	public static class TestClass {
@@ -621,15 +619,15 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	public static class ClassWithPrimitiveAndWrapper {
-		long primitive;
-		Long wrapper;
+		long value1;
+		Long value2;
 
 		public ClassWithPrimitiveAndWrapper () {
 		}
 
-		public ClassWithPrimitiveAndWrapper (long primitive, Long wrapper) {
-			this.primitive = primitive;
-			this.wrapper = wrapper;
+		public ClassWithPrimitiveAndWrapper (long value1, Long value2) {
+			this.value1 = value1;
+			this.value2 = value2;
 		}
 
 		@Override
@@ -637,12 +635,23 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 			if (this == o) return true;
 			if (o == null || getClass() != o.getClass()) return false;
 			final ClassWithPrimitiveAndWrapper that = (ClassWithPrimitiveAndWrapper)o;
-			return primitive == that.primitive && Objects.equals(wrapper, that.wrapper);
+			return value1 == that.value1 && Objects.equals(value2, that.value2);
+		}
+	}
+
+	public static class ClassWithWrapperAndPrimitive {
+		Long value1;
+		long value2;
+
+		public ClassWithWrapperAndPrimitive() {
 		}
 
 		@Override
-		public int hashCode () {
-			return Objects.hash(primitive, wrapper);
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			final ClassWithWrapperAndPrimitive that = (ClassWithWrapperAndPrimitive)o;
+			return value1.equals(that.value1) && value2 == that.value2;
 		}
 	}
 
@@ -672,6 +681,62 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		@Override
 		public int hashCode () {
 			return Objects.hash(value, list, serializable);
+		}
+	}
+
+	public static class ClassWithObjectField {
+		Object value;
+
+		public ClassWithObjectField() { }
+
+		public ClassWithObjectField(Object value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithObjectField wrapper = (ClassWithObjectField) o;
+			return Objects.equals(value, wrapper.value);
+		}
+	}
+
+	public static class ClassWithStringField {
+		String value;
+
+		public ClassWithStringField() {
+		}
+
+		public ClassWithStringField(String value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			final ClassWithStringField that = (ClassWithStringField)o;
+			return Objects.equals(value, that.value);
+		}
+	}
+
+	public static class ClassWithLongField {
+		Long value;
+
+		public ClassWithLongField() {
+		}
+
+		public ClassWithLongField(Long value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			final ClassWithLongField that = (ClassWithLongField)o;
+			return Objects.equals(value, that.value);
 		}
 	}
 }
