@@ -28,6 +28,8 @@ public class UtilTest extends TestCase {
         assertTrue(Util.isAssignableTo(long.class, Long.class));
         assertTrue(Util.isAssignableTo(Long.class, Long.class));
         assertTrue(Util.isAssignableTo(long.class, long.class));
+        assertTrue(Util.isAssignableTo(Long.class, Object.class));
+        assertTrue(Util.isAssignableTo(long.class, Object.class));
 
         assertFalse(Util.isAssignableTo(String.class, Long.class));
         assertFalse(Util.isAssignableTo(String.class, long.class));
