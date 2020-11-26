@@ -145,6 +145,10 @@ To use the latest Kryo snapshot, use:
 
 Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#installation) on your classpath along with the dependency JARs found in [lib](https://github.com/EsotericSoftware/kryo/tree/master/lib).
 
+### On Android
+
+Kryo 5 ships with Objenesis 3.1 which [currently supports](https://github.com/easymock/objenesis/issues/79) Android API >= 26. If you want to use Kryo with older Android APIs, you need to explicitely depend on Objensis 2.6.
+
 ## Quickstart
 
 Jumping ahead to show how the library can be used:
