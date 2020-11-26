@@ -109,7 +109,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 			fields[i].write(output, object);
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 	}
 
 	@Override
@@ -136,7 +136,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 			fields[i].read(input, object);
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 		return object;
 	}
 

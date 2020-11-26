@@ -36,12 +36,12 @@ public final class DefaultGenerics implements Generics {
 	private int argumentsSize;
 	private Type[] arguments = new Type[16];
 
-	public DefaultGenerics(Kryo kryo) {
+	public DefaultGenerics (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
 	@Override
-	public void pushGenericType(GenericType fieldType) {
+	public void pushGenericType (GenericType fieldType) {
 		// Ensure genericTypes and depths capacity.
 		int size = genericTypesSize;
 		if (size + 1 == genericTypes.length) {
@@ -59,7 +59,7 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
-	public void popGenericType() {
+	public void popGenericType () {
 		int size = genericTypesSize;
 		if (size == 0) return;
 		size--;
@@ -69,7 +69,7 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
-	public GenericType[] nextGenericTypes() {
+	public GenericType[] nextGenericTypes () {
 		int index = genericTypesSize;
 		if (index > 0) {
 			index--;
@@ -85,18 +85,16 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
-	public Class nextGenericClass() {
+	public Class nextGenericClass () {
 		GenericType[] arguments = nextGenericTypes();
 		if (arguments == null) return null;
 		return arguments[0].resolve(this);
 	}
 
 	@Override
-	public int pushTypeVariables(GenericsHierarchy hierarchy, GenericType[] args) {
-		// Do not store type variables if hierarchy is empty or we do not have arguments for all root parameters
-		if (hierarchy.total == 0 || hierarchy.rootTotal > args.length) {
-			return 0;
-		}
+	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args) {
+		// Do not store type variables if hierarchy is empty or we do not have arguments for all root parameters.
+		if (hierarchy.total == 0 || hierarchy.rootTotal > args.length) return 0;
 
 		int startSize = this.argumentsSize;
 
@@ -131,7 +129,7 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
-	public void popTypeVariables(int count) {
+	public void popTypeVariables (int count) {
 		int n = argumentsSize, i = n - count;
 		argumentsSize = i;
 		while (i < n)
@@ -139,13 +137,18 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
-	public Class resolveTypeVariable(TypeVariable typeVariable) {
+	public Class resolveTypeVariable (TypeVariable typeVariable) {
 		for (int i = argumentsSize - 2; i >= 0; i -= 2)
 			if (arguments[i] == typeVariable) return (Class)arguments[i + 1];
 		return null;
 	}
 
-	public String toString () {
+    @Override
+    public int getGenericTypesSize() {
+        return genericTypesSize;
+    }
+
+    public String toString () {
 		StringBuilder buffer = new StringBuilder();
 		for (int i = 0; i < argumentsSize; i += 2) {
 			if (i != 0) buffer.append(", ");

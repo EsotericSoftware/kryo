@@ -145,7 +145,7 @@ public abstract class KryoTestCase {
 			@Override
 			public Input createInput (byte[] buffer) {
 				ByteBuffer byteBuffer = allocateByteBuffer(buffer);
-				return new ByteBufferInput(byteBuffer);
+				return new ByteBufferInput(byteBuffer.asReadOnlyBuffer());
 			}
 		});
 
@@ -200,7 +200,7 @@ public abstract class KryoTestCase {
 			@Override
 			public Input createInput (byte[] buffer) {
 				ByteBuffer byteBuffer = allocateByteBuffer(buffer);
-				return new UnsafeByteBufferInput(byteBuffer);
+				return new UnsafeByteBufferInput(byteBuffer.asReadOnlyBuffer());
 			}
 		});
 
@@ -289,6 +289,9 @@ public abstract class KryoTestCase {
 			copy = kryo.copyShallow(object1);
 			doAssertEquals(object1, copy);
 		}
+
+		// Ensure generic types are balanced after each round of serialization
+		assertEquals(0, kryo.getGenerics().getGenericTypesSize());
 
 		return (T)object2;
 	}

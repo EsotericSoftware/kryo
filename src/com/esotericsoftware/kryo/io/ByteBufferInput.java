@@ -316,7 +316,7 @@ public class ByteBufferInput extends Input {
 		}
 	}
 
-	private int getBufferPosition(Buffer buffer) {
+	private int getBufferPosition (Buffer buffer) {
 		return buffer.position();
 	}
 
@@ -328,7 +328,7 @@ public class ByteBufferInput extends Input {
 		buffer.limit(limit);
 	}
 
-	private void flipBuffer(Buffer buffer) {
+	private void flipBuffer (Buffer buffer) {
 		buffer.flip();
 	}
 

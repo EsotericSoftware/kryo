@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Objects;
 
 import org.junit.Test;
 
@@ -154,6 +155,38 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 			receivedIAE = true;
 		}
 		assertTrue(receivedIAE);
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/774
+	@Test
+	public void testClassWithObjectField() {
+		TaggedFieldSerializer<ClassWithObjectField> serializer = new TaggedFieldSerializer<>(kryo, ClassWithObjectField.class);
+		final TaggedFieldSerializer.TaggedFieldSerializerConfig config = serializer.getTaggedFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setReadUnknownTagData(true);
+		kryo.register(ClassWithObjectField.class, serializer);
+
+		roundTrip(8, new ClassWithObjectField(123));
+		roundTrip(9, new ClassWithObjectField("foo"));
+	}
+
+	public static class ClassWithObjectField {
+		@Tag(0)
+		Object value;
+
+		public ClassWithObjectField() { }
+
+		public ClassWithObjectField(Object value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithObjectField wrapper = (ClassWithObjectField) o;
+			return Objects.equals(value, wrapper.value);
+		}
 	}
 
 	public static class TestClass {

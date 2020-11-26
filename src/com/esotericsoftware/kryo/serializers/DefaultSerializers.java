@@ -58,6 +58,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
  * @author Nathan Sweet */
@@ -720,6 +721,46 @@ public class DefaultSerializers {
 		}
 	}
 
+	/** Serializer for {@link ConcurrentSkipListMap} and any subclass.
+	 * @author Mr14huashao <mr11huashao@gmail.com> (enhacements) */
+	public static class ConcurrentSkipListMapSerializer extends MapSerializer<ConcurrentSkipListMap> {
+		@Override
+		protected void writeHeader (Kryo kryo, Output output, ConcurrentSkipListMap concurrentSkipListMap) {
+			kryo.writeClassAndObject(output, concurrentSkipListMap.comparator());
+		}
+
+		@Override
+		protected ConcurrentSkipListMap create (Kryo kryo, Input input, Class<? extends ConcurrentSkipListMap> type,
+			int size) {
+			return createConcurrentSkipListMap(type, (Comparator)kryo.readClassAndObject(input));
+		}
+
+		@Override
+		protected ConcurrentSkipListMap createCopy (Kryo kryo, ConcurrentSkipListMap original) {
+			return createConcurrentSkipListMap(original.getClass(), original.comparator());
+		}
+
+		private ConcurrentSkipListMap createConcurrentSkipListMap (Class<? extends ConcurrentSkipListMap> type,
+			Comparator comparator) {
+			if (type == ConcurrentSkipListMap.class || type == null) {
+				return new ConcurrentSkipListMap(comparator);
+			}
+			// Use reflection for subclasses.
+			try {
+				Constructor constructor = type.getConstructor(Comparator.class);
+				if (!constructor.isAccessible()) {
+					try {
+						constructor.setAccessible(true);
+					} catch (SecurityException ignored) {
+					}
+				}
+				return (ConcurrentSkipListMap)constructor.newInstance(comparator);
+			} catch (Exception ex) {
+				throw new KryoException(ex);
+			}
+		}
+	}
+
 	/** Serializer for {@link TreeMap} and any subclass.
 	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
 	public static class TreeSetSerializer extends CollectionSerializer<TreeSet> {
@@ -904,7 +945,13 @@ public class DefaultSerializers {
 
 		@Override
 		public List copy (Kryo kryo, List original) {
-			return Arrays.asList(original.toArray());
+			Object[] copyArr = new Object[original.size()];
+			List<Object> copy = Arrays.asList(copyArr);
+			kryo.reference(copy);
+			for (int i = 0; i < original.size(); i++) {
+				copyArr[i] = kryo.copy(original.get(i));
+			}
+			return copy;
 		}
 	}
 

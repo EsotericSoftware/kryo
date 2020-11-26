@@ -705,6 +705,22 @@ public class FieldSerializerTest extends KryoTestCase {
 		roundTrip(1440, root);
 	}
 
+	@Test
+	public void testCircularReference () {
+		kryo.register(CircularReference.class);
+		kryo.register(CircularReference.Inner.class);
+
+		CircularReference instance = new CircularReference();
+		try {
+			roundTrip(1, instance);
+		} catch (KryoException ex) {
+			assertTrue(ex.getMessage().contains("A StackOverflow occurred."));
+			return;
+		}
+
+		fail("Exception was expected");
+	}
+
 	public static class DefaultTypes {
 		// Primitives.
 		public boolean booleanField;
@@ -1279,4 +1295,17 @@ public class FieldSerializerTest extends KryoTestCase {
 			return true;
 		}
 	}
+
+	static class CircularReference {
+		Inner b = new Inner(this);
+
+		static class Inner {
+			CircularReference a;
+	
+			public Inner(CircularReference a) {
+				this.a = a;
+			}
+		}
+	}
+
 }

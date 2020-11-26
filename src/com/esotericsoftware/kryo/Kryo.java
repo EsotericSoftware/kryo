@@ -74,6 +74,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimeZoneSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeSetSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.ConcurrentSkipListMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.URLSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.VoidSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
@@ -117,6 +118,7 @@ import java.util.PriorityQueue;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
@@ -131,9 +133,10 @@ public class Kryo {
 
 	private static final int REF = -1;
 	private static final int NO_REF = -2;
+	private static final int DEFAULT_SERIALIZER_SIZE = 68;
 
 	private SerializerFactory defaultSerializer = new FieldSerializerFactory();
-	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(67);
+	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(DEFAULT_SERIALIZER_SIZE);
 	private final int lowPriorityDefaultSerializerCount;
 
 	private final ClassResolver classResolver;
@@ -193,7 +196,6 @@ public class Kryo {
 		addDefaultSerializer(boolean[].class, BooleanArraySerializer.class);
 		addDefaultSerializer(String[].class, StringArraySerializer.class);
 		addDefaultSerializer(Object[].class, ObjectArraySerializer.class);
-		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
 		addDefaultSerializer(BigInteger.class, BigIntegerSerializer.class);
 		addDefaultSerializer(BigDecimal.class, BigDecimalSerializer.class);
 		addDefaultSerializer(Class.class, ClassSerializer.class);
@@ -211,6 +213,7 @@ public class Kryo {
 		addDefaultSerializer(Collections.singleton(null).getClass(), CollectionsSingletonSetSerializer.class);
 		addDefaultSerializer(TreeSet.class, TreeSetSerializer.class);
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
+		addDefaultSerializer(ConcurrentSkipListMap.class, ConcurrentSkipListMapSerializer.class);
 		addDefaultSerializer(TreeMap.class, TreeMapSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
 		addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
@@ -222,6 +225,7 @@ public class Kryo {
 		addDefaultSerializer(void.class, new VoidSerializer());
 		addDefaultSerializer(PriorityQueue.class, new PriorityQueueSerializer());
 		addDefaultSerializer(BitSet.class, new BitSetSerializer());
+		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		ImmutableCollectionsSerializers.addDefaultSerializers(this);
@@ -515,7 +519,7 @@ public class Kryo {
 
 	protected String unregisteredClassMessage (Class type) {
 		return "Class is not registered: " + className(type) + "\nNote: To register this class use: kryo.register("
-			+ className(type) + ".class);";
+			+ canonicalName(type) + ".class);";
 	}
 
 	/** @see ClassResolver#getRegistration(int) */

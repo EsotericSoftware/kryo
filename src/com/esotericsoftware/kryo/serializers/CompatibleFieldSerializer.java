@@ -50,7 +50,7 @@ import java.util.HashSet;
 public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private static final int binarySearchThreshold = 32;
 
-	private CompatibleFieldSerializerConfig config;
+	private final CompatibleFieldSerializerConfig config;
 
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new CompatibleFieldSerializerConfig());
@@ -123,13 +123,14 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				cachedField.setCanBeNull(false);
 				cachedField.setValueClass(valueClass);
+				cachedField.setReuseSerializer(false);
 			}
 
 			cachedField.write(fieldOutput, object);
 			if (chunked) outputChunked.endChunk();
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 	}
 
 	@Override
@@ -184,7 +185,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				}
 
 				// Ensure the type in the data is compatible with the field type.
-				if (cachedField.valueClass != null && !Util.isAssignableTo(valueClass, cachedField.valueClass)) {
+				if (cachedField.valueClass != null && !Util.isAssignableTo(valueClass, cachedField.field.getType())) {
 					String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
 						+ className(cachedField.valueClass) + " (" + getType().getName() + "#" + cachedField + ")";
 					if (!chunked) throw new KryoException(message);
@@ -195,6 +196,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 				cachedField.setCanBeNull(false);
 				cachedField.setValueClass(valueClass);
+				cachedField.setReuseSerializer(false);
 			} else if (cachedField == null) {
 				if (!chunked) throw new KryoException("Unknown field. (" + getType().getName() + ")");
 				if (TRACE) trace("kryo", "Skip unknown field.");
@@ -207,7 +209,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			if (chunked) inputChunked.nextChunk();
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 		return object;
 	}
 

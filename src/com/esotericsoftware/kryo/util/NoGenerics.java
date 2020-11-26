@@ -61,4 +61,9 @@ public final class NoGenerics implements Generics {
 	public Class resolveTypeVariable (TypeVariable typeVariable) {
 		return null;
 	}
+
+    @Override
+    public int getGenericTypesSize() {
+        return 0;
+    }
 }

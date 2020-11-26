@@ -173,15 +173,15 @@ public class ByteBufferOutput extends Output {
 		setBufferPosition(byteBuffer, 0);
 	}
 
-	private int getBufferPosition(Buffer buffer) {
+	private int getBufferPosition (Buffer buffer) {
 		return buffer.position();
 	}
 
-	private void setBufferPosition(Buffer buffer, int newPosition) {
+	private void setBufferPosition (Buffer buffer, int newPosition) {
 		buffer.position(newPosition);
 	}
 
-	private void setBufferLimit(Buffer buffer, int length) {
+	private void setBufferLimit (Buffer buffer, int length) {
 		buffer.limit(length);
 	}
 
