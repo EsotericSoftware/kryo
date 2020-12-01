@@ -85,6 +85,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
+* [5.0.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.2) - brings an important fix for `CompatibleFieldSerializer`.
 * [5.0.1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.1) - brings several incremental fixes and improvements.
 * [5.0.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0) - the final Kryo 5 release fixing many issues and making many long awaited improvements over Kryo 4. Note: For libraries (not applications) using Kryo, there's now a completely self-contained, versioned artifact (for details see [installation](#installation)). For migration from Kryo 4.x see also [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5).
 * [4.0.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.2) - brings several incremental fixes and improvements.
@@ -105,7 +106,7 @@ To use the latest Kryo release in your application, use this dependency entry in
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.0.1</version>
+   <version>5.0.2</version>
 </dependency>
 ```
 
@@ -115,7 +116,7 @@ To use the latest Kryo release in a library you want to publish, use this depend
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.0.1</version>
+   <version>5.0.2</version>
 </dependency>
 ```
 
@@ -132,13 +133,13 @@ To use the latest Kryo snapshot, use:
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.0.2-SNAPSHOT</version>
+   <version>5.0.3-SNAPSHOT</version>
 </dependency>
 <!-- for usage in a library that should be published: -->
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.0.2-SNAPSHOT</version>
+   <version>5.0.3-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -151,7 +152,7 @@ Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo
 Kryo 5 ships with Objenesis 3.1 which [currently supports](https://github.com/easymock/objenesis/issues/79) Android API >= 26. If you want to use Kryo with older Android APIs, you need to explicitely depend on Objensis 2.6.
 
 ```
-implementation ('com.esotericsoftware:kryo:5.0.1') {
+implementation ('com.esotericsoftware:kryo:5.0.2') {
   exclude group: "org.objenesis"
 }
 implementation 'org.objenesis:objenesis:2.6'
