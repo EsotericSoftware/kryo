@@ -138,8 +138,10 @@ public final class DefaultGenerics implements Generics {
 
 	@Override
 	public Class resolveTypeVariable (TypeVariable typeVariable) {
-		for (int i = argumentsSize - 2; i >= 0; i -= 2)
-			if (arguments[i] == typeVariable) return (Class)arguments[i + 1];
+		for (int i = argumentsSize - 2; i >= 0; i -= 2) {
+			final Type arg = arguments[i];
+			if (arg == typeVariable || arg.equals(typeVariable)) return (Class)arguments[i + 1];
+		}
 		return null;
 	}
 
