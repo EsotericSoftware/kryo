@@ -85,6 +85,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
+* [5.0.3](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.3) - brings an important fix for generics optimization.
 * [5.0.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.2) - brings an important fix for `CompatibleFieldSerializer`.
 * [5.0.1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.1) - brings several incremental fixes and improvements.
 * [5.0.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0) - the final Kryo 5 release fixing many issues and making many long awaited improvements over Kryo 4. Note: For libraries (not applications) using Kryo, there's now a completely self-contained, versioned artifact (for details see [installation](#installation)). For migration from Kryo 4.x see also [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5).
