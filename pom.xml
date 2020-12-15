@@ -9,7 +9,7 @@
 
 	<groupId>com.esotericsoftware</groupId>
 	<artifactId>kryo-parent</artifactId>
-	<version>5.0.3-SNAPSHOT</version>
+	<version>5.0.3</version>
 	<packaging>pom</packaging>
 
 	<name>Kryo Parent</name>
@@ -28,7 +28,7 @@
 		<url>https://github.com/EsotericSoftware/kryo</url>
 		<connection>scm:git:git@github.com:EsotericSoftware/kryo.git</connection>
 		<developerConnection>scm:git:git@github.com:EsotericSoftware/kryo.git</developerConnection>
-	  <tag>HEAD</tag>
+	  <tag>kryo-parent-5.0.3</tag>
   </scm>
 
 	<developers>
