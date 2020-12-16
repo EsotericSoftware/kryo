@@ -32,12 +32,10 @@ public class EnumMapSerializer extends MapSerializer<EnumMap> {
 		this.enumType = enumType;
 	}
 
-	@Override
 	protected EnumMap create (Kryo kryo, Input input, Class<? extends EnumMap> type, int size) {
 		return new EnumMap(enumType);
 	}
 
-	@Override
 	protected EnumMap createCopy (Kryo kryo, EnumMap original) {
 		return new EnumMap(original);
 	}

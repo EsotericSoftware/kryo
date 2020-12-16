@@ -42,7 +42,6 @@ public class GenericsTest extends KryoTestCase {
 		supportsCopy = true;
 	}
 
-	@Override
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();
@@ -198,7 +197,6 @@ public class GenericsTest extends KryoTestCase {
 			this.value = value;
 		}
 
-		@Override
 		public V getValue () {
 			return value;
 		}

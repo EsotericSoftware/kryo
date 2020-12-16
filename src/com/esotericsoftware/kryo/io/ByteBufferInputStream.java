@@ -51,13 +51,11 @@ public class ByteBufferInputStream extends InputStream {
 		this.byteBuffer = byteBuffer;
 	}
 
-	@Override
 	public int read () throws IOException {
 		if (!byteBuffer.hasRemaining()) return -1;
 		return byteBuffer.get() & 0xFF;
 	}
 
-	@Override
 	public int read (byte[] bytes, int offset, int length) throws IOException {
 		if (length == 0) return 0;
 		int count = Math.min(byteBuffer.remaining(), length);
@@ -66,7 +64,6 @@ public class ByteBufferInputStream extends InputStream {
 		return count;
 	}
 
-	@Override
 	public int available () throws IOException {
 		return byteBuffer.remaining();
 	}

@@ -33,12 +33,10 @@ public class EnumNameSerializer extends ImmutableSerializer<Enum> {
 		this.enumType = enumType;
 	}
 
-	@Override
 	public void write (Kryo kryo, Output output, Enum object) {
 		output.writeString(object.name());
 	}
 
-	@Override
 	public Enum read (Kryo kryo, Input input, Class type) {
 		String name = input.readString();
 		try {

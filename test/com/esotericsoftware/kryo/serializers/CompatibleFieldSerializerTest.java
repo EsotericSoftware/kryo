@@ -58,7 +58,6 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory() {
-			@Override
 			public CompatibleFieldSerializer newSerializer (Kryo kryo, Class type) {
 				CompatibleFieldSerializer serializer = super.newSerializer(kryo, type);
 				serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);

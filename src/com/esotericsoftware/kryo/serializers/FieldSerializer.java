@@ -98,7 +98,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 		cachedFields.rebuild();
 	}
 
-	@Override
 	public void write (Kryo kryo, Output output, T object) {
 		int pop = pushTypeVariables();
 
@@ -111,7 +110,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 		popTypeVariables(pop);
 	}
 
-	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int pop = pushTypeVariables();
 
@@ -211,7 +209,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return (T)kryo.newInstance(original.getClass());
 	}
 
-	@Override
 	public T copy (Kryo kryo, T original) {
 		T copy = createCopy(kryo, original);
 		kryo.reference(copy);
@@ -397,7 +394,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 		boolean varEncoding = true;
 		boolean extendedFieldNames;
 
-		@Override
 		public FieldSerializerConfig clone () {
 			try {
 				return (FieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.

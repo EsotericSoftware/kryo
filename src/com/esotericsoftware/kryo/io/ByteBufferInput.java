@@ -89,7 +89,6 @@ public class ByteBufferInput extends Input {
 	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
-	@Override
 	public byte[] getBuffer () {
 		throw new UnsupportedOperationException("This input does not used a byte[], see #getByteBuffer().");
 	}
@@ -97,7 +96,6 @@ public class ByteBufferInput extends Input {
 	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #setBuffer(ByteBuffer) */
-	@Override
 	public void setBuffer (byte[] bytes) {
 		throw new UnsupportedOperationException("This input does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}
@@ -105,7 +103,6 @@ public class ByteBufferInput extends Input {
 	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #setBuffer(ByteBuffer) */
-	@Override
 	public void setBuffer (byte[] bytes, int offset, int count) {
 		throw new UnsupportedOperationException("This input does not used a byte[], see #setByteBufferByteBuffer().");
 	}
@@ -127,14 +124,12 @@ public class ByteBufferInput extends Input {
 		return byteBuffer;
 	}
 
-	@Override
 	public void setInputStream (InputStream inputStream) {
 		this.inputStream = inputStream;
 		limit = 0;
 		reset();
 	}
 
-	@Override
 	public void reset () {
 		super.reset();
 		setBufferPosition(byteBuffer, 0);
@@ -164,7 +159,6 @@ public class ByteBufferInput extends Input {
 		}
 	}
 
-	@Override
 	protected int require (int required) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= required) return remaining;
@@ -208,7 +202,6 @@ public class ByteBufferInput extends Input {
 	 * @param optional Must be > 0.
 	 * @return the number of bytes remaining, but not more than optional, or -1 if {@link #fill(ByteBuffer, int, int)} is unable to
 	 *         provide more bytes. */
-	@Override
 	protected int optional (int optional) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= optional) return optional;
@@ -243,19 +236,16 @@ public class ByteBufferInput extends Input {
 
 	// InputStream:
 
-	@Override
 	public int read () throws KryoException {
 		if (optional(1) <= 0) return -1;
 		position++;
 		return byteBuffer.get() & 0xFF;
 	}
 
-	@Override
 	public int read (byte[] bytes) throws KryoException {
 		return read(bytes, 0, bytes.length);
 	}
 
-	@Override
 	public int read (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int startingCount = count;
@@ -277,25 +267,21 @@ public class ByteBufferInput extends Input {
 		return startingCount - count;
 	}
 
-	@Override
 	public void setPosition (int position) {
 		this.position = position;
 		setBufferPosition(byteBuffer, position);
 	}
 
-	@Override
 	public void setLimit (int limit) {
 		this.limit = limit;
 		setBufferLimit(byteBuffer, limit);
 	}
 
-	@Override
 	public void skip (int count) throws KryoException {
 		super.skip(count);
 		setBufferPosition(byteBuffer, position);
 	}
 
-	@Override
 	public long skip (long count) throws KryoException {
 		long remaining = count;
 		while (remaining > 0) {
@@ -306,7 +292,6 @@ public class ByteBufferInput extends Input {
 		return count;
 	}
 
-	@Override
 	public void close () throws KryoException {
 		if (inputStream != null) {
 			try {
@@ -334,28 +319,24 @@ public class ByteBufferInput extends Input {
 
 	// byte:
 
-	@Override
 	public byte readByte () throws KryoException {
 		if (position == limit) require(1);
 		position++;
 		return byteBuffer.get();
 	}
 
-	@Override
 	public int readByteUnsigned () throws KryoException {
 		if (position == limit) require(1);
 		position++;
 		return byteBuffer.get() & 0xFF;
 	}
 
-	@Override
 	public byte[] readBytes (int length) throws KryoException {
 		byte[] bytes = new byte[length];
 		readBytes(bytes, 0, length);
 		return bytes;
 	}
 
-	@Override
 	public void readBytes (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int copyCount = Math.min(limit - position, count);
@@ -372,7 +353,6 @@ public class ByteBufferInput extends Input {
 
 	// int:
 
-	@Override
 	public int readInt () throws KryoException {
 		require(4);
 		position += 4;
@@ -383,7 +363,6 @@ public class ByteBufferInput extends Input {
 			| (byteBuffer.get() & 0xFF) << 24;
 	}
 
-	@Override
 	public int readVarInt (boolean optimizePositive) throws KryoException {
 		if (require(1) < 5) return readVarInt_slow(optimizePositive);
 		int b = byteBuffer.get();
@@ -442,7 +421,6 @@ public class ByteBufferInput extends Input {
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
-	@Override
 	public boolean canReadVarInt () throws KryoException {
 		if (limit - position >= 5) return true;
 		if (optional(5) <= 0) return false;
@@ -461,7 +439,6 @@ public class ByteBufferInput extends Input {
 
 	/** Reads the boolean part of a varint flag. The position is not advanced, {@link #readVarIntFlag(boolean)} should be used to
 	 * advance the position. */
-	@Override
 	public boolean readVarIntFlag () {
 		if (position == limit) require(1);
 		return (byteBuffer.get(position) & 0x80) != 0;
@@ -469,7 +446,6 @@ public class ByteBufferInput extends Input {
 
 	/** Reads the 1-5 byte int part of a varint flag. The position is advanced so if the boolean part is needed it should be read
 	 * first with {@link #readVarIntFlag()}. */
-	@Override
 	public int readVarIntFlag (boolean optimizePositive) {
 		if (require(1) < 5) return readVarIntFlag_slow(optimizePositive);
 		int b = byteBuffer.get();
@@ -530,7 +506,6 @@ public class ByteBufferInput extends Input {
 
 	// long:
 
-	@Override
 	public long readLong () throws KryoException {
 		require(8);
 		position += 8;
@@ -545,7 +520,6 @@ public class ByteBufferInput extends Input {
 			| (long)byteBuffer.get() << 56;
 	}
 
-	@Override
 	public long readVarLong (boolean optimizePositive) throws KryoException {
 		if (require(1) < 9) return readVarLong_slow(optimizePositive);
 		int b = byteBuffer.get();
@@ -644,7 +618,6 @@ public class ByteBufferInput extends Input {
 		return optimizePositive ? result : ((result >>> 1) ^ -(result & 1));
 	}
 
-	@Override
 	public boolean canReadVarLong () throws KryoException {
 		if (limit - position >= 9) return true;
 		if (optional(5) <= 0) return false;
@@ -671,7 +644,6 @@ public class ByteBufferInput extends Input {
 
 	// float:
 
-	@Override
 	public float readFloat () throws KryoException {
 		require(4);
 		ByteBuffer byteBuffer = this.byteBuffer;
@@ -685,7 +657,6 @@ public class ByteBufferInput extends Input {
 
 	// double:
 
-	@Override
 	public double readDouble () throws KryoException {
 		require(8);
 		ByteBuffer byteBuffer = this.byteBuffer;
@@ -703,7 +674,6 @@ public class ByteBufferInput extends Input {
 
 	// boolean:
 
-	@Override
 	public boolean readBoolean () throws KryoException {
 		if (position == limit) require(1);
 		position++;
@@ -712,14 +682,12 @@ public class ByteBufferInput extends Input {
 
 	// short:
 
-	@Override
 	public short readShort () throws KryoException {
 		require(2);
 		position += 2;
 		return (short)((byteBuffer.get() & 0xFF) | ((byteBuffer.get() & 0xFF) << 8));
 	}
 
-	@Override
 	public int readShortUnsigned () throws KryoException {
 		require(2);
 		position += 2;
@@ -728,7 +696,6 @@ public class ByteBufferInput extends Input {
 
 	// char:
 
-	@Override
 	public char readChar () throws KryoException {
 		require(2);
 		position += 2;
@@ -737,7 +704,6 @@ public class ByteBufferInput extends Input {
 
 	// String:
 
-	@Override
 	public String readString () {
 		if (!readVarIntFlag()) return readAsciiString(); // ASCII.
 		// Null, empty, or UTF8.
@@ -753,7 +719,6 @@ public class ByteBufferInput extends Input {
 		return new String(chars, 0, charCount);
 	}
 
-	@Override
 	public StringBuilder readStringBuilder () {
 		if (!readVarIntFlag()) return new StringBuilder(readAsciiString()); // ASCII.
 		// Null, empty, or UTF8.
@@ -867,7 +832,6 @@ public class ByteBufferInput extends Input {
 
 	// Primitive arrays:
 
-	@Override
 	public int[] readInts (int length) throws KryoException {
 		int[] array = new int[length];
 		if (optional(length << 2) == length << 2) {
@@ -886,7 +850,6 @@ public class ByteBufferInput extends Input {
 		return array;
 	}
 
-	@Override
 	public long[] readLongs (int length) throws KryoException {
 		long[] array = new long[length];
 		if (optional(length << 3) == length << 3) {
@@ -909,7 +872,6 @@ public class ByteBufferInput extends Input {
 		return array;
 	}
 
-	@Override
 	public float[] readFloats (int length) throws KryoException {
 		float[] array = new float[length];
 		if (optional(length << 2) == length << 2) {
@@ -928,7 +890,6 @@ public class ByteBufferInput extends Input {
 		return array;
 	}
 
-	@Override
 	public double[] readDoubles (int length) throws KryoException {
 		double[] array = new double[length];
 		if (optional(length << 3) == length << 3) {
@@ -951,7 +912,6 @@ public class ByteBufferInput extends Input {
 		return array;
 	}
 
-	@Override
 	public short[] readShorts (int length) throws KryoException {
 		short[] array = new short[length];
 		if (optional(length << 1) == length << 1) {
@@ -966,7 +926,6 @@ public class ByteBufferInput extends Input {
 		return array;
 	}
 
-	@Override
 	public char[] readChars (int length) throws KryoException {
 		char[] array = new char[length];
 		if (optional(length << 1) == length << 1) {
@@ -981,7 +940,6 @@ public class ByteBufferInput extends Input {
 		return array;
 	}
 
-	@Override
 	public boolean[] readBooleans (int length) throws KryoException {
 		boolean[] array = new boolean[length];
 		if (optional(length) == length) {

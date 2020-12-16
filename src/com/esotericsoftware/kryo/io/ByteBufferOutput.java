@@ -87,7 +87,6 @@ public class ByteBufferOutput extends Output {
 		this.outputStream = outputStream;
 	}
 
-	@Override
 	public OutputStream getOutputStream () {
 		return outputStream;
 	}
@@ -95,7 +94,6 @@ public class ByteBufferOutput extends Output {
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
-	@Override
 	public byte[] getBuffer () {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #getByteBuffer().");
 	}
@@ -103,7 +101,6 @@ public class ByteBufferOutput extends Output {
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
-	@Override
 	public void setBuffer (byte[] buffer) {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}
@@ -111,7 +108,6 @@ public class ByteBufferOutput extends Output {
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
-	@Override
 	public void setBuffer (byte[] buffer, int maxBufferSize) {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}
@@ -153,7 +149,6 @@ public class ByteBufferOutput extends Output {
 		return byteBuffer;
 	}
 
-	@Override
 	public byte[] toBytes () {
 		byte[] newBuffer = new byte[position];
 		setBufferPosition(byteBuffer, 0);
@@ -161,13 +156,11 @@ public class ByteBufferOutput extends Output {
 		return newBuffer;
 	}
 
-	@Override
 	public void setPosition (int position) {
 		this.position = position;
 		setBufferPosition(byteBuffer, position);
 	}
 
-	@Override
 	public void reset () {
 		super.reset();
 		setBufferPosition(byteBuffer, 0);
@@ -185,7 +178,6 @@ public class ByteBufferOutput extends Output {
 		buffer.limit(length);
 	}
 
-	@Override
 	protected boolean require (int required) throws KryoException {
 		if (capacity - position >= required) return false;
 		flush();
@@ -210,7 +202,6 @@ public class ByteBufferOutput extends Output {
 
 	// OutputStream:
 
-	@Override
 	public void flush () throws KryoException {
 		if (outputStream == null) return;
 		try {
@@ -226,7 +217,6 @@ public class ByteBufferOutput extends Output {
 		position = 0;
 	}
 
-	@Override
 	public void close () throws KryoException {
 		flush();
 		if (outputStream != null) {
@@ -237,47 +227,40 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
-	@Override
 	public void write (int value) throws KryoException {
 		if (position == capacity) require(1);
 		byteBuffer.put((byte)value);
 		position++;
 	}
 
-	@Override
 	public void write (byte[] bytes) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		writeBytes(bytes, 0, bytes.length);
 	}
 
-	@Override
 	public void write (byte[] bytes, int offset, int length) throws KryoException {
 		writeBytes(bytes, offset, length);
 	}
 
 	// byte:
 
-	@Override
 	public void writeByte (byte value) throws KryoException {
 		if (position == capacity) require(1);
 		byteBuffer.put(value);
 		position++;
 	}
 
-	@Override
 	public void writeByte (int value) throws KryoException {
 		if (position == capacity) require(1);
 		byteBuffer.put((byte)value);
 		position++;
 	}
 
-	@Override
 	public void writeBytes (byte[] bytes) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		writeBytes(bytes, 0, bytes.length);
 	}
 
-	@Override
 	public void writeBytes (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int copyCount = Math.min(capacity - position, count);
@@ -294,7 +277,6 @@ public class ByteBufferOutput extends Output {
 
 	// int:
 
-	@Override
 	public void writeInt (int value) throws KryoException {
 		require(4);
 		position += 4;
@@ -305,7 +287,6 @@ public class ByteBufferOutput extends Output {
 		byteBuffer.put((byte)(value >> 24));
 	}
 
-	@Override
 	public int writeVarInt (int value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
 		if (value >>> 7 == 0) {
@@ -351,7 +332,6 @@ public class ByteBufferOutput extends Output {
 		return 5;
 	}
 
-	@Override
 	public int writeVarIntFlag (boolean flag, int value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 31);
 		int first = (value & 0x3F) | (flag ? 0x80 : 0); // Mask first 6 bits, bit 8 is the flag.
@@ -400,7 +380,6 @@ public class ByteBufferOutput extends Output {
 
 	// long:
 
-	@Override
 	public void writeLong (long value) throws KryoException {
 		require(8);
 		position += 8;
@@ -415,7 +394,6 @@ public class ByteBufferOutput extends Output {
 		byteBuffer.put((byte)(value >>> 56));
 	}
 
-	@Override
 	public int writeVarLong (long value, boolean optimizePositive) throws KryoException {
 		if (!optimizePositive) value = (value << 1) ^ (value >> 63);
 		if (value >>> 7 == 0) {
@@ -517,7 +495,6 @@ public class ByteBufferOutput extends Output {
 
 	// float:
 
-	@Override
 	public void writeFloat (float value) throws KryoException {
 		require(4);
 		ByteBuffer byteBuffer = this.byteBuffer;
@@ -531,7 +508,6 @@ public class ByteBufferOutput extends Output {
 
 	// double:
 
-	@Override
 	public void writeDouble (double value) throws KryoException {
 		require(8);
 		position += 8;
@@ -549,7 +525,6 @@ public class ByteBufferOutput extends Output {
 
 	// short:
 
-	@Override
 	public void writeShort (int value) throws KryoException {
 		require(2);
 		position += 2;
@@ -559,7 +534,6 @@ public class ByteBufferOutput extends Output {
 
 	// char:
 
-	@Override
 	public void writeChar (char value) throws KryoException {
 		require(2);
 		position += 2;
@@ -569,7 +543,6 @@ public class ByteBufferOutput extends Output {
 
 	// boolean:
 
-	@Override
 	public void writeBoolean (boolean value) throws KryoException {
 		if (position == capacity) require(1);
 		byteBuffer.put((byte)(value ? 1 : 0));
@@ -578,7 +551,6 @@ public class ByteBufferOutput extends Output {
 
 	// String:
 
-	@Override
 	public void writeString (String value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
@@ -624,7 +596,6 @@ public class ByteBufferOutput extends Output {
 		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
 
-	@Override
 	public void writeAscii (String value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
@@ -685,7 +656,6 @@ public class ByteBufferOutput extends Output {
 
 	// Primitive arrays:
 
-	@Override
 	public void writeInts (int[] array, int offset, int count) throws KryoException {
 		if (capacity >= count << 2) {
 			require(count << 2);
@@ -704,7 +674,6 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
-	@Override
 	public void writeLongs (long[] array, int offset, int count) throws KryoException {
 		if (capacity >= count << 3) {
 			require(count << 3);
@@ -727,7 +696,6 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
-	@Override
 	public void writeFloats (float[] array, int offset, int count) throws KryoException {
 		if (capacity >= count << 2) {
 			require(count << 2);
@@ -746,7 +714,6 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
-	@Override
 	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
 		if (capacity >= count << 3) {
 			require(count << 3);
@@ -769,7 +736,6 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
-	@Override
 	public void writeShorts (short[] array, int offset, int count) throws KryoException {
 		if (capacity >= count << 1) {
 			require(count << 1);
@@ -785,7 +751,6 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
-	@Override
 	public void writeChars (char[] array, int offset, int count) throws KryoException {
 		if (capacity >= count << 1) {
 			require(count << 1);
@@ -801,7 +766,6 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
-	@Override
 	public void writeBooleans (boolean[] array, int offset, int count) throws KryoException {
 		if (capacity >= count) {
 			require(count);

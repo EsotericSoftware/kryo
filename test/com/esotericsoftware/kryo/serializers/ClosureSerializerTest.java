@@ -33,7 +33,6 @@ import org.junit.Test;
 
 /** Test for java 8 closures. */
 public class ClosureSerializerTest extends KryoTestCase {
-	@Override
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();
@@ -61,7 +60,6 @@ public class ClosureSerializerTest extends KryoTestCase {
 		doAssertEquals(closure1, closure2);
 	}
 
-	@Override
 	protected void doAssertEquals (Object object1, Object object2) {
 		try {
 			assertEquals(((Callable)object1).call(), ((Callable)object2).call());

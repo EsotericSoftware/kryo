@@ -40,7 +40,6 @@ import java.io.ObjectStreamClass;
  * @see KryoSerializable
  * @author Nathan Sweet */
 public class JavaSerializer extends Serializer {
-	@Override
 	public void write (Kryo kryo, Output output, Object object) {
 		try {
 			ObjectMap graphContext = kryo.getGraphContext();
@@ -56,7 +55,6 @@ public class JavaSerializer extends Serializer {
 		}
 	}
 
-	@Override
 	public Object read (Kryo kryo, Input input, Class type) {
 		try {
 			ObjectMap graphContext = kryo.getGraphContext();
@@ -83,7 +81,6 @@ public class JavaSerializer extends Serializer {
 			this.kryo = kryo;
 		}
 
-		@Override
 		protected Class resolveClass (ObjectStreamClass type) {
 			try {
 				return Class.forName(type.getName(), false, kryo.getClassLoader());

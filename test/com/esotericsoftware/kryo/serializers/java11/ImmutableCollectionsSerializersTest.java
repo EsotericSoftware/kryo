@@ -32,7 +32,6 @@ public class ImmutableCollectionsSerializersTest extends KryoTestCase {
 		supportsCopy = true;
 	}
 
-	@Override
 	@Before
 	public void setUp () throws Exception {
 		super.setUp();
