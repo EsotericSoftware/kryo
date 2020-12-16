@@ -56,6 +56,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsEmpty
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonListSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonSetSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.ConcurrentSkipListMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CurrencySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DateSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DoubleSerializer;
@@ -74,7 +75,6 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimeZoneSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeSetSerializer;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.ConcurrentSkipListMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.URLSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.VoidSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
@@ -349,11 +349,62 @@ public class Kryo {
 	 * <td>TimeZone</td>
 	 * </tr>
 	 * <tr>
+	 * <td>BitSet</td>
+	 * <td>Locale</td>
+	 * <td>Arrays.asList</td>
 	 * <td>TreeMap</td>
+	 * <td>URL</td>
+	 * </tr>
+	 * <tr>
 	 * <td>EnumSet</td>
+	 * <td>Charset</td>
+	 * <td>ConcurrentSkipListMap</td>
+	 * <td>TreeSet</td>
+	 * <td>PriorityQueue</td>
 	 * </tr>
 	 * </table>
+	 * </p>
+	 * The following classes have serializers set on JDK8 and above:
 	 * <p>
+	 * <table>
+	 * <tr>
+	 * <td>Optional</td>
+	 * <td>OptionalInt</td>
+	 * <td>OptionalLong</td>
+	 * <td>OptionalDouble</td>
+	 * </tr>
+	 * <tr>
+	 * <td>Duration</td>
+	 * <td>Instant</td>
+	 * <td>LocalDate</td>
+	 * <td>LocalTime</td>
+	 * <td>LocalDateTime</td>
+	 * </tr>
+	 * <tr>
+	 * <td>ZoneOffset</td>
+	 * <td>ZoneId</td>
+	 * <td>OffsetTime</td>
+	 * <td>OffsetDateTime</td>
+	 * <td>ZonedDateTime</td>
+	 * </tr>
+	 * <tr>
+	 * <td>Year</td>
+	 * <td>YearMonth</td>
+	 * <td>MonthDay</td>
+	 * <td>Period</td>
+	 * </tr>
+	 * </table>
+	 * </p>
+	 * The following classes have serializers set on JDK9 and above:
+	 * <p>
+	 * <table>
+	 * <tr>
+	 * <td>List.of</td>
+	 * <td>Set.of</td>
+	 * <td>Map.of</td>
+	 * </tr>
+	 * </table>
+	 * </p>
 	 * Note that the order default serializers are added is important for a class that may match multiple types. The above default
 	 * serializers always have a lower priority than subsequent default serializers that are added. */
 	public void addDefaultSerializer (Class type, Class<? extends Serializer> serializerClass) {
