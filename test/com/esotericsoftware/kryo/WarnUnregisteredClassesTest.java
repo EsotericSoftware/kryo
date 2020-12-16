@@ -125,7 +125,7 @@ public class WarnUnregisteredClassesTest {
 		output.flush();
 	}
 
-	class LoggerStub extends Logger {
+	public static class LoggerStub extends Logger {
 		public List<Integer> levels = new ArrayList();
 		public List<String> messages = new ArrayList();
 

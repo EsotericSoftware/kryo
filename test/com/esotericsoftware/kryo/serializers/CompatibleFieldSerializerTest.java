@@ -33,7 +33,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import com.esotericsoftware.kryo.WarnUnregisteredClassesTest;
+import com.esotericsoftware.minlog.Log;
 import org.apache.commons.lang.builder.EqualsBuilder;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -43,6 +46,16 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
+
+    WarnUnregisteredClassesTest.LoggerStub log;
+
+    @Before
+    public void setUp() throws Exception {
+        log = new WarnUnregisteredClassesTest.LoggerStub();
+        Log.setLogger(log);
+        Log.INFO();
+        kryo = new Kryo();
+    }
 
 	@Rule public ExpectedException exceptionRule = ExpectedException.none();
 
@@ -683,6 +696,47 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 			return Objects.hash(value, list, serializable);
 		}
 	}
+
+    @Test
+    public void testLogWarningOnDuplicateFieldInClassHierarchy() {
+        kryo.setReferences(true);
+        CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithDuplicateField.class);
+        serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(true);
+        serializer.getCompatibleFieldSerializerConfig().setExtendedFieldNames(false);
+        serializer.updateFields();
+        kryo.register(ClassWithDuplicateField.class, serializer);
+
+        final ClassWithDuplicateField duplicateField = new ClassWithDuplicateField();
+        roundTrip(31, duplicateField);
+        assertEquals(1, log.messages.size());
+    }
+
+    static class ClassWithDuplicateField extends SuperClassWithDuplicateField {
+        private Boolean customNote = true;
+    }
+
+    static class SuperClassWithDuplicateField implements Serializable {
+        private Boolean customNote = false;
+
+        public SuperClassWithDuplicateField() {}
+
+        public SuperClassWithDuplicateField(Boolean customNote) {
+            this.customNote = customNote;
+        }
+
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            SuperClassWithDuplicateField other = (SuperClassWithDuplicateField)obj;
+            if (customNote != other.customNote)
+                return false;
+            return true;
+        }
+    }
 
 	public static class ClassWithObjectField {
 		Object value;
