@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
@@ -41,17 +41,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** @author Nathan Sweet */
 @SuppressWarnings("synthetic-access")
-public class MapSerializerTest extends KryoTestCase {
+class MapSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
 	@Test
-	public void testMaps () {
+	void testMaps () {
 		kryo.register(HashMap.class);
 		kryo.register(LinkedHashMap.class);
 		HashMap map = new HashMap();
@@ -73,7 +73,7 @@ public class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testEnumMap () {
+	void testEnumMap () {
 		kryo.register(SomeEnum.class);
 		kryo.register(EnumMap.class, new EnumMapSerializer(SomeEnum.class));
 
@@ -85,27 +85,27 @@ public class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testEmptyHashMap () {
+	void testEmptyHashMap () {
 		execute(new HashMap(), 0);
 	}
 
 	@Test
-	public void testNotEmptyHashMap () {
+	void testNotEmptyHashMap () {
 		execute(new HashMap(), 1000);
 	}
 
 	@Test
-	public void testEmptyConcurrentHashMap () {
+	void testEmptyConcurrentHashMap () {
 		execute(new ConcurrentHashMap(), 0);
 	}
 
 	@Test
-	public void testNotEmptyConcurrentHashMap () {
+	void testNotEmptyConcurrentHashMap () {
 		execute(new ConcurrentHashMap(), 1000);
 	}
 
 	@Test
-	public void testGenerics () {
+	void testGenerics () {
 		kryo.register(HasGenerics.class);
 		kryo.register(Integer[].class);
 		kryo.register(HashMap.class);
@@ -143,7 +143,7 @@ public class MapSerializerTest extends KryoTestCase {
 	}
 
     @Test
-    public void testConcurrentSkipListMapSerializer() {
+    void testConcurrentSkipListMapSerializer() {
         ConcurrentSkipListMap map = new ConcurrentSkipListMap();
         kryo.register(ConcurrentSkipListMap.class);
         map.put(9, "456");
@@ -172,7 +172,7 @@ public class MapSerializerTest extends KryoTestCase {
     }
 
 	@Test
-	public void testTreeMap () {
+	void testTreeMap () {
 		kryo.register(TreeMap.class);
 		TreeMap map = new TreeMap();
 		map.put("123", "456");
@@ -200,7 +200,7 @@ public class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testTreeMapWithReferences () {
+	void testTreeMapWithReferences () {
 		kryo.setReferences(true);
 		kryo.register(TreeMap.class);
 		TreeMap map = new TreeMap();
@@ -229,7 +229,7 @@ public class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testSerializingMapAfterDeserializingMultipleReferencesToSameMap () {
+	void testSerializingMapAfterDeserializingMultipleReferencesToSameMap () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		Output output = new Output(4096);
@@ -248,7 +248,7 @@ public class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testArrayListKeys () {
+	void testArrayListKeys () {
 		CollectionSerializer collectionSerializer = new CollectionSerializer();
 		// Increase generics savings so difference is more easily seen.
 		collectionSerializer.setElementsCanBeNull(false);

@@ -19,9 +19,9 @@
 
 package com.esotericsoftware.kryo;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class DepthTest extends KryoTestCase {
+class DepthTest extends KryoTestCase {
 	static class Node<T> {
 		Node<T> child;
 
@@ -31,7 +31,7 @@ public class DepthTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testDepth () {
+	void testDepth () {
 		Node<String> current = new Node<>();
 		Node<String> root = current;
 		for (int i = 0; i < 300; i++) {

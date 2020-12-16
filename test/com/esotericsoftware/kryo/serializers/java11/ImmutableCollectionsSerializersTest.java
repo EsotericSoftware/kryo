@@ -21,18 +21,22 @@ package com.esotericsoftware.kryo.serializers.java11;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** Test for java >=9 ImmutableCollections serializers. */
-public class ImmutableCollectionsSerializersTest extends KryoTestCase {
+class ImmutableCollectionsSerializersTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
-	@Before
+	@BeforeEach
 	public void setUp () throws Exception {
 		super.setUp();
 		kryo.register(Class.forName("java.util.ImmutableCollections$List12"));
@@ -47,7 +51,7 @@ public class ImmutableCollectionsSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testImmutableCollections () {
+	void testImmutableCollections () {
 		roundTrip(4, new TestClass(null, null, null));
 		roundTrip(7, new TestClass(List.of(), Map.of(), Set.of()));
 		roundTrip(11, new TestClass(List.of(1), Map.of(1, 2), Set.of(1)));
@@ -55,7 +59,7 @@ public class ImmutableCollectionsSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testImmutableList () {
+	void testImmutableList () {
 		roundTrip(2, List.of());
 		roundTrip(4, List.of(1));
 		roundTrip(5, List.of(1, 2));
@@ -64,14 +68,14 @@ public class ImmutableCollectionsSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void setImmutableMap () {
+	void setImmutableMap () {
 		roundTrip(2, Map.of());
 		roundTrip(6, Map.of(1, 2));
 		roundTrip(10, Map.of(1, 2, 3, 4));
 	}
 
 	@Test
-	public void testImmutableSet () {
+	void testImmutableSet () {
 		roundTrip(2, Set.of());
 		roundTrip(4, Set.of(1));
 		roundTrip(5, Set.of(1, 2));

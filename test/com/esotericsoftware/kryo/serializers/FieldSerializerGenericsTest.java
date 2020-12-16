@@ -33,12 +33,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
-public class FieldSerializerGenericsTest extends KryoTestCase {
+class FieldSerializerGenericsTest extends KryoTestCase {
 	@Test
-	public void testNoStackOverflowForSimpleGenericsCase () {
+	void testNoStackOverflowForSimpleGenericsCase () {
 		FooRef fooRef = new FooRef();
 		GenericFoo<FooRef> genFoo1 = new GenericFoo(fooRef);
 		GenericFoo<FooRef> genFoo2 = new GenericFoo(fooRef);
@@ -55,7 +55,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testNoStackOverflowForComplexGenericsCase () {
+	void testNoStackOverflowForComplexGenericsCase () {
 		BarRef barRef = new BarRef();
 		GenericBar<BarRef> genBar1 = new GenericBar(barRef);
 		GenericBar<BarRef> genBar2 = new GenericBar(barRef);
@@ -72,7 +72,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testMultipleValuesWithDifferentParameters () {
+	void testMultipleValuesWithDifferentParameters () {
 		// MultipleValues has fields with different parameterized types for Value.
 		MultipleValues values = new MultipleValues();
 		values.integer = new Value(123);
@@ -89,7 +89,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testParameterPassedToSuper () {
+	void testParameterPassedToSuper () {
 		SuperTest superTest = new SuperTest();
 		superTest.integer = new PassArgToSupers();
 		superTest.integer.list = new ArrayList();
@@ -115,7 +115,7 @@ public class FieldSerializerGenericsTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testNestedLists () {
+	void testNestedLists () {
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 
 		// Increase generics savings so difference is more easily seen.

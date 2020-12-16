@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -28,11 +28,11 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
 import java.io.IOException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class RegistrationTest {
+class RegistrationTest {
 	@Test
-	public void testDefaultSerializerOrder () {
+	void testDefaultSerializerOrder () {
 		Kryo kryo = new Kryo();
 		kryo.addDefaultSerializer(Fruit.class, new FieldSerializer(kryo, Fruit.class));
 		FieldSerializer appleSerializer = new FieldSerializer(kryo, Apple.class);
@@ -41,7 +41,7 @@ public class RegistrationTest {
 	}
 
 	@Test
-	public void testReplaceRegistration () throws IOException {
+	void testReplaceRegistration () throws IOException {
 		Kryo kryo = new Kryo();
 		kryo.register(double[].class, 7); // Replace long with double[].
 		kryo.register(Some.class);

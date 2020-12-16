@@ -36,15 +36,15 @@ import java.io.ObjectOutput;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /** Timed Kryo serialization with various buffers and settings.
  * @author Roman Levenstein <romixlev@gmail.com>
  * @author Nathan Sweet */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class SerializationBenchmarkTest extends KryoTestCase {
+@TestMethodOrder(MethodOrderer.Alphanumeric.class)
+class SerializationBenchmarkTest extends KryoTestCase {
 	private static final int WARMUP_ITERATIONS = 1000;
 
 	/** Number of runs. */
@@ -73,7 +73,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testOutput () throws Exception {
+	void testOutput () throws Exception {
 		Output output = new Output(OUTPUT_BUFFER_SIZE);
 		Input input = new Input(output.getBuffer());
 		run("Output", 1, WARMUP_ITERATIONS, output, input, false);
@@ -81,7 +81,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testOutputFixed () throws Exception {
+	void testOutputFixed () throws Exception {
 		Output output = new Output(OUTPUT_BUFFER_SIZE);
 		Input input = new Input(output.getBuffer());
 		input.setVariableLengthEncoding(false);
@@ -91,7 +91,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testByteBufferOutput () throws Exception {
+	void testByteBufferOutput () throws Exception {
 		ByteBufferOutput output = new ByteBufferOutput(OUTPUT_BUFFER_SIZE);
 		ByteBufferInput input = new ByteBufferInput(output.getByteBuffer());
 		run("ByteBufferOutput", 1, WARMUP_ITERATIONS, output, input, false);
@@ -99,7 +99,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testByteBufferOutputFixed () throws Exception {
+	void testByteBufferOutputFixed () throws Exception {
 		ByteBufferOutput output = new ByteBufferOutput(OUTPUT_BUFFER_SIZE);
 		ByteBufferInput input = new ByteBufferInput(output.getByteBuffer());
 		input.setVariableLengthEncoding(false);
@@ -109,7 +109,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testUnsafeOutput () throws Exception {
+	void testUnsafeOutput () throws Exception {
 		UnsafeOutput output = new UnsafeOutput(OUTPUT_BUFFER_SIZE);
 		UnsafeInput input = new UnsafeInput(output.getBuffer());
 		run("UnsafeOutput", 1, WARMUP_ITERATIONS, output, input, false);
@@ -117,7 +117,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testUnsafeOutputFixed () throws Exception {
+	void testUnsafeOutputFixed () throws Exception {
 		UnsafeOutput output = new UnsafeOutput(OUTPUT_BUFFER_SIZE);
 		UnsafeInput input = new UnsafeInput(output.getBuffer());
 		input.setVariableLengthEncoding(false);
@@ -127,7 +127,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testUnsafeByteBufferOutput () throws Exception {
+	void testUnsafeByteBufferOutput () throws Exception {
 		UnsafeByteBufferOutput output = new UnsafeByteBufferOutput(OUTPUT_BUFFER_SIZE);
 		UnsafeByteBufferInput input = new UnsafeByteBufferInput(output.getByteBuffer());
 		run("UnsafeByteBufferOutput", 1, WARMUP_ITERATIONS, output, input, false);
@@ -135,7 +135,7 @@ public class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testUnsafeByteBufferOutputFixed () throws Exception {
+	void testUnsafeByteBufferOutputFixed () throws Exception {
 		UnsafeByteBufferOutput output = new UnsafeByteBufferOutput(OUTPUT_BUFFER_SIZE);
 		UnsafeByteBufferInput input = new UnsafeByteBufferInput(output.getByteBuffer());
 		input.setVariableLengthEncoding(false);

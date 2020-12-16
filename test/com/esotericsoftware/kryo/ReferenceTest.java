@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -30,9 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class ReferenceTest extends KryoTestCase {
+class ReferenceTest extends KryoTestCase {
 	public static class Ordering {
 		public String order;
 	}
@@ -46,7 +46,7 @@ public class ReferenceTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testChildObjectBeforeReference () {
+	void testChildObjectBeforeReference () {
 		Ordering ordering = new Ordering();
 		ordering.order = "assbackwards";
 		Stuff stuff = new Stuff(ordering);
@@ -82,7 +82,7 @@ public class ReferenceTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testReadingNestedObjectsFirst () {
+	void testReadingNestedObjectsFirst () {
 		ArrayList list = new ArrayList();
 		list.add("1");
 		list.add("1");

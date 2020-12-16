@@ -20,7 +20,7 @@
 package com.esotericsoftware.kryo.util;
 
 import static com.esotericsoftware.kryo.util.GenericsUtil.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -28,12 +28,12 @@ import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** @author Nathan Sweet */
-public class GenericsUtilTest {
+class GenericsUtilTest {
 	@Test
-	public void testGenerics () throws Exception {
+	void testGenerics () throws Exception {
 		String[] names = { //
 			"ArrayList<String> fromField1", //
 			"ArrayList<FLOAT> fromSubClass", //
@@ -104,7 +104,7 @@ public class GenericsUtilTest {
 			System.out.println(value1);
 			System.out.println(value2);
 			System.out.println();
-			assertTrue(value1 + " != " + value2, value1.equalsIgnoreCase(value2));
+			assertTrue(value1.equalsIgnoreCase(value2), value1 + " != " + value2);
 		}
 	}
 

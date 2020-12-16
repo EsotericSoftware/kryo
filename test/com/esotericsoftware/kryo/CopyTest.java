@@ -19,22 +19,22 @@
 
 package com.esotericsoftware.kryo;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class CopyTest extends KryoTestCase {
-	@Before
+class CopyTest extends KryoTestCase {
+	@BeforeEach
 	public void setUp () throws Exception {
 		super.setUp();
 		kryo.setRegistrationRequired(false);
 	}
 
 	@Test
-	public void testBasic () {
+	void testBasic () {
 		ArrayList test = new ArrayList();
 		test.add("one");
 		test.add("two");
@@ -46,7 +46,7 @@ public class CopyTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testNested () {
+	void testNested () {
 		ArrayList test = new ArrayList();
 		test.add("one");
 		test.add("two");
@@ -73,7 +73,7 @@ public class CopyTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testReferences () {
+	void testReferences () {
 		ArrayList test = new ArrayList();
 		test.add("one");
 		test.add("two");
@@ -106,7 +106,7 @@ public class CopyTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testCircularReferences () {
+	void testCircularReferences () {
 		ArrayList test = new ArrayList();
 		test.add("one");
 		test.add("two");
@@ -139,7 +139,7 @@ public class CopyTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testShallow () {
+	void testShallow () {
 		ArrayList test = new ArrayList();
 		test.add("one");
 		test.add("two");

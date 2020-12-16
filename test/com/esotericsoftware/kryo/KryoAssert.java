@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Junit Assert wrapper methods class

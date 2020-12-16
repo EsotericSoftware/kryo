@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.util;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
@@ -30,18 +30,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class PoolTest extends KryoTestCase {
+class PoolTest extends KryoTestCase {
 
 	private static final int MAXIMUM_CAPACITY = 4;
-
-	@Parameters
+	
 	public static Collection<Object[]> data () {
 		return Arrays.asList(new Object[][] {
 			{new TestPool(false, false, MAXIMUM_CAPACITY)},
@@ -50,35 +45,26 @@ public class PoolTest extends KryoTestCase {
 			{new TestPool(true, true, MAXIMUM_CAPACITY)}});
 	}
 
-	private final Pool<Kryo> pool;
-
-	public PoolTest (Pool<Kryo> pool) {
-		this.pool = pool;
-	}
-
-	@Before
-	public void beforeMethod () {
-		// clear the pool's queue
-		pool.clear();
-	}
-
-	@Test
-	public void obtainShouldReturnAvailableInstance () {
+	@ParameterizedTest
+	@MethodSource("data")
+	void obtainShouldReturnAvailableInstance (Pool<Kryo> pool) {
 		Kryo kryo = pool.obtain();
 		pool.free(kryo);
 		assertSame(kryo, pool.obtain());
 	}
 
-	@Test
-	public void freeShouldAddKryoToPool () {
+	@ParameterizedTest
+	@MethodSource("data")
+	void freeShouldAddKryoToPool (Pool<Kryo> pool) {
 		assertEquals(0, pool.getFree());
 		Kryo kryo = pool.obtain();
 		pool.free(kryo);
 		assertEquals(1, pool.getFree());
 	}
 
-	@Test
-	public void freeShouldNotAddMoreThanMaximumCapacityToKryoPool () {
+	@ParameterizedTest
+	@MethodSource("data")
+	void freeShouldNotAddMoreThanMaximumCapacityToKryoPool (Pool<Kryo> pool) {
 		final List<Kryo> kryos = IntStream.rangeClosed(0, MAXIMUM_CAPACITY + 1)
 			.mapToObj(i -> pool.obtain())
 			.collect(Collectors.toList());
@@ -88,8 +74,9 @@ public class PoolTest extends KryoTestCase {
 		assertEquals(MAXIMUM_CAPACITY, pool.getFree());
 	}
 
-	@Test
-	public void testSize () {
+	@ParameterizedTest
+	@MethodSource("data")
+	void testSize (Pool<Kryo> pool) {
 		assertEquals(0, pool.getFree());
 		Kryo kryo1 = pool.obtain();
 		assertEquals(0, pool.getFree());
@@ -103,13 +90,28 @@ public class PoolTest extends KryoTestCase {
 
 	private static class TestPool extends Pool<Kryo> {
 
+		private final boolean threadSafe;
+		private final boolean softReferences;
+		private final int maximumCapacity;
+
 		public TestPool (boolean threadSafe, boolean softReferences, int maximumCapacity) {
 			super(threadSafe, softReferences, maximumCapacity);
+			this.threadSafe = threadSafe;
+			this.softReferences = softReferences;
+			this.maximumCapacity = maximumCapacity;
 		}
 
 		@Override
 		protected Kryo create () {
 			return new Kryo();
+		}
+
+		public String toString() {
+			return "TestPool{" +
+					"threadSafe=" + threadSafe +
+					", softReferences=" + softReferences +
+					", maximumCapacity=" + maximumCapacity +
+					'}';
 		}
 	}
 }
