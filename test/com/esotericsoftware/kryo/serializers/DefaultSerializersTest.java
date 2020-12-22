@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
@@ -44,50 +44,50 @@ import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.TimeZone;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet */
-public class DefaultSerializersTest extends KryoTestCase {
+class DefaultSerializersTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
 	@Test
-	public void testBoolean () {
+	void testBoolean () {
 		roundTrip(2, true);
 		roundTrip(2, false);
 	}
 
 	@Test
-	public void testByte () {
+	void testByte () {
 		roundTrip(2, (byte)1);
 		roundTrip(2, (byte)125);
 		roundTrip(2, (byte)-125);
 	}
 
 	@Test
-	public void testChar () {
+	void testChar () {
 		roundTrip(3, 'a');
 		roundTrip(3, 'z');
 	}
 
 	@Test
-	public void testDouble () {
+	void testDouble () {
 		roundTrip(9, 0d);
 		roundTrip(9, 1234d);
 		roundTrip(9, 1234.5678d);
 	}
 
 	@Test
-	public void testFloat () {
+	void testFloat () {
 		roundTrip(5, 0f);
 		roundTrip(5, 123f);
 		roundTrip(5, 123.456f);
 	}
 
 	@Test
-	public void testInt () {
+	void testInt () {
 		roundTrip(2, 0);
 		roundTrip(2, 63);
 		roundTrip(3, 64);
@@ -112,7 +112,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testLong () {
+	void testLong () {
 		roundTrip(2, 0l);
 		roundTrip(2, 63l);
 		roundTrip(3, 64l);
@@ -139,7 +139,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testShort () {
+	void testShort () {
 		roundTrip(3, (short)0);
 		roundTrip(3, (short)123);
 		roundTrip(3, (short)123);
@@ -150,7 +150,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testString () {
+	void testString () {
 		kryo = new Kryo();
 		kryo.setReferences(true);
 		roundTrip(6, "meow");
@@ -168,12 +168,12 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testVoid () {
+	void testVoid () {
 		roundTrip(1, (Void)null);
 	}
 
 	@Test
-	public void testNull () {
+	void testNull () {
 		kryo = new Kryo();
 		kryo.register(ArrayList.class);
 		kryo.setReferences(true);
@@ -195,7 +195,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testDateSerializer () {
+	void testDateSerializer () {
 		kryo.register(Date.class);
 		roundTrip(10, new Date(-1234567));
 		roundTrip(2, new Date(0));
@@ -225,7 +225,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testBigDecimalSerializer () {
+	void testBigDecimalSerializer () {
 		kryo.register(BigDecimal.class);
 		kryo.register(BigDecimalSubclass.class);
 		roundTrip(5, BigDecimal.valueOf(12345, 2));
@@ -238,7 +238,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testBigIntegerSerializer () {
+	void testBigIntegerSerializer () {
 		kryo.register(BigInteger.class);
 		kryo.register(BigIntegerSubclass.class);
 		roundTrip(8, BigInteger.valueOf(1270507903945L));
@@ -249,7 +249,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testEnumSerializer () {
+	void testEnumSerializer () {
 		kryo.register(TestEnum.class);
 		roundTrip(2, TestEnum.a);
 		roundTrip(2, TestEnum.b);
@@ -261,7 +261,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testEnumSetSerializer () {
+	void testEnumSetSerializer () {
 		kryo.register(EnumSet.class);
 		kryo.register(TestEnum.class);
 		roundTrip(5, EnumSet.of(TestEnum.a, TestEnum.c));
@@ -278,7 +278,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testEnumSerializerWithMethods () {
+	void testEnumSerializerWithMethods () {
 		kryo.register(TestEnumWithMethods.class);
 		roundTrip(2, TestEnumWithMethods.a);
 		roundTrip(2, TestEnumWithMethods.b);
@@ -290,7 +290,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testCollectionsMethods () {
+	void testCollectionsMethods () {
 		kryo.setRegistrationRequired(false);
 		ArrayList test = new ArrayList();
 		test.add(Collections.EMPTY_LIST);
@@ -303,21 +303,21 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testArraysAsListUnregistered () {
+	void testArraysAsListUnregistered () {
 		kryo.setRegistrationRequired(false);
 		roundTrip(29, Arrays.asList());
 		roundTrip(37, Arrays.asList(new String[] {"A", "B", "C"}));
 	}
 
 	@Test
-	public void testArraysAsList () {
+	void testArraysAsList () {
 		kryo.register(Arrays.asList().getClass());
 		roundTrip(2, Arrays.asList());
 		roundTrip(10, Arrays.asList(new String[] {"A", "B", "C"}));
 	}
 
 	@Test
-	public void testDeepCollectionCloning () {
+	void testDeepCollectionCloning () {
 		kryo.setRegistrationRequired(false);
 		Object contents = new Object();
 		assertNotEquals(kryo.copy(Collections.singleton(contents)).iterator().next(), contents);
@@ -326,7 +326,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testPriorityQueueCopy () {
+	void testPriorityQueueCopy () {
 		List<Integer> values = Arrays.asList(7, 0, 5, 123, 432);
 		PriorityQueue<Integer> queue = new PriorityQueue(3, new Comparator<Integer>() {
 			public int compare (Integer o1, Integer o2) {
@@ -341,7 +341,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testCalendar () {
+	void testCalendar () {
 		kryo.setRegistrationRequired(false);
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
@@ -350,14 +350,14 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testBitSet () {
+	void testBitSet () {
 		kryo.register(BitSet.class);
 		BitSet set = BitSet.valueOf(new long[] {1L, 2L, 99999L, 2345678987654L});
 		roundTrip(34, set);
 	}
 
 	@Test
-	public void testClassSerializer () {
+	void testClassSerializer () {
 		kryo.register(Class.class);
 		kryo.register(ArrayList.class);
 		kryo.register(void.class);
@@ -411,7 +411,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testLocaleSerializer () {
+	void testLocaleSerializer () {
 		kryo.register(Locale.class);
 
 		roundTrip(5, Locale.ENGLISH);
@@ -422,7 +422,7 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testCharset () {
+	void testCharset () {
 		List<String> css = Arrays.asList("ISO-8859-1", "US-ASCII", "UTF-8", "UTF-16", "UTF-16BE", "UTF-16LE");
 
 		for (String cs : css) {
@@ -444,22 +444,22 @@ public class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testArraysAsListDeepCopy () throws Exception {
+	void testArraysAsListDeepCopy () throws Exception {
 		kryo.register(Arrays.asList().getClass());
 		kryo.register(Date.class);
 
 		List<Date> list = Arrays.asList(new Date(-1234567));
 		List<Date> copiedList = kryo.copy(list);
 
-		assertEquals("List copy should equal the original list", list, copiedList);
-		assertNotSame("List copy should be a different instance", list, copiedList);
-		assertEquals("Class of list copy should be the same as produced by Arrays.asList", copiedList.getClass(), list.getClass());
-		assertEquals("List copy content should equal the original list content", list.get(0), copiedList.get(0));
-		assertNotSame("List copy content should be a different instance", list.get(0), copiedList.get(0));
+		assertEquals(list, copiedList, "List copy should equal the original list");
+		assertNotSame(list, copiedList, "List copy should be a different instance");
+		assertEquals(copiedList.getClass(), list.getClass(), "Class of list copy should be the same as produced by Arrays.asList");
+		assertEquals(list.get(0), copiedList.get(0), "List copy content should equal the original list content");
+		assertNotSame(list.get(0), copiedList.get(0), "List copy content should be a different instance");
 	}
 
 	@Test
-	public void testURLSerializer () throws Exception {
+	void testURLSerializer () throws Exception {
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.register(URL.class);
 

@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -34,20 +34,16 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 /** @author Nathan Sweet */
-public class CompatibleFieldSerializerTest extends KryoTestCase {
+class CompatibleFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
-	@Rule public ExpectedException exceptionRule = ExpectedException.none();
-
 	@Test
-	public void testCompatibleFieldSerializer () {
+	void testCompatibleFieldSerializer () {
 		testCompatibleFieldSerializer(83, false, false);
 		testCompatibleFieldSerializer(116, false, true);
 		testCompatibleFieldSerializer(80, true, false);
@@ -75,7 +71,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testAddedField () {
+	void testAddedField () {
 		testAddedField(59, false, false);
 		testAddedField(87, false, true);
 		testAddedField(63, true, false);
@@ -107,7 +103,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testAddedFieldToClassWithManyFields () {
+	void testAddedFieldToClassWithManyFields () {
 		testAddedFieldToClassWithManyFields(189, false, false, true);
 		testAddedFieldToClassWithManyFields(152, false, false, false);
 
@@ -180,7 +176,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testRemovedField () {
+	void testRemovedField () {
 		testRemovedField(92, false, false);
 		testRemovedField(125, false, true);
 		testRemovedField(87, true, false);
@@ -218,16 +214,14 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testChangeFieldTypeWithChunkedEncodingEnabled () {
+	void testChangeFieldTypeWithChunkedEncodingEnabled () {
 		testChangeFieldType(16, true);
 	}
 
 	@Test
-	public void testChangeFieldTypeWithChunkedEncodingDisabled () {
-		exceptionRule.expect(KryoException.class);
-		exceptionRule.expectMessage("Read type is incompatible with the field type: String -> Long");
-
-		testChangeFieldType(14, false);
+	void testChangeFieldTypeWithChunkedEncodingDisabled () {
+		assertThrows(KryoException.class, () -> testChangeFieldType(14, false),
+				"Read type is incompatible with the field type: String -> Long");
 	}
 
 	private void testChangeFieldType(int length, boolean chunked) {
@@ -249,7 +243,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testChangePrimitiveAndWrapperFieldTypes () {
+	void testChangePrimitiveAndWrapperFieldTypes () {
 		testChangePrimitiveAndWrapperFieldTypes(22, true);
 		testChangePrimitiveAndWrapperFieldTypes(18, false);
 	}
@@ -274,7 +268,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testRemovedFieldFromClassWithManyFields () {
+	void testRemovedFieldFromClassWithManyFields () {
 		testRemovedFieldFromClassWithManyFields(198, false, false, true);
 		// testRemovedFieldFromClassWithManyFields(0, false, false, false); // Doesn't support remove.
 
@@ -344,14 +338,14 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.register(ClassWithManyFields.class, serializer);
 		Object object2 = kryo.readClassAndObject(input);
 		assertTrue(object2 instanceof ClassWithManyFields);
-		assertNull("the bAdd field should be null", ((ClassWithManyFields)object2).bAdd);
+		assertNull(((ClassWithManyFields)object2).bAdd, "the bAdd field should be null");
 		// update the field in order to verify the remainder of the object was deserialized correctly
 		((ClassWithManyFields)object2).bAdd = object1.bAdd;
 		assertEquals(object1, object2);
 	}
 
 	@Test
-	public void testRemovedMultipleFieldsFromClassWithManyFields () {
+	void testRemovedMultipleFieldsFromClassWithManyFields () {
 		testRemovedMultipleFieldsFromClassWithManyFields(170, false, false, true);
 		// testRemovedMultipleFieldsFromClassWithManyFields(0, false, false, false); // Doesn't support remove.
 
@@ -411,9 +405,9 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 		kryo.register(ClassWithManyFields.class, serializer);
 		ClassWithManyFields object2 = (ClassWithManyFields)kryo.readClassAndObject(input);
-		assertNull("bb should be null", object2.bb);
-		assertNull("cc should be null", object2.cc);
-		assertNull("dd should be null", object2.dd);
+		assertNull(object2.bb, "bb should be null");
+		assertNull(object2.cc, "cc should be null");
+		assertNull(object2.dd, "dd should be null");
 		// update the fields to verify the remainder of the object was deserialized correctly
 		object2.bb = object1.bb;
 		object2.cc = object1.cc;
@@ -422,7 +416,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testExtendedClass () {
+	void testExtendedClass () {
 		testExtendedClass(270, false, false);
 		testExtendedClass(294, false, true);
 		testExtendedClass(273, true, false);
@@ -447,7 +441,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testClassWithSuperTypeFields() {
+	void testClassWithSuperTypeFields() {
 		kryo.setReferences(false);
 		kryo.setRegistrationRequired(false);
 
@@ -463,7 +457,7 @@ public class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	// https://github.com/EsotericSoftware/kryo/issues/774
 	@Test
-	public void testClassWithObjectField() {
+	void testClassWithObjectField() {
 		CompatibleFieldSerializer<ClassWithObjectField> serializer = new CompatibleFieldSerializer<>(kryo, ClassWithObjectField.class);
 		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = serializer.getCompatibleFieldSerializerConfig();
 		config.setChunkedEncoding(true);

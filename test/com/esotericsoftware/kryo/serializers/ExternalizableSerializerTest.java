@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
@@ -33,12 +33,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** @author Robert DiFalco <robert.difalco@gmail.com> */
-public class ExternalizableSerializerTest extends KryoTestCase {
+class ExternalizableSerializerTest extends KryoTestCase {
 	@Test
-	public void testRegister () {
+	void testRegister () {
 		kryo.register(TestClass.class, new ExternalizableSerializer());
 		kryo.register(String.class, new DefaultSerializers.StringSerializer());
 		TestClass test = new TestClass();
@@ -51,7 +51,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testDefault () {
+	void testDefault () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, new ExternalizableSerializer());
 		TestClass test = new TestClass();
@@ -63,7 +63,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testReadResolve () {
+	void testReadResolve () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, ExternalizableSerializer.class);
 
@@ -82,7 +82,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testTwoClasses () {
+	void testTwoClasses () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, ExternalizableSerializer.class);
 

@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.io;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 
@@ -27,11 +27,11 @@ import java.io.ByteArrayInputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class ByteBufferInputOutputTest extends KryoTestCase {
+class ByteBufferInputOutputTest extends KryoTestCase {
 	@Test
-	public void testByteBufferInputEnd () {
+	void testByteBufferInputEnd () {
 		ByteBufferInput in = new ByteBufferInput(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
 		assertFalse(in.end());
 		in.setPosition(4);
@@ -39,7 +39,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testByteBufferInputPosition () {
+	void testByteBufferInputPosition () {
 		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
 		ByteBufferInput inputBuffer = new ByteBufferInput(byteBuffer);
 		assertEquals(0, inputBuffer.position());
@@ -50,7 +50,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testByteBufferInputLimit () {
+	void testByteBufferInputLimit () {
 		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096);
 		ByteBufferInput inputBuffer = new ByteBufferInput(byteBuffer);
 		assertEquals(4096, inputBuffer.limit());
@@ -61,7 +61,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testByteBufferInputSkip () {
+	void testByteBufferInputSkip () {
 		ByteBuffer buffer = ByteBuffer.allocateDirect(4096);
 		ByteBufferInput inputBuffer = new ByteBufferInput(buffer);
 		assertEquals(0, inputBuffer.getByteBuffer().position());
@@ -70,7 +70,7 @@ public class ByteBufferInputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testByteBufferOutputPosition () {
+	void testByteBufferOutputPosition () {
 		ByteBufferOutput outputBuffer = new ByteBufferOutput(4096);
 		assertEquals(0, outputBuffer.position());
 		assertEquals(0, outputBuffer.getByteBuffer().position());

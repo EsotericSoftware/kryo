@@ -20,7 +20,7 @@
 package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.minlog.Log.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
@@ -40,7 +40,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 /** Convenience methods for round tripping objects.
  * @author Nathan Sweet */
@@ -66,7 +66,7 @@ public abstract class KryoTestCase {
 		public Input createInput (byte[] buffer);
 	}
 
-	@Before
+	@BeforeEach
 	public void setUp () throws Exception {
 		if (debug && WARN) warn("*** DEBUG TEST ***");
 
@@ -213,8 +213,8 @@ public abstract class KryoTestCase {
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
 		if (checkLength) {
-			assertEquals("Incorrect number of bytes read.", length, input.total());
-			assertEquals("Incorrect number of bytes written.", length, output.total());
+			assertEquals(length, input.total(), "Incorrect number of bytes read.");
+			assertEquals(length, output.total(), "Incorrect number of bytes written.");
 		}
 
 		if (debug) return (T)object2;
@@ -229,7 +229,7 @@ public abstract class KryoTestCase {
 		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
-		if (checkLength) assertEquals("Incorrect number of bytes read.", length, input.total());
+		if (checkLength) assertEquals(length, input.total(), "Incorrect number of bytes read.");
 
 		if (object1 != null) {
 			// Test null with serializer.
@@ -257,8 +257,8 @@ public abstract class KryoTestCase {
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
 		if (checkLength) {
-			assertEquals("Incorrect length.", length, output.total());
-			assertEquals("Incorrect number of bytes read.", length, input.total());
+			assertEquals( length, output.total(), "Incorrect length.");
+			assertEquals( length, input.total(), "Incorrect number of bytes read.");
 		}
 		input.reset();
 

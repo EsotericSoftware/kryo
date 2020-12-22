@@ -21,16 +21,16 @@ package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** @author Nathan Sweet */
-public class BeanSerializerTest extends KryoTestCase {
+class BeanSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
 	@Test
-	public void testBeanSerializer () {
+	void testBeanSerializer () {
 		kryo.register(TestClass.class, new BeanSerializer(kryo, TestClass.class));
 
 		TestClass test = new TestClass();

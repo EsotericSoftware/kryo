@@ -19,20 +19,20 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class VersionedFieldSerializerTest extends KryoTestCase {
+class VersionedFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
 	@Test
-	public void testVersionFieldSerializer () {
+	void testVersionFieldSerializer () {
 		TestClass object1 = new TestClass();
 		object1.moo = 2;
 		object1.child = null;

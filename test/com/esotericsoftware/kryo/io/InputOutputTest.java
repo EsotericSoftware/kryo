@@ -20,7 +20,7 @@
 package com.esotericsoftware.kryo.io;
 
 import static com.esotericsoftware.kryo.KryoAssert.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
@@ -35,13 +35,13 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** @author Nathan Sweet */
 @SuppressWarnings("all")
-public class InputOutputTest extends KryoTestCase {
+class InputOutputTest extends KryoTestCase {
 	@Test
-	public void testByteBufferInputEnd () {
+	void testByteBufferInputEnd () {
 		Input in = new Input(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
 		assertFalse(in.end());
 		in.setPosition(4);
@@ -49,7 +49,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testOutputStream () throws IOException {
+	void testOutputStream () throws IOException {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 		Output output = new Output(buffer, 2);
 		output.writeBytes(new byte[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26});
@@ -66,7 +66,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testInputStream () throws IOException {
+	void testInputStream () throws IOException {
 		byte[] bytes = new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
@@ -90,7 +90,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testWriteBytes () throws IOException {
+	void testWriteBytes () throws IOException {
 		Output buffer = new Output(512);
 		buffer.writeBytes(new byte[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26});
 		buffer.writeBytes(new byte[] {31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46});
@@ -111,7 +111,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testStrings () throws IOException {
+	void testStrings () throws IOException {
 		runStringTest(new Output(4096));
 		runStringTest(new Output(897));
 		runStringTest(new Output(new ByteArrayOutputStream()));
@@ -141,7 +141,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testGrowingBufferForAscii () {
+	void testGrowingBufferForAscii () {
 		// Initial size of 0.
 		final Output output = new Output(0, 1024);
 		// Check that it is possible to write an ASCII string into the output buffer.
@@ -229,7 +229,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testCanReadInt () throws IOException {
+	void testCanReadInt () throws IOException {
 		Output write = new Output(new ByteArrayOutputStream());
 
 		Input read = new Input(write.toBytes());
@@ -244,14 +244,14 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testVarIntFlagOutput () throws IOException {
+	void testVarIntFlagOutput () throws IOException {
 		Output output = new Output(4096);
 		Input input = new Input(output.getBuffer());
 		runVarIntFlagsTest(output, input);
 	}
 
 	@Test
-	public void testVarIntFlagByteBufferOutput () throws IOException {
+	void testVarIntFlagByteBufferOutput () throws IOException {
 		ByteBufferOutput output = new ByteBufferOutput(4096);
 		ByteBufferInput input = new ByteBufferInput(output.getByteBuffer());
 		runVarIntFlagsTest(output, input);
@@ -294,7 +294,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testInts () throws IOException {
+	void testInts () throws IOException {
 		runIntTest(new Output(4096));
 		runIntTest(new Output(new ByteArrayOutputStream()));
 	}
@@ -457,7 +457,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testLongs () throws IOException {
+	void testLongs () throws IOException {
 		runLongTest(new Output(4096));
 		runLongTest(new Output(new ByteArrayOutputStream()));
 	}
@@ -604,7 +604,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testShorts () throws IOException {
+	void testShorts () throws IOException {
 		runShortTest(new Output(4096));
 		runShortTest(new Output(new ByteArrayOutputStream()));
 	}
@@ -645,7 +645,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testFloats () throws IOException {
+	void testFloats () throws IOException {
 		runFloatTest(new Output(4096));
 		runFloatTest(new Output(new ByteArrayOutputStream()));
 	}
@@ -738,7 +738,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testDoubles () throws IOException {
+	void testDoubles () throws IOException {
 		runDoubleTest(new Output(4096));
 		runDoubleTest(new Output(new ByteArrayOutputStream()));
 	}
@@ -833,7 +833,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testBooleans () throws IOException {
+	void testBooleans () throws IOException {
 		runBooleanTest(new Output(4096));
 		runBooleanTest(new Output(new ByteArrayOutputStream()));
 	}
@@ -852,7 +852,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testChars () throws IOException {
+	void testChars () throws IOException {
 		runCharTest(new Output(4096));
 		runCharTest(new Output(new ByteArrayOutputStream()));
 	}
@@ -881,14 +881,14 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testInputWithOffset () throws Exception {
+	void testInputWithOffset () throws Exception {
 		final byte[] buf = new byte[30];
 		final Input in = new Input(buf, 10, 10);
 		assertEquals(10, in.available());
 	}
 
 	@Test
-	public void testSmallBuffers () throws Exception {
+	void testSmallBuffers () throws Exception {
 		ByteBuffer buf = ByteBuffer.allocate(1024);
 		ByteBufferOutputStream byteBufferOutputStream = new ByteBufferOutputStream(buf);
 		Output testOutput = new Output(byteBufferOutputStream);
@@ -907,7 +907,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testVerySmallBuffers () throws Exception {
+	void testVerySmallBuffers () throws Exception {
 		Output out1 = new Output(4, -1);
 		Output out2 = new ByteBufferOutput(4, -1);
 
@@ -923,7 +923,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testZeroLengthOutputs () throws Exception {
+	void testZeroLengthOutputs () throws Exception {
 		Output output = new Output(0, 10000);
 		kryo.writeClassAndObject(output, "Test string");
 
@@ -932,7 +932,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testFlushRoundTrip () throws Exception {
+	void testFlushRoundTrip () throws Exception {
 
 		Kryo kryo = new Kryo();
 
@@ -961,27 +961,27 @@ public class InputOutputTest extends KryoTestCase {
 
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void testNewOutputMaxBufferSizeLessThanBufferSize () {
+	@Test
+	void testNewOutputMaxBufferSizeLessThanBufferSize () {
 		int bufferSize = 2;
 		int maxBufferSize = 1;
 
-		new Output(bufferSize, maxBufferSize);
+		assertThrows(IllegalArgumentException.class, () -> new Output(bufferSize, maxBufferSize));
 	}
 
-	@Test(expected = IllegalArgumentException.class)
-	public void testSetOutputMaxBufferSizeLessThanBufferSize () {
+	@Test
+	void testSetOutputMaxBufferSizeLessThanBufferSize () {
 		int bufferSize = 2;
 		int maxBufferSize = 1;
 
 		Output output = new Output(bufferSize, bufferSize);
 		assertNotNull(output);
 
-		output.setBuffer(new byte[bufferSize], maxBufferSize);
+		assertThrows(IllegalArgumentException.class, () -> output.setBuffer(new byte[bufferSize], maxBufferSize));
 	}
 
 	@Test
-	public void testNewOutputMaxBufferSizeIsMinusOne () {
+	void testNewOutputMaxBufferSizeIsMinusOne () {
 		int bufferSize = 2;
 		int maxBufferSize = -1;
 
@@ -991,7 +991,7 @@ public class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testSetOutputMaxBufferSizeIsMinusOne () {
+	void testSetOutputMaxBufferSizeIsMinusOne () {
 		int bufferSize = 2;
 		int maxBufferSize = -1;
 

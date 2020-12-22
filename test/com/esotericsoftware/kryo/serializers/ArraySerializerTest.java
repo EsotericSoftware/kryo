@@ -19,21 +19,21 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** @author Nathan Sweet */
-public class ArraySerializerTest extends KryoTestCase {
+class ArraySerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
 	@Test
-	public void testArrays () {
+	void testArrays () {
 		kryo.register(int[].class);
 		kryo.register(int[][].class);
 		kryo.register(int[][][].class);
@@ -77,7 +77,7 @@ public class ArraySerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testRecursiveArray () {
+	void testRecursiveArray () {
 		Object[] array = new Object[1];
 		array[0] = array;
 		kryo.register(Object[].class);
@@ -86,7 +86,7 @@ public class ArraySerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testStringArray () {
+	void testStringArray () {
 		String moo = "moooooooooooooooooo";
 		String[] array = {moo, "dog", moo};
 		kryo.register(String[].class);

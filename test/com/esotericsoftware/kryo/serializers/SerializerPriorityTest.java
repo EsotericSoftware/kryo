@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoSerializable;
@@ -27,17 +29,16 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeMapSerializer;
-import org.junit.Test;
 
 import java.util.TreeMap;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Niels Basjes
  */
 @SuppressWarnings("synthetic-access")
-public class SerializerPriorityTest {
+class SerializerPriorityTest {
 
     // Dummy serializer
     public static class MyAnnotationSerializer extends Serializer<Object> {
@@ -79,37 +80,37 @@ public class SerializerPriorityTest {
     static class MyAnnotatedTreeMapKryoSerializable extends TreeMap<String, String> implements BaseKryoSerializable {    }
 
     @Test
-    public void testAnnotatedSerializer() {
+    void testAnnotatedSerializer() {
         assertSerializer(MyAnnotated.class, MyAnnotationSerializer.class);
     }
 
     @Test
-    public void testTreeMapSerializer() {
+    void testTreeMapSerializer() {
         assertSerializer(MyTreeMap.class, TreeMapSerializer.class);
     }
 
     @Test
-    public void testKryoSerializableSerializer() {
+    void testKryoSerializableSerializer() {
         assertSerializer(MyKryoSerializable.class, KryoSerializableSerializer.class);
     }
 
     @Test
-    public void testKryoSerializableSerializerHasHigherPriorityThanDefaultSerializer() {
+    void testKryoSerializableSerializerHasHigherPriorityThanDefaultSerializer() {
         assertSerializer(MyTreeMapKryoSerializable.class, KryoSerializableSerializer.class);
     }
 
     @Test
-    public void testAnnotatedSerializerHasHigherPriorityThanDefaultSerializer() {
+    void testAnnotatedSerializerHasHigherPriorityThanDefaultSerializer() {
         assertSerializer(MyAnnotatedTreeMap.class, MyAnnotationSerializer.class);
     }
 
     @Test
-    public void testAnnotatedSerializerHasHigherPriorityThanKryoSerializable() {
+    void testAnnotatedSerializerHasHigherPriorityThanKryoSerializable() {
         assertSerializer(MyAnnotatedKryoSerializable.class, MyAnnotationSerializer.class);
     }
 
     @Test
-    public void testAnnotatedSerializerHasHigherPriorityThanKryoSerializableAndDefaultSerializer() {
+    void testAnnotatedSerializerHasHigherPriorityThanKryoSerializableAndDefaultSerializer() {
         assertSerializer(MyAnnotatedTreeMapKryoSerializable.class, MyAnnotationSerializer.class);
     }
 

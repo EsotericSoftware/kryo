@@ -20,7 +20,7 @@
 package com.esotericsoftware.kryo.io;
 
 import static com.esotericsoftware.kryo.KryoAssert.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.unsafe.UnsafeInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
@@ -29,12 +29,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Random;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** @author Nathan Sweet <misc@n4te.com> */
-public class UnsafeInputOutputTest {
+class UnsafeInputOutputTest {
 	@Test
-	public void testOutputStream () {
+	void testOutputStream () {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 		UnsafeOutput output = new UnsafeOutput(buffer, 2);
 		output.writeBytes(new byte[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26});
@@ -51,7 +51,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testInputStream () {
+	void testInputStream () {
 		byte[] bytes = new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
@@ -75,7 +75,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testWriteBytes () {
+	void testWriteBytes () {
 		UnsafeOutput buffer = new UnsafeOutput(512);
 		buffer.writeBytes(new byte[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26});
 		buffer.writeBytes(new byte[] {31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46});
@@ -96,7 +96,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testStrings () {
+	void testStrings () {
 		runStringTest(new UnsafeOutput(4096));
 		runStringTest(new UnsafeOutput(897));
 		runStringTest(new UnsafeOutput(new ByteArrayOutputStream()));
@@ -196,7 +196,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testCanReadInt () {
+	void testCanReadInt () {
 		UnsafeOutput write = new UnsafeOutput(new ByteArrayOutputStream());
 
 		Input read = new UnsafeInput(write.toBytes());
@@ -211,7 +211,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testInts () {
+	void testInts () {
 		runIntTest(new UnsafeOutput(4096));
 		runIntTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
@@ -377,7 +377,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testLongs () {
+	void testLongs () {
 		runLongTest(new UnsafeOutput(4096));
 		runLongTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
@@ -520,14 +520,14 @@ public class UnsafeInputOutputTest {
 			write.writeVarLong(value, true);
 			write.writeVarLong(value, false);
 			read.setBuffer(write.toBytes());
-			assertEquals("Element " + i, value, read.readLong());
-			assertEquals("Element " + i, value, read.readVarLong(true));
-			assertEquals("Element " + i, value, read.readVarLong(false));
+			assertEquals(value, read.readLong(), "Element " + i);
+			assertEquals(value, read.readVarLong(true), "Element " + i);
+			assertEquals(value, read.readVarLong(false), "Element " + i);
 		}
 	}
 
 	@Test
-	public void testShorts () {
+	void testShorts () {
 		runShortTest(new UnsafeOutput(4096));
 		runShortTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
@@ -568,7 +568,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testFloats () {
+	void testFloats () {
 		runFloatTest(new UnsafeOutput(4096));
 		runFloatTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
@@ -662,7 +662,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testDoubles () {
+	void testDoubles () {
 		runDoubleTest(new UnsafeOutput(4096));
 		runDoubleTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
@@ -759,7 +759,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testBooleans () {
+	void testBooleans () {
 		runBooleanTest(new UnsafeOutput(4096));
 		runBooleanTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
@@ -778,7 +778,7 @@ public class UnsafeInputOutputTest {
 	}
 
 	@Test
-	public void testChars () {
+	void testChars () {
 		runCharTest(new UnsafeOutput(4096));
 		runCharTest(new UnsafeOutput(new ByteArrayOutputStream()));
 	}
@@ -808,7 +808,7 @@ public class UnsafeInputOutputTest {
 
 	// Check if writing varInts may produce more bytes than expected
 	@Test
-	public void testWriteTooManyBytes () {
+	void testWriteTooManyBytes () {
 		ByteArrayOutputStream os = new ByteArrayOutputStream(1);
 		runIntTest(new UnsafeOutput(os, 4), os);
 	}

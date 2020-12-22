@@ -19,11 +19,14 @@
 
 package com.esotericsoftware.kryo.util;
 
-import junit.framework.TestCase;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class UtilTest extends TestCase {
+import org.junit.jupiter.api.Test;
 
-    public void testIsAssignableTo() {
+class UtilTest {
+
+    @Test
+    void testIsAssignableTo() {
         assertTrue(Util.isAssignableTo(Long.class, long.class));
         assertTrue(Util.isAssignableTo(long.class, Long.class));
         assertTrue(Util.isAssignableTo(Long.class, Long.class));

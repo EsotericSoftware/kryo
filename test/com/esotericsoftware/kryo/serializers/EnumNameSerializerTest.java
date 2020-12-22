@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
@@ -28,12 +28,12 @@ import com.esotericsoftware.kryo.io.Output;
 
 import java.util.EnumSet;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** @author KwonNam Son <kwon37xi@gmail.com> */
-public class EnumNameSerializerTest extends KryoTestCase {
+class EnumNameSerializerTest extends KryoTestCase {
 	@Test
-	public void testEnumNameSerializer () {
+	void testEnumNameSerializer () {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.register(TestNameEnum.class);
 		kryo.register(TestAnotherNameEnum.class);
@@ -55,7 +55,7 @@ public class EnumNameSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testEnumSetSerializerWithEnumNameSerializer () {
+	void testEnumSetSerializerWithEnumNameSerializer () {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.register(EnumSet.class);
 		kryo.register(TestNameEnum.class);
@@ -78,7 +78,7 @@ public class EnumNameSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testEnumNameSerializerWithMethods () {
+	void testEnumNameSerializerWithMethods () {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 
 		kryo.register(TestNameEnumWithMethods.class);

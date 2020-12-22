@@ -1,7 +1,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
@@ -12,10 +12,10 @@ import com.esotericsoftware.kryo.util.Pool;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
-public class ParallelSerializationTest {
+class ParallelSerializationTest {
 
 	private final Pool<Kryo> pool = new Pool<Kryo>(true, false, 8) {
 		@Override
@@ -29,7 +29,7 @@ public class ParallelSerializationTest {
 	};
 
 	@Test
-	public void serializeAndDeserialize () {
+	void serializeAndDeserialize () {
 		IntStream.range(0, 100)
 			.parallel()
 			.forEach(it -> {

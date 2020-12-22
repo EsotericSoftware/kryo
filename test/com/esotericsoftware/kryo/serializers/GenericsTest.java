@@ -34,21 +34,21 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class GenericsTest extends KryoTestCase {
+class GenericsTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
-	@Before
+	@BeforeEach
 	public void setUp () throws Exception {
 		super.setUp();
 	}
 
 	@Test
-	public void testGenericClassWithGenericFields () {
+	void testGenericClassWithGenericFields () {
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
 		kryo.register(BaseGeneric.class);
@@ -61,7 +61,7 @@ public class GenericsTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testNonGenericClassWithGenericSuperclass () {
+	void testNonGenericClassWithGenericSuperclass () {
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
 		kryo.register(BaseGeneric.class);
@@ -76,7 +76,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for/from https://github.com/EsotericSoftware/kryo/issues/377
 	@Test
-	public void testDifferentTypeArguments () {
+	void testDifferentTypeArguments () {
 		LongHolder o1 = new LongHolder(1L);
 		LongListHolder o2 = new LongListHolder(Arrays.asList(1L));
 
@@ -88,7 +88,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// https://github.com/EsotericSoftware/kryo/issues/611
 	@Test
-	public void testSuperGenerics () {
+	void testSuperGenerics () {
 		kryo.register(SuperGenerics.Root.class);
 		kryo.register(SuperGenerics.Value.class);
 
@@ -100,7 +100,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// https://github.com/EsotericSoftware/kryo/issues/648
 	@Test
-	public void testMapTypeParams () {
+	void testMapTypeParams () {
 		ClassWithMap hasMap = new ClassWithMap();
 		MapKey key = new MapKey();
 		key.field1 = "foo";
@@ -120,14 +120,14 @@ public class GenericsTest extends KryoTestCase {
 
 	// https://github.com/EsotericSoftware/kryo/issues/622
 	@Test
-	public void testNotPassingToSuper () {
+	void testNotPassingToSuper () {
 		kryo.register(DontPassToSuper.class);
 		kryo.copy(new DontPassToSuper<>());
 	}
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/654
 	@Test
-	public void testFieldWithGenericInterface () {
+	void testFieldWithGenericInterface () {
 		ClassWithGenericInterfaceField.A o = new ClassWithGenericInterfaceField.A();
 
 		kryo.setRegistrationRequired(false);
@@ -137,7 +137,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
-	public void testFieldWithGenericArrayType() {
+	void testFieldWithGenericArrayType() {
 		ClassArrayHolder o = new ClassArrayHolder(new Class[] {});
 
 		kryo.setRegistrationRequired(false);
@@ -147,7 +147,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
-	public void testClassWithMultipleGenericTypes() {
+	void testClassWithMultipleGenericTypes() {
 		HolderWithAdditionalGenericType<String, Integer> o = new HolderWithAdditionalGenericType<>(1);
 
 		kryo.setRegistrationRequired(false);
@@ -157,7 +157,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
-	public void testClassHierarchyWithChangingGenericTypeVariables () {
+	void testClassHierarchyWithChangingGenericTypeVariables () {
 		ClassHierarchyWithChangingTypeVariableNames.A<?> o = new ClassHierarchyWithChangingTypeVariableNames.A<>(Enum.class);
 
 		kryo.setRegistrationRequired(false);
@@ -167,7 +167,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
-	public void testClassHierarchyWithMultipleTypeVariables () {
+	void testClassHierarchyWithMultipleTypeVariables () {
 		ClassHierarchyWithMultipleTypeVariables.A<Integer, ?> o = new ClassHierarchyWithMultipleTypeVariables.A<>(Enum.class);
 
 		kryo.setRegistrationRequired(false);
@@ -177,7 +177,7 @@ public class GenericsTest extends KryoTestCase {
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/721
 	@Test
-	public void testClassHierarchyWithMissingTypeVariables () {
+	void testClassHierarchyWithMissingTypeVariables () {
 		ClassWithMissingTypeVariable.A o = new ClassWithMissingTypeVariable.A(
 				new ClassWithMissingTypeVariable.B<>(1));
 
