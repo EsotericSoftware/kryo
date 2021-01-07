@@ -48,9 +48,7 @@ public abstract class Pool<T> {
 			queue = new LinkedBlockingQueue<T>(maximumCapacity) {
 				@Override
 				public boolean add (T o) {
-					if (size() >= maximumCapacity) return false;
-					super.add(o);
-					return true;
+					return super.offer(o);
 				}
 			};
 		else if (softReferences) {
