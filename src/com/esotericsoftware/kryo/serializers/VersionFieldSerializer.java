@@ -61,7 +61,6 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		initializeCachedFields();
 	}
 
-	@Override
 	protected void initializeCachedFields () {
 		CachedField[] fields = cachedFields.fields;
 		fieldVersion = new int[fields.length];
@@ -79,19 +78,16 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		if (DEBUG) debug("Version for type " + getType().getName() + ": " + typeVersion);
 	}
 
-	@Override
 	public void removeField (String fieldName) {
 		super.removeField(fieldName);
 		initializeCachedFields();
 	}
 
-	@Override
 	public void removeField (CachedField field) {
 		super.removeField(field);
 		initializeCachedFields();
 	}
 
-	@Override
 	public void write (Kryo kryo, Output output, T object) {
 		if (object == null) {
 			output.writeByte(NULL);
@@ -109,10 +105,9 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 			fields[i].write(output, object);
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 	}
 
-	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int version = input.readVarInt(true);
 		if (version == NULL) return null;
@@ -136,7 +131,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 			fields[i].read(input, object);
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 		return object;
 	}
 
@@ -156,7 +151,6 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	public static class VersionFieldSerializerConfig extends FieldSerializerConfig {
 		boolean compatible = true;
 
-		@Override
 		public VersionFieldSerializerConfig clone () {
 			return (VersionFieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
 		}

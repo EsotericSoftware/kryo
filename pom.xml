@@ -1,25 +1,4 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<!--
-	 Copyright (c) 2008-2020, Nathan Sweet
-	 Copyright (C) 2020, Oracle and/or its affiliates.
-	 All rights reserved.
-
-	 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
-	 conditions are met:
-
-	 - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-	 - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
-	 disclaimer in the documentation and/or other materials provided with the distribution.
-	 - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
-	 from this software without specific prior written permission.
-
-	 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-	 BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
-	 SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-	 DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-	 INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-	 -->
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -30,7 +9,7 @@
 
 	<groupId>com.esotericsoftware</groupId>
 	<artifactId>kryo-parent</artifactId>
-	<version>5.0.0-RC10-SNAPSHOT</version>
+	<version>5.0.4-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>Kryo Parent</name>
@@ -49,7 +28,8 @@
 		<url>https://github.com/EsotericSoftware/kryo</url>
 		<connection>scm:git:git@github.com:EsotericSoftware/kryo.git</connection>
 		<developerConnection>scm:git:git@github.com:EsotericSoftware/kryo.git</developerConnection>
-	</scm>
+	  <tag>HEAD</tag>
+  </scm>
 
 	<developers>
 		<developer>
@@ -60,9 +40,11 @@
 	</developers>
 
 	<properties>
+		<kryo.root>${basedir}</kryo.root>
 		<kryo.major.version>5</kryo.major.version>
 		<javac.target>1.8</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<junit.version>5.7.0</junit.version>
 	</properties>
 
 	<modules>
@@ -74,9 +56,21 @@
 	<dependencies>
 		<!-- Tests. -->
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.12</version>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-params</artifactId>
+			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -112,19 +106,31 @@
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-install-plugin</artifactId>
+					<version>2.5.2</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>2.8.2</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-jar-plugin</artifactId>
-					<version>3.1.1</version>
+					<version>3.2.0</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
-					<version>2.22.0</version>
+					<version>2.22.2</version>
 				</plugin>
 
 				<plugin>
 					<artifactId>maven-resources-plugin</artifactId>
-					<version>3.1.0</version>
+					<version>3.2.0</version>
 					<executions>
 						<!-- Disable resources (project has none). -->
 						<execution>
@@ -141,11 +147,11 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-javadoc-plugin</artifactId>
-					<version>3.0.1</version>
+					<version>3.2.0</version>
 					<configuration>
 						<!-- Required for java8, so that javadoc errors don't fail the build. -->
 						<additionalparam>-Xdoclint:none</additionalparam>
-						<!-- Required for build with jdk11, to prevent "error: package sun.nio.ch is not visible" failing javadoc -->
+						<!-- Required for build with java11, to prevent "error: package sun.nio.ch is not visible" failing javadoc -->
 						<source>8</source>
 					</configuration>
 				</plugin>
@@ -159,12 +165,32 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-release-plugin</artifactId>
+					<version>2.5.3</version>
 					<configuration>
 						<!-- Don't run clean, because this would delete the kryo artifact, which would fail the shade plugin
 						    because the kryo jar would no longer exist.
 						    https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html#preparationGoals
 						-->
 						<preparationGoals>verify</preparationGoals>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>net.revelc.code.formatter</groupId>
+					<artifactId>formatter-maven-plugin</artifactId>
+					<version>2.12.2</version>
+					<configuration>
+						<configFile>${kryo.root}/eclipse/code-format.xml</configFile>
+						<lineEnding>KEEP</lineEnding>
+						<compilerSource>${javac.target}</compilerSource>
+						<compilerCompliance>${javac.target}</compilerCompliance>
+						<compilerTargetPlatform>${javac.target}</compilerTargetPlatform>
+						<directories>
+							<directory>${project.build.sourceDirectory}</directory>
+						</directories>
+						<excludes>
+							<exclude>**/benchmarks/**/*.java</exclude>
+						</excludes>
 					</configuration>
 				</plugin>
 			</plugins>
@@ -242,6 +268,18 @@
 				<jdk>[14,</jdk>
 			</activation>
 			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<version>2.22.2</version>
+						<configuration>
+							<excludes>
+								<exclude>**/java11/*Test.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
 				<pluginManagement>
 					<plugins>
 						<plugin>

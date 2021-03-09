@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
@@ -30,17 +30,18 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Objects;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("synthetic-access")
-public class TaggedFieldSerializerTest extends KryoTestCase {
+class TaggedFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
 	}
 
 	@Test
-	public void testTaggedFieldSerializer () {
+	void testTaggedFieldSerializer () {
 		TestClass object1 = new TestClass();
 		object1.moo = 2;
 		object1.child = new TestClass();
@@ -56,7 +57,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testAddedField () {
+	void testAddedField () {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();
 		object1.other = new AnotherClass();
@@ -77,7 +78,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 	 * fields to simulate a past version of the compiled application. An array is used to ensure subsequent bytes in the stream are
 	 * unaffected. */
 	@Test
-	public void testForwardCompatibility () {
+	void testForwardCompatibility () {
 		FutureClass futureObject = new FutureClass();
 		futureObject.value = 3;
 		futureObject.futureString = "future";
@@ -139,7 +140,7 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 	/** Attempts to register a class with a field tagged with a value already used in its superclass. Should receive
 	 * IllegalArgumentException. */
 	@Test
-	public void testInvalidTagValue () {
+	void testInvalidTagValue () {
 		Kryo newKryo = new Kryo();
 		newKryo.setReferences(true);
 		TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
@@ -154,6 +155,38 @@ public class TaggedFieldSerializerTest extends KryoTestCase {
 			receivedIAE = true;
 		}
 		assertTrue(receivedIAE);
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/774
+	@Test
+	void testClassWithObjectField() {
+		TaggedFieldSerializer<ClassWithObjectField> serializer = new TaggedFieldSerializer<>(kryo, ClassWithObjectField.class);
+		final TaggedFieldSerializer.TaggedFieldSerializerConfig config = serializer.getTaggedFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setReadUnknownTagData(true);
+		kryo.register(ClassWithObjectField.class, serializer);
+
+		roundTrip(8, new ClassWithObjectField(123));
+		roundTrip(9, new ClassWithObjectField("foo"));
+	}
+
+	public static class ClassWithObjectField {
+		@Tag(0)
+		Object value;
+
+		public ClassWithObjectField() { }
+
+		public ClassWithObjectField(Object value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithObjectField wrapper = (ClassWithObjectField) o;
+			return Objects.equals(value, wrapper.value);
+		}
 	}
 
 	public static class TestClass {

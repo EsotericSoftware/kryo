@@ -47,7 +47,6 @@ public class ExternalizableSerializer extends Serializer {
 	private KryoObjectInput objectInput = null;
 	private KryoObjectOutput objectOutput = null;
 
-	@Override
 	public void write (Kryo kryo, Output output, Object object) {
 		JavaSerializer serializer = getJavaSerializerIfRequired(object.getClass());
 		if (serializer == null)
@@ -56,7 +55,6 @@ public class ExternalizableSerializer extends Serializer {
 			serializer.write(kryo, output, object);
 	}
 
-	@Override
 	public Object read (Kryo kryo, Input input, Class type) {
 		JavaSerializer serializer = getJavaSerializerIfRequired(type);
 		if (serializer == null) return readExternal(kryo, input, type);

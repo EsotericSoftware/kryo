@@ -93,7 +93,6 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		updateBufferAddress();
 	}
 
-	@Override
 	public void setBuffer (ByteBuffer buffer) {
 		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
 		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
@@ -105,11 +104,10 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		bufferAddress = ((DirectBuffer)byteBuffer).address();
 	}
 
-	private void setBufferPosition( Buffer buffer,  int position) {
+	private void setBufferPosition (Buffer buffer, int position) {
 		buffer.position(position);
 	}
 
-	@Override
 	public int read () throws KryoException {
 		if (optional(1) <= 0) return -1;
 		int result = unsafe.getByte(bufferAddress + position++) & 0xFF;
@@ -117,7 +115,6 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		return result;
 	}
 
-	@Override
 	public byte readByte () throws KryoException {
 		if (position == limit) require(1);
 		byte result = unsafe.getByte(bufferAddress + position++);
@@ -125,7 +122,6 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		return result;
 	}
 
-	@Override
 	public int readByteUnsigned () throws KryoException {
 		if (position == limit) require(1);
 		int result = unsafe.getByte(bufferAddress + position++) & 0xFF;
@@ -133,7 +129,6 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		return result;
 	}
 
-	@Override
 	public int readInt () throws KryoException {
 		require(4);
 		int result = unsafe.getInt(bufferAddress + position);
@@ -142,7 +137,6 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		return result;
 	}
 
-	@Override
 	public long readLong () throws KryoException {
 		require(8);
 		long result = unsafe.getLong(bufferAddress + position);
@@ -151,7 +145,6 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		return result;
 	}
 
-	@Override
 	public float readFloat () throws KryoException {
 		require(4);
 		float result = unsafe.getFloat(bufferAddress + position);
@@ -160,7 +153,6 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		return result;
 	}
 
-	@Override
 	public double readDouble () throws KryoException {
 		require(8);
 		double result = unsafe.getDouble(bufferAddress + position);
@@ -169,7 +161,6 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		return result;
 	}
 
-	@Override
 	public short readShort () throws KryoException {
 		require(2);
 		short result = unsafe.getShort(bufferAddress + position);
@@ -178,7 +169,6 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		return result;
 	}
 
-	@Override
 	public char readChar () throws KryoException {
 		require(2);
 		char result = unsafe.getChar(bufferAddress + position);
@@ -187,7 +177,6 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		return result;
 	}
 
-	@Override
 	public boolean readBoolean () throws KryoException {
 		if (position == limit) require(1);
 		boolean result = unsafe.getByte(bufferAddress + position++) != 0;
@@ -195,56 +184,48 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 		return result;
 	}
 
-	@Override
 	public int[] readInts (int length) throws KryoException {
 		int[] array = new int[length];
 		readBytes(array, intArrayBaseOffset, length << 2);
 		return array;
 	}
 
-	@Override
 	public long[] readLongs (int length) throws KryoException {
 		long[] array = new long[length];
 		readBytes(array, longArrayBaseOffset, length << 3);
 		return array;
 	}
 
-	@Override
 	public float[] readFloats (int length) throws KryoException {
 		float[] array = new float[length];
 		readBytes(array, floatArrayBaseOffset, length << 2);
 		return array;
 	}
 
-	@Override
 	public double[] readDoubles (int length) throws KryoException {
 		double[] array = new double[length];
 		readBytes(array, doubleArrayBaseOffset, length << 3);
 		return array;
 	}
 
-	@Override
 	public short[] readShorts (int length) throws KryoException {
 		short[] array = new short[length];
 		readBytes(array, shortArrayBaseOffset, length << 1);
 		return array;
 	}
 
-	@Override
 	public char[] readChars (int length) throws KryoException {
 		char[] array = new char[length];
 		readBytes(array, charArrayBaseOffset, length << 1);
 		return array;
 	}
 
-	@Override
 	public boolean[] readBooleans (int length) throws KryoException {
 		boolean[] array = new boolean[length];
 		readBytes(array, booleanArrayBaseOffset, length);
 		return array;
 	}
 
-	@Override
 	public void readBytes (byte[] bytes, int offset, int count) throws KryoException {
 		readBytes(bytes, byteArrayBaseOffset + offset, count);
 	}

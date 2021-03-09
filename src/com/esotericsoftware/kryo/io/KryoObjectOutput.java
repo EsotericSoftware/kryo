@@ -38,17 +38,14 @@ public class KryoObjectOutput extends KryoDataOutput implements ObjectOutput {
 		this.kryo = kryo;
 	}
 
-	@Override
 	public void writeObject (Object object) throws IOException {
 		kryo.writeClassAndObject(output, object);
 	}
 
-	@Override
 	public void flush () throws IOException {
 		output.flush();
 	}
 
-	@Override
 	public void close () throws IOException {
 		output.close();
 	}

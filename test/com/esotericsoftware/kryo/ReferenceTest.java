@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -30,9 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class ReferenceTest extends KryoTestCase {
+class ReferenceTest extends KryoTestCase {
 	public static class Ordering {
 		public String order;
 	}
@@ -46,7 +46,7 @@ public class ReferenceTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testChildObjectBeforeReference () {
+	void testChildObjectBeforeReference () {
 		Ordering ordering = new Ordering();
 		ordering.order = "assbackwards";
 		Stuff stuff = new Stuff(ordering);
@@ -58,12 +58,10 @@ public class ReferenceTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		kryo.setReferences(true);
 		kryo.addDefaultSerializer(Stuff.class, new MapSerializer<Stuff>() {
-			@Override
 			protected void writeHeader (Kryo kryo, Output output, Stuff map) {
 				kryo.writeObjectOrNull(output, map.ordering, Ordering.class);
 			}
 
-			@Override
 			protected Stuff create (Kryo kryo, Input input, Class<? extends Stuff> type, int size) {
 				Ordering ordering = kryo.readObjectOrNull(input, Ordering.class);
 				return new Stuff(ordering);
@@ -84,7 +82,7 @@ public class ReferenceTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testReadingNestedObjectsFirst () {
+	void testReadingNestedObjectsFirst () {
 		ArrayList list = new ArrayList();
 		list.add("1");
 		list.add("1");
@@ -123,7 +121,6 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
-		@Override
 		public void write (Kryo kryo, Output output, List list) {
 			try {
 				kryo.writeClassAndObject(output, listField.get(list));
@@ -136,7 +133,6 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
-		@Override
 		public List read (Kryo kryo, Input input, Class<? extends List> type) {
 			List list = (List)kryo.readClassAndObject(input);
 			int fromIndex = input.readInt();
@@ -171,7 +167,6 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
-		@Override
 		public void write (Kryo kryo, Output output, List list) {
 			try {
 				kryo.writeClassAndObject(output, parentField.get(list));
@@ -184,7 +179,6 @@ public class ReferenceTest extends KryoTestCase {
 			}
 		}
 
-		@Override
 		public List read (Kryo kryo, Input input, Class<? extends List> type) {
 			List list = (List)kryo.readClassAndObject(input);
 			int offset = input.readInt();

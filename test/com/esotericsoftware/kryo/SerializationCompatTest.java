@@ -1,5 +1,4 @@
 /* Copyright (c) 2008-2020, Nathan Sweet
- * Copyright (C) 2020, Oracle and/or its affiliates.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -22,7 +21,7 @@ package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.kryo.ReflectionAssert.*;
 import static java.lang.Integer.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava8;
@@ -38,13 +37,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.lang.reflect.Field;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** Test for serialization compatibility: data serialized with an older version (same major version) must be deserializable with
@@ -70,7 +68,7 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
  * commit the changes. Depending on the situation you may consider creating new files from the smallest version of the same major
  * version (e.g. for 3.1.4 this is 3.0.0) - to do this just save this test and the {@link SerializationCompatTest}, go back to the
  * related tag and run the test (there's nothing here to automate creation of test files for a different version). */
-public class SerializationCompatTest extends KryoTestCase {
+class SerializationCompatTest extends KryoTestCase {
 	// Set to true to delete failed test files, then set back to false, set expected bytes, and run again to generate new files.
 	private static final boolean DELETE_FAILED_TEST_FILES = false;
 
@@ -104,8 +102,7 @@ public class SerializationCompatTest extends KryoTestCase {
 		}
 	}
 
-	@Override
-	@Before
+	@BeforeEach
 	public void setUp () throws Exception {
 		super.setUp();
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
@@ -119,27 +116,25 @@ public class SerializationCompatTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testDefaultSerializers () throws Exception {
+	void testDefaultSerializers () throws Exception {
 		Field defaultSerializersField = Kryo.class.getDeclaredField("defaultSerializers");
 		defaultSerializersField.setAccessible(true);
 		List defaultSerializers = (List)defaultSerializersField.get(kryo);
-		assertEquals("The registered default serializers have changed.\n" //
-			+ "Because serialization compatibility shall be checked for default serializers, you must extend " //
-			+ "SerializationCompatTestData.TestData to have a field for the type of the new default serializer.\n" //
-			+ "After that's done, you must create new versions of 'test/resources/data*' because the new TestData instance will " //
-			+ "no longer be equals the formerly written/serialized one.", EXPECTED_DEFAULT_SERIALIZER_COUNT,
-			defaultSerializers.size());
+		assertEquals(EXPECTED_DEFAULT_SERIALIZER_COUNT, defaultSerializers.size(),
+				"The registered default serializers have changed.\n" //
+						+ "Because serialization compatibility shall be checked for default serializers, you must extend " //
+						+ "SerializationCompatTestData.TestData to have a field for the type of the new default serializer.\n" //
+						+ "After that's done, you must create new versions of 'test/resources/data*' because the new TestData instance will " //
+						+ "no longer be equals the formerly written/serialized one.");
 	}
 
 	@Test
-	public void testStandard () throws Exception {
+	void testStandard () throws Exception {
 		runTests("standard", new Function1<File, Input>() {
-			@Override
 			public Input apply (File file) throws FileNotFoundException {
 				return new Input(new FileInputStream(file));
 			}
 		}, new Function1<File, Output>() {
-			@Override
 			public Output apply (File file) throws Exception {
 				return new Output(new FileOutputStream(file));
 			}
@@ -147,14 +142,12 @@ public class SerializationCompatTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testByteBuffer () throws Exception {
+	void testByteBuffer () throws Exception {
 		runTests("bytebuffer", new Function1<File, Input>() {
-			@Override
 			public Input apply (File file) throws FileNotFoundException {
 				return new ByteBufferInput(new FileInputStream(file));
 			}
 		}, new Function1<File, Output>() {
-			@Override
 			public Output apply (File file) throws Exception {
 				return new ByteBufferOutput(new FileOutputStream(file));
 			}
@@ -223,7 +216,6 @@ public class SerializationCompatTest extends KryoTestCase {
 		kryo.writeObject(out, description.testData);
 	}
 
-	@Override
 	protected void doAssertEquals (final Object one, final Object another) {
 		try {
 			assertReflectionEquals(one, another);

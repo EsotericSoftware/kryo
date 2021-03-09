@@ -70,13 +70,16 @@ public interface Generics {
 	/** Returns the class for the specified type variable, or null if it is not known.
 	 * @return May be null. */
 	Class resolveTypeVariable (TypeVariable typeVariable);
+	
+	/** Returns the number of generic types currently tracked */
+	int getGenericTypesSize();
 
 	/** Stores the type parameters for a class and, for parameters passed to super classes, the corresponding super class type
 	 * parameters. */
 	class GenericsHierarchy {
-		/* total number of type parameters in the hierarchy */
+		/* Total number of type parameters in the hierarchy. */
 		final int total;
-		/* total number of type parameters at the root of the hierarchy */
+		/* Total number of type parameters at the root of the hierarchy. */
 		final int rootTotal;
 		final int[] counts;
 		final TypeVariable[] parameters;
@@ -124,7 +127,6 @@ public interface Generics {
 			this.parameters = parameters.toArray(new TypeVariable[parameters.size()]);
 		}
 
-		@Override
 		public String toString () {
 			StringBuilder buffer = new StringBuilder();
 			buffer.append("[");

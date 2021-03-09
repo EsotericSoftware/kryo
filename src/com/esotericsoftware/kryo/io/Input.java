@@ -20,7 +20,6 @@
 package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.util.Pool;
 import com.esotericsoftware.kryo.util.Pool.Poolable;
 import com.esotericsoftware.kryo.util.Util;
 
@@ -157,7 +156,6 @@ public class Input extends InputStream implements Poolable {
 	}
 
 	/** Sets the position and total to zero. */
-	@Override
 	@SuppressWarnings("sync-override")
 	public void reset () {
 		position = 0;
@@ -272,13 +270,11 @@ public class Input extends InputStream implements Poolable {
 
 	// InputStream:
 
-	@Override
 	public int available () throws IOException {
 		return limit - position + (inputStream != null ? inputStream.available() : 0);
 	}
 
 	/** Reads a single byte as an int from 0 to 255, or -1 if there are no more bytes are available. */
-	@Override
 	public int read () throws KryoException {
 		if (optional(1) <= 0) return -1;
 		return buffer[position++] & 0xFF;
@@ -286,14 +282,12 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads bytes.length bytes or less and writes them to the specified byte[], starting at 0, and returns the number of bytes
 	 * read. */
-	@Override
 	public int read (byte[] bytes) throws KryoException {
 		return read(bytes, 0, bytes.length);
 	}
 
 	/** Reads count bytes or less and writes them to the specified byte[], starting at offset, and returns the number of bytes read
 	 * or -1 if no more bytes are available. */
-	@Override
 	public int read (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int startingCount = count;
@@ -316,7 +310,6 @@ public class Input extends InputStream implements Poolable {
 	}
 
 	/** Discards the specified number of bytes. */
-	@Override
 	public long skip (long count) throws KryoException {
 		long remaining = count;
 		while (remaining > 0) {
@@ -328,7 +321,6 @@ public class Input extends InputStream implements Poolable {
 	}
 
 	/** Closes the underlying InputStream, if any. */
-	@Override
 	public void close () throws KryoException {
 		if (inputStream != null) {
 			try {

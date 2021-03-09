@@ -39,12 +39,10 @@ public class KryoDataInput implements DataInput, AutoCloseable {
 		this.input = input;
 	}
 
-	@Override
 	public void readFully (byte[] b) throws IOException {
 		readFully(b, 0, b.length);
 	}
 
-	@Override
 	public void readFully (byte[] b, int off, int len) throws IOException {
 		try {
 			input.readBytes(b, off, len);
@@ -53,57 +51,46 @@ public class KryoDataInput implements DataInput, AutoCloseable {
 		}
 	}
 
-	@Override
 	public int skipBytes (int n) throws IOException {
 		return (int)input.skip((long)n);
 	}
 
-	@Override
 	public boolean readBoolean () throws IOException {
 		return input.readBoolean();
 	}
 
-	@Override
 	public byte readByte () throws IOException {
 		return input.readByte();
 	}
 
-	@Override
 	public int readUnsignedByte () throws IOException {
 		return input.readByteUnsigned();
 	}
 
-	@Override
 	public short readShort () throws IOException {
 		return input.readShort();
 	}
 
-	@Override
 	public int readUnsignedShort () throws IOException {
 		return input.readShortUnsigned();
 	}
 
-	@Override
 	public char readChar () throws IOException {
 		return input.readChar();
 	}
 
-	@Override
 	public int readInt () throws IOException {
 		return input.readInt();
 	}
 
-	@Override
 	public long readLong () throws IOException {
 		return input.readLong();
 	}
 
-	@Override
 	public float readFloat () throws IOException {
 		return input.readFloat();
 	}
 
-	@Override
 	public double readDouble () throws IOException {
 		return input.readDouble();
 	}
@@ -111,7 +98,6 @@ public class KryoDataInput implements DataInput, AutoCloseable {
 	/** Not implemented.
 	 * @throws UnsupportedOperationException when called.
 	 * @deprecated this method is not supported in this implementation. */
-	@Override
 	public String readLine () throws UnsupportedOperationException {
 		throw new UnsupportedOperationException();
 	}
@@ -120,12 +106,10 @@ public class KryoDataInput implements DataInput, AutoCloseable {
 	 * {@link KryoDataOutput#writeUTF(String)}, {@link com.esotericsoftware.kryo.io.Output#writeString(String)}, and
 	 * {@link com.esotericsoftware.kryo.io.Output#writeAscii(String)}.
 	 * @return May be null. */
-	@Override
 	public String readUTF () throws IOException {
 		return input.readString();
 	}
 
-	@Override
 	public void close () throws Exception {
 		input.close();
 	}

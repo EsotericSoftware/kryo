@@ -51,25 +51,21 @@ public class InputChunked extends Input {
 		super(inputStream, bufferSize);
 	}
 
-	@Override
 	public void setInputStream (InputStream inputStream) {
 		super.setInputStream(inputStream);
 		chunkSize = -1;
 	}
 
-	@Override
 	public void setBuffer (byte[] bytes, int offset, int count) {
 		super.setBuffer(bytes, offset, count);
 		chunkSize = -1;
 	}
 
-	@Override
 	public void reset () {
 		super.reset();
 		chunkSize = -1;
 	}
 
-	@Override
 	protected int fill (byte[] buffer, int offset, int count) throws KryoException {
 		if (chunkSize == -1) { // No current chunk, expect a new chunk.
 			if (!readChunkSize()) return -1;

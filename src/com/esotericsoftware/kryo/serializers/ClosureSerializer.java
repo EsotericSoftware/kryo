@@ -61,7 +61,6 @@ public class ClosureSerializer extends Serializer {
 		}
 	}
 
-	@Override
 	public void write (Kryo kryo, Output output, Object object) {
 		SerializedLambda serializedLambda = toSerializedLambda(object);
 		int count = serializedLambda.getCapturedArgCount();
@@ -83,7 +82,6 @@ public class ClosureSerializer extends Serializer {
 		output.writeString(serializedLambda.getInstantiatedMethodType());
 	}
 
-	@Override
 	public Object read (Kryo kryo, Input input, Class type) {
 		int count = input.readVarInt(true);
 		Object[] capturedArgs = new Object[count];
@@ -99,7 +97,6 @@ public class ClosureSerializer extends Serializer {
 		}
 	}
 
-	@Override
 	public Object copy (Kryo kryo, Object original) {
 		try {
 			return readResolve.invoke(toSerializedLambda(original));

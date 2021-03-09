@@ -34,50 +34,42 @@ public class HashMapReferenceResolver implements ReferenceResolver {
 	protected final IdentityHashMap<Object, Integer> writtenObjects = new IdentityHashMap();
 	protected final ArrayList readObjects = new ArrayList();
 
-	@Override
 	public void setKryo (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
-	@Override
 	public int addWrittenObject (Object object) {
 		int id = writtenObjects.size();
 		writtenObjects.put(object, id);
 		return id;
 	}
 
-	@Override
 	public int getWrittenId (Object object) {
 		Integer id = writtenObjects.get(object);
 		if (id == null) return -1;
 		return id;
 	}
 
-	@Override
 	public int nextReadId (Class type) {
 		int id = readObjects.size();
 		readObjects.add(null);
 		return id;
 	}
 
-	@Override
 	public void setReadObject (int id, Object object) {
 		readObjects.set(id, object);
 	}
 
-	@Override
 	public Object getReadObject (Class type, int id) {
 		return readObjects.get(id);
 	}
 
-	@Override
 	public void reset () {
 		readObjects.clear();
 		writtenObjects.clear();
 	}
 
 	/** Returns false for all primitive wrappers and enums. */
-	@Override
 	public boolean useReferences (Class type) {
 		return !Util.isWrapperClass(type) && !Util.isEnum(type);
 	}

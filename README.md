@@ -18,6 +18,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 - [Installation](#installation)
    * [With Maven](#with-maven)
    * [Without Maven](#without-maven)
+   * [On Android](#on-android)
 - [Quickstart](#quickstart)
 - [IO](#io)
    * [Output](#output)
@@ -84,8 +85,10 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
-* [5.0.0-RC9](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC9) - 9th release candidate with significant performance improvements. Note: For libraries (not applications) using Kryo, there's now a completely self-contained, versioned artifact (for details see [installation](#installation)). For migration from kryo 4.x see also [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5).
-* [5.0.0-RC1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0-RC1) - fixes many issues and makes many long awaited improvements.
+* [5.0.3](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.3) - brings an important fix for generics optimization.
+* [5.0.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.2) - brings an important fix for `CompatibleFieldSerializer`.
+* [5.0.1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.1) - brings several incremental fixes and improvements.
+* [5.0.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0) - the final Kryo 5 release fixing many issues and making many long awaited improvements over Kryo 4. Note: For libraries (not applications) using Kryo, there's now a completely self-contained, versioned artifact (for details see [installation](#installation)). For migration from Kryo 4.x see also [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5).
 * [4.0.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.2) - brings several incremental fixes and improvements.
 
 ## Installation
@@ -104,7 +107,7 @@ To use the latest Kryo release in your application, use this dependency entry in
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.0.0-RC9</version>
+   <version>5.0.3</version>
 </dependency>
 ```
 
@@ -114,7 +117,7 @@ To use the latest Kryo release in a library you want to publish, use this depend
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.0.0-RC9</version>
+   <version>5.0.3</version>
 </dependency>
 ```
 
@@ -131,19 +134,30 @@ To use the latest Kryo snapshot, use:
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.0.0-RC10-SNAPSHOT</version>
+   <version>5.0.4-SNAPSHOT</version>
 </dependency>
 <!-- for usage in a library that should be published: -->
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.0.0-RC10-SNAPSHOT</version>
+   <version>5.0.4-SNAPSHOT</version>
 </dependency>
 ```
 
 ### Without Maven
 
 Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#installation) on your classpath along with the dependency JARs found in [lib](https://github.com/EsotericSoftware/kryo/tree/master/lib).
+
+### On Android
+
+Kryo 5 ships with Objenesis 3.1 which [currently supports](https://github.com/easymock/objenesis/issues/79) Android API >= 26. If you want to use Kryo with older Android APIs, you need to explicitely depend on Objensis 2.6.
+
+```
+implementation ('com.esotericsoftware:kryo:5.0.3') {
+  exclude group: "org.objenesis"
+}
+implementation 'org.objenesis:objenesis:2.6'
+```
 
 ## Quickstart
 
@@ -244,16 +258,17 @@ It can be useful to write the length of some data, then the data. When the lengt
 
 Chunked encoding solves this problem by using a small buffer. When the buffer is full, its length is written, then the data. This is one chunk of data. The buffer is cleared and this continues until there is no more data to write. A chunk with a length of zero denotes the end of the chunks.
 
-Kryo provides classes to maked chunked encoding. OutputChunked is used to write chunked data. It extends Output, so has all the convenient methods to write data. When the OutputChunked buffer is full, it flushes the chunk to another OutputStream. The `endChunks` method is used to mark the end of a set of chunks.
+Kryo provides classes to maked chunked encoding. OutputChunked is used to write chunked data. It extends Output, so has all the convenient methods to write data. When the OutputChunked buffer is full, it flushes the chunk to another OutputStream. The `endChunk` method is used to mark the end of a set of chunks.
 
 ```java
 OutputStream outputStream = new FileOutputStream("file.bin");
 OutputChunked output = new OutputChunked(outputStream, 1024);
 // Write data to output...
-output.endChunks();
+output.endChunk();
 // Write more data to output...
-output.endChunks();
+output.endChunk();
 // Write even more data to output...
+output.endChunk();
 output.close();
 ```
 

@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
@@ -28,13 +28,12 @@ import com.esotericsoftware.kryo.io.Output;
 import java.lang.invoke.SerializedLambda;
 import java.util.concurrent.Callable;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** Test for java 8 closures. */
-public class ClosureSerializerTest extends KryoTestCase {
-	@Override
-	@Before
+class ClosureSerializerTest extends KryoTestCase {
+	@BeforeEach
 	public void setUp () throws Exception {
 		super.setUp();
 		// kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
@@ -46,7 +45,7 @@ public class ClosureSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testSerializableClosure () {
+	void testSerializableClosure () {
 		Callable<Integer> closure1 = (Callable<Integer> & java.io.Serializable)( () -> 72363);
 
 		// The length cannot be checked reliable, as it can vary based on the JVM.
@@ -61,7 +60,6 @@ public class ClosureSerializerTest extends KryoTestCase {
 		doAssertEquals(closure1, closure2);
 	}
 
-	@Override
 	protected void doAssertEquals (Object object1, Object object2) {
 		try {
 			assertEquals(((Callable)object1).call(), ((Callable)object2).call());

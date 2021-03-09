@@ -19,20 +19,20 @@
 
 package com.esotericsoftware.kryo;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
 import java.lang.ref.WeakReference;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Tests for detecting PermGen memory leaks.
  * @author Tumi <serverperformance@gmail.com> */
-public class GarbageCollectionTest {
+class GarbageCollectionTest {
 	@Test
-	public void test () {
+	void test () {
 		Kryo kryo = new Kryo(new DefaultClassResolver(), new MapReferenceResolver());
 		WeakReference<Kryo> kryoWeakRef = new WeakReference(kryo);
 		kryo = null; // remove strong ref, now kryo is only weak-reachable

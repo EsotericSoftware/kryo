@@ -20,7 +20,7 @@
 package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.minlog.Log.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
@@ -40,7 +40,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 /** Convenience methods for round tripping objects.
  * @author Nathan Sweet */
@@ -66,7 +66,7 @@ public abstract class KryoTestCase {
 		public Input createInput (byte[] buffer);
 	}
 
-	@Before
+	@BeforeEach
 	public void setUp () throws Exception {
 		if (debug && WARN) warn("*** DEBUG TEST ***");
 
@@ -93,27 +93,22 @@ public abstract class KryoTestCase {
 	/** @param length Pass Integer.MIN_VALUE to disable checking the length. */
 	public <T> T roundTrip (int length, T object1) {
 		T object2 = roundTripWithBufferFactory(length, object1, new BufferFactory() {
-			@Override
 			public Output createOutput (OutputStream os) {
 				return new Output(os);
 			}
 
-			@Override
 			public Output createOutput (OutputStream os, int size) {
 				return new Output(os, size);
 			}
 
-			@Override
 			public Output createOutput (int size, int limit) {
 				return new Output(size, limit);
 			}
 
-			@Override
 			public Input createInput (InputStream os, int size) {
 				return new Input(os, size);
 			}
 
-			@Override
 			public Input createInput (byte[] buffer) {
 				return new Input(buffer);
 			}
@@ -122,85 +117,70 @@ public abstract class KryoTestCase {
 		if (debug) return object2;
 
 		roundTripWithBufferFactory(length, object1, new BufferFactory() {
-			@Override
 			public Output createOutput (OutputStream os) {
 				return new ByteBufferOutput(os);
 			}
 
-			@Override
 			public Output createOutput (OutputStream os, int size) {
 				return new ByteBufferOutput(os, size);
 			}
 
-			@Override
 			public Output createOutput (int size, int limit) {
 				return new ByteBufferOutput(size, limit);
 			}
 
-			@Override
 			public Input createInput (InputStream os, int size) {
 				return new ByteBufferInput(os, size);
 			}
 
-			@Override
 			public Input createInput (byte[] buffer) {
 				ByteBuffer byteBuffer = allocateByteBuffer(buffer);
-				return new ByteBufferInput(byteBuffer);
+				return new ByteBufferInput(byteBuffer.asReadOnlyBuffer());
 			}
 		});
 
 		roundTripWithBufferFactory(length, object1, new BufferFactory() {
-			@Override
 			public Output createOutput (OutputStream os) {
 				return new UnsafeOutput(os);
 			}
 
-			@Override
 			public Output createOutput (OutputStream os, int size) {
 				return new UnsafeOutput(os, size);
 			}
 
-			@Override
 			public Output createOutput (int size, int limit) {
 				return new UnsafeOutput(size, limit);
 			}
 
-			@Override
 			public Input createInput (InputStream os, int size) {
 				return new UnsafeInput(os, size);
 			}
 
-			@Override
 			public Input createInput (byte[] buffer) {
 				return new UnsafeInput(buffer);
 			}
 		});
 
 		roundTripWithBufferFactory(length, object1, new BufferFactory() {
-			@Override
 			public Output createOutput (OutputStream os) {
 				return new UnsafeByteBufferOutput(os);
 			}
 
-			@Override
 			public Output createOutput (OutputStream os, int size) {
 				return new UnsafeByteBufferOutput(os, size);
 			}
 
-			@Override
 			public Output createOutput (int size, int limit) {
 				return new UnsafeByteBufferOutput(size, limit);
 			}
 
-			@Override
 			public Input createInput (InputStream os, int size) {
 				return new UnsafeByteBufferInput(os, size);
 			}
 
-			@Override
 			public Input createInput (byte[] buffer) {
 				ByteBuffer byteBuffer = allocateByteBuffer(buffer);
-				return new UnsafeByteBufferInput(byteBuffer);
+				return new UnsafeByteBufferInput(byteBuffer.asReadOnlyBuffer());
 			}
 		});
 
@@ -233,8 +213,8 @@ public abstract class KryoTestCase {
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
 		if (checkLength) {
-			assertEquals("Incorrect number of bytes read.", length, input.total());
-			assertEquals("Incorrect number of bytes written.", length, output.total());
+			assertEquals(length, input.total(), "Incorrect number of bytes read.");
+			assertEquals(length, output.total(), "Incorrect number of bytes written.");
 		}
 
 		if (debug) return (T)object2;
@@ -249,7 +229,7 @@ public abstract class KryoTestCase {
 		input = sf.createInput(new ByteArrayInputStream(outStream.toByteArray()), 10);
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
-		if (checkLength) assertEquals("Incorrect number of bytes read.", length, input.total());
+		if (checkLength) assertEquals(length, input.total(), "Incorrect number of bytes read.");
 
 		if (object1 != null) {
 			// Test null with serializer.
@@ -277,8 +257,8 @@ public abstract class KryoTestCase {
 		object2 = kryo.readClassAndObject(input);
 		doAssertEquals(object1, object2);
 		if (checkLength) {
-			assertEquals("Incorrect length.", length, output.total());
-			assertEquals("Incorrect number of bytes read.", length, input.total());
+			assertEquals( length, output.total(), "Incorrect length.");
+			assertEquals( length, input.total(), "Incorrect number of bytes read.");
 		}
 		input.reset();
 
@@ -289,6 +269,9 @@ public abstract class KryoTestCase {
 			copy = kryo.copyShallow(object1);
 			doAssertEquals(object1, copy);
 		}
+
+		// Ensure generic types are balanced after each round of serialization
+		assertEquals(0, kryo.getGenerics().getGenericTypesSize());
 
 		return (T)object2;
 	}

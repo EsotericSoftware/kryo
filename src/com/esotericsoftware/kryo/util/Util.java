@@ -179,6 +179,14 @@ public class Util {
 		return buffer.toString();
 	}
 
+	/** Returns the class formatted as a string. If the class has a canonical name, the canonical name is returned, 
+	 * otherwise it returns the result of {@link #className(Class)} */
+	public static String canonicalName(Class type) {
+		if (type == null) return "null";
+		final String canonicalName = type.getCanonicalName();
+		return canonicalName != null ? canonicalName : className(type);
+	}
+
 	public static String simpleName (Type type) {
 		if (type instanceof Class) return ((Class)type).getSimpleName();
 		return type.toString(); // Java 8: getTypeName
@@ -222,6 +230,7 @@ public class Util {
 	}
 
 	public static boolean isAssignableTo (Class<?> from, Class<?> to) {
+		if (to == Object.class) return true;
 		if (to.isAssignableFrom(from)) return true;
 		if (from.isPrimitive()) return isPrimitiveWrapperOf(to, from);
 		if (to.isPrimitive()) return isPrimitiveWrapperOf(from, to);

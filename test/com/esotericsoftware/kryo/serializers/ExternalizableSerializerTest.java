@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
@@ -33,12 +33,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** @author Robert DiFalco <robert.difalco@gmail.com> */
-public class ExternalizableSerializerTest extends KryoTestCase {
+class ExternalizableSerializerTest extends KryoTestCase {
 	@Test
-	public void testRegister () {
+	void testRegister () {
 		kryo.register(TestClass.class, new ExternalizableSerializer());
 		kryo.register(String.class, new DefaultSerializers.StringSerializer());
 		TestClass test = new TestClass();
@@ -51,7 +51,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testDefault () {
+	void testDefault () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, new ExternalizableSerializer());
 		TestClass test = new TestClass();
@@ -63,7 +63,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testReadResolve () {
+	void testReadResolve () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, ExternalizableSerializer.class);
 
@@ -82,7 +82,7 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testTwoClasses () {
+	void testTwoClasses () {
 		kryo.setRegistrationRequired(false);
 		kryo.addDefaultSerializer(Externalizable.class, ExternalizableSerializer.class);
 
@@ -135,13 +135,11 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 			return true;
 		}
 
-		@Override
 		public void writeExternal (ObjectOutput out) throws IOException {
 			out.writeObject(stringField);
 			out.writeInt(intField);
 		}
 
-		@Override
 		public void readExternal (ObjectInput in) throws IOException, ClassNotFoundException {
 			stringField = (String)in.readObject();
 			intField = in.readInt();
@@ -176,13 +174,11 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 			return true;
 		}
 
-		@Override
 		public void writeExternal (ObjectOutput out) throws IOException {
 			out.writeObject(dateField);
 			out.writeLong(longField);
 		}
 
-		@Override
 		public void readExternal (ObjectInput in) throws IOException, ClassNotFoundException {
 			dateField = (Date)in.readObject();
 			longField = in.readInt();
@@ -200,12 +196,10 @@ public class ExternalizableSerializerTest extends KryoTestCase {
 			this.value = value;
 		}
 
-		@Override
 		public void writeExternal (ObjectOutput out) throws IOException {
 			out.writeObject(value);
 		}
 
-		@Override
 		public void readExternal (ObjectInput in) throws IOException, ClassNotFoundException {
 			value = (String)in.readObject();
 		}

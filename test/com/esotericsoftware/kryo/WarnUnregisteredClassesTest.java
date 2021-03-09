@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.minlog.Log;
@@ -29,14 +29,14 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** @author Tiago Albineli Motta <timotta@gmail.com> */
-public class WarnUnregisteredClassesTest {
+class WarnUnregisteredClassesTest {
 	LoggerStub log;
 
-	@Before
+	@BeforeEach
 	public void setUp () throws Exception {
 		log = new LoggerStub();
 		Log.setLogger(log);
@@ -44,7 +44,7 @@ public class WarnUnregisteredClassesTest {
 	}
 
 	@Test
-	public void testLogOnlyOneTimePerClass () {
+	void testLogOnlyOneTimePerClass () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setWarnUnregisteredClasses(true);
@@ -63,7 +63,7 @@ public class WarnUnregisteredClassesTest {
 	}
 
 	@Test
-	public void testDontLogIfNotRequired () {
+	void testDontLogIfNotRequired () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setWarnUnregisteredClasses(false);
@@ -76,7 +76,7 @@ public class WarnUnregisteredClassesTest {
 	}
 
 	@Test
-	public void testDontLogClassIsRegistered () {
+	void testDontLogClassIsRegistered () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setWarnUnregisteredClasses(true);
@@ -87,7 +87,7 @@ public class WarnUnregisteredClassesTest {
 	}
 
 	@Test
-	public void testLogShouldBeWarn () {
+	void testLogShouldBeWarn () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setWarnUnregisteredClasses(true);
@@ -97,13 +97,25 @@ public class WarnUnregisteredClassesTest {
 	}
 
 	@Test
-	public void testLogMessageShouldContainsClassName () {
+	void testLogMessageShouldContainClassName () {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setWarnUnregisteredClasses(true);
 
 		write(kryo, new UnregisteredClass());
 		assertTrue(log.messages.get(0).contains(UnregisteredClass.class.getName()));
+	}
+
+	@Test
+	void testLogMessageShouldContainRegistrationHintWithCanonicalName () {
+		Kryo kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		kryo.setWarnUnregisteredClasses(true);
+
+		write(kryo, new UnregisteredClass());
+		assertTrue(log.messages.get(0).contains(
+				"kryo.register(com.esotericsoftware.kryo.WarnUnregisteredClassesTest.UnregisteredClass.class)"
+		));
 	}
 
 	public void write (Kryo kryo, Object object) {
@@ -117,7 +129,6 @@ public class WarnUnregisteredClassesTest {
 		public List<Integer> levels = new ArrayList();
 		public List<String> messages = new ArrayList();
 
-		@Override
 		public void log (int level, String category, String message, Throwable ex) {
 			levels.add(level);
 			messages.add(message);

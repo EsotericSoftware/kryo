@@ -71,7 +71,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /** Testdata for serialization compatibility check. */
 @SuppressWarnings("unused")
-public class SerializationCompatTestData {
+class SerializationCompatTestData {
 
 	static class TestDataJava8 extends TestData {
 		private Optional<String> optionalString;

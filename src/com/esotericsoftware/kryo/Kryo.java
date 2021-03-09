@@ -57,6 +57,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsEmpty
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonListSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonSetSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.ConcurrentSkipListMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CurrencySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DateSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DoubleSerializer;
@@ -119,6 +120,7 @@ import java.util.PriorityQueue;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
@@ -133,9 +135,10 @@ public class Kryo {
 
 	private static final int REF = -1;
 	private static final int NO_REF = -2;
+	private static final int DEFAULT_SERIALIZER_SIZE = 68;
 
 	private SerializerFactory defaultSerializer = new FieldSerializerFactory();
-	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(67);
+	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(DEFAULT_SERIALIZER_SIZE);
 	private final int lowPriorityDefaultSerializerCount;
 
 	private final ClassResolver classResolver;
@@ -195,7 +198,6 @@ public class Kryo {
 		addDefaultSerializer(boolean[].class, BooleanArraySerializer.class);
 		addDefaultSerializer(String[].class, StringArraySerializer.class);
 		addDefaultSerializer(Object[].class, ObjectArraySerializer.class);
-		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
 		addDefaultSerializer(BigInteger.class, BigIntegerSerializer.class);
 		addDefaultSerializer(BigDecimal.class, BigDecimalSerializer.class);
 		addDefaultSerializer(Class.class, ClassSerializer.class);
@@ -213,6 +215,7 @@ public class Kryo {
 		addDefaultSerializer(Collections.singleton(null).getClass(), CollectionsSingletonSetSerializer.class);
 		addDefaultSerializer(TreeSet.class, TreeSetSerializer.class);
 		addDefaultSerializer(Collection.class, CollectionSerializer.class);
+		addDefaultSerializer(ConcurrentSkipListMap.class, ConcurrentSkipListMapSerializer.class);
 		addDefaultSerializer(TreeMap.class, TreeMapSerializer.class);
 		addDefaultSerializer(Map.class, MapSerializer.class);
 		addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
@@ -224,6 +227,7 @@ public class Kryo {
 		addDefaultSerializer(void.class, new VoidSerializer());
 		addDefaultSerializer(PriorityQueue.class, new PriorityQueueSerializer());
 		addDefaultSerializer(BitSet.class, new BitSetSerializer());
+		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		ImmutableCollectionsSerializers.addDefaultSerializers(this);
@@ -363,11 +367,62 @@ public class Kryo {
 	 * <td>TimeZone</td>
 	 * </tr>
 	 * <tr>
+	 * <td>BitSet</td>
+	 * <td>Locale</td>
+	 * <td>Arrays.asList</td>
 	 * <td>TreeMap</td>
+	 * <td>URL</td>
+	 * </tr>
+	 * <tr>
 	 * <td>EnumSet</td>
+	 * <td>Charset</td>
+	 * <td>ConcurrentSkipListMap</td>
+	 * <td>TreeSet</td>
+	 * <td>PriorityQueue</td>
 	 * </tr>
 	 * </table>
+	 * </p>
+	 * The following classes have serializers set on JDK8 and above:
 	 * <p>
+	 * <table>
+	 * <tr>
+	 * <td>Optional</td>
+	 * <td>OptionalInt</td>
+	 * <td>OptionalLong</td>
+	 * <td>OptionalDouble</td>
+	 * </tr>
+	 * <tr>
+	 * <td>Duration</td>
+	 * <td>Instant</td>
+	 * <td>LocalDate</td>
+	 * <td>LocalTime</td>
+	 * <td>LocalDateTime</td>
+	 * </tr>
+	 * <tr>
+	 * <td>ZoneOffset</td>
+	 * <td>ZoneId</td>
+	 * <td>OffsetTime</td>
+	 * <td>OffsetDateTime</td>
+	 * <td>ZonedDateTime</td>
+	 * </tr>
+	 * <tr>
+	 * <td>Year</td>
+	 * <td>YearMonth</td>
+	 * <td>MonthDay</td>
+	 * <td>Period</td>
+	 * </tr>
+	 * </table>
+	 * </p>
+	 * The following classes have serializers set on JDK9 and above:
+	 * <p>
+	 * <table>
+	 * <tr>
+	 * <td>List.of</td>
+	 * <td>Set.of</td>
+	 * <td>Map.of</td>
+	 * </tr>
+	 * </table>
+	 * </p>
 	 * Note that the order default serializers are added is important for a class that may match multiple types. The above default
 	 * serializers always have a lower priority than subsequent default serializers that are added. */
 	public void addDefaultSerializer (Class type, Class<? extends Serializer> serializerClass) {
@@ -533,7 +588,7 @@ public class Kryo {
 
 	protected String unregisteredClassMessage (Class type) {
 		return "Class is not registered: " + className(type) + "\nNote: To register this class use: kryo.register("
-			+ className(type) + ".class);";
+			+ canonicalName(type) + ".class);";
 	}
 
 	/** @see ClassResolver#getRegistration(int) */

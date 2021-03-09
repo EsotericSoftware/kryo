@@ -27,18 +27,17 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** Test for java 8 Optional* serializers. */
-public class OptionalSerializersTest extends KryoTestCase {
+class OptionalSerializersTest extends KryoTestCase {
 
 	{
 		supportsCopy = true;
 	}
 
-	@Override
-	@Before
+	@BeforeEach
 	public void setUp () throws Exception {
 		super.setUp();
 		kryo.register(Optional.class);
@@ -49,28 +48,28 @@ public class OptionalSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	public void testOptional () {
+	void testOptional () {
 		roundTrip(2, new TestClass(null));
 		roundTrip(3, new TestClass(Optional.<String> empty()));
 		roundTrip(6, new TestClass(Optional.of("foo")));
 	}
 
 	@Test
-	public void testOptionalInt () {
+	void testOptionalInt () {
 		roundTrip(2, OptionalInt.empty());
 		roundTrip(6, OptionalInt.of(Integer.MIN_VALUE));
 		roundTrip(6, OptionalInt.of(Integer.MAX_VALUE));
 	}
 
 	@Test
-	public void testOptionalLong () {
+	void testOptionalLong () {
 		roundTrip(2, OptionalLong.empty());
 		roundTrip(10, OptionalLong.of(Long.MIN_VALUE));
 		roundTrip(10, OptionalLong.of(Long.MAX_VALUE));
 	}
 
 	@Test
-	public void testOptionalDouble () {
+	void testOptionalDouble () {
 		roundTrip(2, OptionalDouble.empty());
 		roundTrip(10, OptionalDouble.of(Double.MIN_VALUE));
 		roundTrip(10, OptionalDouble.of(Double.MAX_VALUE));

@@ -37,37 +37,30 @@ public class KryoObjectInput extends KryoDataInput implements ObjectInput {
 		this.kryo = kryo;
 	}
 
-	@Override
 	public Object readObject () throws ClassNotFoundException, IOException {
 		return kryo.readClassAndObject(input);
 	}
 
-	@Override
 	public int read () throws IOException {
 		return input.read();
 	}
 
-	@Override
 	public int read (byte[] b) throws IOException {
 		return input.read(b);
 	}
 
-	@Override
 	public int read (byte[] b, int off, int len) throws IOException {
 		return input.read(b, off, len);
 	}
 
-	@Override
 	public long skip (long n) throws IOException {
 		return input.skip(n);
 	}
 
-	@Override
 	public int available () throws IOException {
 		return 0;
 	}
 
-	@Override
 	public void close () throws IOException {
 		input.close();
 	}

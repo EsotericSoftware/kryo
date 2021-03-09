@@ -74,7 +74,6 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		setAcceptsNull(true);
 	}
 
-	@Override
 	protected void initializeCachedFields () {
 		CachedField[] fields = cachedFields.fields;
 		// Remove untagged fields.
@@ -102,19 +101,16 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		this.writeTags = (CachedField[])writeTags.toArray(new CachedField[writeTags.size()]);
 	}
 
-	@Override
 	public void removeField (String fieldName) {
 		super.removeField(fieldName);
 		initializeCachedFields();
 	}
 
-	@Override
 	public void removeField (CachedField field) {
 		super.removeField(field);
 		initializeCachedFields();
 	}
 
-	@Override
 	public void write (Kryo kryo, Output output, T object) {
 		if (object == null) {
 			output.writeByte(NULL);
@@ -157,20 +153,20 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				cachedField.setCanBeNull(false);
 				cachedField.setValueClass(valueClass);
+				cachedField.setReuseSerializer(false);
 			}
 
 			cachedField.write(fieldOutput, object);
 			if (chunked) outputChunked.endChunk();
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 	}
 
 	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class)}. The default implementation does nothing. */
 	protected void writeHeader (Kryo kryo, Output output, T object) {
 	}
 
-	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int fieldCount = input.readVarInt(true);
 		if (fieldCount == NULL) return null;
@@ -226,6 +222,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				cachedField.setCanBeNull(false);
 				cachedField.setValueClass(valueClass);
+				cachedField.setReuseSerializer(false);
 			} else if (cachedField == null) {
 				if (!chunked) throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
 				if (TRACE) trace("kryo", "Skip unknown field tag: " + tag);
@@ -238,7 +235,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			if (chunked) inputChunked.nextChunk();
 		}
 
-		if (pop > 0) popTypeVariables(pop);
+		popTypeVariables(pop);
 		return object;
 	}
 
@@ -258,7 +255,6 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		boolean readUnknownTagData, chunked;
 		int chunkSize = 1024;
 
-		@Override
 		public TaggedFieldSerializerConfig clone () {
 			return (TaggedFieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
 		}

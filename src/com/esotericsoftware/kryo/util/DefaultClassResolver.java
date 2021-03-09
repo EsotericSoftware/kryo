@@ -49,12 +49,10 @@ public class DefaultClassResolver implements ClassResolver {
 	private Class memoizedClass;
 	private Registration memoizedClassValue;
 
-	@Override
 	public void setKryo (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
-	@Override
 	public Registration register (Registration registration) {
 		memoizedClassId = -1;
 		memoizedClass = null;
@@ -75,7 +73,6 @@ public class DefaultClassResolver implements ClassResolver {
 		return registration;
 	}
 
-	@Override
 	public Registration unregister (int classID) {
 		Registration registration = idToRegistration.remove(classID);
 		if (registration != null) {
@@ -88,12 +85,10 @@ public class DefaultClassResolver implements ClassResolver {
 		return registration;
 	}
 
-	@Override
 	public Registration registerImplicit (Class type) {
 		return register(new Registration(type, kryo.getDefaultSerializer(type), NAME));
 	}
 
-	@Override
 	public Registration getRegistration (Class type) {
 		if (type == memoizedClass) return memoizedClassValue;
 		Registration registration = classToRegistration.get(type);
@@ -104,12 +99,10 @@ public class DefaultClassResolver implements ClassResolver {
 		return registration;
 	}
 
-	@Override
 	public Registration getRegistration (int classID) {
 		return idToRegistration.get(classID);
 	}
 
-	@Override
 	public Registration writeClass (Output output, Class type) {
 		if (type == null) {
 			if (TRACE || (DEBUG && kryo.getDepth() == 1)) log("Write", null, output.position());
@@ -148,7 +141,6 @@ public class DefaultClassResolver implements ClassResolver {
 			output.writeString(type.getName());
 	}
 
-	@Override
 	public Registration readClass (Input input) {
 		int classID = input.readVarInt(true);
 		switch (classID) {
@@ -205,7 +197,6 @@ public class DefaultClassResolver implements ClassResolver {
 		return nameToClass != null ? nameToClass.get(className) : null;
 	}
 
-	@Override
 	public void reset () {
 		if (!kryo.isRegistrationRequired()) {
 			if (classToNameId != null) classToNameId.clear(2048);
