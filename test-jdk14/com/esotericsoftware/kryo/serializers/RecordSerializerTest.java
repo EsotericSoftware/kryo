@@ -1,5 +1,4 @@
 /* Copyright (c) 2008-2020, Nathan Sweet
- * Copyright (C) 2020, Oracle and/or its affiliates.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -20,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
@@ -30,8 +29,12 @@ import com.esotericsoftware.kryo.io.Output;
 import java.lang.reflect.Array;
 import java.util.stream.IntStream;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+/** Test for {@link RecordSerializer}.
+ * @author Julia Boes <julia.boes@oracle.com>
+ * @author Chris Hegarty <chris.hegarty@oracle.com>
+ */
 public class RecordSerializerTest extends KryoTestCase {
     {
         supportsCopy = false;

@@ -1,5 +1,4 @@
 /* Copyright (c) 2008-2020, Nathan Sweet
- * Copyright (C) 2020, Oracle and/or its affiliates.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -247,7 +246,6 @@ public class Kryo {
 		register(short.class, new ShortSerializer());
 		register(long.class, new LongSerializer());
 		register(double.class, new DoubleSerializer());
-
 	}
 
 	// --- Default serializers ---

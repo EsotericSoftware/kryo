@@ -1,5 +1,4 @@
 /* Copyright (c) 2008-2020, Nathan Sweet
- * Copyright (C) 2020, Oracle and/or its affiliates.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -22,6 +21,10 @@ package com.esotericsoftware.kryo;
 
 import com.esotericsoftware.kryo.SerializationCompatTestData;
 
+/** Test data for {@link com.esotericsoftware.kryo.serializers.RecordSerializerTest}.
+ * @author Julia Boes <julia.boes@oracle.com>
+ * @author Chris Hegarty <chris.hegarty@oracle.com>
+ */
 public class TestDataJava14 extends SerializationCompatTestData.TestData {
     public record Rec (byte b, short s, int i, long l, float f, double d, boolean bool, char c, String str, Number[] n) { };
 

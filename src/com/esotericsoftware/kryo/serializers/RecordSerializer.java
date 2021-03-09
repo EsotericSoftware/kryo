@@ -1,5 +1,4 @@
 /* Copyright (c) 2008-2020, Nathan Sweet
- * Copyright (C) 2020, Oracle and/or its affiliates.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -35,6 +34,10 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Comparator;
 
+/** Serializer for record classes.
+ * @author Julia Boes <julia.boes@oracle.com>
+ * @author Chris Hegarty <chris.hegarty@oracle.com>
+ */
 public class RecordSerializer<T> extends ImmutableSerializer<T> {
     private static final MethodHandle MH_IS_RECORD;
     private static final MethodHandle MH_GET_RECORD_COMPONENTS;
