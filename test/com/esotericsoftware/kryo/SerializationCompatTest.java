@@ -24,7 +24,6 @@ import static java.lang.Integer.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
-import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava11;
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava8;
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
@@ -75,19 +74,33 @@ class SerializationCompatTest extends KryoTestCase {
 
 	private static final int JAVA_VERSION;
 	static {
-		// java.version is e.g. 1.8.0 or 9.0.4
+		// java.version is e.g. "1.8.0", "9.0.4", or "14"
 		String[] strVersions = System.getProperty("java.version").split("\\.");
-		int[] versions = new int[] {parseInt(strVersions[0]), parseInt(strVersions[1])};
-		JAVA_VERSION = versions[0] > 1 ? versions[0] : versions[1];
+		if (strVersions.length == 1) {
+			JAVA_VERSION = parseInt(strVersions[0]);
+		} else {
+			int[] versions = new int[] {parseInt(strVersions[0]), parseInt(strVersions[1])};
+			JAVA_VERSION = versions[0] > 1 ? versions[0] : versions[1];
+		}
 	}
-	private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 11 ? 58 : 68; // Also change Kryo#defaultSerializers.
+	private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 11
+			? 58 : JAVA_VERSION < 14 ? 68 : 69;  // Also change Kryo#defaultSerializers.
 	private static final List<TestDataDescription> TEST_DATAS = new ArrayList<>();
 
 	static {
 		TEST_DATAS.add(new TestDataDescription<>(new TestData(), 1940, 1958));
 		if (JAVA_VERSION >= 8) TEST_DATAS.add(new TestDataDescription<>(new TestDataJava8(), 2098, 2116));
-		if (JAVA_VERSION >= 11) TEST_DATAS.add(new TestDataDescription<>(new TestDataJava11(), 2210, 2238));
+		if (JAVA_VERSION >= 11) TEST_DATAS.add(new TestDataDescription<>(createTestData(11), 2182, 2210));
+		if (JAVA_VERSION >= 14) TEST_DATAS.add(new TestDataDescription<>(createTestData(14), 1948, 1966));
 	};
+
+	private static TestData createTestData(int version) {
+		try {
+			return (TestData) Class.forName("com.esotericsoftware.kryo.TestDataJava" + version).getConstructor().newInstance();
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException("TestDataJava" + version + " could not be instantiated", e);
+		}
+	}
 
 	@BeforeEach
 	public void setUp () throws Exception {

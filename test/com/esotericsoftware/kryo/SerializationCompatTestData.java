@@ -115,30 +115,6 @@ class SerializationCompatTestData {
 		}
 	}
 
-	static class TestDataJava11 extends TestData {
-		private List<Integer> emptyImmutableList;
-		private Map<Integer, Integer> emptyImmutableMap;
-		private Set<Integer> emptyImmutableSet;
-		private List<Integer> singleImmutableList;
-		private Map<Integer, Integer> singleImmutableMap;
-		private Set<Integer> singleImmutableSet;
-		private List<Integer> immutableList;
-		private Map<Integer, Integer> immutableMap;
-		private Set<Integer> immutableSet;
-
-		TestDataJava11 () {
-			emptyImmutableList = List.of();
-			emptyImmutableMap = Map.of();
-			emptyImmutableSet = Set.of();
-			singleImmutableList = List.of(42);
-			singleImmutableMap = Map.of(42, 42);
-			singleImmutableSet = Set.of(42);
-			immutableList = List.of(1, 2, 3);
-			immutableMap = Map.of(1, 2, 3, 4);
-			immutableSet = Set.of(1, 2, 3);
-		}
-	}
-
 	public static class TestData implements Serializable {
 		private boolean _boolean;
 		private char _char;

@@ -88,6 +88,12 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>build-helper-maven-plugin</artifactId>
+					<version>3.2.0</version>
+				</plugin>
+
+				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
 					<version>3.8.1</version>
@@ -220,13 +226,46 @@
 				</plugins>
 			</build>
 		</profile>
+		<!-- Include any tests that require JDK11+ -->
 		<profile>
-			<id>until-java11</id>
+			<id>jdk11ge</id>
 			<activation>
-				<!-- Use exclusive 11 range instead of inclusive 10, because an upper bound ",10]" is likely not to include most releases of 10,
-				   since they will have an additional "patch" release such as _05 that is not taken into consideration in the above range.
-				   See also http://maven.apache.org/guides/introduction/introduction-to-profiles.html#Details_on_profile_activation -->
-				<jdk>[1.5,11)</jdk>
+				<jdk>[11,</jdk>
+			</activation>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.codehaus.mojo</groupId>
+							<artifactId>build-helper-maven-plugin</artifactId>
+							<executions>
+								<execution>
+									<id>add-test-source</id>
+									<phase>generate-test-sources</phase>
+									<goals>
+										<goal>add-test-source</goal>
+									</goals>
+									<configuration>
+										<sources>
+											<source>test-jdk11</source>
+										</sources>
+									</configuration>
+								</execution>
+							</executions>
+						</plugin>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-compiler-plugin</artifactId>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+			</build>
+		</profile>
+		<!-- Include any tests that require JDK14+ -->
+		<profile>
+			<id>jdk14ge</id>
+			<activation>
+				<jdk>[14,</jdk>
 			</activation>
 			<build>
 				<plugins>
@@ -241,6 +280,52 @@
 						</configuration>
 					</plugin>
 				</plugins>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.codehaus.mojo</groupId>
+							<artifactId>build-helper-maven-plugin</artifactId>
+							<executions>
+								<execution>
+									<id>add-test-source</id>
+									<phase>generate-test-sources</phase>
+									<goals>
+										<goal>add-test-source</goal>
+									</goals>
+									<configuration>
+										<sources>
+											<source>test-jdk11</source>
+											<source>test-jdk14</source>
+										</sources>
+									</configuration>
+								</execution>
+							</executions>
+						</plugin>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-compiler-plugin</artifactId>
+							<configuration>
+								<optimize>true</optimize>
+								<!-- Enable Java 14+ for all sources so that Intellij picks the right language level -->
+								<source>${java.vm.specification.version}</source>
+								<target>${java.vm.specification.version}</target>
+								<compilerArgs>
+									<arg>-parameters</arg>
+									<arg>--enable-preview</arg>
+									<arg>--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED</arg>
+									<arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
+								</compilerArgs>
+							</configuration>
+						</plugin>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-surefire-plugin</artifactId>
+							<configuration>
+									<argLine>--enable-preview</argLine>
+							</configuration>
+						</plugin>
+					</plugins>
+				</pluginManagement>
 			</build>
 		</profile>
 	</profiles>
