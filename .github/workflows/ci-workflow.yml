@@ -5,6 +5,10 @@ on:
     branches:
       - master
 
+env:
+  # Check if version is a SNAPSHOT - grep returns 0 if the pattern is found, otherwise 1
+  IS_SNAPSHOT: $(grep -A 1 "<artifactId>kryo.*</artifactId>" pom.xml | grep SNAPSHOT)        
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,7 +48,3 @@ jobs:
         run: mvn -v && mvn -B -P requireSnapshot --no-transfer-progress deploy -DskipTests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    env:
-      # Check if version is a SNAPSHOT - grep returns 0 if the pattern is found, otherwise 1
-      IS_SNAPSHOT: $(grep -A 1 "<artifactId>kryo.*</artifactId>" pom.xml | grep SNAPSHOT)
