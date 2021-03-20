@@ -24,6 +24,24 @@ jobs:
       - name: Build with JDK 11
         run: mvn -B install --no-transfer-progress
 
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Test with JDK 8
+        run: mvn -v && mvn -B test
+
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Test with JDK 11          
+        run: mvn -v && mvn -B test
+
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 16
+      - name: Test with JDK 16         
+        run: mvn -v && mvn -B test
+
       - name: Set up settings.xml for GitHub Packages
         uses: actions/setup-java@v1
         with:
