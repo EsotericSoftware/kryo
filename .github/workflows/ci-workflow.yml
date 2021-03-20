@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        java-version: [ 8, 11, 16 ]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java-version }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-          
+      - run: mvn -B install --no-transfer-progress
+
+  publish-snapshot:
+    needs: build
+    if: env.IS_SNAPSHOT
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up settings.xml for GitHub Packages
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Publish SNAPSHOT version to GitHub Packages (we can skip tests, since we only deploy, if the build workflow succeeded)
+        run: mvn -v && mvn -B -P requireSnapshot --no-transfer-progress deploy -DskipTests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    env:
+      # Check if version is a SNAPSHOT - grep returns 0 if the pattern is found, otherwise 1
+      IS_SNAPSHOT: $(grep -A 1 "<artifactId>kryo.*</artifactId>" pom.xml | grep SNAPSHOT)
