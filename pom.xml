@@ -176,6 +176,18 @@
 				</plugin>
 
 				<plugin>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>maven-bundle-plugin</artifactId>
+					<version>4.2.1</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-shade-plugin</artifactId>
+					<version>3.2.4</version>
+				</plugin>
+
+				<plugin>
 					<groupId>net.revelc.code.formatter</groupId>
 					<artifactId>formatter-maven-plugin</artifactId>
 					<version>2.12.2</version>
@@ -333,6 +345,30 @@
 										--add-opens=java.base/sun.util.calendar=ALL-UNNAMED
 									</argLine>
 							</configuration>
+						</plugin>
+						<!-- Overridden because of https://issues.apache.org/jira/browse/FELIX-6259 -->
+						<plugin>
+							<groupId>org.apache.felix</groupId>
+							<artifactId>maven-bundle-plugin</artifactId>
+							<version>5.1.1</version>
+						</plugin>
+						<!-- Overridden because of https://issues.apache.org/jira/browse/MSHADE-379 -->
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-shade-plugin</artifactId>
+							<version>3.2.4</version>
+							<dependencies>
+								<dependency>
+									<groupId>org.ow2.asm</groupId>
+									<artifactId>asm</artifactId>
+									<version>9.0</version>
+								</dependency>
+								<dependency>
+									<groupId>org.ow2.asm</groupId>
+									<artifactId>asm-commons</artifactId>
+									<version>9.0</version>
+								</dependency>
+							</dependencies>
 						</plugin>
 					</plugins>
 				</pluginManagement>
