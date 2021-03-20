@@ -6,20 +6,35 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        java-version: [ 8, 11, 16 ]
-      fail-fast: false  
-
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-java@v1
         with:
-          java-version: ${{ matrix.java-version }}
+          java-version: 11
       - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-          
-      - run: mvn -B install --no-transfer-progress
+            ${{ runner.os }}-maven-
+
+      - name: Build with JDK 11
+        run: mvn -B install --no-transfer-progress -DskipTests
+
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Test with JDK 8
+        run: mvn -v && mvn -B test
+
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Test with JDK 11
+        run: mvn -v && mvn -B test
+
+      - uses: actions/setup-java@v1
+        with:
+          java-version: 14
+      - name: Test with JDK 14
+        run: mvn -v && mvn -B test
