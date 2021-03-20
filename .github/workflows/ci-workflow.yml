@@ -11,6 +11,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Set up JDK 11
       - uses: actions/setup-java@v1
         with:
           java-version: 11
@@ -19,31 +20,27 @@ jobs:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-          
-      - run: mvn -B install --no-transfer-progress
-        
-  test:
-    needs: build
-    runs-on: ubuntu-latest
+            ${{ runner.os }}-maven-
+      - name: Build with JDK 11
+        run: mvn -B install --no-transfer-progress -DskipTests
 
-    strategy:
-      matrix:
-        java-version: [ 8, 11, 16 ]
-      fail-fast: false
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
+      - name: Test JDK 8
+        uses: actions/setup-java@v1
         with:
-          java-version: ${{ matrix.java-version }}
-      - run: mvn -v && mvn -B test        
+          java-version: 1.8
+        run: mvn -v && mvn -B test
 
-  publish-snapshot:
-    needs: test
-    runs-on: ubuntu-latest
+      - name: Test JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+        run: mvn -v && mvn -B test
 
-    steps:
-      - uses: actions/checkout@v2
+      - name: Test JDK 16
+        uses: actions/setup-java@v1
+        with:
+          java-version: 16
+        run: mvn -v && mvn -B test
 
       - name: Set up settings.xml for GitHub Packages
         uses: actions/setup-java@v1
@@ -53,4 +50,4 @@ jobs:
       - name: Publish SNAPSHOT version to GitHub Packages (we can skip tests, since we only deploy, if the build workflow succeeded)
         run: mvn -v && mvn -B -P requireSnapshot --no-transfer-progress deploy -DskipTests
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
