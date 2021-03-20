@@ -5,10 +5,6 @@ on:
     branches:
       - master
 
-env:
-  # Check if version is a SNAPSHOT - grep returns 0 if the pattern is found, otherwise 1
-  IS_SNAPSHOT: $(grep -A 1 "<artifactId>kryo.*</artifactId>" pom.xml | grep SNAPSHOT)        
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,7 +29,6 @@ jobs:
 
   publish-snapshot:
     needs: build
-    if: env.IS_SNAPSHOT
     runs-on: ubuntu-latest
 
     steps:
