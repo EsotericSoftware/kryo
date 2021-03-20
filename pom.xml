@@ -323,15 +323,14 @@
 							<configuration>
 									<argLine>
 										--enable-preview
-										--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED
-										--add-exports=java.base/sun.nio.ch=ALL-UNNAMED
-										--add-opens=java.base/sun.util.calendar=ALL-UNNAMED
-										--add-opens=java.base/java.util=ALL-UNNAMED
 										--add-opens java.base/java.lang=ALL-UNNAMED
 										--add-opens java.base/java.lang.invoke=ALL-UNNAMED
 										--add-opens=java.base/java.net=ALL-UNNAMED
 										--add-opens=java.base/java.time=ALL-UNNAMED
+										--add-opens=java.base/java.util=ALL-UNNAMED
 										--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
+										--add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+										--add-opens=java.base/sun.util.calendar=ALL-UNNAMED
 									</argLine>
 							</configuration>
 						</plugin>
