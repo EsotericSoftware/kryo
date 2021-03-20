@@ -346,6 +346,19 @@
 									</argLine>
 							</configuration>
 						</plugin>
+					</plugins>
+				</pluginManagement>
+			</build>
+		</profile>
+		<!-- Overrides for building with JDK16+ -->
+		<profile>
+			<id>jdk16ge</id>
+			<activation>
+				<jdk>[16,</jdk>
+			</activation>
+			<build>
+				<pluginManagement>
+					<plugins>
 						<!-- Overridden because of https://issues.apache.org/jira/browse/FELIX-6259 -->
 						<plugin>
 							<groupId>org.apache.felix</groupId>
