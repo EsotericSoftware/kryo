@@ -38,8 +38,8 @@ jobs:
 
       - uses: actions/setup-java@v1
         with:
-          java-version: 14
-      - name: Test with JDK 14         
+          java-version: 16
+      - name: Test with JDK 16         
         run: mvn -v && mvn -B test
 
       - name: Set up settings.xml for Sonatype
