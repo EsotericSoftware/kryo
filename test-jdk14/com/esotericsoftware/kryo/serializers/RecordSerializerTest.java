@@ -258,7 +258,7 @@ public class RecordSerializerTest extends KryoTestCase {
             task.run();
             throw new AssertionError("Exception not thrown");
         } catch (KryoException ce) {
-            Throwable cause = ce.getCause();
+            Throwable cause = ce.getCause().getCause();
             if (!throwableClass.isInstance(cause)) {
                 throw new RuntimeException("expected: " + throwableClass + ", actual: " + cause);
             }

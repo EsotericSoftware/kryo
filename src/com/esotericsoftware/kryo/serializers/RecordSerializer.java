@@ -21,16 +21,14 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.minlog.Log.TRACE;
 import static com.esotericsoftware.minlog.Log.trace;
-import static java.lang.invoke.MethodType.methodType;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -39,45 +37,37 @@ import java.util.Comparator;
  * @author Chris Hegarty <chris.hegarty@oracle.com>
  */
 public class RecordSerializer<T> extends ImmutableSerializer<T> {
-    private static final MethodHandle MH_IS_RECORD;
-    private static final MethodHandle MH_GET_RECORD_COMPONENTS;
-    private static final MethodHandle MH_GET_NAME;
-    private static final MethodHandle MH_GET_TYPE;
-    private static final MethodHandles.Lookup LOOKUP;
+    private static final Method IS_RECORD;
+    private static final Method GET_RECORD_COMPONENTS;
+    private static final Method GET_NAME;
+    private static final Method GET_TYPE;
 
     static {
-        MethodHandle MH_isRecord;
-        MethodHandle MH_getRecordComponents;
-        MethodHandle MH_getName;
-        MethodHandle MH_getType;
-        LOOKUP = MethodHandles.lookup();
+        Method isRecord;
+        Method getRecordComponents;
+        Method getName;
+        Method getType;
 
         try {
             // reflective machinery required to access the record components
             // without a static dependency on Java SE 14 APIs
             Class<?> c = Class.forName("java.lang.reflect.RecordComponent");
-            MH_isRecord = LOOKUP.findVirtual(Class.class, "isRecord", methodType(boolean.class));
-            MH_getRecordComponents = LOOKUP.findVirtual(Class.class, "getRecordComponents",
-                    methodType(Array.newInstance(c, 0).getClass()))
-                    .asType(methodType(Object[].class, Class.class));
-            MH_getName = LOOKUP.findVirtual(c, "getName", methodType(String.class))
-                    .asType(methodType(String.class, Object.class));
-            MH_getType = LOOKUP.findVirtual(c, "getType", methodType(Class.class))
-                    .asType(methodType(Class.class, Object.class));
+            isRecord = Class.class.getDeclaredMethod("isRecord");
+            getRecordComponents = Class.class.getMethod("getRecordComponents");
+            getName = c.getMethod("getName");
+            getType = c.getMethod("getType");
         } catch (ClassNotFoundException | NoSuchMethodException e) {
             // pre-Java-14
-            MH_isRecord = null;
-            MH_getRecordComponents = null;
-            MH_getName = null;
-            MH_getType = null;
-        } catch (IllegalAccessException unexpected) {
-            throw new AssertionError(unexpected);
+            isRecord = null;
+            getRecordComponents = null;
+            getName = null;
+            getType = null;
         }
 
-        MH_IS_RECORD = MH_isRecord;
-        MH_GET_RECORD_COMPONENTS = MH_getRecordComponents;
-        MH_GET_NAME = MH_getName;
-        MH_GET_TYPE = MH_getType;
+        IS_RECORD = isRecord;
+        GET_RECORD_COMPONENTS = getRecordComponents;
+        GET_NAME = getName;
+        GET_TYPE = getType;
     }
 
     public RecordSerializer() {
@@ -142,7 +132,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
     /** Returns true if, and only if, the given class is a record class. */
     private boolean isRecord(Class<?> type) {
         try {
-            return (boolean) MH_IS_RECORD.invokeExact(type);
+            return (boolean) IS_RECORD.invoke(type);
         } catch (Throwable t) {
             throw new KryoException("Could not determine type (" + type + ")");
         }
@@ -176,13 +166,13 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
     private static <T> RecordComponent[] recordComponents(Class<T> type,
                                                           Comparator<RecordComponent> comparator) {
         try {
-            Object[] rawComponents = (Object[]) MH_GET_RECORD_COMPONENTS.invokeExact(type);
+            Object[] rawComponents = (Object[]) GET_RECORD_COMPONENTS.invoke(type);
             RecordComponent[] recordComponents = new RecordComponent[rawComponents.length];
             for (int i = 0; i < rawComponents.length; i++) {
                 final Object comp = rawComponents[i];
                 recordComponents[i] = new RecordComponent(
-                        (String) MH_GET_NAME.invokeExact(comp),
-                        (Class<?>) MH_GET_TYPE.invokeExact(comp), i);
+                        (String) GET_NAME.invoke(comp),
+                        (Class<?>) GET_TYPE.invoke(comp), i);
             }
             if (comparator != null) Arrays.sort(recordComponents, comparator);
             return recordComponents;
@@ -197,10 +187,8 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
     private static Object componentValue(Object recordObject,
                                          RecordComponent recordComponent) {
         try {
-            MethodHandle MH_get = LOOKUP.findVirtual(recordObject.getClass(),
-                    recordComponent.name(),
-                    methodType(recordComponent.type()));
-            return (Object) MH_get.invoke(recordObject);
+            Method get = recordObject.getClass().getDeclaredMethod(recordComponent.name());
+            return get.invoke(recordObject);
         } catch (Throwable t) {
             KryoException ex = new KryoException(t);
             ex.addTrace("Could not retrieve record components ("
@@ -220,10 +208,8 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
             Class<?>[] paramTypes = Arrays.stream(recordComponents)
                     .map(RecordComponent::type)
                     .toArray(Class<?>[]::new);
-            MethodHandle MH_canonicalConstructor =
-                    LOOKUP.findConstructor(recordType, methodType(void.class, paramTypes))
-                            .asType(methodType(Object.class, paramTypes));
-            return (T)MH_canonicalConstructor.invokeWithArguments(args);
+            Constructor<T> canonicalConstructor = recordType.getConstructor(paramTypes);
+            return canonicalConstructor.newInstance(args);
         } catch (Throwable t) {
             KryoException ex = new KryoException(t);
             ex.addTrace("Could not construct type (" + recordType.getName() + ")");
