@@ -62,8 +62,8 @@ public final class NoGenerics implements Generics {
 		return null;
 	}
 
-    @Override
-    public int getGenericTypesSize() {
-        return 0;
-    }
+	@Override
+	public int getGenericTypesSize () {
+		return 0;
+	}
 }

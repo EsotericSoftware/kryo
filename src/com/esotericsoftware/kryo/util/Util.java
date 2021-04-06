@@ -179,9 +179,9 @@ public class Util {
 		return buffer.toString();
 	}
 
-	/** Returns the class formatted as a string. If the class has a canonical name, the canonical name is returned, 
-	 * otherwise it returns the result of {@link #className(Class)} */
-	public static String canonicalName(Class type) {
+	/** Returns the class formatted as a string. If the class has a canonical name, the canonical name is returned, otherwise it
+	 * returns the result of {@link #className(Class)} */
+	public static String canonicalName (Class type) {
 		if (type == null) return "null";
 		final String canonicalName = type.getCanonicalName();
 		return canonicalName != null ? canonicalName : className(type);

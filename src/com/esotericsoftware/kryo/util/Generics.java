@@ -70,9 +70,9 @@ public interface Generics {
 	/** Returns the class for the specified type variable, or null if it is not known.
 	 * @return May be null. */
 	Class resolveTypeVariable (TypeVariable typeVariable);
-	
+
 	/** Returns the number of generic types currently tracked */
-	int getGenericTypesSize();
+	int getGenericTypesSize ();
 
 	/** Stores the type parameters for a class and, for parameters passed to super classes, the corresponding super class type
 	 * parameters. */

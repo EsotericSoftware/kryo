@@ -307,14 +307,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 
 		/** When true, serializers are re-used for all instances of the field if the {@link #valueClass} is known. Re-using
-		 * serializers is significantly faster than looking them up for every read/write. However, this only works reliably
-		 * when the {@link #valueClass} of the field never changes. Serializers that do not guarantee this must set the flag to
-		 * false. */
-		void setReuseSerializer(boolean reuseSerializer) {
+		 * serializers is significantly faster than looking them up for every read/write. However, this only works reliably when the
+		 * {@link #valueClass} of the field never changes. Serializers that do not guarantee this must set the flag to false. */
+		void setReuseSerializer (boolean reuseSerializer) {
 			this.reuseSerializer = reuseSerializer;
 		}
 
-		boolean getReuseSerializer() {
+		boolean getReuseSerializer () {
 			return reuseSerializer;
 		}
 
@@ -335,7 +334,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		public abstract void read (Input input, Object object);
 
 		public abstract void copy (Object original, Object copy);
-		
+
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
