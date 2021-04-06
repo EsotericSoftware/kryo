@@ -97,14 +97,23 @@
 						sun.nio.ch;resolution:=optional
 						]]>
 						</Import-Package>
-						<Export-Package>com.esotericsoftware.kryo.kryo${kryo.major.version},com.esotericsoftware.kryo.kryo${kryo.major.version}.asm,com.esotericsoftware.kryo.kryo${kryo.major.version}.io,
-						com.esotericsoftware.kryo.kryo${kryo.major.version}.minlog,com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis,
-						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator,com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.strategy,
-						com.esotericsoftware.kryo.kryo${kryo.major.version}.reflectasm,com.esotericsoftware.kryo.kryo${kryo.major.version}.serializers,
-						com.esotericsoftware.kryo.kryo${kryo.major.version}.unsafe,com.esotericsoftware.kryo.kryo${kryo.major.version}.util,
-						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.android,com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.annotations,
-						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.basic,com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.gcj,
-						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.perc,com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.sun,
+						<Export-Package>com.esotericsoftware.kryo.kryo${kryo.major.version},
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.asm,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.io,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.minlog,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.strategy,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.reflectasm,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.serializers,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.unsafe,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.util,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.android,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.annotations,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.basic,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.gcj,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.perc,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.sun,
 						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator.util</Export-Package>
 					</instructions>
 				</configuration>
