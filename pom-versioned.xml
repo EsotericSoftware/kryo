@@ -98,15 +98,15 @@
 						]]>
 						</Import-Package>
 						<Export-Package>
-                        com.esotericsoftware.kryo.kryo${kryo.major.version},
-                        com.esotericsoftware.kryo.kryo${kryo.major.version}.io,			
-                        com.esotericsoftware.kryo.kryo${kryo.major.version}.serializers,
-                        com.esotericsoftware.kryo.kryo${kryo.major.version}.unsafe,
-                        com.esotericsoftware.kryo.kryo${kryo.major.version}.util,		
-                        com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis,
-                        com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator,
-                        com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.strategy		
-                        </Export-Package>
+						com.esotericsoftware.kryo.kryo${kryo.major.version},
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.io,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.serializers,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.unsafe,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.util,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.strategy
+						</Export-Package>
 					</instructions>
 				</configuration>
 			</plugin>
