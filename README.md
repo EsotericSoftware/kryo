@@ -19,6 +19,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
    * [With Maven](#with-maven)
    * [Without Maven](#without-maven)
    * [On Android](#on-android)
+   * [Building from source](#building-from-source)
 - [Quickstart](#quickstart)
 - [IO](#io)
    * [Output](#output)
@@ -158,6 +159,14 @@ implementation ('com.esotericsoftware:kryo:5.0.4') {
   exclude group: "org.objenesis"
 }
 implementation 'org.objenesis:objenesis:2.6'
+```
+
+### Building from source
+
+Building Kryo from source requires JDK11+ and Maven. To build all artifacts, run:
+
+```
+mvn clean && mvn install
 ```
 
 ## Quickstart
