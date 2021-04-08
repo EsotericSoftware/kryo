@@ -150,7 +150,7 @@
 					<version>3.2.0</version>
 					<configuration>
 						<!-- Required for java8, so that javadoc errors don't fail the build. -->
-						<additionalOptions>-Xdoclint:none</additionalOptions>
+						<additionalparam>-Xdoclint:none</additionalparam>
 						<doclint>none</doclint>
 						<!-- Required for build with java11, to prevent "error: package sun.nio.ch is not visible" failing javadoc -->
 						<source>8</source>
