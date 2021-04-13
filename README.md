@@ -154,7 +154,7 @@ Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo
 
 ### On Android
 
-Kryo 5 *prior* to 5.1.0 ships with Objenesis 3.1 which [currently supports](https://github.com/easymock/objenesis/issues/79) Android API >= 26. If you want to use Kryo with older Android APIs, you need to explicitely depend on Objensis 2.6.
+Kryo 5 **before 5.1.0** ships with Objenesis 3.1 which [currently supports](https://github.com/easymock/objenesis/issues/79) Android API >= 26. If you want to use these versions of Kryo with older Android APIs, you need to explicitely depend on Objensis 3.2.
 
 ```
 implementation ('com.esotericsoftware:kryo:5.0.4') {
