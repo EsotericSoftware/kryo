@@ -8,6 +8,8 @@ Kryo is a fast and efficient binary object graph serialization framework for Jav
 
 Kryo can also perform automatic deep and shallow copying/cloning. This is direct copying from object to object, not object to bytes to object.
 
+This documentation is for Kryo version 5.x. See [the Wiki](https://github.com/EsotericSoftware/kryo/wiki/Kryo-v4) for version 4.x.
+
 ## Contact / Mailing list
 
 Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-users) for questions, discussions, and support. Please limit use of the Kryo issue tracker to bugs and enhancements, not questions, discussions, or support.
@@ -152,13 +154,13 @@ Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo
 
 ### On Android
 
-Kryo 5 prior to 5.1.0 ships with Objenesis 3.1 which [currently supports](https://github.com/easymock/objenesis/issues/79) Android API >= 26. If you want to use Kryo with older Android APIs, you need to explicitely depend on Objensis 2.6.
+Kryo 5 **before 5.1.0** ships with Objenesis 3.1 which [currently supports](https://github.com/easymock/objenesis/issues/79) Android API >= 26. If you want to use these versions of Kryo with older Android APIs, you need to explicitely depend on Objensis 3.2.
 
 ```
 implementation ('com.esotericsoftware:kryo:5.0.4') {
   exclude group: "org.objenesis"
 }
-implementation 'org.objenesis:objenesis:2.6'
+implementation 'org.objenesis:objenesis:3.2'
 ```
 
 ### Building from source
