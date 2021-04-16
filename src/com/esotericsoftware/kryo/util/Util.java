@@ -233,8 +233,8 @@ public class Util {
 	public static boolean isAssignableTo (Class<?> from, Class<?> to) {
 		if (to == Object.class) return true;
 		if (to.isAssignableFrom(from)) return true;
-		if (to.isPrimitive()) return isPrimitiveWrapperOf(from, to);
 		if (from.isPrimitive()) return isPrimitiveWrapperOf(to, from);
+		if (to.isPrimitive()) return isPrimitiveWrapperOf(from, to);
 		if (from == ClosureSerializer.Closure.class) return to.isInterface();
 		return false;
 	}
