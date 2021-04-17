@@ -23,6 +23,7 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
+import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 
@@ -234,6 +235,7 @@ public class Util {
 		if (to.isAssignableFrom(from)) return true;
 		if (from.isPrimitive()) return isPrimitiveWrapperOf(to, from);
 		if (to.isPrimitive()) return isPrimitiveWrapperOf(from, to);
+		if (from == ClosureSerializer.Closure.class) return to.isInterface();
 		return false;
 	}
 

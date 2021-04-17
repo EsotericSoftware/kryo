@@ -29,6 +29,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import java.io.Serializable;
+import java.lang.invoke.SerializedLambda;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -476,6 +477,19 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals(o2, kryo.readClassAndObject(new Input(output2.getBuffer())));
 	}
 
+	@Test
+	void testClassWithLambdaField () {
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setReadUnknownFieldData(true);
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory());
+		kryo.register(ClassWithLambdaField.class);
+		kryo.register(SerializedLambda.class);
+		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
+
+		roundTrip(236, new ClassWithLambdaField());
+	}
+
 	public static class TestClass {
 		public String text = "something";
 		public int moo = 120;
@@ -730,6 +744,27 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 			if (o == null || getClass() != o.getClass()) return false;
 			final ClassWithLongField that = (ClassWithLongField)o;
 			return Objects.equals(value, that.value);
+		}
+	}
+
+	public static class ClassWithLambdaField {
+
+		@FunctionalInterface
+		public interface Callback extends Serializable {
+			int call();
+		}
+
+		private final Callback callback;
+
+		public ClassWithLambdaField () {
+			callback = () -> 1;
+		}
+
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithLambdaField that = (ClassWithLambdaField)o;
+			return Objects.equals(callback.call(), that.callback.call());
 		}
 	}
 }
