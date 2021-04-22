@@ -417,6 +417,22 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testRemoveAllFieldsFromClassWithManyFields () {
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer<>(kryo, ClassWithManyFields.class);
+		kryo.register(ClassWithManyFields.class, serializer);
+
+		ClassWithManyFields object1 = new ClassWithManyFields();
+		roundTrip(118, object1);
+
+		for (FieldSerializer.CachedField field : serializer.getFields()) {
+			serializer.removeField(field.getName());
+		}
+
+		ClassWithManyFields object2 = (ClassWithManyFields)kryo.readClassAndObject(input);
+		assertEquals(object1, object2);
+	}
+
+	@Test
 	void testExtendedClass () {
 		testExtendedClass(270, false, false);
 		testExtendedClass(294, false, true);
