@@ -58,11 +58,6 @@
 							<shadedArtifactAttached>false</shadedArtifactAttached>
 							<createDependencyReducedPom>true</createDependencyReducedPom>
 							<dependencyReducedPomLocation>${project.build.directory}/kryo${kryo.major.version}-${project.version}.pom</dependencyReducedPomLocation>
-							<artifactSet>
-								<excludes>
-									<exclude>com.esotericsoftware:kryo</exclude>
-								</excludes>
-							</artifactSet>
 							<filters>
 								<filter>
 									<artifact>com.esotericsoftware:minlog</artifact>
