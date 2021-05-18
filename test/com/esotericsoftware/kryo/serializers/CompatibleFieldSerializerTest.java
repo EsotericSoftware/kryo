@@ -43,8 +43,6 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		supportsCopy = true;
 	}
 
-        static final double EPS = 1.E-14;
-
 	@Test
 	void testCompatibleFieldSerializer () {
 		testCompatibleFieldSerializer(83, false, false);
@@ -266,7 +264,7 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		otherKryo.register(ClassWithWrapperAndPrimitive.class, otherSerializer);
 
 		ClassWithWrapperAndPrimitive o = (ClassWithWrapperAndPrimitive) otherKryo.readClassAndObject(input);
-		assertEquals(1L, o.value1, EPS);
+		assertEquals(1L, o.value1.longValue());
 		assertEquals(1, o.value2);
 	}
 
