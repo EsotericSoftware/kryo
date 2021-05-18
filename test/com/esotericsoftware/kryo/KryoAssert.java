@@ -26,15 +26,18 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class KryoAssert {
 
+    static final double EPS_D = 1.E-14;
+    static final float EPS_F = 5.E-7f;
+
     private KryoAssert() {
 
     }
 
     public static void assertDoubleEquals(double expected, double actual) {
-        assertEquals(expected, actual, 0.0);
+        assertEquals(expected, actual, EPS_D);
     }
 
     public static void assertFloatEquals(float expected, double actual) {
-        assertEquals(expected, actual, 0.0);
+        assertEquals(expected, actual, EPS_F);
     }
 }
