@@ -104,6 +104,20 @@ class ReferenceTest extends KryoTestCase {
 		roundTrip(23, subList);
 	}
 
+	@Test
+	void testReadInvalidReference() {
+		kryo.setReferences(true);
+		kryo.register(Ordering.class);
+		final Input input = new Input(new byte[]{3});
+		try {
+			kryo.readObject(input, Ordering.class);
+		} catch (KryoException ex) {
+			assertTrue(ex.getMessage().contains("Unable to resolve reference"));
+			return;
+		}
+		fail("Exception was expected");
+	}
+
 	public static class SubListSerializer extends Serializer<List> {
 		private Field listField, offsetField, sizeField;
 

@@ -919,7 +919,11 @@ public class Kryo {
 		}
 		// The id is an object reference.
 		id -= 2; // - 2 because 0 and 1 are used for NULL and NOT_NULL.
-		readObject = referenceResolver.getReadObject(type, id);
+		try {
+			readObject = referenceResolver.getReadObject(type, id);
+		} catch (Exception e) {
+			throw new KryoException("Unable to resolve reference for " + className(type) + " with id: " + id, e);
+		}
 		if (DEBUG) debug("kryo", "Read reference " + id + ": " + string(readObject) + pos(input.position()));
 		return REF;
 	}
