@@ -104,7 +104,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Write", fields[i], output.position());
-			fields[i].write(output, object);
+			try {
+				fields[i].write(output, object);
+			} catch (KryoException e) {
+				throw e;
+			} catch (Exception e) {
+				throw new KryoException("Error writing " + fields[i] + " at position " + output.position(), e);
+			}
 		}
 
 		popTypeVariables(pop);
@@ -119,7 +125,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Read", fields[i], input.position());
-			fields[i].read(input, object);
+			try {
+				fields[i].read(input, object);
+			} catch (KryoException e) {
+				throw e;				
+			} catch (Exception e) {
+				throw new KryoException("Error reading " + fields[i] + " at position " + input.position(), e);
+			}
 		}
 
 		popTypeVariables(pop);
