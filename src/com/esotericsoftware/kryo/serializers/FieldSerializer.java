@@ -108,7 +108,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 				fields[i].write(output, object);
 			} catch (KryoException e) {
 				throw e;
-			} catch (Throwable e) {
+			} catch (Exception e) {
 				throw new KryoException("Error writing " + fields[i] + " at position " + output.position(), e);
 			}
 		}
@@ -129,7 +129,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 				fields[i].read(input, object);
 			} catch (KryoException e) {
 				throw e;				
-			} catch (Throwable e) {
+			} catch (Exception e) {
 				throw new KryoException("Error reading " + fields[i] + " at position " + input.position(), e);
 			}
 		}
