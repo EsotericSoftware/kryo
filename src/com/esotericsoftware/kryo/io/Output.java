@@ -643,7 +643,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	}
 
 	// String:
-	
+
 	/** Writes the length and string, or null. Short strings are checked and if ASCII they are written more efficiently, else they
 	 * are written as UTF8. If a string is known to be ASCII, {@link #writeAscii(String)} may be used. The string can be read using
 	 * {@link Input#readString()} or {@link Input#readStringBuilder()}.
@@ -663,8 +663,6 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		if (charCount > 1 && charCount <= 32) {
 			for (int i = 0; i < charCount; i++)
 				if (value.charAt(i) > 127) break outer;
-			
-				// todo can combine
 			if (capacity - position < charCount)
 				writeAscii_slow(value, charCount);
 			else {
@@ -694,7 +692,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		}
 		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
-	
+
 	/** Writes a string that is known to contain only ASCII characters. Non-ASCII strings passed to this method will be corrupted.
 	 * Each byte is a 7 bit character with the remaining byte denoting if another character is available. This is slightly more
 	 * efficient than {@link #writeString(String)}. The string can be read using {@link Input#readString()} or
@@ -743,7 +741,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			}
 		}
 	}
-	
+
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
 		if (charCount == 0) return;
 		if (position == capacity) require(1); // Must be able to write at least one character.
@@ -758,7 +756,9 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			if (require(charsToWrite)) buffer = this.buffer;
 		}
 	}
-	
+
+	// Primitive arrays:
+
 	/** Writes an int array in bulk. This may be more efficient than writing them individually. */
 	public void writeInts (int[] array, int offset, int count) throws KryoException {
 		if (capacity >= count << 2) {

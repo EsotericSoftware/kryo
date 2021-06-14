@@ -47,6 +47,4 @@ public class HugeStringBenchmark {
 		Output output = new Output(1024, 1024 * 512);
 		output.writeAscii(hugeString);
 	}
-	
 }
-￿
