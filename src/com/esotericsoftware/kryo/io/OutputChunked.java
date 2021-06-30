@@ -58,8 +58,9 @@ public class OutputChunked extends Output {
 			} catch (IOException ex) {
 				throw new KryoException(ex);
 			}
+		}else{
+			super.flush();
 		}
-		super.flush();
 	}
 
 	private void writeChunkSize () throws IOException {
