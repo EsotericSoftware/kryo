@@ -94,7 +94,7 @@ public class OutputChunked extends Output {
 		outputStream.write(size);
 	}
 
-	/** Marks the curent written data as the end of a chunk. This chunk can then be skipped when reading. */
+	/** Marks the current written data as the end of a chunk. This chunk can then be skipped when reading. */
 	public void endChunk () {
 		flush();
 		if (TRACE) trace("kryo", "End chunk.");
