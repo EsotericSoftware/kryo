@@ -493,17 +493,26 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals(o2, kryo.readClassAndObject(new Input(output2.getBuffer())));
 	}
 
+	// https://github.com/EsotericSoftware/kryo/issues/821
 	@Test
 	void testClassWithLambdaField () {
 		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
-		config.setChunkedEncoding(true);
-		config.setReadUnknownFieldData(true);
-		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory());
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
 		kryo.register(ClassWithLambdaField.class);
 		kryo.register(SerializedLambda.class);
 		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
 
 		roundTrip(236, new ClassWithLambdaField());
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/840
+	@Test
+	void testClassWithGenericField () {
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		kryo.register(ClassWithGenericField.class);
+
+		roundTrip(9, new ClassWithGenericField<>(1));
 	}
 
 	public static class TestClass {
@@ -781,6 +790,25 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 			if (o == null || getClass() != o.getClass()) return false;
 			ClassWithLambdaField that = (ClassWithLambdaField)o;
 			return Objects.equals(callback.call(), that.callback.call());
+		}
+	}
+
+	public static class ClassWithGenericField<T extends Comparable<T>> {
+
+		private T value;
+
+		public ClassWithGenericField() {
+		}
+
+		public ClassWithGenericField(T value) {
+			this.value = value;
+		}
+
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithGenericField<?> that = (ClassWithGenericField<?>)o;
+			return Objects.equals(value, that.value);
 		}
 	}
 }

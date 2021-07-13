@@ -233,15 +233,19 @@ public class Util {
 	public static boolean isAssignableTo (Class<?> from, Class<?> to) {
 		if (to == Object.class) return true;
 		if (to.isAssignableFrom(from)) return true;
-		if (from.isPrimitive()) return isPrimitiveWrapperOf(to, from);
+		if (from.isPrimitive()) return isPrimitiveWrapperOf(to, from) || to.isAssignableFrom(getPrimitiveWrapper(from));
 		if (to.isPrimitive()) return isPrimitiveWrapperOf(from, to);
 		if (from == ClosureSerializer.Closure.class) return to.isInterface();
 		return false;
 	}
 
 	private static boolean isPrimitiveWrapperOf (Class<?> targetClass, Class<?> primitive) {
-		if (!primitive.isPrimitive()) throw new IllegalArgumentException("First argument has to be primitive type");
-		return primitiveWrappers.get(primitive) == targetClass;
+		return getPrimitiveWrapper(primitive) == targetClass;
+	}
+
+	private static Class<?> getPrimitiveWrapper (Class<?> primitive) {
+		if (!primitive.isPrimitive()) throw new IllegalArgumentException("Argument has to be primitive type");
+		return primitiveWrappers.get(primitive);
 	}
 
 	public static boolean isAscii (String value) {
