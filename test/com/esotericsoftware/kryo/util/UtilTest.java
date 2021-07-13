@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.Serializable;
+
 class UtilTest {
 
     @Test
@@ -33,6 +35,10 @@ class UtilTest {
         assertTrue(Util.isAssignableTo(long.class, long.class));
         assertTrue(Util.isAssignableTo(Long.class, Object.class));
         assertTrue(Util.isAssignableTo(long.class, Object.class));
+        assertTrue(Util.isAssignableTo(Integer.class, Comparable.class));
+        assertTrue(Util.isAssignableTo(Integer.class, Serializable.class));
+        assertTrue(Util.isAssignableTo(int.class, Comparable.class));
+        assertTrue(Util.isAssignableTo(int.class, Serializable.class));
 
         assertFalse(Util.isAssignableTo(String.class, Long.class));
         assertFalse(Util.isAssignableTo(String.class, long.class));
