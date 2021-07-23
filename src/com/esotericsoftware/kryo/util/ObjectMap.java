@@ -45,8 +45,8 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 
 	public int size;
 
-	K[] keyTable;
-	V[] valueTable;
+	protected K[] keyTable;
+	protected V[] valueTable;
 
 	float loadFactor;
 	int threshold;
@@ -295,9 +295,16 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 		int tableSize = tableSize(size + additionalCapacity, loadFactor);
 		if (keyTable.length < tableSize) resize(tableSize);
 	}
+	
+	/**
+	 * Subclass override to dynamically adjust loadFactor, get better performance. */
+	protected float computeLoadFactor(int newSize){
+		return loadFactor;
+	}
 
 	final void resize (int newSize) {
 		int oldCapacity = keyTable.length;
+		loadFactor = computeLoadFactor(newSize);
 		threshold = (int)(newSize * loadFactor);
 		mask = newSize - 1;
 		shift = Long.numberOfLeadingZeros(mask);
