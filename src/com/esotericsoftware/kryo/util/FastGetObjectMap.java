@@ -19,31 +19,27 @@
 
 package com.esotericsoftware.kryo.util;
 
-/**
- * this map extends from objectMap, optimized for better reading performance
- * so there will be some tricky optimization
- * **/
+/** this map extends from objectMap, optimized for better reading performance so there will be some tricky optimization **/
 public class FastGetObjectMap<K, V> extends ObjectMap<K, V> {
 	/** Creates a new map with an initial capacity of 51 and a load factor of 0.8. */
 	public FastGetObjectMap () {
 		this(51, 0.8f);
 	}
-	
+
 	/** Creates a new map with a load factor of 0.8.
 	 * @param initialCapacity If not a power of two, it is increased to the next nearest power of two. */
 	public FastGetObjectMap (int initialCapacity) {
 		this(initialCapacity, 0.8f);
 	}
-	
-	/** Creates a new map with a load factor of 0.8.
+
+	/** Creates a new map with a initial load factor of 0.8(which may be overloaded in resize funtion).
 	 * @param initialCapacity If not a power of two, it is increased to the next nearest power of two. */
-	public FastGetObjectMap (int initialCapacity, float loadFactor) {
-		super(initialCapacity, loadFactor);
+	public FastGetObjectMap (int initialCapacity, float initialLoadFactor) {
+		super(initialCapacity, initialLoadFactor);
 	}
-	
-	/** Returns the value for the specified key, or null if the key is not in the map.
-	 *  unroll because of better performance (benchmark shows about 2% higher performance)
-	 * */
+
+	/** Returns the value for the specified key, or null if the key is not in the map. unroll because of better performance
+	 * (benchmark shows about 2% higher performance) */
 	@Override
 	@Null
 	public <T extends K> V get (T key) {
@@ -54,11 +50,10 @@ public class FastGetObjectMap<K, V> extends ObjectMap<K, V> {
 			if (other == null) return null; // Empty space is available.
 		}
 	}
-	
+
 	@Override
-	/** Returns the value for the specified key, or the default value if the key is not in the map.
-	 *  unroll because of better performance
-	 * */
+	/** Returns the value for the specified key, or the default value if the key is not in the map. unroll because of better
+	 * performance */
 	public V get (K key, @Null V defaultValue) {
 		K[] keyTable = this.keyTable;
 		for (int i = place(key);; i = i + 1 & mask) {
@@ -67,26 +62,21 @@ public class FastGetObjectMap<K, V> extends ObjectMap<K, V> {
 			if (other == null) return defaultValue; // Empty space is available.
 		}
 	}
-	
-	/**
-	 * 1. remove magic number so that minimize the computation cost
-	 * 2. with low loadFactor, we don't need to consider the hash collision **/
+
+	/** 1. remove magic number so that minimize the computation cost 2. with low loadFactor, we don't need to consider the hash
+	 * collision **/
 	@Override
 	protected int place (K item) {
 		return item.hashCode() & mask;
 	}
-	
+
 	/* According to previous benchmark, different size have different best loadFactor **/
 	@Override
-	protected float computeLoadFactor(int newSize){
-		if(newSize <= 2048){
+	protected float computeLoadFactor (int newSize) {
+		if (newSize <= 2048) {
 			return 0.7f;
-		}else{
+		} else {
 			return 0.5f;
 		}
 	}
 }
-
-
-
-

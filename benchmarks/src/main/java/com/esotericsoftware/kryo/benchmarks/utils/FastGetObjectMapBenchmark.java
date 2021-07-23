@@ -1,4 +1,4 @@
-package com.esotericsoftware.kryo.benchmarks.io;
+package com.esotericsoftware.kryo.benchmarks.utils;
 
 import com.esotericsoftware.kryo.util.CuckooObjectMap;
 
