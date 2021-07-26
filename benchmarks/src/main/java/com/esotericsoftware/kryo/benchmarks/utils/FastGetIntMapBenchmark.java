@@ -1,9 +1,6 @@
 package com.esotericsoftware.kryo.benchmarks.utils;
 
-import com.esotericsoftware.kryo.util.CuckooObjectMap;
-
-import com.esotericsoftware.kryo.util.FastGetObjectMap;
-import com.esotericsoftware.kryo.util.ObjectMap;
+import com.esotericsoftware.kryo.util.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,7 +19,7 @@ import net.bytebuddy.implementation.FixedValue;
 import net.bytebuddy.matcher.ElementMatchers;
 
 //  mvn -f benchmarks/pom.xml compile exec:java -Dexec.args="-f 3 -wi 6 -i 3 -t 2 -w 2s -r 2 FastGetObjectMapBenchmark.read"
-public class FastGetObjectMapBenchmark {
+public class FastGetIntMapBenchmark {
     
     @Benchmark
     public void read (ReadBenchmarkState state, Blackhole blackhole) {
@@ -41,12 +38,13 @@ public class FastGetObjectMapBenchmark {
     
     @State(Scope.Thread)
     public static class AbstractBenchmarkState {
-        @Param({"100"}) public int numClasses;
+        @Param({"500", "1000", "3000", "10000"}) public int numClasses;
         @Param({"2048"}) public int maxCapacity;
-        @Param({"fastGet", "cuckoo"}) public MapType mapType;
+        @Param({"intMap", "fastGetIntMap"}) public MapType mapType;
         
-        MapAdapter<Object, Integer> map;
-        List<? extends Class<?>> classes;
+        IntObjectMapAdapter<Object> map;
+        Object[] classes;
+        List<Integer> integers;
     }
     
     @State(Scope.Thread)
@@ -55,23 +53,25 @@ public class FastGetObjectMapBenchmark {
         @Setup(Level.Trial)
         public void setup () {
             map = createMap(mapType, maxCapacity);
-            classes = IntStream.rangeClosed(0, numClasses).mapToObj(FastGetObjectMapBenchmark::buildClass)
-                    .collect(Collectors.toList());
+            classes = IntStream.rangeClosed(0, numClasses).mapToObj(FastGetIntMapBenchmark::buildClass).toArray();
+            integers = IntStream.rangeClosed(0, numClasses).boxed().collect(Collectors.toList());
         }
         
         public void write (Blackhole blackhole) {
-            classes.stream()
-                    .map(c -> map.put(c, 1))
+            integers.stream()
+                    .map(id -> map.put(id, classes[id]))
                     .forEach(blackhole::consume);
         }
         
         public void readWrite (Blackhole blackhole) {
-            classes.forEach(c -> map.put(c, 1));
-            Collections.shuffle(classes);
+            // read
+            integers.stream()
+                    .map(id -> map.put(id, classes[id]))
+                    .forEach(blackhole::consume);
             
             final Random random = new Random();
             for (int i = 0; i < numClasses; i++) {
-                final Class<?> key = classes.get(random.nextInt(numClasses - 1));
+                int key = random.nextInt(numClasses - 1);
                 blackhole.consume(map.get(key));
             }
             
@@ -82,17 +82,20 @@ public class FastGetObjectMapBenchmark {
     @State(Scope.Thread)
     public static class ReadBenchmarkState extends AbstractBenchmarkState {
         
-        @Setup(Level.Trial)
+        @Setup(Level.Iteration)
         public void setup () {
             map = createMap(mapType, maxCapacity);
-            classes = IntStream.rangeClosed(0, numClasses).mapToObj(FastGetObjectMapBenchmark::buildClass)
-                    .collect(Collectors.toList());
-            classes.forEach(c -> map.put(c, 1));
-            Collections.shuffle(classes);
+            classes = IntStream.rangeClosed(0, numClasses).mapToObj(FastGetIntMapBenchmark::buildClass).toArray();
+            integers = IntStream.rangeClosed(0, numClasses).boxed().collect(Collectors.toList());
+        }
+        
+        @Setup(Level.Invocation)
+        public void shuffle(){
+            Collections.shuffle(integers);
         }
         
         public void read (Blackhole blackhole) {
-            classes.stream()
+            integers.stream()
                     .limit(500)
                     .map(map::get)
                     .forEach(blackhole::consume);
@@ -100,105 +103,84 @@ public class FastGetObjectMapBenchmark {
     }
     
     public enum MapType {
-     cuckoo, fastGet
+        fastGetIntMap, intMap
     }
     
     
-    interface MapAdapter<K, V> {
-        V get (K key);
+    
+    interface IntObjectMapAdapter<V> {
+        V get (int key);
         
-        V put (K key, V value);
+        V put (int key, V value);
         
         void clear();
+        
     }
     
-    private static MapAdapter<Object, Integer> createMap (MapType mapType, int maxCapacity) {
+    static class IntMapAdapter<V> implements IntObjectMapAdapter<V> {
+        private final IntMap<V> delegate;
+        private final int maxCapacity;
+        
+        public IntMapAdapter (IntMap<V> delegate, int maxCapacity) {
+            this.delegate = delegate;
+            this.maxCapacity = maxCapacity;
+        }
+        
+        @Override
+        public V get (int key) {
+            return delegate.get(key, null);
+        }
+        
+        @Override
+        public V put (int key, V value) {
+            delegate.put(key, value);
+            return null;
+        }
+    
+        @Override
+        public void clear() {
+            delegate.clear(maxCapacity);
+        }
+    }
+    
+    static class FstGetIntMapAdapter<V> implements IntObjectMapAdapter<V> {
+        private final FastGetIntMap<V> delegate;
+        private final int maxCapacity;
+        
+        public FstGetIntMapAdapter (FastGetIntMap<V> delegate, int maxCapacity) {
+            this.delegate = delegate;
+            this.maxCapacity = maxCapacity;
+        }
+        
+        @Override
+        public V get (int key) {
+            return delegate.get(key, null);
+        }
+        
+        @Override
+        public V put (int key, V value) {
+            delegate.put(key, value);
+            return null;
+        }
+        
+        @Override
+        public void clear() {
+            delegate.clear(maxCapacity);
+        }
+    }
+    
+    
+    private static IntObjectMapAdapter<Object> createMap (MapType mapType, int maxCapacity) {
         switch (mapType) {
-            case fastGet:
-                return new ObjectMapAdapter<>(new FastGetObjectMap<>(), maxCapacity);
-            case cuckoo:
-                return new CuckooMapAdapter<>(new CuckooObjectMap<>(), maxCapacity);
+            case intMap:
+                return new IntMapAdapter<>(new IntMap<>(), maxCapacity);
+            case fastGetIntMap:
+                return new FstGetIntMapAdapter<>(new FastGetIntMap<>(), maxCapacity);
             default:
                 throw new IllegalStateException("Unexpected value: " + mapType);
         }
     }
     
-    static class CuckooMapAdapter<K> implements MapAdapter<K, Integer> {
-        private final CuckooObjectMap<K, Integer> delegate;
-        private final int maxCapacity;
-        
-        public CuckooMapAdapter (CuckooObjectMap<K, Integer> delegate, int maxCapacity) {
-            this.delegate = delegate;
-            this.maxCapacity = maxCapacity;
-        }
-        
-        @Override
-        public Integer get (K key) {
-            return delegate.get(key, -1);
-        }
-        
-        @Override
-        public Integer put (K key, Integer value) {
-            delegate.put(key, value);
-            return null;
-        }
-        
-        @Override
-        public void clear() {
-            delegate.clear(maxCapacity);
-        }
-        
-    }
-    
-    static class ObjectMapAdapter<K> implements MapAdapter<K, Integer> {
-        private final ObjectMap<K, Integer> delegate;
-        private final int maxCapacity;
-        
-        public ObjectMapAdapter (ObjectMap<K, Integer> delegate, int maxCapacity) {
-            this.delegate = delegate;
-            this.maxCapacity = maxCapacity;
-        }
-        
-        @Override
-        public Integer get (K key) {
-            return delegate.get(key, -1);
-        }
-        
-        @Override
-        public Integer put (K key, Integer value) {
-            delegate.put(key, value);
-            return null;
-        }
-        
-        @Override
-        public void clear() {
-            delegate.clear(maxCapacity);
-        }
-        
-    }
-    
-    private static class HashMapAdapter<K> implements MapAdapter<K, Integer> {
-        private final HashMap<K, Integer> delegate;
-        
-        public HashMapAdapter (HashMap<K, Integer> delegate) {
-            this.delegate = delegate;
-        }
-        
-        @Override
-        public Integer get (K key) {
-            return delegate.get(key);
-        }
-        
-        @Override
-        public Integer put (K key, Integer value) {
-            return delegate.put(key, value);
-        }
-        
-        @Override
-        public void clear() {
-            delegate.clear();
-        }
-    }
     
     private static Class<?> buildClass (int i) {
         return new ByteBuddy()
@@ -206,7 +188,7 @@ public class FastGetObjectMapBenchmark {
                 .method(ElementMatchers.named("toString"))
                 .intercept(FixedValue.value(String.valueOf(i)))
                 .make()
-                .load(FastGetObjectMapBenchmark.class.getClassLoader())
+                .load(FastGetIntMapBenchmark.class.getClassLoader())
                 .getLoaded();
     }
     

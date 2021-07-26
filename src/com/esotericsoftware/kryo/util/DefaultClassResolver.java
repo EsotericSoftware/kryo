@@ -37,7 +37,7 @@ public class DefaultClassResolver implements ClassResolver {
 	protected Kryo kryo;
 
 	protected final IntMap<Registration> idToRegistration = new IntMap<>();
-	protected final FastGetObjectMap<Class, Registration> classToRegistration = new FastGetObjectMap<>();
+	protected final CuckooObjectMap<Class, Registration> classToRegistration = new CuckooObjectMap<>();
 	protected IdentityObjectIntMap<Class> classToNameId;
 	protected IntMap<Class> nameIdToClass;
 	protected ObjectMap<String, Class> nameToClass;
@@ -164,7 +164,7 @@ public class DefaultClassResolver implements ClassResolver {
 
 	protected Registration readName (Input input) {
 		int nameId = input.readVarInt(true);
-		if (nameIdToClass == null) nameIdToClass = new IntMap<>();
+		if (nameIdToClass == null) nameIdToClass = new FastGetIntMap<>();
 		Class type = nameIdToClass.get(nameId);
 		if (type == null) {
 			// Only read the class name the first time encountered in object graph.
