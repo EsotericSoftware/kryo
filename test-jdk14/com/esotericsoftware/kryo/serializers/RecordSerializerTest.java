@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
@@ -301,4 +301,21 @@ public class RecordSerializerTest extends KryoTestCase {
 
         roundTrip(6, r2);
     }
+
+    public static record RecordWithSuperType(Number n) {}
+
+    @Test
+    void testRecordWithSuperType() {
+        var rc = new RecordSerializer<RecordWithSuperType>();
+        kryo.register(RecordWithSuperType.class, rc);
+
+        final var r = new RecordWithSuperType(1L);
+        final var output = new Output(32);
+        kryo.writeObject(output, r);
+        final var input = new Input(output.getBuffer(), 0, output.position());
+        final var r2 = kryo.readObject(input, RecordWithSuperType.class);
+
+        roundTrip(3, r2);
+    }
+    
 }
