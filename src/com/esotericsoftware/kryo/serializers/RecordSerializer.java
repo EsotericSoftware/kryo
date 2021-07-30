@@ -220,7 +220,13 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 			Class<?>[] paramTypes = Arrays.stream(recordComponents)
 				.map(RecordComponent::type)
 				.toArray(Class<?>[]::new);
-			Constructor<T> canonicalConstructor = recordType.getConstructor(paramTypes);
+			Constructor<T> canonicalConstructor;
+			try {
+				canonicalConstructor = recordType.getConstructor(paramTypes);
+			} catch (NoSuchMethodException e) {
+				canonicalConstructor = recordType.getDeclaredConstructor(paramTypes);
+				canonicalConstructor.setAccessible(true);
+			}
 			return canonicalConstructor.newInstance(args);
 		} catch (Throwable t) {
 			KryoException ex = new KryoException(t);

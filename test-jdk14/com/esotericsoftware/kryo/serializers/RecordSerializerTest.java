@@ -317,5 +317,16 @@ public class RecordSerializerTest extends KryoTestCase {
 
         roundTrip(3, r2);
     }
+
+    static record PackagePrivateRecord(int i, String s) {}
+    private static record PrivateRecord(String s, int i) {}
     
+    @Test
+    void testNonPublicRecords() {
+        kryo.register(PackagePrivateRecord.class);
+        kryo.register(PrivateRecord.class);
+
+        roundTrip(4, new PackagePrivateRecord(1, "s1"));
+        roundTrip(4, new PrivateRecord("s2",2));
+    }
 }
