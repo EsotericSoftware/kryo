@@ -69,6 +69,8 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 		GET_TYPE = getType;
 	}
 
+	private boolean fixedFieldTypes = false;
+
 	public RecordSerializer () {
 	}
 
@@ -83,10 +85,14 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 			final String name = rc.name();
 			try {
 				if (TRACE) trace("kryo", "Write property: " + name + " (" + type.getName() + ")");
-				if (rc.type().isPrimitive()) {
+				if (type.isPrimitive()) {
 					kryo.writeObject(output, componentValue(object, rc));
 				} else {
-					kryo.writeObjectOrNull(output, componentValue(object, rc), type);
+					if (fixedFieldTypes || kryo.isFinal(type)) {
+						kryo.writeObjectOrNull(output, componentValue(object, rc), type);
+					} else {
+						kryo.writeClassAndObject(output, componentValue(object, rc));
+					}
 				}
 			} catch (KryoException ex) {
 				ex.addTrace(name + " (" + type.getName() + ")");
@@ -109,11 +115,19 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 		for (int i = 0; i < recordComponents.length; i++) {
 			final RecordComponent rc = recordComponents[i];
 			final String name = rc.name();
+			final Class<?> rcType = rc.type();
 			try {
 				if (TRACE) trace("kryo", "Read property: " + name + " (" + type.getName() + ")");
 				// Populate values in the order required by the canonical constructor
-				values[rc.index()] = rc.type().isPrimitive() ? kryo.readObject(input, rc.type())
-					: kryo.readObjectOrNull(input, rc.type());
+				if (rcType.isPrimitive()) {
+					values[rc.index()] = kryo.readObject(input, rcType);
+				} else {
+					if (fixedFieldTypes || kryo.isFinal(rcType)) {
+						values[rc.index()] = kryo.readObjectOrNull(input, rcType);
+					} else {
+						values[rc.index()] = kryo.readClassAndObject(input);
+					}
+				}
 			} catch (KryoException ex) {
 				ex.addTrace(name + " (" + type.getName() + ")");
 				throw ex;
@@ -213,5 +227,11 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 			ex.addTrace("Could not construct type (" + recordType.getName() + ")");
 			throw ex;
 		}
+	}
+
+	/** Tells the RecordSerializer that all field types are effectively final. This allows the serializer to be more efficient,
+	 * since it knows field values will not be a subclass of their declared type. Default is false. */
+	public void setFixedFieldTypes (boolean fixedFieldTypes) {
+		this.fixedFieldTypes = fixedFieldTypes;
 	}
 }

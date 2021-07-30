@@ -26,11 +26,11 @@ import com.esotericsoftware.kryo.SerializationCompatTestData;
  * @author Chris Hegarty <chris.hegarty@oracle.com>
  */
 public class TestDataJava14 extends SerializationCompatTestData.TestData {
-    public record Rec (byte b, short s, int i, long l, float f, double d, boolean bool, char c, String str, Number[] n) { };
+    public record Rec (byte b, short s, int i, long l, float f, double d, boolean bool, char c, String str, Integer[] n) { };
 
     private Rec rec;
 
     public TestDataJava14() {
-        rec = new Rec("b".getBytes()[0], (short)1, 2, 3L, 4.0f, 5.0d, true, 'c', "foo", new Number[]{1,2,3});
+        rec = new Rec("b".getBytes()[0], (short)1, 2, 3L, 4.0f, 5.0d, true, 'c', "foo", new Integer[]{1,2,3});
     }
 }
