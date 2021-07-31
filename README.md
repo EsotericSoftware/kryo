@@ -89,6 +89,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
+* [5.2.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.2.0) - brings bug fixes for `RecordSerializer` and improvements. Important: If you are currently storing serialized `java.util.record`, please see the [release notes](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.2.0) for upgrade instructions.
 * [5.1.1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.1.1) - brings bug fixes for `CompatibleFieldSerializer` and removes dependency from versioned artifact
 * [5.1.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.1.0) - brings support for `java.util.Record` and improved support for older Android versions
 * [5.0.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0) - the final Kryo 5 release fixing many issues and making many long awaited improvements over Kryo 4. Note: For libraries (not applications) using Kryo, there's now a completely self-contained, versioned artifact (for details see [installation](#installation)). For migration from Kryo 4.x see also [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5).
@@ -109,7 +110,7 @@ To use the latest Kryo release in your application, use this dependency entry in
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.1.1</version>
+   <version>5.2.0</version>
 </dependency>
 ```
 
@@ -119,7 +120,7 @@ To use the latest Kryo release in a library you want to publish, use this depend
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.1.1</version>
+   <version>5.2.0</version>
 </dependency>
 ```
 
@@ -136,13 +137,13 @@ To use the latest Kryo snapshot, use:
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.1.2-SNAPSHOT</version>
+   <version>5.2.1-SNAPSHOT</version>
 </dependency>
 <!-- for usage in a library that should be published: -->
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.1.2-SNAPSHOT</version>
+   <version>5.2.1-SNAPSHOT</version>
 </dependency>
 ```
 
