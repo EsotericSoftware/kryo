@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PUBLISH_ARTIFACTS: false
+      PUBLISH_ARTIFACTS: true
 
     steps:
       - uses: actions/checkout@v2
