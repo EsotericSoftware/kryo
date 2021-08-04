@@ -56,4 +56,27 @@ public class ChunkedTest extends KryoTestCase {
 		assertEquals(5678, input.readInt());
 		input.close();
 	}
+	
+	public void testSkipAfterUnderFlow () {
+		Output output = new Output(512);
+		OutputChunked outputChunked = new OutputChunked(output);
+		outputChunked.writeInt(1);
+		outputChunked.endChunks();
+		outputChunked.writeInt(2);
+		outputChunked.endChunks();
+		output.close();
+
+		Input input = new Input(output.getBuffer());
+		InputChunked inputChunked = new InputChunked(input);
+		assertEquals(1, inputChunked.readInt());
+		// trigger buffer underflow
+		try {
+			inputChunked.readInt();
+			fail();
+		} catch (KryoException ignored) {
+		}
+		inputChunked.nextChunks();
+		assertEquals(2, inputChunked.readInt());
+		input.close();
+	}
 }
