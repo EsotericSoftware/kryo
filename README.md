@@ -1306,6 +1306,7 @@ There are a number of projects using Kryo. A few are listed below. Please submit
 - [DestroyAllHumans](https://code.google.com/p/destroyallhumans/) (controls a [robot](http://www.youtube.com/watch?v=ZeZ3R38d3Cg)!)
 - [Mybatis Redis-Cache](https://github.com/mybatis/redis-cache) (MyBatis Redis Cache adapter)
 - [Apache Dubbo](https://github.com/apache/incubator-dubbo) (high performance, open source RPC framework)
+- [Spring Statemachine](https://spring.io/projects/spring-statemachine) (State machine concepts with Spring)
 
 ### Scala
 
