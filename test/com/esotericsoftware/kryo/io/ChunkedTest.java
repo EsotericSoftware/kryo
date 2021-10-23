@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.io;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.KryoException;
 import org.junit.jupiter.api.Test;
 
 /** @author Nathan Sweet */
@@ -54,6 +55,26 @@ class ChunkedTest {
 		inputChunked.nextChunk(); // skip 4
 		assertEquals(5, inputChunked.readInt());
 		assertEquals(5678, input.readInt());
+		input.close();
+	}
+
+	@Test
+	void testSkipAfterUnderFlow () {
+		Output output = new Output(512);
+		OutputChunked outputChunked = new OutputChunked(output);
+		outputChunked.writeInt(1);
+		outputChunked.endChunk();
+		outputChunked.writeInt(2);
+		outputChunked.endChunk();
+		output.close();
+
+		Input input = new Input(output.getBuffer());
+		InputChunked inputChunked = new InputChunked(input);
+		assertEquals(1, inputChunked.readInt());
+		// trigger buffer underflow
+		assertThrows(KryoException.class, inputChunked::readInt);
+		inputChunked.nextChunk();
+		assertEquals(2, inputChunked.readInt());
 		input.close();
 	}
 }
