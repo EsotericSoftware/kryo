@@ -1307,6 +1307,7 @@ There are a number of projects using Kryo. A few are listed below. Please submit
 - [Mybatis Redis-Cache](https://github.com/mybatis/redis-cache) (MyBatis Redis Cache adapter)
 - [Apache Dubbo](https://github.com/apache/incubator-dubbo) (high performance, open source RPC framework)
 - [Spring Statemachine](https://spring.io/projects/spring-statemachine) (State machine concepts with Spring)
+- [session-compatible-fast-serializer](https://github.com/alibaba/session-compatible-fast-serializer) (A compatible field serializer with better performance)
 
 ### Scala
 
