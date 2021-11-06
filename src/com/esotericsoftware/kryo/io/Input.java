@@ -281,7 +281,7 @@ public class Input extends InputStream implements Poolable {
 	}
 
 	/** Reads bytes.length bytes or less and writes them to the specified byte[], starting at 0, and returns the number of bytes
-	 * read. */
+	 * read or -1 if no more bytes are available. */
 	public int read (byte[] bytes) throws KryoException {
 		return read(bytes, 0, bytes.length);
 	}
