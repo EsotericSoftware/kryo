@@ -743,7 +743,8 @@ public class DefaultSerializers {
 		}
 
 		private PriorityQueue createPriorityQueue (Class<? extends Collection> type, int size, Comparator comparator) {
-			if (type == PriorityQueue.class || type == null) return new PriorityQueue(size, comparator);
+			final int initialCapacity = Math.max(size, 1);
+			if (type == PriorityQueue.class || type == null) return new PriorityQueue(initialCapacity, comparator);
 			// Use reflection for subclasses.
 			try {
 				Constructor constructor = type.getConstructor(int.class, Comparator.class);
@@ -753,7 +754,7 @@ public class DefaultSerializers {
 					} catch (SecurityException ignored) {
 					}
 				}
-				return (PriorityQueue)constructor.newInstance(comparator);
+				return (PriorityQueue)constructor.newInstance(initialCapacity, comparator);
 			} catch (Exception ex) {
 				throw new KryoException(ex);
 			}
