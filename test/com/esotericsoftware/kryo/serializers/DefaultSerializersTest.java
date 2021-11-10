@@ -341,6 +341,42 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
+	void testPriorityQueue () {
+		List<Integer> values = Arrays.asList(7, 0, 5, 123, 432);
+		PriorityQueue<Integer> queue = new PriorityQueue(3, new IntegerComparator());
+		queue.addAll(values);
+
+		kryo.register(PriorityQueue.class);
+		kryo.register(IntegerComparator.class);
+		roundTrip(12, queue);
+	}
+
+	@Test
+	void testPriorityQueueSubclass () {
+		List<Integer> values = Arrays.asList(7, 0, 5, 123, 432);
+		PriorityQueue<Integer> queue = new PriorityQueueSubclass(3, new IntegerComparator());
+		queue.addAll(values);
+
+		kryo.register(PriorityQueueSubclass.class);
+		kryo.register(IntegerComparator.class);
+		roundTrip(12, queue);
+	}
+
+	@Test
+	void testEmptyPriorityQueue () {
+		PriorityQueue<Integer> queue = new PriorityQueue();
+		kryo.register(PriorityQueue.class);
+		roundTrip(3, queue);
+	}
+
+	@Test
+	void testEmptyPriorityQueueSubclass () {
+		PriorityQueue<Integer> queue = new PriorityQueueSubclass();
+		kryo.register(PriorityQueueSubclass.class);
+		roundTrip(3, queue);
+	}
+
+	@Test
 	void testCalendar () {
 		kryo.setRegistrationRequired(false);
 		Calendar calendar = Calendar.getInstance();
@@ -467,6 +503,17 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(78, new URL("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
 	}
 
+	protected void doAssertEquals(Object object1, Object object2) {
+		if (object1 instanceof PriorityQueue && object2 instanceof PriorityQueue) {
+			final PriorityQueue q1 = (PriorityQueue) object1;
+			final PriorityQueue q2 = (PriorityQueue) object2;
+			super.doAssertEquals(q1.peek(), q2.peek());	
+			super.doAssertEquals(q1.toArray(), q2.toArray());	
+		} else {
+			super.doAssertEquals(object1, object2);
+		}
+	}
+
 	public enum TestEnum {
 		a, b, c
 	}
@@ -500,4 +547,18 @@ class DefaultSerializersTest extends KryoTestCase {
 		}
 	}
 
+	static class PriorityQueueSubclass extends PriorityQueue {
+		public PriorityQueueSubclass() {
+		}
+
+		public PriorityQueueSubclass(int initialCapacity, Comparator comparator) {
+			super(initialCapacity, comparator);
+		}
+	}
+
+	static class IntegerComparator implements Comparator<Integer> {
+		public int compare(Integer o1, Integer o2) {
+			return o2 - o1;
+		}
+	}
 }
