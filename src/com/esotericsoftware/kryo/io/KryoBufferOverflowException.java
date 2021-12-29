@@ -20,7 +20,6 @@
 package com.esotericsoftware.kryo.io;
 
 public class KryoBufferOverflowException extends KryoIOException {
-	private StringBuffer trace;
 
 	public KryoBufferOverflowException () {
 		super();

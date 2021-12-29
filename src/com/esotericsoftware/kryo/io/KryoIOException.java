@@ -22,7 +22,6 @@ package com.esotericsoftware.kryo.io;
 import com.esotericsoftware.kryo.KryoException;
 
 public class KryoIOException extends KryoException {
-	private StringBuffer trace;
 
 	public KryoIOException () {
 		super();
