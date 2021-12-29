@@ -22,6 +22,8 @@ package com.esotericsoftware.kryo.io;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
+import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
 
 import java.io.ByteArrayInputStream;
 import java.nio.Buffer;
@@ -87,4 +89,36 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(10, inputBuffer.readInt());
 		assertEquals(9, byteBuffer.position());
 	}
+	
+		@Test
+	void testOverflow () {
+		ByteBufferOutput buffer = new ByteBufferOutput(1);
+		buffer.writeByte(51);
+		try
+		{
+			buffer.writeByte(65);
+			
+			fail("exception expected but none thrown");
+		}
+		catch(KryoBufferOverflowException e)
+		{
+			assertTrue(e.getMessage().startsWith("Buffer overflow"));
+		}
+	}
+
+	@Test
+	void testUnderflow () {
+		ByteBufferInput buffer = new ByteBufferInput(1);
+		try
+		{
+			buffer.readBytes(2);
+			
+			fail("exception expected but none thrown");
+		}
+		catch(KryoBufferUnderflowException e)
+		{
+			assertTrue(e.getMessage().equals("Buffer underflow."));
+		}
+	}
+
 }
