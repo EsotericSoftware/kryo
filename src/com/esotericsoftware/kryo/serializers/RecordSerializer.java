@@ -203,6 +203,9 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 		RecordComponent recordComponent) {
 		try {
 			Method get = recordObject.getClass().getDeclaredMethod(recordComponent.name());
+			if (!get.canAccess(recordObject)) {
+				get.setAccessible(true);
+			}
 			return get.invoke(recordObject);
 		} catch (Throwable t) {
 			KryoException ex = new KryoException(t);
