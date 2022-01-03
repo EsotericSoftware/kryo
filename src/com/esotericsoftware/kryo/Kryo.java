@@ -287,7 +287,7 @@ public class Kryo {
 	/** Instances with the specified class name will use the specified serializer when {@link #register(Class)} or
 	 * {@link #register(Class, int)} are called.
 	 * @see #setDefaultSerializer(Class) */
-	private void addDefaultSerializer(String className, Class<? extends Serializer> serializer) {
+	private void addDefaultSerializer (String className, Class<? extends Serializer> serializer) {
 		try {
 			addDefaultSerializer(Class.forName(className), serializer);
 		} catch (ClassNotFoundException e) {

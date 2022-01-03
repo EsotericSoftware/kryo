@@ -184,7 +184,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		if (required > maxCapacity - position) {
 			if (required > maxCapacity)
 				throw new KryoBufferOverflowException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
-			throw new KryoBufferOverflowException("Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
+			throw new KryoBufferOverflowException(
+				"Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
 		}
 		if (capacity == 0) capacity = 16;
 		do {

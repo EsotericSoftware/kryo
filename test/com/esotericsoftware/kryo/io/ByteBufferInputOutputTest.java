@@ -94,31 +94,26 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 	void testOverflow () {
 		ByteBufferOutput buffer = new ByteBufferOutput(1);
 		buffer.writeByte(51);
-		try
-		{
-			buffer.writeByte(65);
-			
-			fail("exception expected but none thrown");
-		}
-		catch(KryoBufferOverflowException e)
-		{
-			assertTrue(e.getMessage().startsWith("Buffer overflow"));
-		}
+		KryoBufferOverflowException thrown = assertThrows(
+			KryoBufferOverflowException.class,
+			() -> buffer.writeByte(65),
+			"Exception expected but none thrown"
+		);
+
+		assertTrue(thrown.getMessage().startsWith("Buffer overflow"));
 	}
 
 	@Test
 	void testUnderflow () {
 		ByteBufferInput buffer = new ByteBufferInput(1);
-		try
-		{
-			buffer.readBytes(2);
-			
-			fail("exception expected but none thrown");
-		}
-		catch(KryoBufferUnderflowException e)
-		{
-			assertTrue(e.getMessage().equals("Buffer underflow."));
-		}
+	
+		KryoBufferUnderflowException thrown = assertThrows(
+			KryoBufferUnderflowException.class,
+			() -> buffer.readBytes(2),
+			"Exception expected but none thrown"
+		);
+
+		assertTrue(thrown.getMessage().equals("Buffer underflow."));
 	}
 
 }

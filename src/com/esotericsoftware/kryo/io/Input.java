@@ -190,7 +190,8 @@ public class Input extends InputStream implements Poolable {
 	/** Fills the buffer with at least the number of bytes specified.
 	 * @param required Must be > 0.
 	 * @return The number of bytes remaining in the buffer, which will be at least <code>required</code> bytes.
-	 * @throws KryoBufferUnderflowException if {@link #fill(byte[], int, int)} is unable to provide more bytes (buffer underflow). */
+	 * @throws KryoBufferUnderflowException if {@link #fill(byte[], int, int)} is unable to provide more bytes (buffer
+	 *            underflow). */
 	protected int require (int required) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= required) return remaining;
