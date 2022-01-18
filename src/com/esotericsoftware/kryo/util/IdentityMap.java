@@ -81,8 +81,8 @@ public class IdentityMap<K, V> extends ObjectMap<K, V> {
 		K[] keyTable = this.keyTable;
 		for (int i = place(key);; i = i + 1 & mask) {
 			K other = keyTable[i];
-			if (other == key) return i; // Same key was found.
 			if (other == null) return -(i + 1); // Empty space is available.
+			if (other == key) return i; // Same key was found.
 		}
 	}
 
