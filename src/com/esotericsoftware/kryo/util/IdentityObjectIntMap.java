@@ -28,10 +28,8 @@ package com.esotericsoftware.kryo.util;
  * <p>
  * Unordered sets and maps are not designed to provide especially fast iteration.
  * <p>
- * This implementation uses linear probing with the backward shift algorithm for removal. Hashcodes are rehashed using Fibonacci
- * hashing, instead of the more common power-of-two mask, to better distribute poor hashCodes (see <a href=
- * "https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/">Malte
- * Skarupke's blog post</a>). Linear probing continues to work even when all hashCodes collide, just more slowly.
+ * This implementation uses linear probing with the backward shift algorithm for removal. Linear probing continues to work even
+ * when all hashCodes collide, just more slowly.
  * @author Nathan Sweet
  * @author Tommy Ettinger */
 public class IdentityObjectIntMap<K> extends ObjectIntMap<K> {
@@ -59,7 +57,15 @@ public class IdentityObjectIntMap<K> extends ObjectIntMap<K> {
 	}
 
 	protected int place (K item) {
-		return (int)(System.identityHashCode(item) * 0x9E3779B97F4A7C15L >>> shift);
+		return System.identityHashCode(item) & mask;
+	}
+
+	public int get (K key, int defaultValue) {
+		for (int i = place(key);; i = i + 1 & mask) {
+			K other = keyTable[i];
+			if (other == null) return defaultValue;
+			if (other == key) return valueTable[i];
+		}
 	}
 
 	int locateKey (K key) {
@@ -67,8 +73,8 @@ public class IdentityObjectIntMap<K> extends ObjectIntMap<K> {
 		K[] keyTable = this.keyTable;
 		for (int i = place(key);; i = i + 1 & mask) {
 			K other = keyTable[i];
-			if (other == null) return -(i + 1); // Empty space is available.
 			if (other == key) return i; // Same key was found.
+			if (other == null) return -(i + 1); // Empty space is available.
 		}
 	}
 

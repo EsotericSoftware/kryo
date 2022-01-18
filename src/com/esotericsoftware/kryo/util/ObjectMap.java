@@ -34,10 +34,8 @@ import java.util.NoSuchElementException;
  * <p>
  * Unordered sets and maps are not designed to provide especially fast iteration.
  * <p>
- * This implementation uses linear probing with the backward shift algorithm for removal. Hashcodes are rehashed using Fibonacci
- * hashing, instead of the more common power-of-two mask, to better distribute poor hashCodes (see <a href=
- * "https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/">Malte
- * Skarupke's blog post</a>). Linear probing continues to work even when all hashCodes collide, just more slowly.
+ * This implementation uses linear probing with the backward shift algorithm for removal. Linear probing continues to work even
+ * when all hashCodes collide, just more slowly.
  * @author Nathan Sweet
  * @author Tommy Ettinger */
 public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
@@ -62,7 +60,7 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 	protected int shift;
 
 	/** A bitmask used to confine hashcodes to the size of the table. Must be all 1 bits in its low positions, ie a power of two
-	 * minus 1. If {@link #place(Object)} is overriden, this can be used instead of {@link #shift} to isolate usable bits of a
+	 * minus 1. If {@link #place(Object)} is overridden, this can be used instead of {@link #shift} to isolate usable bits of a
 	 * hash. */
 	protected int mask;
 
@@ -113,15 +111,15 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 	 * "https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/">Malte
 	 * Skarupke's blog post</a>).
 	 * <p>
-	 * This method can be overriden to customizing hashing. This may be useful eg in the unlikely event that most hashcodes are
+	 * This method can be overridden to customizing hashing. This may be useful eg in the unlikely event that most hashcodes are
 	 * Fibonacci numbers, if keys provide poor or incorrect hashcodes, or to simplify hashing if keys provide high quality
 	 * hashcodes and don't need Fibonacci hashing: {@code return item.hashCode() & mask;} */
 	protected int place (K item) {
-		return (int)(item.hashCode() * 0x9E3779B97F4A7C15L >>> shift);
+		return item.hashCode() & mask;
 	}
 
 	/** Returns the index of the key if already present, else -(index + 1) for the next empty index. This can be overridden in this
-	 * pacakge to compare for equality differently than {@link Object#equals(Object)}. */
+	 * package to compare for equality differently than {@link Object#equals(Object)}. */
 	int locateKey (K key) {
 		if (key == null) throw new IllegalArgumentException("key cannot be null.");
 		K[] keyTable = this.keyTable;
@@ -174,14 +172,20 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 	/** Returns the value for the specified key, or null if the key is not in the map. */
 	@Null
 	public <T extends K> V get (T key) {
-		int i = locateKey(key);
-		return i < 0 ? null : valueTable[i];
+		for (int i = place(key);; i = i + 1 & mask) {
+			K other = keyTable[i];
+			if (other == null) return null;
+			if (other.equals(key)) return valueTable[i];
+		}
 	}
 
 	/** Returns the value for the specified key, or the default value if the key is not in the map. */
 	public V get (K key, @Null V defaultValue) {
-		int i = locateKey(key);
-		return i < 0 ? defaultValue : valueTable[i];
+		for (int i = place(key);; i = i + 1 & mask) {
+			K other = keyTable[i];
+			if (other == null) return defaultValue;
+			if (other.equals(key)) return valueTable[i];
+		}
 	}
 
 	@Null
