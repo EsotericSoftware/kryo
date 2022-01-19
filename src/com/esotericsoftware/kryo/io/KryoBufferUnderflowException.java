@@ -19,7 +19,9 @@
 
 package com.esotericsoftware.kryo.io;
 
-public class KryoBufferUnderflowException extends KryoIOException {
+import com.esotericsoftware.kryo.KryoException;
+
+public class KryoBufferUnderflowException extends KryoException {
 
 	public KryoBufferUnderflowException () {
 		super();
