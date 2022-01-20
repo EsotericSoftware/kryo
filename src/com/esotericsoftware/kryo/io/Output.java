@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
 import com.esotericsoftware.kryo.util.Pool.Poolable;
 import com.esotericsoftware.kryo.util.Util;
 
@@ -182,8 +183,9 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		if (capacity - position >= required) return true;
 		if (required > maxCapacity - position) {
 			if (required > maxCapacity)
-				throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
-			throw new KryoException("Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
+				throw new KryoBufferOverflowException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
+			throw new KryoBufferOverflowException(
+				"Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
 		}
 		if (capacity == 0) capacity = 16;
 		do {

@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.IOException;
@@ -184,8 +185,9 @@ public class ByteBufferOutput extends Output {
 		if (capacity - position >= required) return true;
 		if (required > maxCapacity - position) {
 			if (required > maxCapacity)
-				throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
-			throw new KryoException("Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
+				throw new KryoBufferOverflowException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
+			throw new KryoBufferOverflowException(
+				"Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
 		}
 		if (capacity == 0) capacity = 16;
 		do {
