@@ -60,11 +60,11 @@ public class MapBenchmark {
 	@State(Scope.Thread)
 	public static class AbstractBenchmarkState {
 		@Param({"object", "identity", "cuckoo", "hash"}) public MapType mapType;
+		@Param({"integers", "strings", "classes"}) public DataSource dataSource;
+		@Param({"100", "500", "3000", "5000"}) public int numClasses;
 		@Param({"51"}) public int initialCapacity;
 		@Param({"0.7", "0.8"}) public float loadFactor;
 		@Param({"8192"}) public int maxCapacity;
-		@Param({"integers", "strings", "classes"}) public DataSource dataSource;
-		@Param({"100", "500", "3000", "5000"}) public int numClasses;
 
 		MapAdapter<Object, Integer> map;
 		List<Object> data;
