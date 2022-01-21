@@ -24,7 +24,7 @@ import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.ObjectMap;
 
 import java.util.Collections;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -59,10 +59,12 @@ public class MapBenchmark {
 
 	@State(Scope.Thread)
 	public static class AbstractBenchmarkState {
-		@Param({"100", "500", "3000", "5000"}) public int numClasses;
-		@Param({"8192"}) public int maxCapacity;
 		@Param({"OBJECT", "IDENTITY", "CUCKOO", "HASH"}) public MapType mapType;
+		@Param({"51"}) public int initialCapacity;
+		@Param({"0.7", "0.8"}) public float loadFactor;
+		@Param({"8192"}) public int maxCapacity;
 		@Param({"STRINGS", "INTEGERS", "CLASSES"}) public DataSource dataSource;
+		@Param({"100", "500", "3000", "5000"}) public int numClasses;
 
 		MapAdapter<Object, Integer> map;
 		List<Object> data;
@@ -75,7 +77,7 @@ public class MapBenchmark {
 
 		@Setup(Level.Trial)
 		public void setup () {
-			map = createMap(mapType, maxCapacity);
+			map = createMap(mapType, initialCapacity, loadFactor, maxCapacity);
 			data = dataSource.buildData(random, numClasses);
 			data.forEach(c -> map.put(c, 1));
 			Collections.shuffle(data);
@@ -96,7 +98,7 @@ public class MapBenchmark {
 
 		@Setup(Level.Trial)
 		public void setup () {
-			map = createMap(mapType, maxCapacity);
+			map = createMap(mapType, initialCapacity, loadFactor, maxCapacity);
 			data = dataSource.buildData(random, numClasses);
 			Collections.shuffle(data);
 		}
@@ -133,9 +135,11 @@ public class MapBenchmark {
 			Object getData (Random random) {
 				int leftLimit = 97; // 'a'
 				int rightLimit = 122; // 'z'
-				int targetStringLength = random.nextInt(5, 50);
+				int low = 10;
+				int high = 100;
+				int length = random.nextInt(high-low) + low;
 				return random.ints(leftLimit, rightLimit + 1)
-					.limit(targetStringLength)
+					.limit(length)
 					.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
 					.toString();
 			}
@@ -158,16 +162,16 @@ public class MapBenchmark {
 		}
 	}
 
-	private static MapAdapter<Object, Integer> createMap (MapType mapType, int maxCapacity) {
+	private static MapAdapter<Object, Integer> createMap(MapType mapType, int initialCapacity, float loadFactor, int maxCapacity) {
 		switch (mapType) {
 		case CUCKOO:
-			return new CuckooMapAdapter<>(new CuckooObjectMap<>(), maxCapacity);
+			return new CuckooMapAdapter<>(new CuckooObjectMap<>(initialCapacity, loadFactor), maxCapacity);
 		case OBJECT:
-			return new ObjectMapAdapter<>(new ObjectMap<>(), maxCapacity);
+			return new ObjectMapAdapter<>(new ObjectMap<>(initialCapacity, loadFactor), maxCapacity);
 		case IDENTITY:
-			return new ObjectMapAdapter<>(new IdentityMap<>(), maxCapacity);
+			return new ObjectMapAdapter<>(new IdentityMap<>(initialCapacity, loadFactor), maxCapacity);
 		case HASH:
-			return new HashMapAdapter<>(new IdentityHashMap<>());
+			return new HashMapAdapter<>(new HashMap<>(initialCapacity, loadFactor));
 		default:
 			throw new IllegalStateException("Unexpected value: " + mapType);
 		}
@@ -234,9 +238,9 @@ public class MapBenchmark {
 	}
 
 	private static class HashMapAdapter<K> implements MapAdapter<K, Integer> {
-		private final IdentityHashMap<K, Integer> delegate;
+		private final HashMap<K, Integer> delegate;
 
-		public HashMapAdapter (IdentityHashMap<K, Integer> delegate) {
+		public HashMapAdapter (HashMap<K, Integer> delegate) {
 			this.delegate = delegate;
 		}
 
