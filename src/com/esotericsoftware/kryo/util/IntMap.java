@@ -70,12 +70,12 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 	 * hash. */
 	protected int mask;
 
-	/** Creates a new map with an initial capacity of 51 and a load factor of 0.7. */
+	/** Creates a new map with an initial capacity of 51 and a load factor of 0.75 */
 	public IntMap () {
 		this(51, 0.75f);
 	}
 
-	/** Creates a new map with a load factor of 0.7.
+	/** Creates a new map with a load factor of 0.75
 	 *
 	 * @param initialCapacity If not a power of two, it is increased to the next nearest power of two. */
 	public IntMap (int initialCapacity) {
