@@ -66,15 +66,15 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 	 * hash. */
 	protected int mask;
 
-	/** Creates a new map with an initial capacity of 51 and a load factor of 0.72. */
+	/** Creates a new map with an initial capacity of 51 and a load factor of 0.7. */
 	public ObjectMap () {
-		this(51, 0.72f);
+		this(51, 0.7f);
 	}
 
-	/** Creates a new map with a load factor of 0.72.
+	/** Creates a new map with a load factor of 0.7.
 	 * @param initialCapacity If not a power of two, it is increased to the next nearest power of two. */
 	public ObjectMap (int initialCapacity) {
-		this(initialCapacity, 0.72f);
+		this(initialCapacity, 0.7f);
 	}
 
 	/** Creates a new map with the specified initial capacity and load factor. This map will hold initialCapacity items before
