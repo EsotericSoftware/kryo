@@ -66,15 +66,15 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 	 * hash. */
 	protected int mask;
 
-	/** Creates a new map with an initial capacity of 51 and a load factor of 0.75 */
+	/** Creates a new map with an initial capacity of 51 and a load factor of 0.8. */
 	public ObjectMap () {
-		this(51, 0.75f);
+		this(51, 0.8f);
 	}
 
-	/** Creates a new map with a load factor of 0.75
+	/** Creates a new map with a load factor of 0.8.
 	 * @param initialCapacity If not a power of two, it is increased to the next nearest power of two. */
 	public ObjectMap (int initialCapacity) {
-		this(initialCapacity, 0.75f);
+		this(initialCapacity, 0.8f);
 	}
 
 	/** Creates a new map with the specified initial capacity and load factor. This map will hold initialCapacity items before
@@ -174,14 +174,20 @@ public class ObjectMap<K, V> implements Iterable<ObjectMap.Entry<K, V>> {
 	/** Returns the value for the specified key, or null if the key is not in the map. */
 	@Null
 	public <T extends K> V get (T key) {
-		int i = locateKey(key);
-		return i < 0 ? null : valueTable[i];
+		for (int i = place(key);; i = i + 1 & mask) {
+			K other = keyTable[i];
+			if (other == null) return null;
+			if (other.equals(key)) return valueTable[i];
+		}
 	}
 
 	/** Returns the value for the specified key, or the default value if the key is not in the map. */
 	public V get (K key, @Null V defaultValue) {
-		int i = locateKey(key);
-		return i < 0 ? defaultValue : valueTable[i];
+		for (int i = place(key);; i = i + 1 & mask) {
+			K other = keyTable[i];
+			if (other == null) return defaultValue;
+			if (other.equals(key)) return valueTable[i];
+		}
 	}
 
 	@Null

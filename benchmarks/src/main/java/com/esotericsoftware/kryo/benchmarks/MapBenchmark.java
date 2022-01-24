@@ -48,6 +48,11 @@ public class MapBenchmark {
 	}
 
 	@Benchmark
+	public void miss (MissBenchmarkState state, Blackhole blackhole) {
+		state.miss(blackhole);
+	}
+
+	@Benchmark
 	public void write (WriteBenchmarkState state, Blackhole blackhole) {
 		state.write(blackhole);
 	}
@@ -88,6 +93,28 @@ public class MapBenchmark {
 				.limit(numClasses)
 				.map(map::get)
 				.forEach(blackhole::consume);
+		}
+	}
+
+	@State(Scope.Thread)
+	public static class MissBenchmarkState extends AbstractBenchmarkState {
+
+		final Random random = new Random(123L);
+		
+		private List<Object> moreData;
+
+		@Setup(Level.Trial)
+		public void setup () {
+			map = createMap(mapType, initialCapacity, loadFactor, maxCapacity);
+			data = dataSource.buildData(random, numClasses);
+			data.forEach(c -> map.put(c, 1));
+			moreData = dataSource.buildData(random, numClasses);
+		}
+
+		public void miss (Blackhole blackhole) {
+			moreData.stream()
+					.map(map::get)
+					.forEach(blackhole::consume);
 		}
 	}
 

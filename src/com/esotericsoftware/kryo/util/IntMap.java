@@ -70,16 +70,16 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 	 * hash. */
 	protected int mask;
 
-	/** Creates a new map with an initial capacity of 51 and a load factor of 0.75 */
+	/** Creates a new map with an initial capacity of 51 and a load factor of 0.8. */
 	public IntMap () {
-		this(51, 0.75f);
+		this(51, 0.8f);
 	}
 
-	/** Creates a new map with a load factor of 0.75
+	/** Creates a new map with a load factor of 0.8.
 	 *
 	 * @param initialCapacity If not a power of two, it is increased to the next nearest power of two. */
 	public IntMap (int initialCapacity) {
-		this(initialCapacity, 0.75f);
+		this(initialCapacity, 0.8f);
 	}
 
 	/** Creates a new map with the specified initial capacity and load factor. This map will hold initialCapacity items before
@@ -187,14 +187,20 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 
 	public V get (int key) {
 		if (key == 0) return hasZeroValue ? zeroValue : null;
-		int i = locateKey(key);
-		return i >= 0 ? valueTable[i] : null;
+		for (int i = place(key);; i = i + 1 & mask) {
+			int other = keyTable[i];
+			if (other == 0) return null;
+			if (other == key) return valueTable[i];
+		}
 	}
 
 	public V get (int key, @Null V defaultValue) {
-		if (key == 0) return hasZeroValue ? zeroValue : defaultValue;
-		int i = locateKey(key);
-		return i >= 0 ? valueTable[i] : defaultValue;
+		if (key == 0) return hasZeroValue ? zeroValue : null;
+		for (int i = place(key);; i = i + 1 & mask) {
+			int other = keyTable[i];
+			if (other == 0) return defaultValue;
+			if (other == key) return valueTable[i];
+		}
 	}
 
 	@Null
