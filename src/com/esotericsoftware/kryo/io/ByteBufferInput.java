@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.IOException;
@@ -169,7 +170,7 @@ public class ByteBufferInput extends Input {
 		// Try to fill the buffer.
 		if (remaining > 0) {
 			count = fill(byteBuffer, limit, capacity - limit);
-			if (count == -1) throw new KryoException("Buffer underflow.");
+			if (count == -1) throw new KryoBufferUnderflowException("Buffer underflow.");
 			setBufferPosition(byteBuffer, position);
 			remaining += count;
 			if (remaining >= required) {
@@ -188,7 +189,7 @@ public class ByteBufferInput extends Input {
 			count = fill(byteBuffer, remaining, capacity - remaining);
 			if (count == -1) {
 				if (remaining >= required) break;
-				throw new KryoException("Buffer underflow.");
+				throw new KryoBufferUnderflowException("Buffer underflow.");
 			}
 			remaining += count;
 			if (remaining >= required) break; // Enough has been read.

@@ -17,26 +17,25 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo.serializers;
+package com.esotericsoftware.kryo.io;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.KryoException;
 
-import java.util.EnumMap;
+public class KryoBufferUnderflowException extends KryoException {
 
-/** @author Nathan Sweet */
-public class EnumMapSerializer extends MapSerializer<EnumMap> {
-	private final Class<? extends Enum> enumType;
-
-	public EnumMapSerializer (Class<? extends Enum> enumType) {
-		this.enumType = enumType;
+	public KryoBufferUnderflowException () {
+		super();
 	}
 
-	protected EnumMap create (Kryo kryo, Input input, Class<? extends EnumMap> type, int size) {
-		return new EnumMap(enumType);
+	public KryoBufferUnderflowException (String message, Throwable cause) {
+		super(message, cause);
 	}
 
-	protected EnumMap createCopy (Kryo kryo, EnumMap original) {
-		return new EnumMap(original);
+	public KryoBufferUnderflowException (String message) {
+		super(message);
+	}
+
+	public KryoBufferUnderflowException (Throwable cause) {
+		super(cause);
 	}
 }

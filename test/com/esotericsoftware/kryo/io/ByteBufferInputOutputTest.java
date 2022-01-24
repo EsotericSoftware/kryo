@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -22,6 +22,8 @@ package com.esotericsoftware.kryo.io;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
+import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
 
 import java.io.ByteArrayInputStream;
 import java.nio.Buffer;
@@ -87,4 +89,31 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(10, inputBuffer.readInt());
 		assertEquals(9, byteBuffer.position());
 	}
+	
+		@Test
+	void testOverflow () {
+		ByteBufferOutput buffer = new ByteBufferOutput(1);
+		buffer.writeByte(51);
+		KryoBufferOverflowException thrown = assertThrows(
+			KryoBufferOverflowException.class,
+			() -> buffer.writeByte(65),
+			"Exception expected but none thrown"
+		);
+
+		assertTrue(thrown.getMessage().startsWith("Buffer overflow"));
+	}
+
+	@Test
+	void testUnderflow () {
+		ByteBufferInput buffer = new ByteBufferInput(1);
+	
+		KryoBufferUnderflowException thrown = assertThrows(
+			KryoBufferUnderflowException.class,
+			() -> buffer.readBytes(2),
+			"Exception expected but none thrown"
+		);
+
+		assertTrue(thrown.getMessage().equals("Buffer underflow."));
+	}
+
 }
