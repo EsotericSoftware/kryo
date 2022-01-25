@@ -16,7 +16,8 @@
 
 	<properties>
 		<kryo.root>${basedir}/..</kryo.root>
-		<jmh.version>1.33</jmh.version>
+		<jmh.version>1.34</jmh.version>
+		<byte-buddy.version>1.12.7</byte-buddy.version>
 		<uberjar.name>benchmarks</uberjar.name>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
@@ -37,6 +38,11 @@
 			<artifactId>jmh-generator-annprocess</artifactId>
 			<version>${jmh.version}</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy</artifactId>
+			<version>${byte-buddy.version}</version>
 		</dependency>
 	</dependencies>
 
