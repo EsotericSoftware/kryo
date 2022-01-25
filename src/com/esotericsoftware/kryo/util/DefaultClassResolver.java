@@ -37,7 +37,7 @@ public class DefaultClassResolver implements ClassResolver {
 	protected Kryo kryo;
 
 	protected final IntMap<Registration> idToRegistration = new IntMap<>();
-	protected final CuckooObjectMap<Class, Registration> classToRegistration = new CuckooObjectMap<>();
+	protected final IdentityMap<Class, Registration> classToRegistration = new IdentityMap<>();
 
 	protected IdentityObjectIntMap<Class> classToNameId;
 	protected IntMap<Class> nameIdToClass;
