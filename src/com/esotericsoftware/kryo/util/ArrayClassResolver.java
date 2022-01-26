@@ -73,10 +73,23 @@ public final class ArrayClassResolver extends DefaultClassResolver {
 		case NAME + 2: // Offset for NAME and NULL.
 			return readName(input);
 		}
+
+		// check cache
+		if (classID == memoizedClassId) {
+			if (TRACE) trace("kryo",
+				"Read class " + (classID - 2) + ": " + className(memoizedClassIdValue.getType()) + pos(input.position()));
+			return memoizedClassIdValue;
+		}
+
 		int index = classID - 2;
 		Registration registration = getRegistration(index);
 		if (registration == null) throw new KryoException("Encountered unregistered class ID: " + (classID - 2));
 		if (TRACE) trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()) + pos(input.position()));
+
+		// set cache
+		memoizedClassId = classID;
+		memoizedClassIdValue = registration;
+
 		return registration;
 	}
 

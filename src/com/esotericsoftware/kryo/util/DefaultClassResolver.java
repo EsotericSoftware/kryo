@@ -44,10 +44,10 @@ public class DefaultClassResolver implements ClassResolver {
 	protected ObjectMap<String, Class> nameToClass;
 	protected int nextNameId;
 
-	private int memoizedClassId = -1;
-	private Registration memoizedClassIdValue;
-	private Class memoizedClass;
-	private Registration memoizedClassValue;
+	protected int memoizedClassId = -1;
+	protected Registration memoizedClassIdValue;
+	protected Class memoizedClass;
+	protected Registration memoizedClassValue;
 
 	public void setKryo (Kryo kryo) {
 		this.kryo = kryo;
