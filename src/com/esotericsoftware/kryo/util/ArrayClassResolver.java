@@ -27,11 +27,17 @@ import com.esotericsoftware.kryo.io.Input;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
-/** This is enhanced resolver from {@link DefaultClassResolver} for fast deserialization of collections only in configuration {@link Kryo#registrationRequired} == true.
+/** This is enhanced resolver from {@link DefaultClassResolver} for fast deserialization of collections only in configuration
+ * {@link Kryo#registrationRequired} == true.
  *
- * @apiNote In terms of functionality, {@link ArrayClassResolver} is completely equivalent to {@link DefaultClassResolver}. So output binary of {@link ArrayClassResolver} is equivalent to that of {@link DefaultClassResolver}.
+ * @apiNote In terms of functionality, {@link ArrayClassResolver} is completely equivalent to {@link DefaultClassResolver}. So
+ *          output binary of {@link ArrayClassResolver} is equivalent to that of {@link DefaultClassResolver}.
  *
- * @implNote You can specify the mappings between class and ID by {@link Kryo#register(Class, int)}, But don't specify huge ID like 20000000 because this resolver uses array internally. This resolver internally reconstructs {@link #idToRegistrationArray} whenever the mappings are updated, by {@link #updateIdToRegistrationArray()}. Therefore, it is not suitable in terms of performance if the mappings are updated frequently at peaktime of application. Use the {@link Pool}.
+ * @implNote You can specify the mappings between class and ID by {@link Kryo#register(Class, int)}, But don't specify huge ID
+ *           like 20000000 because this resolver uses array internally. This resolver internally reconstructs
+ *           {@link #idToRegistrationArray} whenever the mappings are updated, by {@link #updateIdToRegistrationArray()}.
+ *           Therefore, it is not suitable in terms of performance if the mappings are updated frequently at peaktime of
+ *           application. Use the {@link Pool}.
  * @see <a href="https://github.com/EsotericSoftware/kryo#pooling">Pool</a>
  *
  * @author lifeinwild1@gmail.com */
