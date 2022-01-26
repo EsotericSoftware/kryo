@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -37,7 +37,7 @@ public class DefaultClassResolver implements ClassResolver {
 	protected Kryo kryo;
 
 	protected final IntMap<Registration> idToRegistration = new IntMap<>();
-	protected final CuckooObjectMap<Class, Registration> classToRegistration = new CuckooObjectMap<>();
+	protected final IdentityMap<Class, Registration> classToRegistration = new IdentityMap<>();
 
 	protected IdentityObjectIntMap<Class> classToNameId;
 	protected IntMap<Class> nameIdToClass;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -32,6 +32,7 @@ import java.util.Random;
  * depending on hash collisions. Load factors greater than 0.91 greatly increase the chances the map will have to rehash to the
  * next higher POT size.
  * @author Nathan Sweet */
+@Deprecated
 public class CuckooObjectMap<K, V> {
 	// primes for hash functions 2, 3, and 4
 	private static final int PRIME2 = 0xbe1f14b1;
