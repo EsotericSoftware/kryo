@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -112,12 +113,34 @@ class CollectionSerializerTest extends KryoTestCase {
 		assertNotSame(objects1.get(0), objects2.get(0));
 	}
 
+	@Test
+	void testGenerics() {
+		kryo.register(HasGenerics.class);
+		kryo.register(ArrayList.class);
+		
+		final HasGenerics test = new HasGenerics();
+		test.list.add("moo");
+		
+		roundTrip(6, test);
+	}
+
 	public static class TreeSetSubclass<E> extends TreeSet<E> {
 		public TreeSetSubclass () {
 		}
 
 		public TreeSetSubclass (Comparator<? super E> comparator) {
 			super(comparator);
+		}
+	}
+
+	public static class HasGenerics {
+		public List<String> list = new ArrayList<>();
+
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			HasGenerics that = (HasGenerics) o;
+			return Objects.equals(list, that.list);
 		}
 	}
 }
