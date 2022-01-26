@@ -20,7 +20,6 @@
 package com.esotericsoftware.kryo.benchmarks;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.benchmarks.data.Sample;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.ArrayClassResolver;
@@ -32,6 +31,13 @@ import static com.esotericsoftware.kryo.benchmarks.FieldSerializerBenchmark.*;
 
 /**
  * {@link ArrayClassResolver} is fast especially in {@link #deserializeCollection(DeserializeCollectionStateArray)}.
+ *
+ * <pre>
+ * new module/old module=4125/3511=17% faster in a environment.
+ * Benchmark                                           Mode  Cnt     Score   Error  Units
+ * ArrayClassResolverBenchmark.deserializeCollection  thrpt       4125.996          ops/s
+ * FieldSerializerBenchmark.deserializeCollection     thrpt       3511.014          ops/s
+ * </pre>
  *
  * @author lifeinwild1@gmail.com
  */
@@ -67,8 +73,7 @@ public class ArrayClassResolverBenchmark {
 	//
 
 	public static Kryo createKryoArray(){
-		Kryo r = new Kryo(new ArrayClassResolver(), null);
-		return r;
+		return new Kryo(new ArrayClassResolver(), null);
 	}
 
 	/**
@@ -107,7 +112,7 @@ public class ArrayClassResolverBenchmark {
 		int loop2 = 1000 * 1000;
 		for(int i=0;i<loop2;i++) {
 			Input in = new Input(out.getBuffer());
-			HashMap deserialized = (HashMap)k.readClassAndObject(in);
+			HashMap<Long, String> deserialized = (HashMap<Long, String>)k.readClassAndObject(in);
 			if(!m.equals(deserialized)){
 				System.out.println("error");
 			}
@@ -174,14 +179,13 @@ public class ArrayClassResolverBenchmark {
 
 		@Setup(Level.Trial)
 		public void setup () {
-			HashMap<Long, Sample> m = new HashMap<>();
+			HashMap<Long, String> m = new HashMap<>();
 			for(long i=0;i<2000;i++)
-				m.put(i, new Sample().populate(true));
+				m.put(i, "val");
 
 			object = m;
 
 			kryo.register(HashMap.class);
-			kryo.register(Sample.class);
 
 			output.setPosition(0);
 			kryo.writeObject(output, object);
