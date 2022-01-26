@@ -40,6 +40,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
+import com.esotericsoftware.kryo.util.ArrayClassResolver;
 import org.junit.jupiter.api.BeforeEach;
 
 /** Convenience methods for round tripping objects.
@@ -71,6 +72,7 @@ public abstract class KryoTestCase {
 		if (debug && WARN) warn("*** DEBUG TEST ***");
 
 		kryo = new Kryo();
+		//kryo = new Kryo(new ArrayClassResolver(), null);
 	}
 
 	/** @param lengthGenerics Pass Integer.MIN_VALUE to disable checking the length for the generic serialization.
