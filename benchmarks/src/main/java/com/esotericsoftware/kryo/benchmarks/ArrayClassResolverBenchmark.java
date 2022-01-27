@@ -30,7 +30,7 @@ import java.util.*;
 import static com.esotericsoftware.kryo.benchmarks.FieldSerializerBenchmark.*;
 
 /**
- * {@link ArrayClassResolver} is fast especially in {@link #deserializeCollection(DeserializeCollectionStateArray)}.
+ * {@link ArrayClassResolver} is fast especially in {@link #deserializeCollection(DeserializingCollectionWithArrayClassResolverState)}}.
  *
  * <pre>
  * new module/old module=4125/3511=17% faster in a environment.
@@ -68,7 +68,7 @@ public class ArrayClassResolverBenchmark {
 	}
 
 	@Benchmark
-	public void deserializeCollection(DeserializeCollectionStateArray state) { state.roundTrip(); }
+	public void deserializeCollection(DeserializingCollectionWithArrayClassResolverState state) { state.roundTrip(); }
 
 	//
 
@@ -161,7 +161,7 @@ public class ArrayClassResolverBenchmark {
 		}
 	}
 
-	static public class DeserializeCollectionStateArray extends DeserializeCollectionState {
+	static public class DeserializingCollectionWithArrayClassResolverState extends DeserializingCollectionState {
 		@Override
 		protected Kryo createKryo() {
 			return createKryoArray();
@@ -169,7 +169,7 @@ public class ArrayClassResolverBenchmark {
 	}
 
 	@State(Scope.Thread)
-	static public abstract class DeserializeCollectionState{
+	static public abstract class DeserializingCollectionState{
 		final Kryo kryo = createKryo();
 		final Output output = new Output(1024 * 1024);
 		final Input input = new Input(output.getBuffer());

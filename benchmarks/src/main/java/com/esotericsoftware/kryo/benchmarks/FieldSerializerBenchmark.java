@@ -71,7 +71,7 @@ public class FieldSerializerBenchmark {
 	}
 
 	@Benchmark
-	public void deserializeCollection(DeserializeCollectionStateDefault state) { state.roundTrip(); }
+	public void deserializeCollection(DeserializingCollectionWithDefaultClassResolverState state) { state.roundTrip(); }
 
 	//
 
@@ -318,7 +318,7 @@ public class FieldSerializerBenchmark {
 		}
 	}
 
-	static public class DeserializeCollectionStateDefault extends ArrayClassResolverBenchmark.DeserializeCollectionState {
+	static public class DeserializingCollectionWithDefaultClassResolverState extends ArrayClassResolverBenchmark.DeserializingCollectionState {
 		@Override
 		protected Kryo createKryo() {
 			return new Kryo();
