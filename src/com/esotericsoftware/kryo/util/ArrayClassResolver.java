@@ -97,12 +97,6 @@ public final class ArrayClassResolver extends DefaultClassResolver {
 		return registration;
 	}
 
-	/*
-	 * @Override public void reset() { super.reset(); //This method does not reset the entire state of ClassResolver, but resets
-	 * states that is created per object graph. //So the mappings between class and id is not reset. //The semantic is actually
-	 * like resetPerUse(). }
-	 */
-
 	@Override
 	public Registration unregister (int classID) {
 		Registration r = super.unregister(classID);
