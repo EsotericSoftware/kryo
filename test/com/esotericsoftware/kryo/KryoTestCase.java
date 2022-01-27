@@ -72,7 +72,6 @@ public abstract class KryoTestCase {
 		if (debug && WARN) warn("*** DEBUG TEST ***");
 
 		kryo = new Kryo();
-		//kryo = new Kryo(new ArrayClassResolver(), null);
 	}
 
 	/** @param lengthGenerics Pass Integer.MIN_VALUE to disable checking the length for the generic serialization.
