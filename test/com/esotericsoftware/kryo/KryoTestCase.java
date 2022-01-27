@@ -40,7 +40,6 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
-import com.esotericsoftware.kryo.util.ArrayClassResolver;
 import org.junit.jupiter.api.BeforeEach;
 
 /** Convenience methods for round tripping objects.
