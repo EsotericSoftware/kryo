@@ -26,19 +26,20 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import java.lang.reflect.Array;
+
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
-/** This is enhanced resolver from {@link DefaultClassResolver} for fast deserialization of collections only in configuration
- * {@link Kryo#registrationRequired} == true.
+/** This is enhanced resolver from {@link DefaultClassResolver} for fast deserialization of collections.
  *
  * @apiNote In terms of functionality, {@link ArrayClassResolver} is completely equivalent to {@link DefaultClassResolver}. So
  *          output binary of {@link ArrayClassResolver} is equivalent to that of {@link DefaultClassResolver}.
  *
  * @implNote You can specify the mappings between class and ID by {@link Kryo#register(Class, int)}, But don't specify huge ID
  *           like 20000000 because this resolver uses array internally. This resolver internally reconstructs
- *           {@link IdToRegistrationArray#array} when the mappings are updated. Therefore, it is not suitable in terms of
- *           performance if the mappings are updated frequently at peaktime of application. Use the {@link Pool}.
+ *           {@link IntToObjArray#array} when the mappings are updated. Therefore, it is not suitable in terms of performance if
+ *           the mappings are added frequently at peaktime of application. Use the {@link Pool}.
  * @see <a href="https://github.com/EsotericSoftware/kryo#pooling">Pool</a>
  *
  * @author lifeinwild1@gmail.com */
@@ -48,8 +49,7 @@ public final class ArrayClassResolver implements ClassResolver {
 	protected final IdentityMap<Class, Registration> classToRegistration = new IdentityMap<>();
 
 	protected IdentityObjectIntMap<Class> classToNameId;
-	/** TODO: array */
-	protected IntMap<Class> nameIdToClass;
+	protected IntToObjArray<Class> nameIdToClass;
 	protected ObjectMap<String, Class> nameToClass;
 	protected int nextNameId;
 
@@ -137,8 +137,8 @@ public final class ArrayClassResolver implements ClassResolver {
 
 	protected Registration readName (Input input) {
 		int nameId = input.readVarInt(true);
-		if (nameIdToClass == null) nameIdToClass = new IntMap<>();
-		Class type = nameIdToClass.get(nameId);
+		if (nameIdToClass == null) nameIdToClass = new IntToObjArray<>(Class.class);
+		Class type = nameIdToClass.array[nameId];
 		if (type == null) {
 			// Only read the class name the first time encountered in object graph.
 			String className = input.readString();
@@ -214,32 +214,49 @@ public final class ArrayClassResolver implements ClassResolver {
 		return registration;
 	}
 
-	private static class IdToRegistrationArray {
-		/** array variant of {@link DefaultClassResolver#idToRegistration} for fast lookup. */
-		public Registration[] array = new Registration[1000];
+	/** replacement of {@link IntMap} for faster lookup. */
+	private static class IntToObjArray<E> {
+		public E[] array;
+		private final Class<E> valueType;
+		private final int initialCapacity;
 
-		public Registration remove (int classID) {
-			if (classID >= array.length)
+		/** @param valueType for generic type array {@link #array} */
+		IntToObjArray (Class<E> valueType, int initialCapacity) {
+			this.valueType = valueType;
+			array = (E[])Array.newInstance(valueType, initialCapacity);
+			this.initialCapacity = initialCapacity;
+		}
+
+		IntToObjArray (Class<E> valueType) {
+			this(valueType, 1000);
+		}
+
+		public void clear () {
+			array = (E[])Array.newInstance(valueType, initialCapacity);
+		}
+
+		public E remove (int classid) {
+			if (classid >= array.length)
 				return null;
-			Registration r = array[classID];
-			array[classID] = null;
+			E r = array[classid];
+			array[classid] = null;
 			return r;
 		}
 
-		public Registration put (int classID, Registration v) {
-			if (classID >= array.length) {
-				Registration[] next = new Registration[(int)(array.length * 1.1)];
+		public E put (int classid, E v) {
+			if (classid >= array.length) {
+				E[] next = (E[])Array.newInstance(valueType, (int)(array.length * 1.1));
 				System.arraycopy(array, 0, next, 0, array.length);
 				array = next;
 			}
 
-			Registration r = array[classID];
-			array[classID] = v;
+			E r = array[classid];
+			array[classid] = v;
 			return r;
 		}
 	}
 
-	private IdToRegistrationArray idToRegistrationTmp = new IdToRegistrationArray();
+	private IntToObjArray<Registration> idToRegistrationTmp = new IntToObjArray(Registration.class);
 
 	public Registration unregister (int classID) {
 		Registration registration = idToRegistrationTmp.remove(classID);
