@@ -19,10 +19,12 @@
 
 package com.esotericsoftware.kryo.util;
 
+import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
@@ -35,36 +37,151 @@ import static com.esotericsoftware.minlog.Log.*;
  *
  * @implNote You can specify the mappings between class and ID by {@link Kryo#register(Class, int)}, But don't specify huge ID
  *           like 20000000 because this resolver uses array internally. This resolver internally reconstructs
- *           {@link #idToRegistrationArray} whenever the mappings are updated, by {@link #updateIdToRegistrationArray()}.
- *           Therefore, it is not suitable in terms of performance if the mappings are updated frequently at peaktime of
- *           application. Use the {@link Pool}.
+ *           {@link IdToRegistrationArray#array} when the mappings are updated. Therefore, it is not suitable in terms of
+ *           performance if the mappings are updated frequently at peaktime of application. Use the {@link Pool}.
  * @see <a href="https://github.com/EsotericSoftware/kryo#pooling">Pool</a>
  *
  * @author lifeinwild1@gmail.com */
-public final class ArrayClassResolver extends DefaultClassResolver {
-	/** array variant of {@link DefaultClassResolver#idToRegistration} for fast lookup. */
-	private Registration[] idToRegistrationArray = new Registration[0];
+public final class ArrayClassResolver implements ClassResolver {
+	protected Kryo kryo;
 
-	private void updateIdToRegistrationArray () {
-		int maxId = 0;
-		for (Registration e : idToRegistration.values()) {
-			if (e.getId() > maxId)
-				maxId = e.getId();
+	protected final IdentityMap<Class, Registration> classToRegistration = new IdentityMap<>();
+
+	protected IdentityObjectIntMap<Class> classToNameId;
+	/** TODO: array */
+	protected IntMap<Class> nameIdToClass;
+	protected ObjectMap<String, Class> nameToClass;
+	protected int nextNameId;
+
+	/** TODO: Map support */
+	private int memoizedClassId = -1;
+	private Registration memoizedClassIdValue;
+	private Class memoizedClass;
+	private Registration memoizedClassValue;
+
+	public void setKryo (Kryo kryo) {
+		this.kryo = kryo;
+	}
+
+	public Registration register (Registration registration) {
+		memoizedClassId = -1;
+		memoizedClass = null;
+		if (registration == null) throw new IllegalArgumentException("registration cannot be null.");
+		if (registration.getId() != DefaultClassResolver.NAME) {
+			if (TRACE) {
+				trace("kryo", "Register class ID " + registration.getId() + ": " + className(registration.getType()) + " ("
+					+ registration.getSerializer().getClass().getName() + ")");
+			}
+			idToRegistrationTmp.put(registration.getId(), registration);
+		} else if (TRACE) {
+			trace("kryo", "Register class name: " + className(registration.getType()) + " ("
+				+ registration.getSerializer().getClass().getName() + ")");
 		}
+		classToRegistration.put(registration.getType(), registration);
+		Class wrapperClass = getWrapperClass(registration.getType());
+		if (wrapperClass != registration.getType()) classToRegistration.put(wrapperClass, registration);
+		return registration;
+	}
 
-		Registration[] updated = new Registration[maxId + 1];
-		for (Registration e : idToRegistration.values()) {
-			updated[e.getId()] = e;
+	public Registration registerImplicit (Class type) {
+		return register(new Registration(type, kryo.getDefaultSerializer(type), DefaultClassResolver.NAME));
+	}
+
+	public Registration getRegistration (Class type) {
+		if (type == memoizedClass) return memoizedClassValue;
+		Registration registration = classToRegistration.get(type);
+		if (registration != null) {
+			memoizedClass = type;
+			memoizedClassValue = registration;
 		}
+		return registration;
+	}
 
-		idToRegistrationArray = updated;
+	public Registration writeClass (Output output, Class type) {
+		if (type == null) {
+			if (TRACE || (DEBUG && kryo.getDepth() == 1)) log("Write", null, output.position());
+			output.writeByte(Kryo.NULL);
+			return null;
+		}
+		Registration registration = kryo.getRegistration(type);
+		if (registration.getId() == DefaultClassResolver.NAME)
+			writeName(output, type, registration);
+		else {
+			if (TRACE) trace("kryo", "Write class " + registration.getId() + ": " + className(type) + pos(output.position()));
+			output.writeVarInt(registration.getId() + 2, true);
+		}
+		return registration;
+	}
+
+	protected void writeName (Output output, Class type, Registration registration) {
+		output.writeByte(1); // NAME + 2
+		if (classToNameId != null) {
+			int nameId = classToNameId.get(type, -1);
+			if (nameId != -1) {
+				if (TRACE) trace("kryo", "Write class name reference " + nameId + ": " + className(type) + pos(output.position()));
+				output.writeVarInt(nameId, true);
+				return;
+			}
+		}
+		// Only write the class name the first time encountered in object graph.
+		if (TRACE) trace("kryo", "Write class name: " + className(type) + pos(output.position()));
+		int nameId = nextNameId++;
+		if (classToNameId == null) classToNameId = new IdentityObjectIntMap<>();
+		classToNameId.put(type, nameId);
+		output.writeVarInt(nameId, true);
+		if (registration.isTypeNameAscii())
+			output.writeAscii(type.getName());
+		else
+			output.writeString(type.getName());
+	}
+
+	protected Registration readName (Input input) {
+		int nameId = input.readVarInt(true);
+		if (nameIdToClass == null) nameIdToClass = new IntMap<>();
+		Class type = nameIdToClass.get(nameId);
+		if (type == null) {
+			// Only read the class name the first time encountered in object graph.
+			String className = input.readString();
+			type = getTypeByName(className);
+			if (type == null) {
+				try {
+					type = Class.forName(className, false, kryo.getClassLoader());
+				} catch (ClassNotFoundException ex) {
+					// Fallback to Kryo's class loader.
+					try {
+						type = Class.forName(className, false, Kryo.class.getClassLoader());
+					} catch (ClassNotFoundException ex2) {
+						throw new KryoException("Unable to find class: " + className, ex);
+					}
+				}
+				if (nameToClass == null) nameToClass = new ObjectMap<>();
+				nameToClass.put(className, type);
+			}
+			nameIdToClass.put(nameId, type);
+			if (TRACE) trace("kryo", "Read class name: " + className + pos(input.position()));
+		} else {
+			if (TRACE) trace("kryo", "Read class name reference " + nameId + ": " + className(type) + pos(input.position()));
+		}
+		return kryo.getRegistration(type);
+	}
+
+	protected Class getTypeByName (final String className) {
+		return nameToClass != null ? nameToClass.get(className) : null;
+	}
+
+	public void reset () {
+		if (!kryo.isRegistrationRequired()) {
+			if (classToNameId != null) classToNameId.clear(2048);
+			if (nameIdToClass != null) nameIdToClass.clear();
+			nextNameId = 0;
+		}
 	}
 
 	@Override
 	public final Registration getRegistration (int classID) {
-		if (classID >= idToRegistrationArray.length)
+		if (classID >= idToRegistrationTmp.array.length)
 			return null;
-		return idToRegistrationArray[classID];
+		return idToRegistrationTmp.array[classID];
 	}
 
 	@Override
@@ -74,7 +191,7 @@ public final class ArrayClassResolver extends DefaultClassResolver {
 		case Kryo.NULL:
 			if (TRACE || (DEBUG && kryo.getDepth() == 1)) log("Read", null, input.position());
 			return null;
-		case NAME + 2: // Offset for NAME and NULL.
+		case DefaultClassResolver.NAME + 2: // Offset for NAME and NULL.
 			return readName(input);
 		}
 
@@ -97,24 +214,42 @@ public final class ArrayClassResolver extends DefaultClassResolver {
 		return registration;
 	}
 
-	@Override
+	private static class IdToRegistrationArray {
+		/** array variant of {@link DefaultClassResolver#idToRegistration} for fast lookup. */
+		public Registration[] array = new Registration[1000];
+
+		public Registration remove (int classID) {
+			if (classID >= array.length)
+				return null;
+			Registration r = array[classID];
+			array[classID] = null;
+			return r;
+		}
+
+		public Registration put (int classID, Registration v) {
+			if (classID >= array.length) {
+				Registration[] next = new Registration[(int)(array.length * 1.1)];
+				System.arraycopy(array, 0, next, 0, array.length);
+				array = next;
+			}
+
+			Registration r = array[classID];
+			array[classID] = v;
+			return r;
+		}
+	}
+
+	private IdToRegistrationArray idToRegistrationTmp = new IdToRegistrationArray();
+
 	public Registration unregister (int classID) {
-		Registration r = super.unregister(classID);
-		updateIdToRegistrationArray();
-		return r;
-	}
-
-	@Override
-	public Registration register (Registration registration) {
-		Registration r = super.register(registration);
-		updateIdToRegistrationArray();
-		return r;
-	}
-
-	@Override
-	public Registration registerImplicit (Class type) {
-		Registration r = super.registerImplicit(type);
-		updateIdToRegistrationArray();
-		return r;
+		Registration registration = idToRegistrationTmp.remove(classID);
+		if (registration != null) {
+			classToRegistration.remove(registration.getType());
+			memoizedClassId = -1;
+			memoizedClass = null;
+			Class wrapperClass = getWrapperClass(registration.getType());
+			if (wrapperClass != registration.getType()) classToRegistration.remove(wrapperClass);
+		}
+		return registration;
 	}
 }
