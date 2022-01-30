@@ -32,8 +32,8 @@ import static com.esotericsoftware.minlog.Log.*;
 /** This is enhanced resolver from {@link DefaultClassResolver} for fast deserialization of collections.
  *
  * @author lifeinwild1@gmail.com
- * @apiNote In terms of functionality, {@link ArrayClassResolver} is completely equivalent to {@link DefaultClassResolver}. So
- *          output binary of {@link ArrayClassResolver} is equivalent to that of {@link DefaultClassResolver}.
+ * @apiNote In terms of functionality, {@link ArrayClassResolver} is completely equivalent to {@link DefaultClassResolver}. So the
+ *          output binary is equivalent to that of {@link DefaultClassResolver}.
  * @implNote You can specify the mappings between class and ID by {@link Kryo#register(Class, int)}, But don't specify huge ID
  *           like 20000000 because this resolver uses array internally. This resolver internally reconstructs array of
  *           {@link IntToObjArray} when the mappings are added. Therefore, it is not suitable in terms of performance if the
