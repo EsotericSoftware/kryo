@@ -28,7 +28,7 @@ import java.lang.reflect.Array;
 public final class IntToObjArray<E> {
 	private final Class<E> valueType;
 	private final int initialCapacity;
-	private final float loadFactor;
+	private final float expandRate;
 	private E[] array;
 
 	public final E get (int key) {
@@ -38,15 +38,19 @@ public final class IntToObjArray<E> {
 		return array[key];
 	}
 
-	IntToObjArray (Class<E> valueType, int initialCapacity, float loadFactor) {
+	IntToObjArray (Class<E> valueType, int initialCapacity, float expandRate) {
+		if (expandRate <= 1.0)
+			throw new IllegalArgumentException("expandRate <= 1.0");
+		if (initialCapacity <= 0)
+			throw new IllegalArgumentException("initialCapacity <= 0");
 		this.valueType = valueType;
 		array = (E[])Array.newInstance(valueType, initialCapacity);
 		this.initialCapacity = initialCapacity;
-		this.loadFactor = loadFactor;
+		this.expandRate = expandRate;
 	}
 
 	IntToObjArray (Class<E> valueType, int initialCapacity) {
-		this(valueType, initialCapacity, 0.75f);
+		this(valueType, initialCapacity, 1.1f);
 	}
 
 	IntToObjArray (Class<E> valueType) {
@@ -67,7 +71,7 @@ public final class IntToObjArray<E> {
 
 	public E put (int classid, E v) {
 		if (classid >= array.length) {
-			E[] next = (E[])Array.newInstance(valueType, (int)(array.length * (1 + loadFactor)));
+			E[] next = (E[])Array.newInstance(valueType, (int)(array.length * expandRate));
 			System.arraycopy(array, 0, next, 0, array.length);
 			array = next;
 		}
