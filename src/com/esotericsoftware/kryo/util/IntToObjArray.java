@@ -38,15 +38,15 @@ public final class IntToObjArray<E> {
 		return array[key];
 	}
 
-	IntToObjArray (Class<E> valueType, int initialCapacity, float expandRate) {
-		if (expandRate <= 1.0)
-			throw new IllegalArgumentException("expandRate <= 1.0");
+	IntToObjArray (Class<E> valueType, int initialCapacity, float expansionRate) {
+		if (expansionRate <= 1.0)
+			throw new IllegalArgumentException("expansionRate <= 1.0");
 		if (initialCapacity <= 0)
 			throw new IllegalArgumentException("initialCapacity <= 0");
 		this.valueType = valueType;
 		array = (E[])Array.newInstance(valueType, initialCapacity);
 		this.initialCapacity = initialCapacity;
-		this.expandRate = expandRate;
+		this.expandRate = expansionRate;
 	}
 
 	IntToObjArray (Class<E> valueType, int initialCapacity) {

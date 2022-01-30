@@ -30,7 +30,7 @@ import java.util.HashMap;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * This class has only few test, but I tested {@link ArrayClassResolver} fully by below method:
+ * This class has only few test, but I fully tested {@link ArrayClassResolver} by below method:
  * I temporarily modified the kryo instance of {@link KryoTestCase#setUp()}, then all test cases passed.
  *
  * <pre>
