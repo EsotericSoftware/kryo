@@ -35,9 +35,9 @@ import static com.esotericsoftware.minlog.Log.*;
  * @apiNote In terms of functionality, {@link ArrayClassResolver} is completely equivalent to {@link DefaultClassResolver}. So
  *          output binary of {@link ArrayClassResolver} is equivalent to that of {@link DefaultClassResolver}.
  * @implNote You can specify the mappings between class and ID by {@link Kryo#register(Class, int)}, But don't specify huge ID
- *           like 20000000 because this resolver uses array internally. This resolver internally reconstructs
- *           {@link IntToObjArray#array} when the mappings are updated. Therefore, it is not suitable in terms of performance if
- *           the mappings are added frequently at peaktime of application. Use the {@link Pool}.
+ *           like 20000000 because this resolver uses array internally. This resolver internally reconstructs array of
+ *           {@link IntToObjArray} when the mappings are added. Therefore, it is not suitable in terms of performance if the
+ *           mappings are added frequently at peaktime of application. Use the {@link Pool}.
  * @see <a href="https://github.com/EsotericSoftware/kryo#pooling">Pool</a> */
 public class ArrayClassResolver implements ClassResolver {
 	protected final IdentityMap<Class, Registration> classToRegistration = new IdentityMap<>();
@@ -131,8 +131,8 @@ public class ArrayClassResolver implements ClassResolver {
 
 	protected Registration readName (Input input) {
 		int nameId = input.readVarInt(true);
-		if (nameIdToClass == null) nameIdToClass = new IntToObjArray<>(Class.class, 20);
-		Class type = nameIdToClass.array[nameId];
+		if (nameIdToClass == null) nameIdToClass = new IntToObjArray<>(Class.class, nameId + 20);
+		Class type = nameIdToClass.get(nameId);
 		if (type == null) {
 			// Only read the class name the first time encountered in object graph.
 			String className = input.readString();
@@ -173,9 +173,7 @@ public class ArrayClassResolver implements ClassResolver {
 
 	@Override
 	public final Registration getRegistration (int classID) {
-		if (classID >= idToRegistrationTmp.array.length)
-			return null;
-		return idToRegistrationTmp.array[classID];
+		return idToRegistrationTmp.get(classID);
 	}
 
 	@Override
@@ -189,7 +187,6 @@ public class ArrayClassResolver implements ClassResolver {
 			return readName(input);
 		}
 
-		// check cache
 		if (classID == memoizedClassId) {
 			if (TRACE) trace("kryo",
 				"Read class " + (classID - 2) + ": " + className(memoizedClassIdValue.getType()) + pos(input.position()));
@@ -201,7 +198,6 @@ public class ArrayClassResolver implements ClassResolver {
 		if (registration == null) throw new KryoException("Encountered unregistered class ID: " + (classID - 2));
 		if (TRACE) trace("kryo", "Read class " + (classID - 2) + ": " + className(registration.getType()) + pos(input.position()));
 
-		// set cache
 		memoizedClassId = classID;
 		memoizedClassIdValue = registration;
 

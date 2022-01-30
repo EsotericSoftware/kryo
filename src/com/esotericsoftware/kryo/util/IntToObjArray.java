@@ -24,15 +24,20 @@ import java.lang.reflect.Array;
 /** LUT by array.
  *
  * @apiNote don't specify large int to key by {@link #put(int, Object)}.
- * @author lifeinwild1@gmail.com
- * */
+ * @author lifeinwild1@gmail.com */
 public final class IntToObjArray<E> {
 	private final Class<E> valueType;
 	private final int initialCapacity;
 	private final float loadFactor;
-	public E[] array;
+	private E[] array;
 
-	/** @param valueType for generic type array {@link #array} */
+	public final E get (int key) {
+		if (key >= array.length || key < 0) {
+			return null;
+		}
+		return array[key];
+	}
+
 	IntToObjArray (Class<E> valueType, int initialCapacity, float loadFactor) {
 		this.valueType = valueType;
 		array = (E[])Array.newInstance(valueType, initialCapacity);
