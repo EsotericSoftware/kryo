@@ -21,6 +21,10 @@ package com.esotericsoftware.kryo.util;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,8 +34,8 @@ import java.util.HashMap;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * This class has only few test, but I fully tested {@link ArrayClassResolver} by below method:
- * I temporarily modified the kryo instance of {@link KryoTestCase#setUp()}, then all test cases passed.
+ * You can test {@link ArrayClassResolver} also by below method:
+ * temporarily modify {@link KryoTestCase#setUp()}, then run all test cases.
  *
  * <pre>
  * @BeforeEach
@@ -40,8 +44,6 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * 	 kryo = new Kryo(new ArrayClassResolver(), null);
  * }
- *
- * Tests passed: 267 of 267 tests
  * </pre>
  *
  * @author lifeinwild1@gmail.com
@@ -57,7 +59,79 @@ public class ArrayClassResolverTest extends KryoTestCase {
     }
 
     @Test
-    void testBasic () {
+    void testHugeID () {
+        ArrayClassResolver resolver = new ArrayClassResolver();
+
+        int id0 = 0;
+        Registration input0 = new Registration(TestModel0.class, new TestSerializer0(), id0);
+        resolver.register(input0);
+
+        int id1 = 1;
+        Registration input1 = new Registration(TestModel1.class, new TestSerializer1(), id1);
+        resolver.register(input1);
+
+        int id1000000 = 1000000;
+        Registration input1000000 = new Registration(TestModel1000000.class, new TestSerializer1000000(), id1000000);
+        resolver.register(input1000000);
+
+        Registration r0 = resolver.getRegistration(id0);
+        assertEquals(input0, r0);
+
+        Registration r1 = resolver.getRegistration(id1);
+        assertEquals(input1, r1);
+
+        Registration r1000000 = resolver.getRegistration(id1000000);
+        assertEquals(input1000000, r1000000);
+    }
+
+    private static class TestModel1{
+
+    }
+    private static class TestSerializer1 extends Serializer<TestModel1> {
+
+        @Override
+        public void write(Kryo kryo, Output output, TestModel1 object) {
+
+        }
+
+        @Override
+        public TestModel1 read(Kryo kryo, Input input, Class<? extends TestModel1> type) {
+            return null;
+        }
+    }
+
+    private static class TestModel0{
+
+    }
+    private static class TestSerializer0 extends Serializer<TestModel0> {
+
+        @Override
+        public void write(Kryo kryo, Output output, TestModel0 object) {
+
+        }
+
+        @Override
+        public TestModel0 read(Kryo kryo, Input input, Class<? extends TestModel0> type) {
+            return null;
+        }
+    }
+    private static class TestModel1000000{
+
+    }
+    private static class TestSerializer1000000 extends Serializer<TestModel1000000> {
+
+        @Override
+        public void write(Kryo kryo, Output output, TestModel1000000 object) {
+
+        }
+
+        @Override
+        public TestModel1000000 read(Kryo kryo, Input input, Class<? extends TestModel1000000> type) {
+            return null;
+        }
+    }
+    @Test
+    void testArrayList () {
         ArrayList test = new ArrayList();
         test.add("one");
         test.add("two");

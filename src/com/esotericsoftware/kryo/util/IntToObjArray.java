@@ -71,7 +71,8 @@ public final class IntToObjArray<E> {
 
 	public E put (int classid, E v) {
 		if (classid >= array.length) {
-			E[] next = (E[])Array.newInstance(valueType, (int)(array.length * expandRate));
+			int nextSize = (int)(classid * expandRate);
+			E[] next = (E[])Array.newInstance(valueType, nextSize);
 			System.arraycopy(array, 0, next, 0, array.length);
 			array = next;
 		}
