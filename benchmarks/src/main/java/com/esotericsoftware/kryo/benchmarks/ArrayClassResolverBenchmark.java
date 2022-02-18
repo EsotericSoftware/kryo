@@ -33,10 +33,14 @@ import static com.esotericsoftware.kryo.benchmarks.FieldSerializerBenchmark.*;
  * {@link ArrayClassResolver} is fast especially in {@link #deserializeCollection(DeserializingCollectionWithArrayClassResolverState)}}.
  *
  * <pre>
- * new module/old module=4125/3511=17% faster in a environment.
  * Benchmark                                           Mode  Cnt     Score   Error  Units
- * ArrayClassResolverBenchmark.deserializeCollection  thrpt       4125.996          ops/s
+ * ArrayClassResolverBenchmark.deserializeCollection  thrpt       4125.996          ops/s +17%
  * FieldSerializerBenchmark.deserializeCollection     thrpt       3511.014          ops/s
+ *
+ * Comparing only readClass() by profiler.
+ * 									Total Time	Invocations
+ * DefaultClassResolver.readClass()	19,872 ms 	10,006,631
+ * ArrayClassResolver.readClass()	12,371 ms 	10,029,051		60% faster
  * </pre>
  *
  * @author lifeinwild1@gmail.com
@@ -74,56 +78,6 @@ public class ArrayClassResolverBenchmark {
 
 	public static Kryo createKryoArray(){
 		return new Kryo(new ArrayClassResolver(), null);
-	}
-
-	/**
-	 * ad-hoc code for profiling
-	 */
-	public static void main(String args[]){
-		//ArrayClassResolver is efficient for collection.
-		Map<Long, String> m = new HashMap<>();
-
-		//The performance difference is proportional to the size of collection.
-		int size = 2000;
-		for(long i=0;i<size;i++)
-			m.put(i, "abcdefhijklmnopqrstuvwxyz");
-
-		//comment out either.
-//		Kryo k = new Kryo();
-		Kryo k = new Kryo(new ArrayClassResolver(), null);
-
-		k.register(HashMap.class);
-
-		System.out.println("serialize");
-
-		//no difference in terms of performance in serializing.
-		int loop = 1;
-		int buf = 1000 * 100;
-		Output out = new Output(buf);
-		for(int i=0;i<loop;i++) {
-			out.setPosition(0);
-			k.writeClassAndObject(out, m);
-		}
-
-		//set a breakpoint here for configuring profiler
-		System.out.println("deserialize");
-
-		//measure this loop by profiler
-		int loop2 = 1000 * 1000;
-		for(int i=0;i<loop2;i++) {
-			Input in = new Input(out.getBuffer());
-			HashMap<Long, String> deserialized = (HashMap<Long, String>)k.readClassAndObject(in);
-			if(!m.equals(deserialized)){
-				System.out.println("error");
-			}
-		}
-
-		/*
-		Result:
-											Total Time	Invocations
-		DefaultClassResolver.readClass()	19,872 ms 	10,006,631
-		ArrayClassResolver.readClass()		12,371 ms 	10,029,051		60% faster
-	    */
 	}
 
 	static public class FieldSerializerStateArray extends FieldSerializerState {
