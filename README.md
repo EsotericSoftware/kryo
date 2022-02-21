@@ -21,7 +21,6 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 - [Installation](#installation)
    * [With Maven](#with-maven)
    * [Without Maven](#without-maven)
-   * [On Android](#on-android)
    * [Building from source](#building-from-source)
 - [Quickstart](#quickstart)
 - [IO](#io)
