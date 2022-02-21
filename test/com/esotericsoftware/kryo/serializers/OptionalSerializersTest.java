@@ -75,7 +75,7 @@ class OptionalSerializersTest extends KryoTestCase {
 		roundTrip(10, OptionalDouble.of(Double.MAX_VALUE));
 	}
 
-	static class TestClass {
+	public static class TestClass {
 		Optional<String> maybe;
 
 		public TestClass () {
