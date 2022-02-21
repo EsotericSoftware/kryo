@@ -37,7 +37,9 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
  * configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be
@@ -119,14 +121,24 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int pop = pushTypeVariables();
 
-		T object = create(kryo, input, type);
-		kryo.reference(object);
+		T object = null;
+		final boolean isRecord = type.isRecord();
+		if (!isRecord) {
+			object = create(kryo, input, type);
+			kryo.reference(object);
+		}
 
 		CachedField[] fields = cachedFields.fields;
+		Object[] values = new Object[fields.length];;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Read", fields[i], input.position());
 			try {
-				fields[i].read(input, object);
+				final CachedField field = fields[i];
+				if (object != null) {
+					field.read(input, object);
+				} else {
+					values[i] = field.read(input);
+				}
 			} catch (KryoException e) {
 				throw e;
 			} catch (OutOfMemoryError | Exception e) {
@@ -134,8 +146,34 @@ public class FieldSerializer<T> extends Serializer<T> {
 			}
 		}
 
+		if (isRecord) {
+			final Class<?>[] objects = Arrays.stream(fields).map(f -> f.field.getType()).toArray(Class[]::new);
+			object = invokeCanonicalConstructor(type, objects, values);
+			kryo.reference(object);
+		}
+
 		popTypeVariables(pop);
 		return object;
+	}
+
+	/** Invokes the canonical constructor of a record class with the given argument values. */
+	private static <T> T invokeCanonicalConstructor (Class<T> recordType,
+		Class<?>[] paramTypes,
+		Object[] args) {
+		try {
+			Constructor<T> canonicalConstructor;
+			try {
+				canonicalConstructor = recordType.getConstructor(paramTypes);
+			} catch (NoSuchMethodException e) {
+				canonicalConstructor = recordType.getDeclaredConstructor(paramTypes);
+				canonicalConstructor.setAccessible(true);
+			}
+			return canonicalConstructor.newInstance(args);
+		} catch (Throwable t) {
+			KryoException ex = new KryoException(t);
+			ex.addTrace("Could not construct type (" + recordType.getName() + ")");
+			throw ex;
+		}
 	}
 
 	/** Prepares the type variables for the serialized type. Must be balanced with {@link #popTypeVariables(int)} if >0 is
@@ -344,6 +382,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		public abstract void write (Output output, Object object);
 
 		public abstract void read (Input input, Object object);
+
+		public abstract Object read (Input input);
 
 		public abstract void copy (Object original, Object copy);
 

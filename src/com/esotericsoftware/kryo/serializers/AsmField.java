@@ -74,6 +74,13 @@ class AsmField extends ReflectField {
 				access.setInt(object, accessIndex, input.readInt());
 		}
 
+		public Object read(Input input) {
+			if (varEncoding)
+				return input.readVarInt(false);
+			else
+				return input.readInt();
+		}
+
 		public void copy (Object original, Object copy) {
 			access.setInt(copy, accessIndex, access.getInt(original, accessIndex));
 		}
@@ -90,6 +97,10 @@ class AsmField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			access.setFloat(object, accessIndex, input.readFloat());
+		}
+
+		public Object read(Input input) {
+			return input.readFloat();
 		}
 
 		public void copy (Object original, Object copy) {
@@ -110,6 +121,10 @@ class AsmField extends ReflectField {
 			access.setShort(object, accessIndex, input.readShort());
 		}
 
+		public Object read(Input input) {
+			return input.readShort();
+		}
+
 		public void copy (Object original, Object copy) {
 			access.setShort(copy, accessIndex, access.getShort(original, accessIndex));
 		}
@@ -126,6 +141,10 @@ class AsmField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			access.setByte(object, accessIndex, input.readByte());
+		}
+
+		public Object read(Input input) {
+			return input.readByte();
 		}
 
 		public void copy (Object original, Object copy) {
@@ -146,6 +165,10 @@ class AsmField extends ReflectField {
 			access.setBoolean(object, accessIndex, input.readBoolean());
 		}
 
+		public Object read(Input input) {
+			return input.readBoolean();
+		}
+
 		public void copy (Object original, Object copy) {
 			access.setBoolean(copy, accessIndex, access.getBoolean(original, accessIndex));
 		}
@@ -162,6 +185,10 @@ class AsmField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			access.setChar(object, accessIndex, input.readChar());
+		}
+
+		public Object read(Input input) {
+			return input.readChar();
 		}
 
 		public void copy (Object original, Object copy) {
@@ -188,6 +215,14 @@ class AsmField extends ReflectField {
 				access.setLong(object, accessIndex, input.readLong());
 		}
 
+		public Object read(Input input) {
+			if (varEncoding) {
+				return input.readVarLong(false);
+			} else {
+				return input.readLong();
+			}
+		}
+
 		public void copy (Object original, Object copy) {
 			access.setLong(copy, accessIndex, access.getLong(original, accessIndex));
 		}
@@ -206,6 +241,10 @@ class AsmField extends ReflectField {
 			access.setDouble(object, accessIndex, input.readDouble());
 		}
 
+		public Object read(Input input) {
+			return input.readDouble();
+		}
+
 		public void copy (Object original, Object copy) {
 			access.setDouble(copy, accessIndex, access.getDouble(original, accessIndex));
 		}
@@ -222,6 +261,10 @@ class AsmField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			access.set(object, accessIndex, input.readString());
+		}
+
+		public Object read(Input input) {
+			return input.readString();
 		}
 
 		public void copy (Object original, Object copy) {
