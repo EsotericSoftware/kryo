@@ -62,6 +62,7 @@ import com.esotericsoftware.reflectasm.FieldAccess;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.RecordComponent;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -181,6 +182,16 @@ class CachedFields implements Comparator<CachedField> {
 
 			if (TRACE) trace("kryo",
 				"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
+		}
+
+		final RecordComponent[] recordComponents = serializer.getType().getRecordComponents();
+		if (recordComponents != null) {
+			for (int i = 0; i < recordComponents.length; i++) {
+				RecordComponent recordComponent = recordComponents[i];
+				if (recordComponent.getName().equals(field.getName())) {
+					cachedField.index = i;
+				}
+			}
 		}
 
 		applyAnnotations(cachedField);

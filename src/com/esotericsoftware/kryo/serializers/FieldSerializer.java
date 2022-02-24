@@ -147,7 +147,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 
 		if (isRecord) {
-			final Class<?>[] objects = Arrays.stream(fields).map(f -> f.field.getType()).toArray(Class[]::new);
+			final Class<?>[] objects = Arrays.stream(fields)
+					.map(f -> f.field.getType())
+					.toArray(Class[]::new);
 			object = invokeCanonicalConstructor(type, objects, values);
 			kryo.reference(object);
 		}
@@ -280,6 +282,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		// For AsmField.
 		FieldAccess access;
 		int accessIndex = -1;
+		
+		// For Records
+		int index;
 
 		// For UnsafeField.
 		long offset;

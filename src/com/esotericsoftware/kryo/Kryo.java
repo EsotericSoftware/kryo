@@ -81,7 +81,6 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.serializers.OptionalSerializers;
-import com.esotericsoftware.kryo.serializers.RecordSerializer;
 import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultGenerics;
@@ -232,7 +231,7 @@ public class Kryo {
 		ImmutableCollectionsSerializers.addDefaultSerializers(this);
 		// Add RecordSerializer if JDK 14+ available
 		if (isClassAvailable("java.lang.Record")) {
-			addDefaultSerializer("java.lang.Record", RecordSerializer.class);
+			//addDefaultSerializer("java.lang.Record", RecordSerializer.class);
 		}
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
