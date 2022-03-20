@@ -346,6 +346,32 @@ public class DefaultSerializers {
 		}
 	}
 
+	/** Serializer for {@link Timestamp} which preserves the nanoseconds field. */
+	public static class TimestampSerializer extends Serializer<Timestamp> {
+		public void write (Kryo kryo, Output output, Timestamp object) {
+			output.writeVarLong(integralTimeComponent(object), true);
+			output.writeVarInt(object.getNanos(), true);
+		}
+
+		public Timestamp read (Kryo kryo, Input input, Class<? extends Timestamp> type) {
+			return create(input.readVarLong(true), input.readVarInt(true));
+		}
+
+		public Timestamp copy (Kryo kryo, Timestamp original) {
+			return create(integralTimeComponent(original), original.getNanos());
+		}
+
+		private long integralTimeComponent (Timestamp object) {
+			return object.getTime() - (object.getNanos() / 1_000_000);
+		}
+
+		private Timestamp create (long time, int nanos) {
+			Timestamp t = new Timestamp(time);
+			t.setNanos(nanos);
+			return t;
+		}
+	}
+
 	public static class EnumSerializer extends ImmutableSerializer<Enum> {
 		{
 			setAcceptsNull(true);
