@@ -1237,7 +1237,7 @@ outputPool.free(output);
 ```java
 Pool<Input> inputPool = new Pool<Input>(true, false, 16) {
    protected Input create () {
-      return new Input(1024, -1);
+      return new Input(1024);
    }
 };
 
