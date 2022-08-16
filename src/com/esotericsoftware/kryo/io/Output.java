@@ -180,7 +180,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	protected boolean require (int required) throws KryoException {
 		if (capacity - position >= required) return false;
 		flush();
-		if (capacity - position >= required) return true;
+		if (capacity - position >= required) return false;
 		if (required > maxCapacity - position) {
 			if (required > maxCapacity)
 				throw new KryoBufferOverflowException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
