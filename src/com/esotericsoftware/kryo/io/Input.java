@@ -903,6 +903,22 @@ public class Input extends InputStream implements Poolable {
 	}
 
 	// Primitive arrays:
+	public int[] readInts (int length, boolean optimizePositive) throws KryoException {
+		return readInts(length, length, optimizePositive);
+	}
+
+	/** Reads an int array in bulk using fixed or variable length encoding, depending on
+	 * {@link #setVariableLengthEncoding(boolean)}. This may be more efficient than reading them individually.
+	 * It also takes optimizedLength when {@link Kryo#isOptimizePrimitiveArrays()} is set */
+	public int[] readInts (int length, int optimizedLength, boolean optimizePositive) throws KryoException {
+		if (varEncoding) {
+			int[] array = new int[length];
+			for (int i = 0; i < optimizedLength; i++)
+				array[i] = readVarInt(optimizePositive);
+			return array;
+		}
+		return readInts(length, optimizedLength);
+	}
 
 	/** Reads an int array in bulk. This may be more efficient than reading them individually. */
 	public int[] readInts (int length, int optimizedLength) throws KryoException {
@@ -922,29 +938,6 @@ public class Input extends InputStream implements Poolable {
 				array[i] = readInt();
 		}
 		return array;
-	}
-
-	/** Reads an int array in bulk using fixed or variable length encoding, depending on
-	 * {@link #setVariableLengthEncoding(boolean)}. This may be more efficient than reading them individually. */
-	public int[] readInts (int length, boolean optimizePositive) throws KryoException {
-		if (varEncoding) {
-			int[] array = new int[length];
-			for (int i = 0; i < length; i++)
-				array[i] = readVarInt(optimizePositive);
-			return array;
-		}
-		return readInts(length, length);
-	}
-
-	/** same as {@link #readInts(int, boolean)} except it also takes optimizedLength when {@link Kryo#isOptimizePrimitiveArrays()} is set */
-	public int[] readInts (int length, int optimizedLength, boolean optimizePositive) throws KryoException {
-		if (varEncoding) {
-			int[] array = new int[length];
-			for (int i = 0; i < optimizedLength; i++)
-				array[i] = readVarInt(optimizePositive);
-			return array;
-		}
-		return readInts(length, optimizedLength);
 	}
 
 	/** Reads a long array in bulk. This may be more efficient than reading them individually. */

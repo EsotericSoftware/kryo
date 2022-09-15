@@ -76,12 +76,6 @@ public class DefaultArraySerializers {
 				while(object[optimizedSize-1]==0){
 					optimizedSize--;
 				}
-//				for (int i = object.length-1; i > 0; i--) {
-//					if(object[i]!=0){
-//						break;
-//					}
-//					optimizedSize--;
-//				}
 				output.writeVarInt(optimizedSize + 1, true);
 				output.writeInts(object, 0, optimizedSize, false);
 			}else{
