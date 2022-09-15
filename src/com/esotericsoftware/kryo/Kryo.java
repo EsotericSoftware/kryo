@@ -162,6 +162,7 @@ public class Kryo {
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference;
 	private Generics generics = new DefaultGenerics(this);
+	public boolean optimizePrimitiveArrays = false;
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and references disabled. */
 	public Kryo () {
@@ -1292,6 +1293,14 @@ public class Kryo {
 	 * @param optimizedGenerics whether to optimize generics (default is true) */
 	public void setOptimizedGenerics (boolean optimizedGenerics) {
 		generics = optimizedGenerics ? new DefaultGenerics(this) : NoGenerics.INSTANCE;
+	}
+
+	public boolean isOptimizePrimitiveArrays() {
+		return optimizePrimitiveArrays;
+	}
+
+	public void setOptimizePrimitiveArrays(boolean optimizePrimitiveArraySize) {
+		this.optimizePrimitiveArrays = optimizePrimitiveArraySize;
 	}
 
 	static final class DefaultSerializerEntry {

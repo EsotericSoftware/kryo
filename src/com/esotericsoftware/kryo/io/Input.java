@@ -19,6 +19,7 @@
 
 package com.esotericsoftware.kryo.io;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
 import com.esotericsoftware.kryo.util.Pool.Poolable;
@@ -904,12 +905,12 @@ public class Input extends InputStream implements Poolable {
 	// Primitive arrays:
 
 	/** Reads an int array in bulk. This may be more efficient than reading them individually. */
-	public int[] readInts (int length) throws KryoException {
+	public int[] readInts (int length, int optimizedLength) throws KryoException {
 		int[] array = new int[length];
-		if (optional(length << 2) == length << 2) {
+		if (optional(optimizedLength << 2) == optimizedLength << 2) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
-			for (int i = 0; i < length; i++, p += 4) {
+			for (int i = 0; i < optimizedLength; i++, p += 4) {
 				array[i] = buffer[p] & 0xFF //
 					| (buffer[p + 1] & 0xFF) << 8 //
 					| (buffer[p + 2] & 0xFF) << 16 //
@@ -917,7 +918,7 @@ public class Input extends InputStream implements Poolable {
 			}
 			position = p;
 		} else {
-			for (int i = 0; i < length; i++)
+			for (int i = 0; i < optimizedLength; i++)
 				array[i] = readInt();
 		}
 		return array;
@@ -932,7 +933,18 @@ public class Input extends InputStream implements Poolable {
 				array[i] = readVarInt(optimizePositive);
 			return array;
 		}
-		return readInts(length);
+		return readInts(length, length);
+	}
+
+	/** same as {@link #readInts(int, boolean)} except it also takes optimizedLength when {@link Kryo#isOptimizePrimitiveArrays()} is set */
+	public int[] readInts (int length, int optimizedLength, boolean optimizePositive) throws KryoException {
+		if (varEncoding) {
+			int[] array = new int[length];
+			for (int i = 0; i < optimizedLength; i++)
+				array[i] = readVarInt(optimizePositive);
+			return array;
+		}
+		return readInts(length, optimizedLength);
 	}
 
 	/** Reads a long array in bulk. This may be more efficient than reading them individually. */
