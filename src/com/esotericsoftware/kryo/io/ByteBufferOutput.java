@@ -20,7 +20,6 @@
 package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.IOException;
@@ -604,8 +603,15 @@ public class ByteBufferOutput extends Output {
 			return;
 		}
 		int charCount = value.length();
-		if (charCount == 0) {
-			writeByte(1 | 0x80); // 1 means empty string, bit 8 means UTF8.
+		switch (charCount) {
+		case 0:
+			writeByte(1 | 0x80); // 1 is string length + 1, bit 8 means UTF8.
+			return;
+		case 1:
+			require(2);
+			byteBuffer.put((byte)(2 | 0x80)); // 2 is string length + 1, bit 8 means UTF8.
+			byteBuffer.put((byte)value.charAt(0));
+			position += 2;
 			return;
 		}
 		if (capacity - position < charCount)
