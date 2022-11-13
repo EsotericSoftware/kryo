@@ -50,7 +50,7 @@ class ReflectField extends CachedField {
 	public void set (Object object, Object value) throws IllegalAccessException {
 		field.set(object, value);
 	}
-	
+
 	public void write (Output output, Object object) {
 		Kryo kryo = fieldSerializer.kryo;
 		try {
@@ -178,7 +178,6 @@ class ReflectField extends CachedField {
 			}
 			kryo.getGenerics().popGenericType();
 
-			
 			return value;
 		} catch (KryoException ex) {
 			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");

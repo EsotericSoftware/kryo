@@ -136,8 +136,9 @@ class CachedFields implements Comparator<CachedField> {
 		boolean isTransient = Modifier.isTransient(modifiers);
 		if (isTransient && !config.serializeTransient && !config.copyTransient) return;
 
+		Class type = serializer.type;
 		Class declaringClass = field.getDeclaringClass();
-		GenericType genericType = new GenericType(declaringClass, serializer.type, field.getGenericType());
+		GenericType genericType = new GenericType(declaringClass, type, field.getGenericType());
 		Class fieldClass = genericType.getType() instanceof Class ? (Class)genericType.getType() : field.getType();
 		int accessIndex = -1;
 		if (asm //
@@ -145,7 +146,7 @@ class CachedFields implements Comparator<CachedField> {
 			&& Modifier.isPublic(modifiers) //
 			&& Modifier.isPublic(fieldClass.getModifiers())) {
 			try {
-				if (access == null) access = FieldAccess.get(serializer.type);
+				if (access == null) access = FieldAccess.get(type);
 				accessIndex = ((FieldAccess)access).getIndex(field);
 			} catch (RuntimeException | LinkageError ex) {
 				if (DEBUG) debug("kryo", "Unable to use ReflectASM.", ex);
@@ -153,7 +154,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 
 		CachedField cachedField;
-		if (unsafe && !serializer.getType().isRecord())
+		if (unsafe && !type.isRecord())
 			cachedField = newUnsafeField(field, fieldClass, genericType);
 		else if (accessIndex != -1) {
 			cachedField = newAsmField(field, fieldClass, genericType);

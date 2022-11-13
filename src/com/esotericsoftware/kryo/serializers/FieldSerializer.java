@@ -41,6 +41,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Objects;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
  * configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be
@@ -157,8 +158,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return object;
 	}
 
-	/** Invokes the canonical constructor of a record class with the given argument values. */
-	static <T> T invokeCanonicalConstructor(Class<? extends T> type, CachedField[] fields, Object[] values) {
+	static <T> T invokeCanonicalConstructor(Class<T> type, CachedField[] fields, Object[] values) {
 		T object;
 		final Class<?>[] objects = Arrays.stream(fields)
 				.sorted(Comparator.comparing(f -> f.index))
@@ -168,10 +168,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return object;
 	}
 
-	/** Invokes the canonical constructor of a record class with the given argument values. */
-	static <T> T invokeCanonicalConstructor (Class<T> recordType,
-		Class<?>[] paramTypes,
-		Object[] args) {
+	static <T> T invokeCanonicalConstructor (Class<T> recordType, Class<?>[] paramTypes, Object[] args) {
 		try {
 			Constructor<T> canonicalConstructor;
 			try {
@@ -272,38 +269,28 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public T copy (Kryo kryo, T original) {
-		T copy = null;
+		final T copy;
+		final CachedField[] copyFields = cachedFields.copyFields;
 		final boolean isRecord = original.getClass().isRecord();
 		if (!isRecord) {
 			copy = createCopy(kryo, original);
 			kryo.reference(copy);
-		}
-
-		Object[] values = null;
-		final CachedField[] copyFields = cachedFields.copyFields;
-		for (int i = 0, n = copyFields.length; i < n; i++) {
-			final CachedField field = copyFields[i];
-			if (copy != null) {
-				field.copy(original, copy);
-			} else {
-				if (values == null) values = new Object[copyFields.length];
+			for (int i = 0, n = copyFields.length; i < n; i++) {
+				copyFields[i].copy(original, copy);
+			}
+		} else {
+			final Object[] values = new Object[copyFields.length];
+			for (int i = 0, n = copyFields.length; i < n; i++) {
+				final CachedField field = copyFields[i];
 				try {
 					values[field.index] = field.getField().get(original);
 				} catch (IllegalAccessException e) {
-					throw new KryoException(e);
+					throw new KryoException("Error accessing field: " + field.getName() + " (" + type.getName() + ")", e);
 				}
 			}
-		}
-		
-		if (isRecord) {
-			final Class<?>[] objects = Arrays.stream(copyFields)
-					.sorted(Comparator.comparing(f -> f.index))
-					.map(f -> f.field.getType())
-					.toArray(Class[]::new);
-			copy = (T) invokeCanonicalConstructor(type, objects, values);
+			copy = (T) invokeCanonicalConstructor(type, copyFields, values);
 			kryo.reference(copy);
 		}
-
 		return copy;
 	}
 
