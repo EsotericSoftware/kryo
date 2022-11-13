@@ -145,11 +145,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		if (isRecord) {
-			final Class<?>[] objects = Arrays.stream(fields)
-					.sorted(Comparator.comparing(f -> f.index))
-					.map(f -> f.field.getType())
-					.toArray(Class[]::new);
-			object = invokeCanonicalConstructor(type, objects, values);
+			object = invokeCanonicalConstructor(type, fields, values);
 			kryo.reference(object);
 		}
 

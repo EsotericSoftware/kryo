@@ -149,15 +149,22 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 
 		if (isRecord) {
-			final Class<?>[] objects = Arrays.stream(fields)
-					.sorted(Comparator.comparing(f -> f.index))
-					.map(f -> f.field.getType())
-					.toArray(Class[]::new);
-			object = invokeCanonicalConstructor(type, objects, values);
+			object = invokeCanonicalConstructor(type, fields, values);
 			kryo.reference(object);
 		}
 
 		popTypeVariables(pop);
+		return object;
+	}
+
+	/** Invokes the canonical constructor of a record class with the given argument values. */
+	static <T> T invokeCanonicalConstructor(Class<? extends T> type, CachedField[] fields, Object[] values) {
+		T object;
+		final Class<?>[] objects = Arrays.stream(fields)
+				.sorted(Comparator.comparing(f -> f.index))
+				.map(f -> f.field.getType())
+				.toArray(Class[]::new);
+		object = invokeCanonicalConstructor(type, objects, values);
 		return object;
 	}
 

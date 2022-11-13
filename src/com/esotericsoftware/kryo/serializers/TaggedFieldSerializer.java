@@ -248,11 +248,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		if (isRecord) {
-			final Class<?>[] objects = readTags.values().toList().stream()
-					.sorted(Comparator.comparing(f -> f.index))
-					.map(f -> f.field.getType())
-					.toArray(Class[]::new);
-			object = invokeCanonicalConstructor(type, objects, values);
+			object = invokeCanonicalConstructor(type, readTags.values().toList().toArray(new CachedField[0]), values);
 			kryo.reference(object);
 		}
 

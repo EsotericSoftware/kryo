@@ -22,6 +22,8 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 
 import org.junit.jupiter.api.Test;
@@ -40,7 +42,7 @@ class VersionedFieldSerializerTest extends KryoTestCase {
 		object1.child = null;
 		object1.other = new AnotherClass();
 		object1.other.value = "meow";
-		object1.record = new RecordClass("1", 2, 3l, 4d);
+		object1.record = new RecordClass("1", 2, 3L, 4d);
 
 		kryo.setDefaultSerializer(VersionFieldSerializer.class);
 		kryo.register(AnotherClass.class);
@@ -55,6 +57,44 @@ class VersionedFieldSerializerTest extends KryoTestCase {
 
 		assertEquals(object2.moo, object1.moo);
 		assertEquals(object2.other.value, object1.other.value);
+	}
+
+	@Test
+	void testVersionedRecordNewToOld() {
+		final RecordClass recordClass = new RecordClass("1", 2, 3L, 4d);
+
+		kryo.setDefaultSerializer(VersionFieldSerializer.class);
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		Object deserialized = kryo.readObject(input, OldRecordClass.class);
+		input.close();
+		
+		assertNotNull(deserialized);
+	}
+
+	@Test
+	void testVersionedRecordOldToNew() {
+		final OldRecordClass recordClass = new OldRecordClass( 2, 3L, 4d);
+
+		kryo.setDefaultSerializer(VersionFieldSerializer.class);
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		Object deserialized = kryo.readObject(input, RecordClass.class);
+		input.close();
+
+		assertNotNull(deserialized);
 	}
 
 	public static class TestClass {
@@ -89,7 +129,9 @@ class VersionedFieldSerializerTest extends KryoTestCase {
 		@Since(1) String value;
 	}
 
-	public record RecordClass(@Since(1)  String height, int width, long x, double y) { }
+	public record OldRecordClass(int width, long x, double y) { }
+	
+	public record RecordClass(@Since(1) String height, int width, long x, double y) { }
 
 	private static class FutureClass {
 		@Since(0) public Integer value;
