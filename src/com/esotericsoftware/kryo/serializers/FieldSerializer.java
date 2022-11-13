@@ -130,7 +130,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 
 		CachedField[] fields = cachedFields.fields;
-		Object[] values = new Object[fields.length];;
+		Object[] values = null;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Read", fields[i], input.position());
 			try {
@@ -138,6 +138,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 				if (object != null) {
 					field.read(input, object);
 				} else {
+					if (values == null) values = new Object[fields.length];
 					values[field.index] = field.read(input);
 				}
 			} catch (KryoException e) {
@@ -161,7 +162,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Invokes the canonical constructor of a record class with the given argument values. */
-	private static <T> T invokeCanonicalConstructor (Class<T> recordType,
+	static <T> T invokeCanonicalConstructor (Class<T> recordType,
 		Class<?>[] paramTypes,
 		Object[] args) {
 		try {
@@ -264,11 +265,37 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public T copy (Kryo kryo, T original) {
-		T copy = createCopy(kryo, original);
-		kryo.reference(copy);
+		T copy = null;
+		final boolean isRecord = original.getClass().isRecord();
+		if (!isRecord) {
+			copy = createCopy(kryo, original);
+			kryo.reference(copy);
+		}
 
-		for (int i = 0, n = cachedFields.copyFields.length; i < n; i++)
-			cachedFields.copyFields[i].copy(original, copy);
+		Object[] values = null;
+		final CachedField[] copyFields = cachedFields.copyFields;
+		for (int i = 0, n = copyFields.length; i < n; i++) {
+			final CachedField field = copyFields[i];
+			if (copy != null) {
+				field.copy(original, copy);
+			} else {
+				if (values == null) values = new Object[copyFields.length];
+				try {
+					values[field.index] = field.getField().get(original);
+				} catch (IllegalAccessException e) {
+					throw new KryoException(e);
+				}
+			}
+		}
+		
+		if (isRecord) {
+			final Class<?>[] objects = Arrays.stream(copyFields)
+					.sorted(Comparator.comparing(f -> f.index))
+					.map(f -> f.field.getType())
+					.toArray(Class[]::new);
+			copy = (T) invokeCanonicalConstructor(type, objects, values);
+			kryo.reference(copy);
+		}
 
 		return copy;
 	}

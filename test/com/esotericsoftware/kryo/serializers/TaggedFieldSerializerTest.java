@@ -49,10 +49,12 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		object1.other = new AnotherClass();
 		object1.other.value = "meow";
 		object1.ignored = 32;
+		object1.record = new RecordClass("1", 1, 1L, 1d);
 		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
 		kryo.register(TestClass.class);
 		kryo.register(AnotherClass.class);
-		TestClass object2 = roundTrip(57, object1);
+		kryo.register(RecordClass.class);
+		TestClass object2 = roundTrip(77, object1);
 		assertEquals(0, object2.ignored);
 	}
 
@@ -67,7 +69,8 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
 		kryo.register(AnotherClass.class, new TaggedFieldSerializer(kryo, AnotherClass.class));
-		roundTrip(39, object1);
+		kryo.register(RecordClass.class, new TaggedFieldSerializer(kryo, AnotherClass.class));
+		roundTrip(43, object1);
 
 		kryo.register(TestClass.class, new TaggedFieldSerializer(kryo, TestClass.class));
 		Object object2 = kryo.readClassAndObject(input);
@@ -100,6 +103,7 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		factory.getConfig().setChunkedEncoding(true);
 		kryo.setDefaultSerializer(factory);
 		kryo.register(TestClass.class);
+		kryo.register(RecordClass.class);
 		kryo.register(Object[].class);
 		TaggedFieldSerializer<FutureClass> futureSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
 		futureSerializer.getTaggedFieldSerializerConfig().setChunkedEncoding(true);
@@ -196,7 +200,8 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		@Tag(3) public TestClass child;
 		@Tag(4) public int zzz = 123;
 		@Tag(5) public AnotherClass other;
-		@Tag(6) @Deprecated public int ignored;
+		@Tag(6) public RecordClass record;
+		@Tag(7) @Deprecated public int ignored;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -212,6 +217,7 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 				if (other.text != null) return false;
 			} else if (!text.equals(other.text)) return false;
 			if (zzz != other.zzz) return false;
+			if (!Objects.equals(record, other.record)) return false;
 			return true;
 		}
 	}
@@ -223,6 +229,8 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 	public static class AnotherClass {
 		@Tag(1) String value;
 	}
+
+	public record RecordClass(@Tag(0) String height, @Tag(1) int width, @Tag(2) long x, @Tag(3) double y) { }
 
 	private static class FutureClass {
 		@Tag(0) public Integer value;
