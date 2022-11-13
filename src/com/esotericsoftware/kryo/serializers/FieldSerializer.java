@@ -40,6 +40,7 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Comparator;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
  * configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be
@@ -137,7 +138,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 				if (object != null) {
 					field.read(input, object);
 				} else {
-					values[i] = field.read(input);
+					values[field.index] = field.read(input);
 				}
 			} catch (KryoException e) {
 				throw e;
@@ -148,6 +149,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		if (isRecord) {
 			final Class<?>[] objects = Arrays.stream(fields)
+					.sorted(Comparator.comparing(f -> f.index))
 					.map(f -> f.field.getType())
 					.toArray(Class[]::new);
 			object = invokeCanonicalConstructor(type, objects, values);
