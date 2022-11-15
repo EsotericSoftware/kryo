@@ -19,14 +19,24 @@
 
 package com.esotericsoftware.kryo;
 
-import com.esotericsoftware.kryo.SerializationCompatTestData;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /** Test data for {@link com.esotericsoftware.kryo.serializers.RecordSerializerTest}.
  * @author Julia Boes <julia.boes@oracle.com>
  * @author Chris Hegarty <chris.hegarty@oracle.com>
  */
 public class TestDataJava14 extends SerializationCompatTestData.TestData {
-    public record Rec (byte b, short s, int i, long l, float f, double d, boolean bool, char c, String str, Integer[] n) { };
+    public record Rec (byte b, short s, int i, long l, float f, double d, boolean bool, char c, String str, Integer[] n) {
+        // Overriden because of https://stackoverflow.com/questions/61261226/java-14-records-and-arrays
+        public boolean equals(Object o) {
+            return EqualsBuilder.reflectionEquals(this, o);
+        }
+
+        public int hashCode() {
+            return HashCodeBuilder.reflectionHashCode(this);
+        }
+    };
 
     private Rec rec;
 
