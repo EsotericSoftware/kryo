@@ -194,8 +194,8 @@ class ReflectionAssert {
 	private static void assertEqualDeclaredFields (final Class<? extends Object> clazz, final Object one, final Object another,
 												   final boolean requireMatchingClasses, final Map<Object, Object> alreadyChecked, final String path) {
 		for (final Field field : clazz.getDeclaredFields()) {
-			field.setAccessible(true);
-			if (!Modifier.isTransient(field.getModifiers())) {
+			if (!Modifier.isTransient(field.getModifiers()) && !Modifier.isStatic(field.getModifiers()) && !field.isSynthetic()) {
+				field.setAccessible(true);
 				try {
 					assertReflectionEquals(field.get(one), field.get(another), requireMatchingClasses, alreadyChecked,
 						path + "." + field.getName());
