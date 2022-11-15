@@ -37,7 +37,6 @@ import java.lang.reflect.Method;
  * <p>
  * <code>kryo.register(Object[].class);
  * kryo.register(Class.class);
- * kryo.register(java.lang.invoke.SerializedLambda.class);<br>
  * kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());</code>
  * <p>
  * Also, the closure's capturing class must be registered.
