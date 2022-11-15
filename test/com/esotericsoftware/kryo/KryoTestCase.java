@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
 import com.esotericsoftware.kryo.unsafe.UnsafeInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
+import com.esotericsoftware.kryo.util.Util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -139,50 +140,54 @@ public abstract class KryoTestCase {
 			}
 		});
 
-		roundTripWithBufferFactory(length, object1, new BufferFactory() {
-			public Output createOutput (OutputStream os) {
-				return new UnsafeOutput(os);
-			}
+		if (Util.isUnsafeAvailable()) {
+			roundTripWithBufferFactory(length, object1, new BufferFactory() {
+				public Output createOutput(OutputStream os) {
+					return new UnsafeOutput(os);
+				}
 
-			public Output createOutput (OutputStream os, int size) {
-				return new UnsafeOutput(os, size);
-			}
+				public Output createOutput(OutputStream os, int size) {
+					return new UnsafeOutput(os, size);
+				}
 
-			public Output createOutput (int size, int limit) {
-				return new UnsafeOutput(size, limit);
-			}
+				public Output createOutput(int size, int limit) {
+					return new UnsafeOutput(size, limit);
+				}
 
-			public Input createInput (InputStream os, int size) {
-				return new UnsafeInput(os, size);
-			}
+				public Input createInput(InputStream os, int size) {
+					return new UnsafeInput(os, size);
+				}
 
-			public Input createInput (byte[] buffer) {
-				return new UnsafeInput(buffer);
-			}
-		});
+				public Input createInput(byte[] buffer) {
+					return new UnsafeInput(buffer);
+				}
+			});
+		}
 
-		roundTripWithBufferFactory(length, object1, new BufferFactory() {
-			public Output createOutput (OutputStream os) {
-				return new UnsafeByteBufferOutput(os);
-			}
+		if (Util.isUnsafeAvailable()) {
+			roundTripWithBufferFactory(length, object1, new BufferFactory() {
+				public Output createOutput(OutputStream os) {
+					return new UnsafeByteBufferOutput(os);
+				}
 
-			public Output createOutput (OutputStream os, int size) {
-				return new UnsafeByteBufferOutput(os, size);
-			}
+				public Output createOutput(OutputStream os, int size) {
+					return new UnsafeByteBufferOutput(os, size);
+				}
 
-			public Output createOutput (int size, int limit) {
-				return new UnsafeByteBufferOutput(size, limit);
-			}
+				public Output createOutput(int size, int limit) {
+					return new UnsafeByteBufferOutput(size, limit);
+				}
 
-			public Input createInput (InputStream os, int size) {
-				return new UnsafeByteBufferInput(os, size);
-			}
+				public Input createInput(InputStream os, int size) {
+					return new UnsafeByteBufferInput(os, size);
+				}
 
-			public Input createInput (byte[] buffer) {
-				ByteBuffer byteBuffer = allocateByteBuffer(buffer);
-				return new UnsafeByteBufferInput(byteBuffer.asReadOnlyBuffer());
-			}
-		});
+				public Input createInput(byte[] buffer) {
+					ByteBuffer byteBuffer = allocateByteBuffer(buffer);
+					return new UnsafeByteBufferInput(byteBuffer.asReadOnlyBuffer());
+				}
+			});
+		}
 
 		return object2;
 	}
