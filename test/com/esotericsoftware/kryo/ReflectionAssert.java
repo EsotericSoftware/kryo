@@ -128,6 +128,12 @@ class ReflectionAssert {
 			assertCollectionEquals((Collection)one, (Collection)another, requireMatchingCollectionClasses, alreadyChecked, path);
 			return;
 		}
+		
+		if (one instanceof StringBuilder || one instanceof StringBuffer) {
+			assertEquals(((CharSequence)one).toString(), ((CharSequence)another).toString(),
+					"Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ");
+			return;
+		}
 
 		if (one instanceof Currency) {
 			// Check that the transient field defaultFractionDigits is initialized
@@ -143,6 +149,11 @@ class ReflectionAssert {
 		}
 
 		Class clazz = one.getClass();
+		if (hasCustomEquals(clazz)) {
+			assertEquals(one, another, "Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ");
+			return;
+		}
+			
 		while (clazz != null) {
 			assertEqualDeclaredFields(clazz, one, another, requireMatchingCollectionClasses, alreadyChecked, path);
 			clazz = clazz.getSuperclass();
@@ -160,6 +171,17 @@ class ReflectionAssert {
 			if (checkedClazz.isAssignableFrom(one.getClass()) || checkedClazz.isAssignableFrom(another.getClass())) {
 				return true;
 			}
+		}
+		return false;
+	}
+
+	private static boolean hasCustomEquals(Class<?> c) {
+		while (!Object.class.equals(c)) {
+			try {
+				c.getDeclaredMethod("equals", Object.class);
+				return true;
+			} catch (Exception ignored) {}
+			c = c.getSuperclass();
 		}
 		return false;
 	}
