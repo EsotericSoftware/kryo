@@ -68,22 +68,32 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 		GET_TYPE = getType;
 	}
 
-	private final Constructor<T> constructor;
-	private final RecordComponent[] recordComponents;
+	private static final ClassValue<Constructor<?>> CONSTRUCTOR = new ClassValue<>() {
+		protected Constructor<?> computeValue(Class<?> clazz) {
+			final RecordComponent[] components = recordComponents(clazz, Comparator.comparing(RecordComponent::index));
+			return getCanonicalConstructor(clazz, components);
+		}
+	};
+	private static final ClassValue<RecordComponent[]> RECORD_COMPONENTS = new ClassValue<>() {
+		protected RecordComponent[] computeValue(Class<?> type) {
+			return recordComponents(type, Comparator.comparing(RecordComponent::name));
+		}
+	};
 
 	private boolean fixedFieldTypes = false;
 
+	/** @deprecated use {@link #RecordSerializer(Class) instead} */
+	@Deprecated(forRemoval = true)
+	public RecordSerializer() {
+	}
+
 	public RecordSerializer (Class<T> clazz) {
 		if (!isRecord(clazz)) throw new KryoException(clazz + " is not a record");
-
-		final RecordComponent[] recordComponentsByIndex = recordComponents(clazz, Comparator.comparing(RecordComponent::index));
-		constructor = getCanonicalConstructor(clazz, recordComponentsByIndex);
-		recordComponents = recordComponents(clazz, Comparator.comparing(RecordComponent::name));
 	}
 
 	@Override
 	public void write (Kryo kryo, Output output, T object) {
-		for (RecordComponent rc : recordComponents) {
+		for (RecordComponent rc : RECORD_COMPONENTS.get(object.getClass())) {
 			final Class<?> type = rc.type();
 			final String name = rc.name();
 			try {
@@ -110,9 +120,10 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 
 	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-		final Object[] values = new Object[recordComponents.length];
-		for (int i = 0; i < recordComponents.length; i++) {
-			final RecordComponent rc = recordComponents[i];
+		final RecordComponent[] components = RECORD_COMPONENTS.get(type);
+		final Object[] values = new Object[components.length];
+		for (int i = 0; i < components.length; i++) {
+			final RecordComponent rc = components[i];
 			final String name = rc.name();
 			final Class<?> rcType = rc.type();
 			try {
@@ -224,7 +235,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 	/** Invokes the canonical constructor of a record class with the given argument values. */
 	private T invokeCanonicalConstructor (Class<? extends T> recordType, Object[] args) {
 		try {
-			return constructor.newInstance(args);
+			return (T) CONSTRUCTOR.get(recordType).newInstance(args);
 		} catch (Throwable t) {
 			KryoException ex = new KryoException(t);
 			ex.addTrace("Could not construct type (" + recordType.getName() + ")");
