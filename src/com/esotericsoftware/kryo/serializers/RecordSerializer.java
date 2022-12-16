@@ -68,13 +68,13 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 		GET_TYPE = getType;
 	}
 
-	private static final ClassValue<Constructor<?>> CONSTRUCTOR = new ClassValue<>() {
+	private static final ClassValue<Constructor<?>> CONSTRUCTOR = new ClassValue<Constructor<?>>() {
 		protected Constructor<?> computeValue(Class<?> clazz) {
 			final RecordComponent[] components = recordComponents(clazz, Comparator.comparing(RecordComponent::index));
 			return getCanonicalConstructor(clazz, components);
 		}
 	};
-	private static final ClassValue<RecordComponent[]> RECORD_COMPONENTS = new ClassValue<>() {
+	private static final ClassValue<RecordComponent[]> RECORD_COMPONENTS = new ClassValue<RecordComponent[]>() {
 		protected RecordComponent[] computeValue(Class<?> type) {
 			return recordComponents(type, Comparator.comparing(RecordComponent::name));
 		}
@@ -203,7 +203,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 				return getter.invoke(recordObject);
 			} catch (Exception t) {
 				KryoException ex = new KryoException(t);
-				ex.addTrace("Could not retrieve record component value (" + recordType + ")");
+				ex.addTrace("Could not retrieve record component value (" + recordType.getName() + ")");
 				throw ex;
 			}
 		}
