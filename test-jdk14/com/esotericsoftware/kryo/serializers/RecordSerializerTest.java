@@ -48,7 +48,7 @@ public class RecordSerializerTest extends KryoTestCase {
         kryo.register(RecordRectangle.class);
 
         final var r1 = new RecordRectangle("one", 2, 3L, 4.0);
-        final var output = new Output(64);
+        final var output = new Output(32);
         kryo.writeObject(output, r1);
         final var input = new Input(output.getBuffer(), 0, output.position());
         final var r2 = kryo.readObject(input, RecordRectangle.class);

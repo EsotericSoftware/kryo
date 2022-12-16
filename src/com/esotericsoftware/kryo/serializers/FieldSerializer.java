@@ -159,28 +159,26 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	static <T> T invokeCanonicalConstructor(Class<T> type, CachedField[] fields, Object[] values) {
-		T object;
 		final Class<?>[] objects = Arrays.stream(fields)
 				.sorted(Comparator.comparing(f -> f.index))
 				.map(f -> f.field.getType())
 				.toArray(Class[]::new);
-		object = invokeCanonicalConstructor(type, objects, values);
-		return object;
+		return invokeCanonicalConstructor(type, objects, values);
 	}
 
-	static <T> T invokeCanonicalConstructor (Class<T> recordType, Class<?>[] paramTypes, Object[] args) {
+	static <T> T invokeCanonicalConstructor (Class<T> type, Class<?>[] paramTypes, Object[] args) {
 		try {
 			Constructor<T> canonicalConstructor;
 			try {
-				canonicalConstructor = recordType.getConstructor(paramTypes);
+				canonicalConstructor = type.getConstructor(paramTypes);
 			} catch (NoSuchMethodException e) {
-				canonicalConstructor = recordType.getDeclaredConstructor(paramTypes);
+				canonicalConstructor = type.getDeclaredConstructor(paramTypes);
 				canonicalConstructor.setAccessible(true);
 			}
 			return canonicalConstructor.newInstance(args);
 		} catch (Throwable t) {
 			KryoException ex = new KryoException(t);
-			ex.addTrace("Could not construct type (" + recordType.getName() + ")");
+			ex.addTrace("Could not construct type (" + type.getName() + ")");
 			throw ex;
 		}
 	}
