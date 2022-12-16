@@ -229,10 +229,6 @@ public class Kryo {
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		ImmutableCollectionsSerializers.addDefaultSerializers(this);
-		// Add RecordSerializer if JDK 14+ available
-		if (isClassAvailable("java.lang.Record")) {
-			//addDefaultSerializer("java.lang.Record", RecordSerializer.class);
-		}
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
@@ -281,17 +277,6 @@ public class Kryo {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerFactory == null) throw new IllegalArgumentException("serializerFactory cannot be null.");
 		insertDefaultSerializer(type, serializerFactory);
-	}
-
-	/** Instances with the specified class name will use the specified serializer when {@link #register(Class)} or
-	 * {@link #register(Class, int)} are called.
-	 * @see #setDefaultSerializer(Class) */
-	private void addDefaultSerializer (String className, Class<? extends Serializer> serializer) {
-		try {
-			addDefaultSerializer(Class.forName(className), serializer);
-		} catch (ClassNotFoundException e) {
-			throw new KryoException("default serializer cannot be added: " + className);
-		}
 	}
 
 	/** Instances of the specified class will use the specified serializer when {@link #register(Class)} or
