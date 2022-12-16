@@ -49,7 +49,7 @@
 	<properties>
 		<kryo.root>${basedir}</kryo.root>
 		<kryo.major.version>5</kryo.major.version>
-		<javac.target>1.8</javac.target>
+		<javac.target>17</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>5.9.1</junit.version>
 	</properties>
