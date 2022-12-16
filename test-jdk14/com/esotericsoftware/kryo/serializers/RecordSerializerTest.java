@@ -306,8 +306,7 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     void testRecordWithSuperType() {
-        var rc = new RecordSerializer<RecordWithSuperType>();
-        kryo.register(RecordWithSuperType.class, rc);
+        kryo.register(RecordWithSuperType.class);
 
         final var r = new RecordWithSuperType(1L);
         final var output = new Output(32);
@@ -328,5 +327,14 @@ public class RecordSerializerTest extends KryoTestCase {
 
         roundTrip(4, new PackagePrivateRecord(1, "s1"));
         roundTrip(4, new PrivateRecord("s2",2));
+    }
+
+    record InterfaceRecord(int i, CharSequence s) {}
+
+    @Test
+    void testRecordWithInterface() {
+        kryo.register(InterfaceRecord.class);
+
+        roundTrip(5, new InterfaceRecord(1, "s1"));
     }
 }
