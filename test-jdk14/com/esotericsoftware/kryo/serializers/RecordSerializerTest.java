@@ -45,7 +45,7 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testBasicRecord() {
-        kryo.register(RecordRectangle.class, new FieldSerializer<>(kryo, RecordRectangle.class));
+        kryo.register(RecordRectangle.class);
 
         final var r1 = new RecordRectangle("one", 2, 3L, 4.0);
         final var output = new Output(64);
@@ -112,7 +112,7 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     public void testRecordWithConstructor() {
-        kryo.register(RecordWithConstructor.class, new FieldSerializer<>(kryo, RecordWithConstructor.class));
+        kryo.register(RecordWithConstructor.class);
 
         final var r1 = new RecordWithConstructor("ten");
         final var output = new Output(32);
