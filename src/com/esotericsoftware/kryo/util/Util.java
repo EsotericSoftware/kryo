@@ -68,6 +68,10 @@ public class Util {
 		primitiveWrappers.put(short.class, Short.class);
 	}
 
+	public static boolean isUnsafeAvailable () {
+		return unsafe;
+	}
+
 	public static boolean isClassAvailable (String className) {
 		try {
 			Class.forName(className);

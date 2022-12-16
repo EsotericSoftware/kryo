@@ -277,14 +277,6 @@ class SerializationCompatTestData {
 			_public = new PublicClass(new PrivateClass("foo"));
 		}
 
-		public int hashCode () {
-			return HashCodeBuilder.reflectionHashCode(this);
-		}
-
-		public boolean equals (Object obj) {
-			return EqualsBuilder.reflectionEquals(this, obj);
-		}
-
 	}
 
 	static class Generic<T> {

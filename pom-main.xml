@@ -23,7 +23,7 @@
 		<dependency>
 			<groupId>org.objenesis</groupId>
 			<artifactId>objenesis</artifactId>
-			<version>3.2</version>
+			<version>3.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.esotericsoftware</groupId>
@@ -122,6 +122,7 @@
 						<exclude>com/esotericsoftware/kryo/util/IntArray</exclude>
 						<exclude>com/esotericsoftware/kryo/util/IntMap</exclude>
 						<exclude>com/esotericsoftware/kryo/util/ObjectMap</exclude>
+						<exclude>com/esotericsoftware/kryo/util/ObjectIntMap</exclude>
 						<exclude>com/esotericsoftware/kryo/unsafe/UnsafeUtil</exclude>
 					</excludes>
 				</configuration>

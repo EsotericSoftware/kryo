@@ -22,15 +22,15 @@ package com.esotericsoftware.kryo.io;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
-import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("all")
 class ByteBufferInputOutputTest extends KryoTestCase {
 	@Test
 	void testByteBufferInputEnd () {
@@ -90,7 +90,7 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(9, byteBuffer.position());
 	}
 	
-		@Test
+	@Test
 	void testOverflow () {
 		ByteBufferOutput buffer = new ByteBufferOutput(1);
 		buffer.writeByte(51);
@@ -114,6 +114,49 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 		);
 
 		assertTrue(thrown.getMessage().equals("Buffer underflow."));
+	}
+
+	@Test
+	void testStrings () throws IOException {
+		runStringTest(1);
+		runStringTest(2);
+		runStringTest(127);
+		runStringTest(256);
+		runStringTest(1024 * 1023);
+		runStringTest(1024 * 1024);
+		runStringTest(1024 * 1025);
+		runStringTest(1024 * 1026);
+		runStringTest(1024 * 1024 * 2);
+	}
+
+	private void runStringTest (int length) throws IOException {
+		Output write = new ByteBufferOutput(1024, -1);
+		StringBuilder buffer = new StringBuilder();
+		for (int i = 0; i < length; i++)
+			buffer.append((char)i);
+
+		String value = buffer.toString();
+		write.writeString(value);
+		write.writeString(value);
+		Input read = new ByteBufferInput(write.toBytes());
+		assertEquals(value, read.readString());
+		assertEquals(value, read.readStringBuilder().toString());
+
+		write.reset();
+		write.writeString(buffer.toString());
+		write.writeString(buffer.toString());
+		read = new ByteBufferInput(write.toBytes());
+		assertEquals(value, read.readString());
+		assertEquals(value, read.readStringBuilder().toString());
+
+		if (length <= 127) {
+			write.reset();
+			write.writeAscii(value);
+			write.writeAscii(value);
+			read = new ByteBufferInput(write.toBytes());
+			assertEquals(value, read.readString());
+			assertEquals(value, read.readStringBuilder().toString());
+		}
 	}
 
 }

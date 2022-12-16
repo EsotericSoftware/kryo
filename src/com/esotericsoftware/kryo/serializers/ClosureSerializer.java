@@ -27,6 +27,7 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.minlog.Log;
 
 import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
@@ -36,7 +37,6 @@ import java.lang.reflect.Method;
  * <p>
  * <code>kryo.register(Object[].class);
  * kryo.register(Class.class);
- * kryo.register(java.lang.invoke.SerializedLambda.class);<br>
  * kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());</code>
  * <p>
  * Also, the closure's capturing class must be registered.
@@ -56,7 +56,9 @@ public class ClosureSerializer extends Serializer {
 				readResolve = SerializedLambda.class.getDeclaredMethod("readResolve");
 				readResolve.setAccessible(true);
 			} catch (Exception ex) {
-				throw new KryoException("Unable to obtain SerializedLambda#readResolve via reflection.", ex);
+				readResolve = null;
+				Log.warn("Unable to obtain SerializedLambda#readResolve via reflection. " +
+					"Falling back on resolving lambdas via capturing class.", ex);
 			}
 		}
 	}
@@ -87,11 +89,12 @@ public class ClosureSerializer extends Serializer {
 		Object[] capturedArgs = new Object[count];
 		for (int i = 0; i < count; i++)
 			capturedArgs[i] = kryo.readClassAndObject(input);
-		SerializedLambda serializedLambda = new SerializedLambda(kryo.readClass(input).getType(), input.readString(),
+		Class<?> capturingClass = kryo.readClass(input).getType();
+		SerializedLambda serializedLambda = new SerializedLambda(capturingClass, input.readString(),
 			input.readString(), input.readString(), input.readVarInt(true), input.readString(), input.readString(),
 			input.readString(), input.readString(), capturedArgs);
 		try {
-			return readResolve.invoke(serializedLambda);
+			return readResolve(capturingClass, serializedLambda);
 		} catch (Exception ex) {
 			throw new KryoException("Error reading closure.", ex);
 		}
@@ -99,10 +102,23 @@ public class ClosureSerializer extends Serializer {
 
 	public Object copy (Kryo kryo, Object original) {
 		try {
-			return readResolve.invoke(toSerializedLambda(original));
+			SerializedLambda lambda = toSerializedLambda(original);
+			Class<?> capturingClass = Class.forName(lambda.getCapturingClass().replace('/', '.'));
+			return readResolve(capturingClass, lambda);
 		} catch (Exception ex) {
 			throw new KryoException("Error copying closure.", ex);
 		}
+	}
+
+	private Object readResolve (Class<?> capturingClass, SerializedLambda lambda) throws Exception {
+		if (readResolve != null) {
+			return readResolve.invoke(lambda);
+		}
+
+		// See SerializedLambda#readResolve
+		Method m = capturingClass.getDeclaredMethod("$deserializeLambda$", SerializedLambda.class);
+		m.setAccessible(true);
+		return m.invoke(null, lambda);
 	}
 
 	private SerializedLambda toSerializedLambda (Object object) {
@@ -118,9 +134,7 @@ public class ClosureSerializer extends Serializer {
 		try {
 			return (SerializedLambda)replacement;
 		} catch (Exception ex) {
-			throw new KryoException(
-				"writeReplace must return a SerializedLambda: " + (replacement == null ? null : className(replacement.getClass())),
-				ex);
+			throw new KryoException("writeReplace must return a SerializedLambda: " + className(replacement.getClass()), ex);
 		}
 	}
 }

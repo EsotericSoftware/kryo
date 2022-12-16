@@ -35,6 +35,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.sql.Time;
@@ -350,6 +351,32 @@ public class DefaultSerializers {
 
 		public Date copy (Kryo kryo, Date original) {
 			return create(kryo, original.getClass(), original.getTime());
+		}
+	}
+
+	/** Serializer for {@link Timestamp} which preserves the nanoseconds field. */
+	public static class TimestampSerializer extends Serializer<Timestamp> {
+		public void write (Kryo kryo, Output output, Timestamp object) {
+			output.writeVarLong(integralTimeComponent(object), true);
+			output.writeVarInt(object.getNanos(), true);
+		}
+
+		public Timestamp read (Kryo kryo, Input input, Class<? extends Timestamp> type) {
+			return create(input.readVarLong(true), input.readVarInt(true));
+		}
+
+		public Timestamp copy (Kryo kryo, Timestamp original) {
+			return create(integralTimeComponent(original), original.getNanos());
+		}
+
+		private long integralTimeComponent (Timestamp object) {
+			return object.getTime() - (object.getNanos() / 1_000_000);
+		}
+
+		private Timestamp create (long time, int nanos) {
+			Timestamp t = new Timestamp(time);
+			t.setNanos(nanos);
+			return t;
 		}
 	}
 
@@ -902,12 +929,12 @@ public class DefaultSerializers {
 
 	/** Serializer for {@link Pattern} */
 	public static class PatternSerializer extends ImmutableSerializer<Pattern> {
-		public void write (Kryo kryo, Output output, Pattern pattern) {
+		public void write (final Kryo kryo, final Output output, final Pattern pattern) {
 			output.writeString(pattern.pattern());
 			output.writeInt(pattern.flags(), true);
 		}
 
-		public Pattern read (Kryo kryo, Input input, Class<? extends Pattern> patternClass) {
+		public Pattern read (final Kryo kryo, final Input input, final Class<? extends Pattern> patternClass) {
 			String regex = input.readString();
 			int flags = input.readInt(true);
 			return Pattern.compile(regex, flags);
@@ -921,7 +948,11 @@ public class DefaultSerializers {
 		}
 
 		public URI read (Kryo kryo, Input input, Class<? extends URI> uriClass) {
-			return URI.create(input.readString());
+			try {
+				return new URI(input.readString());
+			} catch (URISyntaxException ex) {
+				throw new KryoException(ex);
+			}
 		}
 	}
 

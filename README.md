@@ -21,7 +21,6 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 - [Installation](#installation)
    * [With Maven](#with-maven)
    * [Without Maven](#without-maven)
-   * [On Android](#on-android)
    * [Building from source](#building-from-source)
 - [Quickstart](#quickstart)
 - [IO](#io)
@@ -618,12 +617,11 @@ Kryo `isFinal` is used to determine if a class is final. This method can be over
 
 Kryo can serialize Java 8+ closures that implement java.io.Serializable, with some caveats. Closures serialized on one JVM may fail to be deserialized on a different JVM.
 
-Kryo `isClosure` is used to determine if a class is a closure. If so, then ClosureSerializer.Closure is used to find the class registration instead of the closure's class. To serialize closures, the following classes must be registered: ClosureSerializer.Closure, SerializedLambda, Object[], and Class. Additionally, the closure's capturing class must be registered.
+Kryo `isClosure` is used to determine if a class is a closure. If so, then ClosureSerializer.Closure is used to find the class registration instead of the closure's class. To serialize closures, the following classes must be registered: ClosureSerializer.Closure, Object[], and Class. Additionally, the closure's capturing class must be registered.
 
 ```java
 kryo.register(Object[].class);
 kryo.register(Class.class);
-kryo.register(SerializedLambda.class);
 kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
 kryo.register(CapturingClass.class);
 
@@ -1238,7 +1236,7 @@ outputPool.free(output);
 ```java
 Pool<Input> inputPool = new Pool<Input>(true, false, 16) {
    protected Input create () {
-      return new Input(1024, -1);
+      return new Input(1024);
    }
 };
 
