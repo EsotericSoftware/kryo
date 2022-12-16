@@ -717,10 +717,19 @@ class FieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	void testRecord() {
+	void testRecord () {
 		kryo.register(RecordClass.class);
-		
+
 		roundTrip(13, new RecordClass("1", 1, 1L, 1d));
+	}
+
+	@Test
+	void testCopyRecord () {
+		kryo.register(RecordClass.class);
+
+		final RecordClass o = new RecordClass("1", 1, 1L, 1d);
+		final RecordClass copy = kryo.copy(o);
+		doAssertEquals(o, copy);
 	}
 
 	public static class DefaultTypes {

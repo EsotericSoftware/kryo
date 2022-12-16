@@ -281,7 +281,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			for (int i = 0, n = copyFields.length; i < n; i++) {
 				final CachedField field = copyFields[i];
 				try {
-					values[field.index] = field.getField().get(original);
+					values[field.index] = field.get(original);
 				} catch (IllegalAccessException e) {
 					throw new KryoException("Error accessing field: " + field.getName() + " (" + type.getName() + ")", e);
 				}
@@ -413,6 +413,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public abstract void copy (Object original, Object copy);
 
+		Object get(Object object) throws IllegalAccessException {
+			return field.get(object);
+		}
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
