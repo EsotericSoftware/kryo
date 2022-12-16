@@ -185,7 +185,7 @@ class CachedFields implements Comparator<CachedField> {
 				"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
 		}
 
-		final RecordComponent[] recordComponents = serializer.getType().getRecordComponents();
+		final RecordComponent[] recordComponents = type.getRecordComponents();
 		if (recordComponents != null) {
 			for (int i = 0; i < recordComponents.length; i++) {
 				RecordComponent recordComponent = recordComponents[i];
