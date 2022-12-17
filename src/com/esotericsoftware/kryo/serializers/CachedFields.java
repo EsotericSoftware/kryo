@@ -191,6 +191,7 @@ class CachedFields implements Comparator<CachedField> {
 				RecordComponent recordComponent = recordComponents[i];
 				if (recordComponent.getName().equals(field.getName())) {
 					cachedField.index = i;
+					break;
 				}
 			}
 		}
