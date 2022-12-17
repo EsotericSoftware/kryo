@@ -141,6 +141,47 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		assertEquals(futureArray[1], presentArray[1]);
 	}
 
+	@Test
+	void testTaggedRecordNewToOld() {
+		final RecordClass recordClass = new RecordClass("1", 2, 3L, 4d);
+
+		final TaggedFieldSerializer.TaggedFieldSerializerConfig cfg = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+		cfg.setChunkedEncoding(true);
+		cfg.setReadUnknownTagData(true);
+		kryo.setDefaultSerializer(new TaggedFieldSerializerFactory(cfg));
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		Object deserialized = kryo.readObject(input, OldRecordClass.class);
+		input.close();
+
+		assertNotNull(deserialized);
+	}
+
+	@Test
+	void testTaggedRecordOldToNew() {
+		final OldRecordClass recordClass = new OldRecordClass(3L, 4d, 2);
+
+		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		Object deserialized = kryo.readObject(input, RecordClass.class);
+		input.close();
+
+		assertNotNull(deserialized);
+	}
+
 	/** Attempts to register a class with a field tagged with a value already used in its superclass. Should receive
 	 * IllegalArgumentException. */
 	@Test
@@ -230,7 +271,9 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		@Tag(1) String value;
 	}
 
-	public record RecordClass(@Tag(0) String height, @Tag(1) int width, @Tag(2) long x, @Tag(3) double y) { }
+	public record OldRecordClass(@Tag(0) long x, @Tag(1) double y, @Tag(2) int width) { }
+
+	public record RecordClass(@Tag(3) String height, @Tag(2) int width, @Tag(0) long x, @Tag(1) double y) { }
 
 	private static class FutureClass {
 		@Tag(0) public Integer value;

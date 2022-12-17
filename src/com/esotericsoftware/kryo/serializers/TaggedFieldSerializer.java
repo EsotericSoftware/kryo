@@ -190,7 +190,8 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			fieldInput = inputChunked = new InputChunked(input, config.chunkSize);
 		else
 			fieldInput = input;
-		IntMap<CachedField> readTags = this.readTags;
+
+		CachedField[] fields = cachedFields.fields;
 		Object[] values = null;
 		for (int i = 0; i < fieldCount; i++) {
 			int tag = input.readVarInt(true);
@@ -241,14 +242,14 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			if (object != null) {
 				cachedField.read(fieldInput, object);
 			} else {
-				if (values == null) values = new Object[fieldCount];
+				if (values == null) values = new Object[fields.length];
 				values[cachedField.index] = cachedField.read(fieldInput);
 			}
 			if (chunked) inputChunked.nextChunk();
 		}
 
 		if (isRecord) {
-			object = invokeCanonicalConstructor(type, readTags.values().toList().toArray(new CachedField[0]), values);
+			object = invokeCanonicalConstructor(type, fields, values);
 			kryo.reference(object);
 		}
 
