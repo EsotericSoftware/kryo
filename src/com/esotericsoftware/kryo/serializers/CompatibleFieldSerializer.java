@@ -142,7 +142,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					continue;
 				}
 				if (registration == null) {
-					setFieldToNull(cachedField, object);
+					try {
+						if (cachedField != null && cachedField.canBeNull) {
+							cachedField.field.set(object, null);
+						}
+					} catch (IllegalAccessException e) {
+					}
 					if (chunked) inputChunked.nextChunk();
 					continue;
 				}
@@ -241,16 +246,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 		kryo.getGraphContext().put(this, fields);
 		return fields;
-	}
-
-	private void setFieldToNull (CachedField field, Object obj) {
-		if (field instanceof ReflectField && field.getCanBeNull()) {
-			try {
-				((ReflectField)field).set(obj, null);
-			} catch (IllegalAccessException e) {
-				throw new KryoException("Error accessing field: " + field, e);
-			}
-		}
 	}
 
 	public CompatibleFieldSerializerConfig getCompatibleFieldSerializerConfig () {
