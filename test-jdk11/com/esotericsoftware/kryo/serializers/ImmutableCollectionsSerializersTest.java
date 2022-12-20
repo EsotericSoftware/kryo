@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -82,7 +82,7 @@ class ImmutableCollectionsSerializersTest extends KryoTestCase {
 		roundTrip(6, Set.of(1, 2, 3));
 	}
 
-	static class TestClass {
+	public static class TestClass {
 		List<Integer> list;
 		Map<Integer, Integer> map;
 		Set<Integer> set;

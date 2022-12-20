@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -275,14 +275,6 @@ class SerializationCompatTestData {
 			_genericList = new GenericList(new ArrayList(Arrays.asList(new Generic("foo"), new Generic("bar"))));
 			_genericArray = new GenericArray(new Generic("foo"), new Generic("bar"));
 			_public = new PublicClass(new PrivateClass("foo"));
-		}
-
-		public int hashCode () {
-			return HashCodeBuilder.reflectionHashCode(this);
-		}
-
-		public boolean equals (Object obj) {
-			return EqualsBuilder.reflectionEquals(this, obj);
 		}
 
 	}

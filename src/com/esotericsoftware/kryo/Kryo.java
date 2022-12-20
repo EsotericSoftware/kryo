@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -287,7 +287,7 @@ public class Kryo {
 	/** Instances with the specified class name will use the specified serializer when {@link #register(Class)} or
 	 * {@link #register(Class, int)} are called.
 	 * @see #setDefaultSerializer(Class) */
-	private void addDefaultSerializer(String className, Class<? extends Serializer> serializer) {
+	private void addDefaultSerializer (String className, Class<? extends Serializer> serializer) {
 		try {
 			addDefaultSerializer(Class.forName(className), serializer);
 		} catch (ClassNotFoundException e) {

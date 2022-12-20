@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -203,6 +203,9 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 		RecordComponent recordComponent) {
 		try {
 			Method get = recordObject.getClass().getDeclaredMethod(recordComponent.name());
+			if (!get.canAccess(recordObject)) {
+				get.setAccessible(true);
+			}
 			return get.invoke(recordObject);
 		} catch (Throwable t) {
 			KryoException ex = new KryoException(t);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -99,6 +99,7 @@ public class InputChunked extends Input {
 
 	/** Advances the stream to the next chunk. InputChunked will appear to hit the end of the data until this method is called. */
 	public void nextChunk () {
+		position = limit; // Underflow resets the position to 0. Ensure we are at the end of the chunk.
 		if (chunkSize == -1) readChunkSize(); // No current chunk, expect a new chunk.
 		while (chunkSize > 0)
 			skip(chunkSize);

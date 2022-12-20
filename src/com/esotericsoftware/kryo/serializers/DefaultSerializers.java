@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -34,6 +34,8 @@ import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.sql.Time;
@@ -58,7 +60,13 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
  * @author Nathan Sweet */
@@ -343,6 +351,32 @@ public class DefaultSerializers {
 
 		public Date copy (Kryo kryo, Date original) {
 			return create(kryo, original.getClass(), original.getTime());
+		}
+	}
+
+	/** Serializer for {@link Timestamp} which preserves the nanoseconds field. */
+	public static class TimestampSerializer extends Serializer<Timestamp> {
+		public void write (Kryo kryo, Output output, Timestamp object) {
+			output.writeVarLong(integralTimeComponent(object), true);
+			output.writeVarInt(object.getNanos(), true);
+		}
+
+		public Timestamp read (Kryo kryo, Input input, Class<? extends Timestamp> type) {
+			return create(input.readVarLong(true), input.readVarInt(true));
+		}
+
+		public Timestamp copy (Kryo kryo, Timestamp original) {
+			return create(integralTimeComponent(original), original.getNanos());
+		}
+
+		private long integralTimeComponent (Timestamp object) {
+			return object.getTime() - (object.getNanos() / 1_000_000);
+		}
+
+		private Timestamp create (long time, int nanos) {
+			Timestamp t = new Timestamp(time);
+			t.setNanos(nanos);
+			return t;
 		}
 	}
 
@@ -743,7 +777,8 @@ public class DefaultSerializers {
 		}
 
 		private PriorityQueue createPriorityQueue (Class<? extends Collection> type, int size, Comparator comparator) {
-			if (type == PriorityQueue.class || type == null) return new PriorityQueue(size, comparator);
+			final int initialCapacity = Math.max(size, 1);
+			if (type == PriorityQueue.class || type == null) return new PriorityQueue(initialCapacity, comparator);
 			// Use reflection for subclasses.
 			try {
 				Constructor constructor = type.getConstructor(int.class, Comparator.class);
@@ -753,7 +788,7 @@ public class DefaultSerializers {
 					} catch (SecurityException ignored) {
 					}
 				}
-				return (PriorityQueue)constructor.newInstance(comparator);
+				return (PriorityQueue)constructor.newInstance(initialCapacity, comparator);
 			} catch (Exception ex) {
 				throw new KryoException(ex);
 			}
@@ -873,6 +908,7 @@ public class DefaultSerializers {
 		}
 	}
 
+	/** Serializer for {@link BitSet} */
 	public static class BitSetSerializer extends Serializer<BitSet> {
 		public void write (Kryo kryo, Output output, BitSet set) {
 			long[] values = set.toLongArray();
@@ -883,12 +919,113 @@ public class DefaultSerializers {
 		public BitSet read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			long[] values = input.readLongs(length);
-			BitSet set = BitSet.valueOf(values);
-			return set;
+			return BitSet.valueOf(values);
 		}
 
 		public BitSet copy (Kryo kryo, BitSet original) {
 			return BitSet.valueOf(original.toLongArray());
+		}
+	}
+
+	/** Serializer for {@link Pattern} */
+	public static class PatternSerializer extends ImmutableSerializer<Pattern> {
+		public void write (final Kryo kryo, final Output output, final Pattern pattern) {
+			output.writeString(pattern.pattern());
+			output.writeInt(pattern.flags(), true);
+		}
+
+		public Pattern read (final Kryo kryo, final Input input, final Class<? extends Pattern> patternClass) {
+			String regex = input.readString();
+			int flags = input.readInt(true);
+			return Pattern.compile(regex, flags);
+		}
+	}
+
+	/** Serializer for {@link URI} */
+	public static class URISerializer extends ImmutableSerializer<java.net.URI> {
+		public void write (Kryo kryo, Output output, URI uri) {
+			output.writeString(uri.toString());
+		}
+
+		public URI read (Kryo kryo, Input input, Class<? extends URI> uriClass) {
+			try {
+				return new URI(input.readString());
+			} catch (URISyntaxException ex) {
+				throw new KryoException(ex);
+			}
+		}
+	}
+
+	/** Serializer for {@link UUID} */
+	public static class UUIDSerializer extends ImmutableSerializer<UUID> {
+		public void write (Kryo kryo, Output output, UUID uuid) {
+			output.writeLong(uuid.getMostSignificantBits());
+			output.writeLong(uuid.getLeastSignificantBits());
+		}
+
+		public UUID read (final Kryo kryo, final Input input, final Class<? extends UUID> uuidClass) {
+			return new UUID(input.readLong(), input.readLong());
+		}
+	}
+
+	/** Serializer for {@link AtomicBoolean} */
+	public static class AtomicBooleanSerializer extends Serializer<AtomicBoolean> {
+		public void write (Kryo kryo, Output output, AtomicBoolean object) {
+			output.writeBoolean(object.get());
+		}
+
+		public AtomicBoolean read (Kryo kryo, Input input, Class<? extends AtomicBoolean> type) {
+			return new AtomicBoolean(input.readBoolean());
+		}
+
+		public AtomicBoolean copy (Kryo kryo, AtomicBoolean original) {
+			return new AtomicBoolean(original.get());
+		}
+	}
+
+	/** Serializer for {@link AtomicInteger} */
+	public static class AtomicIntegerSerializer extends Serializer<AtomicInteger> {
+		public void write (Kryo kryo, Output output, AtomicInteger object) {
+			output.writeInt(object.get());
+		}
+
+		public AtomicInteger read (Kryo kryo, Input input, Class<? extends AtomicInteger> type) {
+			return new AtomicInteger(input.readInt());
+		}
+
+		public AtomicInteger copy (Kryo kryo, AtomicInteger original) {
+			return new AtomicInteger(original.get());
+		}
+	}
+
+	/** Serializer for {@link AtomicLong} */
+	public static class AtomicLongSerializer extends Serializer<AtomicLong> {
+		public void write (Kryo kryo, Output output, AtomicLong object) {
+			output.writeLong(object.get());
+		}
+
+		public AtomicLong read (Kryo kryo, Input input, Class<? extends AtomicLong> type) {
+			return new AtomicLong(input.readLong());
+		}
+
+		public AtomicLong copy (Kryo kryo, AtomicLong original) {
+			return new AtomicLong(original.get());
+		}
+	}
+
+	/** Serializer for {@link AtomicReference} */
+	public static class AtomicReferenceSerializer extends Serializer<AtomicReference> {
+		public void write (Kryo kryo, Output output, AtomicReference object) {
+			kryo.writeClassAndObject(output, object.get());
+		}
+
+		public AtomicReference read (Kryo kryo, Input input, Class<? extends AtomicReference> type) {
+			final Object value = kryo.readClassAndObject(input);
+			return new AtomicReference(value);
+		}
+
+		public AtomicReference copy (Kryo kryo, AtomicReference original) {
+			return new AtomicReference<>(kryo.copy(original.get()));
 		}
 	}
 }

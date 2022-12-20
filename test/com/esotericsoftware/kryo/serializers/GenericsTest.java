@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -186,11 +186,11 @@ class GenericsTest extends KryoTestCase {
 		roundTrip(168, o);
 	}
 
-	private interface Holder<V> {
+	interface Holder<V> {
 		V getValue ();
 	}
 
-	private abstract static class AbstractValueHolder<V> implements Holder<V> {
+	abstract static class AbstractValueHolder<V> implements Holder<V> {
 		private final V value;
 
 		AbstractValueHolder (V value) {
@@ -210,13 +210,13 @@ class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	private abstract static class AbstractValueListHolder<V> extends AbstractValueHolder<List<V>> {
+	abstract static class AbstractValueListHolder<V> extends AbstractValueHolder<List<V>> {
 		AbstractValueListHolder (List<V> value) {
 			super(value);
 		}
 	}
 
-	private static class LongHolder extends AbstractValueHolder<Long> {
+	static class LongHolder extends AbstractValueHolder<Long> {
 		/** Kryo Constructor */
 		LongHolder () {
 			super(null);
@@ -227,7 +227,7 @@ class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	private static class LongListHolder extends AbstractValueListHolder<Long> {
+	static class LongListHolder extends AbstractValueListHolder<Long> {
 		/** Kryo Constructor */
 		LongListHolder () {
 			super(null);
@@ -272,7 +272,7 @@ class GenericsTest extends KryoTestCase {
 	}
 
 	// A simple serializable class.
-	private static class SerializableObjectFoo implements Serializable {
+	public static class SerializableObjectFoo implements Serializable {
 		String name;
 
 		SerializableObjectFoo (String name) {
@@ -295,18 +295,18 @@ class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	private static class BaseGeneric<T extends Serializable> {
+	static class BaseGeneric<T extends Serializable> {
 		// The type of this field cannot be derived from the context.
 		// Therefore, Kryo should consider it to be Object.
 		private final List<T> listPayload;
 
 		/** Kryo Constructor */
-		protected BaseGeneric () {
+		BaseGeneric () {
 			super();
 			this.listPayload = null;
 		}
 
-		protected BaseGeneric (final List<T> listPayload) {
+		BaseGeneric (final List<T> listPayload) {
 			super();
 			// Defensive copy, listPayload is mutable
 			this.listPayload = new ArrayList(listPayload);
@@ -330,7 +330,7 @@ class GenericsTest extends KryoTestCase {
 	}
 
 	// This is a non-generic class with a generic superclass.
-	private static class ConcreteClass2 extends BaseGeneric<SerializableObjectFoo> {
+	static class ConcreteClass2 extends BaseGeneric<SerializableObjectFoo> {
 		/** Kryo Constructor */
 		ConcreteClass2 () {
 			super();
@@ -341,7 +341,7 @@ class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	private static class ConcreteClass1 extends ConcreteClass2 {
+	static class ConcreteClass1 extends ConcreteClass2 {
 		/** Kryo Constructor */
 		ConcreteClass1 () {
 			super();
@@ -352,7 +352,7 @@ class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	private static class ConcreteClass extends ConcreteClass1 {
+	static class ConcreteClass extends ConcreteClass1 {
 		/** Kryo Constructor */
 		ConcreteClass () {
 			super();
@@ -363,7 +363,7 @@ class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	public static class SuperGenerics {
+	static class SuperGenerics {
 		public static class RootSuper<RS> {
 			public ValueSuper<RS> rootSuperField;
 
@@ -396,7 +396,7 @@ class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	public static class ClassWithMap {
+	static class ClassWithMap {
 		public final Map<MapKey, Set<String>> values = new HashMap();
 
 		public boolean equals (Object obj) {
@@ -419,7 +419,7 @@ class GenericsTest extends KryoTestCase {
 		}
 	}
 
-	public static class A<X> {
+	static class A<X> {
 		public static class B<Y> extends A {
 		}
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -146,7 +146,7 @@ class CachedFields implements Comparator<CachedField> {
 			try {
 				if (access == null) access = FieldAccess.get(serializer.type);
 				accessIndex = ((FieldAccess)access).getIndex(field);
-			} catch (RuntimeException ex) {
+			} catch (RuntimeException | LinkageError ex) {
 				if (DEBUG) debug("kryo", "Unable to use ReflectASM.", ex);
 			}
 		}

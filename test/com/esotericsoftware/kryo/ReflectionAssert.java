@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -128,6 +128,12 @@ class ReflectionAssert {
 			assertCollectionEquals((Collection)one, (Collection)another, requireMatchingCollectionClasses, alreadyChecked, path);
 			return;
 		}
+		
+		if (one instanceof StringBuilder || one instanceof StringBuffer) {
+			assertEquals(((CharSequence)one).toString(), ((CharSequence)another).toString(),
+					"Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ");
+			return;
+		}
 
 		if (one instanceof Currency) {
 			// Check that the transient field defaultFractionDigits is initialized
@@ -143,6 +149,11 @@ class ReflectionAssert {
 		}
 
 		Class clazz = one.getClass();
+		if (hasCustomEquals(clazz)) {
+			assertEquals(one, another, "Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ");
+			return;
+		}
+			
 		while (clazz != null) {
 			assertEqualDeclaredFields(clazz, one, another, requireMatchingCollectionClasses, alreadyChecked, path);
 			clazz = clazz.getSuperclass();
@@ -160,6 +171,17 @@ class ReflectionAssert {
 			if (checkedClazz.isAssignableFrom(one.getClass()) || checkedClazz.isAssignableFrom(another.getClass())) {
 				return true;
 			}
+		}
+		return false;
+	}
+
+	private static boolean hasCustomEquals(Class<?> c) {
+		while (!Object.class.equals(c)) {
+			try {
+				c.getDeclaredMethod("equals", Object.class);
+				return true;
+			} catch (Exception ignored) {}
+			c = c.getSuperclass();
 		}
 		return false;
 	}
@@ -194,8 +216,8 @@ class ReflectionAssert {
 	private static void assertEqualDeclaredFields (final Class<? extends Object> clazz, final Object one, final Object another,
 												   final boolean requireMatchingClasses, final Map<Object, Object> alreadyChecked, final String path) {
 		for (final Field field : clazz.getDeclaredFields()) {
-			field.setAccessible(true);
-			if (!Modifier.isTransient(field.getModifiers())) {
+			if (!Modifier.isTransient(field.getModifiers()) && !Modifier.isStatic(field.getModifiers()) && !field.isSynthetic()) {
+				field.setAccessible(true);
 				try {
 					assertReflectionEquals(field.get(one), field.get(another), requireMatchingClasses, alreadyChecked,
 						path + "." + field.getName());

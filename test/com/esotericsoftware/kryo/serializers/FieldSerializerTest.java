@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -38,6 +38,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
+import com.esotericsoftware.kryo.util.Util;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -402,7 +403,7 @@ class FieldSerializerTest extends KryoTestCase {
 
 		kryo.register(HasPrivateConstructor.class);
 		roundTrip(4, test);
-		assertEquals(20, HasPrivateConstructor.invocations, "Wrong number of constructor invocations");
+		assertEquals(Util.isUnsafeAvailable() ? 20 : 10, HasPrivateConstructor.invocations, "Wrong number of constructor invocations");
 	}
 
 	/** This test uses StdInstantiatorStrategy and should bypass invocation of no-arg constructor, even if it is provided. **/

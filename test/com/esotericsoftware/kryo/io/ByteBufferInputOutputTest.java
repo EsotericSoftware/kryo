@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -24,11 +24,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("all")
 class ByteBufferInputOutputTest extends KryoTestCase {
 	@Test
 	void testByteBufferInputEnd () {
@@ -87,4 +89,74 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 		assertEquals(10, inputBuffer.readInt());
 		assertEquals(9, byteBuffer.position());
 	}
+	
+	@Test
+	void testOverflow () {
+		ByteBufferOutput buffer = new ByteBufferOutput(1);
+		buffer.writeByte(51);
+		KryoBufferOverflowException thrown = assertThrows(
+			KryoBufferOverflowException.class,
+			() -> buffer.writeByte(65),
+			"Exception expected but none thrown"
+		);
+
+		assertTrue(thrown.getMessage().startsWith("Buffer overflow"));
+	}
+
+	@Test
+	void testUnderflow () {
+		ByteBufferInput buffer = new ByteBufferInput(1);
+	
+		KryoBufferUnderflowException thrown = assertThrows(
+			KryoBufferUnderflowException.class,
+			() -> buffer.readBytes(2),
+			"Exception expected but none thrown"
+		);
+
+		assertTrue(thrown.getMessage().equals("Buffer underflow."));
+	}
+
+	@Test
+	void testStrings () throws IOException {
+		runStringTest(1);
+		runStringTest(2);
+		runStringTest(127);
+		runStringTest(256);
+		runStringTest(1024 * 1023);
+		runStringTest(1024 * 1024);
+		runStringTest(1024 * 1025);
+		runStringTest(1024 * 1026);
+		runStringTest(1024 * 1024 * 2);
+	}
+
+	private void runStringTest (int length) throws IOException {
+		Output write = new ByteBufferOutput(1024, -1);
+		StringBuilder buffer = new StringBuilder();
+		for (int i = 0; i < length; i++)
+			buffer.append((char)i);
+
+		String value = buffer.toString();
+		write.writeString(value);
+		write.writeString(value);
+		Input read = new ByteBufferInput(write.toBytes());
+		assertEquals(value, read.readString());
+		assertEquals(value, read.readStringBuilder().toString());
+
+		write.reset();
+		write.writeString(buffer.toString());
+		write.writeString(buffer.toString());
+		read = new ByteBufferInput(write.toBytes());
+		assertEquals(value, read.readString());
+		assertEquals(value, read.readStringBuilder().toString());
+
+		if (length <= 127) {
+			write.reset();
+			write.writeAscii(value);
+			write.writeAscii(value);
+			read = new ByteBufferInput(write.toBytes());
+			assertEquals(value, read.readString());
+			assertEquals(value, read.readStringBuilder().toString());
+		}
+	}
+
 }

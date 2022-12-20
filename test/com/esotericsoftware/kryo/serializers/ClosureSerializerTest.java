@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -25,7 +25,6 @@ import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import java.lang.invoke.SerializedLambda;
 import java.util.concurrent.Callable;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +39,6 @@ class ClosureSerializerTest extends KryoTestCase {
 		kryo.register(Object[].class);
 		kryo.register(Class.class);
 		kryo.register(getClass()); // The closure's capturing class must be registered.
-		kryo.register(SerializedLambda.class);
 		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
 	}
 
@@ -56,6 +54,15 @@ class ClosureSerializerTest extends KryoTestCase {
 
 		Input input = new Input(output.getBuffer(), 0, output.position());
 		Callable<Integer> closure2 = (Callable<Integer>)kryo.readObject(input, ClosureSerializer.Closure.class);
+
+		doAssertEquals(closure1, closure2);
+	}
+
+	@Test
+	void testCopyClosure() {
+		Callable<Integer> closure1 = (Callable<Integer> & java.io.Serializable)( () -> 72363);
+
+		final Callable<Integer> closure2 = kryo.copy(closure1);
 
 		doAssertEquals(closure1, closure2);
 	}

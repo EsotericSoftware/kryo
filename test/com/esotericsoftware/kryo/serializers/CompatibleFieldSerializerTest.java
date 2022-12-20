@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -29,7 +29,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import java.io.Serializable;
-import java.lang.invoke.SerializedLambda;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -499,7 +498,6 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
 		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
 		kryo.register(ClassWithLambdaField.class);
-		kryo.register(SerializedLambda.class);
 		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
 
 		roundTrip(236, new ClassWithLambdaField());

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
+import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -108,6 +110,33 @@ class InputOutputTest extends KryoTestCase {
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
 			61, 62, 63, 64, 65}, buffer.toBytes());
+	}
+
+	@Test
+	void testOverflow () throws IOException {
+		Output buffer = new Output(1);
+		buffer.writeByte(51);
+	
+		KryoBufferOverflowException thrown = assertThrows(
+			KryoBufferOverflowException.class,
+			() -> buffer.writeByte(65),
+			"Exception expected but none thrown"
+		);
+
+		assertTrue(thrown.getMessage().startsWith("Buffer overflow"));
+	}
+
+	@Test
+	void testUnderflow () throws IOException {
+		Input buffer = new Input(1);
+		
+		KryoBufferUnderflowException thrown = assertThrows(
+			KryoBufferUnderflowException.class,
+			() -> buffer.readBytes(2),
+			"Exception expected but none thrown"
+		);
+
+		assertTrue(thrown.getMessage().equals("Buffer underflow."));
 	}
 
 	@Test

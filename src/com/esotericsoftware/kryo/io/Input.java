@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
 import com.esotericsoftware.kryo.util.Pool.Poolable;
 import com.esotericsoftware.kryo.util.Util;
 
@@ -189,7 +190,8 @@ public class Input extends InputStream implements Poolable {
 	/** Fills the buffer with at least the number of bytes specified.
 	 * @param required Must be > 0.
 	 * @return The number of bytes remaining in the buffer, which will be at least <code>required</code> bytes.
-	 * @throws KryoException if {@link #fill(byte[], int, int)} is unable to provide more bytes (buffer underflow). */
+	 * @throws KryoBufferUnderflowException if {@link #fill(byte[], int, int)} is unable to provide more bytes (buffer
+	 *            underflow). */
 	protected int require (int required) throws KryoException {
 		int remaining = limit - position;
 		if (remaining >= required) return remaining;
@@ -199,7 +201,7 @@ public class Input extends InputStream implements Poolable {
 		// Try to fill the buffer.
 		if (remaining > 0) {
 			count = fill(buffer, limit, capacity - limit);
-			if (count == -1) throw new KryoException("Buffer underflow.");
+			if (count == -1) throw new KryoBufferUnderflowException("Buffer underflow.");
 			remaining += count;
 			if (remaining >= required) {
 				limit += count;
@@ -216,7 +218,7 @@ public class Input extends InputStream implements Poolable {
 			count = fill(buffer, remaining, capacity - remaining);
 			if (count == -1) {
 				if (remaining >= required) break;
-				throw new KryoException("Buffer underflow.");
+				throw new KryoBufferUnderflowException("Buffer underflow.");
 			}
 			remaining += count;
 			if (remaining >= required) break; // Enough has been read.
@@ -281,7 +283,7 @@ public class Input extends InputStream implements Poolable {
 	}
 
 	/** Reads bytes.length bytes or less and writes them to the specified byte[], starting at 0, and returns the number of bytes
-	 * read. */
+	 * read or -1 if no more bytes are available. */
 	public int read (byte[] bytes) throws KryoException {
 		return read(bytes, 0, bytes.length);
 	}

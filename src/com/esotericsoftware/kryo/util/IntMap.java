@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -187,14 +187,20 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 
 	public V get (int key) {
 		if (key == 0) return hasZeroValue ? zeroValue : null;
-		int i = locateKey(key);
-		return i >= 0 ? valueTable[i] : null;
+		for (int i = place(key);; i = i + 1 & mask) {
+			int other = keyTable[i];
+			if (other == 0) return null;
+			if (other == key) return valueTable[i];
+		}
 	}
 
 	public V get (int key, @Null V defaultValue) {
-		if (key == 0) return hasZeroValue ? zeroValue : defaultValue;
-		int i = locateKey(key);
-		return i >= 0 ? valueTable[i] : defaultValue;
+		if (key == 0) return hasZeroValue ? zeroValue : null;
+		for (int i = place(key);; i = i + 1 & mask) {
+			int other = keyTable[i];
+			if (other == 0) return defaultValue;
+			if (other == key) return valueTable[i];
+		}
 	}
 
 	@Null

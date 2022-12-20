@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, Nathan Sweet
+/* Copyright (c) 2008-2022, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -184,8 +184,9 @@ public class ByteBufferOutput extends Output {
 		if (capacity - position >= required) return true;
 		if (required > maxCapacity - position) {
 			if (required > maxCapacity)
-				throw new KryoException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
-			throw new KryoException("Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
+				throw new KryoBufferOverflowException("Buffer overflow. Max capacity: " + maxCapacity + ", required: " + required);
+			throw new KryoBufferOverflowException(
+				"Buffer overflow. Available: " + (maxCapacity - position) + ", required: " + required);
 		}
 		if (capacity == 0) capacity = 16;
 		do {
@@ -602,8 +603,15 @@ public class ByteBufferOutput extends Output {
 			return;
 		}
 		int charCount = value.length();
-		if (charCount == 0) {
-			writeByte(1 | 0x80); // 1 means empty string, bit 8 means UTF8.
+		switch (charCount) {
+		case 0:
+			writeByte(1 | 0x80); // 1 is string length + 1, bit 8 means UTF8.
+			return;
+		case 1:
+			require(2);
+			byteBuffer.put((byte)(2 | 0x80)); // 2 is string length + 1, bit 8 means UTF8.
+			byteBuffer.put((byte)value.charAt(0));
+			position += 2;
 			return;
 		}
 		if (capacity - position < charCount)
