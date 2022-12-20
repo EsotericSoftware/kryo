@@ -151,7 +151,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		if (isRecord) {
 			object = invokeCanonicalConstructor(type, fields, values);
-			kryo.reference(object);
 		}
 
 		popTypeVariables(pop);
@@ -287,7 +286,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 				}
 			}
 			copy = (T) invokeCanonicalConstructor(type, copyFields, values);
-			kryo.reference(copy);
 		}
 		return copy;
 	}

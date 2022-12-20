@@ -146,7 +146,6 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 
 		if (isRecord) {
 			object = invokeCanonicalConstructor(type, fields, values);
-			kryo.reference(object);
 		}
 
 		popTypeVariables(pop);
