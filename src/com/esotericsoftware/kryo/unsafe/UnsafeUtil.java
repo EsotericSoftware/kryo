@@ -90,29 +90,32 @@ public class UnsafeUtil {
 		booleanArrayBaseOffset = tempBooleanArrayBaseOffset;
 		unsafe = tempUnsafe;
 	}
-
-	// Constructor to be used for creation of ByteBuffers that use preallocated memory regions.
-	private static Constructor<? extends ByteBuffer> directByteBufferConstructor;
-	static {
-		ByteBuffer buffer = ByteBuffer.allocateDirect(1);
-		try {
-			directByteBufferConstructor = buffer.getClass().getDeclaredConstructor(long.class, int.class);
-			directByteBufferConstructor.setAccessible(true);
-		} catch (Exception ex) {
-			if (DEBUG) debug("kryo", "No direct ByteBuffer constructor is available.", ex);
-			directByteBufferConstructor = null;
+	
+	// Use a static inner class to defer initialization of direct buffer methods until first use
+	private static final class DirectBuffers {
+		// Constructor to be used for creation of ByteBuffers that use pre-allocated memory regions.
+		private static Constructor<? extends ByteBuffer> directByteBufferConstructor;
+		static {
+			ByteBuffer buffer = ByteBuffer.allocateDirect(1);
+			try {
+				directByteBufferConstructor = buffer.getClass().getDeclaredConstructor(long.class, int.class);
+				directByteBufferConstructor.setAccessible(true);
+			} catch (Exception ex) {
+				if (DEBUG) debug("kryo", "No direct ByteBuffer constructor is available.", ex);
+				directByteBufferConstructor = null;
+			}
 		}
-	}
 
-	private static Method cleanerMethod, cleanMethod;
-	static {
-		try {
-			cleanerMethod = DirectBuffer.class.getMethod("cleaner");
-			cleanerMethod.setAccessible(true);
-			cleanMethod = cleanerMethod.getReturnType().getMethod("clean");
-		} catch (Exception ex) {
-			if (DEBUG) debug("kryo", "No direct ByteBuffer clean method is available.", ex);
-			cleanerMethod = null;
+		private static Method cleanerMethod, cleanMethod;
+		static {
+			try {
+				cleanerMethod = DirectBuffer.class.getMethod("cleaner");
+				cleanerMethod.setAccessible(true);
+				cleanMethod = cleanerMethod.getReturnType().getMethod("clean");
+			} catch (Exception ex) {
+				if (DEBUG) debug("kryo", "No direct ByteBuffer clean method is available.", ex);
+				cleanerMethod = null;
+			}
 		}
 	}
 
@@ -121,10 +124,10 @@ public class UnsafeUtil {
 	 * @param size Size in bytes of the memory region.
 	 * @throws UnsupportedOperationException if creating a ByteBuffer this way is not available. */
 	public static ByteBuffer newDirectBuffer (long address, int size) {
-		if (directByteBufferConstructor == null)
+		if (!isNewDirectBufferAvailable())
 			throw new UnsupportedOperationException("No direct ByteBuffer constructor is available.");
 		try {
-			return directByteBufferConstructor.newInstance(address, size);
+			return DirectBuffers.directByteBufferConstructor.newInstance(address, size);
 		} catch (Exception ex) {
 			throw new KryoException("Error creating a ByteBuffer at address: " + address, ex);
 		}
@@ -132,15 +135,15 @@ public class UnsafeUtil {
 
 	/** Returns true if {@link #newDirectBuffer(long, int)} can be called. */
 	public static boolean isNewDirectBufferAvailable () {
-		return directByteBufferConstructor != null;
+		return DirectBuffers.directByteBufferConstructor != null;
 	}
 
 	/** Release a direct buffer immediately rather than waiting for GC. */
 	public static void dispose (ByteBuffer buffer) {
 		if (!(buffer instanceof DirectBuffer)) return;
-		if (cleanerMethod != null) {
+		if (DirectBuffers.cleanerMethod != null) {
 			try {
-				cleanMethod.invoke(cleanerMethod.invoke(buffer));
+				DirectBuffers.cleanMethod.invoke(DirectBuffers.cleanerMethod.invoke(buffer));
 			} catch (Throwable ignored) {
 			}
 		}
