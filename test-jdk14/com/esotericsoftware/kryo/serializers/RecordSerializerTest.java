@@ -306,7 +306,7 @@ public class RecordSerializerTest extends KryoTestCase {
 
     @Test
     void testRecordWithSuperType() {
-        var rc = new RecordSerializer<RecordWithSuperType>();
+        var rc = new RecordSerializer<>(RecordWithSuperType.class);
         kryo.register(RecordWithSuperType.class, rc);
 
         final var r = new RecordWithSuperType(1L);
