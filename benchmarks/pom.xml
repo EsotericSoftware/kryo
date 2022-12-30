@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.esotericsoftware</groupId>
 		<artifactId>kryo-parent</artifactId>
-		<version>5.2.2-SNAPSHOT</version>
+		<version>5.4.1-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -16,8 +16,8 @@
 
 	<properties>
 		<kryo.root>${basedir}/..</kryo.root>
-		<jmh.version>1.34</jmh.version>
-		<byte-buddy.version>1.12.7</byte-buddy.version>
+		<jmh.version>1.36</jmh.version>
+		<byte-buddy.version>1.12.18</byte-buddy.version>
 		<uberjar.name>benchmarks</uberjar.name>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>

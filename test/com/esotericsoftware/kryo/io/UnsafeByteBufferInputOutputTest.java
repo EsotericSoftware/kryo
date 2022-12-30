@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.io;
 import static com.esotericsoftware.kryo.KryoAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.Unsafe;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
 import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
@@ -33,6 +34,7 @@ import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 /** @author Roman Levenstein <romixlev@gmail.com> */
+@Unsafe
 @SuppressWarnings("restriction")
 class UnsafeByteBufferInputOutputTest {
 

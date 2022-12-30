@@ -29,6 +29,7 @@ import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -43,6 +44,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.TimeZone;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
@@ -222,6 +229,28 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(4, new java.sql.Timestamp(1234567));
 		roundTrip(10, new java.sql.Timestamp(Long.MAX_VALUE));
 		roundTrip(10, new java.sql.Timestamp(-1234567));
+	}
+
+	@Test
+	void testTimestampSerializer () {
+		kryo.addDefaultSerializer(java.sql.Timestamp.class, DefaultSerializers.TimestampSerializer.class);
+		kryo.register(java.sql.Timestamp.class);
+		roundTrip(11, newTimestamp(Long.MIN_VALUE+808, 0)); // Smallest valid size
+		roundTrip(15, newTimestamp(Long.MIN_VALUE+808, 999_999_999));
+		roundTrip(11, newTimestamp(Long.MAX_VALUE, 0));
+		roundTrip(14, newTimestamp(Long.MAX_VALUE, 268_435_455)); // Largest valid size
+		roundTrip(3, newTimestamp(0, 0));
+		roundTrip(7, newTimestamp(0, 999_999_999));
+		roundTrip(8, newTimestamp(1234567, 123_456_789));
+		roundTrip(11, newTimestamp(-1234567, 0));
+		roundTrip(11, newTimestamp(-1234567, 1));
+		roundTrip(14, newTimestamp(-1234567, 123_456_789));
+	}
+	
+	private java.sql.Timestamp newTimestamp(long time, int nanos) {
+		java.sql.Timestamp t = new java.sql.Timestamp(time);
+		t.setNanos(nanos);
+		return t;
 	}
 
 	@Test
@@ -496,19 +525,90 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testURLSerializer () throws Exception {
-		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.register(URL.class);
 
 		roundTrip(42, new URL("https://github.com/EsotericSoftware/kryo"));
 		roundTrip(78, new URL("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
 	}
 
+	@Test
+	void testURISerializer () throws Exception {
+		kryo.register(URI.class, new DefaultSerializers.URISerializer());
+
+		roundTrip(42, new URI("https://github.com/EsotericSoftware/kryo"));
+		roundTrip(78, new URI("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
+	}
+
+	@Test
+	void testUUIDSerializer () {
+		kryo.register(UUID.class, new DefaultSerializers.UUIDSerializer());
+		
+		roundTrip(17, UUID.fromString("e58ed763-928c-4155-bee9-fdbaaadc15f3"));
+	}
+
+	@Test
+	void testPatternSerializer () {
+		kryo.register(Pattern.class, new DefaultSerializers.PatternSerializer());
+
+		roundTrip(4, Pattern.compile(".", Pattern.DOTALL));
+		roundTrip(4, Pattern.compile("."));
+	}
+
+	@Test
+	void testAtomicBooleanSerializer () {
+		kryo.register(AtomicBoolean.class, new DefaultSerializers.AtomicBooleanSerializer());
+
+		roundTrip(2, new AtomicBoolean(true));
+		roundTrip(2, new AtomicBoolean(false));
+	}
+
+	@Test
+	void testAtomicIntegerSerializer () {
+		kryo.register(AtomicInteger.class, new DefaultSerializers.AtomicIntegerSerializer());
+
+		roundTrip(5, new AtomicInteger());
+		roundTrip(5, new AtomicInteger(0));
+		roundTrip(5, new AtomicInteger(1));
+		roundTrip(5, new AtomicInteger(-1));
+	}
+
+	@Test
+	void testAtomicLongSerializer () {
+		kryo.register(AtomicLong.class, new DefaultSerializers.AtomicLongSerializer());
+
+		roundTrip(9, new AtomicLong());
+		roundTrip(9, new AtomicLong(0));
+		roundTrip(9, new AtomicLong(1));
+		roundTrip(9, new AtomicLong(-1));
+	}
+
+	@Test
+	void testAtomicReferenceSerializer () {
+		kryo.register(AtomicReference.class, new DefaultSerializers.AtomicReferenceSerializer());
+
+		roundTrip(2, new AtomicReference<>());
+		roundTrip(3, new AtomicReference<>(1L));
+	}
+
 	protected void doAssertEquals(Object object1, Object object2) {
 		if (object1 instanceof PriorityQueue && object2 instanceof PriorityQueue) {
 			final PriorityQueue q1 = (PriorityQueue) object1;
 			final PriorityQueue q2 = (PriorityQueue) object2;
-			super.doAssertEquals(q1.peek(), q2.peek());	
-			super.doAssertEquals(q1.toArray(), q2.toArray());	
+			super.doAssertEquals(q1.peek(), q2.peek());
+			super.doAssertEquals(q1.toArray(), q2.toArray());
+		} else if (object1 instanceof Pattern && object2 instanceof Pattern) {
+			final Pattern q1 = (Pattern)object1;
+			final Pattern q2 = (Pattern)object2;
+			super.doAssertEquals(q1.pattern(), q2.pattern());
+			super.doAssertEquals(q1.flags(), q2.flags());
+		} else if (object1 instanceof AtomicBoolean && object2 instanceof AtomicBoolean) {
+			super.doAssertEquals(((AtomicBoolean)object1).get(), ((AtomicBoolean)object2).get());
+		} else if (object1 instanceof AtomicInteger && object2 instanceof AtomicInteger) {
+			super.doAssertEquals(((AtomicInteger)object1).get(), ((AtomicInteger)object2).get());
+		} else if (object1 instanceof AtomicLong && object2 instanceof AtomicLong) {
+			super.doAssertEquals(((AtomicLong)object1).get(), ((AtomicLong)object2).get());
+		} else if (object1 instanceof AtomicReference && object2 instanceof AtomicReference) {
+			super.doAssertEquals(((AtomicReference)object1).get(), ((AtomicReference)object2).get());
 		} else {
 			super.doAssertEquals(object1, object2);
 		}

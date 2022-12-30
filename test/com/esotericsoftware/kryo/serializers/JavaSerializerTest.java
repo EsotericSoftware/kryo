@@ -22,6 +22,8 @@ package com.esotericsoftware.kryo.serializers;
 import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.io.Serializable;
+import java.net.URL;
+import java.net.URLClassLoader;
 
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +42,17 @@ class JavaSerializerTest extends KryoTestCase {
 		roundTrip(146, test);
 		roundTrip(146, test);
 		roundTrip(146, test);
+	}
+
+	@Test
+	void testJavaSerializerFallbackToDefaultClassLoader () {
+		kryo.setClassLoader(new URLClassLoader(new URL[]{}, null));
+		
+		kryo.register(TestClass.class, new JavaSerializer());
+		
+		TestClass test = new TestClass();
+		test.intField = 54321;
+		roundTrip(139, test);
 	}
 
 	public static class TestClass implements Serializable {

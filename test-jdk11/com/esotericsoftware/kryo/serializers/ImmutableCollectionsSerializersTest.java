@@ -39,13 +39,8 @@ class ImmutableCollectionsSerializersTest extends KryoTestCase {
 	@BeforeEach
 	public void setUp () throws Exception {
 		super.setUp();
-		kryo.register(Class.forName("java.util.ImmutableCollections$List12"));
-		kryo.register(Class.forName("java.util.ImmutableCollections$ListN"));
-		kryo.register(Class.forName("java.util.ImmutableCollections$SubList"));
-		kryo.register(Class.forName("java.util.ImmutableCollections$Map1"));
-		kryo.register(Class.forName("java.util.ImmutableCollections$MapN"));
-		kryo.register(Class.forName("java.util.ImmutableCollections$Set12"));
-		kryo.register(Class.forName("java.util.ImmutableCollections$SetN"));
+		
+		ImmutableCollectionsSerializers.registerSerializers(kryo);
 		kryo.register(HashMap.class);
 		kryo.register(TestClass.class);
 	}
@@ -82,7 +77,7 @@ class ImmutableCollectionsSerializersTest extends KryoTestCase {
 		roundTrip(6, Set.of(1, 2, 3));
 	}
 
-	static class TestClass {
+	public static class TestClass {
 		List<Integer> list;
 		Map<Integer, Integer> map;
 		Set<Integer> set;

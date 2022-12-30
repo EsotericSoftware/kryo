@@ -146,7 +146,7 @@ class CachedFields implements Comparator<CachedField> {
 			try {
 				if (access == null) access = FieldAccess.get(serializer.type);
 				accessIndex = ((FieldAccess)access).getIndex(field);
-			} catch (RuntimeException ex) {
+			} catch (RuntimeException | LinkageError ex) {
 				if (DEBUG) debug("kryo", "Unable to use ReflectASM.", ex);
 			}
 		}

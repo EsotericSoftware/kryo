@@ -109,6 +109,7 @@ class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
+	@Unsafe
 	void testUnsafeOutput () throws Exception {
 		UnsafeOutput output = new UnsafeOutput(OUTPUT_BUFFER_SIZE);
 		UnsafeInput input = new UnsafeInput(output.getBuffer());
@@ -117,6 +118,7 @@ class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
+	@Unsafe
 	void testUnsafeOutputFixed () throws Exception {
 		UnsafeOutput output = new UnsafeOutput(OUTPUT_BUFFER_SIZE);
 		UnsafeInput input = new UnsafeInput(output.getBuffer());
@@ -127,6 +129,7 @@ class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
+	@Unsafe
 	void testUnsafeByteBufferOutput () throws Exception {
 		UnsafeByteBufferOutput output = new UnsafeByteBufferOutput(OUTPUT_BUFFER_SIZE);
 		UnsafeByteBufferInput input = new UnsafeByteBufferInput(output.getByteBuffer());
@@ -135,6 +138,7 @@ class SerializationBenchmarkTest extends KryoTestCase {
 	}
 
 	@Test
+	@Unsafe
 	void testUnsafeByteBufferOutputFixed () throws Exception {
 		UnsafeByteBufferOutput output = new UnsafeByteBufferOutput(OUTPUT_BUFFER_SIZE);
 		UnsafeByteBufferInput input = new UnsafeByteBufferInput(output.getByteBuffer());
@@ -198,7 +202,7 @@ class SerializationBenchmarkTest extends KryoTestCase {
 		Log.WARN();
 	}
 
-	private static class SampleObject implements Externalizable, KryoSerializable {
+	public static class SampleObject implements Externalizable, KryoSerializable {
 		private int intValue;
 		public float floatValue;
 		protected Short shortValue;

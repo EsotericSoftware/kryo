@@ -19,28 +19,16 @@
 
 package com.esotericsoftware.kryo;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/** Test data for {@link com.esotericsoftware.kryo.serializers.RecordSerializerTest}.
- * @author Julia Boes <julia.boes@oracle.com>
- * @author Chris Hegarty <chris.hegarty@oracle.com>
- */
-public class TestDataJava14 extends SerializationCompatTestData.TestData {
-    public record Rec (byte b, short s, int i, long l, float f, double d, boolean bool, char c, String str, Integer[] n) {
-        // Overriden because of https://stackoverflow.com/questions/61261226/java-14-records-and-arrays
-        public boolean equals(Object o) {
-            return EqualsBuilder.reflectionEquals(this, o);
-        }
+import org.junit.jupiter.api.condition.EnabledIf;
 
-        public int hashCode() {
-            return HashCodeBuilder.reflectionHashCode(this);
-        }
-    };
-
-    private Rec rec;
-
-    public TestDataJava14() {
-        rec = new Rec("b".getBytes()[0], (short)1, 2, 3L, 4.0f, 5.0d, true, 'c', "foo", new Integer[]{1,2,3});
-    }
+/** Conditional annotation that runs a test only if Unsafe is available */
+@Target(value = {ElementType.METHOD, ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@EnabledIf("com.esotericsoftware.kryo.util.Util#isUnsafeAvailable")
+public @interface Unsafe {
 }
