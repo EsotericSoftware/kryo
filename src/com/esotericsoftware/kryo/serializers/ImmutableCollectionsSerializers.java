@@ -41,6 +41,15 @@ public final class ImmutableCollectionsSerializers {
 		}
 	}
 
+	/** Creates new serializers for all types of {@link java.util.ImmutableCollections}s and registers them.
+	 *
+	 * @param kryo the {@link Kryo} instance to register the serializers on. */
+	public static void registerSerializers (Kryo kryo) {
+		JdkImmutableListSerializer.registerSerializers(kryo);
+		JdkImmutableMapSerializer.registerSerializers(kryo);
+		JdkImmutableSetSerializer.registerSerializers(kryo);
+	}
+
 	static class JdkImmutableListSerializer extends CollectionSerializer<List<Object>> {
 
 		private JdkImmutableListSerializer () {
@@ -78,6 +87,14 @@ public final class ImmutableCollectionsSerializers {
 			kryo.addDefaultSerializer(List.of(1).getClass(), serializer);
 			kryo.addDefaultSerializer(List.of(1, 2, 3, 4).getClass(), serializer);
 			kryo.addDefaultSerializer(List.of(1, 2, 3, 4).subList(0, 2).getClass(), serializer);
+		}
+
+		static void registerSerializers (Kryo kryo) {
+			final JdkImmutableListSerializer serializer = new JdkImmutableListSerializer();
+			kryo.register(List.of().getClass(), serializer);
+			kryo.register(List.of(1).getClass(), serializer);
+			kryo.register(List.of(1, 2, 3, 4).getClass(), serializer);
+			kryo.register(List.of(1, 2, 3, 4).subList(0, 2).getClass(), serializer);
 		}
 	}
 
@@ -119,6 +136,13 @@ public final class ImmutableCollectionsSerializers {
 			kryo.addDefaultSerializer(Map.of(1, 2).getClass(), serializer);
 			kryo.addDefaultSerializer(Map.of(1, 2, 3, 4).getClass(), serializer);
 		}
+
+		static void registerSerializers (Kryo kryo) {
+			final JdkImmutableMapSerializer serializer = new JdkImmutableMapSerializer();
+			kryo.register(Map.of().getClass(), serializer);
+			kryo.register(Map.of(1, 2).getClass(), serializer);
+			kryo.register(Map.of(1, 2, 3, 4).getClass(), serializer);
+		}
 	}
 
 	static class JdkImmutableSetSerializer extends CollectionSerializer<Set<Object>> {
@@ -157,6 +181,13 @@ public final class ImmutableCollectionsSerializers {
 			kryo.addDefaultSerializer(Set.of().getClass(), serializer);
 			kryo.addDefaultSerializer(Set.of(1).getClass(), serializer);
 			kryo.addDefaultSerializer(Set.of(1, 2, 3, 4).getClass(), serializer);
+		}
+
+		static void registerSerializers (Kryo kryo) {
+			final JdkImmutableSetSerializer serializer = new JdkImmutableSetSerializer();
+			kryo.register(Set.of().getClass(), serializer);
+			kryo.register(Set.of(1).getClass(), serializer);
+			kryo.register(Set.of(1, 2, 3, 4).getClass(), serializer);
 		}
 	}
 
