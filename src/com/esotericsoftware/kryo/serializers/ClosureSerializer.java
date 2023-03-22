@@ -31,6 +31,7 @@ import com.esotericsoftware.minlog.Log;
 
 import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /** Serializer for Java8 closures which implement Serializable. To serialize closures, use:
@@ -49,6 +50,7 @@ public class ClosureSerializer extends Serializer {
 	}
 
 	private static Method readResolve;
+	private static Field capturingClass;
 
 	public ClosureSerializer () {
 		if (readResolve == null) {
@@ -61,6 +63,16 @@ public class ClosureSerializer extends Serializer {
 					"Falling back on resolving lambdas via capturing class.", ex);
 			}
 		}
+		if (capturingClass == null) {
+			try {
+				capturingClass = SerializedLambda.class.getDeclaredField("capturingClass");
+				capturingClass.setAccessible(true);
+			} catch (Exception ex) {
+				capturingClass = null;
+				Log.warn("Unable to obtain SerializedLambda#capturingClass via reflection. " +
+					"Falling back to resolving capturing class via Class.forName.", ex);
+			}
+		}
 	}
 
 	public void write (Kryo kryo, Output output, Object object) {
@@ -70,7 +82,7 @@ public class ClosureSerializer extends Serializer {
 		for (int i = 0; i < count; i++)
 			kryo.writeClassAndObject(output, serializedLambda.getCapturedArg(i));
 		try {
-			kryo.writeClass(output, Class.forName(serializedLambda.getCapturingClass().replace('/', '.')));
+			kryo.writeClass(output, getCapturingClass(serializedLambda));
 		} catch (ClassNotFoundException ex) {
 			throw new KryoException("Error writing closure.", ex);
 		}
@@ -103,7 +115,7 @@ public class ClosureSerializer extends Serializer {
 	public Object copy (Kryo kryo, Object original) {
 		try {
 			SerializedLambda lambda = toSerializedLambda(original);
-			Class<?> capturingClass = Class.forName(lambda.getCapturingClass().replace('/', '.'));
+			Class<?> capturingClass = getCapturingClass(lambda);
 			return readResolve(capturingClass, lambda);
 		} catch (Exception ex) {
 			throw new KryoException("Error copying closure.", ex);
@@ -136,5 +148,16 @@ public class ClosureSerializer extends Serializer {
 		} catch (Exception ex) {
 			throw new KryoException("writeReplace must return a SerializedLambda: " + className(replacement.getClass()), ex);
 		}
+	}
+
+	private static Class<?> getCapturingClass (SerializedLambda serializedLambda) throws ClassNotFoundException {
+		if (capturingClass != null) {
+			try {
+				return (Class<?>)capturingClass.get(serializedLambda);
+			} catch (IllegalAccessException ignored) {
+				// ignore
+			}
+		}
+		return Class.forName(serializedLambda.getCapturingClass().replace('/', '.'));
 	}
 }
