@@ -50,7 +50,7 @@ public final class ImmutableCollectionsSerializers {
 		JdkImmutableSetSerializer.registerSerializers(kryo);
 	}
 
-	static class JdkImmutableListSerializer extends CollectionSerializer<List<Object>> {
+	public static final class JdkImmutableListSerializer extends CollectionSerializer<List<Object>> {
 
 		private JdkImmutableListSerializer () {
 			setElementsCanBeNull(false);
@@ -98,7 +98,7 @@ public final class ImmutableCollectionsSerializers {
 		}
 	}
 
-	static class JdkImmutableMapSerializer extends MapSerializer<Map<Object, Object>> {
+	public static final class JdkImmutableMapSerializer extends MapSerializer<Map<Object, Object>> {
 
 		private JdkImmutableMapSerializer () {
 			setKeysCanBeNull(false);
@@ -145,7 +145,7 @@ public final class ImmutableCollectionsSerializers {
 		}
 	}
 
-	static class JdkImmutableSetSerializer extends CollectionSerializer<Set<Object>> {
+	public static final class JdkImmutableSetSerializer extends CollectionSerializer<Set<Object>> {
 
 		private JdkImmutableSetSerializer () {
 			setElementsCanBeNull(false);
