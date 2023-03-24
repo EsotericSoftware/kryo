@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -57,6 +58,16 @@ public class DefaultClassResolver implements ClassResolver {
 		memoizedClassId = -1;
 		memoizedClass = null;
 		if (registration == null) throw new IllegalArgumentException("registration cannot be null.");
+
+		final Serializer oldSerializer = registration.getSerializer();
+		final Serializer newSerializer = kryo.adaptNewSerializer(oldSerializer);
+		if (oldSerializer != newSerializer) {
+			if (newSerializer == null) {
+				throw new IllegalArgumentException("serializer cannot be null.");
+			}
+			registration.setSerializer(newSerializer);
+		}
+
 		if (registration.getId() != NAME) {
 			if (TRACE) {
 				trace("kryo", "Register class ID " + registration.getId() + ": " + className(registration.getType()) + " ("
