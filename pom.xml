@@ -445,25 +445,6 @@
 				</pluginManagement>
 			</build>
 		</profile>
-		<!-- Overrides for building with JDK16+ -->
-		<profile>
-			<id>jdk16ge</id>
-			<activation>
-				<jdk>[16,</jdk>
-			</activation>
-			<build>
-				<pluginManagement>
-					<plugins>
-						<!-- Overridden because of https://issues.apache.org/jira/browse/MSHADE-379 -->
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-shade-plugin</artifactId>
-							<version>3.4.1</version>
-						</plugin>
-					</plugins>
-				</pluginManagement>
-			</build>
-		</profile>
 	</profiles>
 
 	<repositories>
