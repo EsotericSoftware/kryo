@@ -149,7 +149,7 @@ class ReflectField extends CachedField {
 	}
 
 	Class resolveFieldClass () {
-		if (valueClass == null) {
+		if (valueClass == null && !field.getType().isArray()) {
 			Class fieldClass = genericType.resolve(fieldSerializer.kryo.getGenerics());
 			if (fieldClass != null && fieldSerializer.kryo.isFinal(fieldClass)) return fieldClass;
 		}
