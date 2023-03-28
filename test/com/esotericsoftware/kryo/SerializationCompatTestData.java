@@ -20,6 +20,8 @@
 package com.esotericsoftware.kryo;
 
 import com.esotericsoftware.kryo.SerializationCompatTestData.Person.Gender;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -65,9 +67,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /** Testdata for serialization compatibility check. */
 @SuppressWarnings("unused")
