@@ -261,7 +261,10 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 		Constructor<T> canonicalConstructor;
 		try {
 			canonicalConstructor = recordType.getConstructor(paramTypes);
-		} catch (NoSuchMethodException e) {
+			if (!canonicalConstructor.canAccess(null)) {
+				canonicalConstructor.setAccessible(true);
+			}
+		} catch (Exception e) {
 			canonicalConstructor = recordType.getDeclaredConstructor(paramTypes);
 			canonicalConstructor.setAccessible(true);
 		}
