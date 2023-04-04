@@ -52,6 +52,7 @@
 		<javac.target>1.8</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>5.9.2</junit.version>
+		<kotlin.version>1.8.10</kotlin.version>
 	</properties>
 
 	<modules>
@@ -78,6 +79,12 @@
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-params</artifactId>
 			<version>${junit.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.jetbrains.kotlin</groupId>
+			<artifactId>kotlin-stdlib</artifactId>
+			<version>${kotlin.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -115,6 +122,12 @@
 						<target>${javac.target}</target>
 						<encoding>utf-8</encoding>
 					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.jetbrains.kotlin</groupId>
+					<artifactId>kotlin-maven-plugin</artifactId>
+					<version>${kotlin.version}</version>
 				</plugin>
 
 				<plugin>
