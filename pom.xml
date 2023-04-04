@@ -52,6 +52,8 @@
 		<javac.target>1.8</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>5.9.2</junit.version>
+		<kotlin.version>1.8.20</kotlin.version>
+		<kotlin.compiler.incremental>true</kotlin.compiler.incremental>
 	</properties>
 
 	<modules>
@@ -339,6 +341,63 @@
 				</plugins>
 			</build>
 		</profile>
+		<!-- Include any tests that require kotlin -->
+		<profile>
+			<id>kotlin</id>
+			<activation>
+				<property>
+					<name>!skipKotlin</name>
+				</property>
+			</activation>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.codehaus.mojo</groupId>
+							<artifactId>build-helper-maven-plugin</artifactId>
+							<executions>
+								<execution>
+									<id>add-test-source</id>
+									<phase>generate-test-sources</phase>
+									<goals>
+										<goal>add-test-source</goal>
+									</goals>
+									<configuration>
+										<sources>
+											<source>test-kotlin</source>
+										</sources>
+									</configuration>
+								</execution>
+							</executions>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+				<plugins>
+					<plugin>
+						<groupId>org.jetbrains.kotlin</groupId>
+						<artifactId>kotlin-maven-plugin</artifactId>
+						<version>${kotlin.version}</version>
+						<executions>
+							<execution>
+								<id>test-compile</id>
+								<phase>test-compile</phase>
+								<goals>
+									<goal>test-compile</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+			<dependencies>
+				<dependency>
+					<groupId>org.jetbrains.kotlin</groupId>
+					<artifactId>kotlin-stdlib</artifactId>
+					<version>${kotlin.version}</version>
+					<scope>test</scope>
+				</dependency>
+			</dependencies>
+		</profile>
 		<!-- Include any tests that require JDK11+ -->
 		<profile>
 			<id>jdk11ge</id>
@@ -360,6 +419,7 @@
 									</goals>
 									<configuration>
 										<sources>
+											<source>test-kotlin</source>
 											<source>test-jdk11</source>
 										</sources>
 									</configuration>
@@ -406,6 +466,7 @@
 									</goals>
 									<configuration>
 										<sources>
+											<source>test-kotlin</source>
 											<source>test-jdk11</source>
 											<source>test-jdk14</source>
 										</sources>
