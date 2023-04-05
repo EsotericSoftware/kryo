@@ -4,16 +4,12 @@ import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotSame
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
-class LambdaTest {
-    class Example(private val p: (Long) -> String) {
-        constructor() : this({ it.toString() })
-    }
+class SerializationTest {
 
+    // https://github.com/EsotericSoftware/kryo/issues/864
     @Test
-    @Disabled("Expected to fail")
     fun testLambda() {
         val kryo = Kryo().apply {
             isRegistrationRequired = false
@@ -32,6 +28,10 @@ class LambdaTest {
 
         assertEquals(example::class.java, deserialized::class.java)
         assertNotSame(example, deserialized)
+    }
+
+    class Example(private val p: (Long) -> String) {
+        constructor() : this({ it.toString() })
     }
 }
 
