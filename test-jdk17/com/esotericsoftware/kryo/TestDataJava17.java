@@ -26,7 +26,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * @author Julia Boes <julia.boes@oracle.com>
  * @author Chris Hegarty <chris.hegarty@oracle.com>
  */
-public class TestDataJava14 extends SerializationCompatTestData.TestData {
+public class TestDataJava17 extends SerializationCompatTestData.TestData {
     public record Rec (byte b, short s, int i, long l, float f, double d, boolean bool, char c, String str, Integer[] n) {
         // Overriden because of https://stackoverflow.com/questions/61261226/java-14-records-and-arrays
         public boolean equals(Object o) {
@@ -40,7 +40,7 @@ public class TestDataJava14 extends SerializationCompatTestData.TestData {
 
     private Rec rec;
 
-    public TestDataJava14() {
+    public TestDataJava17() {
         rec = new Rec("b".getBytes()[0], (short)1, 2, 3L, 4.0f, 5.0d, true, 'c', "foo", new Integer[]{1,2,3});
     }
 }
