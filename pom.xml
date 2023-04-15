@@ -434,11 +434,11 @@
 				</pluginManagement>
 			</build>
 		</profile>
-		<!-- Include any tests that require JDK14+ -->
+		<!-- Include any tests that require JDK17+ -->
 		<profile>
-			<id>jdk14ge</id>
+			<id>jdk17ge</id>
 			<activation>
-				<jdk>[14,</jdk>
+				<jdk>[17,</jdk>
 			</activation>
 			<build>
 				<plugins>
@@ -468,7 +468,7 @@
 										<sources>
 											<source>test-kotlin</source>
 											<source>test-jdk11</source>
-											<source>test-jdk14</source>
+											<source>test-jdk17</source>
 										</sources>
 									</configuration>
 								</execution>
@@ -478,7 +478,7 @@
 							<groupId>org.apache.maven.plugins</groupId>
 							<artifactId>maven-compiler-plugin</artifactId>
 							<configuration>
-								<!-- Enable Java 14+ for all sources so that Intellij picks the right language level -->
+								<!-- Enable Java 17+ for all sources so that Intellij picks the right language level -->
 								<source>${java.vm.specification.version}</source>
 								<target>${java.vm.specification.version}</target>
 								<compilerArgs>
