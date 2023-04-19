@@ -1257,10 +1257,10 @@ public class Kryo {
 	 * the class {@link Registration}.
 	 * <p>
 	 * This can be overridden to support alternative closure implementations. The default implementation returns true if the
-	 * specified type's name contains '/' (to detect a Java 8+ closure). */
+	 * specified type is synthetic and the type's simple name contains '/' (to detect a Java 8+ closure). */
 	public boolean isClosure (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		return type.getName().indexOf('/') >= 0;
+		return type.isSynthetic() && type.getSimpleName().indexOf('/') >= 0;
 	}
 
 	/** Returns true if the specified type is a proxy. When true, Kryo uses {@link InvocationHandler} instead of the specified type
