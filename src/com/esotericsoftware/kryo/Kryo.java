@@ -558,7 +558,7 @@ public class Kryo {
 
 		Registration registration = classResolver.getRegistration(type);
 		if (registration == null) {
-			if (Proxy.isProxyClass(type)) {
+			if (isProxy(type)) {
 				// If a Proxy class, treat it like an InvocationHandler because the concrete class for a proxy is generated.
 				registration = getRegistration(InvocationHandler.class);
 			} else if (!type.isEnum() && Enum.class.isAssignableFrom(type) && type != Enum.class) {
@@ -1261,6 +1261,16 @@ public class Kryo {
 	public boolean isClosure (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		return type.getName().indexOf('/') >= 0;
+	}
+
+	/** Returns true if the specified type is a proxy. When true, Kryo uses {@link InvocationHandler} instead of the specified type
+	 * to find the class {@link Registration}.
+	 * <p>
+	 * This can be overridden to support alternative proxy checks. The default implementation delegates to
+	 * {@link Proxy#isProxyClass(Class)}. */
+	public boolean isProxy (Class type) {
+		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		return Proxy.isProxyClass(type);
 	}
 
 	/** Tracks the generic type arguments and actual classes for type variables in the object graph during seralization.
