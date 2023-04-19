@@ -51,7 +51,9 @@
 		<kryo.major.version>5</kryo.major.version>
 		<javac.target>1.8</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<junit.version>5.9.1</junit.version>
+		<junit.version>5.9.2</junit.version>
+		<kotlin.version>1.8.20</kotlin.version>
+		<kotlin.compiler.incremental>true</kotlin.compiler.incremental>
 	</properties>
 
 	<modules>
@@ -81,9 +83,9 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
-			<version>2.6</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.12.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -97,13 +99,13 @@
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>build-helper-maven-plugin</artifactId>
-					<version>3.2.0</version>
+					<version>3.3.0</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-clean-plugin</artifactId>
-					<version>3.1.0</version>
+					<version>3.2.0</version>
 				</plugin>
 
 				<plugin>
@@ -120,19 +122,19 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-install-plugin</artifactId>
-					<version>2.5.2</version>
+					<version>3.0.1</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-deploy-plugin</artifactId>
-					<version>2.8.2</version>
+					<version>3.1.1</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-jar-plugin</artifactId>
-					<version>3.2.0</version>
+					<version>3.3.0</version>
 				</plugin>
 
 				<plugin>
@@ -144,12 +146,12 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
-					<version>2.22.2</version>
+					<version>3.0.0</version>
 				</plugin>
 
 				<plugin>
 					<artifactId>maven-resources-plugin</artifactId>
-					<version>3.2.0</version>
+					<version>3.3.0</version>
 					<executions>
 						<!-- Disable resources (project has none). -->
 						<execution>
@@ -166,7 +168,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-javadoc-plugin</artifactId>
-					<version>3.2.0</version>
+					<version>3.4.1</version>
 					<configuration>
 						<!-- Required for java8, so that javadoc errors don't fail the build. -->
 						<doclint>none</doclint>
@@ -208,19 +210,19 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-shade-plugin</artifactId>
-					<version>3.2.4</version>
+					<version>3.4.1</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-enforcer-plugin</artifactId>
-					<version>3.0.0</version>
+					<version>3.1.0</version>
 				</plugin>
 
 				<plugin>
 					<groupId>net.revelc.code.formatter</groupId>
 					<artifactId>formatter-maven-plugin</artifactId>
-					<version>2.17.1</version>
+					<version>2.21.0</version>
 					<configuration>
 						<configFile>${kryo.root}/eclipse/code-format.xml</configFile>
 						<lineEnding>KEEP</lineEnding>
@@ -318,7 +320,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-enforcer-plugin</artifactId>
-						<version>3.0.0-M3</version>
+						<version>3.2.1</version>
 						<executions>
 							<execution>
 								<goals>
@@ -338,6 +340,63 @@
 					</plugin>
 				</plugins>
 			</build>
+		</profile>
+		<!-- Include any tests that require kotlin -->
+		<profile>
+			<id>kotlin</id>
+			<activation>
+				<property>
+					<name>!skipKotlin</name>
+				</property>
+			</activation>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.codehaus.mojo</groupId>
+							<artifactId>build-helper-maven-plugin</artifactId>
+							<executions>
+								<execution>
+									<id>add-test-source</id>
+									<phase>generate-test-sources</phase>
+									<goals>
+										<goal>add-test-source</goal>
+									</goals>
+									<configuration>
+										<sources>
+											<source>test-kotlin</source>
+										</sources>
+									</configuration>
+								</execution>
+							</executions>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+				<plugins>
+					<plugin>
+						<groupId>org.jetbrains.kotlin</groupId>
+						<artifactId>kotlin-maven-plugin</artifactId>
+						<version>${kotlin.version}</version>
+						<executions>
+							<execution>
+								<id>test-compile</id>
+								<phase>test-compile</phase>
+								<goals>
+									<goal>test-compile</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+			<dependencies>
+				<dependency>
+					<groupId>org.jetbrains.kotlin</groupId>
+					<artifactId>kotlin-stdlib</artifactId>
+					<version>${kotlin.version}</version>
+					<scope>test</scope>
+				</dependency>
+			</dependencies>
 		</profile>
 		<!-- Include any tests that require JDK11+ -->
 		<profile>
@@ -360,6 +419,7 @@
 									</goals>
 									<configuration>
 										<sources>
+											<source>test-kotlin</source>
 											<source>test-jdk11</source>
 										</sources>
 									</configuration>
@@ -374,18 +434,17 @@
 				</pluginManagement>
 			</build>
 		</profile>
-		<!-- Include any tests that require JDK14+ -->
+		<!-- Include any tests that require JDK17+ -->
 		<profile>
-			<id>jdk14ge</id>
+			<id>jdk17ge</id>
 			<activation>
-				<jdk>[14,</jdk>
+				<jdk>[17,</jdk>
 			</activation>
 			<build>
 				<plugins>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-surefire-plugin</artifactId>
-						<version>2.22.2</version>
 						<configuration>
 							<excludes>
 								<exclude>**/java11/*Test.java</exclude>
@@ -407,8 +466,9 @@
 									</goals>
 									<configuration>
 										<sources>
+											<source>test-kotlin</source>
 											<source>test-jdk11</source>
-											<source>test-jdk14</source>
+											<source>test-jdk17</source>
 										</sources>
 									</configuration>
 								</execution>
@@ -418,8 +478,7 @@
 							<groupId>org.apache.maven.plugins</groupId>
 							<artifactId>maven-compiler-plugin</artifactId>
 							<configuration>
-								<optimize>true</optimize>
-								<!-- Enable Java 14+ for all sources so that Intellij picks the right language level -->
+								<!-- Enable Java 17+ for all sources so that Intellij picks the right language level -->
 								<source>${java.vm.specification.version}</source>
 								<target>${java.vm.specification.version}</target>
 								<compilerArgs>
@@ -441,37 +500,6 @@
 										--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
 									</argLine>
 							</configuration>
-						</plugin>
-					</plugins>
-				</pluginManagement>
-			</build>
-		</profile>
-		<!-- Overrides for building with JDK16+ -->
-		<profile>
-			<id>jdk16ge</id>
-			<activation>
-				<jdk>[16,</jdk>
-			</activation>
-			<build>
-				<pluginManagement>
-					<plugins>
-						<!-- Overridden because of https://issues.apache.org/jira/browse/MSHADE-379 -->
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-shade-plugin</artifactId>
-							<version>3.2.4</version>
-							<dependencies>
-								<dependency>
-									<groupId>org.ow2.asm</groupId>
-									<artifactId>asm</artifactId>
-									<version>9.2</version>
-								</dependency>
-								<dependency>
-									<groupId>org.ow2.asm</groupId>
-									<artifactId>asm-commons</artifactId>
-									<version>9.2</version>
-								</dependency>
-							</dependencies>
 						</plugin>
 					</plugins>
 				</pluginManagement>

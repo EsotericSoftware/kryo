@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022, Nathan Sweet
+/* Copyright (c) 2008-2023, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo;
 
+import org.apache.commons.lang3.StringUtils;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.Field;
@@ -35,15 +37,13 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.lang.StringUtils;
-
 /** An assertion utility that provides reflection based assertion, with improvements compared to commons-lang's
  * EqualsBuilder#reflectionEquals and unitils' ReflectionassertReflectionEquals. */
 class ReflectionAssert {
 
 	/** Checks both objects for equality using reflection. There are special equal checks implemented for some types like
 	 * {@link Set} and {@link Map} that are not available in
-	 * {@link org.apache.commons.lang.builder.EqualsBuilder#reflectionEquals(Object, Object)} . Collections must be of the same
+	 * {@link org.apache.commons.lang3.builder.EqualsBuilder#reflectionEquals(Object, Object, String...)} . Collections must be of the same
 	 * implementation, basically {@link #assertReflectionEquals(Object, Object, boolean)} is invoked with <code>true</code> for
 	 * param <code>requireMatchingCollectionClasses</code>.
 	 *
@@ -57,7 +57,7 @@ class ReflectionAssert {
 
 	/** Checks both objects for equality using reflection. There are special equal checks implemented for some types like
 	 * {@link Set} and {@link Map} that are not available in
-	 * {@link org.apache.commons.lang.builder.EqualsBuilder#reflectionEquals(Object, Object)} .
+	 * {@link org.apache.commons.lang3.builder.EqualsBuilder#reflectionEquals(Object, Object, String...)} .
 	 *
 	 * @param one one of both objects to compare.
 	 * @param another one of both objects to compare.

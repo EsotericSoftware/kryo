@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022, Nathan Sweet
+/* Copyright (c) 2008-2023, Nathan Sweet
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -44,4 +44,12 @@ class UtilTest {
         assertFalse(Util.isAssignableTo(String.class, long.class));
     }
 
+    @Test
+    void testGetArrayType() {
+        assertEquals(int[].class, Util.getArrayType(int.class));
+        assertEquals(Integer[].class, Util.getArrayType(Integer.class));
+        assertEquals(String[].class, Util.getArrayType(String.class));
+        assertEquals(String[][].class, Util.getArrayType(String[].class));
+        assertEquals(Object[].class, Util.getArrayType(Object.class));
+    }
 }
