@@ -27,6 +27,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
+import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.reflect.Field;
 
@@ -151,7 +152,9 @@ class ReflectField extends CachedField {
 	Class resolveFieldClass () {
 		if (valueClass == null) {
 			Class fieldClass = genericType.resolve(fieldSerializer.kryo.getGenerics());
-			if (fieldClass != null && fieldSerializer.kryo.isFinal(fieldClass)) return fieldClass;
+			if (fieldClass != null && fieldSerializer.kryo.isFinal(fieldClass)) {
+				return field.getType().isArray() ? Util.getArrayType(fieldClass) : fieldClass;
+			}
 		}
 		return valueClass;
 	}

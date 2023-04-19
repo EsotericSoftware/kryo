@@ -145,6 +145,38 @@ class GenericsTest extends KryoTestCase {
 		roundTrip(70, o);
 	}
 
+	// Test for https://github.com/EsotericSoftware/kryo/issues/940
+	@Test
+	void testFieldWithStringArrayType () {
+		StringArray array = new StringArray(new String[] {"1"});
+		
+		kryo.setRegistrationRequired(false);
+
+		roundTrip(67, array);
+	}
+
+	// Test for https://github.com/EsotericSoftware/kryo/issues/940
+	@Test
+	void testFieldWithNumberArrayType () {
+		NumberArray<Integer> array = new NumberArray<>(new Integer[] {1});
+		NumberArrayHolder container = new NumberArrayHolder(array);
+		
+		kryo.setRegistrationRequired(false);
+
+		roundTrip(137, container);
+	}
+
+	// Test for https://github.com/EsotericSoftware/kryo/issues/940
+	@Test
+	void testFieldWithObjectArrayType () {
+		ObjectArray<TestObject> array = new ObjectArray<>(new TestObject[] {new TestObject(1)});
+		ObjectArrayHolder container = new ObjectArrayHolder(array);
+		
+		kryo.setRegistrationRequired(false);
+
+		roundTrip(265, container);
+	}
+
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
 	void testClassWithMultipleGenericTypes() {
@@ -565,4 +597,116 @@ class GenericsTest extends KryoTestCase {
 		}
 	}
 
+	public static class StringArray {
+
+		private String[] values;
+
+		public StringArray() {
+		}
+
+		public StringArray(String[] array) {
+			this.values = array;
+		}
+
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			StringArray that = (StringArray) o;
+			return Arrays.equals(values, that.values);
+		}
+	}
+
+	public static class NumberArray<V extends Number> {
+
+		private V[] values;
+
+		public NumberArray() {
+		}
+
+		public NumberArray(V[] array) {
+			this.values = array;
+		}
+
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			NumberArray<?> that = (NumberArray<?>) o;
+			return Arrays.equals(values, that.values);
+		}
+	}
+
+	public static class NumberArrayHolder {
+
+		private NumberArray<Integer> field;
+
+		public NumberArrayHolder() {
+		}
+
+		public NumberArrayHolder(NumberArray<Integer> array) {
+			this.field = array;
+		}
+
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			NumberArrayHolder that = (NumberArrayHolder) o;
+			return Objects.equals(field, that.field);
+		}
+	}
+
+	public static class ObjectArray<V> {
+
+		private V[] values;
+
+		public ObjectArray() {
+		}
+
+		public ObjectArray(V[] array) {
+			this.values = array;
+		}
+
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ObjectArray<?> that = (ObjectArray<?>)o;
+			return Arrays.equals(values, that.values);
+		}
+	}
+
+	public static class ObjectArrayHolder {
+
+		private ObjectArray<TestObject> field;
+
+		public ObjectArrayHolder() {
+		}
+
+		public ObjectArrayHolder(ObjectArray<TestObject> array) {
+			this.field = array;
+		}
+
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ObjectArrayHolder that = (ObjectArrayHolder)o;
+			return Objects.equals(field, that.field);
+		}
+	}
+
+	public static class TestObject {
+		private int i;
+
+		public TestObject() {
+		}
+
+		public TestObject(int i) {
+			this.i = i;
+		}
+
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			TestObject that = (TestObject) o;
+			return i == that.i;
+		}
+	}
 }

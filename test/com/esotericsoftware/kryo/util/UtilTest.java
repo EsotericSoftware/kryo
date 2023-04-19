@@ -44,4 +44,12 @@ class UtilTest {
         assertFalse(Util.isAssignableTo(String.class, long.class));
     }
 
+    @Test
+    void testGetArrayType() {
+        assertEquals(int[].class, Util.getArrayType(int.class));
+        assertEquals(Integer[].class, Util.getArrayType(Integer.class));
+        assertEquals(String[].class, Util.getArrayType(String.class));
+        assertEquals(String[][].class, Util.getArrayType(String[].class));
+        assertEquals(Object[].class, Util.getArrayType(Object.class));
+    }
 }

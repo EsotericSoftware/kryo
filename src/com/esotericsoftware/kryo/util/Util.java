@@ -27,6 +27,7 @@ import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -108,6 +109,21 @@ public class Util {
 		if (type == Short.class) return short.class;
 		if (type == Void.class) return void.class;
 		return type;
+	}
+
+	/** Returns the array type for a given class */
+	public static Class getArrayType(Class type) {
+		if (type == String.class) return String[].class;
+		if (type == Integer.class) return Integer[].class;
+		if (type == Float.class) return Float[].class;
+		if (type == Boolean.class) return Boolean[].class;
+		if (type == Byte.class) return Byte[].class;
+		if (type == Long.class) return Long[].class;
+		if (type == Character.class) return Character[].class;
+		if (type == Double.class) return Double[].class;
+		if (type == Short.class) return Short[].class;
+		// See Class#arrayType() available from JDK 12
+		return Array.newInstance(type, 0).getClass();
 	}
 
 	public static boolean isWrapperClass (Class type) {
