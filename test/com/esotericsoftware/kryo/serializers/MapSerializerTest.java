@@ -117,7 +117,10 @@ class MapSerializerTest extends KryoTestCase {
 		kryo.writeClassAndObject(output, test);
 		output.flush();
 
-		input = new Input(output.toBytes());
+		final byte[] bytes = output.toBytes();
+		assertEquals(bytes.length, 13);
+		
+		input = new Input(bytes);
 		HasGenerics test2 = (HasGenerics)kryo.readClassAndObject(input);
 		assertArrayEquals(test.map.get("moo"), test2.map.get("moo"));
 	}
