@@ -5,7 +5,7 @@
 		<groupId>com.esotericsoftware</groupId>
 		<artifactId>kryo-parent</artifactId>
 		<version>5.5.1-SNAPSHOT</version>
-		<relativePath>./pom.xml</relativePath>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<artifactId>kryo</artifactId>
@@ -13,6 +13,10 @@
 
 	<name>Kryo</name>
 	<description>Fast, efficient Java serialization. This is the main Kryo artifact.</description>
+
+	<properties>
+		<kryo.root>../</kryo.root>
+	</properties>
 
 	<dependencies>
 		<dependency>
@@ -33,6 +37,10 @@
 	</dependencies>
 
 	<build>
+		<directory>${kryo.root}/target</directory>
+		<sourceDirectory>${kryo.root}/src</sourceDirectory>
+		<testSourceDirectory>${kryo.root}/test</testSourceDirectory>
+		
 		<plugins>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
@@ -75,8 +83,9 @@
 				<artifactId>maven-assembly-plugin</artifactId>
 				<version>3.4.2</version>
 				<configuration>
+					<archiveBaseDirectory>${kryo.root}</archiveBaseDirectory>
 					<descriptors>
-						<descriptor>build/assembly-all.xml</descriptor>
+						<descriptor>${kryo.root}/build/assembly-all.xml</descriptor>
 					</descriptors>
 				</configuration>
 				<!--

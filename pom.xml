@@ -57,8 +57,8 @@
 	</properties>
 
 	<modules>
-		<module>pom-main.xml</module>
-		<module>pom-versioned.xml</module>
+		<module>main</module>
+		<module>main-versioned</module>
 		<module>benchmarks</module>
 	</modules>
 
@@ -182,7 +182,7 @@
 					<artifactId>findbugs-maven-plugin</artifactId>
 					<version>3.0.5</version>
 				</plugin>
-                                
+
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-release-plugin</artifactId>
@@ -194,8 +194,8 @@
 						<arguments>-Prelease</arguments>
 						<goals>deploy</goals>
 						<!-- Don't run clean, because this would delete the kryo artifact, which would fail the shade plugin
-						    because the kryo jar would no longer exist.
-						    https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html#preparationGoals
+							because the kryo jar would no longer exist.
+							https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html#preparationGoals
 						-->
 						<preparationGoals>verify</preparationGoals>
 					</configuration>
@@ -364,7 +364,7 @@
 									</goals>
 									<configuration>
 										<sources>
-											<source>test-kotlin</source>
+											<source>${kryo.root}/test-kotlin</source>
 										</sources>
 									</configuration>
 								</execution>
@@ -419,8 +419,8 @@
 									</goals>
 									<configuration>
 										<sources>
-											<source>test-kotlin</source>
-											<source>test-jdk11</source>
+											<source>${kryo.root}/test-kotlin</source>
+											<source>${kryo.root}/test-jdk11</source>
 										</sources>
 									</configuration>
 								</execution>
@@ -466,9 +466,9 @@
 									</goals>
 									<configuration>
 										<sources>
-											<source>test-kotlin</source>
-											<source>test-jdk11</source>
-											<source>test-jdk17</source>
+											<source>${kryo.root}/test-kotlin</source>
+											<source>${kryo.root}/test-jdk11</source>
+											<source>${kryo.root}/test-jdk17</source>
 										</sources>
 									</configuration>
 								</execution>
@@ -493,12 +493,13 @@
 							<groupId>org.apache.maven.plugins</groupId>
 							<artifactId>maven-surefire-plugin</artifactId>
 							<configuration>
-									<argLine>
-										--enable-preview
-										--add-opens java.base/sun.nio.ch=ALL-UNNAMED
-										--add-opens java.base/java.nio=ALL-UNNAMED
-										--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
-									</argLine>
+								<argLine>
+									--enable-preview
+									--add-opens java.base/sun.nio.ch=ALL-UNNAMED
+									--add-opens java.base/java.lang.invoke=ALL-UNNAMED
+									--add-opens java.base/java.nio=ALL-UNNAMED
+									--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
+								</argLine>
 							</configuration>
 						</plugin>
 					</plugins>
