@@ -41,6 +41,11 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
+	public GenericsHierarchy buildHierarchy (Class type) {
+		return new GenericsHierarchy(type);
+	}
+
+	@Override
 	public void pushGenericType (GenericType fieldType) {
 		// Ensure genericTypes and depths capacity.
 		int size = genericTypesSize;
