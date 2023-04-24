@@ -31,6 +31,11 @@ public final class NoGenerics implements Generics {
 	}
 
 	@Override
+	public GenericsHierarchy buildHierarchy (Class type) {
+		return GenericsHierarchy.EMPTY;
+	}
+
+	@Override
 	public void pushGenericType (GenericType fieldType) {
 	}
 
