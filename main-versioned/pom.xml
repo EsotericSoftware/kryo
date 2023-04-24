@@ -5,15 +5,18 @@
 		<groupId>com.esotericsoftware</groupId>
 		<artifactId>kryo-parent</artifactId>
 		<version>5.5.1-SNAPSHOT</version>
-		<relativePath>./pom.xml</relativePath>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<groupId>com.esotericsoftware.kryo</groupId>
 	<artifactId>kryo${kryo.major.version}</artifactId>
 	<packaging>jar</packaging>
 
 	<name>Kryo ${kryo.major.version}</name>
 	<description>Fast, efficient Java serialization. This is the version specific Kryo artifact.</description>
+
+	<properties>
+		<kryo.root>../</kryo.root>
+	</properties>
 
 	<dependencies>
 		<dependency>
@@ -24,7 +27,18 @@
 	</dependencies>
 
 	<build>
+		<directory>${kryo.root}/target</directory>
+		<sourceDirectory>${kryo.root}/src</sourceDirectory>
+		<testSourceDirectory>${kryo.root}/test</testSourceDirectory>
+		
 		<plugins>
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<configuration>
+					<!-- Skip clean phase so that artifacts from main POM are not deleted. -->
+					<skip>true</skip>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
