@@ -52,7 +52,7 @@
 		<javac.target>1.8</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>5.9.3</junit.version>
-		<kotlin.version>1.8.20</kotlin.version>
+		<kotlin.version>1.8.21</kotlin.version>
 		<kotlin.compiler.incremental>true</kotlin.compiler.incremental>
 	</properties>
 
