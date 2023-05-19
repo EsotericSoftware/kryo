@@ -14,7 +14,7 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 
 ## Contents
 
-- [New in release 4.0.1](#new-in-release-401)
+- [New in release 4.0.3](#new-in-release-403)
 - [Versioning Semantics, Upgrading](#versioning-semantics-upgrading)
 - [Installation](#installation)
  - [Integration with Maven](#integration-with-maven)
@@ -50,9 +50,9 @@ If you are planning to use Kryo for network communication, the [KryoNet](https:/
 - [Projects using Kryo](#projects-using-kryo)
 - [Contact / Mailing list](#contact--mailing-list)
 
-## New in release 4.0.1
+## New in release 4.0.3
 
-The 4.0.1 release brings several fixes and improvements, for details check out the [release notes](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.1).
+The 4.0.3 release brings several fixes and improvements, for details check out the [release notes](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.3).
 
 ## Versioning Semantics, Upgrading
 
@@ -88,7 +88,7 @@ To use the official release of Kryo, please use the following snippet in your po
     <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo</artifactId>
-        <version>4.0.1</version>
+        <version>4.0.3</version>
     </dependency>
 ```
 
@@ -98,7 +98,7 @@ If you experience issues because you already have a different version of asm in 
     <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo-shaded</artifactId>
-        <version>4.0.1</version>
+        <version>4.0.3</version>
     </dependency>
 ```
 
@@ -114,7 +114,7 @@ If you want to test the latest snapshot of Kryo, please use the following snippe
     <dependency>
        <groupId>com.esotericsoftware</groupId>
        <artifactId>kryo</artifactId>
-        <version>4.0.1-SNAPSHOT</version>
+        <version>4.0.3-SNAPSHOT</version>
     </dependency>
 ```
 
