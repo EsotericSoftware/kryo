@@ -7,7 +7,7 @@
 	</parent>
 	<groupId>com.esotericsoftware</groupId>
 	<artifactId>kryo-parent</artifactId>
-	<version>4.0.3</version>
+	<version>4.0.4-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>Kryo Parent</name>
 	<description>Fast, efficient Java serialization. This is the parent pom that assembles the main kryo and shaded kryo artifacts.</description>
