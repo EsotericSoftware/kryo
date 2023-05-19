@@ -88,6 +88,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
+* [4.0.3](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.3) - brings bug fixes and performance improvements for chunked encoding.
 * [5.5.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.5.0) - brings bug fixes and performance improvements.
 * [5.4.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.4.0) - brings bug fixes and performance improvements.
 * [5.3.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.3.0) - brings bug fixes and performance improvements.
