@@ -23,12 +23,12 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import sun.misc.Cleaner;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
@@ -90,18 +90,6 @@ public class UnsafeUtil {
 		longArrayBaseOffset = tmpLongArrayBaseOffset;
 		doubleArrayBaseOffset = tmpDoubleArrayBaseOffset;
 		_unsafe = tmpUnsafe;
-	}
-
-	static private Method cleanerMethod, cleanMethod;
-	static {
-		try {
-			cleanerMethod = DirectBuffer.class.getMethod("cleaner");
-			cleanerMethod.setAccessible(true);
-			cleanMethod = cleanerMethod.getReturnType().getMethod("clean");
-		} catch (Exception ex) {
-			if (DEBUG) debug("kryo", "No direct ByteBuffer clean method is available.", ex);
-			cleanerMethod = null;
-		}
 	}
 
 	static {
@@ -166,13 +154,11 @@ public class UnsafeUtil {
 	 * 
 	 * NOTE: If Cleaner is not accessible due to SecurityManager restrictions, reflection could be used to obtain the "clean"
 	 * method and then invoke it. */
-	static public void releaseBuffer (ByteBuffer buffer) {
-		if (!(buffer instanceof DirectBuffer)) return;
-		if (cleanerMethod != null) {
-			try {
-				cleanMethod.invoke(cleanerMethod.invoke(buffer));
-			} catch (Throwable ignored) {
-			}
+	static public void releaseBuffer (ByteBuffer niobuffer) {
+		if (niobuffer != null && niobuffer.isDirect()) {
+			Object cleaner = ((DirectBuffer)niobuffer).cleaner();
+			if (cleaner != null) ((Cleaner)cleaner).clean();
+			niobuffer = null;
 		}
 	}
 }
