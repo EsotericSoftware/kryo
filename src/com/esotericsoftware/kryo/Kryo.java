@@ -75,6 +75,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimeZoneSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeSetSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.URISerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.URLSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.VoidSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
@@ -101,6 +102,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -221,6 +223,7 @@ public class Kryo {
 		addDefaultSerializer(Calendar.class, CalendarSerializer.class);
 		addDefaultSerializer(Locale.class, LocaleSerializer.class);
 		addDefaultSerializer(Charset.class, CharsetSerializer.class);
+		addDefaultSerializer(URI.class, URISerializer.class);
 		addDefaultSerializer(URL.class, URLSerializer.class);
 		addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer.class);
 		addDefaultSerializer(void.class, new VoidSerializer());
