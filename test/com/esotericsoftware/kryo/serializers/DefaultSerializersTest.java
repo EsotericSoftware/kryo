@@ -257,13 +257,60 @@ class DefaultSerializersTest extends KryoTestCase {
 	void testBigDecimalSerializer () {
 		kryo.register(BigDecimal.class);
 		kryo.register(BigDecimalSubclass.class);
+		roundTrip(4, BigDecimal.ZERO);
+
+		// postive values
 		roundTrip(5, BigDecimal.valueOf(12345, 2));
 		roundTrip(7, new BigDecimal("12345.12345"));
-		roundTrip(4, BigDecimal.ZERO);
 		roundTrip(4, BigDecimal.ONE);
 		roundTrip(4, BigDecimal.TEN);
 		roundTrip(5, new BigDecimalSubclass(new BigInteger("12345"), 2));
 		roundTrip(7, new BigDecimalSubclass("12345.12345"));
+		roundTrip(11, BigDecimal.valueOf(Long.MAX_VALUE, 2));
+		roundTrip(12, BigDecimal.valueOf(Long.MAX_VALUE, 2).add(BigDecimal.valueOf(1, 2)));
+
+		// negative values
+		roundTrip(5, BigDecimal.valueOf(-12345, 2));
+		roundTrip(7, new BigDecimal("-12345.12345"));
+		roundTrip(4, BigDecimal.ONE.negate());
+		roundTrip(4, BigDecimal.TEN.negate());
+		roundTrip(5, new BigDecimalSubclass(new BigInteger("-12345"), 2));
+		roundTrip(7, new BigDecimalSubclass("-12345.12345"));
+		roundTrip(11, BigDecimal.valueOf(Long.MIN_VALUE, 2));
+		roundTrip(12, BigDecimal.valueOf(Long.MIN_VALUE, 2).subtract(BigDecimal.valueOf(1, 2)));
+	}
+
+	@Test
+	void testBigDecimalSerializerBackwardCompatibility () {
+		kryo.register(BigDecimal.class);
+		output = new Output(8, -1);
+		input = new Input();
+		for (int i = -100000; i < 100000; i++) {
+			output.reset(); input.reset();
+			BigDecimal decimal = BigDecimal.valueOf(i, 2);
+
+			// that's how it was serialized before optimization for small values was implemented
+			byte[] expectedBytes = decimal.unscaledValue().toByteArray();
+			int expectedLength = expectedBytes.length;
+
+			// make sure that after optimizations it is serialized in the same way
+			kryo.writeObject(output, decimal);
+			input.setBuffer(output.getBuffer());
+			int actualLength = input.readVarInt(true) - 1;
+			byte[] actualBytes = input.readBytes(actualLength);
+
+			assertArrayEquals(expectedBytes, actualBytes, () -> String.format(
+					"for %s expected %s but got %s",
+					decimal, Arrays.toString(expectedBytes), Arrays.toString(actualBytes)
+			));
+			assertEquals(expectedLength, actualLength);
+			assertEquals(decimal.scale(), input.readInt(false));
+
+			// additionaly make sure that after deserialization we get the same value
+			input.reset();
+			BigDecimal actual = kryo.readObject(input, BigDecimal.class);
+			assertEquals(decimal, actual);
+		}
 	}
 
 	@Test
