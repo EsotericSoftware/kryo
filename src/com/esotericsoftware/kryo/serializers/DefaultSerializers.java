@@ -251,13 +251,13 @@ public class DefaultSerializers {
 			}
 			if (object == BigDecimal.ZERO) {
 				output.writeVarInt(2, true);
-				output.writeByte(0);
+				output.writeByte((byte) 0);
 				output.writeInt(0, false);
 				return;
 			}
 			if (object == BigDecimal.ONE) {
 				output.writeVarInt(2, true);
-				output.writeByte(1);
+				output.writeByte((byte) 1);
 				output.writeInt(0, false);
 				return;
 			}
