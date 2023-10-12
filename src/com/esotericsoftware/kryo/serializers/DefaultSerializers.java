@@ -205,7 +205,7 @@ public class DefaultSerializers {
 			byte[] bytes = input.readBytes(length - 1);
 			if (type != BigInteger.class && type != null) {
 				// Use reflection for subclasses.
-				return newCustomBigInteger(type, bytes);
+				return newBigIntegerSubclass(type, bytes);
 			}
 			if (length == 2) {
 				// Fast-path optimizations for BigInteger constants.
@@ -221,7 +221,7 @@ public class DefaultSerializers {
 			return new BigInteger(bytes);
 		}
 
-		private static BigInteger newCustomBigInteger(Class<? extends BigInteger> type, byte[] bytes) {
+		private static BigInteger newBigIntegerSubclass(Class<? extends BigInteger> type, byte[] bytes) {
 			try {
 				Constructor<? extends BigInteger> constructor = type.getConstructor(byte[].class);
 				if (!constructor.isAccessible()) {
@@ -327,7 +327,7 @@ public class DefaultSerializers {
 			int scale = input.readInt(false);
 			if (type != BigDecimal.class && type != null) {
 				// For subclasses, use reflection
-				return newCustomBigDecimal(type, unscaledBig != null ? unscaledBig : BigInteger.valueOf(unscaledLong), scale);
+				return newBigDecimalSubclass(type, unscaledBig != null ? unscaledBig : BigInteger.valueOf(unscaledLong), scale);
 			} else {
 				// For BigDecimal, if possible use factory methods to avoid instantiating BigInteger
 				if (unscaledBig != null) {
@@ -342,7 +342,7 @@ public class DefaultSerializers {
 			}
 		}
 
-		private static BigDecimal newCustomBigDecimal (Class<? extends BigDecimal> type, BigInteger unscaledValue, int scale) {
+		private static BigDecimal newBigDecimalSubclass(Class<? extends BigDecimal> type, BigInteger unscaledValue, int scale) {
 			try {
 				Constructor<? extends BigDecimal> constructor = type.getConstructor(BigInteger.class, int.class);
 				if (!constructor.isAccessible()) {

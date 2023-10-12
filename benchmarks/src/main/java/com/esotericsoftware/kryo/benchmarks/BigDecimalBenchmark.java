@@ -45,24 +45,26 @@ public class BigDecimalBenchmark {
 
         @Setup(Level.Iteration)
         public void setUp() {
-            decimal = switch (numOfDigits) {
-                case "null" -> null;
-                case "zero" -> ZERO;
-                case "one" -> ONE;
-                case "0" -> BigDecimal.valueOf(0, scale);
-                case "max_in_long" -> BigDecimal.valueOf(Long.MAX_VALUE, scale);
-                case "min_in_long" -> BigDecimal.valueOf(Long.MIN_VALUE, scale);
-                default -> {
-                    int digits = parseInt(numOfDigits.replace("-", ""));
-                    var d = BigDecimal.valueOf(10, 1 - digits).subtract(ONE).scaleByPowerOfTen(-scale); // '9' repeated numOfDigit times
-                    yield numOfDigits.charAt(0) != '-' ? d : d.negate();
-                }
-            };
-
+            decimal = newDecimal(numOfDigits, scale);
             output = new Output(2, -1);
             serializer.write(null, output, decimal);
             input = new Input(output.toBytes());
             output.reset();
+        }
+
+        private static BigDecimal newDecimal(String numOfDigits, int scale) {
+            switch (numOfDigits) {
+                case "null": return null;
+                case "zero": return ZERO;
+                case "one": return ONE;
+                case "0": return BigDecimal.valueOf(0, scale);
+                case "max_in_long": return BigDecimal.valueOf(Long.MAX_VALUE, scale);
+                case "min_in_long": return BigDecimal.valueOf(Long.MIN_VALUE, scale);
+                default:
+                    int digits = parseInt(numOfDigits.replace("-", ""));
+                    BigDecimal d = BigDecimal.valueOf(10, 1 - digits).subtract(ONE).scaleByPowerOfTen(-scale); // '9' repeated numOfDigit times
+                    return numOfDigits.charAt(0) != '-' ? d : d.negate();
+            }
         }
 
         @TearDown(Level.Iteration)
