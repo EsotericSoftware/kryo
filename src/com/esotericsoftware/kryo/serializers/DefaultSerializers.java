@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.Kryo.*;
 import static com.esotericsoftware.kryo.util.Util.*;
+import static java.lang.Long.numberOfLeadingZeros;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -282,27 +283,15 @@ public class DefaultSerializers {
 		}
 
 		// compatible with writing unscaled value represented as BigInteger's bytes
-		private static void writeUnscaledLong(Output output, long unscaledLong) {
-			if (unscaledLong >>> 7 == 0) { // optimize for tiny values
-				output.writeVarInt(2, true);
-				output.writeByte((byte) unscaledLong);
-			} else {
-				byte[] bytes = new byte[8];
-				int pos = 8;
-				do {
-					bytes[--pos] = (byte) (unscaledLong & 0xFF);
-					unscaledLong >>= 8;
-				} while (unscaledLong != 0 && unscaledLong != -1); // out of bits
+		private static void writeUnscaledLong (Output output, long unscaledLong) {
+			int insignificantBits = unscaledLong >= 0
+					? numberOfLeadingZeros(unscaledLong)
+					: numberOfLeadingZeros(~unscaledLong);
+			int significantBits = (64 - insignificantBits) + 1; // one more bit is for the sign
+			int length = (significantBits + (8 - 1)) >> 3; // how many bytes are needed (rounded up)
 
-				if (((bytes[pos] ^ unscaledLong) & 0x80) != 0) {
-					// sign bit didn't fit in previous byte, need to add another byte
-					bytes[--pos] = (byte) unscaledLong;
-				}
-
-				int length = 8 - pos;
-				output.writeVarInt(length + 1, true);
-				output.writeBytes(bytes, pos, length);
-			}
+			output.writeByte(length + 1);
+			output.writeBytesFromLong(unscaledLong, length);
 		}
 
 		public BigDecimal read (Kryo kryo, Input input, Class<? extends BigDecimal> type) {
@@ -313,15 +302,11 @@ public class DefaultSerializers {
 			if (length == NULL) return null;
 			length--;
 
-			byte[] bytes = input.readBytes(length);
 			if (length > 8) {
+				byte[] bytes = input.readBytes(length);
 				unscaledBig = new BigInteger(bytes);
 			} else {
-				unscaledLong = bytes[0];
-				for (int i = 1; i < bytes.length; i++) {
-					unscaledLong <<= 8;
-					unscaledLong |= (bytes[i] & 0xFF);
-				}
+				unscaledLong = input.readBytesAsLong(length);
 			}
 
 			int scale = input.readInt(false);

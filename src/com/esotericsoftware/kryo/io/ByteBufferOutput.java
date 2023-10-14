@@ -276,6 +276,14 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
+	public void writeBytesFromLong (long bytes, int count) {
+		require(count);
+		position += count;
+		for (int i = count - 1; i >= 0; i--) {
+			byteBuffer.put((byte) (bytes >> (i << 3)));
+		}
+	}
+
 	// int:
 
 	public void writeInt (int value) throws KryoException {

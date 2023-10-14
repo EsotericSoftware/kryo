@@ -373,6 +373,18 @@ public class Input extends InputStream implements Poolable {
 		}
 	}
 
+	/** Reads count bytes and returns them as long, the last byte read will be the lowest byte in the long. */
+	public long readBytesAsLong (int count) {
+		require(count);
+		int p = position;
+		position = p + count;
+		long bytes = buffer[p++];
+		for (int i = 1; i < count; i++) {
+			bytes = (bytes << 8) | (buffer[p++] & 0xFF);
+		}
+		return bytes;
+	}
+
 	// int:
 
 	/** Reads a 4 byte int. */

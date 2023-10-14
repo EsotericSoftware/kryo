@@ -352,6 +352,16 @@ public class ByteBufferInput extends Input {
 		}
 	}
 
+	public long readBytesAsLong (int count) {
+		require(count);
+		position += count;
+		long bytes = byteBuffer.get();
+		for (int i = 1; i < count; i++) {
+			bytes = (bytes << 8) | (byteBuffer.get() & 0xFF);
+		}
+		return bytes;
+	}
+
 	// int:
 
 	public int readInt () throws KryoException {
