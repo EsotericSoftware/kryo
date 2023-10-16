@@ -37,3 +37,10 @@ jobs:
           java-version: 17
       - name: Test with JDK 17
         run: mvn -v && mvn -B test
+
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: 21
+      - name: Test with JDK 21
+        run: mvn -v && mvn -B test    
