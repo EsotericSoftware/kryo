@@ -483,7 +483,6 @@
 								<target>${java.vm.specification.version}</target>
 								<compilerArgs>
 									<arg>-parameters</arg>
-									<arg>--enable-preview</arg>
 									<arg>--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED</arg>
 									<arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
 								</compilerArgs>
