@@ -16,8 +16,8 @@
 
 	<properties>
 		<kryo.root>${basedir}/..</kryo.root>
-		<jmh.version>1.36</jmh.version>
-		<byte-buddy.version>1.14.4</byte-buddy.version>
+		<jmh.version>1.37</jmh.version>
+		<byte-buddy.version>1.14.9</byte-buddy.version>
 		<uberjar.name>benchmarks</uberjar.name>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
@@ -51,7 +51,7 @@
 		<plugins>
 			<plugin>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.5.0</version>
+				<version>3.6.0</version>
 				<executions>
 					<execution>
 						<id>build-classpath</id>
