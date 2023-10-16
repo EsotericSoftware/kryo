@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022, Nathan Sweet
+/* Copyright (c) 2008-2023, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,40 @@ class ClosureSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	void testCopyClosure() {
+	void testCapturingClosure () {
+		final int number = 72363;
+		Supplier<Integer> closure1 = (Supplier<Integer> & java.io.Serializable) () -> number;
+
+		// The length cannot be checked reliable, as it can vary based on the JVM.
+		roundTrip(Integer.MIN_VALUE, closure1);
+
+		Output output = new Output(1024, -1);
+		kryo.writeObject(output, closure1);
+
+		Input input = new Input(output.getBuffer(), 0, output.position());
+		Supplier<Integer> closure2 = (Supplier<Integer>)kryo.readObject(input, ClosureSerializer.Closure.class);
+
+		doAssertEquals(closure1, closure2);
+	}
+
+	@Test
+	void testMethodReference () {
+		Supplier<Integer> closure1 = (Supplier<Integer> & java.io.Serializable)NumberFactory::getNumber;
+
+		// The length cannot be checked reliable, as it can vary based on the JVM.
+		roundTrip(Integer.MIN_VALUE, closure1);
+
+		Output output = new Output(1024, -1);
+		kryo.writeObject(output, closure1);
+
+		Input input = new Input(output.getBuffer(), 0, output.position());
+		Supplier<Integer> closure2 = (Supplier<Integer>)kryo.readObject(input, ClosureSerializer.Closure.class);
+
+		doAssertEquals(closure1, closure2);
+	}
+
+	@Test
+	void testCopyClosure () {
 		Callable<Integer> closure1 = (Callable<Integer> & java.io.Serializable)( () -> 72363);
 
 		final Callable<Integer> closure2 = kryo.copy(closure1);
@@ -69,9 +103,20 @@ class ClosureSerializerTest extends KryoTestCase {
 
 	protected void doAssertEquals (Object object1, Object object2) {
 		try {
-			assertEquals(((Callable)object1).call(), ((Callable)object2).call());
+			if (object1 instanceof Callable) {
+				assertEquals(((Callable)object1).call(), ((Callable)object2).call());
+			}
+			if (object1 instanceof Supplier) {
+				assertEquals(((Supplier)object1).get(), ((Supplier)object2).get());
+			}
 		} catch (Exception ex) {
 			throw new RuntimeException(ex.getMessage());
+		}
+	}
+
+	static class NumberFactory {
+		private static int getNumber () {
+			return 72363;
 		}
 	}
 }

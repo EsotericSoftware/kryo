@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022, Nathan Sweet
+/* Copyright (c) 2008-2023, Nathan Sweet
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -31,6 +31,10 @@ import java.util.ArrayList;
 
 /** Handles storage of generic type information */
 public interface Generics {
+
+	/** Builds a {@link GenericsHierarchy} for the specified type. */
+	GenericsHierarchy buildHierarchy (Class type);
+	
 	/** Sets the type that is currently being serialized. Must be balanced by {@link #popGenericType()}. Between those calls, the
 	 * {@link GenericType#getTypeParameters() type parameters} are returned by {@link #nextGenericTypes()} and
 	 * {@link #nextGenericClass()}. */
@@ -41,7 +45,7 @@ public interface Generics {
 	void popGenericType ();
 
 	/** Returns the current type parameters and {@link #pushGenericType(GenericType) pushes} the next level of type parameters for
-	 * subsquent calls. Must be balanced by {@link #popGenericType()} (optional if null is returned). If multiple type parameters
+	 * subsequent calls. Must be balanced by {@link #popGenericType()} (optional if null is returned). If multiple type parameters
 	 * are returned, the last is used to advance to the next level of type parameters.
 	 * <p>
 	 * {@link #nextGenericClass()} is easier to use when a class has a single type parameter. When a class has multiple type
@@ -77,6 +81,8 @@ public interface Generics {
 	/** Stores the type parameters for a class and, for parameters passed to super classes, the corresponding super class type
 	 * parameters. */
 	class GenericsHierarchy {
+		static final GenericsHierarchy EMPTY = new GenericsHierarchy(0, 0, new int[0], new TypeVariable[0]);
+		
 		/* Total number of type parameters in the hierarchy. */
 		final int total;
 		/* Total number of type parameters at the root of the hierarchy. */
@@ -125,6 +131,13 @@ public interface Generics {
 			this.rootTotal = type.getTypeParameters().length;
 			this.counts = counts.toArray();
 			this.parameters = parameters.toArray(new TypeVariable[parameters.size()]);
+		}
+
+		GenericsHierarchy (int total, int rootTotal, int[] counts, TypeVariable[] parameters) {
+			this.total = total;
+			this.rootTotal = rootTotal;
+			this.counts = counts;
+			this.parameters = parameters;
 		}
 
 		public String toString () {

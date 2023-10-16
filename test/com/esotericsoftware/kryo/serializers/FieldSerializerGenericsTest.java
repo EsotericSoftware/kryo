@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022, Nathan Sweet
+/* Copyright (c) 2008-2023, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.jupiter.api.Test;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 

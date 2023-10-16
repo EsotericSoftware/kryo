@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022, Nathan Sweet
+/* Copyright (c) 2008-2023, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -38,6 +38,11 @@ public final class DefaultGenerics implements Generics {
 
 	public DefaultGenerics (Kryo kryo) {
 		this.kryo = kryo;
+	}
+
+	@Override
+	public GenericsHierarchy buildHierarchy (Class type) {
+		return new GenericsHierarchy(type);
 	}
 
 	@Override
@@ -93,8 +98,9 @@ public final class DefaultGenerics implements Generics {
 
 	@Override
 	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args) {
-		// Do not store type variables if hierarchy is empty or we do not have arguments for all root parameters.
-		if (hierarchy.total == 0 || hierarchy.rootTotal > args.length) return 0;
+		// Do not store type variables if hierarchy is empty, or we do not have arguments for all root parameters, or we have more
+		// arguments than the hierarchy has parameters.
+		if (hierarchy.total == 0 || hierarchy.rootTotal > args.length || args.length > hierarchy.counts.length) return 0;
 
 		int startSize = this.argumentsSize;
 

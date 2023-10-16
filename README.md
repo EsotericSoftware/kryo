@@ -1,6 +1,6 @@
 ![KryoNet](https://raw.github.com/wiki/EsotericSoftware/kryo/images/logo.jpg)
 
-[![Build Status](https://travis-ci.org/EsotericSoftware/kryo.png?branch=master)](https://travis-ci.org/EsotericSoftware/kryo)
+[![Build Status](https://github.com/EsotericSoftware/kryo/actions/workflows/ci-workflow.yml/badge.svg)](https://github.com/EsotericSoftware/kryo/actions/workflows/ci-workflow.yml)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.esotericsoftware/kryo/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.esotericsoftware%22%20AND%20a%3Akryo)
 [![Join the chat at https://gitter.im/EsotericSoftware/kryo](https://badges.gitter.im/EsotericSoftware/kryo.svg)](https://gitter.im/EsotericSoftware/kryo)
 [![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/kryo.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:kryo)
@@ -88,6 +88,8 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
+* [4.0.3](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.3) - brings bug fixes and performance improvements for chunked encoding.
+* [5.5.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.5.0) - brings bug fixes and performance improvements.
 * [5.4.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.4.0) - brings bug fixes and performance improvements.
 * [5.3.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.3.0) - brings bug fixes and performance improvements.
 * [5.2.1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.2.1) - brings minor bug fixes and improvements.
@@ -112,7 +114,7 @@ To use the latest Kryo release in your application, use this dependency entry in
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.4.0</version>
+   <version>5.5.0</version>
 </dependency>
 ```
 
@@ -122,7 +124,7 @@ To use the latest Kryo release in a library you want to publish, use this depend
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.4.0</version>
+   <version>5.5.0</version>
 </dependency>
 ```
 
@@ -139,13 +141,13 @@ To use the latest Kryo snapshot, use:
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.4.1-SNAPSHOT</version>
+   <version>5.5.1-SNAPSHOT</version>
 </dependency>
 <!-- for usage in a library that should be published: -->
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.4.1-SNAPSHOT</version>
+   <version>5.5.1-SNAPSHOT</version>
 </dependency>
 ```
 

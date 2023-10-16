@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022, Nathan Sweet
+/* Copyright (c) 2008-2023, Nathan Sweet
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -261,7 +261,10 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 		Constructor<T> canonicalConstructor;
 		try {
 			canonicalConstructor = recordType.getConstructor(paramTypes);
-		} catch (NoSuchMethodException e) {
+			if (!canonicalConstructor.canAccess(null)) {
+				canonicalConstructor.setAccessible(true);
+			}
+		} catch (Exception e) {
 			canonicalConstructor = recordType.getDeclaredConstructor(paramTypes);
 			canonicalConstructor.setAccessible(true);
 		}
