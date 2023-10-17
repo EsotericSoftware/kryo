@@ -275,7 +275,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes count bytes from long, the last byte written is the lowest byte from the long.
 	 *  Note the number of bytes is not written. */
-	public void writeBytesFromLong (long bytes, int count) {
+	public void writeLong (long bytes, int count) {
+		if (count < 0 || count > 8) throw new IllegalArgumentException("count must be >= 0 and <= 8: " + count);
 		require(count);
 		int p = position;
 		position = p + count;

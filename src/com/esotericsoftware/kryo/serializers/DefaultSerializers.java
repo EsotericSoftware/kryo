@@ -291,7 +291,7 @@ public class DefaultSerializers {
 			int length = (significantBits + (8 - 1)) >> 3; // how many bytes are needed (rounded up)
 
 			output.writeByte(length + 1);
-			output.writeBytesFromLong(unscaledLong, length);
+			output.writeLong(unscaledLong, length);
 		}
 
 		public BigDecimal read (Kryo kryo, Input input, Class<? extends BigDecimal> type) {
@@ -306,7 +306,7 @@ public class DefaultSerializers {
 				byte[] bytes = input.readBytes(length);
 				unscaledBig = new BigInteger(bytes);
 			} else {
-				unscaledLong = input.readBytesAsLong(length);
+				unscaledLong = input.readLong(length);
 			}
 
 			int scale = input.readInt(false);

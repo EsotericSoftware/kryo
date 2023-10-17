@@ -276,7 +276,8 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
-	public void writeBytesFromLong (long bytes, int count) {
+	public void writeLong (long bytes, int count) {
+		if (count < 0 || count > 8) throw new IllegalArgumentException("count must be >= 0 and <= 8: " + count);
 		require(count);
 		position += count;
 		for (int i = count - 1; i >= 0; i--) {

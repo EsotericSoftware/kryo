@@ -374,7 +374,8 @@ public class Input extends InputStream implements Poolable {
 	}
 
 	/** Reads count bytes and returns them as long, the last byte read will be the lowest byte in the long. */
-	public long readBytesAsLong (int count) {
+	public long readLong (int count) {
+		if (count < 0 || count > 8) throw new IllegalArgumentException("count must be >= 0 and <= 8: " + count);
 		require(count);
 		int p = position;
 		position = p + count;
