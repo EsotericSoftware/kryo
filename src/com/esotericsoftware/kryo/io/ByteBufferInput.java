@@ -352,6 +352,17 @@ public class ByteBufferInput extends Input {
 		}
 	}
 
+	public int readInt (int count) {
+		if (count < 0 || count > 4) throw new IllegalArgumentException("count must be >= 0 and <= 4: " + count);
+		require(count);
+		position += count;
+		int bytes = byteBuffer.get();
+		for (int i = 1; i < count; i++) {
+			bytes = (bytes << 8) | (byteBuffer.get() & 0xFF);
+		}
+		return bytes;
+	}
+
 	public long readLong (int count) {
 		if (count < 0 || count > 8) throw new IllegalArgumentException("count must be >= 0 and <= 8: " + count);
 		require(count);

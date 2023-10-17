@@ -348,6 +348,25 @@ class InputOutputTest extends KryoTestCase {
 		write.writeInt(-268435455);
 		write.writeInt(-134217728);
 		write.writeInt(-268435456);
+		write.writeInt(0, 1);
+		write.writeInt(63, 1);
+		write.writeInt(64, 1);
+		write.writeInt(127, 1);
+		write.writeInt(128, 2);
+		write.writeInt(8192, 2);
+		write.writeInt(16384, 2);
+		write.writeInt(2097151, 3);
+		write.writeInt(1048575, 3);
+		write.writeInt(134217727, 4);
+		write.writeInt(268435455, 4);
+		write.writeInt(134217728, 4);
+		write.writeInt(268435456, 4);
+		write.writeInt(-2097151, 3);
+		write.writeInt(-1048575, 3);
+		write.writeInt(-134217727, 4);
+		write.writeInt(-268435455, 4);
+		write.writeInt(-134217728, 4);
+		write.writeInt(-268435456, 4);
 		assertEquals(1, write.writeVarInt(0, true));
 		assertEquals(1, write.writeVarInt(0, false));
 		assertEquals(1, write.writeVarInt(63, true));
@@ -417,6 +436,25 @@ class InputOutputTest extends KryoTestCase {
 		assertEquals(-268435455, read.readInt());
 		assertEquals(-134217728, read.readInt());
 		assertEquals(-268435456, read.readInt());
+		assertEquals(0, read.readInt(1));
+		assertEquals(63, read.readInt(1));
+		assertEquals(64, read.readInt(1));
+		assertEquals(127, read.readInt(1));
+		assertEquals(128, read.readInt(2));
+		assertEquals(8192, read.readInt(2));
+		assertEquals(16384, read.readInt(2));
+		assertEquals(2097151, read.readInt(3));
+		assertEquals(1048575, read.readInt(3));
+		assertEquals(134217727, read.readInt(4));
+		assertEquals(268435455, read.readInt(4));
+		assertEquals(134217728, read.readInt(4));
+		assertEquals(268435456, read.readInt(4));
+		assertEquals(-2097151, read.readInt(3));
+		assertEquals(-1048575, read.readInt(3));
+		assertEquals(-134217727, read.readInt(4));
+		assertEquals(-268435455, read.readInt(4));
+		assertEquals(-134217728, read.readInt(4));
+		assertEquals(-268435456, read.readInt(4));
 		assertTrue(read.canReadVarInt());
 		assertTrue(read.canReadVarInt());
 		assertTrue(read.canReadVarInt());
@@ -477,11 +515,15 @@ class InputOutputTest extends KryoTestCase {
 			write.writeInt(value);
 			write.writeVarInt(value, true);
 			write.writeVarInt(value, false);
+			int numOfBytes = (i % 4) + 1;
+			write.writeInt(value, numOfBytes);
 
 			read.setBuffer(write.toBytes());
 			assertEquals(value, read.readInt());
 			assertEquals(value, read.readVarInt(true));
 			assertEquals(value, read.readVarInt(false));
+			int numOfBytesMask = numOfBytes == 4 ? -1 : (1 << numOfBytes * 8) - 1;
+			assertEquals(value & numOfBytesMask, read.readInt(numOfBytes) & numOfBytesMask);
 		}
 	}
 
