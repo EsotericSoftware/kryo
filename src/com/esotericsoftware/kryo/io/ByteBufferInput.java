@@ -356,22 +356,24 @@ public class ByteBufferInput extends Input {
 		if (count < 0 || count > 4) throw new IllegalArgumentException("count must be >= 0 and <= 4: " + count);
 		require(count);
 		position += count;
-		int bytes = byteBuffer.get();
-		for (int i = 1; i < count; i++) {
-			bytes = (bytes << 8) | (byteBuffer.get() & 0xFF);
+		ByteBuffer byteBuffer = this.byteBuffer;
+		switch (count) {
+			case 1:
+				return byteBuffer.get();
+			case 2:
+				return byteBuffer.get() << 8
+					| byteBuffer.get() & 0xFF;
+			case 3:
+				return byteBuffer.get() << 16
+					| (byteBuffer.get() & 0xFF) << 8
+					| byteBuffer.get() & 0xFF;
+			case 4:
+				return byteBuffer.get() << 24
+					| (byteBuffer.get() & 0xFF) << 16
+					| (byteBuffer.get() & 0xFF) << 8
+					| byteBuffer.get() & 0xFF;
 		}
-		return bytes;
-	}
-
-	public long readLong (int count) {
-		if (count < 0 || count > 8) throw new IllegalArgumentException("count must be >= 0 and <= 8: " + count);
-		require(count);
-		position += count;
-		long bytes = byteBuffer.get();
-		for (int i = 1; i < count; i++) {
-			bytes = (bytes << 8) | (byteBuffer.get() & 0xFF);
-		}
-		return bytes;
+		throw new IllegalStateException(); // impossible
 	}
 
 	// int:

@@ -280,8 +280,25 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		require(count);
 		int p = position;
 		position = p + count;
-		for (int i = count - 1; i >= 0; i--) {
-			buffer[p++] = (byte) (bytes >> (i << 3));
+		switch (count) {
+			case 1:
+				buffer[p] = (byte)bytes;
+				break;
+			case 2:
+				buffer[p] = (byte)(bytes >> 8);
+				buffer[p+1] = (byte)bytes;
+				break;
+			case 3:
+				buffer[p] = (byte)(bytes >> 16);
+				buffer[p+1] = (byte)(bytes >> 8);
+				buffer[p+2] = (byte)bytes;
+				break;
+			case 4:
+				buffer[p] = (byte)(bytes >> 24);
+				buffer[p+1] = (byte)(bytes >> 16);
+				buffer[p+2] = (byte)(bytes >> 8);
+				buffer[p+3] = (byte)bytes;
+				break;
 		}
 	}
 
@@ -289,11 +306,12 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	 *  Note the number of bytes is not written. */
 	public void writeLong (long bytes, int count) {
 		if (count < 0 || count > 8) throw new IllegalArgumentException("count must be >= 0 and <= 8: " + count);
-		require(count);
-		int p = position;
-		position = p + count;
-		for (int i = count - 1; i >= 0; i--) {
-			buffer[p++] = (byte) (bytes >> (i << 3));
+		if (count <= 4) {
+			writeInt((int) bytes, count);
+		} else {
+			require(count);
+			writeInt((int) (bytes >> 32), count - 4);
+			writeInt((int) bytes, 4);
 		}
 	}
 

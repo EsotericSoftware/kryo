@@ -379,24 +379,36 @@ public class Input extends InputStream implements Poolable {
 		require(count);
 		int p = position;
 		position = p + count;
-		int bytes = buffer[p++];
-		for (int i = 1; i < count; i++) {
-			bytes = (bytes << 8) | (buffer[p++] & 0xFF);
+		switch (count) {
+			case 1:
+				return buffer[p];
+			case 2:
+				return buffer[p] << 8
+					| buffer[p+1] & 0xFF;
+			case 3:
+				return buffer[p] << 16
+					| (buffer[p+1] & 0xFF) << 8
+					| buffer[p+2] & 0xFF;
+			case 4:
+				return buffer[p] << 24
+					| (buffer[p+1] & 0xFF) << 16
+					| (buffer[p+2] & 0xFF) << 8
+					| buffer[p+3] & 0xFF;
 		}
-		return bytes;
+		throw new IllegalStateException(); // impossible
 	}
 
 	/** Reads count bytes and returns them as long, the last byte read will be the lowest byte in the long. */
 	public long readLong (int count) {
 		if (count < 0 || count > 8) throw new IllegalArgumentException("count must be >= 0 and <= 8: " + count);
-		require(count);
-		int p = position;
-		position = p + count;
-		long bytes = buffer[p++];
-		for (int i = 1; i < count; i++) {
-			bytes = (bytes << 8) | (buffer[p++] & 0xFF);
+		if (count <= 4) {
+			return readInt(count);
+		} else {
+			require(count);
+			long highBytes = ((long) readInt(count - 4)) << 32;
+			long lowBytes = ((long) readInt(4)) & (1L << 32) - 1;
+			return highBytes | lowBytes;
 		}
-		return bytes;
 	}
 
 	// int:

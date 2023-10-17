@@ -280,17 +280,26 @@ public class ByteBufferOutput extends Output {
 		if (count < 0 || count > 4) throw new IllegalArgumentException("count must be >= 0 and <= 4: " + count);
 		require(count);
 		position += count;
-		for (int i = count - 1; i >= 0; i--) {
-			byteBuffer.put((byte) (bytes >> (i << 3)));
-		}
-	}
-
-	public void writeLong (long bytes, int count) {
-		if (count < 0 || count > 8) throw new IllegalArgumentException("count must be >= 0 and <= 8: " + count);
-		require(count);
-		position += count;
-		for (int i = count - 1; i >= 0; i--) {
-			byteBuffer.put((byte) (bytes >> (i << 3)));
+		ByteBuffer byteBuffer = this.byteBuffer;
+		switch (count) {
+			case 1:
+				byteBuffer.put((byte)bytes);
+				break;
+			case 2:
+				byteBuffer.put((byte)(bytes >> 8));
+				byteBuffer.put((byte)bytes);
+				break;
+			case 3:
+				byteBuffer.put((byte)(bytes >> 16));
+				byteBuffer.put((byte)(bytes >> 8));
+				byteBuffer.put((byte)bytes);
+				break;
+			case 4:
+				byteBuffer.put((byte)(bytes >> 24));
+				byteBuffer.put((byte)(bytes >> 16));
+				byteBuffer.put((byte)(bytes >> 8));
+				byteBuffer.put((byte)bytes);
+				break;
 		}
 	}
 
