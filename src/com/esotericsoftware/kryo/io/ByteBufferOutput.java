@@ -276,6 +276,33 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
+	public void writeInt (int bytes, int count) {
+		if (count < 0 || count > 4) throw new IllegalArgumentException("count must be >= 0 and <= 4: " + count);
+		require(count);
+		position += count;
+		ByteBuffer byteBuffer = this.byteBuffer;
+		switch (count) {
+			case 1:
+				byteBuffer.put((byte)bytes);
+				break;
+			case 2:
+				byteBuffer.put((byte)(bytes >> 8));
+				byteBuffer.put((byte)bytes);
+				break;
+			case 3:
+				byteBuffer.put((byte)(bytes >> 16));
+				byteBuffer.put((byte)(bytes >> 8));
+				byteBuffer.put((byte)bytes);
+				break;
+			case 4:
+				byteBuffer.put((byte)(bytes >> 24));
+				byteBuffer.put((byte)(bytes >> 16));
+				byteBuffer.put((byte)(bytes >> 8));
+				byteBuffer.put((byte)bytes);
+				break;
+		}
+	}
+
 	// int:
 
 	public void writeInt (int value) throws KryoException {
