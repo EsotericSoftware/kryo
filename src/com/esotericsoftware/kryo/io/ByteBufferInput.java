@@ -352,6 +352,30 @@ public class ByteBufferInput extends Input {
 		}
 	}
 
+	public int readInt (int count) {
+		if (count < 0 || count > 4) throw new IllegalArgumentException("count must be >= 0 and <= 4: " + count);
+		require(count);
+		position += count;
+		ByteBuffer byteBuffer = this.byteBuffer;
+		switch (count) {
+			case 1:
+				return byteBuffer.get();
+			case 2:
+				return byteBuffer.get() << 8
+					| byteBuffer.get() & 0xFF;
+			case 3:
+				return byteBuffer.get() << 16
+					| (byteBuffer.get() & 0xFF) << 8
+					| byteBuffer.get() & 0xFF;
+			case 4:
+				return byteBuffer.get() << 24
+					| (byteBuffer.get() & 0xFF) << 16
+					| (byteBuffer.get() & 0xFF) << 8
+					| byteBuffer.get() & 0xFF;
+		}
+		throw new IllegalStateException(); // impossible
+	}
+
 	// int:
 
 	public int readInt () throws KryoException {
