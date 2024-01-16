@@ -55,7 +55,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: 8
+          java-version: 11
 
       - name: Publish SNAPSHOT version to Sonatype (we can skip tests, since we only deploy, if the build workflow succeeded)
         run: mvn -v && mvn -B -P requireSnapshot --no-transfer-progress -DskipTests deploy --settings build/settings-sonatype.xml
