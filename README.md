@@ -984,6 +984,22 @@ The Kryo serializers provided by default assume that Java will be used for deser
 
 For some needs, such as long term storage of serialized bytes, it can be important how serialization handles changes to classes. This is known as forward compatibility (reading bytes serialized by newer classes) and backward compatibility (reading bytes serialized by older classes). Kryo provides a few generic serializers which take different approaches to handling compatibility. Additional serializers can easily be developed for forward and backward compatibility, such as a serializer that uses an external, hand written schema.
 
+### Replacing a class
+
+When a class changes more than its serializer can handle, a serializer can be written to transfer the data to a different class. All use of the old class in application code should be replaced by the new class. The old class is kept solely for this serializer.
+
+```java
+kryo.register(OldClass.class, new TaggedFieldSerializer(kryo, OldClass.class) {
+	public Object read (Kryo kryo, Input input, Class type) {
+		OldClass oldObject = (OldClass)super.read(kryo, input, OldClass.class);
+		NewClass newObject = new NewClass();
+		// Use data from the old class to populate the instance of the new class and return it.
+		return newObject;
+	}
+});
+kryo.register(NewClass.class);
+```
+
 ## Serializers
 
 Kryo provides many serializers with various configuration options and levels of compatibility. Additional serializers can be found in the [kryo-serializers](https://github.com/magro/kryo-serializers) sister project, which hosts serializers that access private APIs or are otherwise not perfectly safe on all JVMs. More serializers can be found in the [links section](#links).
@@ -994,7 +1010,7 @@ FieldSerializer works by serializing each non-transient field. It can serialize 
 
 FieldSerializer is efficient by writing only the field data, without any schema information, using the Java class files as the schema. It does not support adding, removing, or changing the type of fields without invalidating previously serialized bytes. Renaming fields is allowed only if it doesn't change the alphabetical order of the fields.
 
-FieldSerializer's compatibility drawbacks can be acceptable in many situations, such as when sending data over a network, but may not be a good choice for long term data storage because the Java classes cannot evolve.
+FieldSerializer's compatibility drawbacks can be acceptable in many situations, such as when sending data over a network, but may not be a good choice for long term data storage because the Java classes cannot evolve. In many cases [TaggedFieldSerializer](#taggedfieldserializer) is a better choice.
 
 #### FieldSerializer settings
 
@@ -1094,6 +1110,8 @@ Only fields that have a <code>@Tag(int)</code> annotation are serialized. Field 
 The forward and backward compatibility and serialization [performance](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png) depends on the `readUnknownTagData` and `chunkedEncoding` settings. Additionally, a varint is written before each field for the tag value.
 
 When `readUnknownTagData` and `chunkedEncoding` are false, fields must not be removed but the `@Deprecated` annotation can be applied. Deprecated fields are read when reading old bytes but aren't written to new bytes. Classes can evolve by reading the values of deprecated fields and writing them elsewhere. Fields can be renamed and/or made private to reduce clutter in the class (eg, `ignored1`, `ignored2`).
+
+TaggedFieldSerializer (with `readUnknownTagData` and `chunkedEncoding` false) is the suggested serializer for most classes where fields can be annotated. It allows classes to evolve and fields to be removed from the serialized data (via deprecation), meeting the needs of most applications without adding much to the serialized size.
 
 #### TaggedFieldSerializer settings
 
