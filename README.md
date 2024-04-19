@@ -65,6 +65,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 - [Kryo versioning and upgrading](#kryo-versioning-and-upgrading)
 - [Interoperability](#interoperability)
 - [Compatibility](#compatibility)
+   * [Replacing a class](#replacing-a-class)
 - [Serializers](#serializers)
    * [FieldSerializer](#fieldserializer)
       + [CachedField settings](#cachedfield-settings)
