@@ -62,4 +62,4 @@ jobs:
         if: env.PUBLISH_ARTIFACTS == 'true'
         env:
           SONATYPE_USERNAME: yJQKaLoU
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD_TOKEN }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PW_TOKEN }}
