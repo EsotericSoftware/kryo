@@ -27,7 +27,7 @@
 		<dependency>
 			<groupId>org.objenesis</groupId>
 			<artifactId>objenesis</artifactId>
-			<version>3.3</version>
+			<version>3.4</version>
 		</dependency>
 		<dependency>
 			<groupId>com.esotericsoftware</groupId>
@@ -81,7 +81,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-assembly-plugin</artifactId>
-				<version>3.6.0</version>
+				<version>3.7.1</version>
 				<configuration>
 					<archiveBaseDirectory>${kryo.root}</archiveBaseDirectory>
 					<descriptors>
