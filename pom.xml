@@ -402,7 +402,7 @@
 		<profile>
 			<id>jdk11ge</id>
 			<activation>
-				<jdk>[11,</jdk>
+				<jdk>[11,)</jdk>
 			</activation>
 			<build>
 				<pluginManagement>
@@ -438,7 +438,7 @@
 		<profile>
 			<id>jdk17ge</id>
 			<activation>
-				<jdk>[17,</jdk>
+				<jdk>[17,)</jdk>
 			</activation>
 			<build>
 				<plugins>
