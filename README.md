@@ -639,7 +639,7 @@ Input input = new Input(output.getBuffer(), 0, output.position());
 Callable<Integer> closure2 = (Callable<Integer>)kryo.readObject(input, ClosureSerializer.Closure.class);
 ```
 
-Serializing closures which do not implement Serializable is possible [with some effort](https://ruediste.github.io/java,/kryo/2017/05/07/serializing-non-serializable-lambdas.html).
+Serializing closures which do not implement Serializable is possible [with some effort](https://ruediste.github.io/java/kryo/2017/05/07/serializing-non-serializable-lambdas.html).
 
 ### Compression and encryption
 
