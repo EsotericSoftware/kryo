@@ -266,6 +266,10 @@
 	<profiles>
 		<profile>
 			<id>release</id>
+			<properties>
+				<maven.test.skip>true</maven.test.skip>
+				<skipTests>true</skipTests>
+			</properties>
 			<build>
 				<plugins>
 					<plugin>
@@ -305,6 +309,25 @@
 								<goals>
 									<goal>sign</goal>
 								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>enforce-jdk</id>
+								<goals>
+									<goal>enforce</goal>
+								</goals>
+								<configuration>
+									<rules>
+										<requireJavaVersion>
+											<version>[11, 12)</version>
+										</requireJavaVersion>
+									</rules>
+								</configuration>
 							</execution>
 						</executions>
 					</plugin>
