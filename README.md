@@ -90,7 +90,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 ## Recent releases
 
 * [4.0.3](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.3) - brings bug fixes and performance improvements for chunked encoding.
-* [5.6.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.6.2) - ensures compatibility with Java 8
+* [5.6.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.6.2) - recompiles 5.6.1 to be compatible with Java 8 again
 * [5.6.1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.6.1) - brings a bug fix for the Maven coordinates of the versioned artifact
 * [5.6.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.6.0) - brings bug fixes and performance improvements.
 * [5.5.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.5.0) - brings bug fixes and performance improvements.
