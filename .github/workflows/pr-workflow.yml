@@ -11,25 +11,11 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: 11
+          java-version: 17
           cache: 'maven'
 
-      - name: Build with JDK 11
+      - name: Build with JDK 17
         run: mvn -B install --no-transfer-progress -DskipTests
-
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: 8
-      - name: Test with JDK 8
-        run: mvn -v && mvn -B test
-
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: 11
-      - name: Test with JDK 11
-        run: mvn -v && mvn -B test
 
       - uses: actions/setup-java@v3
         with:
