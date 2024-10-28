@@ -175,16 +175,6 @@ public class DefaultClassResolver implements ClassResolver {
 				try {
 					type = Class.forName(className, false, kryo.getClassLoader());
 				} catch (ClassNotFoundException ex) {
-					// Fallback to Kryo's class loader.
-					try {
-						type = Class.forName(className, false, Kryo.class.getClassLoader());
-					} catch (ClassNotFoundException ex2) {
-						throw new KryoException("Unable to find class: " + className, ex);
-					}
-				}
-				try {
-					type = Class.forName(className, false, kryo.getClassLoader());
-				} catch (ClassNotFoundException ex) {
 					// Fallback to current thread classloader
 					try {
 						type = Class.forName(className, false, Thread.currentThread().getContextClassLoader());
