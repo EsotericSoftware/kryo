@@ -57,14 +57,14 @@ public class UnmodifiableCollectionSerializers {
 			try {
 				SOURCE_COLLECTION_FIELD_OFFSET = UnsafeUtil.objectFieldOffset(Class.forName(clsName).getDeclaredField("c"));
 			} catch (Exception e) {
-				Log.info("Could not access source collection field in {}", clsName);
+				Log.warn("Could not access source collection field in {}", clsName);
 				throw new KryoException(e);
 			}
 			clsName = "java.util.Collections$UnmodifiableMap";
 			try {
 				SOURCE_MAP_FIELD_OFFSET = UnsafeUtil.objectFieldOffset(Class.forName(clsName).getDeclaredField("m"));
 			} catch (Exception e) {
-				Log.info("Could not access source map field in {}", clsName);
+				Log.warn("Could not access source map field in {}", clsName);
 				throw new KryoException(e);
 			}
 		}
