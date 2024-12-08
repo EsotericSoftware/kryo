@@ -67,8 +67,7 @@ class UnmodifiableCollectionsSerializersTest extends KryoTestCase {
 
 	protected void doAssertEquals (Object object1, Object object2) {
 		if (object1 instanceof Iterable<?> && object2 instanceof Iterable<?>) {
-			Assertions.assertInstanceOf(object1.getClass(), object2);
-			Assertions.assertInstanceOf(object2.getClass(), object1);
+			Assertions.assertEquals(object1.getClass(), object2.getClass());
 			Assertions.assertIterableEquals((Iterable<?>)object1, (Iterable<?>)object2);
 		} else {
 			Assertions.assertEquals(object1, object2);
