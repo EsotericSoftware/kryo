@@ -117,14 +117,14 @@ public class UnmodifiableCollectionSerializers {
 
 		@Override
 		public Map read (Kryo kryo, Input input, Class<? extends Map> type) {
-			final Object sourceCollection = kryo.readClassAndObject(input);
-			return (Map)factory.apply(sourceCollection);
+			final Object sourceMap = kryo.readClassAndObject(input);
+			return (Map)factory.apply(sourceMap);
 		}
 
 		@Override
 		public Map copy (Kryo kryo, Map original) {
-			final Object collection = UnsafeUtil.getObject(original, offset);
-			return (Map)factory.apply(kryo.copy(collection));
+			final Object map = UnsafeUtil.getObject(original, offset);
+			return (Map)factory.apply(kryo.copy(map));
 		}
 	}
 
