@@ -143,35 +143,28 @@ public class SynchronizedCollectionSerializers {
 	}
 
 	static Tuple2<Class<?>, Function>[] synchronizedFactories () {
-		Tuple2<Class<?>, Function> collectionFactory = Tuple2.of(
-			Collections.synchronizedCollection(Arrays.asList("")).getClass(),
-			o -> Collections.synchronizedCollection((Collection)o));
-		Tuple2<Class<?>, Function> randomListFactory = Tuple2.of(
-			Collections.synchronizedList(new ArrayList<Void>()).getClass(),
-			o -> Collections.synchronizedList((List<?>)o));
-		Tuple2<Class<?>, Function> listFactory = Tuple2.of(
-			Collections.synchronizedList(new LinkedList<Void>()).getClass(),
-			o -> Collections.synchronizedList((List<?>)o));
-		Tuple2<Class<?>, Function> setFactory = Tuple2.of(
-			Collections.synchronizedSet(new HashSet<Void>()).getClass(),
-			o -> Collections.synchronizedSet((Set<?>)o));
-		Tuple2<Class<?>, Function> sortedsetFactory = Tuple2.of(
-			Collections.synchronizedSortedSet(new TreeSet<>()).getClass(),
-			o -> Collections.synchronizedSortedSet((TreeSet<?>)o));
-		Tuple2<Class<?>, Function> mapFactory = Tuple2.of(
-			Collections.synchronizedMap(new HashMap<Void, Void>()).getClass(),
-			o -> Collections.synchronizedMap((Map)o));
-		Tuple2<Class<?>, Function> sortedmapFactory = Tuple2.of(
-			Collections.synchronizedSortedMap(new TreeMap<>()).getClass(),
-			o -> Collections.synchronizedSortedMap((SortedMap)o));
 		return new Tuple2[] {
-			collectionFactory,
-			randomListFactory,
-			listFactory,
-			setFactory,
-			sortedsetFactory,
-			mapFactory,
-			sortedmapFactory
+			Tuple2.<Class<?>, Function> of(
+				Collections.synchronizedCollection(Arrays.asList("")).getClass(),
+				o -> Collections.synchronizedCollection((Collection)o)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.synchronizedList(new ArrayList<Void>()).getClass(),
+				o1 -> Collections.synchronizedList((List<?>)o1)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.synchronizedList(new LinkedList<Void>()).getClass(),
+				o2 -> Collections.synchronizedList((List<?>)o2)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.synchronizedSet(new HashSet<Void>()).getClass(),
+				o3 -> Collections.synchronizedSet((Set<?>)o3)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.synchronizedSortedSet(new TreeSet<>()).getClass(),
+				o4 -> Collections.synchronizedSortedSet((TreeSet<?>)o4)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.synchronizedMap(new HashMap<Void, Void>()).getClass(),
+				o5 -> Collections.synchronizedMap((Map)o5)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.synchronizedSortedMap(new TreeMap<>()).getClass(),
+				o6 -> Collections.synchronizedSortedMap((SortedMap)o6))
 		};
 	}
 

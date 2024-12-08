@@ -138,35 +138,28 @@ public class UnmodifiableCollectionSerializers {
 
 	@SuppressWarnings("RedundantUnmodifiable")
 	static Tuple2<Class<?>, Function>[] unmodifiableFactories () {
-		Tuple2<Class<?>, Function> collectionFactory = Tuple2.of(
-			Collections.unmodifiableCollection(Collections.singletonList("")).getClass(),
-			o -> Collections.unmodifiableCollection((Collection)o));
-		Tuple2<Class<?>, Function> randomAccessListFactory = Tuple2.of(
-			Collections.unmodifiableList(new ArrayList<Void>()).getClass(),
-			o -> Collections.unmodifiableList((List<?>)o));
-		Tuple2<Class<?>, Function> listFactory = Tuple2.of(
-			Collections.unmodifiableList(new LinkedList<Void>()).getClass(),
-			o -> Collections.unmodifiableList((List<?>)o));
-		Tuple2<Class<?>, Function> setFactory = Tuple2.of(
-			Collections.unmodifiableSet(new HashSet<Void>()).getClass(),
-			o -> Collections.unmodifiableSet((Set<?>)o));
-		Tuple2<Class<?>, Function> sortedsetFactory = Tuple2.of(
-			Collections.unmodifiableSortedSet(new TreeSet<>()).getClass(),
-			o -> Collections.unmodifiableSortedSet((SortedSet<?>)o));
-		Tuple2<Class<?>, Function> mapFactory = Tuple2.of(
-			Collections.unmodifiableMap(new HashMap<>()).getClass(),
-			o -> Collections.unmodifiableMap((Map)o));
-		Tuple2<Class<?>, Function> sortedmapFactory = Tuple2.of(
-			Collections.unmodifiableSortedMap(new TreeMap<>()).getClass(),
-			o -> Collections.unmodifiableSortedMap((SortedMap)o));
 		return new Tuple2[] {
-			collectionFactory,
-			randomAccessListFactory,
-			listFactory,
-			setFactory,
-			sortedsetFactory,
-			mapFactory,
-			sortedmapFactory
+			Tuple2.<Class<?>, Function> of(
+				Collections.unmodifiableCollection(Collections.singletonList("")).getClass(),
+				o -> Collections.unmodifiableCollection((Collection)o)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.unmodifiableList(new ArrayList<Void>()).getClass(),
+				o1 -> Collections.unmodifiableList((List<?>)o1)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.unmodifiableList(new LinkedList<Void>()).getClass(),
+				o2 -> Collections.unmodifiableList((List<?>)o2)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.unmodifiableSet(new HashSet<Void>()).getClass(),
+				o3 -> Collections.unmodifiableSet((Set<?>)o3)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.unmodifiableSortedSet(new TreeSet<>()).getClass(),
+				o4 -> Collections.unmodifiableSortedSet((SortedSet<?>)o4)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.unmodifiableMap(new HashMap<>()).getClass(),
+				o5 -> Collections.unmodifiableMap((Map)o5)),
+			Tuple2.<Class<?>, Function> of(
+				Collections.unmodifiableSortedMap(new TreeMap<>()).getClass(),
+				o6 -> Collections.unmodifiableSortedMap((SortedMap)o6))
 		};
 	}
 
