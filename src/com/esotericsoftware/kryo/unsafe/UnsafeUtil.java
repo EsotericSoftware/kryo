@@ -90,7 +90,15 @@ public class UnsafeUtil {
 		booleanArrayBaseOffset = tempBooleanArrayBaseOffset;
 		unsafe = tempUnsafe;
 	}
-	
+
+	public static long objectFieldOffset (Field c) {
+		return unsafe.objectFieldOffset(c);
+	}
+
+	public static Object getObject (Object object, long offset) {
+		return unsafe.getObject(object, offset);
+	}
+
 	// Use a static inner class to defer initialization of direct buffer methods until first use
 	private static final class DirectBuffers {
 		// Constructor to be used for creation of ByteBuffers that use pre-allocated memory regions.
