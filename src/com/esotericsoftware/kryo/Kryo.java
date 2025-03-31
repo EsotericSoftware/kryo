@@ -765,7 +765,7 @@ public class Kryo {
 	public <T> T readObject (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		if (Modifier.isAbstract(type.getModifiers())) throw new IllegalArgumentException("type cannot be an abstract class.");
+		if (!type.isPrimitive() && Modifier.isAbstract(type.getModifiers())) throw new IllegalArgumentException("type cannot be an abstract class.");
 		beginObject();
 		try {
 			T object;
@@ -788,7 +788,7 @@ public class Kryo {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		if (Modifier.isAbstract(type.getModifiers())) throw new IllegalArgumentException("type cannot be an abstract class.");
+		if (!type.isPrimitive() && Modifier.isAbstract(type.getModifiers())) throw new IllegalArgumentException("type cannot be an abstract class.");
 		beginObject();
 		try {
 			T object;
@@ -811,7 +811,7 @@ public class Kryo {
 	public <T> T readObjectOrNull (Input input, Class<T> type) {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		if (Modifier.isAbstract(type.getModifiers())) throw new IllegalArgumentException("type cannot be an abstract class.");
+		if (!type.isPrimitive() && Modifier.isAbstract(type.getModifiers())) throw new IllegalArgumentException("type cannot be an abstract class.");
 		beginObject();
 		try {
 			T object;
@@ -841,7 +841,7 @@ public class Kryo {
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializer == null) throw new IllegalArgumentException("serializer cannot be null.");
-		if (Modifier.isAbstract(type.getModifiers())) throw new IllegalArgumentException("type cannot be an abstract class.");
+		if (!type.isPrimitive() && Modifier.isAbstract(type.getModifiers())) throw new IllegalArgumentException("type cannot be an abstract class.");
 		beginObject();
 		try {
 			T object;
