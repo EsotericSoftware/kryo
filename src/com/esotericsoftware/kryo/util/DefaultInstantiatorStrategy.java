@@ -49,6 +49,7 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 	}
 
 	public ObjectInstantiator newInstantiatorOf (final Class type) {
+
 		if (!Util.isAndroid) {
 			// Use ReflectASM if the class is not a non-static member class.
 			Class enclosingType = type.getEnclosingClass();
@@ -86,7 +87,13 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 					try {
 						return constructor.newInstance();
 					} catch (Exception ex) {
-						throw new KryoException("Error constructing instance of class: " + className(type), ex);
+						StringBuilder message = new StringBuilder("Error constructing instance of class: " + className(type));
+						// Note: For Array and Primitive types the abstract bit is always set.
+						if (!type.isArray() && !type.isPrimitive() && Modifier.isAbstract(type.getModifiers())) {
+							message.append("\nNote: The type you are trying to serialize into is abstract. Kryo will not be able to create an instance of it. Possible solutions:\n");
+							message.append("You can either use a concrete subclass or use a custom ObjectInstantiator to create an instance.");
+						}
+						throw new KryoException(message.toString(), ex);
 					}
 				}
 			};
