@@ -62,6 +62,11 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 						public Object newInstance () {
 							try {
 								return access.newInstance();
+							} catch (InstantiationError instantiationError) {
+								String message = "Error constructing instance of class: " + className(type)
+									+ "\nNote: The type you are trying to serialize into is abstract. Kryo will not be able to create an instance of it. Possible solutions:\n"
+								 	+ "You can either use a concrete subclass or use a custom ObjectInstantiator to create an instance.";
+								throw new KryoException(message, instantiationError);
 							} catch (Exception ex) {
 								throw new KryoException("Error constructing instance of class: " + className(type), ex);
 							}

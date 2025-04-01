@@ -17,7 +17,7 @@ public class SerializerErrorBehaviorTest extends KryoTestCase {
     void testAbstractClassCannotBeSerialized() {
         kryo.register(AbstractClass.class);
         kryo.register(ConcreteClass.class);
-        assertThrows(KryoException.class, this::simpleRoundtrip);
+        assertThrows(KryoException.class, () -> simpleRoundtrip(AbstractClass.class, new ConcreteClass()));
     }
 
     @Test
@@ -26,14 +26,20 @@ public class SerializerErrorBehaviorTest extends KryoTestCase {
         registration.setInstantiator(ConcreteClass::new);
     }
 
-    public void simpleRoundtrip() {
-        AbstractClass abstractClass = new ConcreteClass();
+    @Test
+    void testNonMemberAbstractClassCannotBeSerialized() {
+        kryo.register(TestAbstractClass.class);
+        kryo.register(TestConcreteClass.class);
+        assertThrows(KryoException.class, () -> simpleRoundtrip(TestAbstractClass.class, new TestConcreteClass()));
+    }
+
+    public void simpleRoundtrip(Class type, Object object) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Output output = new Output(baos);
-        kryo.writeObject(output, abstractClass);
+        kryo.writeObject(output, object);
         output.close();
         Input input = new Input(baos.toByteArray());
-        kryo.readObject(input, AbstractClass.class);
+        kryo.readObject(input, type);
         input.close();
     }
 
