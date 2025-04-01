@@ -763,8 +763,6 @@ public class Kryo {
 
 	/** Reads an object using the registered serializer. */
 	public <T> T readObject (Input input, Class<T> type) {
-		System.out.println(type);
-		System.out.println(type.getModifiers());
 		if (input == null) throw new IllegalArgumentException("input cannot be null.");
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		beginObject();
