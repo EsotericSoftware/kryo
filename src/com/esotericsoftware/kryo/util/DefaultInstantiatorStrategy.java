@@ -24,7 +24,6 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.reflectasm.ConstructorAccess;
 
-import java.lang.module.ModuleFinder;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 
