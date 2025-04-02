@@ -24,6 +24,7 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.reflectasm.ConstructorAccess;
 
+import java.lang.module.ModuleFinder;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 
@@ -62,18 +63,12 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 						public Object newInstance () {
 							try {
 								return access.newInstance();
-							} catch (InstantiationError instantiationError) {
-								String message = "Error constructing instance of class: " + className(type)
-									+ "\nNote: The type you are trying to serialize into is abstract. Kryo will not be able to create an instance of it. Possible solutions:\n"
-								 	+ "You can either use a concrete subclass or use a custom ObjectInstantiator to create an instance.";
-								throw new KryoException(message, instantiationError);
-							} catch (Exception ex) {
-								throw new KryoException("Error constructing instance of class: " + className(type), ex);
+							} catch (Exception | InstantiationError ex) {
+								throw createInstantiationError(type, ex);
 							}
 						}
 					};
-				} catch (Exception ignored) {
-				}
+				} catch (Exception ignored) {}
 			}
 		}
 
@@ -92,23 +87,16 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 					try {
 						return constructor.newInstance();
 					} catch (Exception ex) {
-						StringBuilder message = new StringBuilder("Error constructing instance of class: " + className(type));
-						// Note: For Array and Primitive types the abstract bit is always set.
-						if (!type.isArray() && !type.isPrimitive() && Modifier.isAbstract(type.getModifiers())) {
-							message.append("\nNote: The type you are trying to serialize into is abstract. Kryo will not be able to create an instance of it. Possible solutions:\n");
-							message.append("You can either use a concrete subclass or use a custom ObjectInstantiator to create an instance.");
-						}
-						throw new KryoException(message.toString(), ex);
+						throw createInstantiationError(type, ex);
 					}
 				}
 			};
-		} catch (Exception ignored) {
-		}
+		} catch (Exception ignored) {}
 
 		if (fallbackStrategy == null) {
-			if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()))
+			if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers())) {
 				throw new KryoException("Class cannot be created (non-static member class): " + className(type));
-			else {
+			} else {
 				StringBuilder message = new StringBuilder("Class cannot be created (missing no-arg constructor): " + className(type));
 				if (type.getSimpleName().equals("")) {
 					message
@@ -120,10 +108,26 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 						.append("2. Register a FieldSerializer for the containing class and call FieldSerializer\n")
 						.append("setIgnoreSyntheticFields(false) on it. This is not safe but may be sufficient temporarily.");
 				}
+
+				if (type.isInterface()) {
+					message.append("\nNote: The type you are trying to serialize into is abstract (interface). Kryo will not be able to create an instance of it. Possible solutions:\n")
+							.append("You can either use a class that implements the interface or use a custom ObjectInstantiator to create an instance.");
+				}
+
 				throw new KryoException(message.toString());
 			}
 		}
 		// InstantiatorStrategy.
 		return fallbackStrategy.newInstantiatorOf(type);
+	}
+
+	private KryoException createInstantiationError(Class type, Throwable throwable) {
+		StringBuilder message = new StringBuilder("Error constructing instance of class: " + className(type));
+		// Note: For Array and Primitive types the abstract bit is always set.
+		if (!type.isArray() && !type.isPrimitive() && Modifier.isAbstract(type.getModifiers())) {
+			message.append("\nNote: The type you are trying to serialize into is abstract. Kryo will not be able to create an instance of it. Possible solutions:\n")
+				.append("You can either use a concrete subclass or use a custom ObjectInstantiator to create an instance.");
+		}
+		return new KryoException(message.toString(), throwable);
 	}
 }
