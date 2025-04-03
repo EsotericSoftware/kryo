@@ -1,15 +1,15 @@
 /* Copyright (c) 2008-2023, Nathan Sweet
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
  * conditions are met:
- * 
+ *
  * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
  * disclaimer in the documentation and/or other materials provided with the distribution.
  * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
  * from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
  * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
  * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
@@ -67,7 +67,8 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 							}
 						}
 					};
-				} catch (Exception ignored) {}
+				} catch (Exception ignored) {
+				}
 			}
 		}
 
@@ -90,7 +91,8 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 					}
 				}
 			};
-		} catch (Exception ignored) {}
+		} catch (Exception ignored) {
+		}
 
 		if (fallbackStrategy == null) {
 			if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers())) {
@@ -109,8 +111,10 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 				}
 
 				if (type.isInterface()) {
-					message.append("\nNote: The type you are trying to serialize into is abstract (interface). Kryo will not be able to create an instance of it. Possible solutions:\n")
-							.append("You can either use a class that implements the interface or use a custom ObjectInstantiator to create an instance.");
+					message.append(
+						"\nNote: The type you are trying to serialize into is abstract (interface). Kryo will not be able to create an instance of it. Possible solutions:\n")
+						.append(
+							"You can either use a class that implements the interface or use a custom ObjectInstantiator to create an instance.");
 				}
 
 				throw new KryoException(message.toString());
@@ -120,11 +124,12 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 		return fallbackStrategy.newInstantiatorOf(type);
 	}
 
-	private KryoException createInstantiationError(Class type, Throwable throwable) {
+	private KryoException createInstantiationError (Class type, Throwable throwable) {
 		StringBuilder message = new StringBuilder("Error constructing instance of class: " + className(type));
 		// Note: For Array and Primitive types the abstract bit is always set.
 		if (!type.isArray() && !type.isPrimitive() && Modifier.isAbstract(type.getModifiers())) {
-			message.append("\nNote: The type you are trying to serialize into is abstract. Kryo will not be able to create an instance of it. Possible solutions:\n")
+			message.append(
+				"\nNote: The type you are trying to serialize into is abstract. Kryo will not be able to create an instance of it. Possible solutions:\n")
 				.append("You can either use a concrete subclass or use a custom ObjectInstantiator to create an instance.");
 		}
 		return new KryoException(message.toString(), throwable);
