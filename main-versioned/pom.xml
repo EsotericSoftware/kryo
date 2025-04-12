@@ -4,10 +4,11 @@
 	<parent>
 		<groupId>com.esotericsoftware</groupId>
 		<artifactId>kryo-parent</artifactId>
-		<version>5.5.1-SNAPSHOT</version>
+		<version>5.6.3-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
+	<groupId>com.esotericsoftware.kryo</groupId>
 	<artifactId>kryo${kryo.major.version}</artifactId>
 	<packaging>jar</packaging>
 

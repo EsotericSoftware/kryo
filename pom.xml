@@ -3,7 +3,7 @@
 
 	<groupId>com.esotericsoftware</groupId>
 	<artifactId>kryo-parent</artifactId>
-	<version>5.5.1-SNAPSHOT</version>
+	<version>5.6.3-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>Kryo Parent</name>
@@ -51,8 +51,8 @@
 		<kryo.major.version>5</kryo.major.version>
 		<javac.target>17</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<junit.version>5.10.0</junit.version>
-		<kotlin.version>1.9.10</kotlin.version>
+		<junit.version>5.12.1</junit.version>
+		<kotlin.version>2.1.20</kotlin.version>
 		<kotlin.compiler.incremental>true</kotlin.compiler.incremental>
 	</properties>
 
@@ -85,7 +85,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.13.0</version>
+			<version>3.17.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -99,19 +99,19 @@
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>build-helper-maven-plugin</artifactId>
-					<version>3.4.0</version>
+					<version>3.6.0</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-clean-plugin</artifactId>
-					<version>3.3.1</version>
+					<version>3.4.1</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.8.1</version>
+					<version>3.14.0</version>
 					<configuration>
 						<source>${javac.target}</source>
 						<target>${javac.target}</target>
@@ -122,31 +122,31 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-install-plugin</artifactId>
-					<version>3.1.1</version>
+					<version>3.1.4</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-deploy-plugin</artifactId>
-					<version>3.1.1</version>
+					<version>3.1.4</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-jar-plugin</artifactId>
-					<version>3.3.0</version>
+					<version>3.4.2</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-site-plugin</artifactId>
-					<version>3.12.1</version>
+					<version>3.21.0</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
-					<version>3.1.2</version>
+					<version>3.5.3</version>
 				</plugin>
 
 				<plugin>
@@ -168,7 +168,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-javadoc-plugin</artifactId>
-					<version>3.6.0</version>
+					<version>3.11.2</version>
 					<configuration>
 						<!-- Required for java8, so that javadoc errors don't fail the build. -->
 						<doclint>none</doclint>
@@ -186,7 +186,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-release-plugin</artifactId>
-					<version>3.0.1</version>
+					<version>3.1.1</version>
 					<configuration>
 						<autoVersionSubmodules>true</autoVersionSubmodules>
 						<useReleaseProfile>false</useReleaseProfile>
@@ -210,19 +210,19 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-shade-plugin</artifactId>
-					<version>3.5.1</version>
+					<version>3.6.0</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-enforcer-plugin</artifactId>
-					<version>3.4.1</version>
+					<version>3.5.0</version>
 				</plugin>
 
 				<plugin>
 					<groupId>net.revelc.code.formatter</groupId>
 					<artifactId>formatter-maven-plugin</artifactId>
-					<version>2.23.0</version>
+					<version>2.26.0</version>
 					<configuration>
 						<configFile>${kryo.root}/eclipse/code-format.xml</configFile>
 						<lineEnding>KEEP</lineEnding>
@@ -266,12 +266,16 @@
 	<profiles>
 		<profile>
 			<id>release</id>
+			<properties>
+				<maven.test.skip>true</maven.test.skip>
+				<skipTests>true</skipTests>
+			</properties>
 			<build>
 				<plugins>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-source-plugin</artifactId>
-						<version>3.3.0</version>
+						<version>3.3.1</version>
 						<executions>
 							<execution>
 								<id>attach-sources</id>
@@ -284,7 +288,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>3.6.0</version>
+						<version>3.11.2</version>
 						<executions>
 							<execution>
 								<id>attach-javadocs</id>
@@ -297,7 +301,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
-						<version>3.1.0</version>
+						<version>3.2.7</version>
 						<executions>
 							<execution>
 								<id>sign-artifacts</id>
@@ -305,6 +309,25 @@
 								<goals>
 									<goal>sign</goal>
 								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>enforce-jdk</id>
+								<goals>
+									<goal>enforce</goal>
+								</goals>
+								<configuration>
+									<rules>
+										<requireJavaVersion>
+											<version>[11, 12)</version>
+										</requireJavaVersion>
+									</rules>
+								</configuration>
 							</execution>
 						</executions>
 					</plugin>
@@ -320,7 +343,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-enforcer-plugin</artifactId>
-						<version>3.4.1</version>
+						<version>3.5.0</version>
 						<executions>
 							<execution>
 								<goals>
@@ -402,7 +425,7 @@
 		<profile>
 			<id>jdk11ge</id>
 			<activation>
-				<jdk>[11,</jdk>
+				<jdk>[11,)</jdk>
 			</activation>
 			<build>
 				<pluginManagement>
@@ -438,7 +461,7 @@
 		<profile>
 			<id>jdk17ge</id>
 			<activation>
-				<jdk>[17,</jdk>
+				<jdk>[17,)</jdk>
 			</activation>
 			<build>
 				<plugins>
@@ -483,7 +506,6 @@
 								<target>${java.vm.specification.version}</target>
 								<compilerArgs>
 									<arg>-parameters</arg>
-									<arg>--enable-preview</arg>
 									<arg>--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED</arg>
 									<arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
 								</compilerArgs>

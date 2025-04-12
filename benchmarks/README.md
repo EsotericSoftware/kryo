@@ -25,7 +25,7 @@ Where `[parameters]` should be replaced with JMH parameters.
 
 If no JMH parameters are given, the benchmarks are run with settings only suitable for development (fork 0, short runs). A full list of JMH parameters can be found by running:
 ```
-java -cp benchmarks/lib/* org.openjdk.jmh.Main -h
+java -cp "benchmarks/lib/*" org.openjdk.jmh.Main -h
 ```
 Or by digging through the [JMH source](http://hg.openjdk.java.net/code-tools/jmh/file/3769055ad883/jmh-core/src/main/java/org/openjdk/jmh/runner/options/CommandLineOptions.java).
 
