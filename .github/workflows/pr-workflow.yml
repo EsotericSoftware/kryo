@@ -45,9 +45,9 @@ jobs:
       - name: Test with JDK 21
         run: mvn -v && mvn -B test
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 23
-      - name: Test with JDK 23
+          java-version: 24
+      - name: Test with JDK 24
         run: mvn -v && mvn -B test          
