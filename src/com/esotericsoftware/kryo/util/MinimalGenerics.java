@@ -30,14 +30,22 @@ public final class MinimalGenerics extends BaseGenerics {
         super(kryo);
     }
 
+    @Override
+    public GenericsHierarchy buildHierarchy(Class type) {
+        return new GenericsHierarchy(type);
+    }
+
+    @Override
     public int pushTypeVariables(GenericsHierarchy hierarchy, GenericType[] args) {
         return 0;
     }
 
+    @Override
     public void popTypeVariables(int count) {
 
     }
 
+    @Override
     public Class resolveTypeVariable(TypeVariable typeVariable) {
         return null;
     }

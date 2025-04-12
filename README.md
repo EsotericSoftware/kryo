@@ -65,6 +65,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 - [Kryo versioning and upgrading](#kryo-versioning-and-upgrading)
 - [Interoperability](#interoperability)
 - [Compatibility](#compatibility)
+   * [Replacing a class](#replacing-a-class)
 - [Serializers](#serializers)
    * [FieldSerializer](#fieldserializer)
       + [CachedField settings](#cachedfield-settings)
@@ -88,13 +89,11 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 
 ## Recent releases
 
-* [5.4.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.4.0) - brings bug fixes and performance improvements.
-* [5.3.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.3.0) - brings bug fixes and performance improvements.
-* [5.2.1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.2.1) - brings minor bug fixes and improvements.
-* [5.2.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.2.0) - brings bug fixes for `RecordSerializer` and improvements. Important: If you are currently storing serialized `java.util.Record`, please see the [release notes](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.2.0) for upgrade instructions.
-* [5.1.1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.1.1) - brings bug fixes for `CompatibleFieldSerializer` and removes dependency from versioned artifact
-* [5.1.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.1.0) - brings support for `java.util.Record` and improved support for older Android versions
-* [5.0.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.0.0) - the final Kryo 5 release fixing many issues and making many long awaited improvements over Kryo 4. Note: For libraries (not applications) using Kryo, there's now a completely self-contained, versioned artifact (for details see [installation](#installation)). For migration from Kryo 4.x see also [Migration to v5](https://github.com/EsotericSoftware/kryo/wiki/Migration-to-v5).
+* [4.0.3](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.3) - brings bug fixes and performance improvements for chunked encoding.
+* [5.6.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.6.2) - recompiles 5.6.1 to be compatible with Java 8 again
+* [5.6.1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.6.1) - brings a bug fix for the Maven coordinates of the versioned artifact
+* [5.6.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.6.0) - brings bug fixes and performance improvements.
+* [5.5.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.5.0) - brings bug fixes and performance improvements.
 
 ## Installation
 
@@ -112,7 +111,7 @@ To use the latest Kryo release in your application, use this dependency entry in
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.4.0</version>
+   <version>5.6.2</version>
 </dependency>
 ```
 
@@ -122,7 +121,7 @@ To use the latest Kryo release in a library you want to publish, use this depend
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.4.0</version>
+   <version>5.6.2</version>
 </dependency>
 ```
 
@@ -139,13 +138,13 @@ To use the latest Kryo snapshot, use:
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.4.1-SNAPSHOT</version>
+   <version>5.6.3-SNAPSHOT</version>
 </dependency>
 <!-- for usage in a library that should be published: -->
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.4.1-SNAPSHOT</version>
+   <version>5.6.3-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -260,7 +259,7 @@ It can be useful to write the length of some data, then the data. When the lengt
 
 Chunked encoding solves this problem by using a small buffer. When the buffer is full, its length is written, then the data. This is one chunk of data. The buffer is cleared and this continues until there is no more data to write. A chunk with a length of zero denotes the end of the chunks.
 
-Kryo provides classes to maked chunked encoding. OutputChunked is used to write chunked data. It extends Output, so has all the convenient methods to write data. When the OutputChunked buffer is full, it flushes the chunk to another OutputStream. The `endChunk` method is used to mark the end of a set of chunks.
+Kryo provides classes to make chunked encoding easy to use. OutputChunked is used to write chunked data. It extends Output, so has all the convenient methods to write data. When the OutputChunked buffer is full, it flushes the chunk to another OutputStream. The `endChunk` method is used to mark the end of a set of chunks.
 
 ```java
 OutputStream outputStream = new FileOutputStream("file.bin");
@@ -390,7 +389,7 @@ Enabling references impacts performance because every object that is read or wri
 
 Under the covers, a ReferenceResolver handles tracking objects that have been read or written and provides int reference IDs. Multiple implementations are provided:
 
-1. MapReferenceResolver is used by default if a reference resolver is not specified. It uses Kryo's IdentityObjectIntMap (a [cuckoo hashmap](https://en.wikipedia.org/wiki/Cuckoo%5Fhashing)) to track written objects. This kind of map has very fast gets and does not allocate for put, but puts for very large numbers of objects can be somewhat slow.
+1. MapReferenceResolver is used by default if a reference resolver is not specified. It uses Kryo's [IdentityObjectIntMap](https://github.com/EsotericSoftware/kryo/blob/master/src/com/esotericsoftware/kryo/util/IdentityObjectIntMap.java) to track written objects. This kind of map is fast and minimizes allocation.
 2. HashMapReferenceResolver uses a HashMap to track written objects. This kind of map allocates for put but may provide better performance for object graphs with a very high number of objects.
 3. ListReferenceResolver uses an ArrayList to track written objects. For object graphs with relatively few objects, this can be faster than using a map (~15% faster in some tests). This should not be used for graphs with many objects because it has a linear look up to find objects that have already been written.
 
@@ -445,7 +444,7 @@ Class IDs -1 and -2 are reserved. Class IDs 0-8 are used by default for primitiv
 
 #### ClassResolver
 
-Under the covers, a ClassResolver handles actually reading and writing bytes to represent a class. The default implementation is sufficient in most cases, but it can be replaced to customize what happens when a class is registered, what an unregistered class is encountered during serialization, and what is read and written to represent a class.
+Under the covers, a ClassResolver handles actually reading and writing bytes to represent a class. The default implementation is sufficient in most cases, but it can be replaced to customize what happens when a class is registered, what happens when an unregistered class is encountered during serialization, and what is read and written to represent a class.
 
 #### Optional registration
 
@@ -635,7 +634,7 @@ Input input = new Input(output.getBuffer(), 0, output.position());
 Callable<Integer> closure2 = (Callable<Integer>)kryo.readObject(input, ClosureSerializer.Closure.class);
 ```
 
-Serializing closures which do not implement Serializable is possible [with some effort](https://ruediste.github.io/java,/kryo/2017/05/07/serializing-non-serializable-lambdas.html).
+Serializing closures which do not implement Serializable is possible [with some effort](https://ruediste.github.io/java/kryo/2017/05/07/serializing-non-serializable-lambdas.html).
 
 ### Compression and encryption
 
@@ -981,6 +980,22 @@ The Kryo serializers provided by default assume that Java will be used for deser
 
 For some needs, such as long term storage of serialized bytes, it can be important how serialization handles changes to classes. This is known as forward compatibility (reading bytes serialized by newer classes) and backward compatibility (reading bytes serialized by older classes). Kryo provides a few generic serializers which take different approaches to handling compatibility. Additional serializers can easily be developed for forward and backward compatibility, such as a serializer that uses an external, hand written schema.
 
+### Replacing a class
+
+When a class changes more than its serializer can handle, a serializer can be written to transfer the data to a different class. All use of the old class in application code should be replaced by the new class. The old class is kept solely for this serializer.
+
+```java
+kryo.register(OldClass.class, new TaggedFieldSerializer(kryo, OldClass.class) {
+	public Object read (Kryo kryo, Input input, Class type) {
+		OldClass oldObject = (OldClass)super.read(kryo, input, OldClass.class);
+		NewClass newObject = new NewClass();
+		// Use data from the old class to populate the instance of the new class and return it.
+		return newObject;
+	}
+});
+kryo.register(NewClass.class);
+```
+
 ## Serializers
 
 Kryo provides many serializers with various configuration options and levels of compatibility. Additional serializers can be found in the [kryo-serializers](https://github.com/magro/kryo-serializers) sister project, which hosts serializers that access private APIs or are otherwise not perfectly safe on all JVMs. More serializers can be found in the [links section](#links).
@@ -991,7 +1006,7 @@ FieldSerializer works by serializing each non-transient field. It can serialize 
 
 FieldSerializer is efficient by writing only the field data, without any schema information, using the Java class files as the schema. It does not support adding, removing, or changing the type of fields without invalidating previously serialized bytes. Renaming fields is allowed only if it doesn't change the alphabetical order of the fields.
 
-FieldSerializer's compatibility drawbacks can be acceptable in many situations, such as when sending data over a network, but may not be a good choice for long term data storage because the Java classes cannot evolve.
+FieldSerializer's compatibility drawbacks can be acceptable in many situations, such as when sending data over a network, but may not be a good choice for long term data storage because the Java classes cannot evolve. In many cases [TaggedFieldSerializer](#taggedfieldserializer) is a better choice.
 
 #### FieldSerializer settings
 
@@ -1091,6 +1106,8 @@ Only fields that have a <code>@Tag(int)</code> annotation are serialized. Field 
 The forward and backward compatibility and serialization [performance](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png) depends on the `readUnknownTagData` and `chunkedEncoding` settings. Additionally, a varint is written before each field for the tag value.
 
 When `readUnknownTagData` and `chunkedEncoding` are false, fields must not be removed but the `@Deprecated` annotation can be applied. Deprecated fields are read when reading old bytes but aren't written to new bytes. Classes can evolve by reading the values of deprecated fields and writing them elsewhere. Fields can be renamed and/or made private to reduce clutter in the class (eg, `ignored1`, `ignored2`).
+
+TaggedFieldSerializer (with `readUnknownTagData` and `chunkedEncoding` false) is the suggested serializer for most classes where fields can be annotated. It allows classes to evolve and fields to be removed from the serialized data (via deprecation), meeting the needs of most applications without adding much to the serialized size.
 
 #### TaggedFieldSerializer settings
 

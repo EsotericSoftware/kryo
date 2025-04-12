@@ -6,9 +6,10 @@
 	</formats>
 	<fileSets>
 		<fileSet>
+			<directory>.</directory>
 			<includes>
 				<include>README*</include>
-				<include>license*</include>
+				<include>LICENCE*</include>
 				<include>CHANGES*</include>
 				<include>lib/</include>
 				<include>src/</include>

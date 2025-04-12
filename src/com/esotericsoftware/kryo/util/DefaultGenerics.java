@@ -35,6 +35,11 @@ public final class DefaultGenerics extends BaseGenerics {
 		super(kryo);
 	}
 
+    @Override
+    public GenericsHierarchy buildHierarchy (Class type) {
+        return new GenericsHierarchy(type);
+    }
+
 	@Override
 	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args) {
 		// Do not store type variables if hierarchy is empty, or we do not have arguments for all root parameters, or we have more

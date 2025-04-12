@@ -31,7 +31,7 @@ class SerializationTest {
     }
 
     class Example(private val p: (Long) -> String) {
-        constructor() : this({ it.toString() })
+        constructor() : this(@JvmSerializableLambda { it.toString() })
     }
 }
 

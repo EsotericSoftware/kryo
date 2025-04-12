@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.Kryo.*;
 import static com.esotericsoftware.kryo.util.Util.*;
+import static java.lang.Long.numberOfLeadingZeros;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -205,18 +206,7 @@ public class DefaultSerializers {
 			byte[] bytes = input.readBytes(length - 1);
 			if (type != BigInteger.class && type != null) {
 				// Use reflection for subclasses.
-				try {
-					Constructor<? extends BigInteger> constructor = type.getConstructor(byte[].class);
-					if (!constructor.isAccessible()) {
-						try {
-							constructor.setAccessible(true);
-						} catch (SecurityException ignored) {
-						}
-					}
-					return constructor.newInstance(bytes);
-				} catch (Exception ex) {
-					throw new KryoException(ex);
-				}
+				return newBigIntegerSubclass(type, bytes);
 			}
 			if (length == 2) {
 				// Fast-path optimizations for BigInteger constants.
@@ -231,13 +221,26 @@ public class DefaultSerializers {
 			}
 			return new BigInteger(bytes);
 		}
+
+		private static BigInteger newBigIntegerSubclass(Class<? extends BigInteger> type, byte[] bytes) {
+			try {
+				Constructor<? extends BigInteger> constructor = type.getConstructor(byte[].class);
+				if (!constructor.isAccessible()) {
+					try {
+						constructor.setAccessible(true);
+					} catch (SecurityException ignored) {
+					}
+				}
+				return constructor.newInstance(bytes);
+			} catch (Exception ex) {
+				throw new KryoException(ex);
+			}
+		}
 	}
 
 	/** Serializer for {@link BigDecimal} and any subclass.
 	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
 	public static class BigDecimalSerializer extends ImmutableSerializer<BigDecimal> {
-		private final BigIntegerSerializer bigIntegerSerializer = new BigIntegerSerializer();
-
 		{
 			setAcceptsNull(true);
 		}
@@ -247,42 +250,96 @@ public class DefaultSerializers {
 				output.writeByte(NULL);
 				return;
 			}
-			// fast-path optimizations for BigDecimal constants
 			if (object == BigDecimal.ZERO) {
-				bigIntegerSerializer.write(kryo, output, BigInteger.ZERO);
-				output.writeInt(0, false); // for backwards compatibility
+				output.writeVarInt(2, true);
+				output.writeByte((byte) 0);
+				output.writeInt(0, false);
 				return;
 			}
-			// default behaviour
-			bigIntegerSerializer.write(kryo, output, object.unscaledValue());
+			if (object == BigDecimal.ONE) {
+				output.writeVarInt(2, true);
+				output.writeByte((byte) 1);
+				output.writeInt(0, false);
+				return;
+			}
+
+			BigInteger unscaledBig = null; // avoid getting it from BigDecimal, as non-inflated BigDecimal will have to create it
+			boolean compactForm = object.precision() < 19; // less than nineteen decimal digits for sure fits in a long
+			if (!compactForm) {
+				unscaledBig = object.unscaledValue(); // get and remember for possible use in non-compact form
+				compactForm = unscaledBig.bitLength() <= 63; // check exactly if unscaled value will fit in a long
+			}
+
+			if (!compactForm) {
+				byte[] bytes = unscaledBig.toByteArray();
+				output.writeVarInt(bytes.length + 1, true);
+				output.writeBytes(bytes);
+			} else {
+				long unscaledLong = object.scaleByPowerOfTen(object.scale()).longValue(); // best way to get unscaled long value without creating unscaled BigInteger on the way
+				writeUnscaledLong(output, unscaledLong);
+			}
+
 			output.writeInt(object.scale(), false);
 		}
 
+		// compatible with writing unscaled value represented as BigInteger's bytes
+		private static void writeUnscaledLong (Output output, long unscaledLong) {
+			int insignificantBits = unscaledLong >= 0
+					? numberOfLeadingZeros(unscaledLong)
+					: numberOfLeadingZeros(~unscaledLong);
+			int significantBits = (64 - insignificantBits) + 1; // one more bit is for the sign
+			int length = (significantBits + (8 - 1)) >> 3; // how many bytes are needed (rounded up)
+
+			output.writeByte(length + 1);
+			output.writeLong(unscaledLong, length);
+		}
+
 		public BigDecimal read (Kryo kryo, Input input, Class<? extends BigDecimal> type) {
-			BigInteger unscaledValue = bigIntegerSerializer.read(kryo, input, BigInteger.class);
-			if (unscaledValue == null) return null;
+			BigInteger unscaledBig = null;
+			long unscaledLong = 0;
+
+			int length = input.readVarInt(true);
+			if (length == NULL) return null;
+			length--;
+
+			if (length > 8) {
+				byte[] bytes = input.readBytes(length);
+				unscaledBig = new BigInteger(bytes);
+			} else {
+				unscaledLong = input.readLong(length);
+			}
+
 			int scale = input.readInt(false);
 			if (type != BigDecimal.class && type != null) {
 				// For subclasses, use reflection
-				try {
-					Constructor<? extends BigDecimal> constructor = type.getConstructor(BigInteger.class, int.class);
-					if (!constructor.isAccessible()) {
-						try {
-							constructor.setAccessible(true);
-						} catch (SecurityException ignored) {
-						}
+				return newBigDecimalSubclass(type, unscaledBig != null ? unscaledBig : BigInteger.valueOf(unscaledLong), scale);
+			} else {
+				// For BigDecimal, if possible use factory methods to avoid instantiating BigInteger
+				if (unscaledBig != null) {
+					return new BigDecimal(unscaledBig, scale);
+				} else {
+					if (scale == 0) {
+						if (unscaledLong == 0) return BigDecimal.ZERO;
+						if (unscaledLong == 1) return BigDecimal.ONE;
 					}
-					return constructor.newInstance(unscaledValue, scale);
-				} catch (Exception ex) {
-					throw new KryoException(ex);
+					return BigDecimal.valueOf(unscaledLong, scale);
 				}
 			}
-			// fast-path optimizations for BigDecimal constants
-			if (unscaledValue == BigInteger.ZERO && scale == 0) {
-				return BigDecimal.ZERO;
+		}
+
+		private static BigDecimal newBigDecimalSubclass(Class<? extends BigDecimal> type, BigInteger unscaledValue, int scale) {
+			try {
+				Constructor<? extends BigDecimal> constructor = type.getConstructor(BigInteger.class, int.class);
+				if (!constructor.isAccessible()) {
+					try {
+						constructor.setAccessible(true);
+					} catch (SecurityException ignored) {
+					}
+				}
+				return constructor.newInstance(unscaledValue, scale);
+			} catch (Exception ex) {
+				throw new KryoException(ex);
 			}
-			// default behaviour
-			return new BigDecimal(unscaledValue, scale);
 		}
 	}
 

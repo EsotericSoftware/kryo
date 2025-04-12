@@ -76,7 +76,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		this.type = type;
 		this.config = config;
 
-		genericsHierarchy = new GenericsHierarchy(type);
+		final Generics generics = kryo.getGenerics();
+		genericsHierarchy = generics.buildHierarchy(type);
 
 		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
