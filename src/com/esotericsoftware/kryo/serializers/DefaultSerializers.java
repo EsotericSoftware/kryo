@@ -62,6 +62,7 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -849,6 +850,27 @@ public class DefaultSerializers {
 			} catch (Exception ex) {
 				throw new KryoException(ex);
 			}
+		}
+	}
+
+	/** Serializer for {@link ConcurrentHashMap.KeySetView}.
+	 * @author Andreas Bergander */
+	public static class KeySetViewSerializer extends CollectionSerializer<ConcurrentHashMap.KeySetView> {
+		protected void writeHeader (Kryo kryo, Output output, ConcurrentHashMap.KeySetView set) {
+			kryo.writeClassAndObject(output, set.getMap());
+			kryo.writeClassAndObject(output, set.getMappedValue());
+		}
+
+		protected ConcurrentHashMap.KeySetView create (Kryo kryo, Input input, Class<? extends ConcurrentHashMap.KeySetView> type, int size) {
+			return createKeySetView((ConcurrentHashMap)kryo.readClassAndObject(input), kryo.readClassAndObject(input));
+		}
+
+		protected ConcurrentHashMap.KeySetView createCopy (Kryo kryo, ConcurrentHashMap.KeySetView original) {
+			return createKeySetView(original.getMap(), original.getMappedValue());
+		}
+
+		private ConcurrentHashMap.KeySetView createKeySetView (ConcurrentHashMap map, Object mappedValue) {
+			return map.keySet(mappedValue);
 		}
 	}
 
