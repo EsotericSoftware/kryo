@@ -460,7 +460,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		set.add(12);
 		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
 		kryo.register(ConcurrentHashMap.class);
-		roundTrip(13, set);
+		roundTrip(9, set);
 	}
 
 	@Test
@@ -474,7 +474,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
 		kryo.register(ConcurrentHashMap.class);
-		roundTrip(22, set);
+		roundTrip(15, set);
 	}
 
 	@Test
@@ -482,7 +482,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		ConcurrentHashMap.KeySetView set = ConcurrentHashMap.newKeySet();
 		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
 		kryo.register(ConcurrentHashMap.class);
-		roundTrip(6, set);
+		roundTrip(5, set);
 	}
 
 	@Test
