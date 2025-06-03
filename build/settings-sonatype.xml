@@ -1,9 +1,9 @@
 <settings>
 <servers>
 	<server>
-		<id>sonatype-nexus-snapshots</id>
-		<username>${env.SONATYPE_USERNAME}</username>
-		<password>${env.SONATYPE_PASSWORD}</password>
+		<id>central</id>
+		<username>${env.CENTRAL_USERNAME}</username>
+		<password>${env.CENTRAL_PASSWORD}</password>
 	</server>
 </servers>
 </settings>

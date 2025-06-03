@@ -68,5 +68,5 @@ jobs:
         run: mvn -v && mvn -B -P requireSnapshot --no-transfer-progress -DskipTests deploy --settings build/settings-sonatype.xml
         if: env.PUBLISH_ARTIFACTS == 'true'
         env:
-          SONATYPE_USERNAME: yJQKaLoU
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PW_TOKEN }}
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
