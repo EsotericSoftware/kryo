@@ -5,9 +5,6 @@ on: pull_request
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    env:
-      PUBLISH_ARTIFACTS: true
 
     steps:
       - uses: actions/checkout@v4
@@ -47,16 +44,3 @@ jobs:
           java-version: 21
       - name: Test with JDK 21
         run: mvn -v && mvn -B test    
-
-      - name: Set up settings.xml for Sonatype
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: 11
-
-      - name: Publish SNAPSHOT version to Sonatype (we can skip tests, since we only deploy, if the build workflow succeeded)
-        run: mvn -v && mvn -B -P requireSnapshot --no-transfer-progress -DskipTests deploy --settings build/settings-sonatype.xml
-        if: env.PUBLISH_ARTIFACTS == 'true'
-        env:
-          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
-          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
