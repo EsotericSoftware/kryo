@@ -524,6 +524,8 @@ public class IdentityObjectIntMap<K> {
 	}
 
 	private void resize (int newSize) {
+		if (newSize < 0) throw new IllegalArgumentException("newSize must be >= 0: " + newSize);
+
 		int oldEndIndex = capacity + stashSize;
 
 		capacity = newSize;
