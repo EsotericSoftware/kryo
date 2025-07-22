@@ -288,7 +288,7 @@ input.close();
 
 ### Buffer performance
 
-Generally Output and Input provide good performance. Unsafe buffers perform as well or better, especially for primitive arrays, if their crossplatform incompatibilities are acceptable. ByteBufferOutput and ByteBufferInput provide slightly worse performance, but this may be acceptable if the final destination of the bytes must be a ByteBuffer.
+Generally Output and Input provide good performance. Unsafe buffers perform as well or better, especially for primitive arrays, if their cross platform incompatibilities are acceptable. ByteBufferOutput and ByteBufferInput provide slightly worse performance, but this may be acceptable if the final destination of the bytes must be a ByteBuffer.
 
 ![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/string.png)
 
@@ -598,7 +598,7 @@ static public class SomeClassSerializer extends FieldSerializer<SomeClass> {
    public SomeClassSerializer (Kryo kryo) {
       super(kryo, SomeClass.class);
    }
-   public void write (Kryo kryo, Output output, SomeClass object) {
+   public void write (Kryo kryo, Output, SomeClass object) {
       output.writeInt(object.value);
    }
    protected SomeClass create (Kryo kryo, Input input, Class<? extends SomeClass> type) {
@@ -713,7 +713,7 @@ When a serialization fails, a KryoException can be thrown with serialization tra
 ```java
 Object object = ...
 Field[] fields = ...
-for (Field field : fields) {
+for (Field : fields) {
    try {
       // Use other serializers to serialize each field.
    } catch (KryoException ex) {
@@ -854,7 +854,7 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
       genericsHierarchy = new GenericsHierarchy(SomeClass.class);
    }
 
-   public void write (Kryo kryo, Output output, SomeClass object) {
+   public void write (Kryo kryo, Output, SomeClass object) {
       Class valueClass = null;
       Generics generics = kryo.getGenerics();
       int pop = 0;
@@ -911,10 +911,10 @@ Instead of using a serializer, a class can choose to do its own serialization by
 ```java
 public class SomeClass implements KryoSerializable {
    private int value;
-   public void write (Kryo kryo, Output output) {
+   public void write (Kryo kryo, Output) {
       output.writeInt(value, false);
    }
-   public void read (Kryo kryo, Input input) {
+   public void read (Kryo kryo, Input) {
       value = input.readInt(false);
    }
 }
@@ -986,7 +986,7 @@ When a class changes more than its serializer can handle, a serializer can be wr
 
 ```java
 kryo.register(OldClass.class, new TaggedFieldSerializer(kryo, OldClass.class) {
-	public Object read (Kryo kryo, Input input, Class type) {
+	public Object read (Kryo kryo, Input, Class type) {
 		OldClass oldObject = (OldClass)super.read(kryo, input, OldClass.class);
 		NewClass newObject = new NewClass();
 		// Use data from the old class to populate the instance of the new class and return it.
