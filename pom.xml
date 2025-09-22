@@ -162,7 +162,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-javadoc-plugin</artifactId>
-					<version>3.11.3</version>
+					<version>3.12.0</version>
 					<configuration>
 						<!-- Required for java8, so that javadoc errors don't fail the build. -->
 						<doclint>none</doclint>
@@ -292,7 +292,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>3.11.3</version>
+						<version>3.12.0</version>
 						<executions>
 							<execution>
 								<id>attach-javadocs</id>
