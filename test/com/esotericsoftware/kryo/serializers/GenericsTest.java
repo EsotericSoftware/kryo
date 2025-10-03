@@ -436,17 +436,29 @@ class GenericsTest extends KryoTestCase {
 			if (obj == null) return false;
 			if (getClass() != obj.getClass()) return false;
 			ClassWithMap other = (ClassWithMap)obj;
-			if (values == null) {
-				if (other.values != null) return false;
-			} else if (!values.toString().equals(other.values.toString())) return false;
-			return true;
+			return Objects.equals(values, other.values);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(values);
 		}
 
 		public static class MapKey {
 			public String field1, field2;
 
-			public String toString () {
-				return field1 + ":" + field2;
+			@Override
+			public boolean equals(Object obj) {
+				if (this == obj) return true;
+				if (!(obj instanceof MapKey)) return false;
+				MapKey other = (MapKey) obj;
+				return Objects.equals(field1, other.field1) &&
+					Objects.equals(field2, other.field2);
+			}
+
+			@Override
+			public int hashCode() {
+				return Objects.hash(field1, field2);
 			}
 		}
 	}
