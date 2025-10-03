@@ -513,6 +513,20 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		roundTrip(9, new ClassWithGenericField<>(1));
 	}
 
+	// https://github.com/EsotericSoftware/kryo/issues/851
+	@Test
+	void testClassWithDefaultValueField () {
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setReadUnknownFieldData(true);
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		kryo.register(ClassWithDefaultValueField.class);
+
+		final ClassWithDefaultValueField o = new ClassWithDefaultValueField();
+		o.setValue(null);
+		roundTrip(10, o);
+	}
+
 	public static class TestClass {
 		public String text = "something";
 		public int moo = 120;
@@ -806,6 +820,31 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 			if (this == o) return true;
 			if (o == null || getClass() != o.getClass()) return false;
 			ClassWithGenericField<?> that = (ClassWithGenericField<?>)o;
+			return Objects.equals(value, that.value);
+		}
+	}
+
+	public static class ClassWithDefaultValueField {
+
+		private Integer value = 10;
+
+		public Integer getValue () {
+			return value;
+		}
+
+		public void setValue (Integer value) {
+			this.value = value;
+		}
+
+		@Override
+		public boolean equals (Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			final ClassWithDefaultValueField that = (ClassWithDefaultValueField)o;
 			return Objects.equals(value, that.value);
 		}
 	}
