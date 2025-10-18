@@ -54,8 +54,8 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 24
-      - name: Test with JDK 24
+          java-version: 25
+      - name: Test with JDK 25
         run: mvn -v && mvn -B test
       
       - name: Set up settings.xml for Sonatype
