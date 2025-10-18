@@ -43,11 +43,11 @@ jobs:
           distribution: 'temurin'
           java-version: 21
       - name: Test with JDK 21
-        run: mvn -v && mvn -B test
+        run: mvn -v && mvn -B test    
 
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 24
-      - name: Test with JDK 24
-        run: mvn -v && mvn -B test          
+          java-version: 25
+      - name: Test with JDK 25
+        run: mvn -v && mvn -B test   
