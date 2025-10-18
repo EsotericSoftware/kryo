@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023, Nathan Sweet
+/* Copyright (c) 2008-2025, Nathan Sweet
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -25,7 +25,6 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
-import com.esotericsoftware.kryo.util.Tuple2;
 import com.esotericsoftware.minlog.Log;
 
 import java.util.ArrayList;
@@ -48,7 +47,6 @@ import java.util.function.Function;
 public class UnmodifiableCollectionSerializers {
 
 	private static class Offset {
-		// Graalvm unsafe offset substitution support
 		private static final long SOURCE_COLLECTION_FIELD_OFFSET;
 		private static final long SOURCE_MAP_FIELD_OFFSET;
 
@@ -128,39 +126,39 @@ public class UnmodifiableCollectionSerializers {
 		}
 	}
 
-	private static Serializer<?> createSerializer (Tuple2<Class<?>, Function> factory) {
-		if (Collection.class.isAssignableFrom(factory.f0)) {
-			return new UnmodifiableCollectionSerializer(factory.f1, Offset.SOURCE_COLLECTION_FIELD_OFFSET);
+	private static Serializer<?> createSerializer (Map.Entry<Class<?>, Function> factory) {
+		if (Collection.class.isAssignableFrom(factory.getKey())) {
+			return new UnmodifiableCollectionSerializer(factory.getValue(), Offset.SOURCE_COLLECTION_FIELD_OFFSET);
 		} else {
-			return new UnmodifiableMapSerializer(factory.f1, Offset.SOURCE_MAP_FIELD_OFFSET);
+			return new UnmodifiableMapSerializer(factory.getValue(), Offset.SOURCE_MAP_FIELD_OFFSET);
 		}
 	}
 
 	@SuppressWarnings("RedundantUnmodifiable")
-	static Tuple2<Class<?>, Function>[] unmodifiableFactories () {
-		return new Tuple2[] {
-			Tuple2.<Class<?>, Function> of(
-				Collections.unmodifiableCollection(Collections.singletonList("")).getClass(),
-				o -> Collections.unmodifiableCollection((Collection)o)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.unmodifiableList(new ArrayList<Void>()).getClass(),
-				o1 -> Collections.unmodifiableList((List<?>)o1)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.unmodifiableList(new LinkedList<Void>()).getClass(),
-				o2 -> Collections.unmodifiableList((List<?>)o2)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.unmodifiableSet(new HashSet<Void>()).getClass(),
-				o3 -> Collections.unmodifiableSet((Set<?>)o3)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.unmodifiableSortedSet(new TreeSet<>()).getClass(),
-				o4 -> Collections.unmodifiableSortedSet((SortedSet<?>)o4)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.unmodifiableMap(new HashMap<>()).getClass(),
-				o5 -> Collections.unmodifiableMap((Map)o5)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.unmodifiableSortedMap(new TreeMap<>()).getClass(),
-				o6 -> Collections.unmodifiableSortedMap((SortedMap)o6))
-		};
+	static Map<Class<?>, Function> unmodifiableFactories () {
+		final Map<Class<?>, Function> factories = new HashMap<>();
+		factories.put(
+			Collections.unmodifiableCollection(Collections.singletonList("")).getClass(),
+			o -> Collections.unmodifiableCollection((Collection)o));
+		factories.put(
+			Collections.unmodifiableList(new ArrayList<Void>()).getClass(),
+			o1 -> Collections.unmodifiableList((List<?>)o1));
+		factories.put(
+			Collections.unmodifiableList(new LinkedList<Void>()).getClass(),
+			o2 -> Collections.unmodifiableList((List<?>)o2));
+		factories.put(
+			Collections.unmodifiableSet(new HashSet<Void>()).getClass(),
+			o3 -> Collections.unmodifiableSet((Set<?>)o3));
+		factories.put(
+			Collections.unmodifiableSortedSet(new TreeSet<>()).getClass(),
+			o4 -> Collections.unmodifiableSortedSet((SortedSet<?>)o4));
+		factories.put(
+			Collections.unmodifiableMap(new HashMap<>()).getClass(),
+			o5 -> Collections.unmodifiableMap((Map)o5));
+		factories.put(
+			Collections.unmodifiableSortedMap(new TreeMap<>()).getClass(),
+			o6 -> Collections.unmodifiableSortedMap((SortedMap)o6));
+		return factories;
 	}
 
 	/** Registers serializers for unmodifiable Collections created via {@link Collections}, including {@link Map}s.
@@ -173,8 +171,8 @@ public class UnmodifiableCollectionSerializers {
 	 * @see Collections#unmodifiableSortedMap(SortedMap) */
 	public static void registerSerializers (Kryo kryo) {
 		try {
-			for (Tuple2<Class<?>, Function> factory : unmodifiableFactories()) {
-				kryo.register(factory.f0, createSerializer(factory));
+			for (Map.Entry<Class<?>, Function> factory : unmodifiableFactories().entrySet()) {
+				kryo.register(factory.getKey(), createSerializer(factory));
 			}
 		} catch (Throwable ignored) {
 			// ignored
@@ -191,8 +189,8 @@ public class UnmodifiableCollectionSerializers {
 	 * @see Collections#unmodifiableSortedMap(SortedMap) */
 	public static void addDefaultSerializers (Kryo kryo) {
 		try {
-			for (Tuple2<Class<?>, Function> factory : unmodifiableFactories()) {
-				kryo.addDefaultSerializer(factory.f0, createSerializer(factory));
+			for (Map.Entry<Class<?>, Function> factory : unmodifiableFactories().entrySet()) {
+				kryo.addDefaultSerializer(factory.getKey(), createSerializer(factory));
 			}
 		} catch (Throwable ignored) {
 			// ignored

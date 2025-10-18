@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023, Nathan Sweet
+/* Copyright (c) 2008-2025, Nathan Sweet
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -25,7 +25,6 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
-import com.esotericsoftware.kryo.util.Tuple2;
 import com.esotericsoftware.minlog.Log;
 
 import java.util.ArrayList;
@@ -49,7 +48,6 @@ import java.util.function.Function;
 public class SynchronizedCollectionSerializers {
 
 	private static class Offset {
-		// Graalvm unsafe offset substitution support
 		private static final long SOURCE_COLLECTION_FIELD_OFFSET;
 		private static final long SOURCE_MAP_FIELD_OFFSET;
 
@@ -72,7 +70,6 @@ public class SynchronizedCollectionSerializers {
 	}
 
 	static final class SynchronizedCollectionSerializer extends CollectionSerializer<Collection> {
-
 		private final Function factory;
 		private final long offset;
 
@@ -134,38 +131,38 @@ public class SynchronizedCollectionSerializers {
 		}
 	}
 
-	private static Serializer<?> createSerializer (Tuple2<Class<?>, Function> factory) {
-		if (Collection.class.isAssignableFrom(factory.f0)) {
-			return new SynchronizedCollectionSerializer(factory.f1, Offset.SOURCE_COLLECTION_FIELD_OFFSET);
+	private static Serializer<?> createSerializer (Map.Entry<Class<?>, Function> factory) {
+		if (Collection.class.isAssignableFrom(factory.getKey())) {
+			return new SynchronizedCollectionSerializer(factory.getValue(), Offset.SOURCE_COLLECTION_FIELD_OFFSET);
 		} else {
-			return new SynchronizedMapSerializer(factory.f1, Offset.SOURCE_MAP_FIELD_OFFSET);
+			return new SynchronizedMapSerializer(factory.getValue(), Offset.SOURCE_MAP_FIELD_OFFSET);
 		}
 	}
 
-	static Tuple2<Class<?>, Function>[] synchronizedFactories () {
-		return new Tuple2[] {
-			Tuple2.<Class<?>, Function> of(
-				Collections.synchronizedCollection(Arrays.asList("")).getClass(),
-				o -> Collections.synchronizedCollection((Collection)o)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.synchronizedList(new ArrayList<Void>()).getClass(),
-				o1 -> Collections.synchronizedList((List<?>)o1)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.synchronizedList(new LinkedList<Void>()).getClass(),
-				o2 -> Collections.synchronizedList((List<?>)o2)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.synchronizedSet(new HashSet<Void>()).getClass(),
-				o3 -> Collections.synchronizedSet((Set<?>)o3)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.synchronizedSortedSet(new TreeSet<>()).getClass(),
-				o4 -> Collections.synchronizedSortedSet((TreeSet<?>)o4)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.synchronizedMap(new HashMap<Void, Void>()).getClass(),
-				o5 -> Collections.synchronizedMap((Map)o5)),
-			Tuple2.<Class<?>, Function> of(
-				Collections.synchronizedSortedMap(new TreeMap<>()).getClass(),
-				o6 -> Collections.synchronizedSortedMap((SortedMap)o6))
-		};
+	static Map<Class<?>, Function> synchronizedFactories () {
+		final Map<Class<?>, Function> factories = new HashMap<>();
+		factories.put(
+			Collections.synchronizedCollection(Arrays.asList("")).getClass(),
+			o -> Collections.synchronizedCollection((Collection)o));
+		factories.put(
+			Collections.synchronizedList(new ArrayList<Void>()).getClass(),
+			o1 -> Collections.synchronizedList((List<?>)o1));
+		factories.put(
+			Collections.synchronizedList(new LinkedList<Void>()).getClass(),
+			o2 -> Collections.synchronizedList((List<?>)o2));
+		factories.put(
+			Collections.synchronizedSet(new HashSet<Void>()).getClass(),
+			o3 -> Collections.synchronizedSet((Set<?>)o3));
+		factories.put(
+			Collections.synchronizedSortedSet(new TreeSet<>()).getClass(),
+			o4 -> Collections.synchronizedSortedSet((TreeSet<?>)o4));
+		factories.put(
+			Collections.synchronizedMap(new HashMap<Void, Void>()).getClass(),
+			o5 -> Collections.synchronizedMap((Map)o5));
+		factories.put(
+			Collections.synchronizedSortedMap(new TreeMap<>()).getClass(),
+			o6 -> Collections.synchronizedSortedMap((SortedMap)o6));
+		return factories;
 	}
 
 	/** Registering serializers for synchronized Collections and Maps created via {@link Collections}.
@@ -178,8 +175,8 @@ public class SynchronizedCollectionSerializers {
 	 * @see Collections#synchronizedSortedMap(SortedMap) **/
 	public static void registerSerializers (Kryo kryo) {
 		try {
-			for (Tuple2<Class<?>, Function> factory : synchronizedFactories()) {
-				kryo.register(factory.f0, createSerializer(factory));
+			for (Map.Entry<Class<?>, Function> factory : synchronizedFactories().entrySet()) {
+				kryo.register(factory.getKey(), createSerializer(factory));
 			}
 		} catch (Throwable ignored) {
 			// ignored
@@ -196,8 +193,8 @@ public class SynchronizedCollectionSerializers {
 	 * @see Collections#synchronizedSortedMap(SortedMap) **/
 	public static void addDefaultSerializers (Kryo kryo) {
 		try {
-			for (Tuple2<Class<?>, Function> factory : synchronizedFactories()) {
-				kryo.addDefaultSerializer(factory.f0, createSerializer(factory));
+			for (Map.Entry<Class<?>, Function> factory : synchronizedFactories().entrySet()) {
+				kryo.addDefaultSerializer(factory.getKey(), createSerializer(factory));
 			}
 		} catch (Throwable ignored) {
 			// ignored
