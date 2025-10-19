@@ -17,7 +17,7 @@
 	<properties>
 		<kryo.root>${basedir}/..</kryo.root>
 		<jmh.version>1.37</jmh.version>
-		<byte-buddy.version>1.17.5</byte-buddy.version>
+		<byte-buddy.version>1.17.8</byte-buddy.version>
 		<uberjar.name>benchmarks</uberjar.name>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
@@ -51,7 +51,7 @@
 		<plugins>
 			<plugin>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.8.1</version>
+				<version>3.9.0</version>
 				<executions>
 					<execution>
 						<id>build-classpath</id>
@@ -69,7 +69,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
-				<version>3.5.0</version>
+				<version>3.6.1</version>
 				<executions>
 					<execution>
 						<id>run-tests</id>

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023, Nathan Sweet
+/* Copyright (c) 2008-2025, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.KeySetViewSerializer;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -45,6 +46,7 @@ import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -246,7 +248,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(11, newTimestamp(-1234567, 1));
 		roundTrip(14, newTimestamp(-1234567, 123_456_789));
 	}
-	
+
 	private java.sql.Timestamp newTimestamp(long time, int nanos) {
 		java.sql.Timestamp t = new java.sql.Timestamp(time);
 		t.setNanos(nanos);
@@ -453,6 +455,53 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
+	void testConcurrentHashMapKeySetView () {
+		ConcurrentHashMap.KeySetView<Integer, Boolean> set = ConcurrentHashMap.newKeySet();
+		set.add(12);
+		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.class);
+		roundTrip(9, set);
+	}
+
+	@Test
+	void testConcurrentHashMapKeySetViewFromExistingMap () {
+		ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
+
+		map.put("1", 1);
+		map.put("2", 2);
+
+		ConcurrentHashMap.KeySetView<String, Integer> set = map.keySet(4);
+
+		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.class);
+		roundTrip(15, set);
+	}
+
+	@Test
+	void testEmptyConcurrentHashMapKeySetView () {
+		ConcurrentHashMap.KeySetView set = ConcurrentHashMap.newKeySet();
+		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.class);
+		roundTrip(5, set);
+	}
+
+	@Test
+	void testConcurrentHashMapKeySetViewCopy () {
+		ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
+
+		map.put("1", 1);
+		map.put("2", 2);
+
+		ConcurrentHashMap.KeySetView<String, Integer> set = map.keySet(4);
+
+		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.class);
+		ConcurrentHashMap.KeySetView<String, Integer> copy = kryo.copy(set);
+		assertEquals(set.iterator().next(), copy.iterator().next());
+		assertEquals(set.getMappedValue(), copy.getMappedValue());
+	}
+
+	@Test
 	void testCalendar () {
 		kryo.setRegistrationRequired(false);
 		Calendar calendar = Calendar.getInstance();
@@ -589,7 +638,7 @@ class DefaultSerializersTest extends KryoTestCase {
 	@Test
 	void testUUIDSerializer () {
 		kryo.register(UUID.class, new DefaultSerializers.UUIDSerializer());
-		
+
 		roundTrip(17, UUID.fromString("e58ed763-928c-4155-bee9-fdbaaadc15f3"));
 	}
 

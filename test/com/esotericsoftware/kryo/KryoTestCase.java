@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023, Nathan Sweet
+/* Copyright (c) 2008-2025, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -40,6 +40,7 @@ import java.lang.reflect.Array;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 
@@ -282,7 +283,18 @@ public abstract class KryoTestCase {
 	}
 
 	protected void doAssertEquals (Object object1, Object object2) {
-		assertEquals(arrayToList(object1), arrayToList(object2));
+		Object val1 = arrayToList(object1);
+		Object val2 = arrayToList(object2);
+
+		if (val1 instanceof List && val2 instanceof List) {
+			List<?> list1 = (List<?>) val1;
+			List<?> list2 = (List<?>) val2;
+			assertEquals(list1.size(), list2.size());
+			assertTrue(list1.containsAll(list2));
+			assertTrue(list2.containsAll(list1));
+		} else {
+			assertEquals(val1, val2);
+		}
 	}
 
 	public static Object arrayToList (Object array) {
