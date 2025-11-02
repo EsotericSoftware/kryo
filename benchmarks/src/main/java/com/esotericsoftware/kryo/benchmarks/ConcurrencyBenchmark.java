@@ -141,7 +141,7 @@ public class ConcurrencyBenchmark {
 				output.flush();
 				return stream.toByteArray();
 			} catch (IOException e) {
-				 throw new SerializationException("Error during serialization", e);
+				throw new RuntimeException(e);
 			} finally {
 				output.reset();
 			}
@@ -184,10 +184,4 @@ public class ConcurrencyBenchmark {
 		new Runner(opt).run();
 
 	}
-}
-
-public class SerializationException extends RuntimeException {
-    public SerializationException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }
