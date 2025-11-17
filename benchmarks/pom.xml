@@ -17,7 +17,7 @@
 	<properties>
 		<kryo.root>${basedir}/..</kryo.root>
 		<jmh.version>1.37</jmh.version>
-		<byte-buddy.version>1.17.8</byte-buddy.version>
+		<byte-buddy.version>1.18.1</byte-buddy.version>
 		<uberjar.name>benchmarks</uberjar.name>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
