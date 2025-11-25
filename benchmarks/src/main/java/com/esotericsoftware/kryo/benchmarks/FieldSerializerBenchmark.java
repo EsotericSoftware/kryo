@@ -70,6 +70,9 @@ public class FieldSerializerBenchmark {
 		state.roundTrip();
 	}
 
+	@Benchmark
+	public void deserializeCollection(DeserializingCollectionWithDefaultClassResolverState state) { state.roundTrip(); }
+
 	//
 
 	@State(Scope.Thread)
@@ -77,10 +80,14 @@ public class FieldSerializerBenchmark {
 		@Param({"true", "false"}) public boolean references;
 		@Param() public ObjectType objectType;
 
-		final Kryo kryo = new Kryo();
+		final Kryo kryo = createKryo();
 		final Output output = new Output(1024 * 512);
 		final Input input = new Input(output.getBuffer());
 		Object object;
+
+		public Kryo createKryo(){
+			return new Kryo();
+		}
 
 		@Setup(Level.Trial)
 		public void setup () {
@@ -308,6 +315,13 @@ public class FieldSerializerBenchmark {
 			output.writeInt(image.height, true);
 			output.writeInt(image.size.ordinal(), true);
 			kryo.writeObjectOrNull(output, image.media, Media.class);
+		}
+	}
+
+	static public class DeserializingCollectionWithDefaultClassResolverState extends ArrayClassResolverBenchmark.DeserializingCollectionState {
+		@Override
+		protected Kryo createKryo() {
+			return new Kryo();
 		}
 	}
 }
