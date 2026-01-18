@@ -1052,8 +1052,8 @@ Annotations can be used to configure the serializers for each field.
 Annotation | Description
 --- | ---
 `@Bind` | Sets the CachedField settings for any field.
-`@CollectionBind` | Sets the CollectionSerializer settings for Collection fields.
-`@MapBind` | Sets the MapSerializer settings for Map fields.
+`@BindCollection` | Sets the CollectionSerializer settings for Collection fields.
+`@BindMap` | Sets the MapSerializer settings for Map fields.
 `@NotNull` | Marks a field as never being null.
 
 ```java
@@ -1293,7 +1293,7 @@ Kryo can be compared to many other serialization libraries in the [JVM Serialize
 
 There are a number of projects using Kryo. A few are listed below. Please submit a pull request if you'd like your project included here.
 
-- [KryoNet](http://code.google.com/p/kryonet/) (NIO networking)
+- [KryoNet](https://github.com/EsotericSoftware/kryonet) (NIO networking)
 - [kryo-serializers](https://github.com/magro/kryo-serializers) (additional serializers)
 - [Twitter's Scalding](https://github.com/twitter/scalding) (Scala API for Cascading)
 - [Twitter's Chill](https://github.com/twitter/chill) (Kryo serializers for Scala)
