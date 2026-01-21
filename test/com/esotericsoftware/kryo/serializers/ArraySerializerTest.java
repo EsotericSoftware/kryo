@@ -33,6 +33,23 @@ class ArraySerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testOptimizedIntArrays () {
+		kryo.register(int[].class);
+
+		// default case
+		roundTrip(6, new int[] {1, 2, 3, 4});
+		// case where lot of trailing values are default value
+		// case withbut any optimization, it would have length of 18
+		roundTrip(18, new int[] {1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+
+		// case with optimization, it would have length of 7, and also regardless of the size now.
+		kryo.setOptimizePrimitiveArrays(true);
+		roundTrip(7, new int[] {1, 2, 3, 4, 0, 0, 0, 0, 0});
+		roundTrip(7, new int[] {1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+
+	}
+
+	@Test
 	void testArrays () {
 		kryo.register(int[].class);
 		kryo.register(int[][].class);
