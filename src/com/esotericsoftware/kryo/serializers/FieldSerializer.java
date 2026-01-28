@@ -363,6 +363,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	 * a value set for the specified key. This can be useful when a field must be serialized for one purpose, but not for another.
 	 * Eg, a class for a networked application could have a field that should not be serialized and sent to clients, but should be
 	 * serialized when stored on the server.
+	 * If a field has multiple of this annotation, then the field is serialized if at least one of the keys is present in the context.
 	 * @author Nathan Sweet */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
