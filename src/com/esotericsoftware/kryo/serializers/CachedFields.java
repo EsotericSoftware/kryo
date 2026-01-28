@@ -127,8 +127,11 @@ class CachedFields implements Comparator<CachedField> {
 			}
 		}
 
-		Optional optional = field.getAnnotation(Optional.class);
-		if (optional != null && !serializer.kryo.getContext().containsKey(optional.value())) return;
+		Optional[] optionals = field.getAnnotationsByType(Optional.class);
+		if (optionals.length > 0 && Arrays.stream(optionals).noneMatch(
+				optional -> serializer.kryo.getContext().containsKey(optional.value()))) {
+			return;
+		}
 
 		if (removedFields.contains(field)) return;
 

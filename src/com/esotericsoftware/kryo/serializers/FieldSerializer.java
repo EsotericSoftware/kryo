@@ -34,6 +34,7 @@ import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
 import com.esotericsoftware.reflectasm.FieldAccess;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -351,14 +352,23 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
+	 * a value set for a key specified by at least one of the {@link Optional} annotations. */
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target(ElementType.FIELD)
+	public @interface Optionals {
+		Optional[] value();
+	}
+
+	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
 	 * a value set for the specified key. This can be useful when a field must be serialized for one purpose, but not for another.
 	 * Eg, a class for a networked application could have a field that should not be serialized and sent to clients, but should be
 	 * serialized when stored on the server.
 	 * @author Nathan Sweet */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)
+	@Repeatable(Optionals.class)
 	public @interface Optional {
-		public String value();
+		String value();
 	}
 
 	/** Used to annotate fields with a specific Kryo serializer.

@@ -364,10 +364,35 @@ class FieldSerializerTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		kryo.setReferences(true);
 		roundTrip(82, new HasOptionalAnnotation());
+
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setReferences(true);
 		kryo.getContext().put("smurf", null);
+		roundTrip(83, new HasOptionalAnnotation());
+
+		// To verify that more than one matching key is fine
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
+		kryo.getContext().put("smurf", null);
+		kryo.getContext().put("another smurf", null);
+		roundTrip(83, new HasOptionalAnnotation());
+
+		// To verify that additional keys do not matter
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
+		kryo.getContext().put("smurf", null);
+		kryo.getContext().put("another smurf", null);
+		kryo.getContext().put("has nothing to do with it", null);
+		roundTrip(83, new HasOptionalAnnotation());
+
+		// To verify that the order of Optional annotations does not matter
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		kryo.setReferences(true);
+		kryo.getContext().put("another smurf", null);
 		roundTrip(83, new HasOptionalAnnotation());
 	}
 
@@ -1026,7 +1051,7 @@ class FieldSerializerTest extends KryoTestCase {
 	}
 
 	public static class HasOptionalAnnotation {
-		@Optional("smurf") int moo;
+		@Optional("smurf") @Optional("another smurf") int moo;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
