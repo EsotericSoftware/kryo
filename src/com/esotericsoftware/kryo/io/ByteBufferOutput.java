@@ -684,7 +684,7 @@ public class ByteBufferOutput extends Output {
 			buffer.put(tmp, 0, charsToWrite);
 			charIndex += charsToWrite;
 			position += charsToWrite;
-			charsToWrite = Math.min(charCount - charIndex, capacity);
+			charsToWrite = Math.min(charCount - charIndex, maxAvailableRequired());
 			if (require(charsToWrite)) buffer = this.byteBuffer;
 		}
 	}

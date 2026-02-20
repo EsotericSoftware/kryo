@@ -173,7 +173,13 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		position = 0;
 		total = 0;
 	}
-
+	
+	/**how much space can be allocated when call require **/
+	public int maxAvailableRequired(){
+		if(outputStream != null){return maxCapacity;}
+		else{return maxCapacity - position;}
+	}
+	
 	/** Ensures the buffer is large enough to read the specified number of bytes.
 	 * @return true if the buffer has been resized. */
 	protected boolean require (int required) throws KryoException {
@@ -789,7 +795,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			value.getBytes(charIndex, charIndex + charsToWrite, buffer, position);
 			charIndex += charsToWrite;
 			position += charsToWrite;
-			charsToWrite = Math.min(charCount - charIndex, capacity);
+			charsToWrite = Math.min(charCount - charIndex, maxAvailableRequired());
 			if (require(charsToWrite)) buffer = this.buffer;
 		}
 	}
