@@ -437,6 +437,13 @@ public class Kryo {
 		return lowest;
 	}
 
+	/** A single point of contact for customising new serializer instances when they are registered.
+	 * Invoked by {@link DefaultClassResolver#register(Registration)}.
+	 */
+	public Serializer adaptNewSerializer (Serializer serializer) {
+		return serializer;
+	}
+
 	/** Returns the best matching serializer for a class. This method can be overridden to implement custom logic to choose a
 	 * serializer. */
 	public Serializer getDefaultSerializer (Class type) {
@@ -527,7 +534,7 @@ public class Kryo {
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
 	 * <p>
-	 * Registration can be suclassed to efficiently store per type information, accessible in serializers via
+	 * Registration can be subclassed to efficiently store per type information, accessible in serializers via
 	 * {@link Kryo#getRegistration(Class)}. */
 	public Registration register (Registration registration) {
 		int id = registration.getId();
