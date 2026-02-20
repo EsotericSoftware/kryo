@@ -71,13 +71,27 @@ public class DefaultArraySerializers {
 				return;
 			}
 			output.writeVarInt(object.length + 1, true);
-			output.writeInts(object, 0, object.length, false);
+			if(kryo.isOptimizePrimitiveArrays()){
+				int optimizedSize = object.length;
+				while(object[optimizedSize-1]==0){
+					optimizedSize--;
+				}
+				output.writeVarInt(optimizedSize + 1, true);
+				output.writeInts(object, 0, optimizedSize, false);
+			}else{
+				output.writeInts(object, 0, object.length, false);
+			}
 		}
 
 		public int[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			return input.readInts(length - 1, false);
+			if(kryo.isOptimizePrimitiveArrays()){
+				int optimizedSize = input.readVarInt(true);
+				return input.readInts(length-1, optimizedSize - 1, false);
+			}else{
+				return input.readInts(length - 1, false);
+			}
 		}
 
 		public int[] copy (Kryo kryo, int[] original) {
