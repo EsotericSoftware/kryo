@@ -38,6 +38,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /** Serializes objects using direct field assignment for fields that have a <code>@Tag(int)</code> annotation, providing backward
  * compatibility and optional forward compatibility. This means fields can be added or renamed and optionally removed without
@@ -118,12 +121,24 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		int pop = pushTypeVariables();
-
 		CachedField[] writeTags = this.writeTags;
+
+		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownTagData, skipNullFields = config.skipNullFields;
+
+		if (chunked && skipNullFields) {
+			//filter fields with null values
+			List<CachedField> list = Arrays.stream(writeTags)
+					.filter(field -> !isNullField(field,object)).collect(Collectors.toList());
+			writeTags = new CachedField[list.size()];
+			for (int i = 0; i < list.size(); i++) {
+				writeTags[i] = list.get(i);
+			}
+		}
+
 		output.writeVarInt(writeTags.length + 1, true);
+
 		writeHeader(kryo, output, object);
 
-		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownTagData;
 		Output fieldOutput;
 		OutputChunked outputChunked = null;
 		if (chunked)
@@ -161,6 +176,17 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		popTypeVariables(pop);
+	}
+
+	private boolean isNullField(CachedField cachedField, Object target) {
+		try {
+			if (cachedField.getField().get(target) != null) {
+				return false;
+			}
+		} catch (Exception e) {
+			//this should not happen because the fields should be accessible
+		}
+		return true;
 	}
 
 	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class)}. The default implementation does nothing. */
@@ -252,7 +278,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	/** Configuration for TaggedFieldSerializer instances. */
 	public static class TaggedFieldSerializerConfig extends FieldSerializerConfig {
-		boolean readUnknownTagData, chunked;
+		boolean readUnknownTagData, chunked, skipNullFields;
 		int chunkSize = 1024;
 
 		public TaggedFieldSerializerConfig clone () {
@@ -289,6 +315,14 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		public boolean getChunkedEncoding () {
 			return chunked;
+		}
+
+		public boolean isSkipNullFields() {
+			return skipNullFields;
+		}
+
+		public void setSkipNullFields(boolean skipNullFields) {
+			this.skipNullFields = skipNullFields;
 		}
 
 		/** The maximum size of each chunk for chunked encoding. Default is 1024. */
