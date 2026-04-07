@@ -79,6 +79,13 @@ class UnsafeField extends ReflectField {
 				unsafe.putInt(object, offset, input.readInt());
 		}
 
+		public Object read(Input input) {
+			if (varEncoding)
+				return input.readVarInt(false);
+			else
+				return input.readInt();
+		}
+
 		public void copy (Object original, Object copy) {
 			unsafe.putInt(copy, offset, unsafe.getInt(original, offset));
 		}
@@ -96,6 +103,10 @@ class UnsafeField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			unsafe.putFloat(object, offset, input.readFloat());
+		}
+
+		public Object read(Input input) {
+			return input.readFloat();
 		}
 
 		public void copy (Object original, Object copy) {
@@ -117,6 +128,10 @@ class UnsafeField extends ReflectField {
 			unsafe.putShort(object, offset, input.readShort());
 		}
 
+		public Object read(Input input) {
+			return input.readShort();
+		}
+
 		public void copy (Object original, Object copy) {
 			unsafe.putShort(copy, offset, unsafe.getShort(original, offset));
 		}
@@ -134,6 +149,10 @@ class UnsafeField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			unsafe.putByte(object, offset, input.readByte());
+		}
+
+		public Object read(Input input) {
+			return input.readShort();
 		}
 
 		public void copy (Object original, Object copy) {
@@ -155,6 +174,10 @@ class UnsafeField extends ReflectField {
 			unsafe.putBoolean(object, offset, input.readBoolean());
 		}
 
+		public Object read(Input input) {
+			return input.readShort();
+		}
+
 		public void copy (Object original, Object copy) {
 			unsafe.putBoolean(copy, offset, unsafe.getBoolean(original, offset));
 		}
@@ -172,6 +195,10 @@ class UnsafeField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			unsafe.putChar(object, offset, input.readChar());
+		}
+
+		public Object read(Input input) {
+			return input.readShort();
 		}
 
 		public void copy (Object original, Object copy) {
@@ -199,6 +226,13 @@ class UnsafeField extends ReflectField {
 				unsafe.putLong(object, offset, input.readLong());
 		}
 
+		public Object read (Input input) {
+			if (varEncoding)
+				return input.readVarLong(false);
+			else
+				return input.readLong();
+		}
+
 		public void copy (Object original, Object copy) {
 			unsafe.putLong(copy, offset, unsafe.getLong(original, offset));
 		}
@@ -218,6 +252,10 @@ class UnsafeField extends ReflectField {
 			unsafe.putDouble(object, offset, input.readDouble());
 		}
 
+		public Object read(Input input) {
+			return input.readDouble();
+		}
+
 		public void copy (Object original, Object copy) {
 			unsafe.putDouble(copy, offset, unsafe.getDouble(original, offset));
 		}
@@ -235,6 +273,10 @@ class UnsafeField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			unsafe.putObject(object, offset, input.readString());
+		}
+
+		public Object read(Input input) {
+			return input.readString();
 		}
 
 		public void copy (Object original, Object copy) {
