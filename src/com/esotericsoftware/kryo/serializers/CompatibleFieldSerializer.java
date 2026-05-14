@@ -142,6 +142,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					continue;
 				}
 				if (registration == null) {
+					try {
+						if (cachedField != null && cachedField.canBeNull) {
+							cachedField.field.set(object, null);
+						}
+					} catch (IllegalAccessException e) {
+					}
 					if (chunked) inputChunked.nextChunk();
 					continue;
 				}
