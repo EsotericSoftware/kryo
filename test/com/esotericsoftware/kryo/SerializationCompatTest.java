@@ -84,7 +84,7 @@ class SerializationCompatTest extends KryoTestCase {
 		}
 	}
 	private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = JAVA_VERSION < 11
-			? 58 : JAVA_VERSION < 14 ? 68 : 69;  // Also change Kryo#defaultSerializers.
+			? 58 : 68;  // Also change Kryo#defaultSerializers.
 	private static final List<TestDataDescription> TEST_DATAS = new ArrayList<>();
 
 	static {
