@@ -15,6 +15,10 @@ This documentation is for Kryo version 5.x. See [the Wiki](https://github.com/Es
 
 Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-users) for questions, discussions, and support. Please limit use of the Kryo issue tracker to bugs and enhancements, not questions, discussions, or support.
 
+## Sponsors
+
+Kryo maintenance and development is sponsored by the [Gecko fund](https://geckofund.org/), which is powered by EXANTE.
+
 ## Table of contents
 
 - [Recent releases](#recent-releases)
