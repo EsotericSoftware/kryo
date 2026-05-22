@@ -842,4 +842,68 @@ class UnsafeByteBufferInputOutputTest {
 		assertEquals(32767, read.readChar());
 		assertEquals(65535, read.readChar());
 	}
+
+	// Verifies that bulk array writes honor the offset and count parameters (issue #1270 / PR #1270).
+	// Before the fix, UnsafeByteBufferOutput.writeInts/Longs/Floats/Doubles/Shorts/Chars/Booleans ignored
+	// offset and count and always wrote the entire array.
+	@Test
+	void testWriteArrayOffsetAndCount () {
+		int offset = 2, count = 5;
+
+		int[] ints = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+		UnsafeByteBufferOutput out = new UnsafeByteBufferOutput(4096);
+		out.writeInts(ints, offset, count);
+		assertEquals(count * 4L, out.total(), "writeInts wrote wrong number of bytes");
+		int[] expectedInts = new int[count];
+		System.arraycopy(ints, offset, expectedInts, 0, count);
+		assertArrayEquals(expectedInts, new UnsafeByteBufferInput(out.toBytes()).readInts(count));
+
+		long[] longs = {10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L, 19L};
+		out = new UnsafeByteBufferOutput(4096);
+		out.writeLongs(longs, offset, count);
+		assertEquals(count * 8L, out.total(), "writeLongs wrote wrong number of bytes");
+		long[] expectedLongs = new long[count];
+		System.arraycopy(longs, offset, expectedLongs, 0, count);
+		assertArrayEquals(expectedLongs, new UnsafeByteBufferInput(out.toBytes()).readLongs(count));
+
+		float[] floats = {0f, 1.5f, 2.5f, 3.5f, 4.5f, 5.5f, 6.5f, 7.5f, 8.5f, 9.5f};
+		out = new UnsafeByteBufferOutput(4096);
+		out.writeFloats(floats, offset, count);
+		assertEquals(count * 4L, out.total(), "writeFloats wrote wrong number of bytes");
+		float[] expectedFloats = new float[count];
+		System.arraycopy(floats, offset, expectedFloats, 0, count);
+		assertArrayEquals(expectedFloats, new UnsafeByteBufferInput(out.toBytes()).readFloats(count));
+
+		double[] doubles = {0d, 1.5d, 2.5d, 3.5d, 4.5d, 5.5d, 6.5d, 7.5d, 8.5d, 9.5d};
+		out = new UnsafeByteBufferOutput(4096);
+		out.writeDoubles(doubles, offset, count);
+		assertEquals(count * 8L, out.total(), "writeDoubles wrote wrong number of bytes");
+		double[] expectedDoubles = new double[count];
+		System.arraycopy(doubles, offset, expectedDoubles, 0, count);
+		assertArrayEquals(expectedDoubles, new UnsafeByteBufferInput(out.toBytes()).readDoubles(count));
+
+		short[] shorts = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+		out = new UnsafeByteBufferOutput(4096);
+		out.writeShorts(shorts, offset, count);
+		assertEquals(count * 2L, out.total(), "writeShorts wrote wrong number of bytes");
+		short[] expectedShorts = new short[count];
+		System.arraycopy(shorts, offset, expectedShorts, 0, count);
+		assertArrayEquals(expectedShorts, new UnsafeByteBufferInput(out.toBytes()).readShorts(count));
+
+		char[] chars = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'};
+		out = new UnsafeByteBufferOutput(4096);
+		out.writeChars(chars, offset, count);
+		assertEquals(count * 2L, out.total(), "writeChars wrote wrong number of bytes");
+		char[] expectedChars = new char[count];
+		System.arraycopy(chars, offset, expectedChars, 0, count);
+		assertArrayEquals(expectedChars, new UnsafeByteBufferInput(out.toBytes()).readChars(count));
+
+		boolean[] booleans = {true, false, true, true, false, true, false, false, true, false};
+		out = new UnsafeByteBufferOutput(4096);
+		out.writeBooleans(booleans, offset, count);
+		assertEquals(count, out.total(), "writeBooleans wrote wrong number of bytes");
+		boolean[] expectedBooleans = new boolean[count];
+		System.arraycopy(booleans, offset, expectedBooleans, 0, count);
+		assertArrayEquals(expectedBooleans, new UnsafeByteBufferInput(out.toBytes()).readBooleans(count));
+	}
 }
