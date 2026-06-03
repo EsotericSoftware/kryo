@@ -75,6 +75,7 @@ public class FieldSerializerBenchmark {
 	@State(Scope.Thread)
 	static public abstract class BenchmarkState {
 		@Param({"true", "false"}) public boolean references;
+		@Param({"DEFAULT", "MINIMAL", "NONE"}) public Kryo.GenericsStrategy generics;
 		@Param() public ObjectType objectType;
 
 		final Kryo kryo = new Kryo();
@@ -108,6 +109,7 @@ public class FieldSerializerBenchmark {
 				break;
 			}
 
+			kryo.setGenericsStrategy(generics);
 			kryo.setReferences(references);
 		}
 

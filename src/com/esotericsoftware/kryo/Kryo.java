@@ -92,6 +92,7 @@ import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
 import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
+import com.esotericsoftware.kryo.util.MinimalGenerics;
 import com.esotericsoftware.kryo.util.NoGenerics;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
@@ -1301,7 +1302,36 @@ public class Kryo {
 	 * setting in order to be compatible.
 	 * @param optimizedGenerics whether to optimize generics (default is true) */
 	public void setOptimizedGenerics (boolean optimizedGenerics) {
-		generics = optimizedGenerics ? new DefaultGenerics(this) : NoGenerics.INSTANCE;
+		setGenericsStrategy(optimizedGenerics ? GenericsStrategy.DEFAULT : GenericsStrategy.NONE);
+	}
+
+	/** Sets a {@link GenericsStrategy}.
+	 * 
+	 * TODO JavaDoc
+	 * 
+	 * @param strategy the strategy for processing generics information */
+	public void setGenericsStrategy (GenericsStrategy strategy) {
+		this.generics = strategy.createInstance(this);
+	}
+
+	public enum GenericsStrategy {
+		DEFAULT {
+			public Generics createInstance (Kryo kryo) {
+				return new DefaultGenerics(kryo);
+			}
+		},
+		MINIMAL {
+			public Generics createInstance (Kryo kryo) {
+				return new MinimalGenerics(kryo);
+			}
+		},
+		NONE {
+			public Generics createInstance (Kryo kryo) {
+				return NoGenerics.INSTANCE;
+			}
+		};
+
+		public abstract Generics createInstance (Kryo kryo);
 	}
 
 	static final class DefaultSerializerEntry {
