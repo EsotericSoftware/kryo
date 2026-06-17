@@ -21,6 +21,8 @@ package com.esotericsoftware.kryo.util;
 
 import static com.esotericsoftware.kryo.util.Util.*;
 
+import com.esotericsoftware.kryo.Kryo;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.GenericDeclaration;
@@ -77,6 +79,14 @@ public interface Generics {
 
 	/** Returns the number of generic types currently tracked */
 	int getGenericTypesSize ();
+
+	/** Discards all tracked generic type information, returning to an empty state. This is called by {@link Kryo#reset()} so a
+	 * reused Kryo instance is not left with stale generics if a serializer throws an exception before a balancing
+	 * {@link #popGenericType()} or {@link #popTypeVariables(int)}. Implementations should be cheap when there is nothing to
+	 * discard, since this is called after every serialization and deserialization (when auto-reset is enabled). The default
+	 * implementation does nothing. */
+	default void reset () {
+	}
 
 	/** Stores the type parameters for a class and, for parameters passed to super classes, the corresponding super class type
 	 * parameters. */
