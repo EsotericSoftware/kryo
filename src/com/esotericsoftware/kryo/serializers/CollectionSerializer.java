@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.HashSet;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
@@ -180,6 +181,8 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	}
 
 	private static int clampSize (Input input, int size) {
+		if (size > input.getMaxArraySize())
+			throw new KryoException("Array size is larger than maxArraySize: " + size + " > " + input.getMaxArraySize());
 		return input.getInputStream() == null ? Math.min(size, input.limit() - input.position()) : size;
 	}
 

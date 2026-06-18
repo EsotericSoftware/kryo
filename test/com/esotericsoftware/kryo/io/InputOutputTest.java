@@ -198,6 +198,16 @@ class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
+	void testMaxArraySize () throws IOException {
+		Input stream = new Input(new ByteArrayInputStream(new byte[16]));
+		stream.setMaxArraySize(1024);
+		assertEquals(1024, stream.getMaxArraySize());
+		assertThrows(KryoException.class, () -> stream.readInts(2000000));
+		assertThrows(KryoException.class, () -> stream.readBytes(2000000));
+		assertThrows(KryoException.class, () -> stream.readLongs(2000000, true));
+	}
+
+	@Test
 	void testStrings () throws IOException {
 		runStringTest(new Output(4096));
 		runStringTest(new Output(897));

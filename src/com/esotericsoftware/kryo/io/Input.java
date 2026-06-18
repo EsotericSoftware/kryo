@@ -39,6 +39,7 @@ public class Input extends InputStream implements Poolable {
 	protected char[] chars = new char[32];
 	protected InputStream inputStream;
 	protected boolean varEncoding = true;
+	protected int maxArraySize = Integer.MAX_VALUE;
 
 	/** Creates an uninitialized Input, {@link #setBuffer(byte[])} must be called before the Input is used. */
 	public Input () {
@@ -124,6 +125,14 @@ public class Input extends InputStream implements Poolable {
 	 * {@link #readLongs(int, boolean)} will use fixed length encoding, which may be faster for some data. Default is true. */
 	public void setVariableLengthEncoding (boolean varEncoding) {
 		this.varEncoding = varEncoding;
+	}
+
+	public int getMaxArraySize () {
+		return maxArraySize;
+	}
+
+	public void setMaxArraySize (int maxArraySize) {
+		this.maxArraySize = maxArraySize;
 	}
 
 	/** Returns the total number of bytes read. */
@@ -942,6 +951,7 @@ public class Input extends InputStream implements Poolable {
 	// Primitive arrays:
 
 	public int validateArrayLength (int length) {
+		if (length > maxArraySize) throw new KryoException("Array size is larger than maxArraySize: " + length + " > " + maxArraySize);
 		if (inputStream == null && length > limit - position) throw new KryoBufferUnderflowException("Buffer underflow.");
 		return length;
 	}

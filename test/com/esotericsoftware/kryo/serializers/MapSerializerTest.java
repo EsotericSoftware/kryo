@@ -63,6 +63,19 @@ class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testMaxMapSize () {
+		kryo.setReferences(false);
+		kryo.register(HashMap.class);
+		Output declared = new Output(8);
+		kryo.writeClass(declared, HashMap.class);
+		declared.writeVarInt(2000000001, true);
+		declared.flush();
+		Input stream = new Input(new ByteArrayInputStream(declared.toBytes()));
+		stream.setMaxArraySize(1024);
+		assertThrows(KryoException.class, () -> kryo.readClassAndObject(stream));
+	}
+
+	@Test
 	void testMaps () {
 		kryo.register(HashMap.class);
 		kryo.register(LinkedHashMap.class);

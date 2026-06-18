@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -173,6 +174,8 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)} with a special case
 	 * for HashMap. */
 	private static int clampSize (Input input, int size) {
+		if (size > input.getMaxArraySize())
+			throw new KryoException("Array size is larger than maxArraySize: " + size + " > " + input.getMaxArraySize());
 		return input.getInputStream() == null ? Math.min(size, input.limit() - input.position()) : size;
 	}
 
