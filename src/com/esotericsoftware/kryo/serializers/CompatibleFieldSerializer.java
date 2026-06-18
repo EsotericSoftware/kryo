@@ -193,7 +193,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private CachedField[] readFields (Kryo kryo, Input input) {
 		if (TRACE) trace("kryo", "Read fields for class: " + type.getName());
 
-		int length = input.readVarInt(true);
+		int length = input.validateArrayLength(input.readVarInt(true));
 		String[] names = new String[length];
 		for (int i = 0; i < length; i++) {
 			names[i] = input.readString();
