@@ -136,43 +136,43 @@ public class UnsafeInput extends Input {
 	}
 
 	public int[] readInts (int length) throws KryoException {
-		int[] array = new int[length];
+		int[] array = new int[validateArrayLength(length)];
 		readBytes(array, intArrayBaseOffset, length << 2);
 		return array;
 	}
 
 	public long[] readLongs (int length) throws KryoException {
-		long[] array = new long[length];
+		long[] array = new long[validateArrayLength(length)];
 		readBytes(array, longArrayBaseOffset, length << 3);
 		return array;
 	}
 
 	public float[] readFloats (int length) throws KryoException {
-		float[] array = new float[length];
+		float[] array = new float[validateArrayLength(length)];
 		readBytes(array, floatArrayBaseOffset, length << 2);
 		return array;
 	}
 
 	public double[] readDoubles (int length) throws KryoException {
-		double[] array = new double[length];
+		double[] array = new double[validateArrayLength(length)];
 		readBytes(array, doubleArrayBaseOffset, length << 3);
 		return array;
 	}
 
 	public short[] readShorts (int length) throws KryoException {
-		short[] array = new short[length];
+		short[] array = new short[validateArrayLength(length)];
 		readBytes(array, shortArrayBaseOffset, length << 1);
 		return array;
 	}
 
 	public char[] readChars (int length) throws KryoException {
-		char[] array = new char[length];
+		char[] array = new char[validateArrayLength(length)];
 		readBytes(array, charArrayBaseOffset, length << 1);
 		return array;
 	}
 
 	public boolean[] readBooleans (int length) throws KryoException {
-		boolean[] array = new boolean[length];
+		boolean[] array = new boolean[validateArrayLength(length)];
 		readBytes(array, booleanArrayBaseOffset, length);
 		return array;
 	}

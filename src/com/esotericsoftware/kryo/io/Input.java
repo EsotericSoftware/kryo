@@ -348,7 +348,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads the specified number of bytes into a new byte[]. */
 	public byte[] readBytes (int length) throws KryoException {
-		byte[] bytes = new byte[length];
+		byte[] bytes = new byte[validateArrayLength(length)];
 		readBytes(bytes, 0, length);
 		return bytes;
 	}
@@ -941,9 +941,14 @@ public class Input extends InputStream implements Poolable {
 
 	// Primitive arrays:
 
+	protected int validateArrayLength (int length) {
+		if (inputStream == null && length > limit - position) throw new KryoBufferUnderflowException("Buffer underflow.");
+		return length;
+	}
+
 	/** Reads an int array in bulk. This may be more efficient than reading them individually. */
 	public int[] readInts (int length) throws KryoException {
-		int[] array = new int[length];
+		int[] array = new int[validateArrayLength(length)];
 		if (optional(length << 2) == length << 2) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
@@ -965,7 +970,7 @@ public class Input extends InputStream implements Poolable {
 	 * {@link #setVariableLengthEncoding(boolean)}. This may be more efficient than reading them individually. */
 	public int[] readInts (int length, boolean optimizePositive) throws KryoException {
 		if (varEncoding) {
-			int[] array = new int[length];
+			int[] array = new int[validateArrayLength(length)];
 			for (int i = 0; i < length; i++)
 				array[i] = readVarInt(optimizePositive);
 			return array;
@@ -975,7 +980,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads a long array in bulk. This may be more efficient than reading them individually. */
 	public long[] readLongs (int length) throws KryoException {
-		long[] array = new long[length];
+		long[] array = new long[validateArrayLength(length)];
 		if (optional(length << 3) == length << 3) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
@@ -1001,7 +1006,7 @@ public class Input extends InputStream implements Poolable {
 	 * {@link #setVariableLengthEncoding(boolean)}. This may be more efficient than reading them individually. */
 	public long[] readLongs (int length, boolean optimizePositive) throws KryoException {
 		if (varEncoding) {
-			long[] array = new long[length];
+			long[] array = new long[validateArrayLength(length)];
 			for (int i = 0; i < length; i++)
 				array[i] = readVarLong(optimizePositive);
 			return array;
@@ -1011,7 +1016,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads a float array in bulk. This may be more efficient than reading them individually. */
 	public float[] readFloats (int length) throws KryoException {
-		float[] array = new float[length];
+		float[] array = new float[validateArrayLength(length)];
 		if (optional(length << 2) == length << 2) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
@@ -1031,7 +1036,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads a double array in bulk. This may be more efficient than reading them individually. */
 	public double[] readDoubles (int length) throws KryoException {
-		double[] array = new double[length];
+		double[] array = new double[validateArrayLength(length)];
 		if (optional(length << 3) == length << 3) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
@@ -1055,7 +1060,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads a short array in bulk. This may be more efficient than reading them individually. */
 	public short[] readShorts (int length) throws KryoException {
-		short[] array = new short[length];
+		short[] array = new short[validateArrayLength(length)];
 		if (optional(length << 1) == length << 1) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
@@ -1071,7 +1076,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads a char array in bulk. This may be more efficient than reading them individually. */
 	public char[] readChars (int length) throws KryoException {
-		char[] array = new char[length];
+		char[] array = new char[validateArrayLength(length)];
 		if (optional(length << 1) == length << 1) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
@@ -1087,7 +1092,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads a boolean array in bulk. This may be more efficient than reading them individually. */
 	public boolean[] readBooleans (int length) throws KryoException {
-		boolean[] array = new boolean[length];
+		boolean[] array = new boolean[validateArrayLength(length)];
 		if (optional(length) == length) {
 			byte[] buffer = this.buffer;
 			int p = this.position;

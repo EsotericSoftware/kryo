@@ -23,6 +23,7 @@ import static com.esotericsoftware.kryo.KryoAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
@@ -137,6 +138,48 @@ class InputOutputTest extends KryoTestCase {
 		);
 
 		assertTrue(thrown.getMessage().equals("Buffer underflow."));
+	}
+
+	@Test
+	void testArrayLengthValidation () throws IOException {
+		int hugeLength = 2000000000;
+
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readInts(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readInts(hugeLength, true));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readLongs(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readLongs(hugeLength, true));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readFloats(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readDoubles(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readShorts(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readChars(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readBooleans(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readBytes(hugeLength));
+
+		assertThrows(KryoBufferUnderflowException.class, () -> new ByteBufferInput(new byte[5]).readInts(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new ByteBufferInput(new byte[5]).readDoubles(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new ByteBufferInput(new byte[5]).readBytes(hugeLength));
+
+		int[] ints = {1, 2, 3, 4, 5};
+		Output output = new Output(64);
+		output.writeInts(ints, 0, ints.length, false);
+		output.flush();
+		assertArrayEquals(ints, new Input(output.toBytes()).readInts(ints.length, false));
+	}
+
+	@Test
+	void testMaliciousArrayLength () throws IOException {
+		kryo.register(int[].class);
+
+		Output declared = new Output(8);
+		declared.writeVarInt(2000000001, true);
+		declared.flush();
+		assertThrows(KryoException.class, () -> kryo.readObject(new Input(declared.toBytes()), int[].class));
+
+		int[] valid = {1, 2, 3, 4, 5};
+		Output output = new Output(64);
+		kryo.writeObject(output, valid);
+		output.flush();
+		assertArrayEquals(valid, kryo.readObject(new Input(output.toBytes()), int[].class));
 	}
 
 	@Test

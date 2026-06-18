@@ -333,7 +333,7 @@ public class ByteBufferInput extends Input {
 	}
 
 	public byte[] readBytes (int length) throws KryoException {
-		byte[] bytes = new byte[length];
+		byte[] bytes = new byte[validateArrayLength(length)];
 		readBytes(bytes, 0, length);
 		return bytes;
 	}
@@ -858,7 +858,7 @@ public class ByteBufferInput extends Input {
 	// Primitive arrays:
 
 	public int[] readInts (int length) throws KryoException {
-		int[] array = new int[length];
+		int[] array = new int[validateArrayLength(length)];
 		if (optional(length << 2) == length << 2) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++) {
@@ -876,7 +876,7 @@ public class ByteBufferInput extends Input {
 	}
 
 	public long[] readLongs (int length) throws KryoException {
-		long[] array = new long[length];
+		long[] array = new long[validateArrayLength(length)];
 		if (optional(length << 3) == length << 3) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++) {
@@ -898,7 +898,7 @@ public class ByteBufferInput extends Input {
 	}
 
 	public float[] readFloats (int length) throws KryoException {
-		float[] array = new float[length];
+		float[] array = new float[validateArrayLength(length)];
 		if (optional(length << 2) == length << 2) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++) {
@@ -916,7 +916,7 @@ public class ByteBufferInput extends Input {
 	}
 
 	public double[] readDoubles (int length) throws KryoException {
-		double[] array = new double[length];
+		double[] array = new double[validateArrayLength(length)];
 		if (optional(length << 3) == length << 3) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++) {
@@ -938,7 +938,7 @@ public class ByteBufferInput extends Input {
 	}
 
 	public short[] readShorts (int length) throws KryoException {
-		short[] array = new short[length];
+		short[] array = new short[validateArrayLength(length)];
 		if (optional(length << 1) == length << 1) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++)
@@ -952,7 +952,7 @@ public class ByteBufferInput extends Input {
 	}
 
 	public char[] readChars (int length) throws KryoException {
-		char[] array = new char[length];
+		char[] array = new char[validateArrayLength(length)];
 		if (optional(length << 1) == length << 1) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++)
@@ -966,7 +966,7 @@ public class ByteBufferInput extends Input {
 	}
 
 	public boolean[] readBooleans (int length) throws KryoException {
-		boolean[] array = new boolean[length];
+		boolean[] array = new boolean[validateArrayLength(length)];
 		if (optional(length) == length) {
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int i = 0; i < length; i++)
