@@ -179,6 +179,10 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		return collection;
 	}
 
+	private static int clampSize (Input input, int size) {
+		return input.getInputStream() == null ? Math.min(size, input.limit() - input.position()) : size;
+	}
+
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		Class elementClass = this.elementClass;
 		Serializer elementSerializer = this.elementSerializer;
@@ -203,7 +207,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				if (length == 0) return null;
 
 				length--;
-				collection = create(kryo, input, type, length);
+				collection = create(kryo, input, type, clampSize(input, length));
 				kryo.reference(collection);
 
 				if (length == 0) return collection;
@@ -213,7 +217,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				if (length == 0) return null;
 
 				length--;
-				collection = create(kryo, input, type, length);
+				collection = create(kryo, input, type, clampSize(input, length));
 				kryo.reference(collection);
 
 				if (length == 0) return collection;

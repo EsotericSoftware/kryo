@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -48,6 +49,17 @@ import org.junit.jupiter.api.Test;
 class MapSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
+	}
+
+	@Test
+	void testMaliciousMapSize () {
+		kryo.setReferences(false);
+		kryo.register(HashMap.class);
+		Output declared = new Output(8);
+		kryo.writeClass(declared, HashMap.class);
+		declared.writeVarInt(2000000001, true);
+		declared.flush();
+		assertThrows(KryoException.class, () -> kryo.readClassAndObject(new Input(declared.toBytes())));
 	}
 
 	@Test
