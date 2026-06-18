@@ -762,7 +762,7 @@ public class ByteBufferInput extends Input {
 	}
 
 	private void readUtf8Chars (int charCount) {
-		if (chars.length < charCount) chars = new char[charCount];
+		if (chars.length < charCount) chars = new char[validateArrayLength(charCount)];
 		char[] chars = this.chars;
 		// Try to read 7 bit ASCII chars.
 		ByteBuffer byteBuffer = this.byteBuffer;

@@ -183,6 +183,21 @@ class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
+	void testMaliciousStringLength () throws IOException {
+		Output declared = new Output(8);
+		declared.writeVarIntFlag(true, 2000000001, true);
+		declared.flush();
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(declared.toBytes()).readString());
+		assertThrows(KryoBufferUnderflowException.class, () -> new ByteBufferInput(declared.toBytes()).readString());
+
+		String value = "kryo \u00e9\u00fc\u1234 unicode string";
+		Output output = new Output(64);
+		output.writeString(value);
+		output.flush();
+		assertEquals(value, new Input(output.toBytes()).readString());
+	}
+
+	@Test
 	void testStrings () throws IOException {
 		runStringTest(new Output(4096));
 		runStringTest(new Output(897));

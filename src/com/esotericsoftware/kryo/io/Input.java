@@ -848,7 +848,7 @@ public class Input extends InputStream implements Poolable {
 	}
 
 	private void readUtf8Chars (int charCount) {
-		if (chars.length < charCount) chars = new char[charCount];
+		if (chars.length < charCount) chars = new char[validateArrayLength(charCount)];
 		byte[] buffer = this.buffer;
 		char[] chars = this.chars;
 		// Try to read 7 bit ASCII chars.
@@ -941,7 +941,7 @@ public class Input extends InputStream implements Poolable {
 
 	// Primitive arrays:
 
-	protected int validateArrayLength (int length) {
+	public int validateArrayLength (int length) {
 		if (inputStream == null && length > limit - position) throw new KryoBufferUnderflowException("Buffer underflow.");
 		return length;
 	}
