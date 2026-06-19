@@ -30,6 +30,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
 - [IO](#io)
    * [Output](#output)
    * [Input](#input)
+   * [Limiting deserialized size](#limiting-deserialized-size)
    * [ByteBuffers](#bytebuffers)
    * [Unsafe buffers](#unsafe-buffers)
    * [Variable length encoding](#variable-length-encoding)
@@ -225,6 +226,21 @@ The Input class is an InputStream that reads data from a byte array buffer. This
 If the Input `close` is called, the Input's InputStream is closed, if any. If not reading from an InputStream then it is not necessary to call `close`. Unlike many streams, an Input instance can be reused by setting the position and limit, or setting a new byte array or InputStream.
 
 The zero argument Input constructor creates an uninitialized Input. Input `setBuffer` must be called before the Input can be used.
+
+### Limiting deserialized size
+
+When reading an array, string, collection, or map, Kryo first reads a declared size and uses it to allocate before reading any elements. A corrupt or malicious message can declare a size of billions, triggering a large allocation from only a few bytes.
+
+For an Input backed by a byte array (no InputStream), this is guarded automatically: the declared size cannot exceed the bytes remaining, since every element occupies at least one byte, so an impossible size is rejected with a `KryoException` before allocating. No configuration is needed and valid input is never affected.
+
+An Input reading from an InputStream cannot be checked this way, because the buffered window is not the total size. For that case, `setMaxArraySize` bounds the declared size:
+
+```java
+Input input = new Input(inputStream);
+input.setMaxArraySize(1024 * 1024); // reject any declared array/string/collection/map size above 1M elements
+```
+
+The default is `Integer.MAX_VALUE`, ie no limit, so by default behavior is unchanged and Kryo's trusted-source assumption is preserved: a valid payload never declares more elements than the input can supply, so the limit never fires on valid input. A declared size above the limit throws a `KryoException` before allocating. Callers that decode untrusted input, especially from a stream, should set a limit suited to their application.
 
 ### ByteBuffers
 
