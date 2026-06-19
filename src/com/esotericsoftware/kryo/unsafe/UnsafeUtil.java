@@ -65,14 +65,14 @@ public class UnsafeUtil {
 				Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
 				field.setAccessible(true);
 				tempUnsafe = (sun.misc.Unsafe)field.get(null);
-				tempByteArrayBaseOffset = tempUnsafe.arrayBaseOffset(byte[].class);
-				tempCharArrayBaseOffset = tempUnsafe.arrayBaseOffset(char[].class);
-				tempShortArrayBaseOffset = tempUnsafe.arrayBaseOffset(short[].class);
-				tempIntArrayBaseOffset = tempUnsafe.arrayBaseOffset(int[].class);
-				tempFloatArrayBaseOffset = tempUnsafe.arrayBaseOffset(float[].class);
-				tempLongArrayBaseOffset = tempUnsafe.arrayBaseOffset(long[].class);
-				tempDoubleArrayBaseOffset = tempUnsafe.arrayBaseOffset(double[].class);
-				tempBooleanArrayBaseOffset = tempUnsafe.arrayBaseOffset(boolean[].class);
+				tempByteArrayBaseOffset = Unsafe.ARRAY_BYTE_BASE_OFFSET;
+				tempCharArrayBaseOffset = Unsafe.ARRAY_CHAR_BASE_OFFSET;
+				tempShortArrayBaseOffset = Unsafe.ARRAY_SHORT_BASE_OFFSET;
+				tempIntArrayBaseOffset = Unsafe.ARRAY_INT_BASE_OFFSET;
+				tempFloatArrayBaseOffset = Unsafe.ARRAY_FLOAT_BASE_OFFSET;
+				tempLongArrayBaseOffset = Unsafe.ARRAY_LONG_BASE_OFFSET;
+				tempDoubleArrayBaseOffset = Unsafe.ARRAY_DOUBLE_BASE_OFFSET;
+				tempBooleanArrayBaseOffset = Unsafe.ARRAY_BOOLEAN_BASE_OFFSET;
 			} else {
 				if (DEBUG) debug("kryo", "Unsafe is not available on Android.");
 			}
