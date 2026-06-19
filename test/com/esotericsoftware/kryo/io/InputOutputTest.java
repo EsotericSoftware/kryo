@@ -208,6 +208,31 @@ class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
+	void testArrayLengthByteWidthValidation () throws IOException {
+		// A declared element count that fits the buffer by count but not once element width is counted is rejected up front,
+		// before the (potentially much larger) array is allocated. Eight ints need 32 bytes, not 8.
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[8]).readInts(8));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[8]).readLongs(8));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[8]).readDoubles(8));
+		assertThrows(KryoBufferUnderflowException.class, () -> new ByteBufferInput(new byte[8]).readInts(8));
+
+		// Stream-backed: a declared size whose total byte count overflows an int can never be read and previously overflowed the
+		// length << n shifts (risking ArrayIndexOutOfBoundsException or a huge allocation). It is now rejected cleanly.
+		assertThrows(KryoException.class, () -> new Input(new ByteArrayInputStream(new byte[16])).readInts(600000000));
+		assertThrows(KryoException.class, () -> new Input(new ByteArrayInputStream(new byte[16])).readLongs(300000000));
+
+		// setMaxArraySize rejects negative limits.
+		assertThrows(IllegalArgumentException.class, () -> new Input(new byte[1]).setMaxArraySize(-1));
+
+		// Valid fixed-width arrays still round-trip through the guard.
+		long[] longs = {1, 2, 3, 4, 5};
+		Output output = new Output(64);
+		output.writeLongs(longs, 0, longs.length, false);
+		output.flush();
+		assertArrayEquals(longs, new Input(output.toBytes()).readLongs(longs.length, false));
+	}
+
+	@Test
 	void testStrings () throws IOException {
 		runStringTest(new Output(4096));
 		runStringTest(new Output(897));
