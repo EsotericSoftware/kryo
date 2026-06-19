@@ -185,37 +185,37 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 	}
 
 	public int[] readInts (int length) throws KryoException {
-		int[] array = new int[validateArrayLength(length)];
+		int[] array = new int[validateArrayLength(length, 4)];
 		readBytes(array, intArrayBaseOffset, length << 2);
 		return array;
 	}
 
 	public long[] readLongs (int length) throws KryoException {
-		long[] array = new long[validateArrayLength(length)];
+		long[] array = new long[validateArrayLength(length, 8)];
 		readBytes(array, longArrayBaseOffset, length << 3);
 		return array;
 	}
 
 	public float[] readFloats (int length) throws KryoException {
-		float[] array = new float[validateArrayLength(length)];
+		float[] array = new float[validateArrayLength(length, 4)];
 		readBytes(array, floatArrayBaseOffset, length << 2);
 		return array;
 	}
 
 	public double[] readDoubles (int length) throws KryoException {
-		double[] array = new double[validateArrayLength(length)];
+		double[] array = new double[validateArrayLength(length, 8)];
 		readBytes(array, doubleArrayBaseOffset, length << 3);
 		return array;
 	}
 
 	public short[] readShorts (int length) throws KryoException {
-		short[] array = new short[validateArrayLength(length)];
+		short[] array = new short[validateArrayLength(length, 2)];
 		readBytes(array, shortArrayBaseOffset, length << 1);
 		return array;
 	}
 
 	public char[] readChars (int length) throws KryoException {
-		char[] array = new char[validateArrayLength(length)];
+		char[] array = new char[validateArrayLength(length, 2)];
 		readBytes(array, charArrayBaseOffset, length << 1);
 		return array;
 	}
