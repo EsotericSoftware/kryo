@@ -182,7 +182,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 
 	private static int clampSize (Input input, int size) {
 		if (size > input.getMaxArraySize())
-			throw new KryoException("Array size is larger than maxArraySize: " + size + " > " + input.getMaxArraySize());
+			throw new KryoException("Declared size larger than maxArraySize: " + size + " > " + input.getMaxArraySize());
 		return input.getInputStream() == null ? Math.min(size, input.limit() - input.position()) : size;
 	}
 

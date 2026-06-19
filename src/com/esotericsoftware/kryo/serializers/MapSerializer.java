@@ -175,7 +175,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	 * for HashMap. */
 	private static int clampSize (Input input, int size) {
 		if (size > input.getMaxArraySize())
-			throw new KryoException("Array size is larger than maxArraySize: " + size + " > " + input.getMaxArraySize());
+			throw new KryoException("Declared size larger than maxArraySize: " + size + " > " + input.getMaxArraySize());
 		return input.getInputStream() == null ? Math.min(size, input.limit() - input.position()) : size;
 	}
 
