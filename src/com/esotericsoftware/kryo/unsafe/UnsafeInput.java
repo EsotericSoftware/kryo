@@ -136,38 +136,38 @@ public class UnsafeInput extends Input {
 	}
 
 	public int[] readInts (int length) throws KryoException {
-		int[] array = new int[validateArrayLength(length, 4)];
-		readBytes(array, intArrayBaseOffset, length << 2);
+		int[] array = new int[validateArrayLength(length, Integer.BYTES)];
+		readBytes(array, intArrayBaseOffset, length * Integer.BYTES);
 		return array;
 	}
 
 	public long[] readLongs (int length) throws KryoException {
-		long[] array = new long[validateArrayLength(length, 8)];
-		readBytes(array, longArrayBaseOffset, length << 3);
+		long[] array = new long[validateArrayLength(length, Long.BYTES)];
+		readBytes(array, longArrayBaseOffset, length * Long.BYTES);
 		return array;
 	}
 
 	public float[] readFloats (int length) throws KryoException {
-		float[] array = new float[validateArrayLength(length, 4)];
-		readBytes(array, floatArrayBaseOffset, length << 2);
+		float[] array = new float[validateArrayLength(length, Float.BYTES)];
+		readBytes(array, floatArrayBaseOffset, length * Float.BYTES);
 		return array;
 	}
 
 	public double[] readDoubles (int length) throws KryoException {
-		double[] array = new double[validateArrayLength(length, 8)];
-		readBytes(array, doubleArrayBaseOffset, length << 3);
+		double[] array = new double[validateArrayLength(length, Double.BYTES)];
+		readBytes(array, doubleArrayBaseOffset, length * Double.BYTES);
 		return array;
 	}
 
 	public short[] readShorts (int length) throws KryoException {
-		short[] array = new short[validateArrayLength(length, 2)];
-		readBytes(array, shortArrayBaseOffset, length << 1);
+		short[] array = new short[validateArrayLength(length, Short.BYTES)];
+		readBytes(array, shortArrayBaseOffset, length * Short.BYTES);
 		return array;
 	}
 
 	public char[] readChars (int length) throws KryoException {
-		char[] array = new char[validateArrayLength(length, 2)];
-		readBytes(array, charArrayBaseOffset, length << 1);
+		char[] array = new char[validateArrayLength(length, Character.BYTES)];
+		readBytes(array, charArrayBaseOffset, length * Character.BYTES);
 		return array;
 	}
 

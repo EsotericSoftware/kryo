@@ -988,9 +988,20 @@ public class Input extends InputStream implements Poolable {
 		return length;
 	}
 
+	/** Clamps a declared collection or map size before it is used as an initial capacity. Throws if {@code size} exceeds
+	 * {@link #setMaxArraySize(int) maxArraySize}; otherwise, for a buffer-backed input (no {@link InputStream}), limits it to the
+	 * bytes remaining, since a collection or map element can occupy as little as a single byte. A stream-backed input is returned
+	 * unchanged (the remaining size is unknown). Unlike {@link #validateArrayLength(int, int)} the size is clamped rather than
+	 * rejected, because the capacity is only a hint and elements may occupy zero bytes. */
+	public int clampSize (int size) {
+		if (size > maxArraySize)
+			throw new KryoException("Declared size larger than maxArraySize: " + size + " > " + maxArraySize);
+		return inputStream == null ? Math.min(size, limit - position) : size;
+	}
+
 	/** Reads an int array in bulk. This may be more efficient than reading them individually. */
 	public int[] readInts (int length) throws KryoException {
-		int[] array = new int[validateArrayLength(length, 4)];
+		int[] array = new int[validateArrayLength(length, Integer.BYTES)];
 		if (optional(length << 2) == length << 2) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
@@ -1022,7 +1033,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads a long array in bulk. This may be more efficient than reading them individually. */
 	public long[] readLongs (int length) throws KryoException {
-		long[] array = new long[validateArrayLength(length, 8)];
+		long[] array = new long[validateArrayLength(length, Long.BYTES)];
 		if (optional(length << 3) == length << 3) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
@@ -1058,7 +1069,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads a float array in bulk. This may be more efficient than reading them individually. */
 	public float[] readFloats (int length) throws KryoException {
-		float[] array = new float[validateArrayLength(length, 4)];
+		float[] array = new float[validateArrayLength(length, Float.BYTES)];
 		if (optional(length << 2) == length << 2) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
@@ -1078,7 +1089,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads a double array in bulk. This may be more efficient than reading them individually. */
 	public double[] readDoubles (int length) throws KryoException {
-		double[] array = new double[validateArrayLength(length, 8)];
+		double[] array = new double[validateArrayLength(length, Double.BYTES)];
 		if (optional(length << 3) == length << 3) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
@@ -1102,7 +1113,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads a short array in bulk. This may be more efficient than reading them individually. */
 	public short[] readShorts (int length) throws KryoException {
-		short[] array = new short[validateArrayLength(length, 2)];
+		short[] array = new short[validateArrayLength(length, Short.BYTES)];
 		if (optional(length << 1) == length << 1) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
@@ -1118,7 +1129,7 @@ public class Input extends InputStream implements Poolable {
 
 	/** Reads a char array in bulk. This may be more efficient than reading them individually. */
 	public char[] readChars (int length) throws KryoException {
-		char[] array = new char[validateArrayLength(length, 2)];
+		char[] array = new char[validateArrayLength(length, Character.BYTES)];
 		if (optional(length << 1) == length << 1) {
 			byte[] buffer = this.buffer;
 			int p = this.position;

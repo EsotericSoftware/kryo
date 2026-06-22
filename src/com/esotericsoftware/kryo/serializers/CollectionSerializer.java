@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.HashSet;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
@@ -180,12 +179,6 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		return collection;
 	}
 
-	private static int clampSize (Input input, int size) {
-		if (size > input.getMaxArraySize())
-			throw new KryoException("Declared size larger than maxArraySize: " + size + " > " + input.getMaxArraySize());
-		return input.getInputStream() == null ? Math.min(size, input.limit() - input.position()) : size;
-	}
-
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		Class elementClass = this.elementClass;
 		Serializer elementSerializer = this.elementSerializer;
@@ -210,7 +203,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				if (length == 0) return null;
 
 				length--;
-				collection = create(kryo, input, type, clampSize(input, length));
+				collection = create(kryo, input, type, input.clampSize(length));
 				kryo.reference(collection);
 
 				if (length == 0) return collection;
@@ -220,7 +213,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				if (length == 0) return null;
 
 				length--;
-				collection = create(kryo, input, type, clampSize(input, length));
+				collection = create(kryo, input, type, input.clampSize(length));
 				kryo.reference(collection);
 
 				if (length == 0) return collection;

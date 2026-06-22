@@ -20,7 +20,6 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -173,12 +172,6 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)} with a special case
 	 * for HashMap. */
-	private static int clampSize (Input input, int size) {
-		if (size > input.getMaxArraySize())
-			throw new KryoException("Declared size larger than maxArraySize: " + size + " > " + input.getMaxArraySize());
-		return input.getInputStream() == null ? Math.min(size, input.limit() - input.position()) : size;
-	}
-
 	protected T create (Kryo kryo, Input input, Class<? extends T> type, int size) {
 		if (type == HashMap.class) {
 			if (size < 3)
@@ -195,7 +188,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		if (length == 0) return null;
 		length--;
 
-		T map = create(kryo, input, type, clampSize(input, length));
+		T map = create(kryo, input, type, input.clampSize(length));
 		kryo.reference(map);
 		if (length == 0) return map;
 
