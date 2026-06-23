@@ -95,8 +95,10 @@ public class SynchronizedCollectionSerializers {
 
 		@Override
 		public Collection copy (Kryo kryo, Collection original) {
-			final Object collection = UnsafeUtil.getObject(original, offset);
-			return (Collection)factory.apply(kryo.copy(collection));
+			synchronized (original) {
+				final Object collection = UnsafeUtil.getObject(original, offset);
+				return (Collection)factory.apply(kryo.copy(collection));
+			}
 		}
 	}
 
@@ -126,8 +128,10 @@ public class SynchronizedCollectionSerializers {
 
 		@Override
 		public Map copy (Kryo kryo, Map original) {
-			final Object map = UnsafeUtil.getObject(original, offset);
-			return (Map)factory.apply(kryo.copy(map));
+			synchronized (original) {
+				final Object map = UnsafeUtil.getObject(original, offset);
+				return (Map)factory.apply(kryo.copy(map));
+			}
 		}
 	}
 
@@ -155,8 +159,7 @@ public class SynchronizedCollectionSerializers {
 			o3 -> Collections.synchronizedSet((Set<?>)o3));
 		factories.put(
 			Collections.synchronizedSortedSet(new TreeSet<>()).getClass(),
-			o4 -> Collections.synchronizedSortedSet((TreeSet<?>)o4));
-		factories.put(
+			o4 -> Collections.synchronizedSortedSet((SortedSet<?>)o4));
 			Collections.synchronizedMap(new HashMap<Void, Void>()).getClass(),
 			o5 -> Collections.synchronizedMap((Map)o5));
 		factories.put(
@@ -178,8 +181,8 @@ public class SynchronizedCollectionSerializers {
 			for (Map.Entry<Class<?>, Function> factory : synchronizedFactories().entrySet()) {
 				kryo.register(factory.getKey(), createSerializer(factory));
 			}
-		} catch (Throwable ignored) {
-			// ignored
+		} catch (Throwable t) {
+			Log.warn("Unable to register serializers for synchronized collections.", t);
 		}
 	}
 
@@ -196,8 +199,8 @@ public class SynchronizedCollectionSerializers {
 			for (Map.Entry<Class<?>, Function> factory : synchronizedFactories().entrySet()) {
 				kryo.addDefaultSerializer(factory.getKey(), createSerializer(factory));
 			}
-		} catch (Throwable ignored) {
-			// ignored
+		} catch (Throwable t) {
+			Log.warn("Unable to add default serializers for synchronized collections.", t);
 		}
 	}
 }

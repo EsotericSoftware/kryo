@@ -174,8 +174,8 @@ public class UnmodifiableCollectionSerializers {
 			for (Map.Entry<Class<?>, Function> factory : unmodifiableFactories().entrySet()) {
 				kryo.register(factory.getKey(), createSerializer(factory));
 			}
-		} catch (Throwable ignored) {
-			// ignored
+		} catch (Throwable t) {
+			Log.warn("Unable to register serializers for unmodifiable collections.", t);
 		}
 	}
 
