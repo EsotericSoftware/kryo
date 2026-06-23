@@ -22,11 +22,15 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializerTest.KeyComparator;
 import com.esotericsoftware.kryo.serializers.MapSerializerTest.KeyThatIsntComparable;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -42,6 +46,30 @@ import org.junit.jupiter.api.Test;
 class CollectionSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
+	}
+
+	@Test
+	void testMaliciousCollectionSize () {
+		kryo.setReferences(false);
+		kryo.register(ArrayList.class);
+		Output declared = new Output(8);
+		kryo.writeClass(declared, ArrayList.class);
+		declared.writeVarIntFlag(false, 2000000001, true);
+		declared.flush();
+		assertThrows(KryoException.class, () -> kryo.readClassAndObject(new Input(declared.toBytes())));
+	}
+
+	@Test
+	void testMaxCollectionSize () {
+		kryo.setReferences(false);
+		kryo.register(ArrayList.class);
+		Output declared = new Output(8);
+		kryo.writeClass(declared, ArrayList.class);
+		declared.writeVarIntFlag(false, 2000000001, true);
+		declared.flush();
+		Input stream = new Input(new ByteArrayInputStream(declared.toBytes()));
+		stream.setMaxArraySize(1024);
+		assertThrows(KryoException.class, () -> kryo.readClassAndObject(stream));
 	}
 
 	@Test

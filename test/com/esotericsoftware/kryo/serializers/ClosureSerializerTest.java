@@ -115,7 +115,7 @@ class ClosureSerializerTest extends KryoTestCase {
 	}
 
 	static class NumberFactory {
-		private static int getNumber () {
+		static int getNumber () {
 			return 72363;
 		}
 	}

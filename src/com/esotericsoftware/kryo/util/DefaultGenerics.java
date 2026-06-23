@@ -95,6 +95,16 @@ public final class DefaultGenerics extends BaseGenerics {
 		return null;
 	}
 
+	@Override
+	public void reset () {
+		super.reset();
+
+		if (argumentsSize == 0) return;
+		for (int i = 0; i < argumentsSize; i++)
+			arguments[i] = null;
+		argumentsSize = 0;
+	}
+
 	public String toString () {
 		StringBuilder buffer = new StringBuilder();
 		for (int i = 0; i < argumentsSize; i += 2) {

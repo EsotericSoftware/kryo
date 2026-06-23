@@ -1,7 +1,7 @@
 ![KryoNet](https://raw.github.com/wiki/EsotericSoftware/kryo/images/logo.jpg)
 
 [![Build Status](https://github.com/EsotericSoftware/kryo/actions/workflows/ci-workflow.yml/badge.svg)](https://github.com/EsotericSoftware/kryo/actions/workflows/ci-workflow.yml)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.esotericsoftware/kryo/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.esotericsoftware%22%20AND%20a%3Akryo)
+[![Maven Central](https://maven-badges.sml.io/maven-central/com.esotericsoftware/kryo/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.esotericsoftware%22%20AND%20a%3Akryo)
 [![Join the chat at https://gitter.im/EsotericSoftware/kryo](https://badges.gitter.im/EsotericSoftware/kryo.svg)](https://gitter.im/EsotericSoftware/kryo)
 [![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/kryo.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:kryo)
 
@@ -15,6 +15,10 @@ This documentation is for Kryo version 5.x. See [the Wiki](https://github.com/Es
 
 Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-users) for questions, discussions, and support. Please limit use of the Kryo issue tracker to bugs and enhancements, not questions, discussions, or support.
 
+## Sponsors
+
+Kryo maintenance and development is sponsored by the [Gecko fund](https://geckofund.org/), which is powered by EXANTE.
+
 ## Table of contents
 
 - [Recent releases](#recent-releases)
@@ -26,6 +30,7 @@ Please use the [Kryo mailing list](https://groups.google.com/forum/#!forum/kryo-
 - [IO](#io)
    * [Output](#output)
    * [Input](#input)
+   * [Limiting deserialized size](#limiting-deserialized-size)
    * [ByteBuffers](#bytebuffers)
    * [Unsafe buffers](#unsafe-buffers)
    * [Variable length encoding](#variable-length-encoding)
@@ -221,6 +226,21 @@ The Input class is an InputStream that reads data from a byte array buffer. This
 If the Input `close` is called, the Input's InputStream is closed, if any. If not reading from an InputStream then it is not necessary to call `close`. Unlike many streams, an Input instance can be reused by setting the position and limit, or setting a new byte array or InputStream.
 
 The zero argument Input constructor creates an uninitialized Input. Input `setBuffer` must be called before the Input can be used.
+
+### Limiting deserialized size
+
+When reading an array, string, collection, or map, Kryo first reads a declared size and uses it to allocate before reading any elements. A corrupt or malicious message can declare a size of billions, triggering a large allocation from only a few bytes.
+
+For an Input backed by a byte array (no InputStream), this is guarded automatically: the declared size cannot exceed the bytes remaining, since every element occupies at least one byte, so an impossible size is rejected with a `KryoException` before allocating. No configuration is needed and valid input is never affected.
+
+An Input reading from an InputStream cannot be checked this way, because the buffered window is not the total size. For that case, `setMaxArraySize` bounds the declared size:
+
+```java
+Input input = new Input(inputStream);
+input.setMaxArraySize(1024 * 1024); // reject any declared array/string/collection/map size above 1M elements
+```
+
+The default is `Integer.MAX_VALUE`, ie no limit, so by default behavior is unchanged and Kryo's trusted-source assumption is preserved: a valid payload never declares more elements than the input can supply, so the limit never fires on valid input. A declared size above the limit throws a `KryoException` before allocating. Callers that decode untrusted input, especially from a stream, should set a limit suited to their application.
 
 ### ByteBuffers
 
@@ -1052,8 +1072,8 @@ Annotations can be used to configure the serializers for each field.
 Annotation | Description
 --- | ---
 `@Bind` | Sets the CachedField settings for any field.
-`@CollectionBind` | Sets the CollectionSerializer settings for Collection fields.
-`@MapBind` | Sets the MapSerializer settings for Map fields.
+`@BindCollection` | Sets the CollectionSerializer settings for Collection fields.
+`@BindMap` | Sets the MapSerializer settings for Map fields.
 `@NotNull` | Marks a field as never being null.
 
 ```java
@@ -1293,7 +1313,7 @@ Kryo can be compared to many other serialization libraries in the [JVM Serialize
 
 There are a number of projects using Kryo. A few are listed below. Please submit a pull request if you'd like your project included here.
 
-- [KryoNet](http://code.google.com/p/kryonet/) (NIO networking)
+- [KryoNet](https://github.com/EsotericSoftware/kryonet) (NIO networking)
 - [kryo-serializers](https://github.com/magro/kryo-serializers) (additional serializers)
 - [Twitter's Scalding](https://github.com/twitter/scalding) (Scala API for Cascading)
 - [Twitter's Chill](https://github.com/twitter/chill) (Kryo serializers for Scala)

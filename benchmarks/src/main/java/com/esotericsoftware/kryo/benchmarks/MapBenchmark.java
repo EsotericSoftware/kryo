@@ -189,7 +189,7 @@ public class MapBenchmark {
 		}
 	}
 
-	private static MapAdapter<Object, Integer> createMap(MapType mapType, int initialCapacity, float loadFactor, int maxCapacity) {
+	static MapAdapter<Object, Integer> createMap(MapType mapType, int initialCapacity, float loadFactor, int maxCapacity) {
 		switch (mapType) {
 		case cuckoo:
 			return new CuckooMapAdapter<>(new CuckooObjectMap<>(initialCapacity, loadFactor), maxCapacity);

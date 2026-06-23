@@ -86,7 +86,6 @@ class ReflectField extends CachedField {
 					kryo.writeObject(output, value, serializer);
 				}
 			}
-			kryo.getGenerics().popGenericType();
 		} catch (IllegalAccessException ex) {
 			throw new KryoException("Error accessing field: " + name + " (" + object.getClass().getName() + ")", ex);
 		} catch (KryoException ex) {
@@ -102,6 +101,9 @@ class ReflectField extends CachedField {
 			KryoException ex = new KryoException(t);
 			ex.addTrace(name + " (" + object.getClass().getName() + ")");
 			throw ex;
+		} finally {
+			// Pop in a finally so an exception thrown by the nested write does not leave the generics stack unbalanced.
+			kryo.getGenerics().popGenericType();
 		}
 	}
 
@@ -134,8 +136,6 @@ class ReflectField extends CachedField {
 				else
 					value = kryo.readObject(input, concreteType, serializer);
 			}
-			kryo.getGenerics().popGenericType();
-
 			set(object, value);
 		} catch (IllegalAccessException ex) {
 			throw new KryoException("Error accessing field: " + name + " (" + fieldSerializer.type.getName() + ")", ex);
@@ -146,6 +146,9 @@ class ReflectField extends CachedField {
 			KryoException ex = new KryoException(t);
 			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
+		} finally {
+			// Pop in a finally so an exception thrown by the nested read does not leave the generics stack unbalanced.
+			kryo.getGenerics().popGenericType();
 		}
 	}
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022, Nathan Sweet
+/* Copyright (c) 2008-2025, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -88,6 +88,14 @@ abstract class BaseGenerics implements Generics {
 	@Override
 	public int getGenericTypesSize () {
 		return genericTypesSize;
+	}
+
+	@Override
+	public void reset () {
+		if (genericTypesSize == 0) return;
+		for (int i = 0; i < genericTypesSize; i++)
+			genericTypes[i] = null;
+		genericTypesSize = 0;
 	}
 
 }

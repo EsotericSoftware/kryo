@@ -23,6 +23,7 @@ import static com.esotericsoftware.kryo.KryoAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
@@ -137,6 +138,98 @@ class InputOutputTest extends KryoTestCase {
 		);
 
 		assertTrue(thrown.getMessage().equals("Buffer underflow."));
+	}
+
+	@Test
+	void testArrayLengthValidation () throws IOException {
+		int hugeLength = 2000000000;
+
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readInts(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readInts(hugeLength, true));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readLongs(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readLongs(hugeLength, true));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readFloats(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readDoubles(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readShorts(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readChars(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readBooleans(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[5]).readBytes(hugeLength));
+
+		assertThrows(KryoBufferUnderflowException.class, () -> new ByteBufferInput(new byte[5]).readInts(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new ByteBufferInput(new byte[5]).readDoubles(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new ByteBufferInput(new byte[5]).readBytes(hugeLength));
+
+		int[] ints = {1, 2, 3, 4, 5};
+		Output output = new Output(64);
+		output.writeInts(ints, 0, ints.length, false);
+		output.flush();
+		assertArrayEquals(ints, new Input(output.toBytes()).readInts(ints.length, false));
+	}
+
+	@Test
+	void testMaliciousArrayLength () throws IOException {
+		kryo.register(int[].class);
+
+		Output declared = new Output(8);
+		declared.writeVarInt(2000000001, true);
+		declared.flush();
+		assertThrows(KryoException.class, () -> kryo.readObject(new Input(declared.toBytes()), int[].class));
+
+		int[] valid = {1, 2, 3, 4, 5};
+		Output output = new Output(64);
+		kryo.writeObject(output, valid);
+		output.flush();
+		assertArrayEquals(valid, kryo.readObject(new Input(output.toBytes()), int[].class));
+	}
+
+	@Test
+	void testMaliciousStringLength () throws IOException {
+		Output declared = new Output(8);
+		declared.writeVarIntFlag(true, 2000000001, true);
+		declared.flush();
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(declared.toBytes()).readString());
+		assertThrows(KryoBufferUnderflowException.class, () -> new ByteBufferInput(declared.toBytes()).readString());
+
+		String value = "kryo \u00e9\u00fc\u1234 unicode string";
+		Output output = new Output(64);
+		output.writeString(value);
+		output.flush();
+		assertEquals(value, new Input(output.toBytes()).readString());
+	}
+
+	@Test
+	void testMaxArraySize () throws IOException {
+		Input stream = new Input(new ByteArrayInputStream(new byte[16]));
+		stream.setMaxArraySize(1024);
+		assertEquals(1024, stream.getMaxArraySize());
+		assertThrows(KryoException.class, () -> stream.readInts(2000000));
+		assertThrows(KryoException.class, () -> stream.readBytes(2000000));
+		assertThrows(KryoException.class, () -> stream.readLongs(2000000, true));
+	}
+
+	@Test
+	void testArrayLengthByteWidthValidation () throws IOException {
+		// A declared element count that fits the buffer by count but not once element width is counted is rejected up front,
+		// before the (potentially much larger) array is allocated. Eight ints need 32 bytes, not 8.
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[8]).readInts(8));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[8]).readLongs(8));
+		assertThrows(KryoBufferUnderflowException.class, () -> new Input(new byte[8]).readDoubles(8));
+		assertThrows(KryoBufferUnderflowException.class, () -> new ByteBufferInput(new byte[8]).readInts(8));
+
+		// Stream-backed: a declared size whose total byte count overflows an int can never be read and previously overflowed the
+		// length << n shifts (risking ArrayIndexOutOfBoundsException or a huge allocation). It is now rejected cleanly.
+		assertThrows(KryoException.class, () -> new Input(new ByteArrayInputStream(new byte[16])).readInts(600000000));
+		assertThrows(KryoException.class, () -> new Input(new ByteArrayInputStream(new byte[16])).readLongs(300000000));
+
+		// setMaxArraySize rejects negative limits.
+		assertThrows(IllegalArgumentException.class, () -> new Input(new byte[1]).setMaxArraySize(-1));
+
+		// Valid fixed-width arrays still round-trip through the guard.
+		long[] longs = {1, 2, 3, 4, 5};
+		Output output = new Output(64);
+		output.writeLongs(longs, 0, longs.length, false);
+		output.flush();
+		assertArrayEquals(longs, new Input(output.toBytes()).readLongs(longs.length, false));
 	}
 
 	@Test
