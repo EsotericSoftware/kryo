@@ -211,7 +211,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 
 	/** Returns an ordered array of the record components for the given record class. The order is imposed by the given comparator.
 	 * If the given comparator is null, the order is that of the record components in the record attribute of the class file. */
-	private static <T> RecordComponent[] recordComponents (Class<T> type,
+	static <T> RecordComponent[] recordComponents (Class<T> type,
 		Comparator<RecordComponent> comparator) {
 		try {
 			Object[] rawComponents = (Object[])GET_RECORD_COMPONENTS.invoke(type);
@@ -243,7 +243,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 		}
 	}
 
-	private static <T> Constructor<T> getCanonicalConstructor (Class<T> recordType, RecordComponent[] recordComponents) {
+	static <T> Constructor<T> getCanonicalConstructor (Class<T> recordType, RecordComponent[] recordComponents) {
 		try {
 			Class<?>[] paramTypes = Arrays.stream(recordComponents)
 				.map(RecordComponent::type)

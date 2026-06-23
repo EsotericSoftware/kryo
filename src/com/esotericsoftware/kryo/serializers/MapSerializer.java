@@ -188,7 +188,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		if (length == 0) return null;
 		length--;
 
-		T map = create(kryo, input, type, length);
+		T map = create(kryo, input, type, input.clampSize(length));
 		kryo.reference(map);
 		if (length == 0) return map;
 

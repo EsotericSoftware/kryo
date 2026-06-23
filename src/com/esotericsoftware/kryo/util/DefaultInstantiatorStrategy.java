@@ -124,7 +124,7 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 		return fallbackStrategy.newInstantiatorOf(type);
 	}
 
-	private KryoException createInstantiationError (Class type, Throwable throwable) {
+	KryoException createInstantiationError (Class type, Throwable throwable) {
 		StringBuilder message = new StringBuilder("Error constructing instance of class: " + className(type));
 		// Note: For Array and Primitive types the abstract bit is always set.
 		if (!type.isArray() && !type.isPrimitive() && Modifier.isAbstract(type.getModifiers())) {

@@ -23,6 +23,8 @@ import static com.esotericsoftware.kryo.KryoAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Unsafe;
+import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
 
@@ -35,6 +37,18 @@ import org.junit.jupiter.api.Test;
 /** @author Nathan Sweet <misc@n4te.com> */
 @Unsafe
 class UnsafeInputOutputTest {
+	@Test
+	void testArrayLengthValidation () {
+		int hugeLength = 2000000000;
+
+		assertThrows(KryoBufferUnderflowException.class, () -> new UnsafeInput(new byte[5]).readInts(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new UnsafeInput(new byte[5]).readLongs(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new UnsafeInput(new byte[5]).readDoubles(hugeLength));
+
+		assertThrows(KryoBufferUnderflowException.class, () -> new UnsafeByteBufferInput(new byte[5]).readInts(hugeLength));
+		assertThrows(KryoBufferUnderflowException.class, () -> new UnsafeByteBufferInput(new byte[5]).readDoubles(hugeLength));
+	}
+
 	@Test
 	void testOutputStream () {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();

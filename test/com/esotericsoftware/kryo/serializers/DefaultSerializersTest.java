@@ -497,7 +497,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
 		kryo.register(ConcurrentHashMap.class);
 		ConcurrentHashMap.KeySetView<String, Integer> copy = kryo.copy(set);
-		assertEquals(set.iterator().next(), copy.iterator().next());
+		assertTrue(set.containsAll(copy) && copy.containsAll(set));
 		assertEquals(set.getMappedValue(), copy.getMappedValue());
 	}
 

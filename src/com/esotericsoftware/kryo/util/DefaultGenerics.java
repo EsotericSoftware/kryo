@@ -156,6 +156,19 @@ public final class DefaultGenerics implements Generics {
 		return genericTypesSize;
 	}
 
+	@Override
+	public void reset () {
+		// Fast path: after a balanced (successful) serialization both stacks are already empty.
+		if (genericTypesSize == 0 && argumentsSize == 0) return;
+		// Slow path: a serializer threw before popping. Discard the leaked entries so the next serialization starts clean.
+		for (int i = 0; i < genericTypesSize; i++)
+			genericTypes[i] = null;
+		genericTypesSize = 0;
+		for (int i = 0; i < argumentsSize; i++)
+			arguments[i] = null;
+		argumentsSize = 0;
+	}
+
 	public String toString () {
 		StringBuilder buffer = new StringBuilder();
 		for (int i = 0; i < argumentsSize; i += 2) {

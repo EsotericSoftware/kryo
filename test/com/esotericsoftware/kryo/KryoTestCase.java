@@ -193,7 +193,7 @@ public abstract class KryoTestCase {
 		return object2;
 	}
 
-	private ByteBuffer allocateByteBuffer(byte[] buffer) {
+	ByteBuffer allocateByteBuffer(byte[] buffer) {
 		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(buffer.length);
 		byteBuffer.put(buffer);
 		((Buffer) byteBuffer).flip();

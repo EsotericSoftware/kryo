@@ -65,14 +65,14 @@ public class UnsafeUtil {
 				Field field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
 				field.setAccessible(true);
 				tempUnsafe = (sun.misc.Unsafe)field.get(null);
-				tempByteArrayBaseOffset = tempUnsafe.arrayBaseOffset(byte[].class);
-				tempCharArrayBaseOffset = tempUnsafe.arrayBaseOffset(char[].class);
-				tempShortArrayBaseOffset = tempUnsafe.arrayBaseOffset(short[].class);
-				tempIntArrayBaseOffset = tempUnsafe.arrayBaseOffset(int[].class);
-				tempFloatArrayBaseOffset = tempUnsafe.arrayBaseOffset(float[].class);
-				tempLongArrayBaseOffset = tempUnsafe.arrayBaseOffset(long[].class);
-				tempDoubleArrayBaseOffset = tempUnsafe.arrayBaseOffset(double[].class);
-				tempBooleanArrayBaseOffset = tempUnsafe.arrayBaseOffset(boolean[].class);
+				tempByteArrayBaseOffset = Unsafe.ARRAY_BYTE_BASE_OFFSET;
+				tempCharArrayBaseOffset = Unsafe.ARRAY_CHAR_BASE_OFFSET;
+				tempShortArrayBaseOffset = Unsafe.ARRAY_SHORT_BASE_OFFSET;
+				tempIntArrayBaseOffset = Unsafe.ARRAY_INT_BASE_OFFSET;
+				tempFloatArrayBaseOffset = Unsafe.ARRAY_FLOAT_BASE_OFFSET;
+				tempLongArrayBaseOffset = Unsafe.ARRAY_LONG_BASE_OFFSET;
+				tempDoubleArrayBaseOffset = Unsafe.ARRAY_DOUBLE_BASE_OFFSET;
+				tempBooleanArrayBaseOffset = Unsafe.ARRAY_BOOLEAN_BASE_OFFSET;
 			} else {
 				if (DEBUG) debug("kryo", "Unsafe is not available on Android.");
 			}
@@ -90,11 +90,19 @@ public class UnsafeUtil {
 		booleanArrayBaseOffset = tempBooleanArrayBaseOffset;
 		unsafe = tempUnsafe;
 	}
-	
+
+	public static long objectFieldOffset (Field c) {
+		return unsafe.objectFieldOffset(c);
+	}
+
+	public static Object getObject (Object object, long offset) {
+		return unsafe.getObject(object, offset);
+	}
+
 	// Use a static inner class to defer initialization of direct buffer methods until first use
 	private static final class DirectBuffers {
 		// Constructor to be used for creation of ByteBuffers that use pre-allocated memory regions.
-		private static Constructor<? extends ByteBuffer> directByteBufferConstructor;
+		static Constructor<? extends ByteBuffer> directByteBufferConstructor;
 		static {
 			ByteBuffer buffer = ByteBuffer.allocateDirect(1);
 			try {
@@ -106,7 +114,7 @@ public class UnsafeUtil {
 			}
 		}
 
-		private static Method cleanerMethod, cleanMethod;
+		static Method cleanerMethod, cleanMethod;
 		static {
 			try {
 				cleanerMethod = DirectBuffer.class.getMethod("cleaner");
