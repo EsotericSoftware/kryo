@@ -953,6 +953,7 @@ public class Kryo {
 		depth = 0;
 		if (graphContext != null) graphContext.clear(2048);
 		classResolver.reset();
+		generics.reset();
 		if (references) {
 			referenceResolver.reset();
 			readObject = null;

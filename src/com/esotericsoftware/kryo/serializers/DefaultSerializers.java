@@ -63,6 +63,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -853,7 +854,7 @@ public class DefaultSerializers {
 		}
 	}
 
-	/** Serializer for {@link ConcurrentHashMap.KeySetView}.
+	/** Serializer for {@link KeySetView}.
 	 * @author Andreas Bergander */
 	public static class KeySetViewSerializer extends Serializer<ConcurrentHashMap.KeySetView> {
 		public void write (Kryo kryo, Output output, ConcurrentHashMap.KeySetView set) {

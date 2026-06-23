@@ -277,7 +277,7 @@ public class DefaultArraySerializers {
 		public String[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			String[] array = new String[--length];
+			String[] array = new String[input.validateArrayLength(--length)];
 			if (kryo.getReferences() && kryo.getReferenceResolver().useReferences(String.class)) {
 				Serializer serializer = kryo.getSerializer(String.class);
 				for (int i = 0; i < length; i++)

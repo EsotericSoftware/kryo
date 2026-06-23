@@ -46,7 +46,7 @@
 		<javac.target>1.8</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>5.13.4</junit.version>
-		<kotlin.version>2.2.20</kotlin.version>
+		<kotlin.version>2.4.0</kotlin.version>
 		<kotlin.compiler.incremental>true</kotlin.compiler.incremental>
 	</properties>
 
@@ -79,7 +79,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.19.0</version>
+			<version>3.20.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -105,7 +105,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.14.1</version>
+					<version>3.15.0</version>
 					<configuration>
 						<source>${javac.target}</source>
 						<target>${javac.target}</target>
@@ -128,24 +128,24 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-jar-plugin</artifactId>
-					<version>3.4.2</version>
+					<version>3.5.0</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-site-plugin</artifactId>
-					<version>3.21.0</version>
+					<version>3.22.0</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
-					<version>3.5.4</version>
+					<version>3.5.6</version>
 				</plugin>
 
 				<plugin>
 					<artifactId>maven-resources-plugin</artifactId>
-					<version>3.3.1</version>
+					<version>3.5.0</version>
 					<executions>
 						<!-- Disable resources (project has none). -->
 						<execution>
@@ -180,7 +180,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-release-plugin</artifactId>
-					<version>3.1.1</version>
+					<version>3.3.1</version>
 					<configuration>
 						<autoVersionSubmodules>true</autoVersionSubmodules>
 						<useReleaseProfile>false</useReleaseProfile>
@@ -204,13 +204,13 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-shade-plugin</artifactId>
-					<version>3.6.1</version>
+					<version>3.6.2</version>
 				</plugin>
 
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-enforcer-plugin</artifactId>
-					<version>3.6.2</version>
+					<version>3.6.3</version>
 				</plugin>
 
 				<plugin>
@@ -238,7 +238,7 @@
 			<plugin>
 				<groupId>org.sonatype.central</groupId>
 				<artifactId>central-publishing-maven-plugin</artifactId>
-				<version>0.9.0</version>
+				<version>0.11.0</version>
 				<extensions>true</extensions>
 				<configuration>
 					<publishingServerId>central</publishingServerId>
@@ -257,7 +257,7 @@
 						<configuration>
 							<rules>
 								<requireMavenVersion>
-									<version>3.6.2</version>
+									<version>3.6.3</version>
 								</requireMavenVersion>
 							</rules>
 						</configuration>
@@ -279,7 +279,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-source-plugin</artifactId>
-						<version>3.3.1</version>
+						<version>3.4.0</version>
 						<executions>
 							<execution>
 								<id>attach-sources</id>
@@ -347,7 +347,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-enforcer-plugin</artifactId>
-						<version>3.6.2</version>
+						<version>3.6.3</version>
 						<executions>
 							<execution>
 								<goals>
