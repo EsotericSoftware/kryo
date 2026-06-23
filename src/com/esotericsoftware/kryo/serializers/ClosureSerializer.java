@@ -98,7 +98,7 @@ public class ClosureSerializer extends Serializer {
 
 	public Object read (Kryo kryo, Input input, Class type) {
 		int count = input.readVarInt(true);
-		Object[] capturedArgs = new Object[count];
+		Object[] capturedArgs = new Object[input.validateArrayLength(count)];
 		for (int i = 0; i < count; i++)
 			capturedArgs[i] = kryo.readClassAndObject(input);
 		Class<?> capturingClass = kryo.readClass(input).getType();
