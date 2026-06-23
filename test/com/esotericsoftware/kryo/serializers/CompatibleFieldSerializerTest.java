@@ -44,10 +44,10 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testCompatibleFieldSerializer () {
-		testCompatibleFieldSerializer(83, false, false);
-		testCompatibleFieldSerializer(116, false, true);
-		testCompatibleFieldSerializer(80, true, false);
-		testCompatibleFieldSerializer(113, true, true);
+		testCompatibleFieldSerializer(90, false, false);
+		testCompatibleFieldSerializer(123, false, true);
+		testCompatibleFieldSerializer(87, true, false);
+		testCompatibleFieldSerializer(120, true, true);
 	}
 
 	private void testCompatibleFieldSerializer (int length, boolean references, final boolean chunked) {
@@ -72,10 +72,10 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testAddedField () {
-		testAddedField(59, false, false);
-		testAddedField(87, false, true);
-		testAddedField(63, true, false);
-		testAddedField(91, true, true);
+		testAddedField(65, false, false);
+		testAddedField(93, false, true);
+		testAddedField(69, true, false);
+		testAddedField(97, true, true);
 	}
 
 	private void testAddedField (int length, boolean references, boolean chunked) {
@@ -104,16 +104,16 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testAddedFieldToClassWithManyFields () {
-		testAddedFieldToClassWithManyFields(189, false, false, true);
+		testAddedFieldToClassWithManyFields(226, false, false, true);
 		testAddedFieldToClassWithManyFields(152, false, false, false);
 
-		testAddedFieldToClassWithManyFields(263, false, true, true);
+		testAddedFieldToClassWithManyFields(300, false, true, true);
 		testAddedFieldToClassWithManyFields(226, false, true, false);
 
-		testAddedFieldToClassWithManyFields(227, true, false, true);
+		testAddedFieldToClassWithManyFields(264, true, false, true);
 		testAddedFieldToClassWithManyFields(190, true, false, false);
 
-		testAddedFieldToClassWithManyFields(301, true, true, true);
+		testAddedFieldToClassWithManyFields(338, true, true, true);
 		testAddedFieldToClassWithManyFields(264, true, true, false);
 	}
 
@@ -177,10 +177,10 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testRemovedField () {
-		testRemovedField(92, false, false);
-		testRemovedField(125, false, true);
-		testRemovedField(87, true, false);
-		testRemovedField(120, true, true);
+		testRemovedField(99, false, false);
+		testRemovedField(132, false, true);
+		testRemovedField(94, true, false);
+		testRemovedField(127, true, true);
 	}
 
 	private void testRemovedField (int length, boolean references, boolean chunked) {
@@ -215,12 +215,12 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testChangeFieldTypeWithChunkedEncodingEnabled () {
-		testChangeFieldType(16, true);
+		testChangeFieldType(17, true);
 	}
 
 	@Test
 	void testChangeFieldTypeWithChunkedEncodingDisabled () {
-		assertThrows(KryoException.class, () -> testChangeFieldType(14, false),
+		assertThrows(KryoException.class, () -> testChangeFieldType(15, false),
 				"Read type is incompatible with the field type: String -> Long");
 	}
 
@@ -244,8 +244,8 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testChangePrimitiveAndWrapperFieldTypes () {
-		testChangePrimitiveAndWrapperFieldTypes(22, true);
-		testChangePrimitiveAndWrapperFieldTypes(18, false);
+		testChangePrimitiveAndWrapperFieldTypes(24, true);
+		testChangePrimitiveAndWrapperFieldTypes(20, false);
 	}
 
 	private void testChangePrimitiveAndWrapperFieldTypes (int length, boolean chunked) {
@@ -269,16 +269,16 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testRemovedFieldFromClassWithManyFields () {
-		testRemovedFieldFromClassWithManyFields(198, false, false, true);
+		testRemovedFieldFromClassWithManyFields(236, false, false, true);
 		// testRemovedFieldFromClassWithManyFields(0, false, false, false); // Doesn't support remove.
 
-		testRemovedFieldFromClassWithManyFields(274, false, true, true);
+		testRemovedFieldFromClassWithManyFields(312, false, true, true);
 		testRemovedFieldFromClassWithManyFields(236, false, true, false);
 
-		testRemovedFieldFromClassWithManyFields(237, true, false, true);
+		testRemovedFieldFromClassWithManyFields(275, true, false, true);
 		// testRemovedFieldFromClassWithManyFields(0, true, false, false); // Doesn't support remove.
 
-		testRemovedFieldFromClassWithManyFields(313, true, true, true);
+		testRemovedFieldFromClassWithManyFields(351, true, true, true);
 		testRemovedFieldFromClassWithManyFields(275, true, true, false);
 	}
 
@@ -346,16 +346,16 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testRemovedMultipleFieldsFromClassWithManyFields () {
-		testRemovedMultipleFieldsFromClassWithManyFields(170, false, false, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(208, false, false, true);
 		// testRemovedMultipleFieldsFromClassWithManyFields(0, false, false, false); // Doesn't support remove.
 
-		testRemovedMultipleFieldsFromClassWithManyFields(246, false, true, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(284, false, true, true);
 		testRemovedMultipleFieldsFromClassWithManyFields(220, false, true, false);
 
-		testRemovedMultipleFieldsFromClassWithManyFields(197, true, false, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(235, true, false, true);
 		// testRemovedMultipleFieldsFromClassWithManyFields(0, true, false, false); // Doesn't support remove.
 
-		testRemovedMultipleFieldsFromClassWithManyFields(273, true, true, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(311, true, true, true);
 		testRemovedMultipleFieldsFromClassWithManyFields(247, true, true, false);
 	}
 
@@ -421,7 +421,7 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.register(ClassWithManyFields.class, serializer);
 
 		ClassWithManyFields object1 = new ClassWithManyFields();
-		roundTrip(118, object1);
+		roundTrip(156, object1);
 
 		for (FieldSerializer.CachedField field : serializer.getFields()) {
 			serializer.removeField(field.getName());
@@ -433,10 +433,10 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testExtendedClass () {
-		testExtendedClass(270, false, false);
-		testExtendedClass(294, false, true);
-		testExtendedClass(273, true, false);
-		testExtendedClass(297, true, true);
+		testExtendedClass(282, false, false);
+		testExtendedClass(306, false, true);
+		testExtendedClass(285, true, false);
+		testExtendedClass(309, true, true);
 	}
 
 	private void testExtendedClass (int length, boolean references, boolean chunked) {
@@ -468,7 +468,7 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		config.setReadUnknownFieldData(true);
 		kryo.register(ClassWithSuperTypeFields.class, serializer);
 
-		roundTrip(71, new ClassWithSuperTypeFields("foo", Arrays.asList("bar"), "baz"));
+		roundTrip(75, new ClassWithSuperTypeFields("foo", Arrays.asList("bar"), "baz"));
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/774
@@ -500,7 +500,36 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.register(ClassWithLambdaField.class);
 		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
 
-		roundTrip(236, new ClassWithLambdaField());
+		roundTrip(237, new ClassWithLambdaField());
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/1098
+	@Test
+	void testRemovedGenericCollectionField () {
+		// Removing a List<String> field caused a deserialization exception because CollectionSerializer uses a compact
+		// binary format (no per-element class) when the element type is known via generics. Without the fix, the writer
+		// pushed List<String>'s generic type so String was the element type, but the reader skipped unknown fields
+		// without pushing any generic type, causing CollectionSerializer to use the self-describing format and
+		// misread the compact bytes.
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithListField.class);
+		kryo.register(java.util.ArrayList.class);
+		kryo.register(ClassWithListField.class, serializer);
+
+		List<String> list = new java.util.ArrayList<>(Arrays.asList("foo", "bar"));
+		ClassWithListField object1 = new ClassWithListField("hello", list);
+		Output out = new Output(4096, Integer.MAX_VALUE);
+		kryo.writeClassAndObject(out, object1);
+		byte[] bytes = out.toBytes();
+
+		// Verify basic roundtrip with the full class.
+		ClassWithListField read1 = (ClassWithListField)kryo.readClassAndObject(new Input(bytes));
+		assertEquals(object1, read1);
+
+		// Re-register the serializer with the list field removed, then read the previously-written bytes.
+		serializer.removeField("list");
+		ClassWithListField read2 = (ClassWithListField)kryo.readClassAndObject(new Input(bytes));
+		assertEquals("hello", read2.str);
+		assertNull(read2.list);
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/840
@@ -510,7 +539,7 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
 		kryo.register(ClassWithGenericField.class);
 
-		roundTrip(9, new ClassWithGenericField<>(1));
+		roundTrip(10, new ClassWithGenericField<>(1));
 	}
 
 	public static class TestClass {
@@ -807,6 +836,26 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 			if (o == null || getClass() != o.getClass()) return false;
 			ClassWithGenericField<?> that = (ClassWithGenericField<?>)o;
 			return Objects.equals(value, that.value);
+		}
+	}
+
+	public static class ClassWithListField {
+		public String str;
+		public List<String> list;
+
+		public ClassWithListField () {
+		}
+
+		public ClassWithListField (String str, List<String> list) {
+			this.str = str;
+			this.list = list;
+		}
+
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithListField that = (ClassWithListField)o;
+			return Objects.equals(str, that.str) && Objects.equals(list, that.list);
 		}
 	}
 }
