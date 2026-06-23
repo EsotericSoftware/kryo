@@ -55,7 +55,7 @@ class SynchronizedCollectionSerializersTest extends KryoTestCase {
 	}
 
 	@Test
-	void setSerializer () {
+	void testSerializer () {
 		roundTrip(3, Collections.synchronizedMap(new HashMap<>()));
 		roundTrip(4, Collections.synchronizedMap(new TreeMap<>()));
 		roundTrip(3, Collections.synchronizedList(new ArrayList<>()));
