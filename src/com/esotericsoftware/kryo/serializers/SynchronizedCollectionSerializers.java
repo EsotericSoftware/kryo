@@ -160,6 +160,7 @@ public class SynchronizedCollectionSerializers {
 		factories.put(
 			Collections.synchronizedSortedSet(new TreeSet<>()).getClass(),
 			o4 -> Collections.synchronizedSortedSet((SortedSet<?>)o4));
+		factories.put(
 			Collections.synchronizedMap(new HashMap<Void, Void>()).getClass(),
 			o5 -> Collections.synchronizedMap((Map)o5));
 		factories.put(
