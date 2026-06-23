@@ -210,7 +210,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		if (TRACE) trace("kryo", "Read fields for class: " + type.getName());
 
 		boolean readUnknownTagData = config.readUnknownFieldData;
-		int length = input.readVarInt(true);
+		int length = input.validateArrayLength(input.readVarInt(true));
 		String[] names = new String[length];
 		GenericType[][] schemaTypeArgs = readUnknownTagData ? new GenericType[length][] : null;
 		for (int i = 0; i < length; i++) {

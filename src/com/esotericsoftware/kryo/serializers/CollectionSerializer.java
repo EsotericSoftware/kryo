@@ -203,7 +203,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				if (length == 0) return null;
 
 				length--;
-				collection = create(kryo, input, type, length);
+				collection = create(kryo, input, type, input.clampSize(length));
 				kryo.reference(collection);
 
 				if (length == 0) return collection;
@@ -213,7 +213,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				if (length == 0) return null;
 
 				length--;
-				collection = create(kryo, input, type, length);
+				collection = create(kryo, input, type, input.clampSize(length));
 				kryo.reference(collection);
 
 				if (length == 0) return collection;

@@ -77,6 +77,18 @@ public class ArrayBenchmark {
 		state.input.readLongs(state.longs.length, true);
 	}
 
+	@Benchmark
+	public void writeDoubles (WriteDoublesState state) {
+		state.reset();
+		state.output.writeDoubles(state.doubles, 0, state.doubles.length);
+	}
+
+	@Benchmark
+	public void readDoubles (ReadDoublesState state) {
+		state.reset();
+		state.input.readDoubles(state.doubles.length);
+	}
+
 	//
 
 	@State(Scope.Thread)
@@ -109,6 +121,20 @@ public class ArrayBenchmark {
 		public void setup () {
 			super.setup();
 			new ArrayBenchmark().writeLongs(this);
+		}
+	}
+
+	@State(Scope.Thread)
+	static public class WriteDoublesState extends InputOutputState {
+		public double[] doubles = {0, 1, 2, 3, 4, 5, 63, 64, 65, 127, 128, 129, 4000, 5000, 6000, 16000, 32000, 256000, 1024000,
+			-1, -2, -3, -4, Double.MIN_VALUE, Double.MAX_VALUE, 0.5, -0.5, 3.14159};
+	}
+
+	@State(Scope.Thread)
+	static public class ReadDoublesState extends WriteDoublesState {
+		public void setup () {
+			super.setup();
+			new ArrayBenchmark().writeDoubles(this);
 		}
 	}
 }
