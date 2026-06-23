@@ -532,6 +532,55 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertNull(read2.list);
 	}
 
+	// https://github.com/EsotericSoftware/kryo/issues/907
+	@Test
+	void testRemovedGenericMapField () {
+		kryo.register(java.util.LinkedHashMap.class);
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithMapField.class);
+		kryo.register(ClassWithMapField.class, serializer);
+
+		ClassWithMapField object1 = new ClassWithMapField();
+		object1.value = "some string";
+		object1.map = new java.util.LinkedHashMap<>();
+		object1.map.put(1111, "some string");
+		object1.map.put(2222, "some string");
+
+		Output out = new Output(4096, Integer.MAX_VALUE);
+		kryo.writeClassAndObject(out, object1);
+		byte[] bytes = out.toBytes();
+
+		ClassWithMapField read1 = (ClassWithMapField)kryo.readClassAndObject(new Input(bytes));
+		assertEquals(object1, read1);
+
+		serializer.removeField("map");
+		ClassWithMapField read2 = (ClassWithMapField)kryo.readClassAndObject(new Input(bytes));
+		assertEquals("some string", read2.value);
+		assertNull(read2.map);
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/834 (root cause)
+	@Test
+	void testRemovedGenericCollectionFieldWithChunkedEncoding () {
+		kryo.setReferences(true);
+		kryo.register(java.util.ArrayList.class);
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithListField.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(true);
+		kryo.register(ClassWithListField.class, serializer);
+
+		ClassWithListField object1 = new ClassWithListField("hello", new java.util.ArrayList<>(Arrays.asList("foo", "bar")));
+		Output out = new Output(4096, Integer.MAX_VALUE);
+		kryo.writeClassAndObject(out, object1);
+		byte[] bytes = out.toBytes();
+
+		ClassWithListField read1 = (ClassWithListField)kryo.readClassAndObject(new Input(bytes));
+		assertEquals(object1, read1);
+
+		serializer.removeField("list");
+		ClassWithListField read2 = (ClassWithListField)kryo.readClassAndObject(new Input(bytes));
+		assertEquals("hello", read2.str);
+		assertNull(read2.list);
+	}
+
 	// https://github.com/EsotericSoftware/kryo/issues/840
 	@Test
 	void testClassWithGenericField () {
@@ -836,6 +885,18 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 			if (o == null || getClass() != o.getClass()) return false;
 			ClassWithGenericField<?> that = (ClassWithGenericField<?>)o;
 			return Objects.equals(value, that.value);
+		}
+	}
+
+	public static class ClassWithMapField {
+		public String value;
+		public java.util.Map<Integer, String> map;
+
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ClassWithMapField that = (ClassWithMapField)o;
+			return Objects.equals(value, that.value) && Objects.equals(map, that.map);
 		}
 	}
 
