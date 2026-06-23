@@ -276,14 +276,17 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		}
 	}
 
-	/** Reads generic type arguments from the schema (written by {@link #writeFieldTypeArgs}). Returns null when there are none. */
+	/** Reads generic type arguments from the schema (written by {@link #writeFieldTypeArgs}). Returns null when there are none or
+	 * when any argument could not be resolved (e.g. a wildcard or type variable written as null), so the caller does not push an
+	 * incomplete GenericType that would cause a NullPointerException inside {@link DefaultGenerics#nextGenericClass()}. */
 	private GenericType[] readFieldTypeArgs (Kryo kryo, Input input) {
 		int numArgs = input.readVarInt(true);
 		if (numArgs == 0) return null;
 		GenericType[] args = new GenericType[numArgs];
 		for (int i = 0; i < numArgs; i++) {
 			Registration reg = kryo.readClass(input);
-			args[i] = reg != null ? new GenericType(reg.getType(), null) : null;
+			if (reg == null) return null; // Wildcard or type variable — omit GenericType push entirely.
+			args[i] = new GenericType(reg.getType(), null);
 		}
 		return args;
 	}
