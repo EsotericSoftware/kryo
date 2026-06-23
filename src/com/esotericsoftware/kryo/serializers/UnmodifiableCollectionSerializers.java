@@ -192,8 +192,8 @@ public class UnmodifiableCollectionSerializers {
 			for (Map.Entry<Class<?>, Function> factory : unmodifiableFactories().entrySet()) {
 				kryo.addDefaultSerializer(factory.getKey(), createSerializer(factory));
 			}
-		} catch (Throwable ignored) {
-			// ignored
+		} catch (Throwable t) {
+			Log.warn("Unable to add default serializers for unmodifiable collections.", t);
 		}
 	}
 }
