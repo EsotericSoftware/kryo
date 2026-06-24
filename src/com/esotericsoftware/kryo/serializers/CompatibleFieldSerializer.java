@@ -29,8 +29,12 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
+import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
 /** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
  * added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported.
@@ -48,6 +52,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private static final int binarySearchThreshold = 32;
 
 	private final CompatibleFieldSerializerConfig config;
+	// Key used to store per-field generic type arguments in the graph context alongside the CachedField[].
+	private final Object typeArgsKey = new Object();
 
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new CompatibleFieldSerializerConfig());
@@ -62,6 +68,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		int pop = pushTypeVariables();
 
 		CachedField[] fields = cachedFields.fields;
+		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownFieldData;
 		ObjectMap context = kryo.getGraphContext();
 		if (!context.containsKey(this)) {
 			if (TRACE) trace("kryo", "Write fields for class: " + type.getName());
@@ -70,10 +77,11 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			for (int i = 0, n = fields.length; i < n; i++) {
 				if (TRACE) trace("kryo", "Write field name: " + fields[i].name + pos(output.position()));
 				output.writeString(fields[i].name);
+				// When readUnknownTagData is enabled, also write the field's generic type arguments so that
+				// removed fields with parameterized types (e.g. List<String>) can be read back correctly during skip.
+				if (readUnknownTagData) writeFieldTypeArgs(kryo, output, fields[i]);
 			}
 		}
-
-		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownFieldData;
 		Output fieldOutput;
 		OutputChunked outputChunked = null;
 		if (chunked)
@@ -121,6 +129,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		if (fields == null) fields = readFields(kryo, input);
 
 		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownFieldData;
+		GenericType[][] schemaTypeArgs = readUnknownTagData ? (GenericType[][])kryo.getGraphContext().get(typeArgsKey) : null;
 		Input fieldInput;
 		InputChunked inputChunked = null;
 		if (chunked)
@@ -149,6 +158,11 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				if (cachedField == null) {
 					// Read unknown data in case it is a reference.
 					if (TRACE) trace("kryo", "Read unknown data, type: " + className(valueClass) + pos(input.position()));
+					// Reconstruct the generics context from the schema so that serializers like
+					// CollectionSerializer use the same compact format that was chosen during write.
+					GenericType fieldGenericType = schemaTypeArgs != null && schemaTypeArgs[i] != null
+						? new GenericType(valueClass, schemaTypeArgs[i]) : null;
+					if (fieldGenericType != null) kryo.getGenerics().pushGenericType(fieldGenericType);
 					try {
 						kryo.readObject(fieldInput, valueClass);
 					} catch (KryoException ex) {
@@ -156,6 +170,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 							+ "#" + cachedField + ")";
 						if (!chunked) throw new KryoException(message, ex);
 						if (DEBUG) debug("kryo", message, ex);
+					} finally {
+						if (fieldGenericType != null) kryo.getGenerics().popGenericType();
 					}
 					if (chunked) inputChunked.nextChunk();
 					continue;
@@ -193,11 +209,14 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private CachedField[] readFields (Kryo kryo, Input input) {
 		if (TRACE) trace("kryo", "Read fields for class: " + type.getName());
 
+		boolean readUnknownTagData = config.readUnknownFieldData;
 		int length = input.validateArrayLength(input.readVarInt(true));
 		String[] names = new String[length];
+		GenericType[][] schemaTypeArgs = readUnknownTagData ? new GenericType[length][] : null;
 		for (int i = 0; i < length; i++) {
 			names[i] = input.readString();
 			if (TRACE) trace("kryo", "Read field name: " + names[i]);
+			if (readUnknownTagData) schemaTypeArgs[i] = readFieldTypeArgs(kryo, input);
 		}
 
 		CachedField[] fields = new CachedField[length];
@@ -239,7 +258,37 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		kryo.getGraphContext().put(this, fields);
+		if (schemaTypeArgs != null) kryo.getGraphContext().put(typeArgsKey, schemaTypeArgs);
 		return fields;
+	}
+
+	/** Writes the generic type arguments of a field's declared type to the schema. Stored alongside the field name so that
+	 * removed parameterized fields (e.g. {@code List<String>}) can be correctly read and discarded during deserialization. */
+	private void writeFieldTypeArgs (Kryo kryo, Output output, CachedField cachedField) {
+		Type genericType = cachedField.field.getGenericType();
+		if (genericType instanceof ParameterizedType) {
+			Type[] typeArgs = ((ParameterizedType)genericType).getActualTypeArguments();
+			output.writeVarInt(typeArgs.length, true);
+			for (Type typeArg : typeArgs)
+				kryo.writeClass(output, typeArg instanceof Class ? (Class)typeArg : null);
+		} else {
+			output.writeVarInt(0, true);
+		}
+	}
+
+	/** Reads generic type arguments from the schema (written by {@link #writeFieldTypeArgs}). Returns null when there are none or
+	 * when any argument could not be resolved (e.g. a wildcard or type variable written as null), so the caller does not push an
+	 * incomplete GenericType that would cause a NullPointerException inside {@link DefaultGenerics#nextGenericClass()}. */
+	private GenericType[] readFieldTypeArgs (Kryo kryo, Input input) {
+		int numArgs = input.readVarInt(true);
+		if (numArgs == 0) return null;
+		GenericType[] args = new GenericType[numArgs];
+		for (int i = 0; i < numArgs; i++) {
+			Registration reg = kryo.readClass(input);
+			if (reg == null) return null; // Wildcard or type variable — omit GenericType push entirely.
+			args[i] = new GenericType(reg.getType(), null);
+		}
+		return args;
 	}
 
 	public CompatibleFieldSerializerConfig getCompatibleFieldSerializerConfig () {

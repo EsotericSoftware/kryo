@@ -183,6 +183,13 @@ public interface Generics {
 			initialize(fromClass, toClass, context);
 		}
 
+		/** Creates a GenericType with an explicit type and type-argument list. Used to reconstruct generics context from stored
+		 * schema data when reading removed fields. */
+		public GenericType (Type type, GenericType[] arguments) {
+			this.type = type;
+			this.arguments = arguments;
+		}
+
 		private void initialize (Class fromClass, Class toClass, Type context) {
 			if (context instanceof ParameterizedType) {
 				// Type with a type parameter, eg ArrayList<T>.
