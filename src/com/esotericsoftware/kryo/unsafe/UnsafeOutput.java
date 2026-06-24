@@ -135,47 +135,47 @@ public class UnsafeOutput extends Output {
 	}
 
 	public void writeInts (int[] array, int offset, int count) throws KryoException {
-		writeBytes(array, intArrayBaseOffset, array.length << 2);
+		writeBytes(array, intArrayBaseOffset + ((long)offset << 2), (long)count << 2);
 	}
 
 	public void writeLongs (long[] array, int offset, int count) throws KryoException {
-		writeBytes(array, longArrayBaseOffset, array.length << 3);
+		writeBytes(array, longArrayBaseOffset + ((long)offset << 3), (long)count << 3);
 	}
 
 	public void writeFloats (float[] array, int offset, int count) throws KryoException {
-		writeBytes(array, floatArrayBaseOffset, array.length << 2);
+		writeBytes(array, floatArrayBaseOffset + ((long)offset << 2), (long)count << 2);
 	}
 
 	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
-		writeBytes(array, doubleArrayBaseOffset, array.length << 3);
+		writeBytes(array, doubleArrayBaseOffset + ((long)offset << 3), (long)count << 3);
 	}
 
 	public void writeShorts (short[] array, int offset, int count) throws KryoException {
-		writeBytes(array, shortArrayBaseOffset, array.length << 1);
+		writeBytes(array, shortArrayBaseOffset + ((long)offset << 1), (long)count << 1);
 	}
 
 	public void writeChars (char[] array, int offset, int count) throws KryoException {
-		writeBytes(array, charArrayBaseOffset, array.length << 1);
+		writeBytes(array, charArrayBaseOffset + ((long)offset << 1), (long)count << 1);
 	}
 
 	public void writeBooleans (boolean[] array, int offset, int count) throws KryoException {
-		writeBytes(array, booleanArrayBaseOffset, array.length);
+		writeBytes(array, booleanArrayBaseOffset + offset, count);
 	}
 
 	public void writeBytes (byte[] array, int offset, int count) throws KryoException {
-		writeBytes(array, byteArrayBaseOffset + offset, count);
+		writeBytes(array, byteArrayBaseOffset + offset, (long)count);
 	}
 
 	/** Write count bytes to the byte buffer, reading from the given offset inside the in-memory representation of the object. */
-	public void writeBytes (Object from, long offset, int count) throws KryoException {
-		int copyCount = Math.min(capacity - position, count);
+	public void writeBytes (Object from, long offset, long count) throws KryoException {
+		int copyCount = (int)Math.min(capacity - position, count);
 		while (true) {
 			unsafe.copyMemory(from, offset, buffer, byteArrayBaseOffset + position, copyCount);
 			position += copyCount;
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = Math.min(capacity, count);
+			copyCount = (int)Math.min(capacity, count);
 			require(copyCount);
 		}
 	}
