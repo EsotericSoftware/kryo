@@ -38,6 +38,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 /** Serializes objects using direct field assignment for fields that have a <code>@Tag(int)</code> annotation, providing backward
  * compatibility and optional forward compatibility. This means fields can be added or renamed and optionally removed without
@@ -174,8 +176,12 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		int pop = pushTypeVariables();
 
-		T object = create(kryo, input, type);
-		kryo.reference(object);
+		T object = null;
+		final boolean isRecord = type.isRecord();
+		if (!isRecord) {
+			object = create(kryo, input, type);
+			kryo.reference(object);
+		}
 
 		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownTagData;
 		Input fieldInput;
@@ -184,7 +190,9 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			fieldInput = inputChunked = new InputChunked(input, config.chunkSize);
 		else
 			fieldInput = input;
-		IntMap<CachedField> readTags = this.readTags;
+
+		CachedField[] fields = cachedFields.fields;
+		Object[] values = null;
 		for (int i = 0; i < fieldCount; i++) {
 			int tag = input.readVarInt(true);
 			CachedField cachedField = readTags.get(tag);
@@ -231,8 +239,17 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			}
 
 			if (TRACE) log("Read", cachedField, input.position());
-			cachedField.read(fieldInput, object);
+			if (object != null) {
+				cachedField.read(fieldInput, object);
+			} else {
+				if (values == null) values = new Object[fields.length];
+				values[cachedField.index] = cachedField.read(fieldInput);
+			}
 			if (chunked) inputChunked.nextChunk();
+		}
+
+		if (isRecord) {
+			object = invokeCanonicalConstructor(type, fields, values);
 		}
 
 		popTypeVariables(pop);
