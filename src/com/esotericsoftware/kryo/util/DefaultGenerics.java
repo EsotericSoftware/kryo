@@ -26,75 +26,19 @@ import java.lang.reflect.TypeVariable;
 
 /** Stores the generic type arguments and actual classes for type variables in the current location in the object graph.
  * @author Nathan Sweet */
-public final class DefaultGenerics implements Generics {
-	private final Kryo kryo;
-
-	private int genericTypesSize;
-	private GenericType[] genericTypes = new GenericType[16];
-	private int[] depths = new int[16];
+public final class DefaultGenerics extends BaseGenerics {
 
 	private int argumentsSize;
 	private Type[] arguments = new Type[16];
 
 	public DefaultGenerics (Kryo kryo) {
-		this.kryo = kryo;
+		super(kryo);
 	}
 
-	@Override
-	public GenericsHierarchy buildHierarchy (Class type) {
-		return new GenericsHierarchy(type);
-	}
-
-	@Override
-	public void pushGenericType (GenericType fieldType) {
-		// Ensure genericTypes and depths capacity.
-		int size = genericTypesSize;
-		if (size + 1 == genericTypes.length) {
-			GenericType[] genericTypesNew = new GenericType[genericTypes.length << 1];
-			System.arraycopy(genericTypes, 0, genericTypesNew, 0, size);
-			genericTypes = genericTypesNew;
-			int[] depthsNew = new int[depths.length << 1];
-			System.arraycopy(depths, 0, depthsNew, 0, size);
-			depths = depthsNew;
-		}
-
-		genericTypesSize = size + 1;
-		genericTypes[size] = fieldType;
-		depths[size] = kryo.getDepth();
-	}
-
-	@Override
-	public void popGenericType () {
-		int size = genericTypesSize;
-		if (size == 0) return;
-		size--;
-		if (depths[size] < kryo.getDepth()) return;
-		genericTypes[size] = null;
-		genericTypesSize = size;
-	}
-
-	@Override
-	public GenericType[] nextGenericTypes () {
-		int index = genericTypesSize;
-		if (index > 0) {
-			index--;
-			GenericType genericType = genericTypes[index];
-			if (genericType.arguments == null) return null;
-			// The depth must match to prevent the types being wrong if a serializer doesn't call nextGenericTypes.
-			if (depths[index] == kryo.getDepth() - 1) {
-				pushGenericType(genericType.arguments[genericType.arguments.length - 1]);
-				return genericType.arguments;
-			}
-		}
-		return null;
-	}
-
-	@Override
-	public Class nextGenericClass () {
-		GenericType[] arguments = nextGenericTypes();
-		if (arguments == null) return null;
-		return arguments[0].resolve(this);
-	}
+    @Override
+    public GenericsHierarchy buildHierarchy (Class type) {
+        return new GenericsHierarchy(type);
+    }
 
 	@Override
 	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args) {
@@ -152,18 +96,10 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
-	public int getGenericTypesSize () {
-		return genericTypesSize;
-	}
-
-	@Override
 	public void reset () {
-		// Fast path: after a balanced (successful) serialization both stacks are already empty.
-		if (genericTypesSize == 0 && argumentsSize == 0) return;
-		// Slow path: a serializer threw before popping. Discard the leaked entries so the next serialization starts clean.
-		for (int i = 0; i < genericTypesSize; i++)
-			genericTypes[i] = null;
-		genericTypesSize = 0;
+		super.reset();
+
+		if (argumentsSize == 0) return;
 		for (int i = 0; i < argumentsSize; i++)
 			arguments[i] = null;
 		argumentsSize = 0;
