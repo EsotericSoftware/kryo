@@ -474,7 +474,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	 * {@link #writeVarLong(long, boolean)} explicitly when writing values that should always use variable length encoding (eg
 	 * values that appear many times).
 	 * @return The number of bytes written.
-	 * @see #longLength(int, boolean) */
+	 * @see #longLength(long, boolean) */
 	public int writeLong (long value, boolean optimizePositive) throws KryoException {
 		if (varEncoding) return writeVarLong(value, optimizePositive);
 		writeLong(value);
@@ -594,7 +594,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	}
 
 	/** Returns the number of bytes that would be written with {@link #writeLong(long, boolean)}. */
-	public int longLength (int value, boolean optimizePositive) {
+	public int longLength (long value, boolean optimizePositive) {
 		if (varEncoding) return varLongLength(value, optimizePositive);
 		return 8;
 	}

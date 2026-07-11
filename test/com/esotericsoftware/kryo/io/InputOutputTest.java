@@ -52,6 +52,22 @@ class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
+	void testLongLength () {
+		// Values spanning each var-long byte boundary, including values outside int range and negatives.
+		long[] values = {0L, 127L, 128L, 1L << 28, 1L << 32, 1L << 40, 1L << 48, 1L << 56, Long.MAX_VALUE, -1L,
+			Long.MIN_VALUE};
+		for (boolean optimizePositive : new boolean[] {true, false}) {
+			for (long value : values) {
+				Output output = new Output(16);
+				int written = output.writeVarLong(value, optimizePositive);
+				assertEquals(written, output.longLength(value, optimizePositive),
+					"value=" + value + " optimizePositive=" + optimizePositive);
+				assertEquals(written, Output.varLongLength(value, optimizePositive));
+			}
+		}
+	}
+
+	@Test
 	void testOutputStream () throws IOException {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 		Output output = new Output(buffer, 2);
