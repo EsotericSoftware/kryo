@@ -96,21 +96,19 @@ public class ExternalizableSerializer extends Serializer {
 	}
 
 	/** Determines if this class requires the fall-back {@code JavaSerializer}. If the class does not require any specialized Java
-	 * serialization features then null will be returned.
+	 * serialization features then null will be returned. The answer is cached, so the reflective lookup it needs is done once per
+	 * type rather than once per object.
 	 * @param type the type we wish to externalize
 	 * @return a {@code JavaSerializer} if the type requires more than simple externalization. */
-	private JavaSerializer getJavaSerializerIfRequired (Class type) {
-		JavaSerializer javaSerializer = getCachedSerializer(type);
-		if (javaSerializer == null && isJavaSerializerRequired(type)) javaSerializer = new JavaSerializer();
-		return javaSerializer;
-	}
-
-	private JavaSerializer getCachedSerializer (Class type) {
+	JavaSerializer getJavaSerializerIfRequired (Class type) {
 		if (javaSerializerByType == null) {
 			javaSerializerByType = new ObjectMap();
-			return null;
+		} else if (javaSerializerByType.containsKey(type)) {
+			return javaSerializerByType.get(type);
 		}
-		return javaSerializerByType.get(type);
+		JavaSerializer javaSerializer = isJavaSerializerRequired(type) ? new JavaSerializer() : null;
+		javaSerializerByType.put(type, javaSerializer);
+		return javaSerializer;
 	}
 
 	private boolean isJavaSerializerRequired (Class type) {

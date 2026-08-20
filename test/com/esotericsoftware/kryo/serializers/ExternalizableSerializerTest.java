@@ -107,6 +107,16 @@ class ExternalizableSerializerTest extends KryoTestCase {
 		assertEquals(result.get(1), test2);
 	}
 
+	/** The fall-back serializer is looked up once per type and then reused. */
+	@Test
+	void testFallBackSerializerIsCachedPerType () {
+		ExternalizableSerializer serializer = new ExternalizableSerializer();
+		JavaSerializer first = serializer.getJavaSerializerIfRequired(ReadResolvable.class);
+		assertNotNull(first, "ReadResolvable declares readResolve, so it needs the fall-back.");
+		assertSame(first, serializer.getJavaSerializerIfRequired(ReadResolvable.class),
+			"The fall-back serializer should be cached, not looked up again.");
+	}
+
 	public static class TestClass implements Externalizable {
 		String stringField;
 		int intField;
