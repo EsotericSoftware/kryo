@@ -26,7 +26,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.KryoObjectInput;
 import com.esotericsoftware.kryo.io.KryoObjectOutput;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.util.ObjectMap;
 
 import java.io.Externalizable;
 import java.io.ObjectInput;
@@ -43,7 +42,11 @@ import java.lang.reflect.Method;
  *
  * @author Robert DiFalco <robert.difalco@gmail.com> */
 public class ExternalizableSerializer extends Serializer {
-	private ObjectMap<Class, JavaSerializer> javaSerializerByType;
+	private final ClassValue<JavaSerializer> javaSerializerByType = new ClassValue<JavaSerializer>() {
+		protected JavaSerializer computeValue (Class<?> type) {
+			return isJavaSerializerRequired(type) ? new JavaSerializer() : null;
+		}
+	};
 	private KryoObjectInput objectInput = null;
 	private KryoObjectOutput objectOutput = null;
 
@@ -101,14 +104,7 @@ public class ExternalizableSerializer extends Serializer {
 	 * @param type the type we wish to externalize
 	 * @return a {@code JavaSerializer} if the type requires more than simple externalization. */
 	JavaSerializer getJavaSerializerIfRequired (Class type) {
-		if (javaSerializerByType == null) {
-			javaSerializerByType = new ObjectMap();
-		} else if (javaSerializerByType.containsKey(type)) {
-			return javaSerializerByType.get(type);
-		}
-		JavaSerializer javaSerializer = isJavaSerializerRequired(type) ? new JavaSerializer() : null;
-		javaSerializerByType.put(type, javaSerializer);
-		return javaSerializer;
+		return javaSerializerByType.get(type);
 	}
 
 	private boolean isJavaSerializerRequired (Class type) {
