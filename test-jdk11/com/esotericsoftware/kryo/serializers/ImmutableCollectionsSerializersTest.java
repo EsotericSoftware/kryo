@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,10 +57,10 @@ class ImmutableCollectionsSerializersTest extends KryoTestCase {
 	@Test
 	void testImmutableList () {
 		roundTrip(2, List.of());
-		roundTrip(4, List.of(1));
-		roundTrip(5, List.of(1, 2));
-		roundTrip(6, List.of(1, 2, 3));
-		roundTrip(4, List.of(1, 2, 3).subList(0, 1));
+		roundTrip(5, List.of(1));
+		roundTrip(6, List.of(1, 2));
+		roundTrip(7, List.of(1, 2, 3));
+		roundTrip(5, List.of(1, 2, 3).subList(0, 1));
 	}
 
 	@Test
@@ -75,6 +76,18 @@ class ImmutableCollectionsSerializersTest extends KryoTestCase {
 		roundTrip(4, Set.of(1));
 		roundTrip(5, Set.of(1, 2));
 		roundTrip(6, Set.of(1, 2, 3));
+	}
+
+	@Test
+	void testImmutableListWithNullsFromStreamToList () {
+		final List<Integer> mixedNulls = Stream.of(null, 1, null).toList();
+		roundTrip(Integer.MIN_VALUE, mixedNulls);
+	}
+
+	@Test
+	void testImmutableListWithOnlyNullsFromStreamToList () {
+		final List<Integer> onlyNulls = Stream.of(null, 1, null).filter(x -> x == null).toList();
+		roundTrip(Integer.MIN_VALUE, onlyNulls);
 	}
 
 	public static class TestClass {
