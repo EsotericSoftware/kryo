@@ -53,7 +53,7 @@ public final class ImmutableCollectionsSerializers {
 	public static final class JdkImmutableListSerializer extends CollectionSerializer<List<Object>> {
 
 		private JdkImmutableListSerializer () {
-			setElementsCanBeNull(true);
+			setElementsCanBeNull(false);
 		}
 
 		@Override
@@ -72,13 +72,13 @@ public final class ImmutableCollectionsSerializers {
 			if (list == null) {
 				return null;
 			}
-			return list.stream().toList();
+			return List.of(list.toArray());
 		}
 
 		@Override
 		public List<Object> copy (Kryo kryo, List<Object> original) {
 			List<Object> copy = super.copy(kryo, original);
-			return copy.stream().toList();
+			return List.copyOf(copy);
 		}
 
 		static void addDefaultSerializers (Kryo kryo) {
