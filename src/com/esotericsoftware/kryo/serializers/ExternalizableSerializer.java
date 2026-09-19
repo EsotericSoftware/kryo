@@ -75,6 +75,7 @@ public class ExternalizableSerializer extends Serializer {
 	private Object readExternal (Kryo kryo, Input input, Class type) {
 		try {
 			Externalizable object = (Externalizable)kryo.newInstance(type);
+			kryo.reference(object);
 			object.readExternal(getObjectInput(kryo, input));
 			return object;
 		} catch (Exception ex) {
