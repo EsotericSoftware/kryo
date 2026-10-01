@@ -81,6 +81,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
    * [BeanSerializer](#beanserializer)
    * [CollectionSerializer](#collectionserializer)
    * [MapSerializer](#mapserializer)
+   * [Unmodifiable and synchronized collections](#unmodifiable-and-synchronized-collections)
    * [JavaSerializer and ExternalizableSerializer](#javaserializer-and-externalizableserializer)
 - [Logging](#logging)
 - [Thread safety](#thread-safety)
@@ -1185,6 +1186,25 @@ Setting | Description | Default value
 `valueClass` | Sets the concrete class to use for every value in the map. This removes the need to write the class ID for each value. | null
 `keySerializer` | Sets the serializer to use for every key in the map. If the value serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for each key's class will be used. | null
 `valueSerializer` | Sets the serializer to use for every value in the map. If the key serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for each value's class will be used. | null
+
+### Unmodifiable and synchronized collections
+
+Kryo provides serializers for the wrappers returned by `Collections.unmodifiableCollection`, `unmodifiableList`, `unmodifiableSet`, `unmodifiableMap`, `synchronizedList`, `synchronizedMap`, etc. The JDK offers no public API to get the wrapped collection, so these serializers read private JDK fields using `sun.misc.Unsafe`. Because they depend on JDK internals that may change or become inaccessible in future Java versions, they are not registered by default and must be enabled manually:
+
+```java
+Kryo kryo = new Kryo();
+// register the wrapper classes (when registration is required)
+UnmodifiableCollectionSerializers.registerSerializers(kryo);
+SynchronizedCollectionSerializers.registerSerializers(kryo);
+
+// or add them as default serializers (when registration is not required)
+UnmodifiableCollectionSerializers.addDefaultSerializers(kryo);
+SynchronizedCollectionSerializers.addDefaultSerializers(kryo);
+```
+
+If the JDK internals can't be accessed, a warning is logged and the serializers are not registered. Serializing these wrappers then falls back to the global default serializer and may fail.
+
+Note that serializers for immutable collections created with `List.of`, `Set.of`, and `Map.of` are already registered by default.
 
 ### JavaSerializer and ExternalizableSerializer
 
