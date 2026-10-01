@@ -27,7 +27,9 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer.BindCollection;
@@ -38,7 +40,10 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.util.Util;
+import com.esotericsoftware.minlog.Log;
+import com.esotericsoftware.minlog.Log.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -713,6 +718,81 @@ class FieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testBindSerializerFactory () {
+		CountingTaggedFieldSerializerFactory.created = 0;
+		kryo.register(BindSerializerFactoryFields.class);
+		kryo.register(TaggedValue.class);
+		kryo.register(ArrayList.class);
+		kryo.register(HashMap.class);
+
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(BindSerializerFactoryFields.class);
+		TaggedFieldSerializer valueSerializer = (TaggedFieldSerializer)serializer.getField("value").getSerializer();
+		assertTrue(valueSerializer.getTaggedFieldSerializerConfig().getReadUnknownTagData());
+		CollectionSerializer listSerializer = (CollectionSerializer)serializer.getField("list").getSerializer();
+		assertTrue(listSerializer.getElementSerializer() instanceof TaggedFieldSerializer);
+		MapSerializer mapSerializer = (MapSerializer)serializer.getField("map").getSerializer();
+		assertTrue(mapSerializer.getKeySerializer() instanceof TaggedFieldSerializer);
+		assertTrue(mapSerializer.getValueSerializer() instanceof TaggedFieldSerializer);
+		assertEquals(4, CountingTaggedFieldSerializerFactory.created);
+
+		BindSerializerFactoryFields object = new BindSerializerFactoryFields();
+		object.value = new TaggedValue(1);
+		object.list = new ArrayList<>();
+		object.list.add(new TaggedValue(2));
+		object.list.add(new TaggedValue(3));
+		object.map = new HashMap<>();
+		object.map.put(new TaggedValue(4), new TaggedValue(5));
+		roundTrip(25, object);
+	}
+
+	@Test
+	void testBindSerializerFactoryWithoutClass () {
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.register(BindSerializerFactoryWithoutClassFields.class));
+		assertTrue(ex.getMessage().contains("@Bind serializerFactory requires valueClass"), ex.getMessage());
+	}
+
+	@Test
+	void testBindCollectionSerializerFactoryWithoutElementClass () {
+		KryoException ex = assertThrows(KryoException.class,
+			() -> kryo.register(BindCollectionSerializerWithoutElementClassFields.class));
+		assertTrue(ex.getMessage().contains("@BindCollection elementSerializer and elementSerializerFactory require elementClass"),
+			ex.getMessage());
+	}
+
+	@Test
+	void testBindMapSerializerWithoutKeyClassLogsWarning () {
+		LoggerStub logger = new LoggerStub();
+		Log.setLogger(logger);
+		try {
+			kryo.register(BindMapSerializerWithoutKeyClassFields.class);
+		} finally {
+			Log.setLogger(new Logger());
+		}
+		assertEquals(1, logger.messages.size());
+		assertTrue(logger.messages.get(0).contains("@BindMap keySerializer and keySerializerFactory require keyClass"),
+			logger.messages.get(0));
+
+		// Copying and serializing an empty map still work without the key class
+		kryo.register(HashMap.class);
+		BindMapSerializerWithoutKeyClassFields object = new BindMapSerializerWithoutKeyClassFields();
+		object.map = new HashMap<>();
+		roundTrip(3, object);
+		object.map.put("a", "b");
+		assertEquals(object, kryo.copy(object));
+	}
+
+	@Test
+	void testBindTypeIndependentSerializerFactoryWithoutValueClass () {
+		kryo.register(BindTypeIndependentSerializerFactoryFields.class);
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(BindTypeIndependentSerializerFactoryFields.class);
+		assertTrue(serializer.getField("text").getSerializer() instanceof StringSerializer);
+
+		BindTypeIndependentSerializerFactoryFields object = new BindTypeIndependentSerializerFactoryFields();
+		object.text = "abc";
+		roundTrip(5, object);
+	}
+
+	@Test
 	void testDeep () {
 		kryo.register(Deep.class);
 		Deep root = new Deep();
@@ -1181,6 +1261,99 @@ class FieldSerializerTest extends KryoTestCase {
 			elementsCanBeNull = false) //
 		@Bind(serializer = CollectionSerializer.class) //
 		Collection collection;
+	}
+
+	public static class CountingTaggedFieldSerializerFactory extends TaggedFieldSerializerFactory {
+		static int created;
+
+		public CountingTaggedFieldSerializerFactory () {
+			getConfig().setReadUnknownTagData(true);
+		}
+
+		public TaggedFieldSerializer newSerializer (Kryo kryo, Class type) {
+			created++;
+			return super.newSerializer(kryo, type);
+		}
+	}
+
+	public static class StringSerializerFactory implements SerializerFactory<StringSerializer> {
+		public StringSerializer newSerializer (Kryo kryo, Class type) {
+			return new StringSerializer();
+		}
+
+		public boolean isSupported (Class type) {
+			return true;
+		}
+	}
+
+	public static class TaggedValue {
+		@Tag(1) int value;
+
+		public TaggedValue () {
+		}
+
+		public TaggedValue (int value) {
+			this.value = value;
+		}
+
+		public boolean equals (Object o) {
+			return o instanceof TaggedValue && ((TaggedValue)o).value == value;
+		}
+
+		public int hashCode () {
+			return value;
+		}
+	}
+
+	public static class BindSerializerFactoryFields {
+		@Bind(valueClass = TaggedValue.class, serializerFactory = CountingTaggedFieldSerializerFactory.class) TaggedValue value;
+
+		@BindCollection(elementClass = TaggedValue.class, elementSerializerFactory = CountingTaggedFieldSerializerFactory.class)
+		List<TaggedValue> list;
+
+		@BindMap(keyClass = TaggedValue.class, keySerializerFactory = CountingTaggedFieldSerializerFactory.class,
+			valueClass = TaggedValue.class, valueSerializerFactory = CountingTaggedFieldSerializerFactory.class)
+		Map<TaggedValue, TaggedValue> map;
+
+		public boolean equals (Object o) {
+			if (!(o instanceof BindSerializerFactoryFields)) return false;
+			BindSerializerFactoryFields other = (BindSerializerFactoryFields)o;
+			return Objects.equals(value, other.value) && Objects.equals(list, other.list) && Objects.equals(map, other.map);
+		}
+	}
+
+	public static class BindSerializerFactoryWithoutClassFields {
+		@Bind(serializerFactory = FieldSerializerFactory.class) TaggedValue value;
+	}
+
+	public static class BindCollectionSerializerWithoutElementClassFields {
+		@BindCollection(elementSerializerFactory = CountingTaggedFieldSerializerFactory.class) List<TaggedValue> list;
+	}
+
+	public static class BindMapSerializerWithoutKeyClassFields {
+		@BindMap(keySerializer = StringSerializer.class) Map<String, String> map;
+
+		public boolean equals (Object o) {
+			return o instanceof BindMapSerializerWithoutKeyClassFields
+				&& Objects.equals(map, ((BindMapSerializerWithoutKeyClassFields)o).map);
+		}
+	}
+
+	static class LoggerStub extends Logger {
+		final List<String> messages = new ArrayList<>();
+
+		public void log (int level, String category, String message, Throwable ex) {
+			if (level == Log.LEVEL_WARN) messages.add(message);
+		}
+	}
+
+	public static class BindTypeIndependentSerializerFactoryFields {
+		@Bind(serializerFactory = StringSerializerFactory.class) Object text;
+
+		public boolean equals (Object o) {
+			return o instanceof BindTypeIndependentSerializerFactoryFields
+				&& Objects.equals(text, ((BindTypeIndependentSerializerFactoryFields)o).text);
+		}
 	}
 
 	public static class WronglyAnnotatedCollectionFields {
