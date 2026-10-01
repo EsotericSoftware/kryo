@@ -1,7 +1,7 @@
 ![KryoNet](https://raw.github.com/wiki/EsotericSoftware/kryo/images/logo.jpg)
 
 [![Build Status](https://github.com/EsotericSoftware/kryo/actions/workflows/ci-workflow.yml/badge.svg)](https://github.com/EsotericSoftware/kryo/actions/workflows/ci-workflow.yml)
-[![Maven Central](https://maven-badges.sml.io/maven-central/com.esotericsoftware/kryo/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.esotericsoftware%22%20AND%20a%3Akryo)
+[![Maven Central](https://maven-badges.sml.io/maven-central/com.esotericsoftware/kryo/badge.svg)](https://central.sonatype.com/artifact/com.esotericsoftware/kryo)
 [![Join the chat at https://gitter.im/EsotericSoftware/kryo](https://badges.gitter.im/EsotericSoftware/kryo.svg)](https://gitter.im/EsotericSoftware/kryo)
 [![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/kryo.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:kryo)
 
@@ -116,7 +116,7 @@ Kryo publishes two kinds of artifacts/jars:
 * the default jar (with the usual library dependencies) which is meant for direct usage in applications (not libraries)
 * a dependency-free, "versioned" jar which should be used by other libraries. Different libraries shall be able to use different major versions of Kryo.
 
-Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](https://search.maven.org/#search|gav|1|g%3Acom.esotericsoftware%20a%3Akryo). The latest snapshots of Kryo, including snapshot builds of master, are in the [Maven Central snapshot repository](https://central.sonatype.com/repository/maven-snapshots/).
+Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](https://central.sonatype.com/artifact/com.esotericsoftware/kryo). The latest snapshots of Kryo, including snapshot builds of master, are in the [Maven Central snapshot repository](https://central.sonatype.com/repository/maven-snapshots/).
 
 ### With Maven
 
