@@ -104,6 +104,8 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
 
 ## Installation
 
+Kryo requires Java 8 or later.
+
 Kryo publishes two kinds of artifacts/jars:
 * the default jar (with the usual library dependencies) which is meant for direct usage in applications (not libraries)
 * a dependency-free, "versioned" jar which should be used by other libraries. Different libraries shall be able to use different major versions of Kryo.
