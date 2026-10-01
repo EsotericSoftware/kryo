@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025, Nathan Sweet
+/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -129,7 +129,7 @@ class CachedFields implements Comparator<CachedField> {
 
 		Optional[] optionals = field.getAnnotationsByType(Optional.class);
 		if (optionals.length > 0 && Arrays.stream(optionals).noneMatch(
-				optional -> serializer.kryo.getContext().containsKey(optional.value()))) {
+			optional -> serializer.kryo.getContext().containsKey(optional.value()))) {
 			return;
 		}
 
@@ -331,7 +331,8 @@ class CachedFields implements Comparator<CachedField> {
 			if (valueClass == Object.class) valueClass = null;
 			if (valueClass != null) cachedField.setValueClass(valueClass);
 
-			Serializer serializer = newSerializer(valueClass, annotation.serializer(), annotation.serializerFactory());
+			Serializer serializer = newSerializer(field, valueClass, annotation.serializer(), annotation.serializerFactory(), false,
+				"@Bind serializerFactory requires valueClass");
 			if (serializer != null) cachedField.setSerializer(serializer);
 
 			cachedField.setCanBeNull(annotation.canBeNull());
@@ -351,8 +352,9 @@ class CachedFields implements Comparator<CachedField> {
 
 			Class elementClass = annotation.elementClass();
 			if (elementClass == Object.class) elementClass = null;
-			Serializer elementSerializer = newSerializer(elementClass, annotation.elementSerializer(),
-				annotation.elementSerializerFactory());
+			Serializer elementSerializer = newSerializer(field, elementClass, annotation.elementSerializer(),
+				annotation.elementSerializerFactory(), true,
+				"@BindCollection elementSerializer and elementSerializerFactory require elementClass to deserialize elements");
 
 			CollectionSerializer serializer = new CollectionSerializer();
 			serializer.setElementsCanBeNull(annotation.elementsCanBeNull());
@@ -373,12 +375,14 @@ class CachedFields implements Comparator<CachedField> {
 
 			Class valueClass = annotation.valueClass();
 			if (valueClass == Object.class) valueClass = null;
-			Serializer valueSerializer = newSerializer(valueClass, annotation.valueSerializer(),
-				annotation.valueSerializerFactory());
+			Serializer valueSerializer = newSerializer(field, valueClass, annotation.valueSerializer(),
+				annotation.valueSerializerFactory(), true,
+				"@BindMap valueSerializer and valueSerializerFactory require valueClass to deserialize values");
 
 			Class keyClass = annotation.keyClass();
 			if (keyClass == Object.class) keyClass = null;
-			Serializer keySerializer = newSerializer(keyClass, annotation.keySerializer(), annotation.keySerializerFactory());
+			Serializer keySerializer = newSerializer(field, keyClass, annotation.keySerializer(), annotation.keySerializerFactory(),
+				true, "@BindMap keySerializer and keySerializerFactory require keyClass to deserialize keys");
 
 			MapSerializer serializer = new MapSerializer();
 			serializer.setKeysCanBeNull(annotation.keysCanBeNull());
@@ -391,11 +395,25 @@ class CachedFields implements Comparator<CachedField> {
 		}
 	}
 
-	private Serializer newSerializer (Class valueClass, Class serializerClass, Class factoryClass) {
+	/** @param warnIfClassMissing If true, a warning is logged when a serializer or factory is set without the value class.
+	 *           Otherwise the value class is only reported as missing if a custom factory fails to create the serializer.
+	 * @param missingClassMessage The message used when the value class is missing. */
+	private Serializer newSerializer (Field field, Class valueClass, Class serializerClass, Class factoryClass,
+		boolean warnIfClassMissing, String missingClassMessage) {
 		if (serializerClass == Serializer.class) serializerClass = null;
 		if (factoryClass == SerializerFactory.class) factoryClass = null;
-		if (factoryClass == null && serializerClass != null) factoryClass = ReflectionSerializerFactory.class;
-		if (factoryClass == null) return null;
-		return newFactory(factoryClass, serializerClass).newSerializer(serializer.kryo, valueClass);
+		if (factoryClass == null && serializerClass == null) return null;
+		String fieldName = field.getDeclaringClass().getName() + "." + field.getName();
+		if (warnIfClassMissing && valueClass == null && WARN) warn("kryo", missingClassMessage + ": " + fieldName);
+		boolean customFactory = factoryClass != null;
+		if (factoryClass == null) factoryClass = ReflectionSerializerFactory.class;
+		SerializerFactory factory = newFactory(factoryClass, serializerClass);
+		try {
+			return factory.newSerializer(serializer.kryo, valueClass);
+		} catch (RuntimeException ex) {
+			// Most factories need the class, give a hint if it was not set
+			if (!customFactory || valueClass != null) throw ex;
+			throw new KryoException(missingClassMessage + ": " + fieldName, ex);
+		}
 	}
 }

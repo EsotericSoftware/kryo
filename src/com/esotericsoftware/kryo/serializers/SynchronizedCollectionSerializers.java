@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025, Nathan Sweet
+/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -45,7 +45,7 @@ import java.util.function.Function;
 
 /** Serializer for synchronized Collections and Maps created via Collections. */
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class SynchronizedCollectionSerializers {
+public final class SynchronizedCollectionSerializers {
 
 	private static class Offset {
 		private static final long SOURCE_COLLECTION_FIELD_OFFSET;
@@ -56,14 +56,14 @@ public class SynchronizedCollectionSerializers {
 			try {
 				SOURCE_COLLECTION_FIELD_OFFSET = UnsafeUtil.objectFieldOffset(Class.forName(clsName).getDeclaredField("c"));
 			} catch (Exception e) {
-				Log.warn("Could not access source collection field in {}", clsName);
+				Log.warn("Could not access source collection field in " + clsName);
 				throw new KryoException(e);
 			}
 			clsName = "java.util.Collections$SynchronizedMap";
 			try {
 				SOURCE_MAP_FIELD_OFFSET = UnsafeUtil.objectFieldOffset(Class.forName(clsName).getDeclaredField("m"));
 			} catch (Exception e) {
-				Log.warn("Could not access source map field in {}", clsName);
+				Log.warn("Could not access source map field in " + clsName);
 				throw new KryoException(e);
 			}
 		}

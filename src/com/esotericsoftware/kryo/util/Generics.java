@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025, Nathan Sweet
+/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -36,7 +36,7 @@ public interface Generics {
 
 	/** Builds a {@link GenericsHierarchy} for the specified type. */
 	GenericsHierarchy buildHierarchy (Class type);
-	
+
 	/** Sets the type that is currently being serialized. Must be balanced by {@link #popGenericType()}. Between those calls, the
 	 * {@link GenericType#getTypeParameters() type parameters} are returned by {@link #nextGenericTypes()} and
 	 * {@link #nextGenericClass()}. */
@@ -92,7 +92,7 @@ public interface Generics {
 	 * parameters. */
 	class GenericsHierarchy {
 		static final GenericsHierarchy EMPTY = new GenericsHierarchy(0, 0, new int[0], new TypeVariable[0]);
-		
+
 		/* Total number of type parameters in the hierarchy. */
 		final int total;
 		/* Total number of type parameters at the root of the hierarchy. */

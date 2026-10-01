@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025, Nathan Sweet
+/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -112,7 +112,7 @@ public class Util {
 	}
 
 	/** Returns the array type for a given class */
-	public static Class getArrayType(Class type) {
+	public static Class getArrayType (Class type) {
 		if (type == String.class) return String[].class;
 		if (type == Integer.class) return Integer[].class;
 		if (type == Float.class) return Float[].class;

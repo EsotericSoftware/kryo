@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025, Nathan Sweet
+/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -38,6 +39,14 @@ import org.junit.jupiter.api.Test;
 class TaggedFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
+	}
+
+	@Test
+	void testDuplicateTags () {
+		KryoException ex = assertThrows(KryoException.class, () -> new TaggedFieldSerializer(kryo, DuplicateTags.class));
+		assertTrue(ex.getMessage().contains("Duplicate tag 5"), ex.getMessage());
+		assertTrue(ex.getMessage().contains("DuplicateTags.a"), ex.getMessage());
+		assertTrue(ex.getMessage().contains("DuplicateTags.b"), ex.getMessage());
 	}
 
 	@Test
@@ -299,5 +308,10 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 			} else if (!text.equals(other.text)) return false;
 			return true;
 		}
+	}
+
+	public static class DuplicateTags {
+		@Tag(5) int a;
+		@Tag(5) int b;
 	}
 }

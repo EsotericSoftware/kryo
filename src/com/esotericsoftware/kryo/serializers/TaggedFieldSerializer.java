@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025, Nathan Sweet
+/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -93,7 +93,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			Field field = cachedField.field;
 			int tag = field.getAnnotation(Tag.class).value();
 			if (readTags.containsKey(tag))
-				throw new KryoException(String.format("Duplicate tag %d on fields: %s and %s", tag, field, writeTags.get(tag)));
+				throw new KryoException(String.format("Duplicate tag %d on fields: %s and %s", tag, field, readTags.get(tag).field));
 			readTags.put(tag, cachedField);
 			if (field.getAnnotation(Deprecated.class) == null) writeTags.add(cachedField);
 			cachedField.tag = tag;

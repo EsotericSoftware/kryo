@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025, Nathan Sweet
+/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -282,24 +282,24 @@ public class ByteBufferOutput extends Output {
 		position += count;
 		ByteBuffer byteBuffer = this.byteBuffer;
 		switch (count) {
-			case 1:
-				byteBuffer.put((byte)bytes);
-				break;
-			case 2:
-				byteBuffer.put((byte)(bytes >> 8));
-				byteBuffer.put((byte)bytes);
-				break;
-			case 3:
-				byteBuffer.put((byte)(bytes >> 16));
-				byteBuffer.put((byte)(bytes >> 8));
-				byteBuffer.put((byte)bytes);
-				break;
-			case 4:
-				byteBuffer.put((byte)(bytes >> 24));
-				byteBuffer.put((byte)(bytes >> 16));
-				byteBuffer.put((byte)(bytes >> 8));
-				byteBuffer.put((byte)bytes);
-				break;
+		case 1:
+			byteBuffer.put((byte)bytes);
+			break;
+		case 2:
+			byteBuffer.put((byte)(bytes >> 8));
+			byteBuffer.put((byte)bytes);
+			break;
+		case 3:
+			byteBuffer.put((byte)(bytes >> 16));
+			byteBuffer.put((byte)(bytes >> 8));
+			byteBuffer.put((byte)bytes);
+			break;
+		case 4:
+			byteBuffer.put((byte)(bytes >> 24));
+			byteBuffer.put((byte)(bytes >> 16));
+			byteBuffer.put((byte)(bytes >> 8));
+			byteBuffer.put((byte)bytes);
+			break;
 		}
 	}
 

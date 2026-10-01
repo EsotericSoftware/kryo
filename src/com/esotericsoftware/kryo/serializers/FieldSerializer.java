@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025, Nathan Sweet
+/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -110,7 +110,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 				fields[i].write(output, object);
 			} catch (KryoException e) {
 				throw e;
-			} catch (OutOfMemoryError | Exception e) {
+			} catch (Exception e) {
 				throw new KryoException("Error writing " + fields[i] + " at position " + output.position(), e);
 			}
 		}
@@ -131,7 +131,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 				fields[i].read(input, object);
 			} catch (KryoException e) {
 				throw e;
-			} catch (OutOfMemoryError | Exception e) {
+			} catch (Exception e) {
 				throw new KryoException("Error reading " + fields[i] + " at position " + input.position(), e);
 			}
 		}
@@ -362,8 +362,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
 	 * a value set for the specified key. This can be useful when a field must be serialized for one purpose, but not for another.
 	 * Eg, a class for a networked application could have a field that should not be serialized and sent to clients, but should be
-	 * serialized when stored on the server.
-	 * If a field has multiple of this annotation, then the field is serialized if at least one of the keys is present in the context.
+	 * serialized when stored on the server. If a field has multiple of this annotation, then the field is serialized if at least
+	 * one of the keys is present in the context.
 	 * @author Nathan Sweet */
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.FIELD)

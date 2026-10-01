@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025, Nathan Sweet
+/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -273,45 +273,45 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		}
 	}
 
-	/** Writes count bytes from long, the last byte written is the lowest byte from the long.
-	 *  Note the number of bytes is not written. */
+	/** Writes count bytes from long, the last byte written is the lowest byte from the long. Note the number of bytes is not
+	 * written. */
 	public void writeInt (int bytes, int count) {
 		if (count < 0 || count > 4) throw new IllegalArgumentException("count must be >= 0 and <= 4: " + count);
 		require(count);
 		int p = position;
 		position = p + count;
 		switch (count) {
-			case 1:
-				buffer[p] = (byte)bytes;
-				break;
-			case 2:
-				buffer[p] = (byte)(bytes >> 8);
-				buffer[p+1] = (byte)bytes;
-				break;
-			case 3:
-				buffer[p] = (byte)(bytes >> 16);
-				buffer[p+1] = (byte)(bytes >> 8);
-				buffer[p+2] = (byte)bytes;
-				break;
-			case 4:
-				buffer[p] = (byte)(bytes >> 24);
-				buffer[p+1] = (byte)(bytes >> 16);
-				buffer[p+2] = (byte)(bytes >> 8);
-				buffer[p+3] = (byte)bytes;
-				break;
+		case 1:
+			buffer[p] = (byte)bytes;
+			break;
+		case 2:
+			buffer[p] = (byte)(bytes >> 8);
+			buffer[p + 1] = (byte)bytes;
+			break;
+		case 3:
+			buffer[p] = (byte)(bytes >> 16);
+			buffer[p + 1] = (byte)(bytes >> 8);
+			buffer[p + 2] = (byte)bytes;
+			break;
+		case 4:
+			buffer[p] = (byte)(bytes >> 24);
+			buffer[p + 1] = (byte)(bytes >> 16);
+			buffer[p + 2] = (byte)(bytes >> 8);
+			buffer[p + 3] = (byte)bytes;
+			break;
 		}
 	}
 
-	/** Writes count bytes from long, the last byte written is the lowest byte from the long.
-	 *  Note the number of bytes is not written. */
+	/** Writes count bytes from long, the last byte written is the lowest byte from the long. Note the number of bytes is not
+	 * written. */
 	public void writeLong (long bytes, int count) {
 		if (count < 0 || count > 8) throw new IllegalArgumentException("count must be >= 0 and <= 8: " + count);
 		if (count <= 4) {
-			writeInt((int) bytes, count);
+			writeInt((int)bytes, count);
 		} else {
 			require(count);
-			writeInt((int) (bytes >> 32), count - 4);
-			writeInt((int) bytes, 4);
+			writeInt((int)(bytes >> 32), count - 4);
+			writeInt((int)bytes, 4);
 		}
 	}
 

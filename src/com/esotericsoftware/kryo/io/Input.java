@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025, Nathan Sweet
+/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -399,20 +399,20 @@ public class Input extends InputStream implements Poolable {
 		int p = position;
 		position = p + count;
 		switch (count) {
-			case 1:
-				return buffer[p];
-			case 2:
-				return buffer[p] << 8
-					| buffer[p+1] & 0xFF;
-			case 3:
-				return buffer[p] << 16
-					| (buffer[p+1] & 0xFF) << 8
-					| buffer[p+2] & 0xFF;
-			case 4:
-				return buffer[p] << 24
-					| (buffer[p+1] & 0xFF) << 16
-					| (buffer[p+2] & 0xFF) << 8
-					| buffer[p+3] & 0xFF;
+		case 1:
+			return buffer[p];
+		case 2:
+			return buffer[p] << 8
+				| buffer[p + 1] & 0xFF;
+		case 3:
+			return buffer[p] << 16
+				| (buffer[p + 1] & 0xFF) << 8
+				| buffer[p + 2] & 0xFF;
+		case 4:
+			return buffer[p] << 24
+				| (buffer[p + 1] & 0xFF) << 16
+				| (buffer[p + 2] & 0xFF) << 8
+				| buffer[p + 3] & 0xFF;
 		}
 		throw new IllegalStateException(); // impossible
 	}
@@ -424,8 +424,8 @@ public class Input extends InputStream implements Poolable {
 			return readInt(count);
 		} else {
 			require(count);
-			long highBytes = ((long) readInt(count - 4)) << 32;
-			long lowBytes = ((long) readInt(4)) & (1L << 32) - 1;
+			long highBytes = ((long)readInt(count - 4)) << 32;
+			long lowBytes = ((long)readInt(4)) & (1L << 32) - 1;
 			return highBytes | lowBytes;
 		}
 	}
@@ -967,9 +967,9 @@ public class Input extends InputStream implements Poolable {
 	}
 
 	/** Validates a declared array length read from the input before it is used to allocate. Throws if {@code length} exceeds
-	 * {@link #setMaxArraySize(int) maxArraySize}, if the total size {@code length * bytesPerElement} would overflow an int, or, for
-	 * a buffer-backed input (no {@link InputStream}), if it exceeds the bytes remaining. A buffer-backed input can never hold more
-	 * elements than it has bytes remaining, since every element occupies at least {@code bytesPerElement} bytes, so a larger
+	 * {@link #setMaxArraySize(int) maxArraySize}, if the total size {@code length * bytesPerElement} would overflow an int, or,
+	 * for a buffer-backed input (no {@link InputStream}), if it exceeds the bytes remaining. A buffer-backed input can never hold
+	 * more elements than it has bytes remaining, since every element occupies at least {@code bytesPerElement} bytes, so a larger
 	 * declared length is provably malformed and is rejected before allocating. Stream-backed input cannot be checked this way and
 	 * is bounded only by {@code maxArraySize} and the overflow check.
 	 * @param bytesPerElement the minimum number of bytes each element occupies in the input. */

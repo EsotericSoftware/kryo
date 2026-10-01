@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025, Nathan Sweet
+/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
@@ -105,6 +105,69 @@ class ExternalizableSerializerTest extends KryoTestCase {
 		// ensure read resolve happened!
 		assertEquals(result.get(0), test1.value);
 		assertEquals(result.get(1), test2);
+	}
+
+	/** The fall-back serializer is looked up once per type and then reused. */
+	@Test
+	void testFallBackSerializerIsCachedPerType () {
+		ExternalizableSerializer serializer = new ExternalizableSerializer();
+		JavaSerializer first = serializer.getJavaSerializerIfRequired(ReadResolvable.class);
+		assertNotNull(first, "ReadResolvable declares readResolve, so it needs the fall-back.");
+		assertSame(first, serializer.getJavaSerializerIfRequired(ReadResolvable.class),
+			"The fall-back serializer should be cached, not looked up again.");
+	}
+
+	@Test
+	void testSelfReference () {
+		ExternalizableNode node = new ExternalizableNode();
+		node.next = node;
+		ExternalizableNode result = roundTripNode(node);
+		assertNotSame(node, result);
+		assertSame(result, result.next);
+	}
+
+	@Test
+	void testMutualReferences () {
+		ExternalizableNode first = new ExternalizableNode();
+		ExternalizableNode second = new ExternalizableNode();
+		first.next = second;
+		second.next = first;
+		ExternalizableNode result = roundTripNode(first);
+		assertNotSame(result, result.next);
+		assertSame(result, result.next.next);
+	}
+
+	@Test
+	void testSharedReference () {
+		ExternalizableNode node = new ExternalizableNode();
+		node.next = new ExternalizableNode();
+		node.other = node.next;
+		ExternalizableNode result = roundTripNode(node);
+		assertNotNull(result.next);
+		assertSame(result.next, result.other);
+	}
+
+	private ExternalizableNode roundTripNode (ExternalizableNode node) {
+		kryo.setReferences(true);
+		kryo.register(ExternalizableNode.class, new ExternalizableSerializer());
+		Output output = new Output(1024);
+		kryo.writeObject(output, node);
+		return kryo.readObject(new Input(output.toBytes()), ExternalizableNode.class);
+	}
+
+	public static class ExternalizableNode implements Externalizable {
+		ExternalizableNode next;
+		ExternalizableNode other;
+
+		public void writeExternal (ObjectOutput out) throws IOException {
+			out.writeObject(next);
+			out.writeObject(other);
+		}
+
+		public void readExternal (ObjectInput in) throws IOException, ClassNotFoundException {
+			next = (ExternalizableNode)in.readObject();
+			other = (ExternalizableNode)in.readObject();
+		}
 	}
 
 	public static class TestClass implements Externalizable {
