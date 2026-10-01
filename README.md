@@ -102,6 +102,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
 
 ## Recent releases
 
+* [5.7.0](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.7.0) - brings safer deserialization of corrupt data, serializers for unmodifiable and synchronized collections, and bug fixes.
 * [4.0.3](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-4.0.3) - brings bug fixes and performance improvements for chunked encoding.
 * [5.6.2](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.6.2) - recompiles 5.6.1 to be compatible with Java 8 again
 * [5.6.1](https://github.com/EsotericSoftware/kryo/releases/tag/kryo-parent-5.6.1) - brings a bug fix for the Maven coordinates of the versioned artifact
@@ -138,7 +139,7 @@ To use the latest Kryo release in your application, use this dependency entry in
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.6.2</version>
+   <version>5.7.0</version>
 </dependency>
 ```
 
@@ -148,7 +149,7 @@ To use the latest Kryo release in a library you want to publish, use this depend
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.6.2</version>
+   <version>5.7.0</version>
 </dependency>
 ```
 
@@ -165,13 +166,13 @@ To use the latest Kryo snapshot, use:
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.6.3-SNAPSHOT</version>
+   <version>5.7.1-SNAPSHOT</version>
 </dependency>
 <!-- for usage in a library that should be published: -->
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
    <artifactId>kryo5</artifactId>
-   <version>5.6.3-SNAPSHOT</version>
+   <version>5.7.1-SNAPSHOT</version>
 </dependency>
 ```
 
