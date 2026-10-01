@@ -241,7 +241,7 @@ The zero argument Input constructor creates an uninitialized Input. Input `setBu
 
 When reading an array, string, collection, or map, Kryo first reads a declared size and uses it to allocate before reading any elements. A corrupt or malicious message can declare a size of billions, triggering a large allocation from only a few bytes.
 
-For an Input backed by a byte array (no InputStream), this is guarded automatically: the declared size cannot exceed the bytes remaining, since every element occupies at least one byte, so an impossible size is rejected with a `KryoException` before allocating. No configuration is needed and valid input is never affected.
+For an Input backed by a byte array (no InputStream), this is guarded automatically: the declared size cannot exceed the bytes remaining, since every element occupies at least one byte. An impossible array or string size is rejected with a `KryoBufferUnderflowException` before allocating. For collections and maps, the declared size is only used as an initial capacity, so it is capped at the bytes remaining instead. No configuration is needed and valid input is never affected.
 
 An Input reading from an InputStream cannot be checked this way, because the buffered window is not the total size. For that case, `setMaxArraySize` bounds the declared size:
 
@@ -303,15 +303,15 @@ output.endChunk();
 output.close();
 ```
 
-To read the chunked data, InputChunked is used. It extends Input, so has all the convenient methods to read data. When reading, InputChunked will appear to hit the end of the data when it reaches the end of a set of chunks. The `nextChunks` method advances to the next set of chunks, even if not all the data has been read from the current set of chunks.
+To read the chunked data, InputChunked is used. It extends Input, so has all the convenient methods to read data. When reading, InputChunked will appear to hit the end of the data when it reaches the end of a set of chunks. The `nextChunk` method advances to the next set of chunks, even if not all the data has been read from the current set of chunks.
 
 ```java
-InputStream outputStream = new FileInputStream("file.bin");
+InputStream inputStream = new FileInputStream("file.bin");
 InputChunked input = new InputChunked(inputStream, 1024);
 // Read data from first set of chunks...
-input.nextChunks();
+input.nextChunk();
 // Read data from second set of chunks...
-input.nextChunks();
+input.nextChunk();
 // Read data from third set of chunks...
 input.close();
 ```
@@ -409,7 +409,7 @@ Kryo `getOriginalToCopyMap` can be used after an object graph is copied to obtai
 
 By default references are not enabled. This means if an object appears in an object graph multiple times, it will be written multiple times and will be deserialized as multiple, different objects. When references are disabled, circular references will cause serialization to fail. References are enabled or disabled with Kryo `setReferences` for serialization and `setCopyReferences` for copying.
 
-When references are enabled, a varint is written before each object the first time it appears in the object graph. For subsequent appearances of that class within the same object graph, only a varint is written. After deserialization the object references are restored, including any circular references. The serializers in use must [support references](#serializer-references) by calling Kryo `reference` in Serializer `read`.
+When references are enabled, a varint is written before each object the first time it appears in the object graph. For subsequent appearances of that object within the same object graph, only a varint is written. After deserialization the object references are restored, including any circular references. The serializers in use must [support references](#serializer-references) by calling Kryo `reference` in Serializer `read`.
 
 Enabling references impacts performance because every object that is read or written needs to be tracked.
 
@@ -420,7 +420,7 @@ Enabling references impacts performance because every object that is read or wri
 Under the covers, a ReferenceResolver handles tracking objects that have been read or written and provides int reference IDs. Multiple implementations are provided:
 
 1. MapReferenceResolver is used by default if a reference resolver is not specified. It uses Kryo's [IdentityObjectIntMap](https://github.com/EsotericSoftware/kryo/blob/master/src/com/esotericsoftware/kryo/util/IdentityObjectIntMap.java) to track written objects. This kind of map is fast and minimizes allocation.
-2. HashMapReferenceResolver uses a HashMap to track written objects. This kind of map allocates for put but may provide better performance for object graphs with a very high number of objects.
+2. HashMapReferenceResolver uses an IdentityHashMap to track written objects. This kind of map allocates for put but may provide better performance for object graphs with a very high number of objects.
 3. ListReferenceResolver uses an ArrayList to track written objects. For object graphs with relatively few objects, this can be faster than using a map (~15% faster in some tests). This should not be used for graphs with many objects because it has a linear look up to find objects that have already been written.
 
 ReferenceResolver `useReferences(Class)` can be overridden. It returns a boolean to decide if references are supported for a class. If a class doesn't support references, the varint reference ID is not written before objects of that type. If a class does not need references and objects of that type appear in the object graph many times, the serialized size can be greatly reduced by disabling references for that class. The default reference resolver returns false for all primitive wrappers and enums. It is common to also return false for String and other classes, depending on the object graphs being serialized.
@@ -433,7 +433,7 @@ public boolean useReferences (Class type) {
 
 #### Reference limits
 
-The reference resolver determines the maximum number of references in a single object graph. Java array indices are limited to `Integer.MAX_VALUE`, so reference resolvers that use data structures based on arrays may result in a `java.lang.NegativeArraySizeException` when serializing more than ~2 billion objects. Kryo uses int class IDs, so the maximum number of references in a single object graph is limited to the full range of positive and negative numbers in an int (~4 billion).
+The reference resolver determines the maximum number of references in a single object graph. Java array indices are limited to `Integer.MAX_VALUE`, so reference resolvers that use data structures based on arrays may result in a `java.lang.NegativeArraySizeException` when serializing more than ~2 billion objects. Kryo uses int reference IDs, so the maximum number of references in a single object graph is limited to the full range of positive and negative numbers in an int (~4 billion).
 
 ### Context
 
@@ -470,7 +470,7 @@ kryo.register(AnotherClass.class, 10);
 kryo.register(YetAnotherClass.class, 11);
 ```
 
-Class IDs -1 and -2 are reserved. Class IDs 0-8 are used by default for primitive types and String, though these IDs can be repurposed. The IDs are written as positive optimized varints, so are most efficient when they are small, positive integers. Negative IDs are not serialized efficiently.
+Class IDs -1 and -2 are reserved. Class IDs 0-8 are used by default for primitive types and String, though these IDs can be repurposed. The IDs are written as positive optimized varints, so are most efficient when they are small, positive integers. Negative IDs are not allowed.
 
 #### ClassResolver
 
@@ -557,7 +557,8 @@ kryo.setDefaultSerializer(defaultFactory);
 
 FieldSerializerFactory someClassFactory = new FieldSerializerFactory();
 someClassFactory.getConfig().setFieldsCanBeNull(false);
-kryo.register(SomeClass.class, someClassFactory);
+kryo.addDefaultSerializer(SomeClass.class, someClassFactory);
+kryo.register(SomeClass.class);
 ```
 
 The serializer factory has an `isSupported(Class)` method which allows it to decline to handle a class, even if it otherwise matches the class. This allows a factory to check for multiple interfaces or implement other logic.
@@ -600,8 +601,8 @@ kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new SerializingInst
 Alternatively, some generic serializers provide methods that can be overridden to customize object creation for a specific type, instead of calling Kryo `newInstance`.
 
 ```java
-kryo.register(SomeClass.class, new FieldSerializer(kryo, SomeClass.class) {
-   protected T create (Kryo kryo, Input input, Class<? extends T> type) {
+kryo.register(SomeClass.class, new FieldSerializer<SomeClass>(kryo, SomeClass.class) {
+   protected SomeClass create (Kryo kryo, Input input, Class<? extends SomeClass> type) {
       return new SomeClass("some constructor arguments", 1234);
    }
 });
@@ -1044,7 +1045,7 @@ Setting | Description | Default value
 --- | --- | ---
 `fieldsCanBeNull` | When false it is assumed that no field values are null, which can save 0-1 byte per field. | true
 `setFieldsAsAccessible` | When true, all non-transient fields (including private fields) will be serialized and `setAccessible` if necessary. If false, only fields in the public API will be serialized. | true
-`ignoreSyntheticFields` | If true, synthetic fields (generated by the compiler for scoping) are serialized. | false
+`ignoreSyntheticFields` | If true, synthetic fields (generated by the compiler for scoping) are not serialized. | true
 `fixedFieldTypes` | If true, it is assumed every field value's concrete type matches the field's type. This removes the need to write the class ID for field values. | false
 `copyTransient` | If true, all transient fields will be copied. | true
 `serializeTransient` | If true, transient fields will be serialized. | false
@@ -1064,16 +1065,16 @@ CachedField nameField = fieldSerializer.getField("name");
 nameField.setCanBeNull(false);
 
 CachedField someClassField = fieldSerializer.getField("someClass");
-someClassField.setClass(SomeClass.class, new SomeClassSerializer());
+someClassField.setValueClass(SomeClass.class, new SomeClassSerializer());
 ```
 
 Setting | Description | Default value
 --- | --- | ---
 `canBeNull` | When false it is assumed the field value is never null, which can save 0-1 byte. | true
-`valueClass` | Sets the concrete class and serializer to use for the field value. This removes the need to write the class ID for the value. If the field value's class is a primitive, primitive wrapper, or final, this setting defaults to the field's class. | null
+`valueClass` | Sets the concrete class and serializer to use for the field value. This removes the need to write the class ID for the value. If the field value's class is a primitive, primitive wrapper, or final, or if `fixedFieldTypes` is true, this setting defaults to the field's class. | null
 `serializer` | Sets the serializer to use for the field value. If the serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for the field value's class will be used. | null
 `variableLengthEncoding` | If true, variable length values are used. This only applies to int or long fields. | true
-`optimizePositive` | If true, positive values are optimized for variable length values. This only applies to int or long fields when variable length encoding is used. | true
+`optimizePositive` | If true, positive values are optimized for variable length values. This only applies to int or long fields when variable length encoding is used. | false
 
 #### FieldSerializer annotations
 
@@ -1085,7 +1086,7 @@ Annotation | Description
 `@BindCollection` | Sets the CollectionSerializer settings for Collection fields.
 `@BindMap` | Sets the MapSerializer settings for Map fields.
 `@NotNull` | Marks a field as never being null.
-`@Optional` | Ignores a field unless the [Kryo context](#context) has a value for the specified key. Can be repeated, in which case the field is serialized if any of the keys is present.
+`@Optional` | Ignores a field unless the [Kryo context](#context) has a value for the specified key. The context is checked when the serializer is created, so the key must be set before the class is registered or first serialized. Can be repeated, in which case the field is serialized if any of the keys is present.
 
 ```java
 public class SomeClass {
@@ -1212,8 +1213,8 @@ Setting | Description | Default value
 `valuesCanBeNull` | When false it is assumed that no values in the map are null, which can save 0-1 byte per entry. | true
 `keyClass` | Sets the concrete class to use for every key in the map. This removes the need to write the class ID for each key. | null
 `valueClass` | Sets the concrete class to use for every value in the map. This removes the need to write the class ID for each value. | null
-`keySerializer` | Sets the serializer to use for every key in the map. If the value serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for each key's class will be used. | null
-`valueSerializer` | Sets the serializer to use for every value in the map. If the key serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for each value's class will be used. | null
+`keySerializer` | Sets the serializer to use for every key in the map. If the key serializer is set, some serializers required the key class to also be set. If null, the serializer registered with Kryo for each key's class will be used. | null
+`valueSerializer` | Sets the serializer to use for every value in the map. If the value serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for each value's class will be used. | null
 
 ### Unmodifiable and synchronized collections
 
@@ -1270,7 +1271,7 @@ Log.DEBUG();
 Log.TRACE();
 ```
 
-Kryo does no logging at `INFO` (the default) and above levels. `DEBUG` is convenient to use during development. `TRACE` is good to use when debugging a specific problem, but generally outputs too much information to leave on.
+Kryo does no logging at `INFO` (the default) level. `WARN` is only used for a few exceptional cases, such as unregistered classes when `setWarnUnregisteredClasses` is enabled, or when serializers that rely on JDK internals cannot access them. `DEBUG` is convenient to use during development. `TRACE` is good to use when debugging a specific problem, but generally outputs too much information to leave on.
 
 MinLog supports a fixed logging level, which causes the Java compiler to remove logging statements below that level at compile time. Kryo must be compiled with a fixed logging level MinLog JAR.
 
