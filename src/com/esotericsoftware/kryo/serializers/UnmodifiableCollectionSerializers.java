@@ -44,7 +44,7 @@ import java.util.function.Function;
 
 /** Serializer for unmodifiable Collections and Maps created via Collections. */
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class UnmodifiableCollectionSerializers {
+public final class UnmodifiableCollectionSerializers {
 
 	private static class Offset {
 		private static final long SOURCE_COLLECTION_FIELD_OFFSET;

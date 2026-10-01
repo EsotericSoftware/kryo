@@ -45,7 +45,7 @@ import java.util.function.Function;
 
 /** Serializer for synchronized Collections and Maps created via Collections. */
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class SynchronizedCollectionSerializers {
+public final class SynchronizedCollectionSerializers {
 
 	private static class Offset {
 		private static final long SOURCE_COLLECTION_FIELD_OFFSET;
