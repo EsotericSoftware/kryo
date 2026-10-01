@@ -289,7 +289,17 @@ writeLong(long) | Writes an 8 byte long.
 writeVarLong(long, boolean) | Writes an 1-9 byte long.
 writeLong(long, boolean) | Writes either an 8 or 1-9 byte long (the buffer decides).
 
-To disable variable length encoding for all values, the `writeVarInt`, `writeVarLong`, `readVarInt`, and `readVarLong` methods would need to be overridden.
+The buffer's decision is controlled by Output and Input `setVariableLengthEncoding`, which is true by default. When false, the methods where the buffer decides, such as `writeInt(int, boolean)` and `writeLongs(long[], int, int, boolean)`, write fixed size values. This affects, for example, `Integer` values and `int[]` and `long[]` arrays. The same setting must be used for the Output and the Input, otherwise the data cannot be read.
+
+```java
+Output output = new Output(1024, -1);
+output.setVariableLengthEncoding(false);
+
+Input input = new Input(bytes);
+input.setVariableLengthEncoding(false);
+```
+
+Values that are always written with `writeVarInt` or `writeVarLong`, such as lengths and class IDs, are not affected. For fields serialized by FieldSerializer, variable length encoding is configured by FieldSerializer's `variableLengthEncoding` [setting](#fieldserializer-settings) instead. To disable variable length encoding for all values, the `writeVarInt`, `writeVarLong`, `readVarInt`, and `readVarLong` methods would need to be overridden.
 
 ### Chunked encoding
 
