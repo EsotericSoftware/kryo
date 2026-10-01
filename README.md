@@ -1135,6 +1135,28 @@ public class SomeClass {
 }
 ```
 
+The serializer set with `@Bind` `serializer`, `@BindCollection` `elementSerializer`, or `@BindMap` `keySerializer` and `valueSerializer` is created by a [serializer factory](#serializer-factories). By default, a ReflectionSerializerFactory creates an instance of the serializer class. A different factory can be set with `serializerFactory`, `elementSerializerFactory`, `keySerializerFactory`, or `valueSerializerFactory`, for example to configure the serializer:
+
+```java
+public class LenientTaggedFieldSerializerFactory extends TaggedFieldSerializerFactory {
+   public LenientTaggedFieldSerializerFactory () {
+      getConfig().setReadUnknownTagData(true);
+   }
+}
+
+public class SomeClass {
+   @Bind(valueClass = Settings.class, serializerFactory = LenientTaggedFieldSerializerFactory.class)
+   Settings settings;
+
+   @BindCollection(elementClass = Item.class, elementSerializerFactory = LenientTaggedFieldSerializerFactory.class)
+   List<Item> items;
+}
+```
+
+The factory must have a zero argument constructor, or a constructor that takes the serializer class. If the factory has no constructor that takes a serializer class, as with Kryo's built-in field serializer factories, the serializer attribute is ignored and the factory decides which serializer to create.
+
+When an element, key, or value serializer or serializer factory is set, the matching `elementClass`, `keyClass`, or `valueClass` must also be set. Otherwise, the elements, keys, or values cannot be deserialized, and a warning is logged when the serializer is created. For `@Bind`, `valueClass` is needed for most factories, because the factory needs the class to create the serializer.
+
 ### VersionFieldSerializer
 
 VersionFieldSerializer extends FieldSerializer and provides backward compatibility. This means fields can be added without invalidating previously serialized bytes. Removing, renaming, or changing the type of a field is not supported.
