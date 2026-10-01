@@ -224,7 +224,7 @@ public class DefaultSerializers {
 			return new BigInteger(bytes);
 		}
 
-		private static BigInteger newBigIntegerSubclass(Class<? extends BigInteger> type, byte[] bytes) {
+		private static BigInteger newBigIntegerSubclass (Class<? extends BigInteger> type, byte[] bytes) {
 			try {
 				Constructor<? extends BigInteger> constructor = type.getConstructor(byte[].class);
 				if (!constructor.isAccessible()) {
@@ -254,13 +254,13 @@ public class DefaultSerializers {
 			}
 			if (object == BigDecimal.ZERO) {
 				output.writeVarInt(2, true);
-				output.writeByte((byte) 0);
+				output.writeByte((byte)0);
 				output.writeInt(0, false);
 				return;
 			}
 			if (object == BigDecimal.ONE) {
 				output.writeVarInt(2, true);
-				output.writeByte((byte) 1);
+				output.writeByte((byte)1);
 				output.writeInt(0, false);
 				return;
 			}
@@ -277,7 +277,8 @@ public class DefaultSerializers {
 				output.writeVarInt(bytes.length + 1, true);
 				output.writeBytes(bytes);
 			} else {
-				long unscaledLong = object.scaleByPowerOfTen(object.scale()).longValue(); // best way to get unscaled long value without creating unscaled BigInteger on the way
+				// Best way to get unscaled long value without creating unscaled BigInteger on the way
+				long unscaledLong = object.scaleByPowerOfTen(object.scale()).longValue();
 				writeUnscaledLong(output, unscaledLong);
 			}
 
@@ -287,8 +288,8 @@ public class DefaultSerializers {
 		// compatible with writing unscaled value represented as BigInteger's bytes
 		private static void writeUnscaledLong (Output output, long unscaledLong) {
 			int insignificantBits = unscaledLong >= 0
-					? numberOfLeadingZeros(unscaledLong)
-					: numberOfLeadingZeros(~unscaledLong);
+				? numberOfLeadingZeros(unscaledLong)
+				: numberOfLeadingZeros(~unscaledLong);
 			int significantBits = (64 - insignificantBits) + 1; // one more bit is for the sign
 			int length = (significantBits + (8 - 1)) >> 3; // how many bytes are needed (rounded up)
 
@@ -329,7 +330,7 @@ public class DefaultSerializers {
 			}
 		}
 
-		private static BigDecimal newBigDecimalSubclass(Class<? extends BigDecimal> type, BigInteger unscaledValue, int scale) {
+		private static BigDecimal newBigDecimalSubclass (Class<? extends BigDecimal> type, BigInteger unscaledValue, int scale) {
 			try {
 				Constructor<? extends BigDecimal> constructor = type.getConstructor(BigInteger.class, int.class);
 				if (!constructor.isAccessible()) {

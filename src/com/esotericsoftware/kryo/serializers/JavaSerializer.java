@@ -84,7 +84,8 @@ public class JavaSerializer extends Serializer {
 		protected Class resolveClass (ObjectStreamClass type) {
 			try {
 				return Class.forName(type.getName(), false, kryo.getClassLoader());
-			} catch (ClassNotFoundException ignored) {}
+			} catch (ClassNotFoundException ignored) {
+			}
 			try {
 				return super.resolveClass(type);
 			} catch (ClassNotFoundException ex) {

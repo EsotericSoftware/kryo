@@ -282,24 +282,24 @@ public class ByteBufferOutput extends Output {
 		position += count;
 		ByteBuffer byteBuffer = this.byteBuffer;
 		switch (count) {
-			case 1:
-				byteBuffer.put((byte)bytes);
-				break;
-			case 2:
-				byteBuffer.put((byte)(bytes >> 8));
-				byteBuffer.put((byte)bytes);
-				break;
-			case 3:
-				byteBuffer.put((byte)(bytes >> 16));
-				byteBuffer.put((byte)(bytes >> 8));
-				byteBuffer.put((byte)bytes);
-				break;
-			case 4:
-				byteBuffer.put((byte)(bytes >> 24));
-				byteBuffer.put((byte)(bytes >> 16));
-				byteBuffer.put((byte)(bytes >> 8));
-				byteBuffer.put((byte)bytes);
-				break;
+		case 1:
+			byteBuffer.put((byte)bytes);
+			break;
+		case 2:
+			byteBuffer.put((byte)(bytes >> 8));
+			byteBuffer.put((byte)bytes);
+			break;
+		case 3:
+			byteBuffer.put((byte)(bytes >> 16));
+			byteBuffer.put((byte)(bytes >> 8));
+			byteBuffer.put((byte)bytes);
+			break;
+		case 4:
+			byteBuffer.put((byte)(bytes >> 24));
+			byteBuffer.put((byte)(bytes >> 16));
+			byteBuffer.put((byte)(bytes >> 8));
+			byteBuffer.put((byte)bytes);
+			break;
 		}
 	}
 

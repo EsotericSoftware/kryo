@@ -112,7 +112,7 @@ public class Util {
 	}
 
 	/** Returns the array type for a given class */
-	public static Class getArrayType(Class type) {
+	public static Class getArrayType (Class type) {
 		if (type == String.class) return String[].class;
 		if (type == Integer.class) return Integer[].class;
 		if (type == Float.class) return Float[].class;

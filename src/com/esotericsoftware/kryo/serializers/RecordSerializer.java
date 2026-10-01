@@ -69,13 +69,13 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 	}
 
 	private static final ClassValue<Constructor<?>> CONSTRUCTOR = new ClassValue<Constructor<?>>() {
-		protected Constructor<?> computeValue(Class<?> clazz) {
+		protected Constructor<?> computeValue (Class<?> clazz) {
 			final RecordComponent[] components = recordComponents(clazz, Comparator.comparing(RecordComponent::index));
 			return getCanonicalConstructor(clazz, components);
 		}
 	};
 	private static final ClassValue<RecordComponent[]> RECORD_COMPONENTS = new ClassValue<RecordComponent[]>() {
-		protected RecordComponent[] computeValue(Class<?> type) {
+		protected RecordComponent[] computeValue (Class<?> type) {
 			return recordComponents(type, Comparator.comparing(RecordComponent::name));
 		}
 	};
@@ -84,7 +84,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 
 	/** @deprecated use {@link #RecordSerializer(Class) instead} */
 	@Deprecated(forRemoval = true)
-	public RecordSerializer() {
+	public RecordSerializer () {
 	}
 
 	public RecordSerializer (Class<T> clazz) {
@@ -235,7 +235,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 	/** Invokes the canonical constructor of a record class with the given argument values. */
 	private T invokeCanonicalConstructor (Class<? extends T> recordType, Object[] args) {
 		try {
-			return (T) CONSTRUCTOR.get(recordType).newInstance(args);
+			return (T)CONSTRUCTOR.get(recordType).newInstance(args);
 		} catch (Throwable t) {
 			KryoException ex = new KryoException(t);
 			ex.addTrace("Could not construct type (" + recordType.getName() + ")");

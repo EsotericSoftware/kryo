@@ -129,7 +129,7 @@ class CachedFields implements Comparator<CachedField> {
 
 		Optional[] optionals = field.getAnnotationsByType(Optional.class);
 		if (optionals.length > 0 && Arrays.stream(optionals).noneMatch(
-				optional -> serializer.kryo.getContext().containsKey(optional.value()))) {
+			optional -> serializer.kryo.getContext().containsKey(optional.value()))) {
 			return;
 		}
 
@@ -376,7 +376,8 @@ class CachedFields implements Comparator<CachedField> {
 			Class valueClass = annotation.valueClass();
 			if (valueClass == Object.class) valueClass = null;
 			Serializer valueSerializer = newSerializer(field, valueClass, annotation.valueSerializer(),
-				annotation.valueSerializerFactory(), true, "@BindMap valueSerializer and valueSerializerFactory require valueClass to deserialize values");
+				annotation.valueSerializerFactory(), true,
+				"@BindMap valueSerializer and valueSerializerFactory require valueClass to deserialize values");
 
 			Class keyClass = annotation.keyClass();
 			if (keyClass == Object.class) keyClass = null;
@@ -394,8 +395,8 @@ class CachedFields implements Comparator<CachedField> {
 		}
 	}
 
-	/** @param warnIfClassMissing If true, a warning is logged when a serializer or factory is set without the value class. Otherwise
-	 *           the value class is only reported as missing if a custom factory fails to create the serializer.
+	/** @param warnIfClassMissing If true, a warning is logged when a serializer or factory is set without the value class.
+	 *           Otherwise the value class is only reported as missing if a custom factory fails to create the serializer.
 	 * @param missingClassMessage The message used when the value class is missing. */
 	private Serializer newSerializer (Field field, Class valueClass, Class serializerClass, Class factoryClass,
 		boolean warnIfClassMissing, String missingClassMessage) {

@@ -220,6 +220,7 @@
 					<configuration>
 						<configFile>${kryo.root}/eclipse/code-format.xml</configFile>
 						<lineEnding>KEEP</lineEnding>
+						<removeTrailingWhitespace>false</removeTrailingWhitespace>
 						<compilerSource>${javac.target}</compilerSource>
 						<compilerCompliance>${javac.target}</compilerCompliance>
 						<compilerTargetPlatform>${javac.target}</compilerTargetPlatform>
