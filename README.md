@@ -116,6 +116,18 @@ Kryo publishes two kinds of artifacts/jars:
 * the default jar (with the usual library dependencies) which is meant for direct usage in applications (not libraries)
 * a dependency-free, "versioned" jar which should be used by other libraries. Different libraries shall be able to use different major versions of Kryo.
 
+The two jars differ as follows:
+
+| | Default jar | Versioned jar |
+| --- | --- | --- |
+| Maven coordinates | `com.esotericsoftware:kryo` | `com.esotericsoftware.kryo:kryo5` |
+| Package | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo5` |
+| Dependencies | ReflectASM, Objenesis, MinLog | None (bundled and relocated into `com.esotericsoftware.kryo.kryo5`) |
+| Java module name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo5` |
+| OSGi bundle symbolic name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.5` |
+
+Both jars are OSGi bundles and declare an automatic module name, so they can be used on the Java module path. When using the versioned jar, all Kryo classes must be imported from the relocated package, for example `com.esotericsoftware.kryo.kryo5.Kryo`.
+
 Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](https://central.sonatype.com/artifact/com.esotericsoftware/kryo). The latest snapshots of Kryo, including snapshot builds of master, are in the [Maven Central snapshot repository](https://central.sonatype.com/repository/maven-snapshots/).
 
 ### With Maven
