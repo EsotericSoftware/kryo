@@ -1,4 +1,4 @@
-![KryoNet](https://raw.github.com/wiki/EsotericSoftware/kryo/images/logo.jpg)
+![Kryo](https://raw.github.com/wiki/EsotericSoftware/kryo/images/logo.jpg)
 
 [![Build Status](https://github.com/EsotericSoftware/kryo/actions/workflows/ci-workflow.yml/badge.svg)](https://github.com/EsotericSoftware/kryo/actions/workflows/ci-workflow.yml)
 [![Maven Central](https://maven-badges.sml.io/maven-central/com.esotericsoftware/kryo/badge.svg)](https://central.sonatype.com/artifact/com.esotericsoftware/kryo)
@@ -290,7 +290,7 @@ The IO classes provide methods to read and write variable length int (varint) an
 
 When writing a variable length value, the value can be optimized either for positive values or for both negative and positive values. For example, when optimized for positive values, 0 to 127 is written in one byte, 128 to 16383 in two bytes, etc. However, small negative numbers are the worst case at 5 bytes. When not optimized for positive, these ranges are shifted down by half. For example, -64 to 63 is written in one byte, 64 to 8191 and -65 to -8192 in two bytes, etc.
 
-Input and Output buffers provides methods to read and write fixed sized or variable length values. There are also methods to allow the buffer to decide whether a fixed size or variable length value is written. This allows serialization code to ensure variable length encoding is used for very common values that would bloat the output if a fixed size were used, while still allowing the buffer configuration to decide for all other values.
+Input and Output buffers provide methods to read and write fixed sized or variable length values. There are also methods to allow the buffer to decide whether a fixed size or variable length value is written. This allows serialization code to ensure variable length encoding is used for very common values that would bloat the output if a fixed size were used, while still allowing the buffer configuration to decide for all other values.
 
 Method | Description
 --- | ---
@@ -298,7 +298,7 @@ writeInt(int) | Writes a 4 byte int.
 writeVarInt(int, boolean) | Writes a 1-5 byte int.
 writeInt(int, boolean) | Writes either a 4 or 1-5 byte int (the buffer decides).
 writeLong(long) | Writes an 8 byte long.
-writeVarLong(long, boolean) | Writes an 1-9 byte long.
+writeVarLong(long, boolean) | Writes a 1-9 byte long.
 writeLong(long, boolean) | Writes either an 8 or 1-9 byte long (the buffer decides).
 
 The buffer's decision is controlled by Output and Input `setVariableLengthEncoding`, which is true by default. When false, the methods where the buffer decides, such as `writeInt(int, boolean)` and `writeLongs(long[], int, int, boolean)`, write fixed size values. This affects, for example, `Integer` values and `int[]` and `long[]` arrays. The same setting must be used for the Output and the Input, otherwise the data cannot be read.
@@ -315,7 +315,7 @@ Values that are always written with `writeVarInt` or `writeVarLong`, such as len
 
 ### Chunked encoding
 
-It can be useful to write the length of some data, then the data. When the length of the data is not known ahead of time, all the data needs to be buffered to determine its length, then the length can be written, then the data. using a single, large buffer for this would prevent streaming and may require an unreasonably large buffer, which is not ideal.
+It can be useful to write the length of some data, then the data. When the length of the data is not known ahead of time, all the data needs to be buffered to determine its length, then the length can be written, then the data. Using a single, large buffer for this would prevent streaming and may require an unreasonably large buffer, which is not ideal.
 
 Chunked encoding solves this problem by using a small buffer. When the buffer is full, its length is written, then the data. This is one chunk of data. The buffer is cleared and this continues until there is no more data to write. A chunk with a length of zero denotes the end of the chunks.
 
@@ -348,7 +348,7 @@ input.close();
 
 ### Buffer performance
 
-Generally Output and Input provide good performance. Unsafe buffers perform as well or better, especially for primitive arrays, if their crossplatform incompatibilities are acceptable. ByteBufferOutput and ByteBufferInput provide slightly worse performance, but this may be acceptable if the final destination of the bytes must be a ByteBuffer.
+Generally Output and Input provide good performance. Unsafe buffers perform as well or better, especially for primitive arrays, if their cross-platform incompatibilities are acceptable. ByteBufferOutput and ByteBufferInput provide slightly worse performance, but this may be acceptable if the final destination of the bytes must be a ByteBuffer.
 
 ![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/string.png)
 
@@ -429,7 +429,7 @@ SomeClass copy2 = kryo.copyShallow(object);
 
 All the serializers being used need to support [copying](#serializer-copying). All serializers provided with Kryo support copying.
 
-Like with serialization, when copying, multiple references to the same object and circular references are handled by Kryo automatically if references are enabled.
+Like with serialization, when copying, multiple references to the same object and circular references are handled by Kryo automatically if copy references are enabled, which they are by default.
 
 If using Kryo only for copying, registration can be safely disabled.
 
@@ -437,7 +437,7 @@ Kryo `getOriginalToCopyMap` can be used after an object graph is copied to obtai
 
 ### References
 
-By default references are not enabled. This means if an object appears in an object graph multiple times, it will be written multiple times and will be deserialized as multiple, different objects. When references are disabled, circular references will cause serialization to fail. References are enabled or disabled with Kryo `setReferences` for serialization and `setCopyReferences` for copying.
+By default references are not enabled for serialization. This means if an object appears in an object graph multiple times, it will be written multiple times and will be deserialized as multiple, different objects. When references are disabled, circular references will cause serialization to fail. References are enabled or disabled with Kryo `setReferences` for serialization (default false) and `setCopyReferences` for copying (default true).
 
 When references are enabled, a varint is written before each object the first time it appears in the object graph. For subsequent appearances of that object within the same object graph, only a varint is written. After deserialization the object references are restored, including any circular references. The serializers in use must [support references](#serializer-references) by calling Kryo `reference` in Serializer `read`.
 
@@ -450,7 +450,7 @@ Enabling references impacts performance because every object that is read or wri
 Under the covers, a ReferenceResolver handles tracking objects that have been read or written and provides int reference IDs. Multiple implementations are provided:
 
 1. MapReferenceResolver is used by default if a reference resolver is not specified. It uses Kryo's [IdentityObjectIntMap](https://github.com/EsotericSoftware/kryo/blob/master/src/com/esotericsoftware/kryo/util/IdentityObjectIntMap.java) to track written objects. This kind of map is fast and minimizes allocation.
-2. HashMapReferenceResolver uses an IdentityHashMap to track written objects. This kind of map allocates for put but may provide better performance for object graphs with a very high number of objects.
+2. HashMapReferenceResolver uses an IdentityHashMap to track written objects. This kind of map allocates for put, so it is generally slightly slower than MapReferenceResolver.
 3. ListReferenceResolver uses an ArrayList to track written objects. For object graphs with relatively few objects, this can be faster than using a map (~15% faster in some tests). This should not be used for graphs with many objects because it has a linear look up to find objects that have already been written.
 
 ReferenceResolver `useReferences(Class)` can be overridden. It returns a boolean to decide if references are supported for a class. If a class doesn't support references, the varint reference ID is not written before objects of that type. If a class does not need references and objects of that type appear in the object graph many times, the serialized size can be greatly reduced by disabling references for that class. The default reference resolver returns false for all primitive wrappers and enums. It is common to also return false for String and other classes, depending on the object graphs being serialized.
@@ -463,7 +463,7 @@ public boolean useReferences (Class type) {
 
 #### Reference limits
 
-The reference resolver determines the maximum number of references in a single object graph. Java array indices are limited to `Integer.MAX_VALUE`, so reference resolvers that use data structures based on arrays may result in a `java.lang.NegativeArraySizeException` when serializing more than ~2 billion objects. Kryo uses int reference IDs, so the maximum number of references in a single object graph is limited to the full range of positive and negative numbers in an int (~4 billion).
+The reference resolver determines the maximum number of references in a single object graph. Java array indices are limited to `Integer.MAX_VALUE`, so reference resolvers that use data structures based on arrays may result in a `java.lang.NegativeArraySizeException` when serializing more than ~2 billion objects. Kryo uses non-negative int reference IDs, so the maximum number of references in a single object graph is limited to `Integer.MAX_VALUE` (~2 billion).
 
 ### Context
 
@@ -473,7 +473,7 @@ Kryo `getGraphContext` is similar, but is cleared after each object graph is ser
 
 ### Reset
 
-By default, Kryo `reset` is called after each entire object graph is serialized. This resets unregistered class names in the [class resolver](#classresolver), references to previously serialized or deserialized objects in the [reference resolver](#referenceresolver), clears the graph context, and clears the generic type information collected during (de)serialization. Because of the latter, a Kryo instance remains usable after an exception was thrown during (de)serialization once `reset` has been called. Kryo `setAutoReset(false)` can be used to disable calling `reset` automatically, allowing that state to span multiple object graphs.
+By default, Kryo `reset` is called after each entire object graph is serialized or deserialized. It is also always called after an object graph is copied. This resets unregistered class names in the [class resolver](#classresolver), references to previously serialized or deserialized objects in the [reference resolver](#referenceresolver), clears the [original to copy map](#deep-and-shallow-copies), clears the graph context, and clears the generic type information collected during (de)serialization. Because of the latter, a Kryo instance remains usable after an exception was thrown during (de)serialization once `reset` has been called. Kryo `setAutoReset(false)` can be used to disable calling `reset` automatically, allowing that state to span multiple object graphs.
 
 ## Serializer framework
 
@@ -549,9 +549,9 @@ SomeClass object = ...
 kryo.writeObject(output, object);
 ```
 
-This will cause a SomeSerializer instance to be created when SomeClass or any class which extends or implements SomeClass is registered.
+This will cause a SomeSerializer instance to be created when SomeClass or any class which extends or implements SomeClass is registered, or first encountered when registration is not required.
 
-Default serializers are sorted so more specific classes are matched first, but are otherwise matched in the order they are added. The order they are added can be relevant for interfaces.
+Default serializers are sorted so more specific classes are matched first, but otherwise the most recently added default serializer is matched first. Default serializers added with `addDefaultSerializer` always take precedence over Kryo's built-in default serializers. The order they are added can be relevant for interfaces.
 
 If no default serializers match a class, then the global default serializer is used. The global default serializer is set to [FieldSerializer](#fieldserializer) by default, but can be changed. Usually the global serializer is one that can handle many different types.
 
@@ -612,7 +612,7 @@ If the registration doesn't have an instantiator, one is provided by Kryo `newIn
 
 Kryo provides DefaultInstantiatorStrategy which creates objects using ReflectASM to call a zero argument constructor. If that is not possible, it uses reflection to call a zero argument constructor. If that also fails, then it either throws an exception or tries a fallback InstantiatorStrategy. Reflection uses `setAccessible`, so a private zero argument constructor can be a good way to allow Kryo to create instances of a class without affecting the public API.
 
-DefaultInstantiatorStrategy is the recommended way of creating objects with Kryo. It runs constructors just like would be done with Java code. Alternative, extralinguistic mechanisms can also be used to create objects. The [Objenesis](http://objenesis.org/) StdInstantiatorStrategy uses JVM specific APIs to create an instance of a class without calling any constructor at all. Using this is dangerous because most classes expect their constructors to be called. Creating the object by bypassing its constructors may leave the object in an uninitialized or invalid state. Classes must be designed to be created in this way.
+DefaultInstantiatorStrategy is the recommended way of creating objects with Kryo. It runs constructors just as Java code would. Alternative, extralinguistic mechanisms can also be used to create objects. The [Objenesis](http://objenesis.org/) StdInstantiatorStrategy uses JVM specific APIs to create an instance of a class without calling any constructor at all. Using this is dangerous because most classes expect their constructors to be called. Creating the object by bypassing its constructors may leave the object in an uninitialized or invalid state. Classes must be designed to be created in this way.
 
 Kryo can be configured to try DefaultInstantiatorStrategy first, then fallback to StdInstantiatorStrategy if necessary.
 
@@ -620,7 +620,7 @@ Kryo can be configured to try DefaultInstantiatorStrategy first, then fallback t
 kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 ```
 
-Another option is SerializingInstantiatorStrategy, which uses Java's built-in serialization mechanism to create an instance. Using this, the class must implement java.io.Serializable and the first zero argument constructor in a super class is invoked. This also bypasses constructors and so is dangerous for the same reasons as StdInstantiatorStrategy.
+Another option is SerializingInstantiatorStrategy, which uses Java's built-in serialization mechanism to create an instance. Using this, the class must implement java.io.Serializable and the zero argument constructor of the first non-serializable super class is invoked. This also bypasses constructors and so is dangerous for the same reasons as StdInstantiatorStrategy.
 
 ```java
 kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new SerializingInstantiatorStrategy()));
@@ -652,7 +652,7 @@ static public class TreeMapSerializer extends MapSerializer<TreeMap> {
 }
 ```
 
-If a serializer doesn't provide `writeHeader`, writing data for `create` can be done in `write`.
+If a serializer doesn't provide `writeHeader`, writing data for `create` can be done in `write` before the rest of the object is written.
 
 ```java
 static public class SomeClassSerializer extends FieldSerializer<SomeClass> {
@@ -661,6 +661,7 @@ static public class SomeClassSerializer extends FieldSerializer<SomeClass> {
    }
    public void write (Kryo kryo, Output output, SomeClass object) {
       output.writeInt(object.value);
+      super.write(kryo, output, object);
    }
    protected SomeClass create (Kryo kryo, Input input, Class<? extends SomeClass> type) {
       return new SomeClass(input.readInt());
@@ -678,11 +679,9 @@ Kryo `isFinal` is used to determine if a class is final. This method can be over
 
 Kryo can serialize Java 8+ closures that implement java.io.Serializable, with some caveats. Closures serialized on one JVM may fail to be deserialized on a different JVM.
 
-Kryo `isClosure` is used to determine if a class is a closure. If so, then ClosureSerializer.Closure is used to find the class registration instead of the closure's class. To serialize closures, the following classes must be registered: ClosureSerializer.Closure, Object[], and Class. Additionally, the closure's capturing class must be registered.
+Kryo `isClosure` is used to determine if a class is a closure. If so, then ClosureSerializer.Closure is used to find the class registration instead of the closure's class. To serialize closures, ClosureSerializer.Closure and the closure's capturing class must be registered. The classes of any values captured by the closure must also be registered.
 
 ```java
-kryo.register(Object[].class);
-kryo.register(Class.class);
 kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
 kryo.register(CapturingClass.class);
 
@@ -849,7 +848,7 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
 }
 ```
 
-For a class with multiple type parameters, `nextGenericTypes` returns an array of GenericType instances and `resolve` is used to obtain the class for each GenericType. After reading or writing any nested objects, `popGenericType` must be called. See MapSerializer for an example.
+For a class with multiple type parameters, `nextGenericTypes` returns an array of GenericType instances and `resolve` is used to obtain the class for each GenericType. For all except the last type parameter, `pushGenericType` must be called before and `popGenericType` after reading or writing that nested object. After reading or writing all nested objects, `popGenericType` must be called. See MapSerializer for an example.
 
 ```java
 public class SomeClass<K, V> {
@@ -865,11 +864,13 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
          valueClass = genericTypes[1].resolve(kryo.getGenerics());
       }
 
+      if (genericTypes != null) kryo.getGenerics().pushGenericType(genericTypes[0]);
       if (keyClass != null && kryo.isFinal(keyClass)) {
          Serializer serializer = kryo.getSerializer(keyClass);
          kryo.writeObjectOrNull(output, object.key, serializer);
       } else
          kryo.writeClassAndObject(output, object.key);
+      if (genericTypes != null) kryo.getGenerics().popGenericType();
 
       if (valueClass != null && kryo.isFinal(valueClass)) {
          Serializer serializer = kryo.getSerializer(valueClass);
@@ -891,11 +892,13 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
       SomeClass object = new SomeClass();
       kryo.reference(object);
 
+      if (genericTypes != null) kryo.getGenerics().pushGenericType(genericTypes[0]);
       if (keyClass != null && kryo.isFinal(keyClass)) {
          Serializer serializer = kryo.getSerializer(keyClass);
          object.key = kryo.readObjectOrNull(input, keyClass, serializer);
       } else
          object.key = kryo.readClassAndObject(input);
+      if (genericTypes != null) kryo.getGenerics().popGenericType();
 
       if (valueClass != null && kryo.isFinal(valueClass)) {
          Serializer serializer = kryo.getSerializer(valueClass);
@@ -989,7 +992,7 @@ public class SomeClass implements KryoSerializable {
 }
 ```
 
-Obviously the instance must already be created before `read` can be called, so the class isn't able to control its own creation. A KryoSerializable class will use the default serializer KryoSerializableSerializer, which uses Kryo `newInstance` to create a new instance. It is trivial to write your own serializer to customize the process, call methods before or after serialiation, etc.
+Obviously the instance must already be created before `read` can be called, so the class isn't able to control its own creation. A KryoSerializable class will use the default serializer KryoSerializableSerializer, which uses Kryo `newInstance` to create a new instance. It is trivial to write your own serializer to customize the process, call methods before or after serialization, etc.
 
 ### Serializer copying
 
@@ -1037,7 +1040,6 @@ The following rules of thumb are applied to Kryo's version numbering:
 Upgrading any dependency is a significant event, but a serialization library is more prone to breakage than most dependencies. When upgrading Kryo check the version differences and test the new version thoroughly in your own applications. We try to make it as safe and easy as possible.
 
 * At development time serialization compatibility is tested for the different binary formats and default serializers.
-* At development time binary and source compatibility is tracked with [clirr](http://www.mojohaus.org/clirr-maven-plugin/).
 * For each release a [changelog](https://github.com/EsotericSoftware/kryo/releases) is provided that also contains a section reporting the serialization, binary, and source compatibilities.
 * For reporting binary and source compatibility [japi-compliance-checker](https://github.com/lvc/japi-compliance-checker/) is used.
 
@@ -1055,12 +1057,12 @@ When a class changes more than its serializer can handle, a serializer can be wr
 
 ```java
 kryo.register(OldClass.class, new TaggedFieldSerializer(kryo, OldClass.class) {
-	public Object read (Kryo kryo, Input input, Class type) {
-		OldClass oldObject = (OldClass)super.read(kryo, input, OldClass.class);
-		NewClass newObject = new NewClass();
-		// Use data from the old class to populate the instance of the new class and return it.
-		return newObject;
-	}
+   public Object read (Kryo kryo, Input input, Class type) {
+      OldClass oldObject = (OldClass)super.read(kryo, input, OldClass.class);
+      NewClass newObject = new NewClass();
+      // Use data from the old class to populate the instance of the new class and return it.
+      return newObject;
+   }
 });
 kryo.register(NewClass.class);
 ```
@@ -1092,7 +1094,7 @@ Setting | Description | Default value
 
 #### CachedField settings
 
-FieldSerializer provides the fields that will be serialized. Fields can be removed, so they won't be serialized. Fields can be configured to make serialiation more efficient.
+FieldSerializer provides the fields that will be serialized. Fields can be removed, so they won't be serialized. Fields can be configured to make serialization more efficient.
 
 ```java
 FieldSerializer fieldSerializer = ...
@@ -1110,7 +1112,7 @@ Setting | Description | Default value
 --- | --- | ---
 `canBeNull` | When false it is assumed the field value is never null, which can save 0-1 byte. | true
 `valueClass` | Sets the concrete class and serializer to use for the field value. This removes the need to write the class ID for the value. If the field value's class is a primitive, primitive wrapper, or final, or if `fixedFieldTypes` is true, this setting defaults to the field's class. | null
-`serializer` | Sets the serializer to use for the field value. If the serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for the field value's class will be used. | null
+`serializer` | Sets the serializer to use for the field value. If the serializer is set, some serializers require the value class to also be set. If null, the serializer registered with Kryo for the field value's class will be used. | null
 `variableLengthEncoding` | If true, variable length values are used. This only applies to int or long fields. | true
 `optimizePositive` | If true, positive values are optimized for variable length values. This only applies to int or long fields when variable length encoding is used. | false
 
@@ -1199,7 +1201,7 @@ TaggedFieldSerializer extends FieldSerializer to provide backward compatibility 
 
 Only fields that have a <code>@Tag(int)</code> annotation are serialized. Field tag values must be unique, both within a class and all its super classes. An exception is thrown if duplicate tag values are encountered.
 
-The forward and backward compatibility and serialization [performance](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png) depends on the `readUnknownTagData` and `chunkedEncoding` settings. Additionally, a varint is written before each field for the tag value.
+The forward and backward compatibility and serialization [performance](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png) depend on the `readUnknownTagData` and `chunkedEncoding` settings. Additionally, a varint is written before each field for the tag value.
 
 When `readUnknownTagData` and `chunkedEncoding` are false, fields must not be removed but the `@Deprecated` annotation can be applied. Deprecated fields are read when reading old bytes but aren't written to new bytes. Classes can evolve by reading the values of deprecated fields and writing them elsewhere. Fields can be renamed and/or made private to reduce clutter in the class (eg, `ignored1`, `ignored2`).
 
@@ -1217,9 +1219,9 @@ TaggedFieldSerializer also inherits all the settings of FieldSerializer.
 
 ### CompatibleFieldSerializer
 
-CompatibleFieldSerializer extends FieldSerializer to provided both forward and backward compatibility. This means fields can be added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported. Like FieldSerializer, it can serialize most classes without needing annotations.
+CompatibleFieldSerializer extends FieldSerializer to provide both forward and backward compatibility. This means fields can be added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported. Like FieldSerializer, it can serialize most classes without needing annotations.
 
-The forward and backward compatibility and serialization [performance](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png) depends on the `readUnknownFieldData` and `chunkedEncoding` settings. Additionally, the first time the class is encountered in the serialized bytes, a simple schema is written containing the field name strings. Because field data is identified by name, if a super class has a field with the same name as a subclass, `extendedFieldNames` must be true.
+The forward and backward compatibility and serialization [performance](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png) depend on the `readUnknownFieldData` and `chunkedEncoding` settings. Additionally, the first time the class is encountered in each object graph, a simple schema is written containing the field name strings. Because field data is identified by name, if a super class has a field with the same name as a subclass, `extendedFieldNames` must be true.
 
 #### CompatibleFieldSerializer settings
 
@@ -1233,7 +1235,7 @@ CompatibleFieldSerializer also inherits all the settings of FieldSerializer.
 
 ### BeanSerializer
 
-BeanSerializer is very similar to FieldSerializer, except it uses bean getter and setter methods rather than direct field access. This slightly slower, but may be safer because it uses the public API to configure the object. Like FieldSerializer, it provides no forward or backward compatibility.
+BeanSerializer is very similar to FieldSerializer, except it uses bean getter and setter methods rather than direct field access. This is slightly slower, but may be safer because it uses the public API to configure the object. Like FieldSerializer, it provides no forward or backward compatibility.
 
 ### RecordSerializer
 
@@ -1258,8 +1260,8 @@ CollectionSerializer serializes objects that implement the java.util.Collection 
 Setting | Description | Default value
 --- | --- | ---
 `elementsCanBeNull` | When false it is assumed that no elements in the collection are null, which can save 0-1 byte per element. | true
-`elementClass` | Sets the concrete class to use for each element in the collection. This removes the need to write the class ID for each element. If the element class is known (eg through generics) and a primitive, primitive wrapper, or final, then CollectionSerializer won't write the class ID even when this setting is null. | null
-`elementSerializer` | Sets the serializer to use for every element in the collection. If the serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for each element's class will be used. | null
+`elementClass` | Sets the concrete class of the elements in the collection. Used together with `elementSerializer`: when both are set, the class ID is not written for each element. If the element class is known (eg through generics) and a primitive, primitive wrapper, or final, then CollectionSerializer won't write the class ID even when this setting is null. | null
+`elementSerializer` | Sets the serializer to use for every element in the collection. If the serializer is set, some serializers require the element class to also be set. If null, the serializer registered with Kryo for each element's class will be used. | null
 
 ### MapSerializer
 
@@ -1271,10 +1273,10 @@ Setting | Description | Default value
 --- | --- | ---
 `keysCanBeNull` | When false it is assumed that no keys in the map are null, which can save 0-1 byte per entry. | true
 `valuesCanBeNull` | When false it is assumed that no values in the map are null, which can save 0-1 byte per entry. | true
-`keyClass` | Sets the concrete class to use for every key in the map. This removes the need to write the class ID for each key. | null
-`valueClass` | Sets the concrete class to use for every value in the map. This removes the need to write the class ID for each value. | null
-`keySerializer` | Sets the serializer to use for every key in the map. If the key serializer is set, some serializers required the key class to also be set. If null, the serializer registered with Kryo for each key's class will be used. | null
-`valueSerializer` | Sets the serializer to use for every value in the map. If the value serializer is set, some serializers required the value class to also be set. If null, the serializer registered with Kryo for each value's class will be used. | null
+`keyClass` | Sets the concrete class of the keys in the map. Used together with `keySerializer`: when both are set, the class ID is not written for each key. | null
+`valueClass` | Sets the concrete class of the values in the map. Used together with `valueSerializer`: when both are set, the class ID is not written for each value. | null
+`keySerializer` | Sets the serializer to use for every key in the map. If the key serializer is set, some serializers require the key class to also be set. If null, the serializer registered with Kryo for each key's class will be used. | null
+`valueSerializer` | Sets the serializer to use for every value in the map. If the value serializer is set, some serializers require the value class to also be set. If null, the serializer registered with Kryo for each value's class will be used. | null
 
 ### Unmodifiable and synchronized collections
 
@@ -1301,7 +1303,7 @@ ImmutableCollectionsSerializers.registerSerializers(kryo);
 
 ### JavaSerializer and ExternalizableSerializer
 
-JavaSerializer and ExternalizableSerializer are Kryo serializers which uses Java's built-in serialization. This is as slow as usual Java serialization, but may be necessary for legacy classes. 
+JavaSerializer and ExternalizableSerializer are Kryo serializers which use Java's built-in serialization. This is as slow as usual Java serialization, but may be necessary for legacy classes.
 
 java.io.Externalizable and java.io.Serializable do not have default serializers set by default, so the default serializers must be set manually or the serializers set when the class is registered.
 
@@ -1349,7 +1351,7 @@ static private final ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
       Kryo kryo = new Kryo();
       // Configure the Kryo instance.
       return kryo;
-   };
+   }
 };
 
 Kryo kryo = kryos.get();
@@ -1403,7 +1405,8 @@ If `true` is passed as the second argument to the Pool constructor, the Pool sto
 The third Pool parameter is the maximum capacity. If an object is freed and the pool already contains the maximum number of free objects, the specified object is reset but not added to the pool. The maximum capacity may be omitted for no limit.
 
 If an object implements Pool.Poolable then Poolable `reset` is called when the object is freed. This gives the object a chance to reset its state for reuse in the future. Alternatively, Pool `reset` can be overridden to reset objects. Input and Output implement Poolable to set their `position` and `total` to 0.
-Kryo does not implement Poolable because its object graph state is typically reset automatically after each serialization (see [Reset](#reset)). If you disable automatic reset via `setAutoReset(false)`, make sure that you call `Kryo.reset()` before returning the instance to the pool.
+
+Kryo does not implement Poolable because its object graph state is typically reset automatically after each serialization (see [Reset](#reset)). If you disable automatic reset via `setAutoReset(false)`, make sure that you call Kryo `reset` before returning the instance to the pool.
 
 Pool `getFree` returns the number of objects available to be obtained. If using soft references, this number may include objects that have been garbage collected. `clean` may be used first to remove empty soft references.
 
@@ -1411,7 +1414,7 @@ Pool `getPeak` returns the all-time highest number of free objects. This can hel
 
 ## Benchmarks
 
-Kryo provides a number of [JMH](http://openjdk.java.net/projects/code-tools/jmh/)-based [benchmarks and R/ggplot2 files](https://github.com/EsotericSoftware/kryo/tree/master/benchmarks).
+Kryo provides a number of [JMH](https://openjdk.org/projects/code-tools/jmh/)-based [benchmarks and R/ggplot2 files](https://github.com/EsotericSoftware/kryo/tree/master/benchmarks).
 
 ![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png)
 ![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/string.png)
@@ -1459,7 +1462,6 @@ There are a number of projects using Kryo. A few are listed below. Please submit
 - [akka-kryo-serialization](https://github.com/altoo-ag/akka-kryo-serialization) (Kryo serializers for Scala and Akka)
 - [pekko-kryo-serialization](https://github.com/altoo-ag/pekko-kryo-serialization) (Kryo serializers for Scala and Pekko)
 - [Twitter's Scalding](https://github.com/twitter/scalding) (Scala API for Cascading)
-- [Kryo Serializers](https://github.com/magro/kryo-serializers) (Additional serializers for Java)
 - [Kryo Macros](https://github.com/evolution-gaming/kryo-macros) (Scala macros for compile-time generation of Kryo serializers)
 
 ### Clojure
