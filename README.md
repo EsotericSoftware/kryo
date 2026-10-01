@@ -801,6 +801,8 @@ The serializers Kryo provides use the call stack when serializing nested objects
 
 Kryo `setMaxDepth` can be used to limit the maximum depth of an object graph. This can prevent malicious data from causing a stack overflow.
 
+The maximum depth also limits how much work deserialization can cause, which for some object graphs grows exponentially with the depth (see [SerialDoS](https://gist.github.com/coekie/a27cc406fc9f3dc7a70d)). When reading data from untrusted sources, set it to the deepest object graph the application expects. Note that Kryo is not designed to make deserialization of untrusted data safe.
+
 ### Accepting null
 
 By default, serializers will never receive a null, instead Kryo will write a byte as needed to denote null or not null. If a serializer can be more efficient by handling nulls itself, it can call Serializer `setAcceptsNull(true)`. This can also be used to avoid writing the null denoting byte when it is known that all instances the serializer will handle will never be null.

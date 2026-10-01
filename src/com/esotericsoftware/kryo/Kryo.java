@@ -1235,8 +1235,9 @@ public class Kryo {
 		this.autoReset = autoReset;
 	}
 
-	/** Sets the maxiumum depth of an object graph. This can be used to prevent malicious data from causing a stack overflow.
-	 * Default is {@link Integer#MAX_VALUE}. */
+	/** Sets the maximum depth of an object graph. This can be used to prevent malicious data from causing a stack overflow. It
+	 * also limits the work that deeply nested malicious data can cause during deserialization, which for some object graphs grows
+	 * exponentially with the depth. Default is {@link Integer#MAX_VALUE}. */
 	public void setMaxDepth (int maxDepth) {
 		if (maxDepth <= 0) throw new IllegalArgumentException("maxDepth must be > 0.");
 		this.maxDepth = maxDepth;
