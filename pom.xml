@@ -506,15 +506,23 @@
 							<groupId>org.apache.maven.plugins</groupId>
 							<artifactId>maven-compiler-plugin</artifactId>
 							<configuration>
-								<!-- Enable Java 17+ for all sources so that Intellij picks the right language level -->
-								<source>${java.vm.specification.version}</source>
-								<target>${java.vm.specification.version}</target>
-								<compilerArgs>
-									<arg>-parameters</arg>
-									<arg>--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED</arg>
-									<arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
-								</compilerArgs>
+								<!-- Enable Java 17+ for test sources so that Intellij picks the right language level. Main sources must
+									always target Java 8, see javac.target. -->
+								<testSource>${java.vm.specification.version}</testSource>
+								<testTarget>${java.vm.specification.version}</testTarget>
 							</configuration>
+							<executions>
+								<execution>
+									<id>default-testCompile</id>
+									<configuration>
+										<compilerArgs>
+											<arg>-parameters</arg>
+											<arg>--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED</arg>
+											<arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
+										</compilerArgs>
+									</configuration>
+								</execution>
+							</executions>
 						</plugin>
 						<plugin>
 							<groupId>org.apache.maven.plugins</groupId>
