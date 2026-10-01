@@ -209,9 +209,15 @@ Getting data in and out of Kryo is done using the Input and Output classes. Thes
 
 ### Output
 
-The Output class is an OutputStream that writes data to a byte array buffer. This buffer can be obtained and used directly, if a byte array is desired. If the Output is given an OutputStream, it will flush the bytes to the stream when the buffer becomes full, otherwise Output can grow its buffer automatically. Output has many methods for efficiently writing primitives and strings to bytes. It provides functionality similar to DataOutputStream, BufferedOutputStream, FilterOutputStream, and ByteArrayOutputStream, all in one class.
+The Output class is an OutputStream that writes data to a byte array buffer. This buffer can be obtained and used directly, if a byte array is desired. If the Output is given an OutputStream, it will flush the bytes to the stream when the buffer becomes full. Output has many methods for efficiently writing primitives and strings to bytes. It provides functionality similar to DataOutputStream, BufferedOutputStream, FilterOutputStream, and ByteArrayOutputStream, all in one class.
 
 > Tip: Output and Input provide all the functionality of ByteArrayOutputStream. There is seldom a reason to have Output flush to a ByteArrayOutputStream.
+
+If the Output has no OutputStream and its buffer is full, it grows the buffer up to the maximum buffer size given in the constructor. `new Output(bufferSize)` and `new Output(byte[])` use the initial size as the maximum, so the buffer never grows. Use `new Output(bufferSize, maxBufferSize)` to allow growth, or pass -1 as `maxBufferSize` for no limit. When more bytes are written than the maximum allows, a `KryoBufferOverflowException` is thrown.
+
+```java
+Output output = new Output(1024, -1); // starts at 1KB, grows as needed
+```
 
 Output buffers the bytes when writing to an OutputStream, so `flush` or `close` must be called after writing is complete to cause the buffered bytes to be written to the OutputStream. If the Output has not been provided an OutputStream, calling `flush` or `close` is unnecessary. Unlike many streams, an Output instance can be reused by setting the position, or setting a new byte array or stream.
 
@@ -226,6 +232,8 @@ The Input class is an InputStream that reads data from a byte array buffer. This
 > Tip: Input provides all the functionality of ByteArrayInputStream. There is seldom a reason to have Input read from a ByteArrayInputStream.
 
 If the Input `close` is called, the Input's InputStream is closed, if any. If not reading from an InputStream then it is not necessary to call `close`. Unlike many streams, an Input instance can be reused by setting the position and limit, or setting a new byte array or InputStream.
+
+When more bytes are read than the Input can provide, because the buffer is exhausted and there is no InputStream or the InputStream has reached its end, a `KryoBufferUnderflowException` is thrown. This usually means the data is truncated, or was written with different serializers or registrations than are used for reading.
 
 The zero argument Input constructor creates an uninitialized Input. Input `setBuffer` must be called before the Input can be used.
 
