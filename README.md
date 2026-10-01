@@ -685,6 +685,14 @@ Callable<Integer> closure2 = (Callable<Integer>)kryo.readObject(input, ClosureSe
 
 Serializing closures which do not implement Serializable is possible [with some effort](https://ruediste.github.io/java/kryo/2017/05/07/serializing-non-serializable-lambdas.html).
 
+Since Kotlin 2.0, Kotlin lambdas are compiled like Java lambdas and do not implement Serializable, so Kryo cannot serialize them. Annotating a lambda with `@JvmSerializableLambda` makes the Kotlin compiler generate a serializable class for it instead, which Kryo serializes like any other object rather than as a closure:
+
+```kotlin
+class Example(val transform: (Long) -> String = @JvmSerializableLambda { it.toString() })
+```
+
+The generated class has a compiler-assigned name, such as `Example$1`. When registration is required, that class must be registered, for example with `kryo.register(Class.forName("Example$1"))`. Since the name can change when the code changes, disabling required registration may be more practical for such classes.
+
 ### Compression and encryption
 
 Kryo supports streams, so it is trivial to use compression or encryption on all of the serialized bytes:
