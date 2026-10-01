@@ -107,7 +107,7 @@ Kryo publishes two kinds of artifacts/jars:
 * the default jar (with the usual library dependencies) which is meant for direct usage in applications (not libraries)
 * a dependency-free, "versioned" jar which should be used by other libraries. Different libraries shall be able to use different major versions of Kryo.
 
-Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](https://search.maven.org/#search|gav|1|g%3Acom.esotericsoftware%20a%3Akryo). The latest snapshots of Kryo, including snapshot builds of master, are in the [Sonatype Repository](https://oss.sonatype.org/content/repositories/snapshots/com/esotericsoftware/kryo/).
+Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](https://search.maven.org/#search|gav|1|g%3Acom.esotericsoftware%20a%3Akryo). The latest snapshots of Kryo, including snapshot builds of master, are in the [Maven Central snapshot repository](https://central.sonatype.com/repository/maven-snapshots/).
 
 ### With Maven
 
@@ -135,9 +135,9 @@ To use the latest Kryo snapshot, use:
 
 ```xml
 <repository>
-   <id>sonatype-snapshots</id>
-   <name>sonatype snapshots repo</name>
-   <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+   <id>central-snapshots</id>
+   <name>Maven Central snapshots repo</name>
+   <url>https://central.sonatype.com/repository/maven-snapshots/</url>
 </repository>
 
 <!-- for usage in an application: -->
@@ -434,7 +434,7 @@ Kryo `getGraphContext` is similar, but is cleared after each object graph is ser
 
 ### Reset
 
-By default, Kryo `reset` is called after each entire object graph is serialized. This resets unregistered class names in the [class resolver](#classresolver), references to previously serialized or deserialized objects in the [reference resolver](#referenceresolver), and clears the graph context. Kryo `setAutoReset(false)` can be used to disable calling `reset` automatically, allowing that state to span multiple object graphs.
+By default, Kryo `reset` is called after each entire object graph is serialized. This resets unregistered class names in the [class resolver](#classresolver), references to previously serialized or deserialized objects in the [reference resolver](#referenceresolver), clears the graph context, and clears the generic type information collected during (de)serialization. Because of the latter, a Kryo instance remains usable after an exception was thrown during (de)serialization once `reset` has been called. Kryo `setAutoReset(false)` can be used to disable calling `reset` automatically, allowing that state to span multiple object graphs.
 
 ## Serializer framework
 
@@ -498,7 +498,7 @@ kryo.register(SomeClass.class, new SomeSerializer());
 kryo.register(AnotherClass.class, new AnotherSerializer());
 ```
 
-If a serializer is not specified or when an unregistered class is encountered, a serializer is chosen automatically from a list of "default serializers" that maps a class to a serializer. Having many default serializers doesn't affect serialization performance, so by default Kryo has [50+ default serializers](https://github.com/EsotericSoftware/kryo/blob/master/src/com/esotericsoftware/kryo/Kryo.java#L179) for various JRE classes. Additional default serializers can be added:
+If a serializer is not specified or when an unregistered class is encountered, a serializer is chosen automatically from a list of "default serializers" that maps a class to a serializer. Having many default serializers doesn't affect serialization performance, so by default Kryo has [50+ default serializers](https://github.com/EsotericSoftware/kryo/blob/master/src/com/esotericsoftware/kryo/Kryo.java) for various JRE classes. Additional default serializers can be added:
 
 ```java
 Kryo kryo = new Kryo();
@@ -1076,6 +1076,7 @@ Annotation | Description
 `@BindCollection` | Sets the CollectionSerializer settings for Collection fields.
 `@BindMap` | Sets the MapSerializer settings for Map fields.
 `@NotNull` | Marks a field as never being null.
+`@Optional` | Ignores a field unless the [Kryo context](#context) has a value for the specified key. Can be repeated, in which case the field is serialized if any of the keys is present.
 
 ```java
 public class SomeClass {
@@ -1099,6 +1100,10 @@ public class SomeClass {
       elementClass = long[].class, 
       elementsCanBeNull = false) 
    Collection collection;
+
+   @Optional("server")
+   @Optional("admin")
+   String secret; // only serialized if "server" or "admin" is set in the Kryo context
 }
 ```
 
