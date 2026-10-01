@@ -79,6 +79,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
    * [TaggedFieldSerializer](#taggedfieldserializer)
    * [CompatibleFieldSerializer](#compatiblefieldserializer)
    * [BeanSerializer](#beanserializer)
+   * [RecordSerializer](#recordserializer)
    * [CollectionSerializer](#collectionserializer)
    * [MapSerializer](#mapserializer)
    * [Unmodifiable and synchronized collections](#unmodifiable-and-synchronized-collections)
@@ -1164,6 +1165,20 @@ CompatibleFieldSerializer also inherits all the settings of FieldSerializer.
 ### BeanSerializer
 
 BeanSerializer is very similar to FieldSerializer, except it uses bean getter and setter methods rather than direct field access. This slightly slower, but may be safer because it uses the public API to configure the object. Like FieldSerializer, it provides no forward or backward compatibility.
+
+### RecordSerializer
+
+RecordSerializer serializes Java records. On Java 14+ it is added as a default serializer for `java.lang.Record`, so records only need to be registered like any other class:
+
+```java
+public record Point(int x, int y) {}
+
+kryo.register(Point.class);
+```
+
+RecordSerializer writes the record components sorted by name. When reading, it passes the values to the record's canonical constructor, so any validation in that constructor is applied to deserialized data. RecordSerializer is an immutable serializer, so `copy` returns the original record. This also applies to deep copies: mutable component values, such as a list, are shared rather than copied.
+
+Like FieldSerializer, it provides no forward or backward compatibility. Adding, removing, renaming, or changing the type of a record component invalidates previously serialized bytes.
 
 ### CollectionSerializer
 
