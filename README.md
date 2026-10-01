@@ -1209,7 +1209,11 @@ SynchronizedCollectionSerializers.addDefaultSerializers(kryo);
 
 If the JDK internals can't be accessed, a warning is logged and the serializers are not registered. Serializing these wrappers then falls back to the global default serializer and may fail.
 
-Note that serializers for immutable collections created with `List.of`, `Set.of`, and `Map.of` are already registered by default.
+Serializers for immutable collections created with `List.of`, `Set.of`, `Map.of`, etc. are added as default serializers on Java 9+. Since these collections are implemented by JDK-internal classes, they cannot be registered by name. When registration is required, register them all at once:
+
+```java
+ImmutableCollectionsSerializers.registerSerializers(kryo);
+```
 
 ### JavaSerializer and ExternalizableSerializer
 
