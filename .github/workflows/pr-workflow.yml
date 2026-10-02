@@ -24,6 +24,9 @@ jobs:
       - name: Test with JDK 17
         run: mvn -v && mvn -B test
 
+      - name: Check code formatting
+        run: mvn -B --no-transfer-progress -pl main formatter:validate
+
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
@@ -41,6 +44,6 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: 26
-      - name: Test with JDK 26
+          java-version: 27
+      - name: Test with JDK 27
         run: mvn -v && mvn -B test   

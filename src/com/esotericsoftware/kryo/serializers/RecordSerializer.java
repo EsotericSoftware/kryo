@@ -32,8 +32,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 /** Serializer for record classes.
- * @author Julia Boes <julia.boes@oracle.com>
- * @author Chris Hegarty <chris.hegarty@oracle.com> */
+ * @author Julia Boes {@literal <julia.boes@oracle.com>}
+ * @author Chris Hegarty {@literal <chris.hegarty@oracle.com>} */
 public class RecordSerializer<T> extends ImmutableSerializer<T> {
 	private static final Method IS_RECORD;
 	private static final Method GET_RECORD_COMPONENTS;

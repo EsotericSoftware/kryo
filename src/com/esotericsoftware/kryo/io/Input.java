@@ -139,7 +139,7 @@ public class Input extends InputStream implements Poolable {
 	 * behavior: a valid payload never declares more elements than the input can supply, so the limit never fires on valid input.
 	 * Callers that decode untrusted input, especially from an {@link InputStream} where the declared size cannot be checked
 	 * against the buffered bytes, should set a limit suited to their application.
-	 * @param maxArraySize must be >= 0. */
+	 * @param maxArraySize must be {@code >= 0}. */
 	public void setMaxArraySize (int maxArraySize) {
 		if (maxArraySize < 0) throw new IllegalArgumentException("maxArraySize must be >= 0: " + maxArraySize);
 		this.maxArraySize = maxArraySize;
@@ -207,7 +207,7 @@ public class Input extends InputStream implements Poolable {
 	}
 
 	/** Fills the buffer with at least the number of bytes specified.
-	 * @param required Must be > 0.
+	 * @param required Must be {@code > 0}.
 	 * @return The number of bytes remaining in the buffer, which will be at least <code>required</code> bytes.
 	 * @throws KryoBufferUnderflowException if {@link #fill(byte[], int, int)} is unable to provide more bytes (buffer
 	 *            underflow). */
@@ -248,7 +248,7 @@ public class Input extends InputStream implements Poolable {
 	}
 
 	/** Fills the buffer with at least the number of bytes specified, if possible.
-	 * @param optional Must be > 0.
+	 * @param optional Must be {@code > 0}.
 	 * @return the number of bytes remaining, but not more than optional, or -1 if {@link #fill(byte[], int, int)} is unable to
 	 *         provide more bytes. */
 	protected int optional (int optional) throws KryoException {

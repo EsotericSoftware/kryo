@@ -23,7 +23,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 /** A {@link DataOutput} which writes data to an {@link Output}.
- * @author Robert DiFalco <robert.difalco@gmail.com> */
+ * @author Robert DiFalco {@literal <robert.difalco@gmail.com>} */
 public class KryoDataOutput implements DataOutput, AutoCloseable {
 	protected Output output;
 
