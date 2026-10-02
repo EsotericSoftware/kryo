@@ -94,10 +94,11 @@ class CachedFields implements Comparator<CachedField> {
 
 		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
 		boolean asm = !unsafe && !isAndroid && Modifier.isPublic(serializer.type.getModifiers());
+		RecordComponent[] recordComponents = serializer.type.getRecordComponents();
 		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
 			for (Field field : nextClass.getDeclaredFields())
-				addField(field, asm, newFields, newCopyFields);
+				addField(field, asm, recordComponents, newFields, newCopyFields);
 			nextClass = nextClass.getSuperclass();
 		}
 
@@ -112,7 +113,9 @@ class CachedFields implements Comparator<CachedField> {
 		serializer.initializeCachedFields();
 	}
 
-	private void addField (Field field, boolean asm, ArrayList<CachedField> fields, ArrayList<CachedField> copyFields) {
+	/** @param recordComponents May be null if the type is not a record. */
+	private void addField (Field field, boolean asm, RecordComponent[] recordComponents, ArrayList<CachedField> fields,
+		ArrayList<CachedField> copyFields) {
 		int modifiers = field.getModifiers();
 		if (Modifier.isStatic(modifiers)) return;
 		FieldSerializerConfig config = serializer.config;
@@ -188,11 +191,9 @@ class CachedFields implements Comparator<CachedField> {
 				"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
 		}
 
-		final RecordComponent[] recordComponents = type.getRecordComponents();
 		if (recordComponents != null) {
 			for (int i = 0; i < recordComponents.length; i++) {
-				RecordComponent recordComponent = recordComponents[i];
-				if (recordComponent.getName().equals(field.getName())) {
+				if (recordComponents[i].getName().equals(field.getName())) {
 					cachedField.index = i;
 					break;
 				}
