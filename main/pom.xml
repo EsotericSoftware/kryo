@@ -125,7 +125,6 @@
 					<excludes>
 						<!-- Internal APIs -->
 						<exclude>com/esotericsoftware/kryo/util/GenericsUtil</exclude>
-						<exclude>com/esotericsoftware/kryo/util/CuckooObjectMap</exclude>
 						<exclude>com/esotericsoftware/kryo/util/IdentityMap</exclude>
 						<exclude>com/esotericsoftware/kryo/util/IdentityObjectIntMap</exclude>
 						<exclude>com/esotericsoftware/kryo/util/IntArray</exclude>
