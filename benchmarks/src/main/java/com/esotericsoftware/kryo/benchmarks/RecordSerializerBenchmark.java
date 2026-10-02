@@ -92,7 +92,7 @@ public class RecordSerializerBenchmark {
 
 	static public class RecordSerializerState extends BenchmarkState {
 		public void setup () {
-			kryo.register(RecordRectangle.class, new RecordSerializer<>());
+			kryo.register(RecordRectangle.class, new RecordSerializer<>(RecordRectangle.class));
 			super.setup();
 		}
 	}
