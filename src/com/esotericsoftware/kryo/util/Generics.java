@@ -30,6 +30,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /** Handles storage of generic type information */
 public interface Generics {
@@ -46,9 +47,14 @@ public interface Generics {
 	 * even if {@link #pushGenericType(GenericType)} was not called. */
 	void popGenericType ();
 
-	/** Returns the current type parameters and {@link #pushGenericType(GenericType) pushes} the next level of type parameters for
-	 * subsequent calls. Must be balanced by {@link #popGenericType()} (optional if null is returned). If multiple type parameters
-	 * are returned, the last is used to advance to the next level of type parameters.
+	/** Returns the current generic type, if it has type parameters, and {@link #pushGenericType(GenericType) pushes} the next
+	 * level of type parameters for subsequent calls. Must be balanced by {@link #popGenericType()} (optional if null is returned).
+	 * If the type has multiple type parameters, the last is used to advance to the next level of type parameters.
+	 * @return May be null. */
+	GenericType nextGenericType ();
+
+	/** Returns the type parameters of {@link #nextGenericType()}. Must be balanced by {@link #popGenericType()} (optional if null
+	 * is returned).
 	 * <p>
 	 * {@link #nextGenericClass()} is easier to use when a class has a single type parameter. When a class has multiple type
 	 * parameters, {@link #pushGenericType(GenericType)} must be used for all except the last parameter.
@@ -63,13 +69,14 @@ public interface Generics {
 	 * @return May be null. */
 	Class nextGenericClass ();
 
-	/** Stores the types of the type parameters for the specified class hierarchy. Must be balanced by
-	 * {@link #popTypeVariables(int)} if {@code > 0} is returned.
-	 * @param args May contain null for type arguments that aren't known.
+	/** Stores the types of the type parameters for the specified class hierarchy, resolved from the type arguments of the declared
+	 * type, eg the type of the field that holds the object. The declared type can be a super class or interface of the class of
+	 * the hierarchy. Must be balanced by {@link #popTypeVariables(int)} if {@code > 0} is returned.
+	 * @param type The declared type, as returned by {@link #nextGenericType()}.
 	 * @return The number of entries that were pushed. */
-	int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args);
+	int pushTypeVariables (GenericsHierarchy hierarchy, GenericType type);
 
-	/** Removes the number of entries that were pushed by {@link #pushTypeVariables(GenericsHierarchy, GenericType[])}.
+	/** Removes the number of entries that were pushed by {@link #pushTypeVariables(GenericsHierarchy, GenericType)}.
 	 * @param count Must be even. */
 	void popTypeVariables (int count);
 
@@ -92,6 +99,15 @@ public interface Generics {
 	 * parameters. */
 	class GenericsHierarchy {
 		static final GenericsHierarchy EMPTY = new GenericsHierarchy(0, 0, new int[0], new TypeVariable[0]);
+
+		/* The class of the hierarchy, or null for EMPTY. */
+		final Class type;
+		/* The argument indices if the declared type is the class of the hierarchy, see argumentIndices. */
+		private final int[] identityIndices;
+		/* The most recently used declared type that is a super type of the class, and its argument indices. */
+		private Class lastDeclared;
+		private int[] lastIndices;
+		private IdentityMap<Class, int[]> superTypeIndices;
 
 		/* Total number of type parameters in the hierarchy. */
 		final int total;
@@ -137,17 +153,105 @@ public interface Generics {
 				current = current.getSuperclass();
 			} while (current != null);
 
+			this.type = type;
 			this.total = total;
 			this.rootTotal = type.getTypeParameters().length;
+			identityIndices = new int[rootTotal];
+			for (int i = 0; i < rootTotal; i++)
+				identityIndices[i] = i;
 			this.counts = counts.toArray();
 			this.parameters = parameters.toArray(new TypeVariable[parameters.size()]);
 		}
 
 		GenericsHierarchy (int total, int rootTotal, int[] counts, TypeVariable[] parameters) {
+			type = null;
+			identityIndices = null;
 			this.total = total;
 			this.rootTotal = rootTotal;
 			this.counts = counts;
 			this.parameters = parameters;
+		}
+
+		/** Returns, for each type parameter of the class, the index of the type argument of the declared class it is passed to, or
+		 * -1 if it is not passed to the declared class. Returns null if the declared class is not the class or one of its super
+		 * types. For example, for {@code class Sub<A, B> extends Base<B, A>} and the declared class {@code Base}, this returns
+		 * {@code [1, 0]}.
+		 * @param declaredType The declared class, other types return null. */
+		int[] argumentIndices (Type declaredType) {
+			if (declaredType == type) return identityIndices; // Fast path.
+			if (declaredType == lastDeclared) return lastIndices;
+			if (type == null || !(declaredType instanceof Class)) return null;
+			Class declared = (Class)declaredType;
+			if (superTypeIndices == null) superTypeIndices = new IdentityMap();
+			int[] indices = superTypeIndices.get(declared);
+			if (indices == null && !superTypeIndices.containsKey(declared)) {
+				indices = computeArgumentIndices(declared);
+				superTypeIndices.put(declared, indices);
+			}
+			lastDeclared = declared;
+			lastIndices = indices;
+			return indices;
+		}
+
+		private int[] computeArgumentIndices (Class declared) {
+			Type[] declaredArguments = superTypeArguments(type, declared);
+			if (declaredArguments == null) return null;
+			TypeVariable[] typeParameters = type.getTypeParameters();
+			int[] indices = new int[typeParameters.length];
+			outer:
+			for (int i = 0; i < typeParameters.length; i++) {
+				for (int ii = 0; ii < declaredArguments.length; ii++) {
+					if (declaredArguments[ii] == typeParameters[i]) {
+						indices[i] = ii;
+						continue outer;
+					}
+				}
+				indices[i] = -1;
+			}
+			return indices;
+		}
+
+		/** Returns the type arguments of the declared class in terms of the type parameters of the type, or null if the declared
+		 * class is not the type or one of its super types. An argument is null if it is not known, eg for a raw super type. */
+		static private Type[] superTypeArguments (Class type, Class declared) {
+			if (type == declared) {
+				// A copy as Type[], since the caller replaces type variables with other types.
+				TypeVariable[] parameters = declared.getTypeParameters();
+				return Arrays.copyOf(parameters, parameters.length, Type[].class);
+			}
+			Type[] interfaces = type.getGenericInterfaces();
+			for (int i = -1; i < interfaces.length; i++) {
+				Type superType = i == -1 ? type.getGenericSuperclass() : interfaces[i];
+				Class superClass;
+				if (superType instanceof ParameterizedType)
+					superClass = (Class)((ParameterizedType)superType).getRawType();
+				else if (superType instanceof Class)
+					superClass = (Class)superType;
+				else
+					continue;
+				if (!declared.isAssignableFrom(superClass)) continue;
+				Type[] arguments = superTypeArguments(superClass, declared);
+				if (arguments == null) continue;
+				// Replace the type parameters of the super type with the arguments the type passes to it.
+				TypeVariable[] superParameters = superClass.getTypeParameters();
+				Type[] actual = superType instanceof ParameterizedType ? ((ParameterizedType)superType).getActualTypeArguments()
+					: null;
+				for (int ii = 0; ii < arguments.length; ii++) {
+					if (!(arguments[ii] instanceof TypeVariable)) continue;
+					Type replacement = null;
+					if (actual != null) {
+						for (int iii = 0; iii < superParameters.length; iii++) {
+							if (superParameters[iii] == arguments[ii]) {
+								replacement = actual[iii];
+								break;
+							}
+						}
+					}
+					arguments[ii] = replacement;
+				}
+				return arguments;
+			}
+			return null;
 		}
 
 		public String toString () {

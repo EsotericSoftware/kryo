@@ -74,7 +74,7 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
-	public GenericType[] nextGenericTypes () {
+	public GenericType nextGenericType () {
 		int index = genericTypesSize;
 		if (index > 0) {
 			index--;
@@ -83,10 +83,16 @@ public final class DefaultGenerics implements Generics {
 			// The depth must match to prevent the types being wrong if a serializer doesn't call nextGenericTypes.
 			if (depths[index] == kryo.getDepth() - 1) {
 				pushGenericType(genericType.arguments[genericType.arguments.length - 1]);
-				return genericType.arguments;
+				return genericType;
 			}
 		}
 		return null;
+	}
+
+	@Override
+	public GenericType[] nextGenericTypes () {
+		GenericType genericType = nextGenericType();
+		return genericType == null ? null : genericType.arguments;
 	}
 
 	@Override
@@ -97,10 +103,12 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
-	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args) {
-		// Do not store type variables if hierarchy is empty, or we do not have arguments for all root parameters, or we have more
-		// arguments than the hierarchy has parameters.
-		if (hierarchy.total == 0 || hierarchy.rootTotal > args.length || args.length > hierarchy.counts.length) return 0;
+	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType type) {
+		if (hierarchy.rootTotal == 0) return 0; // The class has no type parameters.
+
+		// The arguments are for the declared type, which can be a super type of the class with different type parameters.
+		int[] indices = hierarchy.argumentIndices(type.type);
+		if (indices == null) return 0;
 
 		int startSize = this.argumentsSize;
 
@@ -112,22 +120,22 @@ public final class DefaultGenerics implements Generics {
 			arguments = newArray;
 		}
 
-		// Resolve and store the type arguments.
+		// Resolve and store the type arguments for the type parameters of the class, which come first in the hierarchy.
+		GenericType[] args = type.arguments;
 		int[] counts = hierarchy.counts;
 		TypeVariable[] params = hierarchy.parameters;
-		for (int i = 0, p = 0, n = args.length; i < n; i++) {
-			GenericType arg = args[i];
-			Class resolved = arg.resolve(this);
-			if (resolved == null) continue;
+		for (int i = 0, p = 0, n = indices.length; i < n; i++) {
 			int count = counts[i];
-			if (arg == null)
+			int index = indices[i];
+			Class resolved = index == -1 ? null : args[index].resolve(this);
+			if (resolved == null) {
 				p += count;
-			else {
-				for (int nn = p + count; p < nn; p++) {
-					arguments[argumentsSize] = params[p];
-					arguments[argumentsSize + 1] = resolved;
-					argumentsSize += 2;
-				}
+				continue;
+			}
+			for (int nn = p + count; p < nn; p++) {
+				arguments[argumentsSize] = params[p];
+				arguments[argumentsSize + 1] = resolved;
+				argumentsSize += 2;
 			}
 		}
 

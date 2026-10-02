@@ -208,6 +208,27 @@ class GenericsTest extends KryoTestCase {
 	}
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/721
+	// The type parameter of the class is not passed to the declared interface.
+	@Test
+	void testTypeParameterNotPassedToDeclaredType () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderC());
+	}
+
+	// The type parameters of the class are passed to the declared super class in a different order.
+	@Test
+	void testTypeParametersInDifferentOrder () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderBase());
+	}
+
+	// A type argument that can't be resolved must not shift the following type arguments.
+	@Test
+	void testUnresolvedTypeArgument () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderPair());
+	}
+
 	@Test
 	void testClassHierarchyWithMissingTypeVariables () {
 		ClassWithMissingTypeVariable.A o = new ClassWithMissingTypeVariable.A(
@@ -719,6 +740,87 @@ class GenericsTest extends KryoTestCase {
 			if (o == null || getClass() != o.getClass()) return false;
 			TestObject that = (TestObject) o;
 			return i == that.i;
+		}
+	}
+
+	static class DeclaredTypes {
+		interface C<T> {
+		}
+
+		public static class B<R> implements C<String> {
+			public R r;
+
+			public B () {
+			}
+
+			B (R r) {
+				this.r = r;
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof B b && Objects.equals(r, b.r);
+			}
+		}
+
+		public static class HolderC {
+			public C<String> c = new B<>(1);
+
+			public boolean equals (Object o) {
+				return o instanceof HolderC h && Objects.equals(c, h.c);
+			}
+		}
+
+		public static class Base<K, V> {
+		}
+
+		public static class Sub<A, B> extends Base<B, A> {
+			public A a;
+			public B b;
+
+			public Sub () {
+			}
+
+			Sub (A a, B b) {
+				this.a = a;
+				this.b = b;
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof Sub s && Objects.equals(a, s.a) && Objects.equals(b, s.b);
+			}
+		}
+
+		public static class HolderBase {
+			public Base<String, Integer> base = new Sub<>(1, "x");
+
+			public boolean equals (Object o) {
+				return o instanceof HolderBase h && Objects.equals(base, h.base);
+			}
+		}
+
+		public static class Pair<X, Y> {
+			public X x;
+			public Y y;
+
+			public Pair () {
+			}
+
+			Pair (X x, Y y) {
+				this.x = x;
+				this.y = y;
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof Pair p && Objects.equals(x, p.x) && Objects.equals(y, p.y);
+			}
+		}
+
+		public static class HolderPair<T> {
+			public Pair<T, String> pair = new Pair(1, "s");
+
+			public boolean equals (Object o) {
+				return o instanceof HolderPair h && Objects.equals(pair, h.pair);
+			}
 		}
 	}
 }
