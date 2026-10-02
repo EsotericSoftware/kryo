@@ -41,6 +41,7 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
@@ -194,6 +195,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 			if (values[i] == null) values[i] = defaults[i];
 		try {
 			return (T)recordConstructor.newInstance(values);
+		} catch (InvocationTargetException ex) {
+			throw new KryoException("Error constructing record: " + className(type), ex.getCause());
 		} catch (Exception ex) {
 			throw new KryoException("Error constructing record: " + className(type), ex);
 		}
