@@ -49,11 +49,6 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 
 	private boolean fixedFieldTypes = false;
 
-	/** @deprecated use {@link #RecordSerializer(Class) instead} */
-	@Deprecated(forRemoval = true)
-	public RecordSerializer () {
-	}
-
 	public RecordSerializer (Class<T> clazz) {
 		if (!clazz.isRecord()) throw new KryoException(clazz + " is not a record");
 	}
