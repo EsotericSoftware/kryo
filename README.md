@@ -84,7 +84,6 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
       + [CompatibleFieldSerializer settings](#compatiblefieldserializer-settings)
    * [BeanSerializer](#beanserializer)
    * [Records](#records)
-      + [Migrating records from Kryo 5](#migrating-records-from-kryo-5)
    * [CollectionSerializer](#collectionserializer)
       + [CollectionSerializer settings](#collectionserializer-settings)
    * [MapSerializer](#mapserializer)
@@ -112,7 +111,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
 
 ## Installation
 
-Kryo 6 requires Java 17 or later. Kryo 5 requires Java 8 or later.
+Kryo 6 requires Java 17 or later. Kryo 5 requires Java 8 or later. See [MIGRATION.md](MIGRATION.md) for the changes when upgrading from Kryo 5.
 
 Kryo publishes two kinds of artifacts/jars:
 * the default jar (with the usual library dependencies) which is meant for direct usage in applications (not libraries)
@@ -559,7 +558,7 @@ Default serializers are sorted so more specific classes are matched first, but o
 
 If no default serializers match a class, then the global default serializer is used. The global default serializer is set to [FieldSerializer](#fieldserializer) by default, but can be changed. Usually the global serializer is one that can handle many different types.
 
-Kryo 6 adds default serializers for `Timestamp`, `URI`, `UUID`, `Pattern`, `AtomicBoolean`, `AtomicInteger`, `AtomicLong`, `AtomicReference` and `ConcurrentHashMap.KeySetView`. To read data written by Kryo 5, register the serializers Kryo 5 used for these types, e.g. `kryo.register(Timestamp.class, new DateSerializer())` or `kryo.register(UUID.class, new FieldSerializer<>(kryo, UUID.class))`.
+Kryo 6 adds default serializers for several JDK types. To read data written by Kryo 5, see [MIGRATION.md](MIGRATION.md#new-default-serializers).
 
 ```java
 Kryo kryo = new Kryo();
@@ -1259,15 +1258,7 @@ FieldSerializer writes the record components sorted by name. When reading, it pa
 
 The subclasses of FieldSerializer can also be used for records, for example CompatibleFieldSerializer or TaggedFieldSerializer to add or remove components without invalidating previously serialized bytes.
 
-#### Migrating records from Kryo 5
-
-Kryo 5 serialized records with RecordSerializer. With the default configuration, FieldSerializer writes the same data, except for components with generic types, such as `List<String>`. FieldSerializer uses the type arguments to avoid writing the class of each element, while RecordSerializer wrote it. FieldSerializer cannot correctly read such records written by Kryo 5, and may even read them without an exception but with wrong values. To read such data, register RecordSerializer for the affected records, or for all records:
-
-```java
-kryo.register(SomeRecord.class, new RecordSerializer<>(SomeRecord.class));
-// or for all records
-kryo.addDefaultSerializer(Record.class, RecordSerializer.class);
-```
+To read records serialized by Kryo 5, see [MIGRATION.md](MIGRATION.md#records).
 
 ### CollectionSerializer
 
