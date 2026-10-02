@@ -152,6 +152,47 @@ class ReflectField extends CachedField {
 		}
 	}
 
+	public Object read(Input input) {
+		Kryo kryo = fieldSerializer.kryo;
+		try {
+			Object value;
+
+			Serializer serializer = this.serializer;
+			Class concreteType = resolveFieldClass();
+			if (concreteType == null) {
+				// The concrete type of the field is unknown, read the class first.
+				Registration registration = kryo.readClass(input);
+				if (registration == null) {
+					return null;
+				}
+				if (serializer == null) serializer = registration.getSerializer();
+				kryo.getGenerics().pushGenericType(genericType);
+				value = kryo.readObject(input, registration.getType(), serializer);
+			} else {
+				if (serializer == null) {
+					serializer = kryo.getSerializer(concreteType);
+					// The concrete type of the field is known, always use the same serializer.
+					if (valueClass != null && reuseSerializer) this.serializer = serializer;
+				}
+				kryo.getGenerics().pushGenericType(genericType);
+				if (canBeNull)
+					value = kryo.readObjectOrNull(input, concreteType, serializer);
+				else
+					value = kryo.readObject(input, concreteType, serializer);
+			}
+			kryo.getGenerics().popGenericType();
+
+			return value;
+		} catch (KryoException ex) {
+			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
+			throw ex;
+		} catch (Throwable t) {
+			KryoException ex = new KryoException(t);
+			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
+			throw ex;
+		}
+	}
+
 	Class resolveFieldClass () {
 		if (valueClass == null) {
 			Class fieldClass = genericType.resolve(fieldSerializer.kryo.getGenerics());
@@ -208,6 +249,13 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		public Object read (Input input) {
+			if (varEncoding)
+				return input.readVarInt(false);
+			else
+				return input.readInt();
+		}
+
 		public void copy (Object original, Object copy) {
 			try {
 				field.setInt(copy, field.getInt(original));
@@ -242,6 +290,10 @@ class ReflectField extends CachedField {
 				ex.addTrace(name + " (float)");
 				throw ex;
 			}
+		}
+
+		public Object read (Input input) {
+			return input.readFloat();
 		}
 
 		public void copy (Object original, Object copy) {
@@ -280,6 +332,10 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		public Object read (Input input) {
+			return input.readShort();
+		}
+
 		public void copy (Object original, Object copy) {
 			try {
 				field.setShort(copy, field.getShort(original));
@@ -314,6 +370,10 @@ class ReflectField extends CachedField {
 				ex.addTrace(name + " (byte)");
 				throw ex;
 			}
+		}
+
+		public Object read (Input input) {
+			return input.readByte();
 		}
 
 		public void copy (Object original, Object copy) {
@@ -352,6 +412,10 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		public Object read(Input input) {
+			return input.readBoolean();
+		}
+
 		public void copy (Object original, Object copy) {
 			try {
 				field.setBoolean(copy, field.getBoolean(original));
@@ -386,6 +450,10 @@ class ReflectField extends CachedField {
 				ex.addTrace(name + " (char)");
 				throw ex;
 			}
+		}
+
+		public Object read(Input input) {
+			return input.readChar();
 		}
 
 		public void copy (Object original, Object copy) {
@@ -430,6 +498,13 @@ class ReflectField extends CachedField {
 			}
 		}
 
+		public Object read(Input input) {
+			if (varEncoding)
+				return input.readVarLong(false);
+			else
+				return input.readLong();
+		}
+
 		public void copy (Object original, Object copy) {
 			try {
 				field.setLong(copy, field.getLong(original));
@@ -464,6 +539,10 @@ class ReflectField extends CachedField {
 				ex.addTrace(name + " (double)");
 				throw ex;
 			}
+		}
+
+		public Object read(Input input) {
+			return input.readDouble();
 		}
 
 		public void copy (Object original, Object copy) {

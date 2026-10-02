@@ -22,9 +22,13 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.Objects;
 
 class VersionedFieldSerializerTest extends KryoTestCase {
 	{
@@ -38,19 +42,59 @@ class VersionedFieldSerializerTest extends KryoTestCase {
 		object1.child = null;
 		object1.other = new AnotherClass();
 		object1.other.value = "meow";
+		object1.record = new RecordClass("1", 2, 3L, 4d);
 
 		kryo.setDefaultSerializer(VersionFieldSerializer.class);
 		kryo.register(AnotherClass.class);
+		kryo.register(RecordClass.class);
 
 		// Make VersionFieldSerializer handle "child" field being null.
 		VersionFieldSerializer serializer = new VersionFieldSerializer(kryo, TestClass.class);
 		serializer.getField("child").setValueClass(TestClass.class, serializer);
 		kryo.register(TestClass.class, serializer);
 
-		TestClass object2 = roundTrip(25, object1);
+		TestClass object2 = roundTrip(38, object1);
 
 		assertEquals(object2.moo, object1.moo);
 		assertEquals(object2.other.value, object1.other.value);
+	}
+
+	@Test
+	void testVersionedRecordNewToOld() {
+		final RecordClass recordClass = new RecordClass("1", 2, 3L, 4d);
+
+		kryo.setDefaultSerializer(VersionFieldSerializer.class);
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		Object deserialized = kryo.readObject(input, OldRecordClass.class);
+		input.close();
+		
+		assertNotNull(deserialized);
+	}
+
+	@Test
+	void testVersionedRecordOldToNew() {
+		final OldRecordClass recordClass = new OldRecordClass( 2, 3L, 4d);
+
+		kryo.setDefaultSerializer(VersionFieldSerializer.class);
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		Object deserialized = kryo.readObject(input, RecordClass.class);
+		input.close();
+
+		assertNotNull(deserialized);
 	}
 
 	public static class TestClass {
@@ -60,6 +104,7 @@ class VersionedFieldSerializerTest extends KryoTestCase {
 		@Since(2) public TestClass child;
 		@Since(3) public int zzz = 123;
 		@Since(3) public AnotherClass other;
+		@Since(3) public RecordClass record;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -75,6 +120,7 @@ class VersionedFieldSerializerTest extends KryoTestCase {
 				if (other.text != null) return false;
 			} else if (!text.equals(other.text)) return false;
 			if (zzz != other.zzz) return false;
+			if (!Objects.equals(record, other.record)) return false;
 			return true;
 		}
 	}
@@ -82,6 +128,10 @@ class VersionedFieldSerializerTest extends KryoTestCase {
 	public static class AnotherClass {
 		@Since(1) String value;
 	}
+
+	public record OldRecordClass(int width, long x, double y) { }
+	
+	public record RecordClass(@Since(1) String height, int width, long x, double y) { }
 
 	private static class FutureClass {
 		@Since(0) public Integer value;
