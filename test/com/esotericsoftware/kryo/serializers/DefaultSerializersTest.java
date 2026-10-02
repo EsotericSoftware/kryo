@@ -684,6 +684,41 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(3, new AtomicReference<>(1L));
 	}
 
+	@Test
+	void testTimestampSubclass () {
+		kryo.register(TimestampSubclass.class);
+		TimestampSubclass timestamp = new TimestampSubclass(1234567);
+		timestamp.setNanos(123_456_789);
+
+		assertSame(TimestampSubclass.class, roundTrip(8, timestamp).getClass());
+		assertSame(TimestampSubclass.class, kryo.copy(timestamp).getClass());
+	}
+
+	@Test
+	void testAtomicSubclasses () {
+		kryo.register(AtomicBooleanSubclass.class);
+		kryo.register(AtomicIntegerSubclass.class);
+		kryo.register(AtomicLongSubclass.class);
+		kryo.register(AtomicReferenceSubclass.class);
+		AtomicBooleanSubclass atomicBoolean = new AtomicBooleanSubclass();
+		atomicBoolean.set(true);
+		AtomicIntegerSubclass atomicInteger = new AtomicIntegerSubclass();
+		atomicInteger.set(1);
+		AtomicLongSubclass atomicLong = new AtomicLongSubclass();
+		atomicLong.set(1);
+		AtomicReferenceSubclass atomicReference = new AtomicReferenceSubclass();
+		atomicReference.set(1L);
+
+		assertSame(AtomicBooleanSubclass.class, roundTrip(2, atomicBoolean).getClass());
+		assertSame(AtomicIntegerSubclass.class, roundTrip(5, atomicInteger).getClass());
+		assertSame(AtomicLongSubclass.class, roundTrip(9, atomicLong).getClass());
+		assertSame(AtomicReferenceSubclass.class, roundTrip(3, atomicReference).getClass());
+		assertSame(AtomicBooleanSubclass.class, kryo.copy(atomicBoolean).getClass());
+		assertSame(AtomicIntegerSubclass.class, kryo.copy(atomicInteger).getClass());
+		assertSame(AtomicLongSubclass.class, kryo.copy(atomicLong).getClass());
+		assertSame(AtomicReferenceSubclass.class, kryo.copy(atomicReference).getClass());
+	}
+
 	protected void doAssertEquals(Object object1, Object object2) {
 		if (object1 instanceof PriorityQueue && object2 instanceof PriorityQueue) {
 			final PriorityQueue q1 = (PriorityQueue) object1;
@@ -748,6 +783,24 @@ class DefaultSerializersTest extends KryoTestCase {
 		public PriorityQueueSubclass(int initialCapacity, Comparator comparator) {
 			super(initialCapacity, comparator);
 		}
+	}
+
+	static class TimestampSubclass extends java.sql.Timestamp {
+		public TimestampSubclass (long time) {
+			super(time);
+		}
+	}
+
+	static class AtomicBooleanSubclass extends AtomicBoolean {
+	}
+
+	static class AtomicIntegerSubclass extends AtomicInteger {
+	}
+
+	static class AtomicLongSubclass extends AtomicLong {
+	}
+
+	static class AtomicReferenceSubclass extends AtomicReference<Object> {
 	}
 
 	static class IntegerComparator implements Comparator<Integer> {
