@@ -451,6 +451,16 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		testExtendedClass(297, true, true);
 	}
 
+	// https://github.com/EsotericSoftware/kryo/issues/699
+	@Test
+	void testDuplicateFieldNames () {
+		kryo.register(ExtendedTestClass.class, new CompatibleFieldSerializer(kryo, ExtendedTestClass.class));
+
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.writeObject(new Output(1024), new ExtendedTestClass()));
+		assertTrue(ex.getMessage().contains("setExtendedFieldNames"), ex.getMessage());
+		assertThrows(KryoException.class, () -> kryo.readObject(new Input(new byte[16]), ExtendedTestClass.class));
+	}
+
 	private void testExtendedClass (int length, boolean references, boolean chunked) {
 		kryo.setReferences(references);
 

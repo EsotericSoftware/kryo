@@ -42,12 +42,14 @@ import com.esotericsoftware.kryo.util.Util;
  * the serialized bytes, a simple schema is written containing the field name strings.
  * <p>
  * Note that the field data is identified by name. If a super class has a field with the same name as a subclass,
- * {@link CompatibleFieldSerializerConfig#setExtendedFieldNames(boolean)} must be true.
+ * {@link CompatibleFieldSerializerConfig#setExtendedFieldNames(boolean)} must be true, otherwise an exception is thrown.
  * @author Nathan Sweet */
 public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private static final int binarySearchThreshold = 32;
 
 	private final CompatibleFieldSerializerConfig config;
+	/** The error message if fields with the same name can't be distinguished, else null. */
+	private String duplicateFieldName;
 
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new CompatibleFieldSerializerConfig());
@@ -58,7 +60,26 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		this.config = config;
 	}
 
+	protected void initializeCachedFields () {
+		// Fields are sorted by name, so fields with the same name are adjacent. The exception is thrown when writing or reading,
+		// so the config can still be changed and updateFields called after the serializer is constructed.
+		duplicateFieldName = null;
+		CachedField[] fields = cachedFields.fields;
+		for (int i = 1, n = fields.length; i < n; i++) {
+			CachedField field = fields[i], previous = fields[i - 1];
+			if (field.name.equals(previous.name)) {
+				duplicateFieldName = "Field \"" + field.name + "\" is declared in both "
+					+ className(previous.field.getDeclaringClass())
+					+ " and " + className(field.field.getDeclaringClass())
+					+ ". CompatibleFieldSerializer identifies fields by name, so "
+					+ "CompatibleFieldSerializerConfig#setExtendedFieldNames must be true for " + className(type) + ".";
+				return;
+			}
+		}
+	}
+
 	public void write (Kryo kryo, Output output, T object) {
+		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
 		int pop = pushTypeVariables();
 
 		CachedField[] fields = cachedFields.fields;
@@ -112,6 +133,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
+		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
 		int pop = pushTypeVariables();
 
 		T object = null;
