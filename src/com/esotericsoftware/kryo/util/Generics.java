@@ -31,6 +31,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /** Handles storage of generic type information */
 public interface Generics {
@@ -102,9 +103,11 @@ public interface Generics {
 
 		/* The class of the hierarchy, or null for EMPTY. */
 		final Class type;
-		/* The argument indices if the declared type is the class of the hierarchy, see argumentIndices. */
+		/*
+		 * The argument indices for the class itself, the most recently used other declared type and all other declared types, see
+		 * argumentIndices.
+		 */
 		private final int[] identityIndices;
-		/* The most recently used declared type that is a super type of the class, and its argument indices. */
 		private Class lastDeclared;
 		private int[] lastIndices;
 		private IdentityMap<Class, int[]> superTypeIndices;
@@ -156,9 +159,7 @@ public interface Generics {
 			this.type = type;
 			this.total = total;
 			this.rootTotal = type.getTypeParameters().length;
-			identityIndices = new int[rootTotal];
-			for (int i = 0; i < rootTotal; i++)
-				identityIndices[i] = i;
+			identityIndices = computeArgumentIndices(type);
 			this.counts = counts.toArray();
 			this.parameters = parameters.toArray(new TypeVariable[parameters.size()]);
 		}
@@ -173,46 +174,35 @@ public interface Generics {
 		}
 
 		/** Returns, for each type parameter of the class, the index of the type argument of the declared class it is passed to, or
-		 * -1 if it is not passed to the declared class. Returns null if the declared class is not the class or one of its super
-		 * types. For example, for {@code class Sub<A, B> extends Base<B, A>} and the declared class {@code Base}, this returns
-		 * {@code [1, 0]}.
+		 * -1 if it is not passed to the declared class. For example, for {@code class Sub<A, B> extends Base<B, A>} and the
+		 * declared class {@code Base}, this returns {@code [1, 0]}.
 		 * @param declaredType The declared class, other types return null. */
 		int[] argumentIndices (Type declaredType) {
 			if (declaredType == type) return identityIndices; // Fast path.
 			if (declaredType == lastDeclared) return lastIndices;
-			if (type == null || !(declaredType instanceof Class)) return null;
-			Class declared = (Class)declaredType;
+			if (!(declaredType instanceof Class)) return null;
 			if (superTypeIndices == null) superTypeIndices = new IdentityMap();
-			int[] indices = superTypeIndices.get(declared);
-			if (indices == null && !superTypeIndices.containsKey(declared)) {
-				indices = computeArgumentIndices(declared);
-				superTypeIndices.put(declared, indices);
+			int[] indices = superTypeIndices.get((Class)declaredType);
+			if (indices == null) {
+				indices = computeArgumentIndices((Class)declaredType);
+				superTypeIndices.put((Class)declaredType, indices);
 			}
-			lastDeclared = declared;
+			lastDeclared = (Class)declaredType;
 			lastIndices = indices;
 			return indices;
 		}
 
 		private int[] computeArgumentIndices (Class declared) {
-			Type[] declaredArguments = superTypeArguments(type, declared);
-			if (declaredArguments == null) return null;
-			TypeVariable[] typeParameters = type.getTypeParameters();
-			int[] indices = new int[typeParameters.length];
-			outer:
-			for (int i = 0; i < typeParameters.length; i++) {
-				for (int ii = 0; ii < declaredArguments.length; ii++) {
-					if (declaredArguments[ii] == typeParameters[i]) {
-						indices[i] = ii;
-						continue outer;
-					}
-				}
-				indices[i] = -1;
-			}
+			List declaredArguments = Arrays.asList(superTypeArguments(type, declared));
+			TypeVariable[] parameters = type.getTypeParameters();
+			int[] indices = new int[parameters.length];
+			for (int i = 0; i < parameters.length; i++)
+				indices[i] = declaredArguments.indexOf(parameters[i]);
 			return indices;
 		}
 
-		/** Returns the type arguments of the declared class in terms of the type parameters of the type, or null if the declared
-		 * class is not the type or one of its super types. An argument is null if it is not known, eg for a raw super type. */
+		/** Returns the type arguments of the declared class in terms of the type parameters of the type. An argument is null if it
+		 * is not known, eg for a raw super type. Returns an empty array if the declared class is not the type or a super type. */
 		static private Type[] superTypeArguments (Class type, Class declared) {
 			if (type == declared) {
 				// A copy as Type[], since the caller replaces type variables with other types.
@@ -222,36 +212,22 @@ public interface Generics {
 			Type[] interfaces = type.getGenericInterfaces();
 			for (int i = -1; i < interfaces.length; i++) {
 				Type superType = i == -1 ? type.getGenericSuperclass() : interfaces[i];
-				Class superClass;
-				if (superType instanceof ParameterizedType)
-					superClass = (Class)((ParameterizedType)superType).getRawType();
-				else if (superType instanceof Class)
-					superClass = (Class)superType;
-				else
-					continue;
-				if (!declared.isAssignableFrom(superClass)) continue;
-				Type[] arguments = superTypeArguments(superClass, declared);
-				if (arguments == null) continue;
+				Type[] actual = null;
+				if (superType instanceof ParameterizedType) {
+					actual = ((ParameterizedType)superType).getActualTypeArguments();
+					superType = ((ParameterizedType)superType).getRawType();
+				}
+				if (!(superType instanceof Class) || !declared.isAssignableFrom((Class)superType)) continue;
 				// Replace the type parameters of the super type with the arguments the type passes to it.
-				TypeVariable[] superParameters = superClass.getTypeParameters();
-				Type[] actual = superType instanceof ParameterizedType ? ((ParameterizedType)superType).getActualTypeArguments()
-					: null;
+				List superParameters = Arrays.asList(((Class)superType).getTypeParameters());
+				Type[] arguments = superTypeArguments((Class)superType, declared);
 				for (int ii = 0; ii < arguments.length; ii++) {
-					if (!(arguments[ii] instanceof TypeVariable)) continue;
-					Type replacement = null;
-					if (actual != null) {
-						for (int iii = 0; iii < superParameters.length; iii++) {
-							if (superParameters[iii] == arguments[ii]) {
-								replacement = actual[iii];
-								break;
-							}
-						}
-					}
-					arguments[ii] = replacement;
+					if (arguments[ii] instanceof TypeVariable)
+						arguments[ii] = actual == null ? null : actual[superParameters.indexOf(arguments[ii])];
 				}
 				return arguments;
 			}
-			return null;
+			return new Type[0];
 		}
 
 		public String toString () {
