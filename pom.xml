@@ -3,7 +3,7 @@
 
 	<groupId>com.esotericsoftware</groupId>
 	<artifactId>kryo-parent</artifactId>
-	<version>5.7.1-SNAPSHOT</version>
+	<version>6.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>Kryo Parent</name>
@@ -42,7 +42,7 @@
 
 	<properties>
 		<kryo.root>${basedir}</kryo.root>
-		<kryo.major.version>5</kryo.major.version>
+		<kryo.major.version>6</kryo.major.version>
 		<javac.target>17</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>5.13.4</junit.version>
