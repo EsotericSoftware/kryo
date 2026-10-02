@@ -484,6 +484,18 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
+	void testConcurrentHashMapKeySet () {
+		ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
+		map.put("1", 1);
+		ConcurrentHashMap.KeySetView<String, Integer> set = map.keySet();
+
+		kryo.register(ConcurrentHashMap.KeySetView.class);
+		kryo.register(ConcurrentHashMap.class);
+		roundTrip(9, set);
+		assertNull(kryo.copy(set).getMappedValue());
+	}
+
+	@Test
 	void testConcurrentHashMapKeySetViewCopy () {
 		ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
 
@@ -682,6 +694,21 @@ class DefaultSerializersTest extends KryoTestCase {
 
 		roundTrip(2, new AtomicReference<>());
 		roundTrip(3, new AtomicReference<>(1L));
+	}
+
+	@Test
+	void testAtomicReferenceCycle () {
+		kryo.register(AtomicReference.class);
+		kryo.setReferences(true);
+		AtomicReference<Object> reference = new AtomicReference<>();
+		reference.set(reference);
+
+		Output output = new Output(64);
+		kryo.writeObject(output, reference);
+		AtomicReference<?> read = kryo.readObject(new Input(output.toBytes()), AtomicReference.class);
+		assertSame(read, read.get());
+		AtomicReference<?> copy = kryo.copy(reference);
+		assertSame(copy, copy.get());
 	}
 
 	@Test

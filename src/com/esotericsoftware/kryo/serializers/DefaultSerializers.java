@@ -443,7 +443,14 @@ public class DefaultSerializers {
 			if (type == Timestamp.class || type == null) return new Timestamp(time);
 			// Use reflection for subclasses.
 			try {
-				return type.getConstructor(long.class).newInstance(time);
+				Constructor<? extends Timestamp> constructor = type.getConstructor(long.class);
+				if (!constructor.isAccessible()) {
+					try {
+						constructor.setAccessible(true);
+					} catch (SecurityException ignored) {
+					}
+				}
+				return constructor.newInstance(time);
 			} catch (Exception ex) {
 				Timestamp t = kryo.newInstance(type);
 				t.setTime(time);
@@ -884,7 +891,7 @@ public class DefaultSerializers {
 		}
 
 		private ConcurrentHashMap.KeySetView createKeySetView (ConcurrentHashMap map, Object mappedValue) {
-			return map.keySet(mappedValue);
+			return mappedValue == null ? map.keySet() : map.keySet(mappedValue);
 		}
 	}
 
@@ -1140,14 +1147,15 @@ public class DefaultSerializers {
 		}
 
 		public AtomicReference read (Kryo kryo, Input input, Class<? extends AtomicReference> type) {
-			final Object value = kryo.readClassAndObject(input);
 			AtomicReference object = create(kryo, type);
-			object.set(value);
+			kryo.reference(object);
+			object.set(kryo.readClassAndObject(input));
 			return object;
 		}
 
 		public AtomicReference copy (Kryo kryo, AtomicReference original) {
 			AtomicReference copy = create(kryo, original.getClass());
+			kryo.reference(copy);
 			copy.set(kryo.copy(original.get()));
 			return copy;
 		}
