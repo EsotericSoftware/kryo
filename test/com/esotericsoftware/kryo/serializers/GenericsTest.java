@@ -232,6 +232,13 @@ class GenericsTest extends KryoTestCase {
 		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderBase());
 	}
 
+	// The same class is held by fields with different declared types.
+	@Test
+	void testDifferentDeclaredTypes () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderMulti());
+	}
+
 	// A type argument that can't be resolved must not shift the following type arguments.
 	@Test
 	void testUnresolvedTypeArgument () {
@@ -822,6 +829,37 @@ class GenericsTest extends KryoTestCase {
 
 			public boolean equals (Object o) {
 				return o instanceof Pair p && Objects.equals(x, p.x) && Objects.equals(y, p.y);
+			}
+		}
+
+		public static class MultiBase<M> {
+		}
+
+		public interface MultiInterface<I> {
+		}
+
+		public static class Multi<T> extends MultiBase<T> implements MultiInterface<T> {
+			public List<T> list = new ArrayList<>();
+
+			Multi<T> add (T value) {
+				list.add(value);
+				return this;
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof Multi m && Objects.equals(list, m.list);
+			}
+		}
+
+		public static class HolderMulti {
+			public MultiBase<String> base = new Multi<String>().add("a");
+			public MultiInterface<Integer> interfaceType = new Multi<Integer>().add(1);
+			public Multi<Long> direct = new Multi<Long>().add(2L);
+			public MultiBase<Integer> base2 = new Multi<Integer>().add(3);
+
+			public boolean equals (Object o) {
+				return o instanceof HolderMulti h && Objects.equals(base, h.base) && Objects.equals(interfaceType, h.interfaceType)
+					&& Objects.equals(direct, h.direct) && Objects.equals(base2, h.base2);
 			}
 		}
 

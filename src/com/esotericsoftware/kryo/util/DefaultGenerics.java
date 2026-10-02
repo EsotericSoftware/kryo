@@ -42,6 +42,8 @@ public final class DefaultGenerics implements Generics {
 
 	@Override
 	public GenericsHierarchy buildHierarchy (Class type) {
+		// Type variables are only stored for the type parameters of the class itself.
+		if (type.getTypeParameters().length == 0) return GenericsHierarchy.EMPTY;
 		return new GenericsHierarchy(type);
 	}
 

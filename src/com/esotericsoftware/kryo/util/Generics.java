@@ -181,11 +181,17 @@ public interface Generics {
 			if (declaredType == type) return identityIndices; // Fast path.
 			if (declaredType == lastDeclared) return lastIndices;
 			if (!(declaredType instanceof Class)) return null;
-			if (superTypeIndices == null) superTypeIndices = new IdentityMap();
-			int[] indices = superTypeIndices.get((Class)declaredType);
+			int[] indices = superTypeIndices == null ? null : superTypeIndices.get((Class)declaredType);
 			if (indices == null) {
 				indices = computeArgumentIndices((Class)declaredType);
-				superTypeIndices.put((Class)declaredType, indices);
+				// Usually there is only one other declared type, so the map is only needed for the second one.
+				if (lastDeclared != null) {
+					if (superTypeIndices == null) {
+						superTypeIndices = new IdentityMap(4);
+						superTypeIndices.put(lastDeclared, lastIndices);
+					}
+					superTypeIndices.put((Class)declaredType, indices);
+				}
 			}
 			lastDeclared = (Class)declaredType;
 			lastIndices = indices;
