@@ -78,6 +78,16 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		}
 	}
 
+	public void removeField (String fieldName) {
+		super.removeField(fieldName);
+		initializeCachedFields();
+	}
+
+	public void removeField (CachedField field) {
+		super.removeField(field);
+		initializeCachedFields();
+	}
+
 	public void write (Kryo kryo, Output output, T object) {
 		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
 		int pop = pushTypeVariables();
