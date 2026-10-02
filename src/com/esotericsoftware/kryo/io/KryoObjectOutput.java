@@ -29,7 +29,7 @@ import java.io.ObjectOutput;
  * Note this is not an implementation of {@link java.io.ObjectOutputStream} which has special handling for Java serialization and
  * serialization extras like writeReplace. By default it will simply delegate to the appropriate Kryo method. Also, using it will
  * currently add one extra byte for each time {@link #writeObject(Object)} is invoked since we need to allow unknown null objects.
- * @author Robert DiFalco <robert.difalco@gmail.com> */
+ * @author Robert DiFalco {@literal <robert.difalco@gmail.com>} */
 public class KryoObjectOutput extends KryoDataOutput implements ObjectOutput {
 	private final Kryo kryo;
 

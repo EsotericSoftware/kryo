@@ -28,7 +28,7 @@ import java.io.ObjectInput;
  * <p>
  * Note this is not an implementation of {@link java.io.ObjectInputStream} which has special handling for Java serialization, such
  * as support for readResolve.
- * @author Robert DiFalco <robert.difalco@gmail.com> */
+ * @author Robert DiFalco {@literal <robert.difalco@gmail.com>} */
 public class KryoObjectInput extends KryoDataInput implements ObjectInput {
 	private final Kryo kryo;
 
