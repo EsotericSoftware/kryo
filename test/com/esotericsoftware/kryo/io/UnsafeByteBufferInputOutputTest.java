@@ -47,17 +47,17 @@ class UnsafeByteBufferInputOutputTest {
 			ByteBufferOutput outputBuffer = new ByteBufferOutput(UnsafeUtil.newDirectBuffer(bufAddress, 4096));
 			outputBuffer.writeInt(10);
 
-			ByteBufferInput inputBuffer = new ByteBufferInput(outputBuffer.getByteBuffer());
-			inputBuffer.readInt();
+			ByteBufferInput inputBuffer = new ByteBufferInput(UnsafeUtil.newDirectBuffer(bufAddress, 4096));
+			assertEquals(10, inputBuffer.readInt());
 
 			UnsafeUtil.dispose(inputBuffer.getByteBuffer());
 			UnsafeUtil.dispose(outputBuffer.getByteBuffer());
 
 			outputBuffer = new UnsafeByteBufferOutput(bufAddress, 4096);
-			outputBuffer.writeInt(10);
+			outputBuffer.writeInt(11);
 
-			inputBuffer = new UnsafeByteBufferInput(outputBuffer.getByteBuffer());
-			inputBuffer.readInt();
+			inputBuffer = new UnsafeByteBufferInput(bufAddress, 4096);
+			assertEquals(11, inputBuffer.readInt());
 
 			UnsafeUtil.dispose(inputBuffer.getByteBuffer());
 			UnsafeUtil.dispose(outputBuffer.getByteBuffer());
