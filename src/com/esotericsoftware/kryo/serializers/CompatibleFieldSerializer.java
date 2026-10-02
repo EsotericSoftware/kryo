@@ -78,6 +78,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		}
 	}
 
+	/** Field values must be readable without the field, so they don't depend on the field's generic type when
+	 * {@link CompatibleFieldSerializerConfig#setReadUnknownFieldData(boolean) readUnknownFieldData} is true. */
+	protected boolean optimizeGenerics () {
+		return !config.readUnknownFieldData;
+	}
+
 	public void removeField (String fieldName) {
 		super.removeField(fieldName);
 		initializeCachedFields();

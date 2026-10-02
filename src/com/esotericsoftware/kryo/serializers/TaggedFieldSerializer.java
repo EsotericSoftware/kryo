@@ -101,6 +101,12 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		this.writeTags = (CachedField[])writeTags.toArray(new CachedField[writeTags.size()]);
 	}
 
+	/** Field values must be readable without the field, so they don't depend on the field's generic type when
+	 * {@link TaggedFieldSerializerConfig#setReadUnknownTagData(boolean) readUnknownTagData} is true. */
+	protected boolean optimizeGenerics () {
+		return !config.readUnknownTagData;
+	}
+
 	public void removeField (String fieldName) {
 		super.removeField(fieldName);
 		initializeCachedFields();

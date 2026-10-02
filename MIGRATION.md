@@ -29,6 +29,24 @@ kryo.register(Timestamp.class, new DateSerializer());
 kryo.register(UUID.class, new FieldSerializer<>(kryo, UUID.class));
 ```
 
+### Generic fields with CompatibleFieldSerializer and TaggedFieldSerializer
+
+CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` no longer use the generic type of a field to optimize its value. Kryo 5 omitted the class of collection elements and map keys and values if the field's type arguments were final, eg `List<String>`, so the value could not be read anymore once the field was removed ([#1098](https://github.com/EsotericSoftware/kryo/issues/1098)). To read such data written by Kryo 5, override `optimizeGenerics`. This restores the Kryo 5 behavior, so data with such a field that has since been removed can only be read if it was written with chunked encoding:
+
+```java
+public class Kryo5CompatibleFieldSerializer<T> extends CompatibleFieldSerializer<T> {
+	public Kryo5CompatibleFieldSerializer (Kryo kryo, Class type) {
+		super(kryo, type);
+	}
+
+	protected boolean optimizeGenerics () {
+		return true;
+	}
+}
+
+kryo.setDefaultSerializer(Kryo5CompatibleFieldSerializer.class);
+```
+
 ### Maps
 
 If the class of the keys or values of a map is unknown, MapSerializer writes it only once if all keys or values are not null and have the same class. Kryo 5 wrote the class of each key and value. To read data written by Kryo 5, disable this for the MapSerializer instances, eg for all maps that use the default MapSerializer:
