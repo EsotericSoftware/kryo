@@ -451,6 +451,25 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		testExtendedClass(297, true, true);
 	}
 
+	// https://github.com/EsotericSoftware/kryo/issues/699
+	@Test
+	void testDuplicateFieldNames () {
+		kryo.register(ExtendedTestClass.class, new CompatibleFieldSerializer(kryo, ExtendedTestClass.class));
+
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.writeObject(new Output(1024), new ExtendedTestClass()));
+		assertTrue(ex.getMessage().contains("setExtendedFieldNames"), ex.getMessage());
+		assertThrows(KryoException.class, () -> kryo.readObject(new Input(new byte[16]), ExtendedTestClass.class));
+	}
+
+	@Test
+	void testDuplicateFieldNameRemoved () {
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, DuplicateFieldChild.class);
+		serializer.removeField("value");
+		kryo.register(DuplicateFieldChild.class, serializer);
+
+		roundTrip(9, new DuplicateFieldChild());
+	}
+
 	private void testExtendedClass (int length, boolean references, boolean chunked) {
 		kryo.setReferences(references);
 
@@ -899,6 +918,19 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	public record RecordClass(String height, int width, long x, double y) { }
 	public record OldPrimitiveRecord(long x) { }
+
+	public static class DuplicateFieldParent {
+		public int value = 1;
+	}
+
+	public static class DuplicateFieldChild extends DuplicateFieldParent {
+		public int value = 2;
+
+		public boolean equals (Object o) {
+			return o instanceof DuplicateFieldChild other && value == other.value
+				&& ((DuplicateFieldParent)this).value == ((DuplicateFieldParent)other).value;
+		}
+	}
 
 	public static class DefaultValue {
 		public Integer value = 10;
