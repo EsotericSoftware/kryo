@@ -36,6 +36,7 @@ import com.esotericsoftware.kryo.serializers.CollectionSerializer.BindCollection
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.IntArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.LongArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
@@ -63,6 +64,26 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 class FieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
+	}
+
+	@Test
+	void testReadPrimitiveFieldValues () {
+		FieldSerializer<SmallPrimitives> serializer = new FieldSerializer<>(kryo, SmallPrimitives.class);
+		SmallPrimitives object = new SmallPrimitives();
+		object.b = 1;
+		object.c = 'c';
+		object.s = 2;
+		object.z = true;
+
+		Output output = new Output(64, -1);
+		serializer.write(kryo, output, object);
+		Input input = new Input(output.toBytes());
+		// Fields are sorted by name: b, c, s, z.
+		CachedField[] fields = serializer.getFields();
+		assertEquals((byte)1, fields[0].read(input));
+		assertEquals('c', fields[1].read(input));
+		assertEquals((short)2, fields[2].read(input));
+		assertEquals(true, fields[3].read(input));
 	}
 
 	@Test
@@ -1544,5 +1565,12 @@ class FieldSerializerTest extends KryoTestCase {
 	public record RecordClass(String height, int width, long x, double y) { }
 
 	public record RecordWithList(List<String> list, int number) { }
+
+	public static class SmallPrimitives {
+		byte b;
+		char c;
+		short s;
+		boolean z;
+	}
 
 }

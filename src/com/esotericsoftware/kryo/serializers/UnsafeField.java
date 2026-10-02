@@ -152,7 +152,7 @@ class UnsafeField extends ReflectField {
 		}
 
 		public Object read(Input input) {
-			return input.readShort();
+			return input.readByte();
 		}
 
 		public void copy (Object original, Object copy) {
@@ -175,7 +175,7 @@ class UnsafeField extends ReflectField {
 		}
 
 		public Object read(Input input) {
-			return input.readShort();
+			return input.readBoolean();
 		}
 
 		public void copy (Object original, Object copy) {
@@ -198,7 +198,7 @@ class UnsafeField extends ReflectField {
 		}
 
 		public Object read(Input input) {
-			return input.readShort();
+			return input.readChar();
 		}
 
 		public void copy (Object original, Object copy) {
