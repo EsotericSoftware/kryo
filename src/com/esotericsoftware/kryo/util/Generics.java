@@ -295,6 +295,8 @@ public interface Generics {
 				type = rawType;
 				Type[] actualArgs = paramType.getActualTypeArguments();
 				int n = actualArgs.length;
+				// A non-generic inner class of a generic class, eg Outer<String>.Inner, has no type arguments of its own.
+				if (n == 0) return;
 				arguments = new GenericType[n];
 				for (int i = 0; i < n; i++)
 					arguments[i] = new GenericType(fromClass, toClass, actualArgs[i]);

@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
 import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 class GenericsTest extends KryoTestCase {
 	{
@@ -208,6 +210,14 @@ class GenericsTest extends KryoTestCase {
 	}
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/721
+	// A parameterized type without type arguments of its own.
+	@Test
+	void testNonGenericInnerClassOfGenericClass () {
+		kryo.setRegistrationRequired(false);
+		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderInner());
+	}
+
 	// The type parameter of the class is not passed to the declared interface.
 	@Test
 	void testTypeParameterNotPassedToDeclaredType () {
@@ -812,6 +822,24 @@ class GenericsTest extends KryoTestCase {
 
 			public boolean equals (Object o) {
 				return o instanceof Pair p && Objects.equals(x, p.x) && Objects.equals(y, p.y);
+			}
+		}
+
+		public static class Outer<T> {
+			public class Inner {
+				public int value = 1;
+
+				public boolean equals (Object o) {
+					return o instanceof Outer.Inner i && value == i.value;
+				}
+			}
+		}
+
+		public static class HolderInner {
+			public Outer<String>.Inner inner = new Outer<String>().new Inner();
+
+			public boolean equals (Object o) {
+				return o instanceof HolderInner h && Objects.equals(inner, h.inner);
 			}
 		}
 
