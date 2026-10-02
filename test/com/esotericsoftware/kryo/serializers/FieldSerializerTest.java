@@ -66,6 +66,18 @@ class FieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testRecordRemovedPrimitiveComponent () {
+		FieldSerializer serializer = new FieldSerializer(kryo, RecordClass.class);
+		serializer.removeField("width");
+		kryo.register(RecordClass.class, serializer);
+
+		Output output = new Output(64, -1);
+		kryo.writeObject(output, new RecordClass("1", 1, 1L, 1d));
+		RecordClass deserialized = kryo.readObject(new Input(output.toBytes()), RecordClass.class);
+		assertEquals(new RecordClass("1", 0, 1L, 1d), deserialized);
+	}
+
+	@Test
 	void testDefaultTypes () {
 		kryo.register(DefaultTypes.class);
 		kryo.register(byte[].class);

@@ -36,6 +36,18 @@ class VersionedFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testVersionedRecordMissingPrimitiveComponent () {
+		kryo.setDefaultSerializer(VersionFieldSerializer.class);
+		kryo.register(OldPrimitiveRecord.class);
+		kryo.register(NewPrimitiveRecord.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, new OldPrimitiveRecord(3L));
+		NewPrimitiveRecord deserialized = kryo.readObject(new Input(output.toBytes()), NewPrimitiveRecord.class);
+		assertEquals(new NewPrimitiveRecord(0, 3L), deserialized);
+	}
+
+	@Test
 	void testVersionFieldSerializer () {
 		TestClass object1 = new TestClass();
 		object1.moo = 2;
@@ -209,4 +221,8 @@ class VersionedFieldSerializerTest extends KryoTestCase {
 			return true;
 		}
 	}
+	public record OldPrimitiveRecord(long x) { }
+
+	public record NewPrimitiveRecord(@Since(1) int added, long x) { }
+
 }

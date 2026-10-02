@@ -43,6 +43,18 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testRecordMissingPrimitiveComponent () {
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(OldPrimitiveRecord.class);
+		kryo.register(NewPrimitiveRecord.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, new OldPrimitiveRecord(3L));
+		NewPrimitiveRecord deserialized = kryo.readObject(new Input(output.toBytes()), NewPrimitiveRecord.class);
+		assertEquals(new NewPrimitiveRecord(3L, 0.0), deserialized);
+	}
+
+	@Test
 	void testCompatibleFieldSerializer () {
 		testCompatibleFieldSerializer(83, false, false);
 		testCompatibleFieldSerializer(116, false, true);
@@ -856,4 +868,8 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	public record OldRecordClass(long x, double y, int width) { }
 
 	public record RecordClass(String height, int width, long x, double y) { }
+	public record OldPrimitiveRecord(long x) { }
+
+	public record NewPrimitiveRecord(long x, double added) { }
+
 }

@@ -38,11 +38,10 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Objects;
+import java.lang.reflect.RecordComponent;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
  * configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be
@@ -69,6 +68,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 	final CachedFields cachedFields;
 	private final GenericsHierarchy genericsHierarchy;
 
+	// For records.
+	final Constructor recordConstructor;
+	private final Object[] recordDefaults;
+
 	public FieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new FieldSerializerConfig());
 	}
@@ -83,6 +86,29 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		final Generics generics = kryo.getGenerics();
 		genericsHierarchy = generics.buildHierarchy(type);
+
+		if (type.isRecord()) {
+			RecordComponent[] components = type.getRecordComponents();
+			Class[] componentTypes = new Class[components.length];
+			recordDefaults = new Object[components.length];
+			for (int i = 0; i < components.length; i++) {
+				componentTypes[i] = components[i].getType();
+				if (componentTypes[i].isPrimitive()) recordDefaults[i] = Array.get(Array.newInstance(componentTypes[i], 1), 0);
+			}
+			try {
+				recordConstructor = type.getDeclaredConstructor(componentTypes);
+			} catch (NoSuchMethodException ex) {
+				throw new KryoException("Unable to find canonical constructor: " + className(type), ex);
+			}
+			try {
+				recordConstructor.setAccessible(true);
+			} catch (RuntimeException ex) {
+				if (DEBUG) debug("kryo", "Unable to set canonical constructor as accessible: " + className(type), ex);
+			}
+		} else {
+			recordConstructor = null;
+			recordDefaults = null;
+		}
 
 		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
@@ -126,24 +152,22 @@ public class FieldSerializer<T> extends Serializer<T> {
 		int pop = pushTypeVariables();
 
 		T object = null;
-		final boolean isRecord = type.isRecord();
-		if (!isRecord) {
+		Object[] values = null;
+		if (recordConstructor == null) {
 			object = create(kryo, input, type);
 			kryo.reference(object);
-		}
+		} else
+			values = newRecordValues();
 
 		CachedField[] fields = cachedFields.fields;
-		Object[] values = null;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Read", fields[i], input.position());
 			try {
 				final CachedField field = fields[i];
-				if (object != null) {
+				if (values == null)
 					field.read(input, object);
-				} else {
-					if (values == null) values = new Object[fields.length];
+				else
 					values[field.index] = field.read(input);
-				}
 			} catch (KryoException e) {
 				throw e;
 			} catch (Exception e) {
@@ -151,36 +175,27 @@ public class FieldSerializer<T> extends Serializer<T> {
 			}
 		}
 
-		if (isRecord) {
-			object = invokeCanonicalConstructor(type, fields, values);
-		}
+		if (values != null) object = createRecord(values);
 
 		popTypeVariables(pop);
 		return object;
 	}
 
-	static <T> T invokeCanonicalConstructor(Class<T> type, CachedField[] fields, Object[] values) {
-		final Class<?>[] objects = Arrays.stream(fields)
-				.sorted(Comparator.comparing(f -> f.index))
-				.map(f -> f.field.getType())
-				.toArray(Class[]::new);
-		return invokeCanonicalConstructor(type, objects, values);
+	/** Returns a new array for the component values of a record, indexed by {@link CachedField#index}. */
+	Object[] newRecordValues () {
+		return new Object[recordDefaults.length];
 	}
 
-	static <T> T invokeCanonicalConstructor (Class<T> type, Class<?>[] paramTypes, Object[] args) {
+	/** Creates a record using its canonical constructor. Components without a value, for example because they were not present in
+	 * the serialized data, are set to their default value. */
+	T createRecord (Object[] values) {
+		Object[] defaults = recordDefaults;
+		for (int i = 0, n = values.length; i < n; i++)
+			if (values[i] == null) values[i] = defaults[i];
 		try {
-			Constructor<T> canonicalConstructor;
-			try {
-				canonicalConstructor = type.getConstructor(paramTypes);
-			} catch (NoSuchMethodException e) {
-				canonicalConstructor = type.getDeclaredConstructor(paramTypes);
-				canonicalConstructor.setAccessible(true);
-			}
-			return canonicalConstructor.newInstance(args);
-		} catch (Throwable t) {
-			KryoException ex = new KryoException(t);
-			ex.addTrace("Could not construct type (" + type.getName() + ")");
-			throw ex;
+			return (T)recordConstructor.newInstance(values);
+		} catch (Exception ex) {
+			throw new KryoException("Error constructing record: " + className(type), ex);
 		}
 	}
 
@@ -268,28 +283,25 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public T copy (Kryo kryo, T original) {
-		final T copy;
 		final CachedField[] copyFields = cachedFields.copyFields;
-		final boolean isRecord = original.getClass().isRecord();
-		if (!isRecord) {
-			copy = createCopy(kryo, original);
+		if (recordConstructor == null) {
+			T copy = createCopy(kryo, original);
 			kryo.reference(copy);
-			for (int i = 0, n = copyFields.length; i < n; i++) {
+			for (int i = 0, n = copyFields.length; i < n; i++)
 				copyFields[i].copy(original, copy);
-			}
-		} else {
-			final Object[] values = new Object[copyFields.length];
-			for (int i = 0, n = copyFields.length; i < n; i++) {
-				final CachedField field = copyFields[i];
-				try {
-					values[field.index] = field.get(original);
-				} catch (IllegalAccessException e) {
-					throw new KryoException("Error accessing field: " + field.getName() + " (" + type.getName() + ")", e);
-				}
-			}
-			copy = (T) invokeCanonicalConstructor(type, copyFields, values);
+			return copy;
 		}
-		return copy;
+
+		Object[] values = newRecordValues();
+		for (int i = 0, n = copyFields.length; i < n; i++) {
+			CachedField field = copyFields[i];
+			try {
+				values[field.index] = field.get(original);
+			} catch (IllegalAccessException ex) {
+				throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
+			}
+		}
+		return createRecord(values);
 	}
 
 	/** Settings for serializing a field. */

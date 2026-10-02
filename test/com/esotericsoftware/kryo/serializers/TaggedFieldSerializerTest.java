@@ -42,6 +42,18 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testTaggedRecordMissingPrimitiveComponent () {
+		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
+		kryo.register(OldPrimitiveRecord.class);
+		kryo.register(NewPrimitiveRecord.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, new OldPrimitiveRecord(3L));
+		NewPrimitiveRecord deserialized = kryo.readObject(new Input(output.toBytes()), NewPrimitiveRecord.class);
+		assertEquals(new NewPrimitiveRecord(3L, 0, false), deserialized);
+	}
+
+	@Test
 	void testDuplicateTags () {
 		KryoException ex = assertThrows(KryoException.class, () -> new TaggedFieldSerializer(kryo, DuplicateTags.class));
 		assertTrue(ex.getMessage().contains("Duplicate tag 5"), ex.getMessage());
@@ -365,4 +377,8 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		@Tag(5) int a;
 		@Tag(5) int b;
 	}
+	public record OldPrimitiveRecord(@Tag(0) long x) { }
+
+	public record NewPrimitiveRecord(@Tag(0) long x, @Tag(1) int added, @Tag(2) boolean flag) { }
+
 }

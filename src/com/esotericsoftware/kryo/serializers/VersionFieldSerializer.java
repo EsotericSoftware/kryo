@@ -32,8 +32,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Comparator;
 
 /** Serializes objects using direct field assignment, providing backward compatibility with minimal overhead. This means fields
  * can be added without invalidating previously serialized bytes. Removing, renaming, or changing the type of a field is not
@@ -120,14 +118,14 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		int pop = pushTypeVariables();
 
 		T object = null;
-		final boolean isRecord = type.isRecord();
-		if (!isRecord) {
+		Object[] values = null;
+		if (recordConstructor == null) {
 			object = create(kryo, input, type);
 			kryo.reference(object);
-		}
+		} else
+			values = newRecordValues();
 
 		CachedField[] fields = cachedFields.fields;
-		Object[] values = null;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			// Field is not present in input, skip it.
 			if (fieldVersion[i] > version) {
@@ -135,18 +133,13 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 				continue;
 			}
 			if (TRACE) log("Read", fields[i], input.position());
-			final CachedField field = fields[i];
-			if (object != null) {
-				field.read(input, object);
-			} else {
-				if (values == null) values = new Object[fields.length];
-				values[field.index] = field.read(input);
-			}
+			if (values == null)
+				fields[i].read(input, object);
+			else
+				values[fields[i].index] = fields[i].read(input);
 		}
 
-		if (isRecord) {
-			object = invokeCanonicalConstructor(type, fields, values);
-		}
+		if (values != null) object = createRecord(values);
 
 		popTypeVariables(pop);
 		return object;
