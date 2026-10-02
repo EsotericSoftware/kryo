@@ -296,9 +296,14 @@ public class FieldSerializer<T> extends Serializer<T> {
 		for (int i = 0, n = copyFields.length; i < n; i++) {
 			CachedField field = copyFields[i];
 			try {
-				values[field.index] = field.get(original);
+				Object value = field.get(original);
+				// Primitive values are immutable, all other values are copied like other field values.
+				values[field.index] = field.field.getType().isPrimitive() ? value : kryo.copy(value);
 			} catch (IllegalAccessException ex) {
 				throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
+			} catch (KryoException ex) {
+				ex.addTrace(field.name + " (" + className(type) + ")");
+				throw ex;
 			}
 		}
 		return createRecord(values);

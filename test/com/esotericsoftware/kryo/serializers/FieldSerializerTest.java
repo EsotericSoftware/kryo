@@ -78,6 +78,21 @@ class FieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testRecordDeepCopy () {
+		kryo.register(RecordWithList.class);
+		kryo.register(ArrayList.class);
+
+		RecordWithList original = new RecordWithList(new ArrayList<>(Arrays.asList("a", "b")), 1);
+		RecordWithList copy = kryo.copy(original);
+		assertEquals(original, copy);
+		assertNotSame(original.list(), copy.list());
+
+		RecordWithList shallowCopy = kryo.copyShallow(original);
+		assertEquals(original, shallowCopy);
+		assertSame(original.list(), shallowCopy.list());
+	}
+
+	@Test
 	void testDefaultTypes () {
 		kryo.register(DefaultTypes.class);
 		kryo.register(byte[].class);
@@ -1527,5 +1542,7 @@ class FieldSerializerTest extends KryoTestCase {
 	}
 
 	public record RecordClass(String height, int width, long x, double y) { }
+
+	public record RecordWithList(List<String> list, int number) { }
 
 }
