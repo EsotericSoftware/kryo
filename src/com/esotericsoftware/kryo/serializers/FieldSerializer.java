@@ -323,7 +323,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		// For AsmField.
 		FieldAccess access;
 		int accessIndex = -1;
-		
+
 		// For Records
 		int index;
 
@@ -433,7 +433,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public abstract void copy (Object original, Object copy);
 
-		Object get(Object object) throws IllegalAccessException {
+		Object get (Object object) throws IllegalAccessException {
 			return field.get(object);
 		}
 	}

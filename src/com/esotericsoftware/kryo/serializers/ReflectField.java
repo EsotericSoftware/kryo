@@ -152,7 +152,7 @@ class ReflectField extends CachedField {
 		}
 	}
 
-	public Object read(Input input) {
+	public Object read (Input input) {
 		Kryo kryo = fieldSerializer.kryo;
 		try {
 			Object value;
@@ -412,7 +412,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readBoolean();
 		}
 
@@ -452,7 +452,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readChar();
 		}
 
@@ -498,7 +498,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			if (varEncoding)
 				return input.readVarLong(false);
 			else
@@ -541,7 +541,7 @@ class ReflectField extends CachedField {
 			}
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readDouble();
 		}
 

@@ -79,7 +79,7 @@ class UnsafeField extends ReflectField {
 				unsafe.putInt(object, offset, input.readInt());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			if (varEncoding)
 				return input.readVarInt(false);
 			else
@@ -105,7 +105,7 @@ class UnsafeField extends ReflectField {
 			unsafe.putFloat(object, offset, input.readFloat());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readFloat();
 		}
 
@@ -128,7 +128,7 @@ class UnsafeField extends ReflectField {
 			unsafe.putShort(object, offset, input.readShort());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readShort();
 		}
 
@@ -151,7 +151,7 @@ class UnsafeField extends ReflectField {
 			unsafe.putByte(object, offset, input.readByte());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readByte();
 		}
 
@@ -174,7 +174,7 @@ class UnsafeField extends ReflectField {
 			unsafe.putBoolean(object, offset, input.readBoolean());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readBoolean();
 		}
 
@@ -197,7 +197,7 @@ class UnsafeField extends ReflectField {
 			unsafe.putChar(object, offset, input.readChar());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readChar();
 		}
 
@@ -252,7 +252,7 @@ class UnsafeField extends ReflectField {
 			unsafe.putDouble(object, offset, input.readDouble());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readDouble();
 		}
 
@@ -275,7 +275,7 @@ class UnsafeField extends ReflectField {
 			unsafe.putObject(object, offset, input.readString());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readString();
 		}
 

@@ -74,7 +74,7 @@ class AsmField extends ReflectField {
 				access.setInt(object, accessIndex, input.readInt());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			if (varEncoding)
 				return input.readVarInt(false);
 			else
@@ -99,7 +99,7 @@ class AsmField extends ReflectField {
 			access.setFloat(object, accessIndex, input.readFloat());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readFloat();
 		}
 
@@ -121,7 +121,7 @@ class AsmField extends ReflectField {
 			access.setShort(object, accessIndex, input.readShort());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readShort();
 		}
 
@@ -143,7 +143,7 @@ class AsmField extends ReflectField {
 			access.setByte(object, accessIndex, input.readByte());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readByte();
 		}
 
@@ -165,7 +165,7 @@ class AsmField extends ReflectField {
 			access.setBoolean(object, accessIndex, input.readBoolean());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readBoolean();
 		}
 
@@ -187,7 +187,7 @@ class AsmField extends ReflectField {
 			access.setChar(object, accessIndex, input.readChar());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readChar();
 		}
 
@@ -215,7 +215,7 @@ class AsmField extends ReflectField {
 				access.setLong(object, accessIndex, input.readLong());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			if (varEncoding) {
 				return input.readVarLong(false);
 			} else {
@@ -241,7 +241,7 @@ class AsmField extends ReflectField {
 			access.setDouble(object, accessIndex, input.readDouble());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readDouble();
 		}
 
@@ -263,7 +263,7 @@ class AsmField extends ReflectField {
 			access.set(object, accessIndex, input.readString());
 		}
 
-		public Object read(Input input) {
+		public Object read (Input input) {
 			return input.readString();
 		}
 
