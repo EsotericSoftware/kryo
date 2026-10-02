@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.io;
 
 import static com.esotericsoftware.kryo.KryoAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 import com.esotericsoftware.kryo.Unsafe;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
@@ -40,6 +41,7 @@ class UnsafeByteBufferInputOutputTest {
 
 	@Test
 	void testByteBufferOutputWithPreallocatedMemory () {
+		assumeTrue(UnsafeUtil.isNewDirectBufferAvailable(), "Streams with preallocated direct memory are not supported on this JVM");
 		long bufAddress = UnsafeUtil.unsafe.allocateMemory(4096);
 		try {
 			ByteBufferOutput outputBuffer = new ByteBufferOutput(UnsafeUtil.newDirectBuffer(bufAddress, 4096));
@@ -59,9 +61,6 @@ class UnsafeByteBufferInputOutputTest {
 
 			UnsafeUtil.dispose(inputBuffer.getByteBuffer());
 			UnsafeUtil.dispose(outputBuffer.getByteBuffer());
-		} catch (Throwable t) {
-			System.err.println("Streams with preallocated direct memory are not supported on this JVM");
-			t.printStackTrace();
 		} finally {
 			UnsafeUtil.unsafe.freeMemory(bufAddress);
 		}

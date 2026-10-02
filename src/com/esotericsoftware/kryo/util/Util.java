@@ -284,7 +284,7 @@ public class Util {
 				} catch (NoSuchMethodException ex) {
 				}
 			}
-			return factoryClass.newInstance();
+			return factoryClass.getDeclaredConstructor().newInstance();
 		} catch (Exception ex) {
 			if (serializerClass == null)
 				throw new IllegalArgumentException("Unable to create serializer factory: " + factoryClass.getName(), ex);
