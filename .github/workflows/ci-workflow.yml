@@ -11,8 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # Snapshots for kryo-6 will be published once it contains the first major Kryo 6 changes.
-      PUBLISH_ARTIFACTS: ${{ github.ref == 'refs/heads/master' }}
+      PUBLISH_ARTIFACTS: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/kryo-6' }}
 
     steps:
       - uses: actions/checkout@v7
