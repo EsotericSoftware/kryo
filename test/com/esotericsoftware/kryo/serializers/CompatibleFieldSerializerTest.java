@@ -29,8 +29,11 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -468,6 +471,33 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.register(DuplicateFieldChild.class, serializer);
 
 		roundTrip(9, new DuplicateFieldChild());
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/1098 and https://github.com/EsotericSoftware/kryo/issues/907
+	@Test
+	void testRemovedGenericFields () {
+		testRemovedGenericField(false, false);
+		testRemovedGenericField(false, true);
+		testRemovedGenericField(true, false);
+		testRemovedGenericField(true, true);
+	}
+
+	private void testRemovedGenericField (boolean chunked, boolean references) {
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(chunked);
+		kryo = new Kryo();
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		kryo.setReferences(references);
+		kryo.register(ArrayList.class);
+		kryo.register(HashMap.class);
+		kryo.register(GenericFields.class);
+		kryo.register(WithoutGenericFields.class);
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, new GenericFields());
+		WithoutGenericFields read = kryo.readObject(new Input(output.toBytes()), WithoutGenericFields.class);
+		assertEquals("a", read.a);
+		assertEquals("z", read.z);
 	}
 
 	private void testExtendedClass (int length, boolean references, boolean chunked) {
@@ -918,6 +948,28 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	public record RecordClass(String height, int width, long x, double y) { }
 	public record OldPrimitiveRecord(long x) { }
+
+	public static class GenericFieldsParent<T> {
+		public List<T> inherited = new ArrayList<>();
+	}
+
+	public static class GenericFields extends GenericFieldsParent<String> {
+		public String a = "a";
+		public List<String> list = new ArrayList<>(List.of("x", "y"));
+		public Map<Integer, String> map = new HashMap<>(Map.of(1, "one"));
+		public List<List<String>> nested = new ArrayList<>(List.of(new ArrayList<>(List.of("n"))));
+		public String z = "z";
+
+		public GenericFields () {
+			inherited.add("i");
+		}
+	}
+
+	/** {@link GenericFields} without the generic fields. */
+	public static class WithoutGenericFields {
+		public String a;
+		public String z;
+	}
 
 	public static class DuplicateFieldParent {
 		public int value = 1;

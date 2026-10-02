@@ -120,6 +120,12 @@ public class FieldSerializer<T> extends Serializer<T> {
 	protected void initializeCachedFields () {
 	}
 
+	/** Returns true if the generic type of a field is used to optimize the serialization of its value, eg to omit the class of
+	 * collection elements. Then the value can only be read with the same generic type. */
+	protected boolean optimizeGenerics () {
+		return true;
+	}
+
 	/** If the returned config settings are modified, {@link #updateFields()} must be called. */
 	public FieldSerializerConfig getFieldSerializerConfig () {
 		return config;

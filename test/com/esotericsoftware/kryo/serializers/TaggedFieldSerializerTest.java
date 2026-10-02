@@ -31,6 +31,8 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
@@ -397,6 +399,34 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		Input input = new Input(output.toBytes());
 		assertEquals(5, kryo.readObject(input, DefaultValue.class).value);
 		assertNull(kryo.readObject(input, DefaultValue.class).value);
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/1098
+	@Test
+	void testRemovedGenericField () {
+		TaggedFieldSerializer.TaggedFieldSerializerConfig config = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+		config.setReadUnknownTagData(true);
+		kryo.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
+		kryo.register(ArrayList.class);
+		kryo.register(GenericField.class);
+		kryo.register(WithoutGenericField.class);
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, new GenericField());
+		WithoutGenericField read = kryo.readObject(new Input(output.toBytes()), WithoutGenericField.class);
+		assertEquals("a", read.a);
+		assertEquals("z", read.z);
+	}
+
+	public static class GenericField {
+		@Tag(0) public String a = "a";
+		@Tag(1) public List<String> list = new ArrayList<>(List.of("x", "y"));
+		@Tag(2) public String z = "z";
+	}
+
+	public static class WithoutGenericField {
+		@Tag(0) public String a;
+		@Tag(2) public String z;
 	}
 
 	public static class DefaultValue {
