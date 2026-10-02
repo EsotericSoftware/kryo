@@ -35,7 +35,7 @@ import sun.nio.ch.DirectBuffer;
 /** Utility methods for using {@link sun.misc.Unsafe}.
  * <p>
  * Not available on all JVMs. {@link Util#unsafe} can be checked before using this class.
- * @author Roman Levenstein <romixlev@gmail.com> */
+ * @author Roman Levenstein {@literal <romixlev@gmail.com>} */
 @SuppressWarnings("restriction")
 public class UnsafeUtil {
 	/** The sun.misc.Unsafe instance, or null if Unsafe is unavailable. */

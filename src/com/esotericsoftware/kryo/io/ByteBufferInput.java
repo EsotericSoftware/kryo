@@ -33,7 +33,7 @@ import java.nio.ByteOrder;
  * <p>
  * Note that the byte[] {@link #getBuffer() buffer} is not used. Code taking an Input and expecting the byte[] to be used may not
  * work correctly.
- * @author Roman Levenstein <romixlev@gmail.com>
+ * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 public class ByteBufferInput extends Input {
 	private static final ByteOrder nativeOrder = ByteOrder.nativeOrder();
@@ -200,7 +200,7 @@ public class ByteBufferInput extends Input {
 	}
 
 	/** Fills the buffer with at least the number of bytes specified, if possible.
-	 * @param optional Must be > 0.
+	 * @param optional Must be {@code > 0}.
 	 * @return the number of bytes remaining, but not more than optional, or -1 if {@link #fill(ByteBuffer, int, int)} is unable to
 	 *         provide more bytes. */
 	protected int optional (int optional) throws KryoException {
