@@ -59,6 +59,7 @@ public class RecordSerializerBenchmark {
 	@State(Scope.Thread)
 	static public abstract class BenchmarkState {
 		@Param({"true", "false"}) public boolean references;
+		@Param({"true", "false"}) public boolean publicRecord;
 
 		final Kryo kryo = new Kryo();
 		final Output output = new Output(1024 * 512);
@@ -67,7 +68,8 @@ public class RecordSerializerBenchmark {
 
 		@Setup(Level.Trial)
 		public void setup () {
-			object = new RecordRectangle("2134324", 10, 10L, 20D);
+			object = publicRecord ? new RecordRectangle("2134324", 10, 10L, 20D)
+				: new NonPublicRecordRectangle("2134324", 10, 10L, 20D);
 			kryo.setReferences(references);
 		}
 
@@ -82,10 +84,13 @@ public class RecordSerializerBenchmark {
 
 	public record RecordRectangle (String height, int width, long x, double y) { }
 
+	record NonPublicRecordRectangle (String height, int width, long x, double y) { }
+
 	static public class FieldSerializerState extends BenchmarkState {
 		public void setup () {
 			kryo.setDefaultSerializer(FieldSerializer.class);
 			kryo.register(RecordRectangle.class);
+			kryo.register(NonPublicRecordRectangle.class);
 			super.setup();
 		}
 	}
@@ -93,6 +98,7 @@ public class RecordSerializerBenchmark {
 	static public class RecordSerializerState extends BenchmarkState {
 		public void setup () {
 			kryo.register(RecordRectangle.class, new RecordSerializer<>(RecordRectangle.class));
+			kryo.register(NonPublicRecordRectangle.class, new RecordSerializer<>(NonPublicRecordRectangle.class));
 			super.setup();
 		}
 	}
