@@ -34,8 +34,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 /** An assertion utility that provides reflection based assertion, with improvements compared to commons-lang's
  * EqualsBuilder#reflectionEquals and unitils' ReflectionassertReflectionEquals. */
@@ -104,6 +107,26 @@ class ReflectionAssert {
 		if (one instanceof AtomicInteger || one instanceof AtomicLong) {
 			assertEquals(((Number)one).longValue(), ((Number)another).longValue(),
 					"Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ");
+			return;
+		}
+
+		if (one instanceof AtomicBoolean) {
+			assertEquals(((AtomicBoolean)one).get(), ((AtomicBoolean)another).get(),
+					"Values not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ");
+			return;
+		}
+
+		if (one instanceof AtomicReference) {
+			assertReflectionEquals(((AtomicReference)one).get(), ((AtomicReference)another).get(), requireMatchingCollectionClasses,
+				alreadyChecked, path + ".get()");
+			return;
+		}
+
+		if (one instanceof Pattern) {
+			assertEquals(((Pattern)one).pattern(), ((Pattern)another).pattern(),
+					"Patterns not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ");
+			assertEquals(((Pattern)one).flags(), ((Pattern)another).flags(),
+					"Pattern flags not equals for path '" + (StringUtils.isEmpty(path) ? "." : path) + "' - ");
 			return;
 		}
 
