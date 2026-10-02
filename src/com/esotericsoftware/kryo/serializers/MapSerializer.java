@@ -197,9 +197,6 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	protected void writeHeader (Kryo kryo, Output output, T map) {
 	}
 
-	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
-	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)} with a special case
-	 * for HashMap. */
 	/** Returns the class of all objects, or null if there is a null object or the objects have different classes. */
 	private Class sameClass (Iterable objects) {
 		Class type = null;
@@ -212,6 +209,9 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		return type;
 	}
 
+	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
+	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)} with a special case
+	 * for HashMap. */
 	protected T create (Kryo kryo, Input input, Class<? extends T> type, int size) {
 		if (type == HashMap.class) {
 			if (size < 3)
