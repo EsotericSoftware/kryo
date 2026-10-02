@@ -111,7 +111,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
 
 ## Installation
 
-Kryo requires Java 8 or later.
+Kryo 6 requires Java 17 or later. Kryo 5 requires Java 8 or later.
 
 Kryo publishes two kinds of artifacts/jars:
 * the default jar (with the usual library dependencies) which is meant for direct usage in applications (not libraries)
@@ -121,13 +121,15 @@ The two jars differ as follows:
 
 | | Default jar | Versioned jar |
 | --- | --- | --- |
-| Maven coordinates | `com.esotericsoftware:kryo` | `com.esotericsoftware.kryo:kryo5` |
-| Package | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo5` |
-| Dependencies | ReflectASM, Objenesis, MinLog | None (bundled and relocated into `com.esotericsoftware.kryo.kryo5`) |
-| Java module name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo5` |
-| OSGi bundle symbolic name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.5` |
+| Maven coordinates | `com.esotericsoftware:kryo` | `com.esotericsoftware.kryo:kryo6` |
+| Package | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo6` |
+| Dependencies | ReflectASM, Objenesis, MinLog | None (bundled and relocated into `com.esotericsoftware.kryo.kryo6`) |
+| Java module name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo6` |
+| OSGi bundle symbolic name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.6` |
 
-Both jars are OSGi bundles and declare an automatic module name, so they can be used on the Java module path. When using the versioned jar, all Kryo classes must be imported from the relocated package, for example `com.esotericsoftware.kryo.kryo5.Kryo`.
+The names of the versioned jar contain the major version. For Kryo 5, they use `5` instead of `6`, for example `kryo5` and `com.esotericsoftware.kryo.kryo5`.
+
+Both jars are OSGi bundles and declare an automatic module name, so they can be used on the Java module path. When using the versioned jar, all Kryo classes must be imported from the relocated package, for example `com.esotericsoftware.kryo.kryo6.Kryo`.
 
 Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](https://central.sonatype.com/artifact/com.esotericsoftware/kryo). The latest snapshots of Kryo, including snapshot builds of master, are in the [Maven Central snapshot repository](https://central.sonatype.com/repository/maven-snapshots/).
 
@@ -166,13 +168,13 @@ To use the latest Kryo snapshot, use:
 <dependency>
    <groupId>com.esotericsoftware</groupId>
    <artifactId>kryo</artifactId>
-   <version>5.7.1-SNAPSHOT</version>
+   <version>6.0.0-SNAPSHOT</version>
 </dependency>
 <!-- for usage in a library that should be published: -->
 <dependency>
    <groupId>com.esotericsoftware.kryo</groupId>
-   <artifactId>kryo5</artifactId>
-   <version>5.7.1-SNAPSHOT</version>
+   <artifactId>kryo6</artifactId>
+   <version>6.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -182,7 +184,7 @@ Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo
 
 ### Building from source
 
-Building Kryo from source requires JDK11+ and Maven. To build all artifacts, run:
+Building Kryo from source requires JDK 17+ and Maven. To build all artifacts, run:
 
 ```
 mvn clean && mvn install
