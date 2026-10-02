@@ -541,9 +541,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 
 		/** Controls which fields are serialized.
-		 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
-		 *           {@link java.lang.reflect.Field#setAccessible(boolean) set as accessible} if necessary (default). If false, only
-		 *           fields in the public API will be serialized. */
+		 * @param setFieldsAsAccessible If true, all non-transient fields (including private fields) will be serialized and
+		 *           {@link java.lang.reflect.Field#setAccessible(boolean) set as accessible} (default). If false, only public,
+		 *           non-final fields of public classes will be serialized, which can be accessed without setAccessible. */
 		public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
 			this.setFieldsAsAccessible = setFieldsAsAccessible;
 			if (TRACE) trace("kryo", "FieldSerializerConfig setFieldsAsAccessible: " + setFieldsAsAccessible);
