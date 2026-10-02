@@ -62,6 +62,7 @@ import com.esotericsoftware.reflectasm.FieldAccess;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -92,10 +93,11 @@ class CachedFields implements Comparator<CachedField> {
 
 		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
 		boolean asm = !unsafe && !isAndroid && Modifier.isPublic(serializer.type.getModifiers());
+		RecordComponent[] recordComponents = serializer.type.getRecordComponents();
 		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
 			for (Field field : nextClass.getDeclaredFields())
-				addField(field, asm, newFields, newCopyFields);
+				addField(field, asm, recordComponents, newFields, newCopyFields);
 			nextClass = nextClass.getSuperclass();
 		}
 
@@ -110,7 +112,9 @@ class CachedFields implements Comparator<CachedField> {
 		serializer.initializeCachedFields();
 	}
 
-	private void addField (Field field, boolean asm, ArrayList<CachedField> fields, ArrayList<CachedField> copyFields) {
+	/** @param recordComponents May be null if the type is not a record. */
+	private void addField (Field field, boolean asm, RecordComponent[] recordComponents, ArrayList<CachedField> fields,
+		ArrayList<CachedField> copyFields) {
 		int modifiers = field.getModifiers();
 		if (Modifier.isStatic(modifiers)) return;
 		FieldSerializerConfig config = serializer.config;
@@ -137,8 +141,9 @@ class CachedFields implements Comparator<CachedField> {
 		boolean isTransient = Modifier.isTransient(modifiers);
 		if (isTransient && !config.serializeTransient && !config.copyTransient) return;
 
+		Class type = serializer.type;
 		Class declaringClass = field.getDeclaringClass();
-		GenericType genericType = new GenericType(declaringClass, serializer.type, field.getGenericType());
+		GenericType genericType = new GenericType(declaringClass, type, field.getGenericType());
 		Class fieldClass = genericType.getType() instanceof Class ? (Class)genericType.getType() : field.getType();
 		int accessIndex = -1;
 		if (asm //
@@ -146,7 +151,7 @@ class CachedFields implements Comparator<CachedField> {
 			&& Modifier.isPublic(modifiers) //
 			&& Modifier.isPublic(fieldClass.getModifiers())) {
 			try {
-				if (access == null) access = FieldAccess.get(serializer.type);
+				if (access == null) access = FieldAccess.get(type);
 				accessIndex = ((FieldAccess)access).getIndex(field);
 			} catch (RuntimeException | LinkageError ex) {
 				if (DEBUG) debug("kryo", "Unable to use ReflectASM.", ex);
@@ -154,7 +159,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 
 		CachedField cachedField;
-		if (unsafe)
+		if (unsafe && !type.isRecord())
 			cachedField = newUnsafeField(field, fieldClass, genericType);
 		else if (accessIndex != -1) {
 			cachedField = newAsmField(field, fieldClass, genericType);
@@ -183,6 +188,15 @@ class CachedFields implements Comparator<CachedField> {
 
 			if (TRACE) trace("kryo",
 				"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
+		}
+
+		if (recordComponents != null) {
+			for (int i = 0; i < recordComponents.length; i++) {
+				if (recordComponents[i].getName().equals(field.getName())) {
+					cachedField.index = i;
+					break;
+				}
+			}
 		}
 
 		applyAnnotations(cachedField);

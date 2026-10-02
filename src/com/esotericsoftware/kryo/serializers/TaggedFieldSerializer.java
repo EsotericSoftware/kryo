@@ -174,8 +174,13 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		int pop = pushTypeVariables();
 
-		T object = create(kryo, input, type);
-		kryo.reference(object);
+		T object = null;
+		Object[] values = null;
+		if (recordConstructor == null) {
+			object = create(kryo, input, type);
+			kryo.reference(object);
+		} else
+			values = newRecordValues();
 
 		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownTagData;
 		Input fieldInput;
@@ -231,9 +236,14 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			}
 
 			if (TRACE) log("Read", cachedField, input.position());
-			cachedField.read(fieldInput, object);
+			if (values == null)
+				cachedField.read(fieldInput, object);
+			else
+				values[cachedField.index] = cachedField.read(fieldInput);
 			if (chunked) inputChunked.nextChunk();
 		}
+
+		if (values != null) object = createRecord(values);
 
 		popTypeVariables(pop);
 		return object;

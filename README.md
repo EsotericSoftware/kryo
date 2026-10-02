@@ -83,7 +83,8 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
    * [CompatibleFieldSerializer](#compatiblefieldserializer)
       + [CompatibleFieldSerializer settings](#compatiblefieldserializer-settings)
    * [BeanSerializer](#beanserializer)
-   * [RecordSerializer](#recordserializer)
+   * [Records](#records)
+      + [Migrating records from Kryo 5](#migrating-records-from-kryo-5)
    * [CollectionSerializer](#collectionserializer)
       + [CollectionSerializer settings](#collectionserializer-settings)
    * [MapSerializer](#mapserializer)
@@ -1244,9 +1245,9 @@ CompatibleFieldSerializer also inherits all the settings of FieldSerializer.
 
 BeanSerializer is very similar to FieldSerializer, except it uses bean getter and setter methods rather than direct field access. This is slightly slower, but may be safer because it uses the public API to configure the object. Like FieldSerializer, it provides no forward or backward compatibility.
 
-### RecordSerializer
+### Records
 
-RecordSerializer serializes Java records. On Java 14+ it is added as a default serializer for `java.lang.Record`, so records only need to be registered like any other class:
+Java records are serialized by FieldSerializer, like any other class, so records only need to be registered:
 
 ```java
 public record Point(int x, int y) {}
@@ -1254,9 +1255,19 @@ public record Point(int x, int y) {}
 kryo.register(Point.class);
 ```
 
-RecordSerializer writes the record components sorted by name. When reading, it passes the values to the record's canonical constructor, so any validation in that constructor is applied to deserialized data. RecordSerializer is an immutable serializer, so `copy` returns the original record. This also applies to deep copies: mutable component values, such as a list, are shared rather than copied.
+FieldSerializer writes the record components sorted by name. When reading, it passes the values to the record's canonical constructor, so any validation in that constructor is applied to deserialized data. Components that are not present in the serialized data, for example because they were added later, are set to their default value (`0`, `false`, or `null`). Copying a record creates a new record and copies the components like other field values.
 
-Like FieldSerializer, it provides no forward or backward compatibility. Adding, removing, renaming, or changing the type of a record component invalidates previously serialized bytes.
+The subclasses of FieldSerializer can also be used for records, for example CompatibleFieldSerializer or TaggedFieldSerializer to add or remove components without invalidating previously serialized bytes.
+
+#### Migrating records from Kryo 5
+
+Kryo 5 serialized records with RecordSerializer. With the default configuration, FieldSerializer writes the same data, except for components with generic types, such as `List<String>`. FieldSerializer uses the type arguments to avoid writing the class of each element, while RecordSerializer wrote it. FieldSerializer cannot correctly read such records written by Kryo 5, and may even read them without an exception but with wrong values. To read such data, register RecordSerializer for the affected records, or for all records:
+
+```java
+kryo.register(SomeRecord.class, new RecordSerializer<>(SomeRecord.class));
+// or for all records
+kryo.addDefaultSerializer(Record.class, RecordSerializer.class);
+```
 
 ### CollectionSerializer
 

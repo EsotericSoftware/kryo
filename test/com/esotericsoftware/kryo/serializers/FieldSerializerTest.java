@@ -36,6 +36,7 @@ import com.esotericsoftware.kryo.serializers.CollectionSerializer.BindCollection
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.IntArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.LongArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
@@ -63,6 +64,53 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 class FieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
+	}
+
+	@Test
+	void testReadPrimitiveFieldValues () {
+		FieldSerializer<SmallPrimitives> serializer = new FieldSerializer<>(kryo, SmallPrimitives.class);
+		SmallPrimitives object = new SmallPrimitives();
+		object.b = 1;
+		object.c = 'c';
+		object.s = 2;
+		object.z = true;
+
+		Output output = new Output(64, -1);
+		serializer.write(kryo, output, object);
+		Input input = new Input(output.toBytes());
+		// Fields are sorted by name: b, c, s, z.
+		CachedField[] fields = serializer.getFields();
+		assertEquals((byte)1, fields[0].read(input));
+		assertEquals('c', fields[1].read(input));
+		assertEquals((short)2, fields[2].read(input));
+		assertEquals(true, fields[3].read(input));
+	}
+
+	@Test
+	void testRecordRemovedPrimitiveComponent () {
+		FieldSerializer serializer = new FieldSerializer(kryo, RecordClass.class);
+		serializer.removeField("width");
+		kryo.register(RecordClass.class, serializer);
+
+		Output output = new Output(64, -1);
+		kryo.writeObject(output, new RecordClass("1", 1, 1L, 1d));
+		RecordClass deserialized = kryo.readObject(new Input(output.toBytes()), RecordClass.class);
+		assertEquals(new RecordClass("1", 0, 1L, 1d), deserialized);
+	}
+
+	@Test
+	void testRecordDeepCopy () {
+		kryo.register(RecordWithList.class);
+		kryo.register(ArrayList.class);
+
+		RecordWithList original = new RecordWithList(new ArrayList<>(Arrays.asList("a", "b")), 1);
+		RecordWithList copy = kryo.copy(original);
+		assertEquals(original, copy);
+		assertNotSame(original.list(), copy.list());
+
+		RecordWithList shallowCopy = kryo.copyShallow(original);
+		assertEquals(original, shallowCopy);
+		assertSame(original.list(), shallowCopy.list());
 	}
 
 	@Test
@@ -821,6 +869,22 @@ class FieldSerializerTest extends KryoTestCase {
 		fail("Exception was expected");
 	}
 
+	@Test
+	void testRecord () {
+		kryo.register(RecordClass.class);
+
+		roundTrip(13, new RecordClass("1", 1, 1L, 1d));
+	}
+
+	@Test
+	void testCopyRecord () {
+		kryo.register(RecordClass.class);
+
+		final RecordClass o = new RecordClass("1", 1, 1L, 1d);
+		final RecordClass copy = kryo.copy(o);
+		doAssertEquals(o, copy);
+	}
+
 	public static class DefaultTypes {
 		// Primitives.
 		public boolean booleanField;
@@ -1496,6 +1560,17 @@ class FieldSerializerTest extends KryoTestCase {
 				this.a = a;
 			}
 		}
+	}
+
+	public record RecordClass(String height, int width, long x, double y) { }
+
+	public record RecordWithList(List<String> list, int number) { }
+
+	public static class SmallPrimitives {
+		byte b;
+		char c;
+		short s;
+		boolean z;
 	}
 
 }

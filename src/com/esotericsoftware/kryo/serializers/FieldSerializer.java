@@ -38,7 +38,11 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.RecordComponent;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
  * configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be
@@ -65,6 +69,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 	final CachedFields cachedFields;
 	private final GenericsHierarchy genericsHierarchy;
 
+	// For records.
+	final Constructor recordConstructor;
+	private final Object[] recordDefaults;
+
 	public FieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new FieldSerializerConfig());
 	}
@@ -79,6 +87,29 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		final Generics generics = kryo.getGenerics();
 		genericsHierarchy = generics.buildHierarchy(type);
+
+		if (type.isRecord()) {
+			RecordComponent[] components = type.getRecordComponents();
+			Class[] componentTypes = new Class[components.length];
+			recordDefaults = new Object[components.length];
+			for (int i = 0; i < components.length; i++) {
+				componentTypes[i] = components[i].getType();
+				if (componentTypes[i].isPrimitive()) recordDefaults[i] = Array.get(Array.newInstance(componentTypes[i], 1), 0);
+			}
+			try {
+				recordConstructor = type.getDeclaredConstructor(componentTypes);
+			} catch (NoSuchMethodException ex) {
+				throw new KryoException("Unable to find canonical constructor: " + className(type), ex);
+			}
+			try {
+				recordConstructor.setAccessible(true);
+			} catch (RuntimeException ex) {
+				if (DEBUG) debug("kryo", "Unable to set canonical constructor as accessible: " + className(type), ex);
+			}
+		} else {
+			recordConstructor = null;
+			recordDefaults = null;
+		}
 
 		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
@@ -121,14 +152,23 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int pop = pushTypeVariables();
 
-		T object = create(kryo, input, type);
-		kryo.reference(object);
+		T object = null;
+		Object[] values = null;
+		if (recordConstructor == null) {
+			object = create(kryo, input, type);
+			kryo.reference(object);
+		} else
+			values = newRecordValues();
 
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Read", fields[i], input.position());
 			try {
-				fields[i].read(input, object);
+				final CachedField field = fields[i];
+				if (values == null)
+					field.read(input, object);
+				else
+					values[field.index] = field.read(input);
 			} catch (KryoException e) {
 				throw e;
 			} catch (Exception e) {
@@ -136,8 +176,30 @@ public class FieldSerializer<T> extends Serializer<T> {
 			}
 		}
 
+		if (values != null) object = createRecord(values);
+
 		popTypeVariables(pop);
 		return object;
+	}
+
+	/** Returns a new array for the component values of a record, indexed by {@link CachedField#index}. */
+	Object[] newRecordValues () {
+		return new Object[recordDefaults.length];
+	}
+
+	/** Creates a record using its canonical constructor. Components without a value, for example because they were not present in
+	 * the serialized data, are set to their default value. */
+	T createRecord (Object[] values) {
+		Object[] defaults = recordDefaults;
+		for (int i = 0, n = values.length; i < n; i++)
+			if (values[i] == null) values[i] = defaults[i];
+		try {
+			return (T)recordConstructor.newInstance(values);
+		} catch (InvocationTargetException ex) {
+			throw new KryoException("Error constructing record: " + className(type), ex.getCause());
+		} catch (Exception ex) {
+			throw new KryoException("Error constructing record: " + className(type), ex);
+		}
 	}
 
 	/** Prepares the type variables for the serialized type. Must be balanced with {@link #popTypeVariables(int)} if {@code > 0} is
@@ -224,13 +286,30 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public T copy (Kryo kryo, T original) {
-		T copy = createCopy(kryo, original);
-		kryo.reference(copy);
+		final CachedField[] copyFields = cachedFields.copyFields;
+		if (recordConstructor == null) {
+			T copy = createCopy(kryo, original);
+			kryo.reference(copy);
+			for (int i = 0, n = copyFields.length; i < n; i++)
+				copyFields[i].copy(original, copy);
+			return copy;
+		}
 
-		for (int i = 0, n = cachedFields.copyFields.length; i < n; i++)
-			cachedFields.copyFields[i].copy(original, copy);
-
-		return copy;
+		Object[] values = newRecordValues();
+		for (int i = 0, n = copyFields.length; i < n; i++) {
+			CachedField field = copyFields[i];
+			try {
+				Object value = field.get(original);
+				// Primitive values are immutable, all other values are copied like other field values.
+				values[field.index] = field.field.getType().isPrimitive() ? value : kryo.copy(value);
+			} catch (IllegalAccessException ex) {
+				throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
+			} catch (KryoException ex) {
+				ex.addTrace(field.name + " (" + className(type) + ")");
+				throw ex;
+			}
+		}
+		return createRecord(values);
 	}
 
 	/** Settings for serializing a field. */
@@ -244,6 +323,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		// For AsmField.
 		FieldAccess access;
 		int accessIndex = -1;
+
+		// For Records
+		int index;
 
 		// For UnsafeField.
 		long offset;
@@ -347,8 +429,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public abstract void read (Input input, Object object);
 
+		public abstract Object read (Input input);
+
 		public abstract void copy (Object original, Object copy);
 
+		Object get (Object object) throws IllegalAccessException {
+			return field.get(object);
+		}
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has

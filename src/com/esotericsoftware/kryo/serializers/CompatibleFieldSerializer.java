@@ -114,8 +114,13 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int pop = pushTypeVariables();
 
-		T object = create(kryo, input, type);
-		kryo.reference(object);
+		T object = null;
+		Object[] values = null;
+		if (recordConstructor == null) {
+			object = create(kryo, input, type);
+			kryo.reference(object);
+		} else
+			values = newRecordValues();
 
 		CachedField[] fields = (CachedField[])kryo.getGraphContext().get(this);
 		if (fields == null) fields = readFields(kryo, input);
@@ -182,9 +187,14 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 
 			if (TRACE) log("Read", cachedField, input.position());
-			cachedField.read(fieldInput, object);
+			if (values == null)
+				cachedField.read(fieldInput, object);
+			else
+				values[cachedField.index] = cachedField.read(fieldInput);
 			if (chunked) inputChunked.nextChunk();
 		}
+
+		if (values != null) object = createRecord(values);
 
 		popTypeVariables(pop);
 		return object;

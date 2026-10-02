@@ -117,8 +117,13 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 
 		int pop = pushTypeVariables();
 
-		T object = create(kryo, input, type);
-		kryo.reference(object);
+		T object = null;
+		Object[] values = null;
+		if (recordConstructor == null) {
+			object = create(kryo, input, type);
+			kryo.reference(object);
+		} else
+			values = newRecordValues();
 
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
@@ -128,8 +133,13 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 				continue;
 			}
 			if (TRACE) log("Read", fields[i], input.position());
-			fields[i].read(input, object);
+			if (values == null)
+				fields[i].read(input, object);
+			else
+				values[fields[i].index] = fields[i].read(input);
 		}
+
+		if (values != null) object = createRecord(values);
 
 		popTypeVariables(pop);
 		return object;

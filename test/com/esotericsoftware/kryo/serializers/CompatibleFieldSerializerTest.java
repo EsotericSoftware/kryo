@@ -43,6 +43,18 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testRecordMissingPrimitiveComponent () {
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(OldPrimitiveRecord.class);
+		kryo.register(NewPrimitiveRecord.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, new OldPrimitiveRecord(3L));
+		NewPrimitiveRecord deserialized = kryo.readObject(new Input(output.toBytes()), NewPrimitiveRecord.class);
+		assertEquals(new NewPrimitiveRecord(3L, 0.0), deserialized);
+	}
+
+	@Test
 	void testCompatibleFieldSerializer () {
 		testCompatibleFieldSerializer(83, false, false);
 		testCompatibleFieldSerializer(116, false, true);
@@ -513,6 +525,49 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		roundTrip(9, new ClassWithGenericField<>(1));
 	}
 
+	@Test
+	void testRecordNewToOld() {
+		final RecordClass recordClass = new RecordClass("1", 2, 3L, 4d);
+
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		OldRecordClass deserialized = kryo.readObject(input, OldRecordClass.class);
+		input.close();
+
+		assertEquals(deserialized.width(), recordClass.width());
+		assertEquals(deserialized.x(), recordClass.x());
+		assertEquals(deserialized.y(), recordClass.y());
+	}
+
+	@Test
+	void testRecordOldToNew() {
+		final OldRecordClass recordClass = new OldRecordClass(3L, 4d, 2);
+
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		RecordClass deserialized = kryo.readObject(input, RecordClass.class);
+		input.close();
+
+		assertNull(deserialized.height());
+		assertEquals(deserialized.width(), recordClass.width());
+		assertEquals(deserialized.x(), recordClass.x());
+		assertEquals(deserialized.y(), recordClass.y());
+	}
+
 	public static class TestClass {
 		public String text = "something";
 		public int moo = 120;
@@ -809,4 +864,12 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 			return Objects.equals(value, that.value);
 		}
 	}
+
+	public record OldRecordClass(long x, double y, int width) { }
+
+	public record RecordClass(String height, int width, long x, double y) { }
+	public record OldPrimitiveRecord(long x) { }
+
+	public record NewPrimitiveRecord(long x, double added) { }
+
 }
