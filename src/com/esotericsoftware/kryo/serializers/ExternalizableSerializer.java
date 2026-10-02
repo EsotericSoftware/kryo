@@ -40,7 +40,7 @@ import java.lang.reflect.Method;
  * Note that this class does not specialize the type on {@code Externalizable}. That is because if we fall back on the
  * {@code JavaSerializer} it may have an {@code readResolve} method that returns an object of a different type.
  *
- * @author Robert DiFalco <robert.difalco@gmail.com> */
+ * @author Robert DiFalco {@literal <robert.difalco@gmail.com>} */
 public class ExternalizableSerializer extends Serializer {
 	private final ClassValue<JavaSerializer> javaSerializerByType = new ClassValue<JavaSerializer>() {
 		protected JavaSerializer computeValue (Class<?> type) {

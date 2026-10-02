@@ -41,7 +41,7 @@ import java.lang.reflect.Method;
  * kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());</code>
  * <p>
  * Also, the closure's capturing class must be registered.
- * @author Roman Levenstein <romixlev@gmail.com>
+ * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 public class ClosureSerializer extends Serializer {
 	/** Marker class used to find the class {@link Registration} for closure instances.
