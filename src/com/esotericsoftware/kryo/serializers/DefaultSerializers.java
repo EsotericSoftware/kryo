@@ -179,7 +179,7 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for {@link BigInteger} and any subclass.
-	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
+	 * @author Tumi {@literal <serverperformance@gmail.com>} (enhacements) */
 	public static class BigIntegerSerializer extends ImmutableSerializer<BigInteger> {
 		{
 			setAcceptsNull(true);
@@ -241,7 +241,7 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for {@link BigDecimal} and any subclass.
-	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
+	 * @author Tumi {@literal <serverperformance@gmail.com>} (enhacements) */
 	public static class BigDecimalSerializer extends ImmutableSerializer<BigDecimal> {
 		{
 			setAcceptsNull(true);
@@ -366,7 +366,7 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for {@link Date}, {@link java.sql.Date}, {@link Time}, {@link Timestamp} and any other subclass.
-	 * @author Tumi <serverperformance@gmail.com> */
+	 * @author Tumi {@literal <serverperformance@gmail.com>} */
 	public static class DateSerializer extends Serializer<Date> {
 		private Date create (Kryo kryo, Class<? extends Date> type, long time) throws KryoException {
 			if (type == Date.class || type == null) {
@@ -667,7 +667,7 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for {@link TimeZone}. Assumes the timezones are immutable.
-	 * @author Tumi <serverperformance@gmail.com> */
+	 * @author Tumi {@literal <serverperformance@gmail.com>} */
 	public static class TimeZoneSerializer extends ImmutableSerializer<TimeZone> {
 		public void write (Kryo kryo, Output output, TimeZone object) {
 			output.writeString(object.getID());
@@ -679,7 +679,7 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for {@link GregorianCalendar}, java.util.JapaneseImperialCalendar, and sun.util.BuddhistCalendar.
-	 * @author Tumi <serverperformance@gmail.com> */
+	 * @author Tumi {@literal <serverperformance@gmail.com>} */
 	public static class CalendarSerializer extends Serializer<Calendar> {
 		// The default value of gregorianCutover.
 		private static final long DEFAULT_GREGORIAN_CUTOVER = -12219292800000L;
@@ -716,7 +716,7 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for {@link TreeMap} and any subclass.
-	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
+	 * @author Tumi {@literal <serverperformance@gmail.com>} (enhacements) */
 	public static class TreeMapSerializer extends MapSerializer<TreeMap> {
 		protected void writeHeader (Kryo kryo, Output output, TreeMap treeSet) {
 			kryo.writeClassAndObject(output, treeSet.comparator());
@@ -749,7 +749,7 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for {@link ConcurrentSkipListMap} and any subclass.
-	 * @author Mr14huashao <mr11huashao@gmail.com> (enhacements) */
+	 * @author Mr14huashao {@literal <mr11huashao@gmail.com>} (enhacements) */
 	public static class ConcurrentSkipListMapSerializer extends MapSerializer<ConcurrentSkipListMap> {
 		@Override
 		protected void writeHeader (Kryo kryo, Output output, ConcurrentSkipListMap concurrentSkipListMap) {
@@ -789,7 +789,7 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for {@link TreeMap} and any subclass.
-	 * @author Tumi <serverperformance@gmail.com> (enhacements) */
+	 * @author Tumi {@literal <serverperformance@gmail.com>} (enhacements) */
 	public static class TreeSetSerializer extends CollectionSerializer<TreeSet> {
 		protected void writeHeader (Kryo kryo, Output output, TreeSet treeSet) {
 			kryo.writeClassAndObject(output, treeSet.comparator());
@@ -877,7 +877,7 @@ public class DefaultSerializers {
 	}
 
 	/** Serializer for {@link Locale} (immutables).
-	 * @author Tumi <serverperformance@gmail.com> */
+	 * @author Tumi {@literal <serverperformance@gmail.com>} */
 	public static class LocaleSerializer extends ImmutableSerializer<Locale> {
 		// Missing constants in j.u.Locale for common locale
 		public static final Locale SPANISH = new Locale("es", "", "");

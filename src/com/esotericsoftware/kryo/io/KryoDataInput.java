@@ -27,7 +27,7 @@ import java.io.IOException;
 
 /** A {@link DataInput} which reads from an {@link Input}. {@link #readLine()} is unsupported. Other methods behave slightly
  * differently, eg {@link #readUTF()} may return a null string.
- * @author Robert DiFalco <robert.difalco@gmail.com> */
+ * @author Robert DiFalco {@literal <robert.difalco@gmail.com>} */
 public class KryoDataInput implements DataInput, AutoCloseable {
 	protected Input input;
 

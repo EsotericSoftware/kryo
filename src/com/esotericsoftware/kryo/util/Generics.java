@@ -64,7 +64,7 @@ public interface Generics {
 	Class nextGenericClass ();
 
 	/** Stores the types of the type parameters for the specified class hierarchy. Must be balanced by
-	 * {@link #popTypeVariables(int)} if >0 is returned.
+	 * {@link #popTypeVariables(int)} if {@code > 0} is returned.
 	 * @param args May contain null for type arguments that aren't known.
 	 * @return The number of entries that were pushed. */
 	int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args);
