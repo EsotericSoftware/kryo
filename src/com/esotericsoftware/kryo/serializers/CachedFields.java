@@ -63,7 +63,6 @@ import com.esotericsoftware.reflectasm.FieldAccess;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
-import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -125,7 +124,7 @@ class CachedFields implements Comparator<CachedField> {
 			if (!config.setFieldsAsAccessible) return;
 			try {
 				field.setAccessible(true);
-			} catch (AccessControlException ex) {
+			} catch (SecurityException ex) {
 				if (DEBUG) debug("kryo", "Unable to set field as accessible: " + field);
 				return;
 			}

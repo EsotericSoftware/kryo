@@ -71,14 +71,14 @@ class SerializationCompatTest extends KryoTestCase {
 	// Set to true to delete failed test files, then set back to false, set expected bytes, and run again to generate new files.
 	private static final boolean DELETE_FAILED_TEST_FILES = false;
 
-	private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = 68; // Also change Kryo#defaultSerializers.
+	private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = 77; // Also change Kryo#defaultSerializers.
 	private static final List<TestDataDescription> TEST_DATAS = new ArrayList<>();
 
 	static {
-		TEST_DATAS.add(new TestDataDescription<>(new TestData(), 1940, 1958));
-		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava8(), 2098, 2116));
-		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava11(), 2182, 2210));
-		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava17(), 1948, 1966));
+		TEST_DATAS.add(new TestDataDescription<>(new TestData(), 2240, 2258));
+		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava8(), 2398, 2416));
+		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava11(), 2482, 2510));
+		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava17(), 2248, 2266));
 	};
 
 	@BeforeEach

@@ -103,10 +103,17 @@ public class UnsafeUtil {
 	private static final class DirectBuffers {
 		// Constructor to be used for creation of ByteBuffers that use pre-allocated memory regions.
 		static Constructor<? extends ByteBuffer> directByteBufferConstructor;
+		// True if the constructor takes the capacity as long (Java 21+).
+		static boolean longCapacity;
 		static {
-			ByteBuffer buffer = ByteBuffer.allocateDirect(1);
+			Class<? extends ByteBuffer> type = ByteBuffer.allocateDirect(1).getClass();
 			try {
-				directByteBufferConstructor = buffer.getClass().getDeclaredConstructor(long.class, int.class);
+				try {
+					directByteBufferConstructor = type.getDeclaredConstructor(long.class, int.class);
+				} catch (NoSuchMethodException ex) {
+					directByteBufferConstructor = type.getDeclaredConstructor(long.class, long.class);
+					longCapacity = true;
+				}
 				directByteBufferConstructor.setAccessible(true);
 			} catch (Exception ex) {
 				if (DEBUG) debug("kryo", "No direct ByteBuffer constructor is available.", ex);
@@ -133,8 +140,10 @@ public class UnsafeUtil {
 	 * @throws UnsupportedOperationException if creating a ByteBuffer this way is not available. */
 	public static ByteBuffer newDirectBuffer (long address, int size) {
 		if (!isNewDirectBufferAvailable())
-			throw new UnsupportedOperationException("No direct ByteBuffer constructor is available.");
+			throw new UnsupportedOperationException(
+				"No direct ByteBuffer constructor is available. It requires --add-opens java.base/java.nio=ALL-UNNAMED.");
 		try {
+			if (DirectBuffers.longCapacity) return DirectBuffers.directByteBufferConstructor.newInstance(address, (long)size);
 			return DirectBuffers.directByteBufferConstructor.newInstance(address, size);
 		} catch (Exception ex) {
 			throw new KryoException("Error creating a ByteBuffer at address: " + address, ex);

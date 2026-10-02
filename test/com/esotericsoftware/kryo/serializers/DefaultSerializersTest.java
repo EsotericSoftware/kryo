@@ -26,7 +26,6 @@ import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.KeySetViewSerializer;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -225,7 +224,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(10, new java.sql.Time(Long.MAX_VALUE));
 		roundTrip(10, new java.sql.Time(-1234567));
 
-		kryo.register(java.sql.Timestamp.class);
+		kryo.register(java.sql.Timestamp.class, new DefaultSerializers.DateSerializer());
 		roundTrip(10, new java.sql.Timestamp(Long.MIN_VALUE));
 		roundTrip(2, new java.sql.Timestamp(0));
 		roundTrip(4, new java.sql.Timestamp(1234567));
@@ -235,7 +234,6 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testTimestampSerializer () {
-		kryo.addDefaultSerializer(java.sql.Timestamp.class, DefaultSerializers.TimestampSerializer.class);
 		kryo.register(java.sql.Timestamp.class);
 		roundTrip(11, newTimestamp(Long.MIN_VALUE+808, 0)); // Smallest valid size
 		roundTrip(15, newTimestamp(Long.MIN_VALUE+808, 999_999_999));
@@ -458,7 +456,7 @@ class DefaultSerializersTest extends KryoTestCase {
 	void testConcurrentHashMapKeySetView () {
 		ConcurrentHashMap.KeySetView<Integer, Boolean> set = ConcurrentHashMap.newKeySet();
 		set.add(12);
-		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.KeySetView.class);
 		kryo.register(ConcurrentHashMap.class);
 		roundTrip(9, set);
 	}
@@ -472,7 +470,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 		ConcurrentHashMap.KeySetView<String, Integer> set = map.keySet(4);
 
-		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.KeySetView.class);
 		kryo.register(ConcurrentHashMap.class);
 		roundTrip(15, set);
 	}
@@ -480,9 +478,21 @@ class DefaultSerializersTest extends KryoTestCase {
 	@Test
 	void testEmptyConcurrentHashMapKeySetView () {
 		ConcurrentHashMap.KeySetView set = ConcurrentHashMap.newKeySet();
-		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.KeySetView.class);
 		kryo.register(ConcurrentHashMap.class);
 		roundTrip(5, set);
+	}
+
+	@Test
+	void testConcurrentHashMapKeySet () {
+		ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
+		map.put("1", 1);
+		ConcurrentHashMap.KeySetView<String, Integer> set = map.keySet();
+
+		kryo.register(ConcurrentHashMap.KeySetView.class);
+		kryo.register(ConcurrentHashMap.class);
+		roundTrip(9, set);
+		assertNull(kryo.copy(set).getMappedValue());
 	}
 
 	@Test
@@ -494,7 +504,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 		ConcurrentHashMap.KeySetView<String, Integer> set = map.keySet(4);
 
-		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.KeySetView.class);
 		kryo.register(ConcurrentHashMap.class);
 		ConcurrentHashMap.KeySetView<String, Integer> copy = kryo.copy(set);
 		assertTrue(set.containsAll(copy) && copy.containsAll(set));
@@ -629,7 +639,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testURISerializer () throws Exception {
-		kryo.register(URI.class, new DefaultSerializers.URISerializer());
+		kryo.register(URI.class);
 
 		roundTrip(42, new URI("https://github.com/EsotericSoftware/kryo"));
 		roundTrip(78, new URI("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
@@ -637,14 +647,14 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testUUIDSerializer () {
-		kryo.register(UUID.class, new DefaultSerializers.UUIDSerializer());
+		kryo.register(UUID.class);
 
 		roundTrip(17, UUID.fromString("e58ed763-928c-4155-bee9-fdbaaadc15f3"));
 	}
 
 	@Test
 	void testPatternSerializer () {
-		kryo.register(Pattern.class, new DefaultSerializers.PatternSerializer());
+		kryo.register(Pattern.class);
 
 		roundTrip(4, Pattern.compile(".", Pattern.DOTALL));
 		roundTrip(4, Pattern.compile("."));
@@ -652,7 +662,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testAtomicBooleanSerializer () {
-		kryo.register(AtomicBoolean.class, new DefaultSerializers.AtomicBooleanSerializer());
+		kryo.register(AtomicBoolean.class);
 
 		roundTrip(2, new AtomicBoolean(true));
 		roundTrip(2, new AtomicBoolean(false));
@@ -660,7 +670,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testAtomicIntegerSerializer () {
-		kryo.register(AtomicInteger.class, new DefaultSerializers.AtomicIntegerSerializer());
+		kryo.register(AtomicInteger.class);
 
 		roundTrip(5, new AtomicInteger());
 		roundTrip(5, new AtomicInteger(0));
@@ -670,7 +680,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testAtomicLongSerializer () {
-		kryo.register(AtomicLong.class, new DefaultSerializers.AtomicLongSerializer());
+		kryo.register(AtomicLong.class);
 
 		roundTrip(9, new AtomicLong());
 		roundTrip(9, new AtomicLong(0));
@@ -680,10 +690,60 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testAtomicReferenceSerializer () {
-		kryo.register(AtomicReference.class, new DefaultSerializers.AtomicReferenceSerializer());
+		kryo.register(AtomicReference.class);
 
 		roundTrip(2, new AtomicReference<>());
 		roundTrip(3, new AtomicReference<>(1L));
+	}
+
+	@Test
+	void testAtomicReferenceCycle () {
+		kryo.register(AtomicReference.class);
+		kryo.setReferences(true);
+		AtomicReference<Object> reference = new AtomicReference<>();
+		reference.set(reference);
+
+		Output output = new Output(64);
+		kryo.writeObject(output, reference);
+		AtomicReference<?> read = kryo.readObject(new Input(output.toBytes()), AtomicReference.class);
+		assertSame(read, read.get());
+		AtomicReference<?> copy = kryo.copy(reference);
+		assertSame(copy, copy.get());
+	}
+
+	@Test
+	void testTimestampSubclass () {
+		kryo.register(TimestampSubclass.class);
+		TimestampSubclass timestamp = new TimestampSubclass(1234567);
+		timestamp.setNanos(123_456_789);
+
+		assertSame(TimestampSubclass.class, roundTrip(8, timestamp).getClass());
+		assertSame(TimestampSubclass.class, kryo.copy(timestamp).getClass());
+	}
+
+	@Test
+	void testAtomicSubclasses () {
+		kryo.register(AtomicBooleanSubclass.class);
+		kryo.register(AtomicIntegerSubclass.class);
+		kryo.register(AtomicLongSubclass.class);
+		kryo.register(AtomicReferenceSubclass.class);
+		AtomicBooleanSubclass atomicBoolean = new AtomicBooleanSubclass();
+		atomicBoolean.set(true);
+		AtomicIntegerSubclass atomicInteger = new AtomicIntegerSubclass();
+		atomicInteger.set(1);
+		AtomicLongSubclass atomicLong = new AtomicLongSubclass();
+		atomicLong.set(1);
+		AtomicReferenceSubclass atomicReference = new AtomicReferenceSubclass();
+		atomicReference.set(1L);
+
+		assertSame(AtomicBooleanSubclass.class, roundTrip(2, atomicBoolean).getClass());
+		assertSame(AtomicIntegerSubclass.class, roundTrip(5, atomicInteger).getClass());
+		assertSame(AtomicLongSubclass.class, roundTrip(9, atomicLong).getClass());
+		assertSame(AtomicReferenceSubclass.class, roundTrip(3, atomicReference).getClass());
+		assertSame(AtomicBooleanSubclass.class, kryo.copy(atomicBoolean).getClass());
+		assertSame(AtomicIntegerSubclass.class, kryo.copy(atomicInteger).getClass());
+		assertSame(AtomicLongSubclass.class, kryo.copy(atomicLong).getClass());
+		assertSame(AtomicReferenceSubclass.class, kryo.copy(atomicReference).getClass());
 	}
 
 	protected void doAssertEquals(Object object1, Object object2) {
@@ -750,6 +810,24 @@ class DefaultSerializersTest extends KryoTestCase {
 		public PriorityQueueSubclass(int initialCapacity, Comparator comparator) {
 			super(initialCapacity, comparator);
 		}
+	}
+
+	static class TimestampSubclass extends java.sql.Timestamp {
+		public TimestampSubclass (long time) {
+			super(time);
+		}
+	}
+
+	static class AtomicBooleanSubclass extends AtomicBoolean {
+	}
+
+	static class AtomicIntegerSubclass extends AtomicInteger {
+	}
+
+	static class AtomicLongSubclass extends AtomicLong {
+	}
+
+	static class AtomicReferenceSubclass extends AtomicReference<Object> {
 	}
 
 	static class IntegerComparator implements Comparator<Integer> {

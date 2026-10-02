@@ -559,6 +559,8 @@ Default serializers are sorted so more specific classes are matched first, but o
 
 If no default serializers match a class, then the global default serializer is used. The global default serializer is set to [FieldSerializer](#fieldserializer) by default, but can be changed. Usually the global serializer is one that can handle many different types.
 
+Kryo 6 adds default serializers for `Timestamp`, `URI`, `UUID`, `Pattern`, `AtomicBoolean`, `AtomicInteger`, `AtomicLong`, `AtomicReference` and `ConcurrentHashMap.KeySetView`. To read data written by Kryo 5, register the serializers Kryo 5 used for these types, e.g. `kryo.register(Timestamp.class, new DateSerializer())` or `kryo.register(UUID.class, new FieldSerializer<>(kryo, UUID.class))`.
+
 ```java
 Kryo kryo = new Kryo();
 kryo.setDefaultSerializer(TaggedFieldSerializer.class);
