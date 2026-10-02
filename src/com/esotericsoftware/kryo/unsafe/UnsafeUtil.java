@@ -127,6 +127,13 @@ public class UnsafeUtil {
 		}
 	}
 
+	/** Throws an exception if offset and count don't describe a range inside an array of the given length. Unsafe doesn't check
+	 * bounds, so this must be called before copying a part of an array. */
+	static void checkArrayRange (int length, int offset, int count) {
+		if ((offset | count) < 0 || offset > length - count) throw new ArrayIndexOutOfBoundsException(
+			"Range out of bounds, offset: " + offset + ", count: " + count + ", length: " + length);
+	}
+
 	/** Create a ByteBuffer that uses the specified off-heap memory address instead of allocating a new one.
 	 * @param address Address of the memory region to be used for a ByteBuffer.
 	 * @param size Size in bytes of the memory region.
