@@ -568,6 +568,36 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals(deserialized.y(), recordClass.y());
 	}
 
+	// https://github.com/EsotericSoftware/kryo/issues/851
+	@Test
+	void testNullOverwritesDefaultValue () {
+		testNullOverwritesDefaultValue(false);
+		testNullOverwritesDefaultValue(true);
+	}
+
+	private void testNullOverwritesDefaultValue (boolean chunked) {
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(chunked);
+		kryo = new Kryo();
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		kryo.register(DefaultValue.class);
+
+		// A non-null value is written and read first, so the field has been used with a value class before.
+		Output output = new Output(64);
+		kryo.writeObject(output, new DefaultValue(5));
+		kryo.writeObject(output, new DefaultValue(null));
+		Input input = new Input(output.toBytes());
+		assertEquals(5, kryo.readObject(input, DefaultValue.class).value);
+		assertNull(kryo.readObject(input, DefaultValue.class).value);
+	}
+
+	@Test
+	void testNullRecordComponent () {
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(NullableRecord.class);
+		roundTrip(8, new NullableRecord(null));
+	}
+
 	public static class TestClass {
 		public String text = "something";
 		public int moo = 120;
@@ -869,6 +899,19 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	public record RecordClass(String height, int width, long x, double y) { }
 	public record OldPrimitiveRecord(long x) { }
+
+	public static class DefaultValue {
+		public Integer value = 10;
+
+		public DefaultValue () {
+		}
+
+		public DefaultValue (Integer value) {
+			this.value = value;
+		}
+	}
+
+	public record NullableRecord(Integer value) { }
 
 	public record NewPrimitiveRecord(long x, double added) { }
 

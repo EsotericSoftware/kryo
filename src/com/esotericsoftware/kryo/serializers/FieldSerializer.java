@@ -221,6 +221,16 @@ public class FieldSerializer<T> extends Serializer<T> {
 		generics.popGenericType();
 	}
 
+	/** Sets a non-primitive field to null. */
+	void setNull (CachedField cachedField, Object object) {
+		if (cachedField.field.getType().isPrimitive()) return;
+		try {
+			cachedField.field.set(object, null);
+		} catch (IllegalAccessException ex) {
+			throw new KryoException("Error setting field to null: " + cachedField, ex);
+		}
+	}
+
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
 	protected T create (Kryo kryo, Input input, Class<? extends T> type) {

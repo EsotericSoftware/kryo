@@ -381,4 +381,32 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 
 	public record NewPrimitiveRecord(@Tag(0) long x, @Tag(1) int added, @Tag(2) boolean flag) { }
 
+
+	// https://github.com/EsotericSoftware/kryo/issues/851
+	@Test
+	void testNullOverwritesDefaultValue () {
+		TaggedFieldSerializer.TaggedFieldSerializerConfig config = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+		config.setReadUnknownTagData(true);
+		kryo.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
+		kryo.register(DefaultValue.class);
+
+		// A non-null value is written and read first, so the field has been used with a value class before.
+		Output output = new Output(64);
+		kryo.writeObject(output, new DefaultValue(5));
+		kryo.writeObject(output, new DefaultValue(null));
+		Input input = new Input(output.toBytes());
+		assertEquals(5, kryo.readObject(input, DefaultValue.class).value);
+		assertNull(kryo.readObject(input, DefaultValue.class).value);
+	}
+
+	public static class DefaultValue {
+		@Tag(0) public Integer value = 10;
+
+		public DefaultValue () {
+		}
+
+		public DefaultValue (Integer value) {
+			this.value = value;
+		}
+	}
 }
