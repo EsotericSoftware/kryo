@@ -33,7 +33,7 @@ import java.io.OutputStream;
  * Not available on all JVMs. {@link Util#unsafe} can be checked before using this class.
  * <p>
  * This class may be much faster when {@link #setVariableLengthEncoding(boolean)} is false.
- * @author Roman Levenstein <romixlev@gmail.com>
+ * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 @SuppressWarnings("restriction")
 public class UnsafeOutput extends Output {

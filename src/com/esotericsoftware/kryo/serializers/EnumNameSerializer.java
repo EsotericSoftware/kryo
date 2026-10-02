@@ -25,7 +25,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 /** Serializes enums using the enum's name. This prevents invalidating previously serialized byts when the enum order changes.
- * @author KwonNam Son <kwon37xi@gmail.com> */
+ * @author KwonNam Son {@literal <kwon37xi@gmail.com>} */
 public class EnumNameSerializer extends ImmutableSerializer<Enum> {
 	private final Class<? extends Enum> enumType;
 

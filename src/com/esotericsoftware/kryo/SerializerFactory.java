@@ -31,7 +31,7 @@ import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.VersionFieldSerializerConfig;
 
 /** Creates and configures serializers.
- * @author Rafael Winterhalter <rafael.wth@web.de> */
+ * @author Rafael Winterhalter {@literal <rafael.wth@web.de>} */
 public interface SerializerFactory<T extends Serializer> {
 	/** Creates and configures a new serializer.
 	 * @param kryo The Kryo instance that will be used with the new serializer.
@@ -52,7 +52,7 @@ public interface SerializerFactory<T extends Serializer> {
 	 * must either take an instance of {@link Kryo} and an instance of {@link Class} as its parameter, take only a {@link Kryo} or
 	 * {@link Class} as its only argument, or take no arguments. If several of the described constructors are found, the first
 	 * found constructor is used, in the order they were just described.
-	 * @author Rafael Winterhalter <rafael.wth@web.de> */
+	 * @author Rafael Winterhalter {@literal <rafael.wth@web.de>} */
 	public static class ReflectionSerializerFactory<T extends Serializer> extends BaseSerializerFactory<T> {
 		private final Class<T> serializerClass;
 
@@ -90,7 +90,7 @@ public interface SerializerFactory<T extends Serializer> {
 
 	/** A serializer factory that always returns a given serializer instance rather than creating new serializer instances. It can
 	 * be used when multiple types should be serialized by the same serializer.
-	 * @author Rafael Winterhalter <rafael.wth@web.de> */
+	 * @author Rafael Winterhalter {@literal <rafael.wth@web.de>} */
 	public static class SingletonSerializerFactory<T extends Serializer> extends BaseSerializerFactory<T> {
 		private final T serializer;
 

@@ -57,7 +57,7 @@ import java.lang.reflect.Field;
  * @see TaggedFieldSerializer
  * @see CompatibleFieldSerializer
  * @author Nathan Sweet
- * @author Roman Levenstein <romixlev@gmail.com> */
+ * @author Roman Levenstein {@literal <romixlev@gmail.com>} */
 public class FieldSerializer<T> extends Serializer<T> {
 	final Kryo kryo;
 	final Class type;
@@ -140,7 +140,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return object;
 	}
 
-	/** Prepares the type variables for the serialized type. Must be balanced with {@link #popTypeVariables(int)} if >0 is
+	/** Prepares the type variables for the serialized type. Must be balanced with {@link #popTypeVariables(int)} if {@code > 0} is
 	 * returned. */
 	protected int pushTypeVariables () {
 		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();

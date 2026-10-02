@@ -32,7 +32,7 @@ import java.nio.ByteOrder;
  * <p>
  * Note that the byte[] {@link #getBuffer() buffer} is not used. Code taking an Output and expecting the byte[] to be used may not
  * work correctly.
- * @author Roman Levenstein <romixlev@gmail.com>
+ * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 public class ByteBufferOutput extends Output {
 	private static final ByteOrder nativeOrder = ByteOrder.nativeOrder();
