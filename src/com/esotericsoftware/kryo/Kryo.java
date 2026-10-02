@@ -488,8 +488,8 @@ public class Kryo {
 	 * affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
-	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for primitive types and
-	 *           String, but these IDs can be repurposed. */
+	 * @param id Must be {@code >= 0}. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for primitive types
+	 *           and String, but these IDs can be repurposed. */
 	public Registration register (Class type, int id) {
 		Registration registration = classResolver.getRegistration(type);
 		if (registration != null) return registration;
@@ -515,8 +515,8 @@ public class Kryo {
 	 * cause the old entry to be overwritten. Registering a primitive also affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
-	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-9 are used by default for primitive types and
-	 *           their wrappers, String, and void, but these IDs can be repurposed. */
+	 * @param id Must be {@code >= 0}. Smaller IDs are serialized more efficiently. IDs 0-9 are used by default for primitive types
+	 *           and their wrappers, String, and void, but these IDs can be repurposed. */
 	public Registration register (Class type, Serializer serializer, int id) {
 		if (id < 0) throw new IllegalArgumentException("id must be >= 0: " + id);
 		return register(new Registration(type, serializer, id));
@@ -1288,8 +1288,8 @@ public class Kryo {
 	 * {@link GenericsHierarchy} stores the type parameters for a class.
 	 * {@link Generics#pushTypeVariables(GenericsHierarchy, GenericType[]) pushTypeVariables} can be called before generic types
 	 * are {@link GenericType#resolve(Generics) resolved} so the type parameters are tracked as serialization moved through the
-	 * object graph. If >0 is returned, this must be followed by {@link Generics#popTypeVariables(int) popTypeVariables}. See
-	 * {@link FieldSerializer} for an example. */
+	 * object graph. If {@code > 0} is returned, this must be followed by {@link Generics#popTypeVariables(int) popTypeVariables}.
+	 * See {@link FieldSerializer} for an example. */
 	public Generics getGenerics () {
 		return generics;
 	}
