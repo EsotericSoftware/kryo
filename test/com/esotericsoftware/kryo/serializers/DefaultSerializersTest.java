@@ -472,7 +472,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 		kryo.register(ConcurrentHashMap.KeySetView.class);
 		kryo.register(ConcurrentHashMap.class);
-		roundTrip(15, set);
+		roundTrip(13, set);
 	}
 
 	@Test

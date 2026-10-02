@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -43,6 +44,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
 	private boolean keysCanBeNull = true, valuesCanBeNull = true;
+	private boolean writeSameClassOnce = true;
 
 	public MapSerializer () {
 		setAcceptsNull(true);
@@ -112,6 +114,13 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
 
+	/** @param writeSameClassOnce True if the class of the keys or values is written only once when it is unknown and all keys or
+	 *           values are not null and have the same class. False to read and write the format of Kryo 5, which writes the class
+	 *           of each key and value. Default is true. */
+	public void setWriteSameClassOnce (boolean writeSameClassOnce) {
+		this.writeSameClassOnce = writeSameClassOnce;
+	}
+
 	public void write (Kryo kryo, Output output, T map) {
 		if (map == null) {
 			output.writeByte(0);
@@ -139,6 +148,25 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 			if (valueSerializer == null) {
 				Class valueType = genericTypes[1].resolve(kryo.getGenerics());
 				if (valueType != null && kryo.isFinal(valueType)) valueSerializer = kryo.getSerializer(valueType);
+			}
+		}
+
+		// If a serializer is unknown, write the class once if all keys or values are not null and have the same class.
+		boolean keysCanBeNull = this.keysCanBeNull, valuesCanBeNull = this.valuesCanBeNull;
+		if (keySerializer == null && writeSameClassOnce) {
+			Class keyClass = sameClass(map.keySet());
+			kryo.writeClass(output, keyClass);
+			if (keyClass != null) {
+				keySerializer = kryo.getSerializer(keyClass);
+				keysCanBeNull = false;
+			}
+		}
+		if (valueSerializer == null && writeSameClassOnce) {
+			Class valueClass = sameClass(map.values());
+			kryo.writeClass(output, valueClass);
+			if (valueClass != null) {
+				valueSerializer = kryo.getSerializer(valueClass);
+				valuesCanBeNull = false;
 			}
 		}
 
@@ -172,6 +200,18 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)} with a special case
 	 * for HashMap. */
+	/** Returns the class of all objects, or null if there is a null object or the objects have different classes. */
+	private Class sameClass (Iterable objects) {
+		Class type = null;
+		for (Object object : objects) {
+			if (object == null) return null;
+			if (type == null)
+				type = object.getClass();
+			else if (object.getClass() != type) return null;
+		}
+		return type;
+	}
+
 	protected T create (Kryo kryo, Input input, Class<? extends T> type, int size) {
 		if (type == HashMap.class) {
 			if (size < 3)
@@ -211,6 +251,24 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 					valueSerializer = kryo.getSerializer(genericClass);
 					valueClass = genericClass;
 				}
+			}
+		}
+
+		boolean keysCanBeNull = this.keysCanBeNull, valuesCanBeNull = this.valuesCanBeNull;
+		if (keySerializer == null && writeSameClassOnce) {
+			Registration registration = kryo.readClass(input);
+			if (registration != null) {
+				keyClass = registration.getType();
+				keySerializer = kryo.getSerializer(keyClass);
+				keysCanBeNull = false;
+			}
+		}
+		if (valueSerializer == null && writeSameClassOnce) {
+			Registration registration = kryo.readClass(input);
+			if (registration != null) {
+				valueClass = registration.getType();
+				valueSerializer = kryo.getSerializer(valueClass);
+				valuesCanBeNull = false;
 			}
 		}
 

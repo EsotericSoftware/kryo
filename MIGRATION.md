@@ -29,6 +29,18 @@ kryo.register(Timestamp.class, new DateSerializer());
 kryo.register(UUID.class, new FieldSerializer<>(kryo, UUID.class));
 ```
 
+### Maps
+
+If the class of the keys or values of a map is unknown, MapSerializer writes it only once if all keys or values are not null and have the same class. Kryo 5 wrote the class of each key and value. To read data written by Kryo 5, disable this for the MapSerializer instances, eg for all maps that use the default MapSerializer:
+
+```java
+MapSerializer mapSerializer = new MapSerializer();
+mapSerializer.setWriteSameClassOnce(false);
+kryo.addDefaultSerializer(Map.class, mapSerializer);
+```
+
+Subclasses like TreeMapSerializer need the same setting.
+
 ## Behavior changes
 
 * RecordSerializer is no longer a default serializer. Records are serialized by FieldSerializer and its subclasses, see [Records](README.md#records).
