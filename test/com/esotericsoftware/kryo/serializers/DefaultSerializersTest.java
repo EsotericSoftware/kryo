@@ -593,6 +593,23 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
+	void testLocaleWithScript () {
+		kryo.register(Locale.class);
+
+		roundTrip(12, new Locale.Builder().setLanguage("sr").setScript("Cyrl").setRegion("RS").build());
+		roundTrip(25, new Locale.Builder().setLanguage("de").setScript("Latn").setRegion("DE").setExtension('u', "co-phonebk").build());
+		// A language that looks like a language tag is not read as one.
+		roundTrip(8, new Locale("en-US"));
+
+		// Locales without a script are written like in Kryo 5.
+		Output output = new Output(32);
+		output.writeAscii("de");
+		output.writeAscii("AT");
+		output.writeString("");
+		assertEquals(new Locale("de", "AT"), kryo.readObject(new Input(output.toBytes()), Locale.class));
+	}
+
+	@Test
 	void testCharset () {
 		List<String> css = Arrays.asList("ISO-8859-1", "US-ASCII", "UTF-8", "UTF-16", "UTF-16BE", "UTF-16LE");
 

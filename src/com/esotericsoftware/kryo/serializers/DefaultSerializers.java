@@ -941,6 +941,12 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, Locale l) {
+			if (!l.getScript().isEmpty()) {
+				// A null language, which Kryo 5 never wrote, marks a language tag. It also contains the script and extensions.
+				output.writeAscii(null);
+				output.writeAscii(l.toLanguageTag());
+				return;
+			}
 			output.writeAscii(l.getLanguage());
 			output.writeAscii(l.getCountry());
 			output.writeString(l.getVariant());
@@ -948,6 +954,7 @@ public class DefaultSerializers {
 
 		public Locale read (Kryo kryo, Input input, Class<? extends Locale> type) {
 			String language = input.readString();
+			if (language == null) return Locale.forLanguageTag(input.readString());
 			String country = input.readString();
 			String variant = input.readString();
 			return create(language, country, variant);
