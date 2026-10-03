@@ -63,8 +63,12 @@ public class DeflateSerializer extends Serializer {
 		// The inflater would read from input beyond the compressed bytes if chunked enoding wasn't used.
 		Inflater inflater = new Inflater(noHeaders);
 		try {
-			InflaterInputStream inflaterStream = new InflaterInputStream(new InputChunked(input, 256), inflater);
-			return serializer.read(kryo, new Input(inflaterStream, 256), type);
+			InputChunked inputChunked = new InputChunked(input, 256);
+			InflaterInputStream inflaterStream = new InflaterInputStream(inputChunked, inflater);
+			Object object = serializer.read(kryo, new Input(inflaterStream, 256), type);
+			// Skip compressed bytes the inflater didn't need, eg the end of the last deflate block, and the end of the chunks.
+			inputChunked.nextChunk();
+			return object;
 		} finally {
 			inflater.end();
 		}
