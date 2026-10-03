@@ -27,14 +27,19 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
 import com.esotericsoftware.minlog.Log;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -135,8 +140,7 @@ public final class UnmodifiableCollectionSerializers {
 	}
 
 	@SuppressWarnings("RedundantUnmodifiable")
-	static Map<Class<?>, Function> unmodifiableFactories () {
-		final Map<Class<?>, Function> factories = new HashMap<>();
+	private static void putFactories (Map<Class<?>, Function> factories) {
 		factories.put(
 			Collections.unmodifiableCollection(Collections.singletonList("")).getClass(),
 			o -> Collections.unmodifiableCollection((Collection)o));
@@ -158,10 +162,71 @@ public final class UnmodifiableCollectionSerializers {
 		factories.put(
 			Collections.unmodifiableSortedMap(new TreeMap<>()).getClass(),
 			o6 -> Collections.unmodifiableSortedMap((SortedMap)o6));
+	}
+
+	/** Used by the deprecated {@link #registerSerializers(Kryo)}. The iteration order of this HashMap determines the registration
+	 * IDs, so it must not change. */
+	private static Map<Class<?>, Function> legacyFactories () {
+		final Map<Class<?>, Function> factories = new HashMap<>();
+		putFactories(factories);
 		return factories;
 	}
 
+	/** The factories in a fixed order, which determines the IDs of {@link #registerSerializersOrdered(Kryo)}. Only classes that
+	 * exist on all supported Java versions, so that the IDs don't change between Java versions. New ones must be added at the
+	 * end. */
+	static Map<Class<?>, Function> orderedFactories () {
+		final Map<Class<?>, Function> factories = new LinkedHashMap<>();
+		putFactories(factories);
+		factories.put(
+			Collections.unmodifiableNavigableSet(new TreeSet<>()).getClass(),
+			o -> Collections.unmodifiableNavigableSet((NavigableSet<?>)o));
+		factories.put(
+			Collections.unmodifiableNavigableMap(new TreeMap<>()).getClass(),
+			o -> Collections.unmodifiableNavigableMap((NavigableMap)o));
+		return factories;
+	}
+
+	static Map<Class<?>, Function> defaultFactories () {
+		final Map<Class<?>, Function> factories = orderedFactories();
+		putSequencedFactory(factories, "unmodifiableSequencedCollection", "java.util.SequencedCollection", new ArrayList<>());
+		putSequencedFactory(factories, "unmodifiableSequencedSet", "java.util.SequencedSet", new LinkedHashSet<>());
+		putSequencedFactory(factories, "unmodifiableSequencedMap", "java.util.SequencedMap", new LinkedHashMap<>());
+		return factories;
+	}
+
+	/** Adds a factory for a Java 21+ sequenced collection method, if available. */
+	private static void putSequencedFactory (Map<Class<?>, Function> factories, String methodName, String parameterType,
+		Object sample) {
+		try {
+			Method method = Collections.class.getMethod(methodName, Class.forName(parameterType));
+			factories.put(method.invoke(null, sample).getClass(), o -> {
+				try {
+					return method.invoke(null, o);
+				} catch (Exception ex) {
+					throw new KryoException("Error creating " + methodName + ".", ex);
+				}
+			});
+		} catch (Exception ignored) { // Before Java 21.
+		}
+	}
+
+	/** Registers serializers for unmodifiable Collections and Maps created via {@link Collections} in a fixed order, so the
+	 * registration IDs are the same on all Java versions: unmodifiableCollection, unmodifiableList of a
+	 * {@link java.util.RandomAccess} list, unmodifiableList of another list, unmodifiableSet, unmodifiableSortedSet,
+	 * unmodifiableMap, unmodifiableSortedMap, unmodifiableNavigableSet and unmodifiableNavigableMap. The Java 21+ sequenced
+	 * wrappers, eg unmodifiableSequencedCollection, are not registered, so that the same classes are registered on all Java
+	 * versions. After {@link #addDefaultSerializers(Kryo)}, they can be registered with {@link Kryo#register(Class)}. */
+	public static void registerSerializersOrdered (Kryo kryo) {
+		for (Map.Entry<Class<?>, Function> factory : orderedFactories().entrySet())
+			kryo.register(factory.getKey(), createSerializer(factory));
+	}
+
 	/** Registers serializers for unmodifiable Collections created via {@link Collections}, including {@link Map}s.
+	 * <p>
+	 * The registration IDs of these classes depend on the JVM, eg the Java version, so data written on one JVM may be read as a
+	 * different collection type on another.
+	 * @deprecated Use {@link #registerSerializersOrdered(Kryo)}, which registers the classes in a fixed order.
 	 *
 	 * @see Collections#unmodifiableCollection(Collection)
 	 * @see Collections#unmodifiableList(List)
@@ -169,9 +234,10 @@ public final class UnmodifiableCollectionSerializers {
 	 * @see Collections#unmodifiableSortedSet(SortedSet)
 	 * @see Collections#unmodifiableMap(Map)
 	 * @see Collections#unmodifiableSortedMap(SortedMap) */
+	@Deprecated
 	public static void registerSerializers (Kryo kryo) {
 		try {
-			for (Map.Entry<Class<?>, Function> factory : unmodifiableFactories().entrySet()) {
+			for (Map.Entry<Class<?>, Function> factory : legacyFactories().entrySet()) {
 				kryo.register(factory.getKey(), createSerializer(factory));
 			}
 		} catch (Throwable t) {
@@ -186,10 +252,12 @@ public final class UnmodifiableCollectionSerializers {
 	 * @see Collections#unmodifiableSet(Set)
 	 * @see Collections#unmodifiableSortedSet(SortedSet)
 	 * @see Collections#unmodifiableMap(Map)
-	 * @see Collections#unmodifiableSortedMap(SortedMap) */
+	 * @see Collections#unmodifiableSortedMap(SortedMap)
+	 * @see Collections#unmodifiableNavigableSet(NavigableSet)
+	 * @see Collections#unmodifiableNavigableMap(NavigableMap) */
 	public static void addDefaultSerializers (Kryo kryo) {
 		try {
-			for (Map.Entry<Class<?>, Function> factory : unmodifiableFactories().entrySet()) {
+			for (Map.Entry<Class<?>, Function> factory : defaultFactories().entrySet()) {
 				kryo.addDefaultSerializer(factory.getKey(), createSerializer(factory));
 			}
 		} catch (Throwable t) {
