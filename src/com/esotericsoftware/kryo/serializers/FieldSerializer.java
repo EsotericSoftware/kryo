@@ -509,8 +509,44 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public @interface NotNull {
 	}
 
+	/** How {@link FieldSerializer} reads and writes fields. If a field can't be accessed this way, the next way in this order is
+	 * used, eg for final fields, which can't be written with VarHandles, or for records, which are never accessed with Unsafe.
+	 * Reflection works for all fields. */
+	public enum FieldAccessType {
+		/** {@code sun.misc.Unsafe}, if available. Fastest, but deprecated for removal by Java. */
+		UNSAFE,
+		/** ReflectASM for public, non-final fields of public classes. */
+		ASM,
+		/** {@link java.lang.invoke.VarHandle} for non-final fields. */
+		VARHANDLE,
+		/** {@link Field} reflection. */
+		REFLECTION
+	}
+
 	/** Configuration for FieldSerializer instances. */
 	public static class FieldSerializerConfig implements Cloneable {
+		/** Unsafe where it can be used without a warning, otherwise VarHandles. Java warns about Unsafe memory access since Java
+		 * 24, unless it is allowed with {@code --sun-misc-unsafe-memory-access=allow}. On Android, which has VarHandles only since
+		 * API level 33, reflection. */
+		static final FieldAccessType defaultFieldAccess;
+		static {
+			String memoryAccess = System.getProperty("sun.misc.unsafe.memory.access");
+			if (isAndroid)
+				defaultFieldAccess = FieldAccessType.REFLECTION;
+			else if (!unsafe)
+				defaultFieldAccess = FieldAccessType.VARHANDLE;
+			else if (memoryAccess != null)
+				defaultFieldAccess = memoryAccess.equals("allow") ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+			else
+				defaultFieldAccess = Runtime.version().feature() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+			if (DEBUG) {
+				debug("kryo", "Default field access: " + defaultFieldAccess + (isAndroid ? " (Android)"
+					: " (Java " + Runtime.version().feature() + ", Unsafe available: " + unsafe + ", Unsafe memory access: "
+						+ (memoryAccess == null ? "default" : memoryAccess) + ")"));
+			}
+		}
+
+		FieldAccessType fieldAccess = defaultFieldAccess;
 		boolean fieldsCanBeNull = true;
 		boolean setFieldsAsAccessible = true;
 		boolean ignoreSyntheticFields = true;
@@ -619,6 +655,20 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public boolean getExtendedFieldNames () {
 			return extendedFieldNames;
+		}
+
+		/** Sets how fields are read and written. Default is {@link FieldAccessType#UNSAFE} where Unsafe can be used without a
+		 * warning, which is before Java 24 or with {@code --sun-misc-unsafe-memory-access=allow},
+		 * {@link FieldAccessType#REFLECTION} on Android, otherwise {@link FieldAccessType#VARHANDLE}. Changes take effect for new
+		 * serializers or after {@link FieldSerializer#updateFields()}. */
+		public void setFieldAccess (FieldAccessType fieldAccess) {
+			if (fieldAccess == null) throw new IllegalArgumentException("fieldAccess cannot be null.");
+			this.fieldAccess = fieldAccess;
+			if (TRACE) trace("kryo", "FieldSerializerConfig fieldAccess: " + fieldAccess);
+		}
+
+		public FieldAccessType getFieldAccess () {
+			return fieldAccess;
 		}
 	}
 }

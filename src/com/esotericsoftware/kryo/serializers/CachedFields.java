@@ -37,6 +37,7 @@ import com.esotericsoftware.kryo.serializers.AsmField.ShortAsmField;
 import com.esotericsoftware.kryo.serializers.AsmField.StringAsmField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldAccessType;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
@@ -83,6 +84,12 @@ class CachedFields implements Comparator<CachedField> {
 		this.serializer = serializer;
 	}
 
+	/** Returns the configured field access, or ASM if Unsafe is configured but not available. */
+	private FieldAccessType fieldAccess () {
+		FieldAccessType fieldAccess = serializer.config.fieldAccess;
+		return fieldAccess == FieldAccessType.UNSAFE && !unsafe ? FieldAccessType.ASM : fieldAccess;
+	}
+
 	public void rebuild () {
 		if (serializer.type.isInterface()) { // No fields to serialize.
 			fields = emptyCachedFields;
@@ -92,7 +99,8 @@ class CachedFields implements Comparator<CachedField> {
 		}
 
 		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
-		boolean asm = !unsafe && !isAndroid && !isNativeImage && Modifier.isPublic(serializer.type.getModifiers());
+		boolean asm = fieldAccess() == FieldAccessType.ASM && !isAndroid && !isNativeImage
+			&& Modifier.isPublic(serializer.type.getModifiers());
 		RecordComponent[] recordComponents = isRecord(serializer.type) ? serializer.type.getRecordComponents() : null;
 		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
@@ -160,13 +168,16 @@ class CachedFields implements Comparator<CachedField> {
 		}
 
 		CachedField cachedField;
-		if (unsafe && !isRecord(type))
+		FieldAccessType fieldAccess = fieldAccess();
+		if (fieldAccess == FieldAccessType.UNSAFE && !isRecord(type))
 			cachedField = newUnsafeField(field, fieldClass, genericType);
 		else if (accessIndex != -1) {
 			cachedField = newAsmField(field, fieldClass, genericType);
 			cachedField.access = (FieldAccess)access;
 			cachedField.accessIndex = accessIndex;
-		} else
+		} else if (fieldAccess != FieldAccessType.REFLECTION && !Modifier.isFinal(modifiers))
+			cachedField = newVarHandleField(field, fieldClass, genericType);
+		else
 			cachedField = newReflectField(field, fieldClass, genericType);
 
 		cachedField.varEncoding = config.varEncoding;
@@ -236,6 +247,23 @@ class CachedFields implements Comparator<CachedField> {
 			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
 			return new StringUnsafeField(field);
 		return new UnsafeField(field, serializer, genericType);
+	}
+
+	private CachedField newVarHandleField (Field field, Class fieldClass, GenericType genericType) {
+		if (fieldClass.isPrimitive()) {
+			if (fieldClass == int.class) return new VarHandleField.IntVarHandleField(field);
+			if (fieldClass == float.class) return new VarHandleField.FloatVarHandleField(field);
+			if (fieldClass == boolean.class) return new VarHandleField.BooleanVarHandleField(field);
+			if (fieldClass == long.class) return new VarHandleField.LongVarHandleField(field);
+			if (fieldClass == double.class) return new VarHandleField.DoubleVarHandleField(field);
+			if (fieldClass == short.class) return new VarHandleField.ShortVarHandleField(field);
+			if (fieldClass == char.class) return new VarHandleField.CharVarHandleField(field);
+			if (fieldClass == byte.class) return new VarHandleField.ByteVarHandleField(field);
+		}
+		if (fieldClass == String.class
+			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
+			return new VarHandleField.StringVarHandleField(field);
+		return new VarHandleField(field, serializer, genericType);
 	}
 
 	private CachedField newAsmField (Field field, Class fieldClass, GenericType genericType) {

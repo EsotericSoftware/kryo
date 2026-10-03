@@ -38,6 +38,8 @@ import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.LongArraySe
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldAccessType;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
@@ -1603,6 +1605,50 @@ class FieldSerializerTest extends KryoTestCase {
 
 	static class NotPublicApiFields {
 		public int a;
+	}
+
+	@Test
+	void testFieldAccess () {
+		assertFieldAccess(FieldAccessType.UNSAFE, "IntUnsafeField", "UnsafeField", "IntUnsafeField");
+		assertFieldAccess(FieldAccessType.ASM, "IntAsmField", "AsmField", "IntReflectField");
+		assertFieldAccess(FieldAccessType.VARHANDLE, "IntVarHandleField", "VarHandleField", "IntReflectField");
+		assertFieldAccess(FieldAccessType.REFLECTION, "IntReflectField", "ReflectField", "IntReflectField");
+	}
+
+	@Test
+	void testDefaultFieldAccess () {
+		// Unsafe where it can be used without a warning. The tests don't set --sun-misc-unsafe-memory-access.
+		FieldAccessType expected = Runtime.version().feature() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+		assertEquals(expected, new FieldSerializerConfig().getFieldAccess());
+	}
+
+	private void assertFieldAccess (FieldAccessType fieldAccess, String intField, String objectField, String finalField) {
+		FieldSerializerConfig config = new FieldSerializerConfig();
+		config.setFieldAccess(fieldAccess);
+		FieldSerializer serializer = new FieldSerializer(kryo, FieldAccessTypes.class, config);
+		assertEquals(intField, serializer.getField("value").getClass().getSimpleName());
+		assertEquals(objectField, serializer.getField("object").getClass().getSimpleName());
+		// Final fields can't be written with ASM or VarHandles.
+		assertEquals(finalField, serializer.getField("finalValue").getClass().getSimpleName());
+
+		kryo.register(FieldAccessTypes.class, serializer);
+		kryo.register(ArrayList.class);
+		FieldAccessTypes object = new FieldAccessTypes();
+		object.value = 1;
+		object.object = new ArrayList();
+		FieldAccessTypes copy = roundTrip(5, object);
+		assertEquals(1, copy.value);
+	}
+
+	public static class FieldAccessTypes {
+		public int value;
+		public Object object;
+		public final int finalValue = 2;
+
+		public boolean equals (Object o) {
+			return o instanceof FieldAccessTypes other && value == other.value && Objects.equals(object, other.object)
+				&& finalValue == other.finalValue;
+		}
 	}
 
 	@Test
