@@ -61,12 +61,14 @@ public final class Kryo5Compatibility {
 	}
 
 	public static void configure (Kryo kryo) {
-		// Kryo 5 serialized records with RecordSerializer.
-		kryo.addDefaultSerializer(Record.class, new BaseSerializerFactory() {
-			public Serializer newSerializer (Kryo kryo, Class type) {
-				return new RecordSerializer(type);
-			}
-		});
+		// Kryo 5 serialized records with RecordSerializer. Android has records only since API level 34.
+		if (!isAndroid || isClassAvailable("java.lang.Record")) {
+			kryo.addDefaultSerializer(Record.class, new BaseSerializerFactory() {
+				public Serializer newSerializer (Kryo kryo, Class type) {
+					return new RecordSerializer(type);
+				}
+			});
+		}
 
 		// Kryo 5 had no default serializers for these types. ConcurrentHashMap.KeySetView is not needed: Kryo 5 wrote it with
 		// CollectionSerializer, but couldn't read it back.
