@@ -1573,6 +1573,37 @@ class FieldSerializerTest extends KryoTestCase {
 		boolean z;
 	}
 
+	@Test
+	void testSetFieldsAsAccessibleFalse () {
+		FieldSerializer serializer = new FieldSerializer(kryo, PublicApiFields.class);
+		serializer.getFieldSerializerConfig().setFieldsAsAccessible(false);
+		serializer.updateFields();
+		kryo.register(PublicApiFields.class, serializer);
+		// Only the public, non-final field of the public class is serialized.
+		assertEquals(1, serializer.getFields().length);
+		assertEquals("a", serializer.getFields()[0].getName());
+
+		PublicApiFields object = new PublicApiFields();
+		object.a = 1;
+		object.b = 2;
+		object.c = 3;
+		Output output = new Output(64);
+		kryo.writeObject(output, object);
+		PublicApiFields read = kryo.readObject(new Input(output.toBytes()), PublicApiFields.class);
+		assertEquals(1, read.a);
+		assertEquals(0, read.b);
+		assertEquals(0, read.c);
+
+		// Fields of a class that is not public (here a nested class of a package-private class) are not in the public API.
+		serializer = new FieldSerializer(kryo, NotPublicApiFields.class);
+		serializer.getFieldSerializerConfig().setFieldsAsAccessible(false);
+		serializer.updateFields();
+		assertEquals(0, serializer.getFields().length);
+	}
+
+	static class NotPublicApiFields {
+		public int a;
+	}
 
 	@Test
 	void testBindWithNotNull () {

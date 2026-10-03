@@ -120,8 +120,9 @@ class CachedFields implements Comparator<CachedField> {
 		FieldSerializerConfig config = serializer.config;
 		if (field.isSynthetic() && config.ignoreSyntheticFields) return;
 
-		if (!field.isAccessible()) {
-			if (!config.setFieldsAsAccessible) return;
+		if (!config.setFieldsAsAccessible) {
+			if (!isPublicApi(field)) return;
+		} else {
 			try {
 				field.setAccessible(true);
 			} catch (SecurityException ex) {
@@ -208,6 +209,16 @@ class CachedFields implements Comparator<CachedField> {
 			fields.add(cachedField);
 			copyFields.add(cachedField);
 		}
+	}
+
+	/** Returns true if the field can be read and written without {@link Field#setAccessible(boolean)}: a public, non-final field
+	 * of a public class. */
+	static private boolean isPublicApi (Field field) {
+		int modifiers = field.getModifiers();
+		if (!Modifier.isPublic(modifiers) || Modifier.isFinal(modifiers)) return false;
+		for (Class type = field.getDeclaringClass(); type != null; type = type.getEnclosingClass())
+			if (!Modifier.isPublic(type.getModifiers())) return false;
+		return true;
 	}
 
 	private CachedField newUnsafeField (Field field, Class fieldClass, GenericType genericType) {
