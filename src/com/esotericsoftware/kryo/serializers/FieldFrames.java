@@ -28,7 +28,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
 import java.util.ArrayList;
 
@@ -58,6 +57,10 @@ final class FieldFrames {
 	private final ArrayList<WriteScope> writeScopes = new ArrayList();
 	private final ArrayList<ReadScope> readScopes = new ArrayList();
 	private int writeDepth, readDepth;
+	/** The field names read in the current object graph and their classes. Usually there are only a few, so a list is faster than
+	 * a map, which would be cleared for each object graph. */
+	private final ArrayList<Class> fieldNameTypes = new ArrayList();
+	private final ArrayList<String[]> fieldNames = new ArrayList();
 
 	/** The number of objects read after the field started by {@link #beginField(Input, boolean)}. */
 	private int fieldObjects;
@@ -121,14 +124,20 @@ final class FieldFrames {
 		classResolver.deferNames(scope.deferNames);
 		Output parent = scope.parent;
 		classResolver.writeNames(parent, scope.names);
-		ArrayList<CompatibleFieldSerializer> fieldNames = scope.fieldNames;
-		parent.writeVarInt(fieldNames.size() << 1 | (scope.outermostFieldNames ? 1 : 0), true);
-		for (CompatibleFieldSerializer serializer : fieldNames) {
-			writeClass(parent, serializer.getType());
-			serializer.writeFieldNames(parent);
+		ArrayList<Class> types = scope.fieldNameTypes;
+		ArrayList<String[]> fieldNames = scope.fieldNames;
+		parent.writeVarInt(types.size() << 1 | (scope.outermostFieldNames ? 1 : 0), true);
+		for (int i = 0, n = types.size(); i < n; i++) {
+			writeClass(parent, types.get(i));
+			writeStrings(parent, fieldNames.get(i));
 		}
 		// The outer scope writes the field names too, in case this scope is skipped. It writes the class names anyway.
-		if (writeDepth > 0) writeScopes.get(writeDepth - 1).fieldNames.addAll(fieldNames);
+		if (writeDepth > 0) {
+			WriteScope outer = writeScopes.get(writeDepth - 1);
+			outer.fieldNameTypes.addAll(types);
+			outer.fieldNames.addAll(fieldNames);
+		}
+		types.clear();
 		fieldNames.clear();
 
 		Output buffer = scope.buffer;
@@ -148,12 +157,26 @@ final class FieldFrames {
 		}
 	}
 
-	/** Remembers the CompatibleFieldSerializer to write its field names before the object data. */
-	void writeFieldNames (CompatibleFieldSerializer serializer) {
+	/** Remembers the field names of CompatibleFieldSerializer for the class, to write them before the object data. */
+	void writeFieldNames (Class type, String[] names) {
 		WriteScope scope = writeScopes.get(writeDepth - 1);
 		// The outermost object writes its field names before any nested object, so they are first.
 		if (scope.nested == 0) scope.outermostFieldNames = true;
-		scope.fieldNames.add(serializer);
+		scope.fieldNameTypes.add(type);
+		scope.fieldNames.add(names);
+	}
+
+	private static void writeStrings (Output output, String[] values) {
+		output.writeVarInt(values.length, true);
+		for (String value : values)
+			output.writeString(value);
+	}
+
+	private static String[] readStrings (Input input) {
+		String[] values = new String[input.validateArrayLength(input.readVarInt(true))];
+		for (int i = 0; i < values.length; i++)
+			values[i] = input.readString();
+		return values;
 	}
 
 	/** Starts a field, reserving space for its length. Returns the start of the field and the number of objects written before it,
@@ -206,7 +229,11 @@ final class FieldFrames {
 				return input;
 			}
 		}
-		if (newGraph()) readDepth = 0;
+		if (newGraph()) {
+			readDepth = 0;
+			fieldNameTypes.clear();
+			fieldNames.clear();
+		}
 		if (readDepth == readScopes.size()) readScopes.add(new ReadScope());
 		ReadScope scope = readScopes.get(readDepth++);
 		scope.input = input;
@@ -217,10 +244,12 @@ final class FieldFrames {
 		int fieldNames = input.readVarInt(true);
 		for (int i = 0, n = fieldNames >>> 1; i < n; i++) {
 			Registration registration = readClass(input);
-			String[] names = CompatibleFieldSerializer.readFieldNames(input);
+			String[] names = readStrings(input);
 			if (i == 0 && (fieldNames & 1) != 0) scope.outermostFieldNames = names;
-			if (registration != null && registration.getSerializer() instanceof CompatibleFieldSerializer serializer
-				&& !kryo.getGraphContext().containsKey(serializer)) serializer.setFieldNames(kryo, names);
+			if (registration != null) {
+				fieldNameTypes.add(registration.getType());
+				this.fieldNames.add(names);
+			}
 		}
 		return input;
 	}
@@ -236,13 +265,15 @@ final class FieldFrames {
 		}
 	}
 
-	/** Returns the fields of the data for the CompatibleFieldSerializer, which has no fields for the current object graph yet. */
-	CachedField[] readFieldNames (CompatibleFieldSerializer serializer) {
-		ReadScope scope = readScopes.get(readDepth - 1);
+	/** Returns the field names of CompatibleFieldSerializer for the class, read in the current object graph. */
+	String[] fieldNames (Class type) {
+		for (int i = fieldNameTypes.size() - 1; i >= 0; i--)
+			if (fieldNameTypes.get(i) == type) return fieldNames.get(i);
 		// The object is read as a different class than it was written, if it started the scope and its field names were new.
+		ReadScope scope = readScopes.get(readDepth - 1);
 		if (scope.nested > 0 || scope.outermostFieldNames == null)
-			throw new KryoException("Field names not found: " + serializer.getType().getName());
-		return serializer.setFieldNames(kryo, scope.outermostFieldNames);
+			throw new KryoException("Field names not found: " + type.getName());
+		return scope.outermostFieldNames;
 	}
 
 	void endRead (boolean legacyChunks) {
@@ -296,7 +327,8 @@ final class FieldFrames {
 		/** The number of class names written before the scope. */
 		int names;
 		boolean deferNames, outermostFieldNames;
-		final ArrayList<CompatibleFieldSerializer> fieldNames = new ArrayList();
+		final ArrayList<Class> fieldNameTypes = new ArrayList();
+		final ArrayList<String[]> fieldNames = new ArrayList();
 	}
 
 	static private class ReadScope {

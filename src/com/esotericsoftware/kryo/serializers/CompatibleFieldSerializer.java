@@ -50,6 +50,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private final Object writeKey = new Object();
 	/** The error message if fields with the same name can't be distinguished, else null. */
 	private String duplicateFieldName;
+	/** The names of the cached fields, in the same order. */
+	private String[] fieldNames;
 
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new CompatibleFieldSerializerConfig());
@@ -65,6 +67,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		// so the config can still be changed and updateFields called after the serializer is constructed.
 		duplicateFieldName = null;
 		CachedField[] fields = cachedFields.fields;
+		fieldNames = new String[fields.length];
+		for (int i = 0, n = fields.length; i < n; i++)
+			fieldNames[i] = fields[i].name;
 		for (int i = 1, n = fields.length; i < n; i++) {
 			CachedField field = fields[i], previous = fields[i - 1];
 			if (field.name.equals(previous.name)) {
@@ -108,7 +113,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			if (TRACE) trace("kryo", "Write fields for class: " + type.getName());
 			context.put(writeKey, null);
 			if (chunked && !legacyChunks)
-				frames.writeFieldNames(this);
+				frames.writeFieldNames(type, fieldNames);
 			else
 				writeFieldNames(output);
 		}
@@ -164,7 +169,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			values = newRecordValues();
 
 		CachedField[] fields = (CachedField[])kryo.getGraphContext().get(this);
-		if (fields == null) fields = chunked && !legacyChunks ? frames.readFieldNames(this) : readFields(kryo, input);
+		if (fields == null) fields = readFields(kryo, input, chunked && !legacyChunks ? frames : null);
 
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
@@ -244,21 +249,20 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		return object;
 	}
 
-	private CachedField[] readFields (Kryo kryo, Input input) {
-		if (TRACE) trace("kryo", "Read fields for class: " + type.getName());
-		return setFieldNames(kryo, readFieldNames(input));
+	/** Returns the fields of the data for the current object graph, read from the input or the frames. */
+	private CachedField[] readFields (Kryo kryo, Input input, FieldFrames frames) {
+		return fields(kryo, frames != null ? frames.fieldNames(type) : readFieldNames(input));
 	}
 
-	void writeFieldNames (Output output) {
-		CachedField[] fields = cachedFields.fields;
-		output.writeVarInt(fields.length, true);
-		for (int i = 0, n = fields.length; i < n; i++) {
-			if (TRACE) trace("kryo", "Write field name: " + fields[i].name + pos(output.position()));
-			output.writeString(fields[i].name);
+	private void writeFieldNames (Output output) {
+		output.writeVarInt(fieldNames.length, true);
+		for (String name : fieldNames) {
+			if (TRACE) trace("kryo", "Write field name: " + name + pos(output.position()));
+			output.writeString(name);
 		}
 	}
 
-	static String[] readFieldNames (Input input) {
+	private String[] readFieldNames (Input input) {
 		int length = input.validateArrayLength(input.readVarInt(true));
 		String[] names = new String[length];
 		for (int i = 0; i < length; i++) {
@@ -268,8 +272,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		return names;
 	}
 
-	/** Sets the fields of the data for the current object graph from their names. */
-	CachedField[] setFieldNames (Kryo kryo, String[] names) {
+	/** Returns the fields of the data for the current object graph from their names, which can contain unknown fields. */
+	private CachedField[] fields (Kryo kryo, String[] names) {
+		if (TRACE) trace("kryo", "Read fields for class: " + type.getName());
 		int length = names.length;
 		CachedField[] fields = new CachedField[length];
 		CachedField[] allFields = cachedFields.fields;
