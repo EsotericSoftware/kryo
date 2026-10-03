@@ -67,6 +67,10 @@ The serializer for immutable lists created by `List.of` and `Stream.toList` supp
 ((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(false);
 ```
 
+### Locales with a script
+
+LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language tag, so the script and extensions are kept ([#1053](https://github.com/EsotericSoftware/kryo/issues/1053)). Kryo 5 lost them. Other locales are written as before, so Kryo 6 reads all locales written by Kryo 5.
+
 ## Behavior changes
 
 * RecordSerializer is no longer a default serializer. Records are serialized by FieldSerializer and its subclasses, see [Records](README.md#records).
