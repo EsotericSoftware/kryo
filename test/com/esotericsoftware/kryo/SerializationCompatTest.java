@@ -76,10 +76,10 @@ class SerializationCompatTest extends KryoTestCase {
 	private static final List<TestDataDescription> TEST_DATAS = new ArrayList<>();
 
 	static {
-		TEST_DATAS.add(new TestDataDescription<>(new TestData(), 2643, 2656));
-		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava8(), 2801, 2814));
-		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava11(), 2885, 2908));
-		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava17(), 2651, 2664));
+		TEST_DATAS.add(new TestDataDescription<>(new TestData(), 3048, 3061));
+		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava8(), 3206, 3219));
+		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava11(), 3290, 3313));
+		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava17(), 3056, 3069));
 	};
 
 	@BeforeEach
