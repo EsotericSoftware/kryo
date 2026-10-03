@@ -1604,4 +1604,28 @@ class FieldSerializerTest extends KryoTestCase {
 	static class NotPublicApiFields {
 		public int a;
 	}
+
+	@Test
+	void testBindWithNotNull () {
+		kryo.register(BindWithNotNull.class);
+		kryo.register(ArrayList.class);
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(BindWithNotNull.class);
+		assertFalse(serializer.getField("notNull").getCanBeNull());
+		assertTrue(serializer.getField("nullable").getCanBeNull());
+
+		roundTrip(3, new BindWithNotNull());
+		BindWithNotNull object = new BindWithNotNull();
+		object.notNull = null;
+		assertThrows(KryoException.class, () -> kryo.writeObject(new Output(64), object));
+	}
+
+	public static class BindWithNotNull {
+		@Bind(valueClass = ArrayList.class) @NotNull public ArrayList notNull = new ArrayList();
+		@Bind(valueClass = ArrayList.class) public ArrayList nullable;
+
+		public boolean equals (Object o) {
+			return o instanceof BindWithNotNull other && Objects.equals(notNull, other.notNull)
+				&& Objects.equals(nullable, other.nullable);
+		}
+	}
 }

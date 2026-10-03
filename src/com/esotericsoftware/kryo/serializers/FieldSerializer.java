@@ -211,10 +211,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Prepares the type variables for the serialized type. Must be balanced with {@link #popTypeVariables(int)} if {@code > 0} is
 	 * returned. */
 	protected int pushTypeVariables () {
-		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
-		if (genericTypes == null) return 0;
+		GenericType genericType = kryo.getGenerics().nextGenericType();
+		if (genericType == null) return 0;
 
-		int pop = kryo.getGenerics().pushTypeVariables(genericsHierarchy, genericTypes);
+		int pop = kryo.getGenerics().pushTypeVariables(genericsHierarchy, genericType);
 		if (TRACE && pop > 0) trace("kryo", "Generics: " + kryo.getGenerics());
 		return pop;
 	}

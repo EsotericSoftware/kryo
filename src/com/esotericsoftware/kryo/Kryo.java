@@ -1297,10 +1297,10 @@ public class Kryo {
 	 * class. This must be followed by {@link Generics#popGenericType() popGenericType}. See {@link MapSerializer} for an example.
 	 * <p>
 	 * {@link GenericsHierarchy} stores the type parameters for a class.
-	 * {@link Generics#pushTypeVariables(GenericsHierarchy, GenericType[]) pushTypeVariables} can be called before generic types
-	 * are {@link GenericType#resolve(Generics) resolved} so the type parameters are tracked as serialization moved through the
-	 * object graph. If {@code > 0} is returned, this must be followed by {@link Generics#popTypeVariables(int) popTypeVariables}.
-	 * See {@link FieldSerializer} for an example. */
+	 * {@link Generics#pushTypeVariables(GenericsHierarchy, GenericType) pushTypeVariables} can be called before generic types are
+	 * {@link GenericType#resolve(Generics) resolved} so the type parameters are tracked as serialization moved through the object
+	 * graph. If {@code > 0} is returned, this must be followed by {@link Generics#popTypeVariables(int) popTypeVariables}. See
+	 * {@link FieldSerializer} for an example. */
 	public Generics getGenerics () {
 		return generics;
 	}

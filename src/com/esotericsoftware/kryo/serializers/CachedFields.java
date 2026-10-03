@@ -359,7 +359,7 @@ class CachedFields implements Comparator<CachedField> {
 				"@Bind serializerFactory requires valueClass");
 			if (serializer != null) cachedField.setSerializer(serializer);
 
-			cachedField.setCanBeNull(annotation.canBeNull());
+			cachedField.setCanBeNull(annotation.canBeNull() && !field.isAnnotationPresent(NotNull.class));
 			cachedField.setVariableLengthEncoding(annotation.variableLengthEncoding());
 			cachedField.setOptimizePositive(annotation.optimizePositive());
 		}
