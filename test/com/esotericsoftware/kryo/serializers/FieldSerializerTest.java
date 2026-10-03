@@ -1605,6 +1605,30 @@ class FieldSerializerTest extends KryoTestCase {
 		public int a;
 	}
 
+	// Java 26+ can deny setting final fields with reflection (JEP 500), which can't be enabled in the test JVM.
+	@Test
+	void testAccessError () throws Exception {
+		IllegalAccessException denied = new IllegalAccessException("denied");
+		KryoException ex = ReflectField.accessError(AccessErrorFields.class.getDeclaredField("finalValue"), denied);
+		assertTrue(ex.getMessage().startsWith("Unable to set final field: " + AccessErrorFields.class.getName() + ".finalValue."));
+		assertTrue(ex.getMessage().contains("--enable-final-field-mutation=" + Util.moduleName() + ","));
+		assertEquals("ALL-UNNAMED", Util.moduleName()); // The tests run on the class path.
+		assertSame(denied, ex.getCause());
+
+		ex = ReflectField.accessError(AccessErrorFields.class.getDeclaredField("value"), denied);
+		assertTrue(ex.getMessage().startsWith("Error accessing field: value"));
+
+		RuntimeException other = new RuntimeException("other");
+		ex = ReflectField.accessError(AccessErrorFields.class.getDeclaredField("finalValue"), other);
+		assertSame(other, ex.getCause());
+		assertFalse(ex.getMessage().contains("final-field-mutation"));
+	}
+
+	static class AccessErrorFields {
+		int value;
+		final int finalValue = 1;
+	}
+
 	@Test
 	void testBindWithNotNull () {
 		kryo.register(BindWithNotNull.class);
