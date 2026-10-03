@@ -92,6 +92,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
    * [JavaSerializer and ExternalizableSerializer](#javaserializer-and-externalizableserializer)
 - [Logging](#logging)
 - [GraalVM native image](#graalvm-native-image)
+- [Android](#android)
 - [Thread safety](#thread-safety)
    * [Pooling](#pooling)
 - [Benchmarks](#benchmarks)
@@ -1360,6 +1361,16 @@ java -Dorg.graalvm.nativeimage.imagecode=agent -agentlib:native-image-agent=conf
 ```
 
 Default serializers added with `addDefaultSerializer(Class, Class)` are created with reflection and need metadata too. `addDefaultSerializer(SomeClass.class, SomeSerializer::new)` creates them without reflection.
+
+## Android
+
+Kryo 6 supports Android from API level 26 (Android 8.0). FieldSerializer accesses fields with reflection there. The Android build tools turn records into regular classes, so they are serialized like other classes with final fields and without a zero argument constructor, which needs an instantiator strategy that can create them:
+
+```java
+kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+```
+
+The serializers for unmodifiable and synchronized collections are not supported on Android.
 
 ## Thread safety
 
