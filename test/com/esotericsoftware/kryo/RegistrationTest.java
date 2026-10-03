@@ -27,6 +27,9 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +41,33 @@ class RegistrationTest {
 		FieldSerializer appleSerializer = new FieldSerializer(kryo, Apple.class);
 		kryo.addDefaultSerializer(Apple.class, appleSerializer);
 		assertSame(appleSerializer, kryo.getDefaultSerializer(Apple.class));
+	}
+
+	@Test
+	void testAllowedUnregisteredClasses () {
+		Kryo kryo = new Kryo();
+		kryo.setAllowedUnregisteredClasses(type -> type.getName().startsWith(RegistrationTest.class.getName()));
+		kryo.register(ArrayList.class);
+
+		Fruit[] fruits = {new Apple(), new Apple()};
+		ArrayList<Fruit> list = new ArrayList<>(Arrays.asList(fruits));
+		Output output = new Output(1024);
+		kryo.writeClassAndObject(output, list);
+		kryo.writeClassAndObject(output, fruits); // Arrays are allowed by their component type.
+		Input input = new Input(output.toBytes());
+		assertEquals(2, ((ArrayList)kryo.readClassAndObject(input)).size());
+		assertEquals(2, ((Fruit[])kryo.readClassAndObject(input)).length);
+
+		// Classes that are not allowed must still be registered, also when reading.
+		assertThrows(IllegalArgumentException.class, () -> kryo.writeClassAndObject(new Output(1024), new HashMap()));
+		Kryo writer = new Kryo();
+		writer.setRegistrationRequired(false);
+		Output other = new Output(1024);
+		writer.writeClassAndObject(other, new HashMap());
+		assertThrows(IllegalArgumentException.class, () -> new Kryo().readClassAndObject(new Input(other.toBytes())));
+		Kryo reader = new Kryo();
+		reader.setAllowedUnregisteredClasses(type -> type == Apple.class);
+		assertThrows(IllegalArgumentException.class, () -> reader.readClassAndObject(new Input(other.toBytes())));
 	}
 
 	@Test
