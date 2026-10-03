@@ -68,6 +68,17 @@ config.setOptimizeGenerics(true);
 kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
 ```
 
+### Chunked encoding
+
+CompatibleFieldSerializer and TaggedFieldSerializer with chunked encoding write each field with its length instead of in chunks. The class names and field names first written in an object are written before it, and with references the number of objects in each field is written too. So skipping a field, eg because the class of a removed field no longer exists, no longer breaks reading the rest of the data ([#1247](https://github.com/EsotericSoftware/kryo/issues/1247)). Kryo 5 lost class names, field names, and references first written in a skipped chunk, also if the classes were registered. The new format is smaller and faster. To read data written by Kryo 5 with chunked encoding, enable `legacyChunks`:
+
+```java
+CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
+config.setChunkedEncoding(true);
+config.setLegacyChunks(true);
+kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+```
+
 ### Maps
 
 If the class of the keys or values of a map is unknown, MapSerializer writes it only once if all keys or values are not null and have the same class. Kryo 5 wrote the class of each key and value. To read data written by Kryo 5, disable this for the MapSerializer instances, eg for all maps that use the default MapSerializer:

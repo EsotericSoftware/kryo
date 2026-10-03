@@ -134,7 +134,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				kryo.writeClass(fieldOutput, valueClass);
 				if (valueClass == null) {
-					if (chunked) endField(frames, fieldOutput, mark, outputChunked);
+					if (chunked) FieldFrames.endChunk(frames, fieldOutput, mark, outputChunked);
 					continue;
 				}
 				cachedField.setCanBeNull(false);
@@ -143,18 +143,11 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 
 			cachedField.write(fieldOutput, object);
-			if (chunked) endField(frames, fieldOutput, mark, outputChunked);
+			if (chunked) FieldFrames.endChunk(frames, fieldOutput, mark, outputChunked);
 		}
 
 		popTypeVariables(pop);
 		if (frames != null) frames.endWrite();
-	}
-
-	static void endField (FieldFrames frames, Output output, long mark, OutputChunked outputChunked) {
-		if (frames != null)
-			frames.endField(output, mark);
-		else
-			outputChunked.endChunk();
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
@@ -209,13 +202,13 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					String message = "Unable to read unknown data (unknown type). (" + getType().getName() + "#" + cachedField + ")";
 					if (!chunked) throw new KryoException(message, ex);
 					if (DEBUG) debug("kryo", message, ex);
-					nextField(frames, input, end, objects, readObjects, inputChunked);
+					FieldFrames.nextChunk(frames, input, end, objects, readObjects, inputChunked);
 					continue;
 				}
 				if (registration == null) {
 					// The value is null, overwrite the value set by the constructor. Record values are already null.
 					if (cachedField != null && object != null) setNull(cachedField, object);
-					if (chunked) nextField(frames, input, end, objects, readObjects, inputChunked);
+					if (chunked) FieldFrames.nextChunk(frames, input, end, objects, readObjects, inputChunked);
 					continue;
 				}
 				Class valueClass = registration.getType();
@@ -230,7 +223,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 						if (!chunked) throw new KryoException(message, ex);
 						if (DEBUG) debug("kryo", message, ex);
 					}
-					if (chunked) nextField(frames, input, end, objects, readObjects, inputChunked);
+					if (chunked) FieldFrames.nextChunk(frames, input, end, objects, readObjects, inputChunked);
 					continue;
 				}
 
@@ -241,7 +234,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 						+ className(fieldType) + " (" + getType().getName() + "#" + cachedField + ")";
 					if (!chunked) throw new KryoException(message);
 					if (DEBUG) debug("kryo", message);
-					nextField(frames, input, end, objects, readObjects, inputChunked);
+					FieldFrames.nextChunk(frames, input, end, objects, readObjects, inputChunked);
 					continue;
 				}
 
@@ -251,7 +244,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			} else if (cachedField == null) {
 				if (!chunked) throw new KryoException("Unknown field. (" + getType().getName() + ")");
 				if (TRACE) trace("kryo", "Skip unknown field.");
-				nextField(frames, input, end, objects, readObjects, inputChunked);
+				FieldFrames.nextChunk(frames, input, end, objects, readObjects, inputChunked);
 				continue;
 			}
 
@@ -260,7 +253,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				cachedField.read(fieldInput, object);
 			else
 				values[cachedField.index] = cachedField.read(fieldInput);
-			if (chunked) nextField(frames, input, end, objects, readObjects, inputChunked);
+			if (chunked) FieldFrames.nextChunk(frames, input, end, objects, readObjects, inputChunked);
 		}
 
 		if (values != null) object = createRecord(values);
@@ -268,14 +261,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		popTypeVariables(pop);
 		if (frames != null) frames.endRead();
 		return object;
-	}
-
-	/** Skips the rest of the field. */
-	static void nextField (FieldFrames frames, Input input, long end, int objects, int readObjects, InputChunked inputChunked) {
-		if (frames != null)
-			frames.endField(input, end, objects, readObjects);
-		else
-			inputChunked.nextChunk();
 	}
 
 	private CachedField[] readFields (Kryo kryo, Input input) {
@@ -368,8 +353,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		 * deserialized. If reading the data fails (eg the class is unknown or has been removed) then an exception is thrown or, if
 		 * {@link #setChunkedEncoding(boolean) chunked encoding} is enabled, the data is skipped.
 		 * <p>
-		 * In either case, if the data is skipped and {@link Kryo#setReferences(boolean) references} are enabled, then any
-		 * references in the skipped data are not read and further deserialization receive the wrong references and fail.
+		 * If the data is skipped and {@link Kryo#setReferences(boolean) references} are enabled, references to objects in the
+		 * skipped data are read as null. Without chunked encoding, or with {@link #setLegacyChunks(boolean) the chunked encoding of
+		 * Kryo 5}, references in skipped data are not read and further deserialization receives the wrong references and fails.
 		 * <p>
 		 * Default is true. */
 		public void setReadUnknownFieldData (boolean readUnknownTagData) {
@@ -380,8 +366,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			return readUnknownFieldData;
 		}
 
-		/** When true, fields are written with chunked encoding to allow unknown field data to be skipped. Default is false.
-		 * @see #setReadUnknownFieldData(boolean) */
+		/** When true, fields are written with chunked encoding to allow unknown field data to be skipped, eg when the class of a
+		 * removed field no longer exists. Each field is written with its length. Default is false.
+		 * @see #setReadUnknownFieldData(boolean)
+		 * @see #setLegacyChunks(boolean) */
 		public void setChunkedEncoding (boolean chunked) {
 			this.chunked = chunked;
 			if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig setChunked: " + chunked);
@@ -392,9 +380,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		/** When true, {@link #setChunkedEncoding(boolean) chunked encoding} uses the format of Kryo 5, which splits each field into
-		 * chunks. Kryo 6 writes each field with its length instead, and writes the class names and field names first written in an
-		 * object before it, so they are known when a field is skipped. Must be true to read data written by Kryo 5. Default is
-		 * false. */
+		 * chunks. If a chunk is skipped, class names, field names, and objects first written in it are unknown afterwards, which
+		 * can make reading the rest of the data fail. Kryo 6 writes each field with its length instead, and the class names and
+		 * field names first written in an object before it. Must be true to read data written by Kryo 5 with chunked encoding.
+		 * Default is false. */
 		public void setLegacyChunks (boolean legacyChunks) {
 			this.legacyChunks = legacyChunks;
 			if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig setLegacyChunks: " + legacyChunks);
@@ -404,7 +393,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			return legacyChunks;
 		}
 
-		/** The maximum size of each chunk for chunked encoding. Default is 1024. */
+		/** The maximum size of each chunk for {@link #setLegacyChunks(boolean) the chunked encoding of Kryo 5}. Default is 1024. */
 		public void setChunkSize (int chunkSize) {
 			this.chunkSize = chunkSize;
 			if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig setChunkSize: " + chunkSize);

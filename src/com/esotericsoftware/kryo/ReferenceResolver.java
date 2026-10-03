@@ -49,8 +49,8 @@ public interface ReferenceResolver {
 	/** Called by {@link Kryo#reset()}. */
 	public void reset ();
 
-	/** Returns the number of objects written in the current object graph, or -1 if unknown. With chunked encoding, the number of
-	 * objects written in a chunk is written after it, so the reference IDs stay in sync if the chunk is skipped. */
+	/** Returns the number of objects written in the current object graph, or -1 if unknown. Chunked encoding writes the number of
+	 * objects in each field, so the reference IDs stay in sync when a field is skipped. */
 	public default int getWrittenCount () {
 		return -1;
 	}

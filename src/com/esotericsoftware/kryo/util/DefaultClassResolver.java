@@ -230,7 +230,11 @@ public class DefaultClassResolver implements ClassResolver {
 		for (ObjectIntMap.Entry<Class> entry : classToNameId.entries()) {
 			if (entry.value < start) continue;
 			output.writeVarInt(entry.value, true);
-			output.writeString(entry.key.getName());
+			Registration registration = getRegistration(entry.key);
+			if (registration != null && registration.isTypeNameAscii())
+				output.writeAscii(entry.key.getName());
+			else
+				output.writeString(entry.key.getName());
 		}
 	}
 

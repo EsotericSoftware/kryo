@@ -142,9 +142,13 @@ public final class Kryo5Compatibility {
 			else if (factory.serializerClass == TaggedFieldSerializer.class) //
 				kryo.defaultSerializer = new TaggedFieldSerializerFactory();
 		}
-		if (kryo.defaultSerializer instanceof CompatibleFieldSerializerFactory factory)
+		// Kryo 5 wrote fields with chunked encoding in chunks.
+		if (kryo.defaultSerializer instanceof CompatibleFieldSerializerFactory factory) {
 			factory.getConfig().setOptimizeGenerics(true);
-		else if (kryo.defaultSerializer instanceof TaggedFieldSerializerFactory factory) //
+			factory.getConfig().setLegacyChunks(true);
+		} else if (kryo.defaultSerializer instanceof TaggedFieldSerializerFactory factory) {
 			factory.getConfig().setOptimizeGenerics(true);
+			factory.getConfig().setLegacyChunks(true);
+		}
 	}
 }

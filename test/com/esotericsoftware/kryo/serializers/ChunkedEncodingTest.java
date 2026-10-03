@@ -22,6 +22,9 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -30,6 +33,9 @@ import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.Compatibl
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSerializerConfig;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
@@ -116,6 +122,124 @@ class ChunkedEncodingTest {
 		assertNull(read.c);
 	}
 
+	@Test
+	void testLargeFields () {
+		// Field lengths that need more than the reserved byte, nested in another large field.
+		for (boolean references : new boolean[] {false, true}) {
+			Entity entity = entity(references);
+			entity.b.x.s = "x".repeat(300);
+			entity.c.s = "c".repeat(20000);
+			byte[] bytes = write(compatibleKryo(true, references, false), entity);
+			Entity read = compatibleKryo(true, references, false).readObject(new Input(bytes), Entity.class);
+			assertEquals(entity.b.x.s, read.b.x.s);
+			assertEquals(entity.c.s, read.c.s);
+
+			Kryo reader = compatibleKryo(true, references, false);
+			reader.getClassResolver().unregister(22);
+			read = reader.readObject(new Input(bytes), Entity.class);
+			assertEquals(entity.c.s, read.c.s);
+		}
+	}
+
+	@Test
+	void testStreams () {
+		// Small buffers, so field lengths and skipping span buffer boundaries.
+		Entity entity = entity(true);
+		entity.b.x.s = "x".repeat(300);
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		Output output = new Output(outputStream, 16);
+		compatibleKryo(false, true, false).writeObject(output, entity);
+		output.flush();
+		byte[] bytes = removeEntity2(outputStream.toByteArray());
+
+		Entity read = compatibleKryo(false, true, false).readObject(new Input(new ByteArrayInputStream(bytes), 16), Entity.class);
+		assertEquals(10, read.c.a);
+		assertNull(read.d);
+		assertSame(read.c, read.e);
+	}
+
+	@Test
+	void testException () {
+		// An exception while writing must not affect the next object graph.
+		Kryo kryo = compatibleKryo(false, false, false);
+		kryo.register(Failing.class, new Serializer<Failing>() {
+			public void write (Kryo kryo, Output output, Failing object) {
+				throw new KryoException("failed");
+			}
+
+			public Failing read (Kryo kryo, Input input, Class<? extends Failing> type) {
+				return null;
+			}
+		});
+		FailingEntity failing = new FailingEntity();
+		failing.c = new Entity3(1);
+		failing.failing = new Failing();
+		assertThrows(KryoException.class, () -> write(kryo, failing));
+
+		byte[] bytes = write(kryo, entity(false));
+		Entity read = compatibleKryo(false, false, false).readObject(new Input(bytes), Entity.class);
+		assertEquals(5, read.b.x.a);
+		assertEquals(10, read.c.a);
+	}
+
+	@Test
+	void testMultipleObjects () {
+		// Each element is written with the class names and field names first written in it.
+		ArrayList<Entity> list = new ArrayList<>();
+		list.add(entity(false));
+		list.add(entity(false));
+		Kryo writer = compatibleKryo(false, false, false);
+		Output output = new Output(1024, -1);
+		writer.writeClassAndObject(output, list);
+		byte[] bytes = removeEntity2(output.toBytes());
+
+		ArrayList<Entity> read = (ArrayList)compatibleKryo(false, false, false).readClassAndObject(new Input(bytes));
+		for (Entity entity : read) {
+			assertNull(entity.b);
+			assertEquals(10, entity.c.a);
+			assertEquals(15, entity.d.a);
+		}
+	}
+
+	@Test
+	void testRecord () {
+		RecordEntity entity = new RecordEntity(new Entity2(), new Entity3(10));
+		entity.b().x = new Entity3(5);
+		byte[] bytes = write(compatibleKryo(true, false, false), entity);
+		Kryo reader = compatibleKryo(true, false, false);
+		reader.getClassResolver().unregister(22);
+		RecordEntity read = reader.readObject(new Input(bytes), RecordEntity.class);
+		assertNull(read.b());
+		assertEquals(10, read.c().a);
+		assertEquals("s10", read.c().s);
+	}
+
+	@Test
+	void testKryo5Compatibility () {
+		// Kryo5Compatibility enables the chunked encoding of Kryo 5.
+		Kryo writer = compatibleKryo(true, true, true);
+		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setLegacyChunks(true);
+		config.setOptimizeGenerics(true);
+		writer.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		Entity entity = entity(true);
+		byte[] bytes = write(writer, entity);
+
+		Kryo reader = new Kryo();
+		config = new CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		reader.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		Kryo5Compatibility.configure(reader); // Before registering, which creates the serializers.
+		reader.setReferences(true);
+		reader.register(Entity.class, 20);
+		reader.register(Entity3.class, 21);
+		reader.register(Entity2.class, 22);
+		Entity read = reader.readObject(new Input(bytes), Entity.class);
+		assertEquals(5, read.b.x.a);
+		assertSame(read.b.x, read.d);
+	}
+
 	private Entity entity (boolean references) {
 		Entity entity = new Entity();
 		entity.b = new Entity2();
@@ -138,6 +262,8 @@ class ChunkedEncodingTest {
 			kryo.register(Entity.class, 20);
 			kryo.register(Entity3.class, 21);
 			kryo.register(Entity2.class, 22);
+			kryo.register(RecordEntity.class, 23);
+			kryo.register(FailingEntity.class, 24);
 		}
 		return kryo;
 	}
@@ -209,6 +335,17 @@ class ChunkedEncodingTest {
 			this.a = a;
 			s = "s" + a;
 		}
+	}
+
+	public record RecordEntity(Entity2 b, Entity3 c) {
+	}
+
+	public static class Failing {
+	}
+
+	public static class FailingEntity {
+		public Entity3 c;
+		public Failing failing;
 	}
 
 	public static class TaggedEntity {
