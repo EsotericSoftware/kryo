@@ -20,13 +20,9 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.minlog.Log;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,186 +40,60 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
 
-/** Serializer for synchronized Collections and Maps created via Collections. */
+/** Serializers for synchronized Collections and Maps created via {@link Collections}. The wrapper is locked while the wrapped
+ * collection is written or copied. */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class SynchronizedCollectionSerializers {
-
 	private static final WrappedCollectionGetter collectionGetter = new WrappedCollectionGetter(
 		"java.util.Collections$SynchronizedCollection", "c");
 	private static final WrappedCollectionGetter mapGetter = new WrappedCollectionGetter("java.util.Collections$SynchronizedMap",
 		"m");
 
-	static final class SynchronizedCollectionSerializer extends CollectionSerializer<Collection> {
-		private final Function factory;
-		private final WrappedCollectionGetter getter;
-
-		public SynchronizedCollectionSerializer (Function factory, WrappedCollectionGetter getter) {
-			setAcceptsNull(false);
-			this.factory = factory;
-			this.getter = getter;
-		}
-
-		@Override
-		public void write (Kryo kryo, Output output, Collection collection) {
-			Object unwrapped = getter.get(collection);
-			synchronized (collection) {
-				kryo.writeClassAndObject(output, unwrapped);
-			}
-		}
-
-		@Override
-		public Collection read (Kryo kryo, Input input, Class<? extends Collection> type) {
-			final Object sourceCollection = kryo.readClassAndObject(input);
-			return (Collection)factory.apply(sourceCollection);
-		}
-
-		@Override
-		public Collection copy (Kryo kryo, Collection original) {
-			synchronized (original) {
-				final Object collection = getter.get(original);
-				return (Collection)factory.apply(kryo.copy(collection));
-			}
-		}
+	private static CollectionWrapperSerializer createSerializer (Map.Entry<Class<?>, Function<Object, Object>> factory) {
+		WrappedCollectionGetter getter = Collection.class.isAssignableFrom(factory.getKey()) ? collectionGetter : mapGetter;
+		return new CollectionWrapperSerializer(factory.getValue(), getter, true);
 	}
 
-	static final class SynchronizedMapSerializer extends MapSerializer<Map> {
-		private final Function factory;
-		private final WrappedCollectionGetter getter;
-
-		public SynchronizedMapSerializer (Function factory, WrappedCollectionGetter getter) {
-			setAcceptsNull(false);
-			this.factory = factory;
-			this.getter = getter;
-		}
-
-		@Override
-		public void write (Kryo kryo, Output output, Map map) {
-			Object unwrapped = getter.get(map);
-			synchronized (map) {
-				kryo.writeClassAndObject(output, unwrapped);
-			}
-		}
-
-		@Override
-		public Map read (Kryo kryo, Input input, Class<? extends Map> type) {
-			final Object sourceMap = kryo.readClassAndObject(input);
-			return (Map)factory.apply(sourceMap);
-		}
-
-		@Override
-		public Map copy (Kryo kryo, Map original) {
-			synchronized (original) {
-				final Object map = getter.get(original);
-				return (Map)factory.apply(kryo.copy(map));
-			}
-		}
-	}
-
-	private static Serializer<?> createSerializer (Map.Entry<Class<?>, Function> factory) {
-		if (Collection.class.isAssignableFrom(factory.getKey())) {
-			return new SynchronizedCollectionSerializer(factory.getValue(), collectionGetter);
-		} else {
-			return new SynchronizedMapSerializer(factory.getValue(), mapGetter);
-		}
-	}
-
-	private static void putFactories (Map<Class<?>, Function> factories) {
-		factories.put(
-			Collections.synchronizedCollection(Arrays.asList("")).getClass(),
+	/** The factories in a fixed order, which determines the IDs of {@link #register(Kryo)}. New ones must be added at the end. */
+	static Map<Class<?>, Function<Object, Object>> orderedFactories () {
+		Map<Class<?>, Function<Object, Object>> factories = new LinkedHashMap<>();
+		factories.put(Collections.synchronizedCollection(Collections.singletonList("")).getClass(),
 			o -> Collections.synchronizedCollection((Collection)o));
-		factories.put(
-			Collections.synchronizedList(new ArrayList<Void>()).getClass(),
-			o1 -> Collections.synchronizedList((List<?>)o1));
-		factories.put(
-			Collections.synchronizedList(new LinkedList<Void>()).getClass(),
-			o2 -> Collections.synchronizedList((List<?>)o2));
-		factories.put(
-			Collections.synchronizedSet(new HashSet<Void>()).getClass(),
-			o3 -> Collections.synchronizedSet((Set<?>)o3));
-		factories.put(
-			Collections.synchronizedSortedSet(new TreeSet<>()).getClass(),
-			o4 -> Collections.synchronizedSortedSet((SortedSet<?>)o4));
-		factories.put(
-			Collections.synchronizedMap(new HashMap<Void, Void>()).getClass(),
-			o5 -> Collections.synchronizedMap((Map)o5));
-		factories.put(
-			Collections.synchronizedSortedMap(new TreeMap<>()).getClass(),
-			o6 -> Collections.synchronizedSortedMap((SortedMap)o6));
-	}
-
-	/** Used by the deprecated {@link #registerSerializers(Kryo)}. The iteration order of this HashMap determines the registration
-	 * IDs, so it must not change. */
-	private static Map<Class<?>, Function> legacyFactories () {
-		final Map<Class<?>, Function> factories = new HashMap<>();
-		putFactories(factories);
-		return factories;
-	}
-
-	/** The factories in a fixed order, which determines the IDs of {@link #register(Kryo)}. Only classes that exist on all
-	 * supported Java versions, so that the IDs don't change between Java versions. New ones must be added at the end. */
-	static Map<Class<?>, Function> orderedFactories () {
-		final Map<Class<?>, Function> factories = new LinkedHashMap<>();
-		putFactories(factories);
-		factories.put(
-			Collections.synchronizedNavigableSet(new TreeSet<>()).getClass(),
-			o -> Collections.synchronizedNavigableSet((NavigableSet<?>)o));
-		factories.put(
-			Collections.synchronizedNavigableMap(new TreeMap<>()).getClass(),
+		factories.put(Collections.synchronizedList(new ArrayList<>()).getClass(), o -> Collections.synchronizedList((List)o));
+		factories.put(Collections.synchronizedList(new LinkedList<>()).getClass(), o -> Collections.synchronizedList((List)o));
+		factories.put(Collections.synchronizedSet(new HashSet<>()).getClass(), o -> Collections.synchronizedSet((Set)o));
+		factories.put(Collections.synchronizedSortedSet(new TreeSet<>()).getClass(),
+			o -> Collections.synchronizedSortedSet((SortedSet)o));
+		factories.put(Collections.synchronizedMap(new HashMap<>()).getClass(), o -> Collections.synchronizedMap((Map)o));
+		factories.put(Collections.synchronizedSortedMap(new TreeMap<>()).getClass(),
+			o -> Collections.synchronizedSortedMap((SortedMap)o));
+		factories.put(Collections.synchronizedNavigableSet(new TreeSet<>()).getClass(),
+			o -> Collections.synchronizedNavigableSet((NavigableSet)o));
+		factories.put(Collections.synchronizedNavigableMap(new TreeMap<>()).getClass(),
 			o -> Collections.synchronizedNavigableMap((NavigableMap)o));
 		return factories;
 	}
 
-	static Map<Class<?>, Function> defaultFactories () {
-		return orderedFactories();
+	/** Computed once, because the Kryo constructor adds the default serializers. */
+	private static final class DefaultFactories {
+		static final Map<Class<?>, Function<Object, Object>> factories = orderedFactories();
 	}
 
-	/** Registers serializers for synchronized Collections and Maps created via {@link Collections} in a fixed order, so the
+	/** Registers serializers for synchronized Collections and Maps created via {@link Collections} in a fixed order, so that the
 	 * registration IDs are the same on all Java versions: synchronizedCollection, synchronizedList of a
 	 * {@link java.util.RandomAccess} list, synchronizedList of another list, synchronizedSet, synchronizedSortedSet,
 	 * synchronizedMap, synchronizedSortedMap, synchronizedNavigableSet and synchronizedNavigableMap. */
 	public static void register (Kryo kryo) {
-		for (Map.Entry<Class<?>, Function> factory : orderedFactories().entrySet())
+		for (Map.Entry<Class<?>, Function<Object, Object>> factory : orderedFactories().entrySet())
 			kryo.register(factory.getKey(), createSerializer(factory));
 	}
 
-	/** Registering serializers for synchronized Collections and Maps created via {@link Collections}.
-	 * <p>
-	 * The registration IDs of these classes depend on the JVM, eg the Java version, so data written on one JVM may be read as a
-	 * different collection type on another.
-	 * @deprecated Use {@link #register(Kryo)}, which registers the classes in a fixed order.
-	 *
-	 * @see Collections#synchronizedCollection(Collection)
-	 * @see Collections#synchronizedList(List)
-	 * @see Collections#synchronizedSet(Set)
-	 * @see Collections#synchronizedSortedSet(SortedSet)
-	 * @see Collections#synchronizedMap(Map)
-	 * @see Collections#synchronizedSortedMap(SortedMap) **/
-	@Deprecated
-	public static void registerSerializers (Kryo kryo) {
-		try {
-			for (Map.Entry<Class<?>, Function> factory : legacyFactories().entrySet()) {
-				kryo.register(factory.getKey(), createSerializer(factory));
-			}
-		} catch (Throwable t) {
-			Log.warn("Unable to register serializers for synchronized collections.", t);
-		}
-	}
-
-	/** Adding default serializers for synchronized Collections and Maps created via {@link Collections}.
-	 *
-	 * @see Collections#synchronizedCollection(Collection)
-	 * @see Collections#synchronizedList(List)
-	 * @see Collections#synchronizedSet(Set)
-	 * @see Collections#synchronizedSortedSet(SortedSet)
-	 * @see Collections#synchronizedMap(Map)
-	 * @see Collections#synchronizedSortedMap(SortedMap)
-	 * @see Collections#synchronizedNavigableSet(NavigableSet)
-	 * @see Collections#synchronizedNavigableMap(NavigableMap) **/
+	/** Adds default serializers for synchronized Collections and Maps created via {@link Collections}. The Kryo constructor calls
+	 * this, except on Android. */
 	public static void addDefaultSerializers (Kryo kryo) {
 		try {
-			for (Map.Entry<Class<?>, Function> factory : defaultFactories().entrySet()) {
+			for (Map.Entry<Class<?>, Function<Object, Object>> factory : DefaultFactories.factories.entrySet())
 				kryo.addDefaultSerializer(factory.getKey(), createSerializer(factory));
-			}
 		} catch (Throwable t) {
 			Log.warn("Unable to add default serializers for synchronized collections.", t);
 		}

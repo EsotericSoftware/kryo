@@ -1306,22 +1306,16 @@ Setting | Description | Default value
 
 ### Unmodifiable and synchronized collections
 
-Kryo provides serializers for the wrappers returned by `Collections.unmodifiableCollection`, `unmodifiableList`, `unmodifiableSet`, `unmodifiableMap`, `synchronizedList`, `synchronizedMap`, etc. The JDK offers no public API to get the wrapped collection, so these serializers read private JDK fields: with method handles if `java.util` is open to Kryo (`--add-opens java.base/java.util=ALL-UNNAMED`, or with Kryo's module name instead of `ALL-UNNAMED` on the module path, eg `com.esotericsoftware.kryo`), otherwise with `sun.misc.Unsafe`, which warns on Java 24+. Because they depend on JDK internals that may change or become inaccessible in future Java versions, they are not registered by default and must be enabled manually:
+Kryo has default serializers for the wrappers returned by `Collections.unmodifiableCollection`, `unmodifiableList`, `unmodifiableSet`, `unmodifiableMap`, `synchronizedList`, `synchronizedMap`, etc., including the navigable and the Java 21+ sequenced wrappers. The JDK offers no public API to get the wrapped collection, so these serializers read private JDK fields: with method handles if `java.util` is open to Kryo (`--add-opens java.base/java.util=ALL-UNNAMED`, or with Kryo's module name instead of `ALL-UNNAMED` on the module path, eg `com.esotericsoftware.kryo`), otherwise with `sun.misc.Unsafe`, which warns on Java 24+. The JDK internals are accessed when a wrapper is serialized or copied for the first time. If neither is allowed, an exception explains how to allow it. These serializers are not available on Android. With references enabled, a wrapper that is contained in the collection it wraps is read as null there, because the wrapper can only be created after the wrapped collection was read.
+
+When registration is required, register the wrapper classes:
 
 ```java
-Kryo kryo = new Kryo();
-// register the wrapper classes (when registration is required)
 UnmodifiableCollectionSerializers.register(kryo);
 SynchronizedCollectionSerializers.register(kryo);
-
-// or add them as default serializers (when registration is not required)
-UnmodifiableCollectionSerializers.addDefaultSerializers(kryo);
-SynchronizedCollectionSerializers.addDefaultSerializers(kryo);
 ```
 
-The registered classes include the navigable wrappers, but not the Java 21+ sequenced wrappers, such as `unmodifiableSequencedCollection`, so that the same classes and IDs are registered on all Java versions. Those have default serializers and can be registered after `addDefaultSerializers`, eg `kryo.register(Collections.unmodifiableSequencedCollection(new ArrayList<>()).getClass())`. The deprecated `registerSerializers(kryo)` registers the classes in an order that depends on the JVM, so their IDs can differ between Java versions.
-
-The JDK internals are accessed when a wrapper is serialized or copied for the first time. If neither is allowed, an exception explains how to allow it.
+This registers the classes in a fixed order, so their IDs are the same on all Java versions. The Java 21+ sequenced wrappers are not included, because they don't exist on older Java versions. Register them individually, eg `kryo.register(Collections.unmodifiableSequencedCollection(new ArrayList<>()).getClass())`.
 
 Serializers for immutable collections created with `List.of`, `Set.of`, `Map.of`, etc. are added as default serializers on Java 9+. Since these collections are implemented by JDK-internal classes, they cannot be registered by name. When registration is required, register them all at once:
 
