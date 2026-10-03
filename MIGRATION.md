@@ -47,12 +47,25 @@ public class Kryo5CompatibleFieldSerializer<T> extends CompatibleFieldSerializer
 kryo.setDefaultSerializer(Kryo5CompatibleFieldSerializer.class);
 ```
 
+### Maps
+
+If the class of the keys or values of a map is unknown, MapSerializer writes it only once if all keys or values are not null and have the same class. Kryo 5 wrote the class of each key and value. To read data written by Kryo 5, disable this for the MapSerializer instances, eg for all maps that use the default MapSerializer:
+
+```java
+MapSerializer mapSerializer = new MapSerializer();
+mapSerializer.setWriteSameClassOnce(false);
+kryo.addDefaultSerializer(Map.class, mapSerializer);
+```
+
+Subclasses like TreeMapSerializer need the same setting.
+
 ## Behavior changes
 
 * RecordSerializer is no longer a default serializer. Records are serialized by FieldSerializer and its subclasses, see [Records](README.md#records).
 * If a record's canonical constructor throws an exception during deserialization, that exception is the cause of the KryoException. RecordSerializer added an InvocationTargetException in between.
 * CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` read a serialized `null` value as `null`. Kryo 5 skipped the field, so it kept the value assigned by the constructor ([#851](https://github.com/EsotericSoftware/kryo/issues/851)).
 * CompatibleFieldSerializer throws an exception when serializing or deserializing a class that declares a field with the same name as a super class, unless `extendedFieldNames` is true. Kryo 5 mixed up the values of these fields when reading ([#699](https://github.com/EsotericSoftware/kryo/issues/699)).
+* `@NotNull` is respected on fields that also have `@Bind`. Kryo 5 ignored it because `@Bind` always set `canBeNull`, so these fields are serialized without the null marker.
 * The type parameters of a class are resolved from the declared type, eg the type of a field, through the super classes and interfaces of the class. Kryo 5 assigned the type arguments of the declared type by position to the type parameters of the class of the value, which failed with a ClassCastException when they didn't match, eg for a `Base<String, Integer>` field holding a `Sub<A, B> extends Base<B, A>`, and ignored them when their number didn't match. When Kryo 6 resolves a type parameter that Kryo 5 ignored, the serialized bytes can differ.
 
 ## Removed APIs
