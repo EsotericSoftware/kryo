@@ -244,7 +244,8 @@ public class Kryo {
 		addDefaultSerializer(PriorityQueue.class, new PriorityQueueSerializer());
 		addDefaultSerializer(BitSet.class, new BitSetSerializer());
 		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
-		addDefaultSerializer(Timestamp.class, TimestampSerializer.class);
+		// java.sql is not available if the application is a named module that does not require it.
+		if (isClassAvailable("java.sql.Timestamp")) addDefaultSerializer(Timestamp.class, TimestampSerializer.class);
 		addDefaultSerializer(ConcurrentHashMap.KeySetView.class, KeySetViewSerializer.class);
 		addDefaultSerializer(URI.class, URISerializer.class);
 		addDefaultSerializer(UUID.class, UUIDSerializer.class);
