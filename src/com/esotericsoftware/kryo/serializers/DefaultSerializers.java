@@ -368,29 +368,27 @@ public class DefaultSerializers {
 	/** Serializer for {@link Date}, {@link java.sql.Date}, {@link Time}, {@link Timestamp} and any other subclass.
 	 * @author Tumi {@literal <serverperformance@gmail.com>} */
 	public static class DateSerializer extends Serializer<Date> {
+		private Class<? extends Date> constructorType;
+		private Constructor<? extends Date> constructor;
+
 		private Date create (Kryo kryo, Class<? extends Date> type, long time) throws KryoException {
 			if (type == Date.class || type == null) {
 				return new Date(time);
 			}
-			if (type == Timestamp.class) {
-				return new Timestamp(time);
-			}
-			if (type == java.sql.Date.class) {
-				return new java.sql.Date(time);
-			}
-			if (type == Time.class) {
-				return new Time(time);
-			}
-			// other cases, reflection
+			// Other types, eg java.sql.Date, Time and Timestamp, are created with reflection, so this class can be loaded without
+			// java.sql, which is not available in named modules that don't require it.
 			try {
 				// Try to avoid invoking the no-args constructor
 				// (which is expected to initialize the instance with the current time)
-				Constructor<? extends Date> constructor = type.getConstructor(long.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
+				if (type != constructorType) {
+					constructor = type.getConstructor(long.class);
+					if (!constructor.isAccessible()) {
+						try {
+							constructor.setAccessible(true);
+						} catch (SecurityException ignored) {
+						}
 					}
+					constructorType = type;
 				}
 				return constructor.newInstance(time);
 			} catch (Exception ex) {
