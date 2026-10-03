@@ -85,6 +85,14 @@ public class Util {
 		return records && type.isRecord();
 	}
 
+	/** Returns the name of Kryo's module for command line options like {@code --add-opens}: the module name if Kryo is in a named
+	 * module, otherwise {@code ALL-UNNAMED}. */
+	public static String moduleName () {
+		if (isAndroid) return "ALL-UNNAMED"; // Android has no modules.
+		Module module = Util.class.getModule();
+		return module.isNamed() ? module.getName() : "ALL-UNNAMED";
+	}
+
 	public static boolean isClassAvailable (String className) {
 		try {
 			Class.forName(className);
