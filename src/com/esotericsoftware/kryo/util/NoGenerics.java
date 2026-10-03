@@ -44,6 +44,11 @@ public final class NoGenerics implements Generics {
 	}
 
 	@Override
+	public GenericType nextGenericType () {
+		return null;
+	}
+
+	@Override
 	public GenericType[] nextGenericTypes () {
 		return null;
 	}
@@ -54,7 +59,7 @@ public final class NoGenerics implements Generics {
 	}
 
 	@Override
-	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args) {
+	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType type) {
 		return 0;
 	}
 

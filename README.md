@@ -937,10 +937,10 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
       Class valueClass = null;
       Generics generics = kryo.getGenerics();
       int pop = 0;
-      GenericType[] genericTypes = generics.nextGenericTypes();
-      if (genericTypes != null) {
-         pop = generics.pushTypeVariables(genericsHierarchy, genericTypes);
-         valueClass = genericTypes[0].resolve(generics);
+      GenericType genericType = generics.nextGenericType();
+      if (genericType != null) {
+         pop = generics.pushTypeVariables(genericsHierarchy, genericType);
+         valueClass = genericType.getTypeParameters()[0].resolve(generics);
       }
 
       if (valueClass != null && kryo.isFinal(valueClass)) {
@@ -959,10 +959,10 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
       Class valueClass = null;
       Generics generics = kryo.getGenerics();
       int pop = 0;
-      GenericType[] genericTypes = generics.nextGenericTypes();
-      if (genericTypes != null) {
-         pop = generics.pushTypeVariables(genericsHierarchy, genericTypes);
-         valueClass = genericTypes[0].resolve(generics);
+      GenericType genericType = generics.nextGenericType();
+      if (genericType != null) {
+         pop = generics.pushTypeVariables(genericsHierarchy, genericType);
+         valueClass = genericType.getTypeParameters()[0].resolve(generics);
       }
 
       SomeClass object = new SomeClass();
