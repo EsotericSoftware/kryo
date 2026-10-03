@@ -41,7 +41,7 @@ public class Util {
 	public static final boolean isNativeImage = System.getProperty("org.graalvm.nativeimage.imagecode") != null;
 
 	/** True if records are available, which is not the case on Android before API level 34. */
-	private static final boolean records = isClassAvailable("java.lang.Record");
+	private static final boolean records = !isAndroid || isClassAvailable("java.lang.Record");
 
 	/** True if Unsafe is available. Unsafe can be disabled by setting the system property "kryo.unsafe" to "false". It is not
 	 * available if Unsafe memory access is denied with {@code --sun-misc-unsafe-memory-access=deny}. */

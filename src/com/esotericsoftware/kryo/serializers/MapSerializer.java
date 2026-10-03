@@ -298,6 +298,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	}
 
 	protected T createCopy (Kryo kryo, T original) {
+		if (original.getClass() == HashMap.class) return (T)new HashMap(Math.max((int)(original.size() / 0.75f) + 1, 16));
 		return (T)kryo.newInstance(original.getClass());
 	}
 

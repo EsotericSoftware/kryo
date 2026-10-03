@@ -34,7 +34,8 @@ import java.util.Set;
 /** Serializers for java.util.ImmutableCollections, Are added as default serializers for Java 9 or later. */
 public final class ImmutableCollectionsSerializers {
 	public static void addDefaultSerializers (Kryo kryo) {
-		if (isClassAvailable("java.util.ImmutableCollections")) {
+		// Android has these collections only since API level 30.
+		if (!isAndroid || isClassAvailable("java.util.ImmutableCollections")) {
 			JdkImmutableListSerializer.addDefaultSerializers(kryo);
 			JdkImmutableMapSerializer.addDefaultSerializers(kryo);
 			JdkImmutableSetSerializer.addDefaultSerializers(kryo);
