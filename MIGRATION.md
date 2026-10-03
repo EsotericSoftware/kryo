@@ -91,6 +91,7 @@ LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language ta
 ## Deprecated APIs
 
 * RecordSerializer. Records are serialized by FieldSerializer and its subclasses. RecordSerializer is only needed to read records written by Kryo 5, see [Records](#records).
+* `FieldAccessType.ASM`, which uses ReflectASM like Kryo 5 did for public fields of public classes when Unsafe was not used. ReflectASM is only used if `ASM` is configured, Kryo 6 uses VarHandles instead, which are as fast. `ASM` and the ReflectASM dependency will be removed in Kryo 7. If VarHandles are slower for you than ReflectASM, please open an issue.
 
 ## Removed APIs
 

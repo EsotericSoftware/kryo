@@ -84,12 +84,18 @@ class CachedFields implements Comparator<CachedField> {
 		this.serializer = serializer;
 	}
 
-	/** Returns the configured field access, or ASM if Unsafe is configured but not available. */
 	private FieldAccessType fieldAccess () {
-		FieldAccessType fieldAccess = serializer.config.fieldAccess;
-		return fieldAccess == FieldAccessType.UNSAFE && !unsafe ? FieldAccessType.ASM : fieldAccess;
+		return fieldAccess(serializer.config.fieldAccess, unsafe, isAndroid);
 	}
 
+	/** Returns the configured field access, or if Unsafe is configured but not available, VarHandles, or reflection on Android,
+	 * which has VarHandles only since API level 33. ReflectASM is only used if it is configured. */
+	static FieldAccessType fieldAccess (FieldAccessType configured, boolean unsafe, boolean android) {
+		if (configured != FieldAccessType.UNSAFE || unsafe) return configured;
+		return android ? FieldAccessType.REFLECTION : FieldAccessType.VARHANDLE;
+	}
+
+	@SuppressWarnings("deprecation") // FieldAccessType.ASM
 	public void rebuild () {
 		if (serializer.type.isInterface()) { // No fields to serialize.
 			fields = emptyCachedFields;
