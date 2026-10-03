@@ -24,7 +24,6 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.ReferenceResolver;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
@@ -100,10 +99,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 	public void write (Kryo kryo, Output output, T object) {
 		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
-		if (config.chunked && !config.legacyChunks) {
-			writeFramed(kryo, output, object);
-			return;
-		}
+		boolean chunked = config.chunked, readUnknownFieldData = config.readUnknownFieldData;
+		FieldFrames frames = chunked && !config.legacyChunks ? FieldFrames.get(kryo) : null;
+		Output fieldOutput = frames != null ? frames.beginWrite(output) : output;
 		int pop = pushTypeVariables();
 
 		CachedField[] fields = cachedFields.fields;
@@ -111,26 +109,21 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		if (!context.containsKey(writeKey)) {
 			if (TRACE) trace("kryo", "Write fields for class: " + type.getName());
 			context.put(writeKey, null);
-			output.writeVarInt(fields.length, true);
-			for (int i = 0, n = fields.length; i < n; i++) {
-				if (TRACE) trace("kryo", "Write field name: " + fields[i].name + pos(output.position()));
-				output.writeString(fields[i].name);
-			}
+			if (frames != null)
+				frames.writeFieldNames(this);
+			else
+				writeFieldNames(output);
 		}
 
-		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownFieldData;
-		Output fieldOutput;
 		OutputChunked outputChunked = null;
-		if (chunked)
-			fieldOutput = outputChunked = new OutputChunked(output, config.chunkSize);
-		else
-			fieldOutput = output;
+		if (chunked && frames == null) fieldOutput = outputChunked = new OutputChunked(output, config.chunkSize);
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
-			if (TRACE) log("Write", cachedField, output.position());
+			if (TRACE) log("Write", cachedField, fieldOutput.position());
+			long mark = frames != null ? frames.beginField(fieldOutput) : 0;
 
 			// Write the value class so the field data can be read even if the field is removed.
-			if (readUnknownTagData) {
+			if (readUnknownFieldData) {
 				Class valueClass = null;
 				try {
 					if (object != null) {
@@ -141,7 +134,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				kryo.writeClass(fieldOutput, valueClass);
 				if (valueClass == null) {
-					if (chunked) outputChunked.endChunk();
+					if (chunked) endField(frames, fieldOutput, mark, outputChunked);
 					continue;
 				}
 				cachedField.setCanBeNull(false);
@@ -150,15 +143,25 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 
 			cachedField.write(fieldOutput, object);
-			if (chunked) outputChunked.endChunk();
+			if (chunked) endField(frames, fieldOutput, mark, outputChunked);
 		}
 
 		popTypeVariables(pop);
+		if (frames != null) frames.endWrite();
+	}
+
+	static void endField (FieldFrames frames, Output output, long mark, OutputChunked outputChunked) {
+		if (frames != null)
+			frames.endField(output, mark);
+		else
+			outputChunked.endChunk();
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
-		if (config.chunked && !config.legacyChunks) return readFramed(kryo, input, type);
+		boolean chunked = config.chunked, readUnknownFieldData = config.readUnknownFieldData;
+		FieldFrames frames = chunked && !config.legacyChunks ? FieldFrames.get(kryo) : null;
+		if (frames != null) frames.beginRead(input);
 		int pop = pushTypeVariables();
 
 		T object = null;
@@ -170,19 +173,35 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			values = newRecordValues();
 
 		CachedField[] fields = (CachedField[])kryo.getGraphContext().get(this);
-		if (fields == null) fields = readFields(kryo, input);
+		if (fields == null) {
+			if (frames == null)
+				fields = readFields(kryo, input);
+			else {
+				// The object is read as a different class than it was written.
+				String[] names = frames.outermostFieldNames();
+				if (names == null) throw new KryoException("Field names not found: " + type.getName());
+				fields = setFieldNames(kryo, names);
+			}
+		}
 
-		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownFieldData;
-		Input fieldInput;
+		Input fieldInput = input;
 		InputChunked inputChunked = null;
-		if (chunked)
-			fieldInput = inputChunked = new InputChunked(input, config.chunkSize);
-		else
-			fieldInput = input;
+		if (chunked && frames == null) fieldInput = inputChunked = new InputChunked(input, config.chunkSize);
+		boolean references = frames != null && kryo.getReferences();
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
+			long end = 0;
+			int objects = 0, readObjects = 0;
+			if (frames != null) {
+				int length = input.readVarInt(true);
+				if (references) {
+					objects = input.readVarInt(true);
+					readObjects = kryo.getReferenceResolver().getReadCount();
+				}
+				end = input.total() + length;
+			}
 
-			if (readUnknownTagData) {
+			if (readUnknownFieldData) {
 				Registration registration;
 				try {
 					registration = kryo.readClass(fieldInput);
@@ -190,13 +209,13 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					String message = "Unable to read unknown data (unknown type). (" + getType().getName() + "#" + cachedField + ")";
 					if (!chunked) throw new KryoException(message, ex);
 					if (DEBUG) debug("kryo", message, ex);
-					inputChunked.nextChunk();
+					nextField(frames, input, end, objects, readObjects, inputChunked);
 					continue;
 				}
 				if (registration == null) {
 					// The value is null, overwrite the value set by the constructor. Record values are already null.
 					if (cachedField != null && object != null) setNull(cachedField, object);
-					if (chunked) inputChunked.nextChunk();
+					if (chunked) nextField(frames, input, end, objects, readObjects, inputChunked);
 					continue;
 				}
 				Class valueClass = registration.getType();
@@ -211,7 +230,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 						if (!chunked) throw new KryoException(message, ex);
 						if (DEBUG) debug("kryo", message, ex);
 					}
-					if (chunked) inputChunked.nextChunk();
+					if (chunked) nextField(frames, input, end, objects, readObjects, inputChunked);
 					continue;
 				}
 
@@ -222,7 +241,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 						+ className(fieldType) + " (" + getType().getName() + "#" + cachedField + ")";
 					if (!chunked) throw new KryoException(message);
 					if (DEBUG) debug("kryo", message);
-					inputChunked.nextChunk();
+					nextField(frames, input, end, objects, readObjects, inputChunked);
 					continue;
 				}
 
@@ -232,7 +251,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			} else if (cachedField == null) {
 				if (!chunked) throw new KryoException("Unknown field. (" + getType().getName() + ")");
 				if (TRACE) trace("kryo", "Skip unknown field.");
-				inputChunked.nextChunk();
+				nextField(frames, input, end, objects, readObjects, inputChunked);
 				continue;
 			}
 
@@ -241,149 +260,22 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				cachedField.read(fieldInput, object);
 			else
 				values[cachedField.index] = cachedField.read(fieldInput);
-			if (chunked) inputChunked.nextChunk();
+			if (chunked) nextField(frames, input, end, objects, readObjects, inputChunked);
 		}
 
 		if (values != null) object = createRecord(values);
 
 		popTypeVariables(pop);
+		if (frames != null) frames.endRead();
 		return object;
 	}
 
-	/** Writes with chunked encoding, see {@link FieldFrames}. */
-	private void writeFramed (Kryo kryo, Output output, T object) {
-		FieldFrames frames = FieldFrames.get(kryo);
-		Output out = frames.beginWrite(output);
-		int pop = pushTypeVariables();
-
-		ObjectMap context = kryo.getGraphContext();
-		if (!context.containsKey(writeKey)) {
-			context.put(writeKey, null);
-			frames.writeFieldNames(this);
-		}
-
-		CachedField[] fields = cachedFields.fields;
-		boolean readUnknownFieldData = config.readUnknownFieldData;
-		for (int i = 0, n = fields.length; i < n; i++) {
-			CachedField cachedField = fields[i];
-			if (TRACE) log("Write", cachedField, out.position());
-			long mark = frames.beginField(out);
-			// Write the value class so the field data can be read even if the field is removed.
-			if (readUnknownFieldData) {
-				Class valueClass = null;
-				try {
-					if (object != null) {
-						Object value = cachedField.field.get(object);
-						if (value != null) valueClass = value.getClass();
-					}
-				} catch (IllegalAccessException ex) {
-				}
-				kryo.writeClass(out, valueClass);
-				if (valueClass == null) {
-					frames.endField(out, mark);
-					continue;
-				}
-				cachedField.setCanBeNull(false);
-				cachedField.setValueClass(valueClass);
-				cachedField.setReuseSerializer(false);
-			}
-			cachedField.write(out, object);
-			frames.endField(out, mark);
-		}
-
-		popTypeVariables(pop);
-		frames.endWrite();
-	}
-
-	/** Reads with chunked encoding, see {@link FieldFrames}. */
-	private T readFramed (Kryo kryo, Input input, Class<? extends T> type) {
-		FieldFrames frames = FieldFrames.get(kryo);
-		frames.beginRead(input);
-		int pop = pushTypeVariables();
-
-		T object = null;
-		Object[] values = null;
-		if (recordConstructor == null) {
-			object = create(kryo, input, type);
-			kryo.reference(object);
-		} else
-			values = newRecordValues();
-
-		CachedField[] fields = (CachedField[])kryo.getGraphContext().get(this);
-		if (fields == null) {
-			// The object is read as a different class than it was written.
-			String[] names = frames.outermostFieldNames();
-			if (names == null) throw new KryoException("Field names not found: " + type.getName());
-			fields = setFieldNames(kryo, names);
-		}
-
-		boolean readUnknownFieldData = config.readUnknownFieldData, references = kryo.getReferences();
-		ReferenceResolver referenceResolver = kryo.getReferenceResolver();
-		for (int i = 0, n = fields.length; i < n; i++) {
-			CachedField cachedField = fields[i];
-			int length = input.readVarInt(true);
-			int objects = references ? input.readVarInt(true) : 0;
-			int readObjects = references ? referenceResolver.getReadCount() : 0;
-			long end = input.total() + length;
-
-			if (readUnknownFieldData) {
-				Registration registration;
-				try {
-					registration = kryo.readClass(input);
-				} catch (KryoException ex) {
-					if (DEBUG)
-						debug("kryo", "Unable to read unknown data (unknown type). (" + type.getName() + "#" + cachedField + ")", ex);
-					frames.endField(input, end, objects, readObjects);
-					continue;
-				}
-				if (registration == null) {
-					// The value is null, overwrite the value set by the constructor. Record values are already null.
-					if (cachedField != null && object != null) setNull(cachedField, object);
-					frames.endField(input, end, objects, readObjects);
-					continue;
-				}
-				Class valueClass = registration.getType();
-				if (cachedField == null) {
-					// Read unknown data in case it is referenced by other objects.
-					if (TRACE) trace("kryo", "Read unknown data, type: " + className(valueClass) + pos(input.position()));
-					try {
-						kryo.readObject(input, valueClass);
-					} catch (KryoException ex) {
-						if (DEBUG) debug("kryo", "Unable to read unknown data, type: " + className(valueClass) + " (" + type.getName()
-							+ "#" + cachedField + ")", ex);
-					}
-					frames.endField(input, end, objects, readObjects);
-					continue;
-				}
-				// Ensure the type in the data is compatible with the field type.
-				if (cachedField.valueClass != null && !Util.isAssignableTo(valueClass, cachedField.field.getType())) {
-					if (DEBUG) debug("kryo", "Read type is incompatible with the field type: " + className(valueClass) + " -> "
-						+ className(cachedField.valueClass) + " (" + type.getName() + "#" + cachedField + ")");
-					frames.endField(input, end, objects, readObjects);
-					continue;
-				}
-				cachedField.setCanBeNull(false);
-				cachedField.setValueClass(valueClass);
-				cachedField.setReuseSerializer(false);
-			} else if (cachedField == null) {
-				if (TRACE) trace("kryo", "Skip unknown field.");
-				frames.endField(input, end, objects, readObjects);
-				continue;
-			}
-
-			if (TRACE) log("Read", cachedField, input.position());
-			if (values == null)
-				cachedField.read(input, object);
-			else
-				values[cachedField.index] = cachedField.read(input);
+	/** Skips the rest of the field. */
+	static void nextField (FieldFrames frames, Input input, long end, int objects, int readObjects, InputChunked inputChunked) {
+		if (frames != null)
 			frames.endField(input, end, objects, readObjects);
-		}
-
-		if (values != null) object = createRecord(values);
-
-		popTypeVariables(pop);
-		frames.endRead();
-		return object;
+		else
+			inputChunked.nextChunk();
 	}
 
 	private CachedField[] readFields (Kryo kryo, Input input) {
