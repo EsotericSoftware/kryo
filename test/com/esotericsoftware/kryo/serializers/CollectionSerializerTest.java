@@ -32,6 +32,7 @@ import com.esotericsoftware.kryo.serializers.MapSerializerTest.KeyThatIsntCompar
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -50,7 +51,7 @@ class CollectionSerializerTest extends KryoTestCase {
 	@Test
 	void testWriteSameClassOnce () {
 		kryo.register(ArrayList.class);
-		ArrayList<String> list = new ArrayList<>(List.of("a", "b", "c"));
+		ArrayList<String> list = new ArrayList<>(Arrays.asList("a", "b", "c"));
 		roundTrip(10, list); // The class of the elements is written once.
 
 		CollectionSerializer serializer = new CollectionSerializer();
@@ -78,10 +79,10 @@ class CollectionSerializerTest extends KryoTestCase {
 		serializer.setWriteSameClassOnce(false);
 		kryo.register(ArrayList.class, serializer);
 		kryo.register(StringBuilder.class);
-		ArrayList list = new ArrayList(List.of(new StringBuilder("a"), new StringBuilder("b")));
+		ArrayList list = new ArrayList(Arrays.asList(new StringBuilder("a"), new StringBuilder("b")));
 		Output output = new Output(64);
 		kryo.writeClassAndObject(output, list);
-		assertEquals(List.of("a", "b"), kryo.readClassAndObject(new Input(output.toBytes())));
+		assertEquals(Arrays.asList("a", "b"), kryo.readClassAndObject(new Input(output.toBytes())));
 	}
 
 	@Test
