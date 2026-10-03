@@ -19,8 +19,16 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ByteArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Random;
 
 import org.junit.jupiter.api.Test;
 
@@ -45,6 +53,27 @@ class DeflateSerializerTest extends KryoTestCase {
 		message.data = physicsUpdate;
 
 		roundTrip(8, message);
+	}
+
+	// The inflater doesn't read the last compressed byte if it only ends the last deflate block. That byte and the end of the
+	// chunks must still be skipped, so the data after the compressed object is read correctly (#1312).
+	@Test
+	void testDataAfterCompressedObject () {
+		DeflateSerializer serializer = new DeflateSerializer(new ByteArraySerializer());
+		Random random = new Random(1);
+		for (int size = 1; size <= 4000; size++) {
+			StringBuilder text = new StringBuilder();
+			while (text.length() < size)
+				text.append("value-").append(random.nextInt(100000)).append(' ');
+			byte[] payload = text.substring(0, size).getBytes(StandardCharsets.UTF_8);
+
+			Output output = new Output(size + 100, -1);
+			kryo.writeObject(output, payload, serializer);
+			output.writeString("after");
+			Input input = new Input(output.toBytes());
+			assertArrayEquals(payload, kryo.readObject(input, byte[].class, serializer));
+			assertEquals("after", input.readString(), "size " + size);
+		}
 	}
 
 	public static class ServerPhysicsUpdate {
