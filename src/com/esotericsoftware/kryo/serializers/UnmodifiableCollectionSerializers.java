@@ -172,9 +172,8 @@ public final class UnmodifiableCollectionSerializers {
 		return factories;
 	}
 
-	/** The factories in a fixed order, which determines the IDs of {@link #registerSerializersOrdered(Kryo)}. Only classes that
-	 * exist on all supported Java versions, so that the IDs don't change between Java versions. New ones must be added at the
-	 * end. */
+	/** The factories in a fixed order, which determines the IDs of {@link #register(Kryo)}. Only classes that exist on all
+	 * supported Java versions, so that the IDs don't change between Java versions. New ones must be added at the end. */
 	static Map<Class<?>, Function> orderedFactories () {
 		final Map<Class<?>, Function> factories = new LinkedHashMap<>();
 		putFactories(factories);
@@ -217,7 +216,7 @@ public final class UnmodifiableCollectionSerializers {
 	 * unmodifiableMap, unmodifiableSortedMap, unmodifiableNavigableSet and unmodifiableNavigableMap. The Java 21+ sequenced
 	 * wrappers, eg unmodifiableSequencedCollection, are not registered, so that the same classes are registered on all Java
 	 * versions. After {@link #addDefaultSerializers(Kryo)}, they can be registered with {@link Kryo#register(Class)}. */
-	public static void registerSerializersOrdered (Kryo kryo) {
+	public static void register (Kryo kryo) {
 		for (Map.Entry<Class<?>, Function> factory : orderedFactories().entrySet())
 			kryo.register(factory.getKey(), createSerializer(factory));
 	}
@@ -226,7 +225,7 @@ public final class UnmodifiableCollectionSerializers {
 	 * <p>
 	 * The registration IDs of these classes depend on the JVM, eg the Java version, so data written on one JVM may be read as a
 	 * different collection type on another.
-	 * @deprecated Use {@link #registerSerializersOrdered(Kryo)}, which registers the classes in a fixed order.
+	 * @deprecated Use {@link #register(Kryo)}, which registers the classes in a fixed order.
 	 *
 	 * @see Collections#unmodifiableCollection(Collection)
 	 * @see Collections#unmodifiableList(List)

@@ -51,7 +51,7 @@ class UnmodifiableCollectionsSerializersTest extends KryoTestCase {
 	public void setUp () throws Exception {
 		super.setUp();
 
-		UnmodifiableCollectionSerializers.registerSerializersOrdered(kryo);
+		UnmodifiableCollectionSerializers.register(kryo);
 
 		kryo.register(ArrayList.class);
 		kryo.register(LinkedList.class);
@@ -83,7 +83,7 @@ class UnmodifiableCollectionsSerializersTest extends KryoTestCase {
 	void testRegistrationOrder () {
 		Kryo kryo = new Kryo();
 		int firstId = kryo.getNextRegistrationId();
-		UnmodifiableCollectionSerializers.registerSerializersOrdered(kryo);
+		UnmodifiableCollectionSerializers.register(kryo);
 		List<Class> types = Arrays.asList(Collections.unmodifiableCollection(Arrays.asList("")).getClass(),
 			Collections.unmodifiableList(new ArrayList<>()).getClass(), Collections.unmodifiableList(new LinkedList<>()).getClass(),
 			Collections.unmodifiableSet(new HashSet<>()).getClass(), Collections.unmodifiableSortedSet(new TreeSet<>()).getClass(),

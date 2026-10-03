@@ -48,7 +48,7 @@ class SynchronizedCollectionSerializersTest extends KryoTestCase {
 	public void setUp () throws Exception {
 		super.setUp();
 
-		SynchronizedCollectionSerializers.registerSerializersOrdered(kryo);
+		SynchronizedCollectionSerializers.register(kryo);
 
 		kryo.register(ArrayList.class);
 		kryo.register(LinkedList.class);
@@ -80,7 +80,7 @@ class SynchronizedCollectionSerializersTest extends KryoTestCase {
 	void testRegistrationOrder () {
 		Kryo kryo = new Kryo();
 		int firstId = kryo.getNextRegistrationId();
-		SynchronizedCollectionSerializers.registerSerializersOrdered(kryo);
+		SynchronizedCollectionSerializers.register(kryo);
 		List<Class> types = Arrays.asList(Collections.synchronizedCollection(Arrays.asList("")).getClass(),
 			Collections.synchronizedList(new ArrayList<>()).getClass(), Collections.synchronizedList(new LinkedList<>()).getClass(),
 			Collections.synchronizedSet(new HashSet<>()).getClass(), Collections.synchronizedSortedSet(new TreeSet<>()).getClass(),
