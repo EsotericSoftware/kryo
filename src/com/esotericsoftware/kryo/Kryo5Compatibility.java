@@ -64,7 +64,8 @@ public final class Kryo5Compatibility {
 			}
 		});
 
-		// Kryo 5 had no default serializers for these types.
+		// Kryo 5 had no default serializers for these types. ConcurrentHashMap.KeySetView is not needed: Kryo 5 wrote it with
+		// CollectionSerializer, but couldn't read it back.
 		try {
 			kryo.addDefaultSerializer(Timestamp.class, DateSerializer::new);
 		} catch (NoClassDefFoundError ignored) { // java.sql is not available in a named module that doesn't require it.

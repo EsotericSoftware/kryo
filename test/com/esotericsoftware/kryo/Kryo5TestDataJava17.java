@@ -28,7 +28,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  */
 public class Kryo5TestDataJava17 extends Kryo5TestData.TestData {
     public record Rec (byte b, short s, int i, long l, float f, double d, boolean bool, char c, String str, Integer[] n) {
-        // Overriden because of https://stackoverflow.com/questions/61261226/java-14-records-and-arrays
+        // Overridden because of https://stackoverflow.com/questions/61261226/java-14-records-and-arrays
         public boolean equals(Object o) {
             return EqualsBuilder.reflectionEquals(this, o);
         }
