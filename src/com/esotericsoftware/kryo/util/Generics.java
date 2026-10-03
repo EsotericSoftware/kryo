@@ -175,25 +175,23 @@ public interface Generics {
 
 		/** Returns, for each type parameter of the class, the index of the type argument of the declared class it is passed to, or
 		 * -1 if it is not passed to the declared class. For example, for {@code class Sub<A, B> extends Base<B, A>} and the
-		 * declared class {@code Base}, this returns {@code [1, 0]}.
-		 * @param declaredType The declared class, other types return null. */
-		int[] argumentIndices (Type declaredType) {
-			if (declaredType == type) return identityIndices; // Fast path.
-			if (declaredType == lastDeclared) return lastIndices;
-			if (!(declaredType instanceof Class)) return null;
-			int[] indices = superTypeIndices == null ? null : superTypeIndices.get((Class)declaredType);
+		 * declared class {@code Base}, this returns {@code [1, 0]}. */
+		int[] argumentIndices (Class declared) {
+			if (declared == type) return identityIndices; // Fast path.
+			if (declared == lastDeclared) return lastIndices;
+			int[] indices = superTypeIndices == null ? null : superTypeIndices.get(declared);
 			if (indices == null) {
-				indices = computeArgumentIndices((Class)declaredType);
+				indices = computeArgumentIndices(declared);
 				// Usually there is only one other declared type, so the map is only needed for the second one.
 				if (lastDeclared != null) {
 					if (superTypeIndices == null) {
 						superTypeIndices = new IdentityMap(4);
 						superTypeIndices.put(lastDeclared, lastIndices);
 					}
-					superTypeIndices.put((Class)declaredType, indices);
+					superTypeIndices.put(declared, indices);
 				}
 			}
-			lastDeclared = (Class)declaredType;
+			lastDeclared = declared;
 			lastIndices = indices;
 			return indices;
 		}
@@ -264,6 +262,7 @@ public interface Generics {
 	class GenericType {
 		Type type; // Either a Class or TypeVariable.
 		GenericType[] arguments;
+		private TypeVariable[] typeVariables;
 
 		public GenericType (Class fromClass, Class toClass, Type context) {
 			initialize(fromClass, toClass, context);
@@ -315,6 +314,12 @@ public interface Generics {
 
 		public Type getType () {
 			return type;
+		}
+
+		/** Returns the type parameters of the class, cached because {@link Class#getTypeParameters()} returns a copy. */
+		TypeVariable[] typeVariables () {
+			if (typeVariables == null) typeVariables = ((Class)type).getTypeParameters();
+			return typeVariables;
 		}
 
 		/** @return May be null. */

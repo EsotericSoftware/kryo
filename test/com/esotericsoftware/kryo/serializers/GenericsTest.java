@@ -19,7 +19,11 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
 import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
@@ -27,6 +31,7 @@ import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -237,6 +242,26 @@ class GenericsTest extends KryoTestCase {
 	void testDifferentDeclaredTypes () {
 		kryo.setRegistrationRequired(false);
 		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderMulti());
+	}
+
+	// A class that extends a generic class as a raw type uses the type arguments of the declared type, like Kryo 5.
+	@Test
+	void testRawSubclassOfDeclaredType () {
+		kryo.setRegistrationRequired(false);
+		// Written by Kryo 5.
+		byte[] bytes = Base64.getDecoder().decode(
+			"AQBjb20uZXNvdGVyaWNzb2Z0d2FyZS5rcnlvLnNlcmlhbGl6ZXJzLkdlbmVyaWNzVGVzdCREZWNsYXJlZFR5cGVzJFJhd1N14gEBamF2YS51dGlsLkFycmF5TGlz9AKCYg==");
+		assertEquals(new DeclaredTypes.HolderRaw(), kryo.readObject(new Input(bytes), DeclaredTypes.HolderRaw.class));
+		Output output = new Output(1024);
+		kryo.writeObject(output, new DeclaredTypes.HolderRaw());
+		assertArrayEquals(bytes, output.toBytes());
+	}
+
+	// Each type variable needs two entries, so nested generic objects must not overflow the type variable storage.
+	@Test
+	void testNestedTypeVariables () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderNode());
 	}
 
 	// A type argument that can't be resolved must not shift the following type arguments.
@@ -860,6 +885,60 @@ class GenericsTest extends KryoTestCase {
 			public boolean equals (Object o) {
 				return o instanceof HolderMulti h && Objects.equals(base, h.base) && Objects.equals(interfaceType, h.interfaceType)
 					&& Objects.equals(direct, h.direct) && Objects.equals(base2, h.base2);
+			}
+		}
+
+		public static class GenericBase<T> {
+			public List<T> list = new ArrayList<>();
+
+			public boolean equals (Object o) {
+				return o != null && o.getClass() == getClass() && Objects.equals(list, ((GenericBase)o).list);
+			}
+		}
+
+		public static class RawSub extends GenericBase {
+		}
+
+		public static class HolderRaw {
+			public GenericBase<String> raw = new RawSub();
+
+			HolderRaw () {
+				raw.list.add("b");
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof HolderRaw h && Objects.equals(raw, h.raw);
+			}
+		}
+
+		public static class Node<A, B, C> {
+			public A a;
+			public B b;
+			public C c;
+			public Node<A, B, C> child;
+
+			public boolean equals (Object o) {
+				return o instanceof Node n && Objects.equals(a, n.a) && Objects.equals(b, n.b) && Objects.equals(c, n.c)
+					&& Objects.equals(child, n.child);
+			}
+		}
+
+		public static class HolderNode {
+			public Node<String, Integer, Long> node = new Node<>();
+
+			HolderNode () {
+				Node<String, Integer, Long> current = node;
+				for (int i = 0; i < 5; i++) {
+					current.a = "a" + i;
+					current.b = i;
+					current.c = (long)i;
+					current.child = new Node<>();
+					current = current.child;
+				}
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof HolderNode h && Objects.equals(node, h.node);
 			}
 		}
 

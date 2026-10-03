@@ -106,42 +106,56 @@ public final class DefaultGenerics implements Generics {
 
 	@Override
 	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType type) {
-		if (hierarchy.rootTotal == 0) return 0; // The class has no type parameters.
+		int startSize = argumentsSize;
+		Class declared = (Class)type.type; // Always a class, because the type has type arguments.
+		GenericType[] args = type.arguments;
 
-		// The arguments are for the declared type, which can be a super type of the class with different type parameters.
-		int[] indices = hierarchy.argumentIndices(type.type);
-		if (indices == null) return 0;
-
-		int startSize = this.argumentsSize;
-
-		// Ensure arguments capacity.
-		int sizeNeeded = startSize + hierarchy.total;
-		if (sizeNeeded > arguments.length) {
-			Type[] newArray = new Type[Math.max(sizeNeeded, arguments.length << 1)];
-			System.arraycopy(arguments, 0, newArray, 0, startSize);
-			arguments = newArray;
+		// The type parameters of the class, which come first in the hierarchy. The arguments are for the declared type, which can
+		// be a super type of the class with different type parameters.
+		if (hierarchy.rootTotal > 0) {
+			int[] indices = hierarchy.argumentIndices(declared);
+			ensureCapacity(hierarchy.total);
+			int[] counts = hierarchy.counts;
+			TypeVariable[] params = hierarchy.parameters;
+			for (int i = 0, p = 0, n = indices.length; i < n; i++) {
+				int count = counts[i];
+				int index = indices[i];
+				Class resolved = index == -1 ? null : args[index].resolve(this);
+				if (resolved == null) {
+					p += count;
+					continue;
+				}
+				for (int nn = p + count; p < nn; p++) {
+					arguments[argumentsSize++] = params[p];
+					arguments[argumentsSize++] = resolved;
+				}
+			}
 		}
 
-		// Resolve and store the type arguments for the type parameters of the class, which come first in the hierarchy.
-		GenericType[] args = type.arguments;
-		int[] counts = hierarchy.counts;
-		TypeVariable[] params = hierarchy.parameters;
-		for (int i = 0, p = 0, n = indices.length; i < n; i++) {
-			int count = counts[i];
-			int index = indices[i];
-			Class resolved = index == -1 ? null : args[index].resolve(this);
-			if (resolved == null) {
-				p += count;
-				continue;
-			}
-			for (int nn = p + count; p < nn; p++) {
-				arguments[argumentsSize] = params[p];
-				arguments[argumentsSize + 1] = resolved;
-				argumentsSize += 2;
+		// If no type parameters of the class are passed to the declared super class, eg because the class extends it as a raw type,
+		// use the arguments for the type parameters of the declared class.
+		if (argumentsSize == startSize && declared != hierarchy.type && !declared.isInterface()) {
+			TypeVariable[] params = type.typeVariables();
+			ensureCapacity(params.length);
+			for (int i = 0; i < params.length; i++) {
+				Class resolved = args[i].resolve(this);
+				if (resolved == null) continue;
+				arguments[argumentsSize++] = params[i];
+				arguments[argumentsSize++] = resolved;
 			}
 		}
 
 		return argumentsSize - startSize;
+	}
+
+	/** Ensures there is room for the specified number of type variables and their classes. */
+	private void ensureCapacity (int count) {
+		int sizeNeeded = argumentsSize + count * 2;
+		if (sizeNeeded > arguments.length) {
+			Type[] newArray = new Type[Math.max(sizeNeeded, arguments.length << 1)];
+			System.arraycopy(arguments, 0, newArray, 0, argumentsSize);
+			arguments = newArray;
+		}
 	}
 
 	@Override
