@@ -58,6 +58,13 @@ class RegistrationTest {
 		assertEquals(2, ((ArrayList)kryo.readClassAndObject(input)).size());
 		assertEquals(2, ((Fruit[])kryo.readClassAndObject(input)).length);
 
+		// The class names are written again for the next object graph, so it can be read on its own.
+		Output second = new Output(1024);
+		kryo.writeClassAndObject(second, new Apple());
+		Kryo reader = new Kryo();
+		reader.setAllowedUnregisteredClasses(kryo.getAllowedUnregisteredClasses());
+		assertTrue(reader.readClassAndObject(new Input(second.toBytes())) instanceof Apple);
+
 		// Classes that are not allowed must still be registered, also when reading.
 		assertThrows(IllegalArgumentException.class, () -> kryo.writeClassAndObject(new Output(1024), new HashMap()));
 		Kryo writer = new Kryo();
@@ -65,9 +72,9 @@ class RegistrationTest {
 		Output other = new Output(1024);
 		writer.writeClassAndObject(other, new HashMap());
 		assertThrows(IllegalArgumentException.class, () -> new Kryo().readClassAndObject(new Input(other.toBytes())));
-		Kryo reader = new Kryo();
-		reader.setAllowedUnregisteredClasses(type -> type == Apple.class);
-		assertThrows(IllegalArgumentException.class, () -> reader.readClassAndObject(new Input(other.toBytes())));
+		Kryo appleReader = new Kryo();
+		appleReader.setAllowedUnregisteredClasses(type -> type == Apple.class);
+		assertThrows(IllegalArgumentException.class, () -> appleReader.readClassAndObject(new Input(other.toBytes())));
 	}
 
 	@Test
