@@ -76,6 +76,38 @@ class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testWriteSameClassOnce () {
+		MapSerializer serializer = new MapSerializer();
+		serializer.setWriteSameClassOnce(true);
+		kryo.register(LinkedHashMap.class, serializer);
+		// The class of the keys and values is written once if they all have the same class.
+		LinkedHashMap map = new LinkedHashMap();
+		map.put("a", 1);
+		map.put("b", 2);
+		roundTrip(10, map);
+		// Otherwise each key or value is written with its class.
+		map.put("c", "3");
+		roundTrip(17, map);
+		map.put("c", null);
+		roundTrip(15, map);
+		map.put(null, 3);
+		roundTrip(21, map);
+		LinkedHashMap nullValues = new LinkedHashMap();
+		nullValues.put("a", null);
+		roundTrip(7, nullValues);
+	}
+
+	// By default, the class of each key and value is written.
+	@Test
+	void testWriteSameClassOnceDisabled () {
+		kryo.register(LinkedHashMap.class);
+		LinkedHashMap map = new LinkedHashMap();
+		map.put("a", 1);
+		map.put("b", 2);
+		roundTrip(12, map);
+	}
+
+	@Test
 	void testMaps () {
 		kryo.register(HashMap.class);
 		kryo.register(LinkedHashMap.class);

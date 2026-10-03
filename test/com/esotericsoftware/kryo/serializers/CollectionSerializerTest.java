@@ -48,6 +48,43 @@ class CollectionSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testWriteSameClassOnce () {
+		kryo.register(ArrayList.class);
+		ArrayList<String> list = new ArrayList<>(List.of("a", "b", "c"));
+		roundTrip(10, list); // The class of the elements is written once.
+
+		CollectionSerializer serializer = new CollectionSerializer();
+		serializer.setWriteSameClassOnce(false);
+		kryo.register(ArrayList.class, serializer);
+		Output output = new Output(64);
+		kryo.writeClassAndObject(output, list);
+		assertEquals(11, output.position()); // The class of each element is written.
+
+		// The data can be read without the setting.
+		Kryo reader = new Kryo();
+		reader.register(ArrayList.class);
+		assertEquals(list, reader.readClassAndObject(new Input(output.toBytes())));
+	}
+
+	// The class of an element can change while it is written, eg if the element is replaced (#943).
+	@Test
+	void testReplacedElements () {
+		Kryo kryo = new Kryo() {
+			public void writeClassAndObject (Output output, Object object) {
+				super.writeClassAndObject(output, object instanceof StringBuilder ? object.toString() : object);
+			}
+		};
+		CollectionSerializer serializer = new CollectionSerializer();
+		serializer.setWriteSameClassOnce(false);
+		kryo.register(ArrayList.class, serializer);
+		kryo.register(StringBuilder.class);
+		ArrayList list = new ArrayList(List.of(new StringBuilder("a"), new StringBuilder("b")));
+		Output output = new Output(64);
+		kryo.writeClassAndObject(output, list);
+		assertEquals(List.of("a", "b"), kryo.readClassAndObject(new Input(output.toBytes())));
+	}
+
+	@Test
 	void testMaliciousCollectionSize () {
 		kryo.setReferences(false);
 		kryo.register(ArrayList.class);
