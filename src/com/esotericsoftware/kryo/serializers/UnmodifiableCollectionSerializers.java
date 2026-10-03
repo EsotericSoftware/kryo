@@ -20,11 +20,9 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
 import com.esotericsoftware.minlog.Log;
 
 import java.util.ArrayList;
@@ -46,41 +44,24 @@ import java.util.function.Function;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class UnmodifiableCollectionSerializers {
 
-	private static class Offset {
-		private static final long SOURCE_COLLECTION_FIELD_OFFSET;
-		private static final long SOURCE_MAP_FIELD_OFFSET;
-
-		static {
-			String clsName = "java.util.Collections$UnmodifiableCollection";
-			try {
-				SOURCE_COLLECTION_FIELD_OFFSET = UnsafeUtil.objectFieldOffset(Class.forName(clsName).getDeclaredField("c"));
-			} catch (Exception e) {
-				Log.warn("Could not access source collection field in " + clsName);
-				throw new KryoException(e);
-			}
-			clsName = "java.util.Collections$UnmodifiableMap";
-			try {
-				SOURCE_MAP_FIELD_OFFSET = UnsafeUtil.objectFieldOffset(Class.forName(clsName).getDeclaredField("m"));
-			} catch (Exception e) {
-				Log.warn("Could not access source map field in " + clsName);
-				throw new KryoException(e);
-			}
-		}
-	}
+	private static final WrappedCollectionGetter collectionGetter = new WrappedCollectionGetter(
+		"java.util.Collections$UnmodifiableCollection", "c");
+	private static final WrappedCollectionGetter mapGetter = new WrappedCollectionGetter("java.util.Collections$UnmodifiableMap",
+		"m");
 
 	static final class UnmodifiableCollectionSerializer extends CollectionSerializer<Collection> {
 		private final Function factory;
-		private final long offset;
+		private final WrappedCollectionGetter getter;
 
-		public UnmodifiableCollectionSerializer (Function factory, long offset) {
+		public UnmodifiableCollectionSerializer (Function factory, WrappedCollectionGetter getter) {
 			setAcceptsNull(false);
 			this.factory = factory;
-			this.offset = offset;
+			this.getter = getter;
 		}
 
 		@Override
 		public void write (Kryo kryo, Output output, Collection collection) {
-			final Object fieldValue = UnsafeUtil.getObject(collection, offset);
+			final Object fieldValue = getter.get(collection);
 			kryo.writeClassAndObject(output, fieldValue);
 		}
 
@@ -92,24 +73,24 @@ public final class UnmodifiableCollectionSerializers {
 
 		@Override
 		public Collection copy (Kryo kryo, Collection original) {
-			final Object collection = UnsafeUtil.getObject(original, offset);
+			final Object collection = getter.get(original);
 			return (Collection)factory.apply(kryo.copy(collection));
 		}
 	}
 
 	static final class UnmodifiableMapSerializer extends MapSerializer<Map> {
 		private final Function factory;
-		private final long offset;
+		private final WrappedCollectionGetter getter;
 
-		public UnmodifiableMapSerializer (Function factory, long offset) {
+		public UnmodifiableMapSerializer (Function factory, WrappedCollectionGetter getter) {
 			setAcceptsNull(false);
 			this.factory = factory;
-			this.offset = offset;
+			this.getter = getter;
 		}
 
 		@Override
 		public void write (Kryo kryo, Output output, Map map) {
-			Object fieldValue = UnsafeUtil.getObject(map, offset);
+			Object fieldValue = getter.get(map);
 			kryo.writeClassAndObject(output, fieldValue);
 		}
 
@@ -121,16 +102,16 @@ public final class UnmodifiableCollectionSerializers {
 
 		@Override
 		public Map copy (Kryo kryo, Map original) {
-			final Object map = UnsafeUtil.getObject(original, offset);
+			final Object map = getter.get(original);
 			return (Map)factory.apply(kryo.copy(map));
 		}
 	}
 
 	private static Serializer<?> createSerializer (Map.Entry<Class<?>, Function> factory) {
 		if (Collection.class.isAssignableFrom(factory.getKey())) {
-			return new UnmodifiableCollectionSerializer(factory.getValue(), Offset.SOURCE_COLLECTION_FIELD_OFFSET);
+			return new UnmodifiableCollectionSerializer(factory.getValue(), collectionGetter);
 		} else {
-			return new UnmodifiableMapSerializer(factory.getValue(), Offset.SOURCE_MAP_FIELD_OFFSET);
+			return new UnmodifiableMapSerializer(factory.getValue(), mapGetter);
 		}
 	}
 
