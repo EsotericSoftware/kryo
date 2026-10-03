@@ -91,6 +91,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
    * [Unmodifiable and synchronized collections](#unmodifiable-and-synchronized-collections)
    * [JavaSerializer and ExternalizableSerializer](#javaserializer-and-externalizableserializer)
 - [Logging](#logging)
+- [GraalVM native image](#graalvm-native-image)
 - [Thread safety](#thread-safety)
    * [Pooling](#pooling)
 - [Benchmarks](#benchmarks)
@@ -1349,6 +1350,16 @@ Log.TRACE();
 Kryo does no logging at `INFO` (the default) level. `WARN` is only used for a few exceptional cases, such as unregistered classes when `setWarnUnregisteredClasses` is enabled, or when serializers that rely on JDK internals cannot access them. `DEBUG` is convenient to use during development. `TRACE` is good to use when debugging a specific problem, but generally outputs too much information to leave on.
 
 MinLog supports a fixed logging level, which causes the Java compiler to remove logging statements below that level at compile time. Kryo must be compiled with a fixed logging level MinLog JAR.
+
+## GraalVM native image
+
+Kryo works in GraalVM native images without reachability metadata for Kryo itself. The serialized classes need metadata: their fields and constructors, and their names if they are not registered. Classes with a default serializer, eg the JDK-internal classes returned by `List.of`, are found without metadata. The easiest way to create the metadata is GraalVM's tracing agent. Run it with the system property `org.graalvm.nativeimage.imagecode`, so that Kryo takes the same code paths as in a native image:
+
+```
+java -Dorg.graalvm.nativeimage.imagecode=agent -agentlib:native-image-agent=config-output-dir=<dir> ...
+```
+
+Default serializers added with `addDefaultSerializer(Class, Class)` are created with reflection and need metadata too. `addDefaultSerializer(SomeClass.class, SomeSerializer::new)` creates them without reflection.
 
 ## Thread safety
 

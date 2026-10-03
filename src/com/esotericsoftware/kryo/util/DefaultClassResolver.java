@@ -172,14 +172,18 @@ public class DefaultClassResolver implements ClassResolver {
 			String className = input.readString();
 			type = getTypeByName(className);
 			if (type == null) {
-				try {
-					type = Class.forName(className, false, kryo.getClassLoader());
-				} catch (ClassNotFoundException ex) {
-					// Fallback to Kryo's class loader.
+				// Classes with a default serializer, eg JDK-internal classes, are found without reflection.
+				type = kryo.getDefaultSerializerType(className);
+				if (type == null) {
 					try {
-						type = Class.forName(className, false, Kryo.class.getClassLoader());
-					} catch (ClassNotFoundException ex2) {
-						throw new KryoException("Unable to find class: " + className, ex);
+						type = Class.forName(className, false, kryo.getClassLoader());
+					} catch (ClassNotFoundException ex) {
+						// Fallback to Kryo's class loader.
+						try {
+							type = Class.forName(className, false, Kryo.class.getClassLoader());
+						} catch (ClassNotFoundException ex2) {
+							throw new KryoException("Unable to find class: " + className, ex);
+						}
 					}
 				}
 				if (nameToClass == null) nameToClass = new ObjectMap<>();
