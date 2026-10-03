@@ -36,12 +36,12 @@ import org.junit.jupiter.api.Test;
 
 /** Skipping a chunk, eg because the class of a removed field no longer exists, must not break the rest of the object graph
  * (#1247). */
-class ChunkTrailerTest {
+class ChunkedEncodingTest {
 	@Test
 	void testUnregisteredClassNameInSkippedChunk () {
 		Entity entity = entity(false);
-		byte[] bytes = removeEntity2(write(compatibleKryo(false, false, true), entity));
-		Entity read = compatibleKryo(false, false, true).readObject(new Input(bytes), Entity.class);
+		byte[] bytes = removeEntity2(write(compatibleKryo(false, false, false), entity));
+		Entity read = compatibleKryo(false, false, false).readObject(new Input(bytes), Entity.class);
 		assertEquals(10, read.c.a);
 		assertEquals(15, read.d.a);
 	}
@@ -49,8 +49,8 @@ class ChunkTrailerTest {
 	@Test
 	void testFieldNamesInSkippedChunk () {
 		Entity entity = entity(false);
-		byte[] bytes = write(compatibleKryo(true, false, true), entity);
-		Kryo reader = compatibleKryo(true, false, true);
+		byte[] bytes = write(compatibleKryo(true, false, false), entity);
+		Kryo reader = compatibleKryo(true, false, false);
 		reader.getClassResolver().unregister(22); // Entity2 was removed.
 		Entity read = reader.readObject(new Input(bytes), Entity.class);
 		assertEquals(10, read.c.a);
@@ -61,8 +61,8 @@ class ChunkTrailerTest {
 	@Test
 	void testReferencesInSkippedChunk () {
 		Entity entity = entity(true);
-		byte[] bytes = write(compatibleKryo(true, true, true), entity);
-		Kryo reader = compatibleKryo(true, true, true);
+		byte[] bytes = write(compatibleKryo(true, true, false), entity);
+		Kryo reader = compatibleKryo(true, true, false);
 		reader.getClassResolver().unregister(22);
 		Entity read = reader.readObject(new Input(bytes), Entity.class);
 		assertEquals(10, read.c.a);
@@ -86,10 +86,33 @@ class ChunkTrailerTest {
 	}
 
 	@Test
-	void testWithoutChunkTrailer () {
-		// Without chunk trailer, the class name of Entity3 is lost with the skipped chunk.
-		byte[] bytes = removeEntity2(write(compatibleKryo(false, false, false), entity(false)));
-		Entity read = compatibleKryo(false, false, false).readObject(new Input(bytes), Entity.class);
+	void testNestedStream () {
+		// DeflateSerializer writes Entity2 to its own stream, which starts a new scope with its own class names and field names.
+		Entity entity = entity(true);
+		Kryo writer = compatibleKryo(true, true, false);
+		writer.register(Entity2.class, new DeflateSerializer(writer.getDefaultSerializer(Entity2.class)), 22);
+		byte[] bytes = write(writer, entity);
+
+		Kryo reader = compatibleKryo(true, true, false);
+		reader.register(Entity2.class, new DeflateSerializer(reader.getDefaultSerializer(Entity2.class)), 22);
+		Entity read = reader.readObject(new Input(bytes), Entity.class);
+		assertEquals(5, read.b.x.a);
+		assertSame(read.b.x, read.d);
+		assertSame(read.c, read.e);
+
+		reader = compatibleKryo(true, true, false);
+		reader.getClassResolver().unregister(22);
+		read = reader.readObject(new Input(bytes), Entity.class);
+		assertEquals(10, read.c.a);
+		assertNull(read.d);
+		assertSame(read.c, read.e);
+	}
+
+	@Test
+	void testLegacyChunks () {
+		// With the chunked encoding of Kryo 5, the class name of Entity3 is lost with the skipped chunk.
+		byte[] bytes = removeEntity2(write(compatibleKryo(false, false, true), entity(false)));
+		Entity read = compatibleKryo(false, false, true).readObject(new Input(bytes), Entity.class);
 		assertNull(read.c);
 	}
 
@@ -103,11 +126,11 @@ class ChunkTrailerTest {
 		return entity;
 	}
 
-	private Kryo compatibleKryo (boolean registration, boolean references, boolean chunkTrailer) {
+	private Kryo compatibleKryo (boolean registration, boolean references, boolean legacyChunks) {
 		Kryo kryo = new Kryo();
 		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
 		config.setChunkedEncoding(true);
-		config.setChunkTrailer(chunkTrailer);
+		config.setLegacyChunks(legacyChunks);
 		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
 		kryo.setReferences(references);
 		kryo.setRegistrationRequired(registration);
@@ -140,22 +163,30 @@ class ChunkTrailerTest {
 		return removeEntity2(bytes, "Entity2", "EntityZ");
 	}
 
-	/** Replaces the class name so the class is not found when reading. Class names are written as ASCII with the high bit set on
-	 * the last character. */
+	/** Replaces the class name so the class is not found when reading. Short class names are written as ASCII with the high bit
+	 * set on the last character, long ones as UTF-8 with their length. */
 	private byte[] removeEntity2 (byte[] bytes, String name, String replacement) {
-		byte[] search = ("$" + name).getBytes(StandardCharsets.US_ASCII), replace = ("$" + replacement).getBytes(StandardCharsets.US_ASCII);
-		search[search.length - 1] |= 0x80;
-		replace[replace.length - 1] |= 0x80;
+		int count = replace(bytes, "$" + name, "$" + replacement, true) + replace(bytes, "$" + name, "$" + replacement, false);
+		assertTrue(count > 0);
+		return bytes;
+	}
+
+	private int replace (byte[] bytes, String name, String replacement, boolean highBit) {
+		byte[] search = name.getBytes(StandardCharsets.US_ASCII), replace = replacement.getBytes(StandardCharsets.US_ASCII);
+		if (highBit) {
+			search[search.length - 1] |= 0x80;
+			replace[replace.length - 1] |= 0x80;
+		}
 		int count = 0;
 		outer:
 		for (int i = 0; i <= bytes.length - search.length; i++) {
 			for (int ii = 0; ii < search.length; ii++)
 				if (bytes[i + ii] != search[ii]) continue outer;
+			// Without high bit, the name must end here, so Entity2 doesn't match TaggedEntity2 when replacing the other.
 			System.arraycopy(replace, 0, bytes, i, replace.length);
 			count++;
 		}
-		assertTrue(count > 0);
-		return bytes;
+		return count;
 	}
 
 	public static class Entity {

@@ -24,6 +24,7 @@ import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.ReferenceResolver;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
@@ -99,6 +100,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 	public void write (Kryo kryo, Output output, T object) {
 		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
+		if (config.chunked && !config.legacyChunks) {
+			writeFramed(kryo, output, object);
+			return;
+		}
 		int pop = pushTypeVariables();
 
 		CachedField[] fields = cachedFields.fields;
@@ -106,23 +111,23 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		if (!context.containsKey(writeKey)) {
 			if (TRACE) trace("kryo", "Write fields for class: " + type.getName());
 			context.put(writeKey, null);
-			writeFieldNames(output);
-			ChunkTrailer.fieldNamesWritten(kryo, this);
+			output.writeVarInt(fields.length, true);
+			for (int i = 0, n = fields.length; i < n; i++) {
+				if (TRACE) trace("kryo", "Write field name: " + fields[i].name + pos(output.position()));
+				output.writeString(fields[i].name);
+			}
 		}
 
 		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownFieldData;
 		Output fieldOutput;
 		OutputChunked outputChunked = null;
-		ChunkTrailer trailer = null;
-		if (chunked) {
+		if (chunked)
 			fieldOutput = outputChunked = new OutputChunked(output, config.chunkSize);
-			if (config.chunkTrailer) trailer = new ChunkTrailer(kryo);
-		} else
+		else
 			fieldOutput = output;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			if (TRACE) log("Write", cachedField, output.position());
-			boolean omit = false;
 
 			// Write the value class so the field data can be read even if the field is removed.
 			if (readUnknownTagData) {
@@ -134,24 +139,18 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					}
 				} catch (IllegalAccessException ex) {
 				}
-				if (trailer != null) {
-					// Writing the class of a value without trailer can't write a class name.
-					omit = trailer.omits(valueClass);
-					if (!omit) trailer.markWrite();
-				}
 				kryo.writeClass(fieldOutput, valueClass);
 				if (valueClass == null) {
-					if (chunked) endChunk(outputChunked, output, trailer, omit);
+					if (chunked) outputChunked.endChunk();
 					continue;
 				}
 				cachedField.setCanBeNull(false);
 				cachedField.setValueClass(valueClass);
 				cachedField.setReuseSerializer(false);
-			} else if (trailer != null) //
-				trailer.markWrite();
+			}
 
 			cachedField.write(fieldOutput, object);
-			if (chunked) endChunk(outputChunked, output, trailer, omit);
+			if (chunked) outputChunked.endChunk();
 		}
 
 		popTypeVariables(pop);
@@ -159,6 +158,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
+		if (config.chunked && !config.legacyChunks) return readFramed(kryo, input, type);
 		int pop = pushTypeVariables();
 
 		T object = null;
@@ -175,16 +175,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownFieldData;
 		Input fieldInput;
 		InputChunked inputChunked = null;
-		ChunkTrailer trailer = null;
-		if (chunked) {
+		if (chunked)
 			fieldInput = inputChunked = new InputChunked(input, config.chunkSize);
-			if (config.chunkTrailer) trailer = new ChunkTrailer(kryo);
-		} else
+		else
 			fieldInput = input;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
-			if (trailer != null) trailer.markRead();
-			boolean omit = false;
 
 			if (readUnknownTagData) {
 				Registration registration;
@@ -194,14 +190,13 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					String message = "Unable to read unknown data (unknown type). (" + getType().getName() + "#" + cachedField + ")";
 					if (!chunked) throw new KryoException(message, ex);
 					if (DEBUG) debug("kryo", message, ex);
-					nextChunk(inputChunked, input, trailer, omit);
+					inputChunked.nextChunk();
 					continue;
 				}
-				if (trailer != null) omit = trailer.omits(registration == null ? null : registration.getType());
 				if (registration == null) {
 					// The value is null, overwrite the value set by the constructor. Record values are already null.
 					if (cachedField != null && object != null) setNull(cachedField, object);
-					if (chunked) nextChunk(inputChunked, input, trailer, omit);
+					if (chunked) inputChunked.nextChunk();
 					continue;
 				}
 				Class valueClass = registration.getType();
@@ -216,7 +211,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 						if (!chunked) throw new KryoException(message, ex);
 						if (DEBUG) debug("kryo", message, ex);
 					}
-					if (chunked) nextChunk(inputChunked, input, trailer, omit);
+					if (chunked) inputChunked.nextChunk();
 					continue;
 				}
 
@@ -227,7 +222,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 						+ className(fieldType) + " (" + getType().getName() + "#" + cachedField + ")";
 					if (!chunked) throw new KryoException(message);
 					if (DEBUG) debug("kryo", message);
-					nextChunk(inputChunked, input, trailer, omit);
+					inputChunked.nextChunk();
 					continue;
 				}
 
@@ -237,7 +232,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			} else if (cachedField == null) {
 				if (!chunked) throw new KryoException("Unknown field. (" + getType().getName() + ")");
 				if (TRACE) trace("kryo", "Skip unknown field.");
-				nextChunk(inputChunked, input, trailer, omit);
+				inputChunked.nextChunk();
 				continue;
 			}
 
@@ -246,7 +241,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				cachedField.read(fieldInput, object);
 			else
 				values[cachedField.index] = cachedField.read(fieldInput);
-			if (chunked) nextChunk(inputChunked, input, trailer, omit);
+			if (chunked) inputChunked.nextChunk();
 		}
 
 		if (values != null) object = createRecord(values);
@@ -255,18 +250,140 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		return object;
 	}
 
-	private void endChunk (OutputChunked outputChunked, Output output, ChunkTrailer trailer, boolean omit) {
-		if (trailer != null)
-			trailer.endChunk(outputChunked, output, omit);
-		else
-			outputChunked.endChunk();
+	/** Writes with chunked encoding, see {@link FieldFrames}. */
+	private void writeFramed (Kryo kryo, Output output, T object) {
+		FieldFrames frames = FieldFrames.get(kryo);
+		Output out = frames.beginWrite(output);
+		int pop = pushTypeVariables();
+
+		ObjectMap context = kryo.getGraphContext();
+		if (!context.containsKey(writeKey)) {
+			context.put(writeKey, null);
+			frames.writeFieldNames(this);
+		}
+
+		CachedField[] fields = cachedFields.fields;
+		boolean readUnknownFieldData = config.readUnknownFieldData;
+		for (int i = 0, n = fields.length; i < n; i++) {
+			CachedField cachedField = fields[i];
+			if (TRACE) log("Write", cachedField, out.position());
+			long mark = frames.beginField(out);
+			// Write the value class so the field data can be read even if the field is removed.
+			if (readUnknownFieldData) {
+				Class valueClass = null;
+				try {
+					if (object != null) {
+						Object value = cachedField.field.get(object);
+						if (value != null) valueClass = value.getClass();
+					}
+				} catch (IllegalAccessException ex) {
+				}
+				kryo.writeClass(out, valueClass);
+				if (valueClass == null) {
+					frames.endField(out, mark);
+					continue;
+				}
+				cachedField.setCanBeNull(false);
+				cachedField.setValueClass(valueClass);
+				cachedField.setReuseSerializer(false);
+			}
+			cachedField.write(out, object);
+			frames.endField(out, mark);
+		}
+
+		popTypeVariables(pop);
+		frames.endWrite();
 	}
 
-	private void nextChunk (InputChunked inputChunked, Input input, ChunkTrailer trailer, boolean omit) {
-		if (trailer != null)
-			trailer.nextChunk(inputChunked, input, omit);
-		else
-			inputChunked.nextChunk();
+	/** Reads with chunked encoding, see {@link FieldFrames}. */
+	private T readFramed (Kryo kryo, Input input, Class<? extends T> type) {
+		FieldFrames frames = FieldFrames.get(kryo);
+		frames.beginRead(input);
+		int pop = pushTypeVariables();
+
+		T object = null;
+		Object[] values = null;
+		if (recordConstructor == null) {
+			object = create(kryo, input, type);
+			kryo.reference(object);
+		} else
+			values = newRecordValues();
+
+		CachedField[] fields = (CachedField[])kryo.getGraphContext().get(this);
+		if (fields == null) {
+			// The object is read as a different class than it was written.
+			String[] names = frames.outermostFieldNames();
+			if (names == null) throw new KryoException("Field names not found: " + type.getName());
+			fields = setFieldNames(kryo, names);
+		}
+
+		boolean readUnknownFieldData = config.readUnknownFieldData, references = kryo.getReferences();
+		ReferenceResolver referenceResolver = kryo.getReferenceResolver();
+		for (int i = 0, n = fields.length; i < n; i++) {
+			CachedField cachedField = fields[i];
+			int length = input.readVarInt(true);
+			int objects = references ? input.readVarInt(true) : 0;
+			int readObjects = references ? referenceResolver.getReadCount() : 0;
+			long end = input.total() + length;
+
+			if (readUnknownFieldData) {
+				Registration registration;
+				try {
+					registration = kryo.readClass(input);
+				} catch (KryoException ex) {
+					if (DEBUG)
+						debug("kryo", "Unable to read unknown data (unknown type). (" + type.getName() + "#" + cachedField + ")", ex);
+					frames.endField(input, end, objects, readObjects);
+					continue;
+				}
+				if (registration == null) {
+					// The value is null, overwrite the value set by the constructor. Record values are already null.
+					if (cachedField != null && object != null) setNull(cachedField, object);
+					frames.endField(input, end, objects, readObjects);
+					continue;
+				}
+				Class valueClass = registration.getType();
+				if (cachedField == null) {
+					// Read unknown data in case it is referenced by other objects.
+					if (TRACE) trace("kryo", "Read unknown data, type: " + className(valueClass) + pos(input.position()));
+					try {
+						kryo.readObject(input, valueClass);
+					} catch (KryoException ex) {
+						if (DEBUG) debug("kryo", "Unable to read unknown data, type: " + className(valueClass) + " (" + type.getName()
+							+ "#" + cachedField + ")", ex);
+					}
+					frames.endField(input, end, objects, readObjects);
+					continue;
+				}
+				// Ensure the type in the data is compatible with the field type.
+				if (cachedField.valueClass != null && !Util.isAssignableTo(valueClass, cachedField.field.getType())) {
+					if (DEBUG) debug("kryo", "Read type is incompatible with the field type: " + className(valueClass) + " -> "
+						+ className(cachedField.valueClass) + " (" + type.getName() + "#" + cachedField + ")");
+					frames.endField(input, end, objects, readObjects);
+					continue;
+				}
+				cachedField.setCanBeNull(false);
+				cachedField.setValueClass(valueClass);
+				cachedField.setReuseSerializer(false);
+			} else if (cachedField == null) {
+				if (TRACE) trace("kryo", "Skip unknown field.");
+				frames.endField(input, end, objects, readObjects);
+				continue;
+			}
+
+			if (TRACE) log("Read", cachedField, input.position());
+			if (values == null)
+				cachedField.read(input, object);
+			else
+				values[cachedField.index] = cachedField.read(input);
+			frames.endField(input, end, objects, readObjects);
+		}
+
+		if (values != null) object = createRecord(values);
+
+		popTypeVariables(pop);
+		frames.endRead();
+		return object;
 	}
 
 	private CachedField[] readFields (Kryo kryo, Input input) {
@@ -344,7 +461,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 	/** Configuration for CompatibleFieldSerializer instances. */
 	public static class CompatibleFieldSerializerConfig extends FieldSerializerConfig {
-		boolean readUnknownFieldData = true, chunked, chunkTrailer = true, optimizeGenerics;
+		boolean readUnknownFieldData = true, chunked, legacyChunks, optimizeGenerics;
 		int chunkSize = 1024;
 
 		public CompatibleFieldSerializerConfig clone () {
@@ -382,18 +499,17 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			return chunked;
 		}
 
-		/** When true and {@link #setChunkedEncoding(boolean) chunked encoding} is enabled, data that is written only the first time
-		 * in an object graph is written again after the chunk in which it was first written: class names of unregistered classes
-		 * and the field names of CompatibleFieldSerializer. The number of objects written in the chunk is written too. This allows
-		 * reading the rest of the object graph correctly when a chunk is skipped, eg because the class of a removed field no longer
-		 * exists. It costs a byte per field. Must be false to read data written by Kryo 5. Default is true. */
-		public void setChunkTrailer (boolean chunkTrailer) {
-			this.chunkTrailer = chunkTrailer;
-			if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig setChunkTrailer: " + chunkTrailer);
+		/** When true, {@link #setChunkedEncoding(boolean) chunked encoding} uses the format of Kryo 5, which splits each field into
+		 * chunks. Kryo 6 writes each field with its length instead, and writes the class names and field names first written in an
+		 * object before it, so they are known when a field is skipped. Must be true to read data written by Kryo 5. Default is
+		 * false. */
+		public void setLegacyChunks (boolean legacyChunks) {
+			this.legacyChunks = legacyChunks;
+			if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig setLegacyChunks: " + legacyChunks);
 		}
 
-		public boolean getChunkTrailer () {
-			return chunkTrailer;
+		public boolean getLegacyChunks () {
+			return legacyChunks;
 		}
 
 		/** The maximum size of each chunk for chunked encoding. Default is 1024. */
