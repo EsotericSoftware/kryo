@@ -59,6 +59,14 @@ kryo.addDefaultSerializer(Map.class, mapSerializer);
 
 Subclasses like TreeMapSerializer need the same setting.
 
+### Immutable lists
+
+The serializer for immutable lists created by `List.of` and `Stream.toList` supports null elements, which `Stream.toList` allows ([#1239](https://github.com/EsotericSoftware/kryo/issues/1239)). It writes whether a list contains null elements. To read data written by Kryo 5, disable null elements:
+
+```java
+((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(false);
+```
+
 ## Behavior changes
 
 * RecordSerializer is no longer a default serializer. Records are serialized by FieldSerializer and its subclasses, see [Records](README.md#records).

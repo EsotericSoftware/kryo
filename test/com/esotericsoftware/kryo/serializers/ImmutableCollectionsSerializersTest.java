@@ -56,10 +56,10 @@ class ImmutableCollectionsSerializersTest extends KryoTestCase {
 	@Test
 	void testImmutableList () {
 		roundTrip(2, List.of());
-		roundTrip(4, List.of(1));
-		roundTrip(5, List.of(1, 2));
-		roundTrip(6, List.of(1, 2, 3));
-		roundTrip(4, List.of(1, 2, 3).subList(0, 1));
+		roundTrip(5, List.of(1));
+		roundTrip(6, List.of(1, 2));
+		roundTrip(7, List.of(1, 2, 3));
+		roundTrip(5, List.of(1, 2, 3).subList(0, 1));
 	}
 
 	@Test
