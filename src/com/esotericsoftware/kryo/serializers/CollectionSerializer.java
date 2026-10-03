@@ -42,7 +42,7 @@ import com.esotericsoftware.kryo.io.Output;
  * collection.
  * @author Nathan Sweet */
 public class CollectionSerializer<T extends Collection> extends Serializer<T> {
-	private boolean elementsCanBeNull = true;
+	private boolean elementsCanBeNull = true, writeSameClassOnce = true;
 	private Serializer elementSerializer;
 	private Class elementClass;
 
@@ -54,6 +54,13 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	 *           it is not known (default). */
 	public void setElementsCanBeNull (boolean elementsCanBeNull) {
 		this.elementsCanBeNull = elementsCanBeNull;
+	}
+
+	/** @param writeSameClassOnce True if the class of the elements is written only once when it is unknown and all elements have
+	 *           the same class (default). False to write the class of each element, eg if the class of an element can change while
+	 *           it is written. Data written with either setting can be read with both. */
+	public void setWriteSameClassOnce (boolean writeSameClassOnce) {
+		this.writeSameClassOnce = writeSameClassOnce;
 	}
 
 	/** The concrete class of the collection elements, or null if it is not known. This saves 1-2 bytes per element. Only set to a
@@ -116,6 +123,9 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 					elementsCanBeNull = false;
 				} else
 					output.writeVarInt(length + 1, true);
+				writeHeader(kryo, output, collection);
+			} else if (!writeSameClassOnce) { // Serializer is unknown, write the class of each element.
+				output.writeVarIntFlag(false, length + 1, true);
 				writeHeader(kryo, output, collection);
 			} else { // Serializer is unknown, check if all elements are the same type.
 				Class elementType = null;

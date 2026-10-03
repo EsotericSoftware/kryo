@@ -1283,6 +1283,7 @@ CollectionSerializer serializes objects that implement the java.util.Collection 
 Setting | Description | Default value
 --- | --- | ---
 `elementsCanBeNull` | When false it is assumed that no elements in the collection are null, which can save 0-1 byte per element. | true
+`writeSameClassOnce` | When true and the class of the elements is unknown, the class is written only once if all elements have the same class. When false, the class of each element is written, eg if the class of an element can change while it is written. | true
 `elementClass` | Sets the concrete class of the elements in the collection. Used together with `elementSerializer`: when both are set, the class ID is not written for each element. If the element class is known (eg through generics) and a primitive, primitive wrapper, or final, then CollectionSerializer won't write the class ID even when this setting is null. | null
 `elementSerializer` | Sets the serializer to use for every element in the collection. If the serializer is set, some serializers require the element class to also be set. If null, the serializer registered with Kryo for each element's class will be used. | null
 
