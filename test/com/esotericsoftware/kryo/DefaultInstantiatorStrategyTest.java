@@ -22,6 +22,8 @@ package com.esotericsoftware.kryo;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -54,6 +56,22 @@ public class DefaultInstantiatorStrategyTest {
         assertTrue(thrown.getMessage().contains("The type you are trying to serialize into is abstract (interface)."));
     }
 
+    @Test
+    public void testPrivateConstructor() {
+        assertEquals(PrivateConstructor.class, instantiatorStrategy.newInstantiatorOf(PrivateConstructor.class).newInstance().getClass());
+    }
+
+    @Test
+    public void testPublicConstructorOfPackagePrivateClass() {
+        assertEquals(PackagePrivateClass.class, instantiatorStrategy.newInstantiatorOf(PackagePrivateClass.class).newInstance().getClass());
+    }
+
+    @Test
+    public void testConstructorException() {
+        KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(ThrowingConstructor.class));
+        assertSame(ThrowingConstructor.exception, thrown.getCause());
+    }
+
     public void tryInstantiate(Class type) {
         instantiatorStrategy.newInstantiatorOf(type).newInstance();
     }
@@ -61,6 +79,22 @@ public class DefaultInstantiatorStrategyTest {
     private static abstract class AbstractStaticMemberClass {}
 
     private interface MemberInterface {}
+
+    private static class PrivateConstructor {
+        private PrivateConstructor() {}
+    }
+
+    static class ThrowingConstructor {
+        static final RuntimeException exception = new IllegalStateException();
+
+        public ThrowingConstructor() {
+            throw exception;
+        }
+    }
+}
+
+class PackagePrivateClass {
+    public PackagePrivateClass() {}
 }
 
 abstract class AbstracClass {}

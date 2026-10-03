@@ -626,7 +626,7 @@ If the registration doesn't have an instantiator, one is provided by Kryo `newIn
 
 #### InstantiatorStrategy
 
-Kryo provides DefaultInstantiatorStrategy which creates objects using ReflectASM to call a zero argument constructor. If that is not possible, it uses reflection to call a zero argument constructor. If that also fails, then it either throws an exception or tries a fallback InstantiatorStrategy. Reflection uses `setAccessible`, so a private zero argument constructor can be a good way to allow Kryo to create instances of a class without affecting the public API.
+Kryo provides DefaultInstantiatorStrategy which creates objects by calling a zero argument constructor with a method handle, or with reflection on Android and in GraalVM native images. If the class has no zero argument constructor or it can't be accessed, then it either throws an exception or tries a fallback InstantiatorStrategy. The constructor is made accessible with `setAccessible`, so a private zero argument constructor can be a good way to allow Kryo to create instances of a class without affecting the public API.
 
 DefaultInstantiatorStrategy is the recommended way of creating objects with Kryo. It runs constructors just as Java code would. Alternative, extralinguistic mechanisms can also be used to create objects. The [Objenesis](http://objenesis.org/) StdInstantiatorStrategy uses JVM specific APIs to create an instance of a class without calling any constructor at all. Using this is dangerous because most classes expect their constructors to be called. Creating the object by bypassing its constructors may leave the object in an uninitialized or invalid state. Classes must be designed to be created in this way.
 
