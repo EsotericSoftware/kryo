@@ -39,6 +39,8 @@ kryo.register(UUID.class, new FieldSerializer<>(kryo, UUID.class));
 
 These serializers were already available in Kryo 5, eg `UUIDSerializer`. If you registered them with Kryo 5, keep registering them, because `Kryo5Compatibility` only applies what Kryo 5 used by default. Registered serializers take precedence over its settings.
 
+Kryo 6 also adds default serializers for the unmodifiable and synchronized collections returned by `Collections`, eg `Collections.unmodifiableList`, except on Android. Kryo 5 serialized them with CollectionSerializer or MapSerializer, which couldn't read them back, so there is no readable Kryo 5 data for them. If you added these serializers with `addDefaultSerializers` in Kryo 5, the data is the same. See [Unmodifiable and synchronized collections](README.md#unmodifiable-and-synchronized-collections) for the JDK internals they access.
+
 ### Generic fields with CompatibleFieldSerializer and TaggedFieldSerializer
 
 CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` no longer use the generic type of a field to optimize its value. Kryo 5 omitted the class of collection elements and map keys and values if the field's type arguments were final, eg `List<String>`, so the value could not be read anymore once the field was removed ([#1098](https://github.com/EsotericSoftware/kryo/issues/1098)). To read such data written by Kryo 5, enable `optimizeGenerics`. This restores the Kryo 5 behavior, so data with such a field that has since been removed can only be read if it was written with chunked encoding:
@@ -93,5 +95,6 @@ LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language ta
 ## Removed APIs
 
 * `CuckooObjectMap`, which was deprecated in Kryo 5.3.0.
+* `UnmodifiableCollectionSerializers.registerSerializers(Kryo)` and `SynchronizedCollectionSerializers.registerSerializers(Kryo)`, which were deprecated in Kryo 5.7.1 because the IDs they assign depend on the JVM. Use `register(Kryo)` instead, which registers the classes in a fixed order. It assigns different IDs, so to read data written with `registerSerializers`, register the wrapper classes with the IDs that it assigned.
 * The deprecated no-arg constructor of RecordSerializer. Use `RecordSerializer(Class)` instead.
 * `Generics#pushTypeVariables(GenericsHierarchy, GenericType[])`. Use `pushTypeVariables(GenericsHierarchy, GenericType)` with the declared type returned by the new `Generics#nextGenericType()`.
