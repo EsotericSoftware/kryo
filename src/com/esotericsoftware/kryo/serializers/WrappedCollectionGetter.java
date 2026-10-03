@@ -32,7 +32,7 @@ import java.util.function.Function;
 
 /** Gets the collection or map that is wrapped by an unmodifiable or synchronized wrapper of {@link java.util.Collections}. The
  * wrapped object is in a private field of java.util, which is read with a method handle if java.util is open to Kryo, or else
- * with Unsafe, unless Unsafe memory access is denied. The field is resolved on first use. */
+ * with Unsafe, if available. The field is resolved on first use. */
 final class WrappedCollectionGetter {
 	private final String className, fieldName;
 	private Function<Object, Object> getter;
@@ -69,7 +69,7 @@ final class WrappedCollectionGetter {
 				throw new KryoException("Unable to access field: " + className + "." + fieldName, ex);
 			}
 		}
-		if (unsafe && !"deny".equals(System.getProperty("sun.misc.unsafe.memory.access"))) {
+		if (unsafe) {
 			long offset = UnsafeUtil.objectFieldOffset(field);
 			return wrapper -> UnsafeUtil.getObject(wrapper, offset);
 		}
