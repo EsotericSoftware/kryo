@@ -841,4 +841,44 @@ class UnsafeByteBufferInputOutputTest {
 		assertEquals(32767, read.readChar());
 		assertEquals(65535, read.readChar());
 	}
+
+	@Test
+	void testWriteArrayRanges () {
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		UnsafeByteBufferOutput output = new UnsafeByteBufferOutput(bytes, 7); // A small buffer, so copies are split.
+		output.writeInts(new int[] {1, 2, 3, 4, 5, 6}, 1, 4);
+		output.writeLongs(new long[] {1, 2, 3, 4, 5, 6}, 1, 4);
+		output.writeFloats(new float[] {1, 2, 3, 4, 5, 6}, 1, 4);
+		output.writeDoubles(new double[] {1, 2, 3, 4, 5, 6}, 1, 4);
+		output.writeShorts(new short[] {1, 2, 3, 4, 5, 6}, 1, 4);
+		output.writeChars(new char[] {'a', 'b', 'c', 'd', 'e', 'f'}, 1, 4);
+		output.writeBooleans(new boolean[] {false, true, false, true, true, false}, 1, 4);
+		output.writeBytes(new byte[] {1, 2, 3, 4, 5, 6}, 1, 4);
+		output.writeInts(new int[] {1, 2}, 2, 0);
+		output.flush();
+
+		UnsafeByteBufferInput input = new UnsafeByteBufferInput(bytes.toByteArray());
+		assertArrayEquals(new int[] {2, 3, 4, 5}, input.readInts(4));
+		assertArrayEquals(new long[] {2, 3, 4, 5}, input.readLongs(4));
+		assertArrayEquals(new float[] {2, 3, 4, 5}, input.readFloats(4));
+		assertArrayEquals(new double[] {2, 3, 4, 5}, input.readDoubles(4));
+		assertArrayEquals(new short[] {2, 3, 4, 5}, input.readShorts(4));
+		assertArrayEquals(new char[] {'b', 'c', 'd', 'e'}, input.readChars(4));
+		assertArrayEquals(new boolean[] {true, false, true, true}, input.readBooleans(4));
+		assertArrayEquals(new byte[] {2, 3, 4, 5}, input.readBytes(4));
+		assertTrue(input.end());
+	}
+
+	@Test
+	void testWriteArrayRangeOutOfBounds () {
+		UnsafeByteBufferOutput output = new UnsafeByteBufferOutput(64);
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> output.writeInts(new int[4], -1, 2));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> output.writeInts(new int[4], 0, -1));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> output.writeInts(new int[4], 3, 2));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> output.writeLongs(new long[4], 1, Integer.MAX_VALUE));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> output.writeBooleans(new boolean[4], 4, 1));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> output.writeBytes(new byte[4], 2, 3));
+		assertThrows(IllegalArgumentException.class, () -> output.writeBytes(null, 0, 1));
+		assertEquals(0, output.position());
+	}
 }
