@@ -226,7 +226,9 @@ public class DefaultClassResolver implements ClassResolver {
 	}
 
 	public void writeNames (Output output, int start) {
-		output.writeVarInt(nextNameId - start, true);
+		int count = nextNameId - start;
+		output.writeVarInt(count, true);
+		if (count == 0) return;
 		for (ObjectIntMap.Entry<Class> entry : classToNameId.entries()) {
 			if (entry.value < start) continue;
 			output.writeVarInt(entry.value, true);

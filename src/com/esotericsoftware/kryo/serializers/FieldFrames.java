@@ -22,8 +22,8 @@ package com.esotericsoftware.kryo.serializers;
 import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.ReferenceResolver;
+import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
@@ -35,22 +35,25 @@ import java.util.ArrayList;
  * length, so it can be skipped, eg when the class of a removed field no longer exists.
  * <p>
  * Data that Kryo writes only the first time in an object graph, class names of unregistered classes and the field names of
- * CompatibleFieldSerializer, is not written inside the fields. The outermost object with chunked encoding is written to a buffer,
- * and the data first written in it is written before the buffer. So skipping a field never loses it. With references, the number
- * of objects in each field is written too, so the reference IDs stay in sync when a field is skipped.
+ * CompatibleFieldSerializer, is not written inside the fields. The outermost object with chunked encoding starts a scope: it is
+ * written to a buffer, and the data first written in it is written before the buffer. So skipping a field never loses it. Nested
+ * objects are written to the same buffer, unless a serializer in between writes to its own output, eg DeflateSerializer, which
+ * starts a nested scope. With references, the number of objects in each field is written too, so the reference IDs stay in sync
+ * when a field is skipped.
  * <p>
- * Format of the outermost object: varint number of class names, each with varint name ID and name; varint number of field names
- * shifted left by 1, bit 1 if the first are those of the outermost object, each with class and field names; then the object data.
- * Format of a field: varint length, with references varint number of objects, then the field data. */
+ * Format of a scope: varint number of class names, each with varint name ID and name; varint number of field names shifted left
+ * by 1, bit 1 if the first are those of the outermost object, each with the class and the field names; then the object data. A
+ * class is written as varint registration ID + 1, or 0 and the class written by Kryo. Format of a field: varint length, with
+ * references varint number of objects, then the field data. */
 final class FieldFrames {
 	private static final Object contextKey = new Object();
-	/** Larger buffers are not kept for the next object. */
+	/** Larger buffers are not kept for the next scope. */
 	private static final int maxBufferSize = 1024 * 1024;
 
 	private final Kryo kryo;
-	private final ArrayList<Scope> scopes = new ArrayList();
-	private int depth;
-	private final Output scratch = new Output(32, -1);
+	private final ArrayList<WriteScope> writeScopes = new ArrayList();
+	private final ArrayList<ReadScope> readScopes = new ArrayList();
+	private int writeDepth, readDepth;
 
 	private FieldFrames (Kryo kryo) {
 		this.kryo = kryo;
@@ -63,82 +66,82 @@ final class FieldFrames {
 		return frames;
 	}
 
-	private Scope current () {
-		return depth == 0 ? null : scopes.get(depth - 1);
-	}
-
-	/** Returns the current scope, discarding scopes of a previous object graph, eg left over after an exception. */
-	private Scope current (Object stream) {
-		if (depth > 0 && !kryo.getGraphContext().containsKey(contextKey)) depth = 0;
-		Scope scope = current();
-		return scope != null && (scope.output == stream || scope.input == stream) ? scope : null;
-	}
-
-	/** Starts a new scope. The graph context entry shows that the scopes belong to the current object graph. */
-	private Scope push () {
-		kryo.getGraphContext().put(contextKey, Boolean.TRUE);
-		if (depth == scopes.size()) scopes.add(new Scope());
-		Scope scope = scopes.get(depth++);
-		scope.nested = 0;
-		return scope;
+	/** Returns true if the scopes are from a previous object graph, eg left over after an exception. The graph context is cleared
+	 * when the object graph is reset. */
+	private boolean newGraph () {
+		boolean newGraph = !kryo.getGraphContext().containsKey(contextKey);
+		if (newGraph) kryo.getGraphContext().put(contextKey, Boolean.TRUE);
+		return newGraph;
 	}
 
 	/** Returns the output for the object data: the output itself if it is the buffer of the current scope, otherwise the buffer of
 	 * a new scope. Must be followed by {@link #endWrite()}. */
 	Output beginWrite (Output output) {
-		Scope scope = current(output);
-		if (scope != null) {
-			scope.nested++;
-			return output;
+		if (writeDepth > 0) {
+			WriteScope scope = writeScopes.get(writeDepth - 1);
+			if (scope.buffer == output) {
+				scope.nested++;
+				return output;
+			}
 		}
-		scope = push();
-		if (scope.output == null) scope.output = new Output(256, -1);
-		scope.output.reset();
+		if (newGraph()) writeDepth = 0;
+		if (writeDepth == writeScopes.size()) writeScopes.add(new WriteScope());
+		WriteScope scope = writeScopes.get(writeDepth++);
+		if (scope.buffer == null)
+			scope.buffer = new Output(256, -1);
+		else
+			scope.buffer.reset();
 		scope.parent = output;
+		scope.nested = 0;
 		scope.outermostFieldNames = false;
 		ClassResolver classResolver = kryo.getClassResolver();
 		scope.names = classResolver.getWrittenNameCount();
 		scope.deferNames = classResolver.deferNames(true);
-		return scope.output;
+		return scope.buffer;
 	}
 
-	/** For a new scope, writes the data first written in it and then the object data. */
+	/** If the object started the current scope, writes the data first written in it and then the object data. */
 	void endWrite () {
-		Scope scope = current();
+		WriteScope scope = writeScopes.get(writeDepth - 1);
 		if (scope.nested > 0) {
 			scope.nested--;
 			return;
 		}
-		Output parent = scope.parent, buffer = scope.output;
+		writeDepth--;
 		ClassResolver classResolver = kryo.getClassResolver();
-		ArrayList<CompatibleFieldSerializer> fieldNames = scope.fieldNames;
-		// Assign name IDs to the classes with field names, so they are written with the class names.
-		scratch.reset();
-		for (int i = 0, n = fieldNames.size(); i < n; i++)
-			kryo.writeClass(scratch, fieldNames.get(i).getType());
 		classResolver.deferNames(scope.deferNames);
-		if (classResolver.getWrittenNameCount() == scope.names)
-			parent.writeVarInt(0, true);
-		else
-			classResolver.writeNames(parent, scope.names);
+		Output parent = scope.parent;
+		classResolver.writeNames(parent, scope.names);
+		ArrayList<CompatibleFieldSerializer> fieldNames = scope.fieldNames;
 		parent.writeVarInt(fieldNames.size() << 1 | (scope.outermostFieldNames ? 1 : 0), true);
-		for (int i = 0, n = fieldNames.size(); i < n; i++) {
-			CompatibleFieldSerializer serializer = fieldNames.get(i);
-			kryo.writeClass(parent, serializer.getType());
+		for (CompatibleFieldSerializer serializer : fieldNames) {
+			writeClass(parent, serializer.getType());
 			serializer.writeFieldNames(parent);
 		}
-		// The outer scope writes them too, in case the data of this scope is skipped. Class names are written again anyway.
-		if (depth > 1) scopes.get(depth - 2).fieldNames.addAll(fieldNames);
+		// The outer scope writes the field names too, in case this scope is skipped. It writes the class names anyway.
+		if (writeDepth > 0) writeScopes.get(writeDepth - 1).fieldNames.addAll(fieldNames);
 		fieldNames.clear();
+
+		Output buffer = scope.buffer;
 		parent.writeBytes(buffer.getBuffer(), 0, buffer.position());
-		if (buffer.getBuffer().length > maxBufferSize) scope.output = null;
 		scope.parent = null;
-		depth--;
+		if (buffer.getBuffer().length > maxBufferSize) scope.buffer = null;
+	}
+
+	/** Writes registered classes by ID, so reading doesn't throw an exception when the class is unknown. */
+	private void writeClass (Output output, Class type) {
+		int id = kryo.getRegistration(type).getId();
+		if (id >= 0)
+			output.writeVarInt(id + 1, true);
+		else {
+			output.writeVarInt(0, true);
+			kryo.writeClass(output, type);
+		}
 	}
 
 	/** Remembers the CompatibleFieldSerializer to write its field names before the object data. */
 	void writeFieldNames (CompatibleFieldSerializer serializer) {
-		Scope scope = current();
+		WriteScope scope = writeScopes.get(writeDepth - 1);
 		// The outermost object writes its field names before any nested object, so they are first.
 		if (scope.nested == 0) scope.outermostFieldNames = true;
 		scope.fieldNames.add(serializer);
@@ -177,46 +180,58 @@ final class FieldFrames {
 		output.setPosition(end);
 	}
 
-	/** Reads the data first written in the scope, if the input is not the input of the current scope. Must be followed by
-	 * {@link #endRead()}. */
+	/** Reads the data first written in the scope, if the input starts a new scope. Must be followed by {@link #endRead()}. */
 	void beginRead (Input input) {
-		Scope scope = current(input);
-		if (scope != null) {
-			scope.nested++;
-			return;
+		if (readDepth > 0) {
+			ReadScope scope = readScopes.get(readDepth - 1);
+			if (scope.input == input) {
+				scope.nested++;
+				return;
+			}
 		}
-		scope = push();
+		if (newGraph()) readDepth = 0;
+		if (readDepth == readScopes.size()) readScopes.add(new ReadScope());
+		ReadScope scope = readScopes.get(readDepth++);
 		scope.input = input;
-		scope.firstFieldNames = null;
+		scope.nested = 0;
+		scope.outermostFieldNames = null;
+
 		kryo.getClassResolver().readNames(input);
 		int fieldNames = input.readVarInt(true);
 		for (int i = 0, n = fieldNames >>> 1; i < n; i++) {
-			Registration registration = null;
-			try {
-				registration = kryo.readClass(input);
-			} catch (KryoException ignored) { // Unknown class.
-			}
+			Registration registration = readClass(input);
 			String[] names = CompatibleFieldSerializer.readFieldNames(input);
-			if (i == 0 && (fieldNames & 1) != 0) scope.firstFieldNames = names;
+			if (i == 0 && (fieldNames & 1) != 0) scope.outermostFieldNames = names;
 			if (registration != null && registration.getSerializer() instanceof CompatibleFieldSerializer serializer
 				&& !kryo.getGraphContext().containsKey(serializer)) serializer.setFieldNames(kryo, names);
 		}
 	}
 
-	/** Returns the field names of the outermost object of a new scope, if they were first written in it, otherwise null. This
-	 * allows reading an object as a different class than it was written. */
+	/** @return May be null if the class is unknown. */
+	private Registration readClass (Input input) {
+		int id = input.readVarInt(true);
+		if (id > 0) return kryo.getClassResolver().getRegistration(id - 1);
+		try {
+			return kryo.readClass(input);
+		} catch (KryoException ignored) { // Unknown class name.
+			return null;
+		}
+	}
+
+	/** Returns the field names of the object that started the current scope, if they were first written in it, otherwise null.
+	 * This allows reading an object as a different class than it was written. */
 	String[] outermostFieldNames () {
-		Scope scope = current();
-		return scope.nested == 0 ? scope.firstFieldNames : null;
+		ReadScope scope = readScopes.get(readDepth - 1);
+		return scope.nested == 0 ? scope.outermostFieldNames : null;
 	}
 
 	void endRead () {
-		Scope scope = current();
+		ReadScope scope = readScopes.get(readDepth - 1);
 		if (scope.nested > 0)
 			scope.nested--;
 		else {
 			scope.input = null;
-			depth--;
+			readDepth--;
 		}
 	}
 
@@ -235,7 +250,7 @@ final class FieldFrames {
 		}
 	}
 
-	/** Ends a field written with chunked encoding, by the frames or the output of the format of Kryo 5. */
+	/** Ends a field written with chunked encoding, by the frames or by the output of the format of Kryo 5. */
 	static void endChunk (FieldFrames frames, Output output, long mark, OutputChunked outputChunked) {
 		if (frames != null)
 			frames.endField(output, mark);
@@ -243,7 +258,7 @@ final class FieldFrames {
 			outputChunked.endChunk();
 	}
 
-	/** Skips the rest of a field read with chunked encoding, by the frames or the input of the format of Kryo 5. */
+	/** Skips the rest of a field read with chunked encoding, by the frames or by the input of the format of Kryo 5. */
 	static void nextChunk (FieldFrames frames, Input input, long end, int objects, int readObjects, InputChunked inputChunked) {
 		if (frames != null)
 			frames.endField(input, end, objects, readObjects);
@@ -251,12 +266,21 @@ final class FieldFrames {
 			inputChunked.nextChunk();
 	}
 
-	static private class Scope {
-		Output output, parent;
-		Input input;
-		int names, nested;
+	static private class WriteScope {
+		/** The object data is written to the buffer, then to the parent. */
+		Output buffer, parent;
+		/** The number of nested objects being written to the buffer. */
+		int nested;
+		/** The number of class names written before the scope. */
+		int names;
 		boolean deferNames, outermostFieldNames;
 		final ArrayList<CompatibleFieldSerializer> fieldNames = new ArrayList();
-		String[] firstFieldNames;
+	}
+
+	static private class ReadScope {
+		Input input;
+		/** The number of nested objects being read from the input. */
+		int nested;
+		String[] outermostFieldNames;
 	}
 }
