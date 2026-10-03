@@ -1377,6 +1377,8 @@ static private final ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
 Kryo kryo = kryos.get();
 ```
 
+ThreadLocal is not a good fit for virtual threads: each virtual thread is typically used for a single task, so every task would construct and configure its own Kryo instance. Use a Pool instead.
+
 For pooling, Kryo provides the Pool class which can pool Kryo, Input, Output, or instances of any other class.
 
 ```java
