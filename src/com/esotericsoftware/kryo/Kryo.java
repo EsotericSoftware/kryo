@@ -238,7 +238,7 @@ public class Kryo {
 		addDefaultSerializer(Collections.EMPTY_MAP.getClass(), CollectionsEmptyMapSerializer::new);
 		addDefaultSerializer(Collections.EMPTY_SET.getClass(), CollectionsEmptySetSerializer::new);
 		addDefaultSerializer(Collections.singletonList(null).getClass(), CollectionsSingletonListSerializer::new);
-		addDefaultSerializer(Collections.singletonMap(null, null).getClass(), CollectionsSingletonMapSerializer.class);
+		addDefaultSerializer(Collections.singletonMap(null, null).getClass(), CollectionsSingletonMapSerializer::new);
 		addDefaultSerializer(Collections.singleton(null).getClass(), CollectionsSingletonSetSerializer::new);
 		addDefaultSerializer(TreeSet.class, TreeSetSerializer::new);
 		addDefaultSerializer(Collection.class, CollectionSerializer::new);

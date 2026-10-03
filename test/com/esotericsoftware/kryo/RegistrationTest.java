@@ -21,12 +21,14 @@ package com.esotericsoftware.kryo;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -48,6 +50,19 @@ class RegistrationTest {
 		Serializer serializer = kryo.getDefaultSerializer(Apple.class);
 		assertTrue(serializer instanceof LongSerializer);
 		assertNotSame(serializer, kryo.getDefaultSerializer(Apple.class)); // A new serializer for each type.
+	}
+
+	// Default serializers created with reflection would need metadata in a GraalVM native image.
+	@Test
+	void testDefaultSerializersWithoutReflection () throws Exception {
+		Field field = Kryo.class.getDeclaredField("defaultSerializers");
+		field.setAccessible(true);
+		Class entryClass = Class.forName(Kryo.class.getName() + "$DefaultSerializerEntry");
+		Field type = entryClass.getDeclaredField("type"), factory = entryClass.getDeclaredField("serializerFactory");
+		type.setAccessible(true);
+		factory.setAccessible(true);
+		for (Object entry : (List)field.get(new Kryo()))
+			assertFalse(factory.get(entry) instanceof ReflectionSerializerFactory, type.get(entry).toString());
 	}
 
 	@Test
