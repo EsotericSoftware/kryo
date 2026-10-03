@@ -52,4 +52,14 @@ class UtilTest {
         assertEquals(String[][].class, Util.getArrayType(String[].class));
         assertEquals(Object[].class, Util.getArrayType(Object.class));
     }
+
+    @Test
+    void testIsRecord() {
+        assertTrue(Util.isRecord(Point.class));
+        assertFalse(Util.isRecord(String.class));
+        assertFalse(Util.isRecord(Record.class));
+    }
+
+    record Point(int x, int y) {
+    }
 }
