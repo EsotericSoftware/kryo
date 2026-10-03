@@ -8,7 +8,15 @@ Kryo 6 requires Java 17 or later. See [Installation](README.md#installation) for
 
 ## Serialization format
 
-The following changes affect data serialized with Kryo 5. In each case, registering the serializer that Kryo 5 used makes the data readable again.
+The following changes affect data serialized with Kryo 5. To read data written by Kryo 5, configure Kryo after setting the default serializer:
+
+```java
+Kryo kryo = new Kryo();
+kryo.setDefaultSerializer(...); // If not FieldSerializer.
+Kryo5Compatibility.configure(kryo);
+```
+
+This applies the settings described below to Kryo's default serializers. Serializers that are registered explicitly or added as default serializers later need these settings themselves. Kryo 5 can read data written with this configuration, unless it contains locales with a script or generic types that Kryo 6 resolves but Kryo 5 ignored, see [Behavior changes](#behavior-changes).
 
 ### Records
 
@@ -22,7 +30,7 @@ kryo.addDefaultSerializer(Record.class, RecordSerializer.class);
 
 ### New default serializers
 
-Kryo 6 adds default serializers for `Timestamp`, `URI`, `UUID`, `Pattern`, `AtomicBoolean`, `AtomicInteger`, `AtomicLong`, `AtomicReference` and `ConcurrentHashMap.KeySetView`. Kryo 5 serialized `Timestamp` with DateSerializer, which drops the nanoseconds, and the other types with FieldSerializer. To read data written by Kryo 5, register the serializers Kryo 5 used for these types:
+Kryo 6 adds default serializers for `Timestamp`, `URI`, `UUID`, `Pattern`, `AtomicBoolean`, `AtomicInteger`, `AtomicLong`, `AtomicReference` and `ConcurrentHashMap.KeySetView`. Kryo 5 serialized `Timestamp` with DateSerializer, which drops the nanoseconds, `KeySetView` with CollectionSerializer, which couldn't read it back, and the other types with the default serializer, usually FieldSerializer. To read data written by Kryo 5, register the serializers Kryo 5 used for these types:
 
 ```java
 kryo.register(Timestamp.class, new DateSerializer());
@@ -31,20 +39,12 @@ kryo.register(UUID.class, new FieldSerializer<>(kryo, UUID.class));
 
 ### Generic fields with CompatibleFieldSerializer and TaggedFieldSerializer
 
-CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` no longer use the generic type of a field to optimize its value. Kryo 5 omitted the class of collection elements and map keys and values if the field's type arguments were final, eg `List<String>`, so the value could not be read anymore once the field was removed ([#1098](https://github.com/EsotericSoftware/kryo/issues/1098)). To read such data written by Kryo 5, override `optimizeGenerics`. This restores the Kryo 5 behavior, so data with such a field that has since been removed can only be read if it was written with chunked encoding:
+CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` no longer use the generic type of a field to optimize its value. Kryo 5 omitted the class of collection elements and map keys and values if the field's type arguments were final, eg `List<String>`, so the value could not be read anymore once the field was removed ([#1098](https://github.com/EsotericSoftware/kryo/issues/1098)). To read such data written by Kryo 5, enable `optimizeGenerics`. This restores the Kryo 5 behavior, so data with such a field that has since been removed can only be read if it was written with chunked encoding:
 
 ```java
-public class Kryo5CompatibleFieldSerializer<T> extends CompatibleFieldSerializer<T> {
-	public Kryo5CompatibleFieldSerializer (Kryo kryo, Class type) {
-		super(kryo, type);
-	}
-
-	protected boolean optimizeGenerics () {
-		return true;
-	}
-}
-
-kryo.setDefaultSerializer(Kryo5CompatibleFieldSerializer.class);
+CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
+config.setOptimizeGenerics(true);
+kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
 ```
 
 ### Maps
