@@ -35,6 +35,8 @@ import java.util.function.Function;
  * with Unsafe, if available. The field is resolved on first use. */
 final class WrappedCollectionGetter {
 	private final String className, fieldName;
+	// Not volatile: the instances are shared, but a getter only has final fields, so another thread sees it fully initialized or
+	// null, and then creates its own.
 	private Function<Object, Object> getter;
 
 	WrappedCollectionGetter (String className, String fieldName) {
@@ -72,6 +74,10 @@ final class WrappedCollectionGetter {
 		if (unsafe) {
 			long offset = UnsafeUtil.objectFieldOffset(field);
 			return wrapper -> UnsafeUtil.getObject(wrapper, offset);
+		}
+		if (isAndroid) {
+			throw new KryoException("Unable to access field: " + className + "." + fieldName
+				+ ". This is not supported on Android, register a serializer for the class instead.");
 		}
 		throw new KryoException("Unable to access field: " + className + "." + fieldName
 			+ ". Allow it with --add-opens java.base/java.util=" + moduleName()
