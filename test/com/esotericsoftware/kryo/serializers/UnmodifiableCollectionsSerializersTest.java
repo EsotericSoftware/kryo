@@ -19,14 +19,22 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -43,7 +51,7 @@ class UnmodifiableCollectionsSerializersTest extends KryoTestCase {
 	public void setUp () throws Exception {
 		super.setUp();
 
-		UnmodifiableCollectionSerializers.registerSerializers(kryo);
+		UnmodifiableCollectionSerializers.register(kryo);
 
 		kryo.register(ArrayList.class);
 		kryo.register(LinkedList.class);
@@ -63,6 +71,69 @@ class UnmodifiableCollectionsSerializersTest extends KryoTestCase {
 		roundTrip(3, Collections.unmodifiableSet(new HashSet<>()));
 		roundTrip(4, Collections.unmodifiableSet(new TreeSet<>()));
 		roundTrip(6, Collections.unmodifiableCollection(Arrays.asList("")));
+	}
+
+	@Test
+	void testNavigable () {
+		roundTrip(4, Collections.unmodifiableNavigableSet(new TreeSet<>()));
+		roundTrip(4, Collections.unmodifiableNavigableMap(new TreeMap<>()));
+	}
+
+	@Test
+	void testRegistrationOrder () {
+		Kryo kryo = new Kryo();
+		int firstId = kryo.getNextRegistrationId();
+		UnmodifiableCollectionSerializers.register(kryo);
+		List<Class> types = Arrays.asList(Collections.unmodifiableCollection(Arrays.asList("")).getClass(),
+			Collections.unmodifiableList(new ArrayList<>()).getClass(), Collections.unmodifiableList(new LinkedList<>()).getClass(),
+			Collections.unmodifiableSet(new HashSet<>()).getClass(), Collections.unmodifiableSortedSet(new TreeSet<>()).getClass(),
+			Collections.unmodifiableMap(new HashMap<>()).getClass(), Collections.unmodifiableSortedMap(new TreeMap<>()).getClass(),
+			Collections.unmodifiableNavigableSet(new TreeSet<>()).getClass(),
+			Collections.unmodifiableNavigableMap(new TreeMap<>()).getClass());
+		for (int i = 0; i < types.size(); i++)
+			Assertions.assertEquals(firstId + i, kryo.getRegistration(types.get(i)).getId());
+	}
+
+	@Test
+	void testDefaultSerializers () {
+		Kryo kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		UnmodifiableCollectionSerializers.addDefaultSerializers(kryo);
+		TreeMap<String, String> map = new TreeMap<>();
+		map.put("a", "b");
+		assertDefaultRoundTrip(kryo, Collections.unmodifiableList(new ArrayList<>(Arrays.asList("a"))));
+		assertDefaultRoundTrip(kryo, Collections.unmodifiableSortedSet(new TreeSet<>(Arrays.asList("a"))));
+		assertDefaultRoundTrip(kryo, Collections.unmodifiableNavigableSet(new TreeSet<>(Arrays.asList("a"))));
+		assertDefaultRoundTrip(kryo, Collections.unmodifiableSortedMap(map));
+		assertDefaultRoundTrip(kryo, Collections.unmodifiableNavigableMap(map));
+	}
+
+	@Test
+	void testSequencedDefaultSerializers () throws Exception {
+		Method method;
+		try {
+			method = Collections.class.getMethod("unmodifiableSequencedCollection", Class.forName("java.util.SequencedCollection"));
+		} catch (ClassNotFoundException ex) {
+			return; // Before Java 21.
+		}
+		Kryo kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		UnmodifiableCollectionSerializers.addDefaultSerializers(kryo);
+		assertDefaultRoundTrip(kryo, method.invoke(null, new ArrayList<>(Arrays.asList("a"))));
+		assertDefaultRoundTrip(kryo, Collections.class.getMethod("unmodifiableSequencedSet", Class.forName("java.util.SequencedSet"))
+			.invoke(null, new LinkedHashSet<>(Arrays.asList("a"))));
+		LinkedHashMap<String, String> map = new LinkedHashMap<>();
+		map.put("a", "b");
+		assertDefaultRoundTrip(kryo, Collections.class.getMethod("unmodifiableSequencedMap", Class.forName("java.util.SequencedMap"))
+			.invoke(null, map));
+	}
+
+	private void assertDefaultRoundTrip (Kryo kryo, Object object) {
+		Output output = new Output(1024, -1);
+		kryo.writeClassAndObject(output, object);
+		Object result = kryo.readClassAndObject(new Input(output.toBytes()));
+		Assertions.assertEquals(object.getClass(), result.getClass());
+		Assertions.assertEquals(object.toString(), result.toString());
 	}
 
 	protected void doAssertEquals (Object object1, Object object2) {

@@ -1299,15 +1299,17 @@ Kryo provides serializers for the wrappers returned by `Collections.unmodifiable
 ```java
 Kryo kryo = new Kryo();
 // register the wrapper classes (when registration is required)
-UnmodifiableCollectionSerializers.registerSerializers(kryo);
-SynchronizedCollectionSerializers.registerSerializers(kryo);
+UnmodifiableCollectionSerializers.register(kryo);
+SynchronizedCollectionSerializers.register(kryo);
 
 // or add them as default serializers (when registration is not required)
 UnmodifiableCollectionSerializers.addDefaultSerializers(kryo);
 SynchronizedCollectionSerializers.addDefaultSerializers(kryo);
 ```
 
-If the JDK internals can't be accessed, a warning is logged and the serializers are not registered. Serializing these wrappers then falls back to the global default serializer and may fail.
+The registered classes include the navigable wrappers, but not the Java 21+ sequenced wrappers, such as `unmodifiableSequencedCollection`, so that the same classes and IDs are registered on all Java versions. Those have default serializers and can be registered after `addDefaultSerializers`, eg `kryo.register(Collections.unmodifiableSequencedCollection(new ArrayList<>()).getClass())`. The deprecated `registerSerializers(kryo)` registers the classes in an order that depends on the JVM, so their IDs can differ between Java versions.
+
+If the JDK internals can't be accessed, `register` throws an exception, while `addDefaultSerializers` logs a warning and doesn't add the serializers. Serializing these wrappers then falls back to the global default serializer and may fail.
 
 Serializers for immutable collections created with `List.of`, `Set.of`, `Map.of`, etc. are added as default serializers on Java 9+. Since these collections are implemented by JDK-internal classes, they cannot be registered by name. When registration is required, register them all at once:
 
