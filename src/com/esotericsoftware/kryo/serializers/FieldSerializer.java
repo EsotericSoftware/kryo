@@ -38,7 +38,11 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.RecordComponent;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
  * configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be
@@ -65,6 +69,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 	final CachedFields cachedFields;
 	private final GenericsHierarchy genericsHierarchy;
 
+	// For records.
+	final Constructor recordConstructor;
+	private final Object[] recordDefaults;
+
 	public FieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new FieldSerializerConfig());
 	}
@@ -80,6 +88,29 @@ public class FieldSerializer<T> extends Serializer<T> {
 		final Generics generics = kryo.getGenerics();
 		genericsHierarchy = generics.buildHierarchy(type);
 
+		if (isRecord(type)) {
+			RecordComponent[] components = type.getRecordComponents();
+			Class[] componentTypes = new Class[components.length];
+			recordDefaults = new Object[components.length];
+			for (int i = 0; i < components.length; i++) {
+				componentTypes[i] = components[i].getType();
+				if (componentTypes[i].isPrimitive()) recordDefaults[i] = Array.get(Array.newInstance(componentTypes[i], 1), 0);
+			}
+			try {
+				recordConstructor = type.getDeclaredConstructor(componentTypes);
+			} catch (NoSuchMethodException ex) {
+				throw new KryoException("Unable to find canonical constructor: " + className(type), ex);
+			}
+			try {
+				recordConstructor.setAccessible(true);
+			} catch (RuntimeException ex) {
+				if (DEBUG) debug("kryo", "Unable to set canonical constructor as accessible: " + className(type), ex);
+			}
+		} else {
+			recordConstructor = null;
+			recordDefaults = null;
+		}
+
 		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
 	}
@@ -87,6 +118,12 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Called when {@link #getFields()} and {@link #getCopyFields()} have been repopulated. Subclasses can override this method to
 	 * configure or remove cached fields. */
 	protected void initializeCachedFields () {
+	}
+
+	/** Returns true if the generic type of a field is used to optimize the serialization of its value, eg to omit the class of
+	 * collection elements. Then the value can only be read with the same generic type. */
+	protected boolean optimizeGenerics () {
+		return true;
 	}
 
 	/** If the returned config settings are modified, {@link #updateFields()} must be called. */
@@ -121,14 +158,23 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int pop = pushTypeVariables();
 
-		T object = create(kryo, input, type);
-		kryo.reference(object);
+		T object = null;
+		Object[] values = null;
+		if (recordConstructor == null) {
+			object = create(kryo, input, type);
+			kryo.reference(object);
+		} else
+			values = newRecordValues();
 
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Read", fields[i], input.position());
 			try {
-				fields[i].read(input, object);
+				final CachedField field = fields[i];
+				if (values == null)
+					field.read(input, object);
+				else
+					values[field.index] = field.read(input);
 			} catch (KryoException e) {
 				throw e;
 			} catch (Exception e) {
@@ -136,17 +182,39 @@ public class FieldSerializer<T> extends Serializer<T> {
 			}
 		}
 
+		if (values != null) object = createRecord(values);
+
 		popTypeVariables(pop);
 		return object;
+	}
+
+	/** Returns a new array for the component values of a record, indexed by {@link CachedField#index}. */
+	Object[] newRecordValues () {
+		return new Object[recordDefaults.length];
+	}
+
+	/** Creates a record using its canonical constructor. Components without a value, for example because they were not present in
+	 * the serialized data, are set to their default value. */
+	T createRecord (Object[] values) {
+		Object[] defaults = recordDefaults;
+		for (int i = 0, n = values.length; i < n; i++)
+			if (values[i] == null) values[i] = defaults[i];
+		try {
+			return (T)recordConstructor.newInstance(values);
+		} catch (InvocationTargetException ex) {
+			throw new KryoException("Error constructing record: " + className(type), ex.getCause());
+		} catch (Exception ex) {
+			throw new KryoException("Error constructing record: " + className(type), ex);
+		}
 	}
 
 	/** Prepares the type variables for the serialized type. Must be balanced with {@link #popTypeVariables(int)} if {@code > 0} is
 	 * returned. */
 	protected int pushTypeVariables () {
-		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
-		if (genericTypes == null) return 0;
+		GenericType genericType = kryo.getGenerics().nextGenericType();
+		if (genericType == null) return 0;
 
-		int pop = kryo.getGenerics().pushTypeVariables(genericsHierarchy, genericTypes);
+		int pop = kryo.getGenerics().pushTypeVariables(genericsHierarchy, genericType);
 		if (TRACE && pop > 0) trace("kryo", "Generics: " + kryo.getGenerics());
 		return pop;
 	}
@@ -157,6 +225,16 @@ public class FieldSerializer<T> extends Serializer<T> {
 			generics.popTypeVariables(pop);
 		}
 		generics.popGenericType();
+	}
+
+	/** Sets a non-primitive field to null. */
+	void setNull (CachedField cachedField, Object object) {
+		if (cachedField.field.getType().isPrimitive()) return;
+		try {
+			cachedField.field.set(object, null);
+		} catch (IllegalAccessException ex) {
+			throw new KryoException("Error setting field to null: " + cachedField, ex);
+		}
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
@@ -224,13 +302,30 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public T copy (Kryo kryo, T original) {
-		T copy = createCopy(kryo, original);
-		kryo.reference(copy);
+		final CachedField[] copyFields = cachedFields.copyFields;
+		if (recordConstructor == null) {
+			T copy = createCopy(kryo, original);
+			kryo.reference(copy);
+			for (int i = 0, n = copyFields.length; i < n; i++)
+				copyFields[i].copy(original, copy);
+			return copy;
+		}
 
-		for (int i = 0, n = cachedFields.copyFields.length; i < n; i++)
-			cachedFields.copyFields[i].copy(original, copy);
-
-		return copy;
+		Object[] values = newRecordValues();
+		for (int i = 0, n = copyFields.length; i < n; i++) {
+			CachedField field = copyFields[i];
+			try {
+				Object value = field.get(original);
+				// Primitive values are immutable, all other values are copied like other field values.
+				values[field.index] = field.field.getType().isPrimitive() ? value : kryo.copy(value);
+			} catch (IllegalAccessException ex) {
+				throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
+			} catch (KryoException ex) {
+				ex.addTrace(field.name + " (" + className(type) + ")");
+				throw ex;
+			}
+		}
+		return createRecord(values);
 	}
 
 	/** Settings for serializing a field. */
@@ -244,6 +339,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		// For AsmField.
 		FieldAccess access;
 		int accessIndex = -1;
+
+		// For Records
+		int index;
 
 		// For UnsafeField.
 		long offset;
@@ -347,8 +445,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public abstract void read (Input input, Object object);
 
+		public abstract Object read (Input input);
+
 		public abstract void copy (Object original, Object copy);
 
+		Object get (Object object) throws IllegalAccessException {
+			return field.get(object);
+		}
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
@@ -406,8 +509,47 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public @interface NotNull {
 	}
 
+	/** How {@link FieldSerializer} reads and writes fields. If a field can't be accessed this way, VarHandles are used, and
+	 * reflection if they can't be used either, eg for final fields, which can't be written with VarHandles, or for records, which
+	 * are never accessed with Unsafe. Reflection works for all fields. */
+	public enum FieldAccessType {
+		/** {@code sun.misc.Unsafe}, if available. Fastest, but deprecated for removal by Java. */
+		UNSAFE,
+		/** ReflectASM for public, non-final fields of public classes. It is only used if it is configured.
+		 * @deprecated VarHandles are as fast as ReflectASM. ASM will be removed in Kryo 7, together with the ReflectASM dependency.
+		 *             If VarHandles are slower for you than ReflectASM, please open an issue. */
+		@Deprecated
+		ASM,
+		/** {@link java.lang.invoke.VarHandle} for non-final fields. */
+		VARHANDLE,
+		/** {@link Field} reflection. */
+		REFLECTION
+	}
+
 	/** Configuration for FieldSerializer instances. */
 	public static class FieldSerializerConfig implements Cloneable {
+		/** Unsafe where it can be used without a warning, otherwise VarHandles. Java warns about Unsafe memory access since Java
+		 * 24, unless it is allowed with {@code --sun-misc-unsafe-memory-access=allow}. On Android, which has VarHandles only since
+		 * API level 33, reflection. */
+		static final FieldAccessType defaultFieldAccess;
+		static {
+			String memoryAccess = System.getProperty("sun.misc.unsafe.memory.access");
+			if (isAndroid)
+				defaultFieldAccess = FieldAccessType.REFLECTION;
+			else if (!unsafe)
+				defaultFieldAccess = FieldAccessType.VARHANDLE;
+			else if (memoryAccess != null)
+				defaultFieldAccess = memoryAccess.equals("allow") ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+			else
+				defaultFieldAccess = Runtime.version().feature() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+			if (DEBUG) {
+				debug("kryo", "Default field access: " + defaultFieldAccess + (isAndroid ? " (Android)"
+					: " (Java " + Runtime.version().feature() + ", Unsafe available: " + unsafe + ", Unsafe memory access: "
+						+ (memoryAccess == null ? "default" : memoryAccess) + ")"));
+			}
+		}
+
+		FieldAccessType fieldAccess = defaultFieldAccess;
 		boolean fieldsCanBeNull = true;
 		boolean setFieldsAsAccessible = true;
 		boolean ignoreSyntheticFields = true;
@@ -438,9 +580,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 
 		/** Controls which fields are serialized.
-		 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
-		 *           {@link java.lang.reflect.Field#setAccessible(boolean) set as accessible} if necessary (default). If false, only
-		 *           fields in the public API will be serialized. */
+		 * @param setFieldsAsAccessible If true, all non-transient fields (including private fields) will be serialized and
+		 *           {@link java.lang.reflect.Field#setAccessible(boolean) set as accessible} (default). If false, only public,
+		 *           non-final fields of public classes will be serialized, which can be accessed without setAccessible. */
 		public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
 			this.setFieldsAsAccessible = setFieldsAsAccessible;
 			if (TRACE) trace("kryo", "FieldSerializerConfig setFieldsAsAccessible: " + setFieldsAsAccessible);
@@ -516,6 +658,20 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public boolean getExtendedFieldNames () {
 			return extendedFieldNames;
+		}
+
+		/** Sets how fields are read and written. Default is {@link FieldAccessType#UNSAFE} where Unsafe can be used without a
+		 * warning, which is before Java 24 or with {@code --sun-misc-unsafe-memory-access=allow},
+		 * {@link FieldAccessType#REFLECTION} on Android, otherwise {@link FieldAccessType#VARHANDLE}. Changes take effect for new
+		 * serializers or after {@link FieldSerializer#updateFields()}. */
+		public void setFieldAccess (FieldAccessType fieldAccess) {
+			if (fieldAccess == null) throw new IllegalArgumentException("fieldAccess cannot be null.");
+			this.fieldAccess = fieldAccess;
+			if (TRACE) trace("kryo", "FieldSerializerConfig fieldAccess: " + fieldAccess);
+		}
+
+		public FieldAccessType getFieldAccess () {
+			return fieldAccess;
 		}
 	}
 }

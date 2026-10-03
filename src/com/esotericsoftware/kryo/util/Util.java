@@ -40,12 +40,18 @@ public class Util {
 	/** True if running in a GraalVM native image, which can't define classes at runtime, so ReflectASM can't be used. */
 	public static final boolean isNativeImage = System.getProperty("org.graalvm.nativeimage.imagecode") != null;
 
-	/** True if Unsafe is available. Unsafe can be disabled by setting the system property "kryo.unsafe" to "false". */
+	/** True if records are available, which is not the case on Android before API level 34. */
+	private static final boolean records = !isAndroid || isClassAvailable("java.lang.Record");
+
+	/** True if Unsafe is available. Unsafe can be disabled by setting the system property "kryo.unsafe" to "false". It is not
+	 * available if Unsafe memory access is denied with {@code --sun-misc-unsafe-memory-access=deny}. */
 	public static final boolean unsafe;
 	static {
 		boolean found = false;
 		if ("false".equals(System.getProperty("kryo.unsafe"))) {
 			if (TRACE) trace("kryo", "Unsafe is disabled.");
+		} else if ("deny".equals(System.getProperty("sun.misc.unsafe.memory.access"))) {
+			if (TRACE) trace("kryo", "Unsafe memory access is denied.");
 		} else {
 			try {
 				found = Class.forName("com.esotericsoftware.kryo.unsafe.UnsafeUtil", true, FieldSerializer.class.getClassLoader())
@@ -74,6 +80,20 @@ public class Util {
 
 	public static boolean isUnsafeAvailable () {
 		return unsafe;
+	}
+
+	/** Returns true if the type is a record. Unlike {@link Class#isRecord()}, this can be called on Android before API level 34,
+	 * which doesn't have records. */
+	public static boolean isRecord (Class type) {
+		return records && type.isRecord();
+	}
+
+	/** Returns the name of Kryo's module for command line options like {@code --add-opens}: the module name if Kryo is in a named
+	 * module, otherwise {@code ALL-UNNAMED}. */
+	public static String moduleName () {
+		if (isAndroid) return "ALL-UNNAMED"; // Android has no modules.
+		Module module = Util.class.getModule();
+		return module.isNamed() ? module.getName() : "ALL-UNNAMED";
 	}
 
 	public static boolean isClassAvailable (String className) {
@@ -287,7 +307,7 @@ public class Util {
 				} catch (NoSuchMethodException ex) {
 				}
 			}
-			return factoryClass.newInstance();
+			return factoryClass.getDeclaredConstructor().newInstance();
 		} catch (Exception ex) {
 			if (serializerClass == null)
 				throw new IllegalArgumentException("Unable to create serializer factory: " + factoryClass.getName(), ex);

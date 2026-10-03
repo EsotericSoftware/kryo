@@ -420,21 +420,40 @@ public class DefaultSerializers {
 		}
 
 		public Timestamp read (Kryo kryo, Input input, Class<? extends Timestamp> type) {
-			return create(input.readVarLong(true), input.readVarInt(true));
+			return create(kryo, type, input.readVarLong(true), input.readVarInt(true));
 		}
 
 		public Timestamp copy (Kryo kryo, Timestamp original) {
-			return create(integralTimeComponent(original), original.getNanos());
+			return create(kryo, original.getClass(), integralTimeComponent(original), original.getNanos());
 		}
 
 		private long integralTimeComponent (Timestamp object) {
 			return object.getTime() - (object.getNanos() / 1_000_000);
 		}
 
-		private Timestamp create (long time, int nanos) {
-			Timestamp t = new Timestamp(time);
+		private Timestamp create (Kryo kryo, Class<? extends Timestamp> type, long time, int nanos) {
+			Timestamp t = newTimestamp(kryo, type, time);
 			t.setNanos(nanos);
 			return t;
+		}
+
+		private Timestamp newTimestamp (Kryo kryo, Class<? extends Timestamp> type, long time) {
+			if (type == Timestamp.class || type == null) return new Timestamp(time);
+			// Use reflection for subclasses.
+			try {
+				Constructor<? extends Timestamp> constructor = type.getConstructor(long.class);
+				if (!constructor.isAccessible()) {
+					try {
+						constructor.setAccessible(true);
+					} catch (SecurityException ignored) {
+					}
+				}
+				return constructor.newInstance(time);
+			} catch (Exception ex) {
+				Timestamp t = kryo.newInstance(type);
+				t.setTime(time);
+				return t;
+			}
 		}
 	}
 
@@ -870,7 +889,7 @@ public class DefaultSerializers {
 		}
 
 		private ConcurrentHashMap.KeySetView createKeySetView (ConcurrentHashMap map, Object mappedValue) {
-			return map.keySet(mappedValue);
+			return mappedValue == null ? map.keySet() : map.keySet(mappedValue);
 		}
 	}
 
@@ -920,6 +939,12 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, Locale l) {
+			if (!l.getScript().isEmpty()) {
+				// A null language, which Kryo 5 never wrote, marks a language tag. It also contains the script and extensions.
+				output.writeAscii(null);
+				output.writeAscii(l.toLanguageTag());
+				return;
+			}
 			output.writeAscii(l.getLanguage());
 			output.writeAscii(l.getCountry());
 			output.writeString(l.getVariant());
@@ -927,6 +952,7 @@ public class DefaultSerializers {
 
 		public Locale read (Kryo kryo, Input input, Class<? extends Locale> type) {
 			String language = input.readString();
+			if (language == null) return Locale.forLanguageTag(input.readString());
 			String country = input.readString();
 			String variant = input.readString();
 			return create(language, country, variant);
@@ -1054,11 +1080,20 @@ public class DefaultSerializers {
 		}
 
 		public AtomicBoolean read (Kryo kryo, Input input, Class<? extends AtomicBoolean> type) {
-			return new AtomicBoolean(input.readBoolean());
+			AtomicBoolean object = create(kryo, type);
+			object.set(input.readBoolean());
+			return object;
 		}
 
 		public AtomicBoolean copy (Kryo kryo, AtomicBoolean original) {
-			return new AtomicBoolean(original.get());
+			AtomicBoolean copy = create(kryo, original.getClass());
+			copy.set(original.get());
+			return copy;
+		}
+
+		private AtomicBoolean create (Kryo kryo, Class<? extends AtomicBoolean> type) {
+			if (type == AtomicBoolean.class || type == null) return new AtomicBoolean();
+			return kryo.newInstance(type);
 		}
 	}
 
@@ -1069,11 +1104,20 @@ public class DefaultSerializers {
 		}
 
 		public AtomicInteger read (Kryo kryo, Input input, Class<? extends AtomicInteger> type) {
-			return new AtomicInteger(input.readInt());
+			AtomicInteger object = create(kryo, type);
+			object.set(input.readInt());
+			return object;
 		}
 
 		public AtomicInteger copy (Kryo kryo, AtomicInteger original) {
-			return new AtomicInteger(original.get());
+			AtomicInteger copy = create(kryo, original.getClass());
+			copy.set(original.get());
+			return copy;
+		}
+
+		private AtomicInteger create (Kryo kryo, Class<? extends AtomicInteger> type) {
+			if (type == AtomicInteger.class || type == null) return new AtomicInteger();
+			return kryo.newInstance(type);
 		}
 	}
 
@@ -1084,11 +1128,20 @@ public class DefaultSerializers {
 		}
 
 		public AtomicLong read (Kryo kryo, Input input, Class<? extends AtomicLong> type) {
-			return new AtomicLong(input.readLong());
+			AtomicLong object = create(kryo, type);
+			object.set(input.readLong());
+			return object;
 		}
 
 		public AtomicLong copy (Kryo kryo, AtomicLong original) {
-			return new AtomicLong(original.get());
+			AtomicLong copy = create(kryo, original.getClass());
+			copy.set(original.get());
+			return copy;
+		}
+
+		private AtomicLong create (Kryo kryo, Class<? extends AtomicLong> type) {
+			if (type == AtomicLong.class || type == null) return new AtomicLong();
+			return kryo.newInstance(type);
 		}
 	}
 
@@ -1099,12 +1152,22 @@ public class DefaultSerializers {
 		}
 
 		public AtomicReference read (Kryo kryo, Input input, Class<? extends AtomicReference> type) {
-			final Object value = kryo.readClassAndObject(input);
-			return new AtomicReference(value);
+			AtomicReference object = create(kryo, type);
+			kryo.reference(object);
+			object.set(kryo.readClassAndObject(input));
+			return object;
 		}
 
 		public AtomicReference copy (Kryo kryo, AtomicReference original) {
-			return new AtomicReference<>(kryo.copy(original.get()));
+			AtomicReference copy = create(kryo, original.getClass());
+			kryo.reference(copy);
+			copy.set(kryo.copy(original.get()));
+			return copy;
+		}
+
+		private AtomicReference create (Kryo kryo, Class<? extends AtomicReference> type) {
+			if (type == AtomicReference.class || type == null) return new AtomicReference();
+			return kryo.newInstance(type);
 		}
 	}
 }

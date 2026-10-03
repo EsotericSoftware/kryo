@@ -29,8 +29,11 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -40,6 +43,18 @@ import org.junit.jupiter.api.Test;
 class CompatibleFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
+	}
+
+	@Test
+	void testRecordMissingPrimitiveComponent () {
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(OldPrimitiveRecord.class);
+		kryo.register(NewPrimitiveRecord.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, new OldPrimitiveRecord(3L));
+		NewPrimitiveRecord deserialized = kryo.readObject(new Input(output.toBytes()), NewPrimitiveRecord.class);
+		assertEquals(new NewPrimitiveRecord(3L, 0.0), deserialized);
 	}
 
 	@Test
@@ -439,6 +454,52 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		testExtendedClass(297, true, true);
 	}
 
+	// https://github.com/EsotericSoftware/kryo/issues/699
+	@Test
+	void testDuplicateFieldNames () {
+		kryo.register(ExtendedTestClass.class, new CompatibleFieldSerializer(kryo, ExtendedTestClass.class));
+
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.writeObject(new Output(1024), new ExtendedTestClass()));
+		assertTrue(ex.getMessage().contains("setExtendedFieldNames"), ex.getMessage());
+		assertThrows(KryoException.class, () -> kryo.readObject(new Input(new byte[16]), ExtendedTestClass.class));
+	}
+
+	@Test
+	void testDuplicateFieldNameRemoved () {
+		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, DuplicateFieldChild.class);
+		serializer.removeField("value");
+		kryo.register(DuplicateFieldChild.class, serializer);
+
+		roundTrip(9, new DuplicateFieldChild());
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/1098 and https://github.com/EsotericSoftware/kryo/issues/907
+	@Test
+	void testRemovedGenericFields () {
+		testRemovedGenericField(false, false);
+		testRemovedGenericField(false, true);
+		testRemovedGenericField(true, false);
+		testRemovedGenericField(true, true);
+	}
+
+	private void testRemovedGenericField (boolean chunked, boolean references) {
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(chunked);
+		kryo = new Kryo();
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		kryo.setReferences(references);
+		kryo.register(ArrayList.class);
+		kryo.register(HashMap.class);
+		kryo.register(GenericFields.class);
+		kryo.register(WithoutGenericFields.class);
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, new GenericFields());
+		WithoutGenericFields read = kryo.readObject(new Input(output.toBytes()), WithoutGenericFields.class);
+		assertEquals("a", read.a);
+		assertEquals("z", read.z);
+	}
+
 	private void testExtendedClass (int length, boolean references, boolean chunked) {
 		kryo.setReferences(references);
 
@@ -511,6 +572,79 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.register(ClassWithGenericField.class);
 
 		roundTrip(9, new ClassWithGenericField<>(1));
+	}
+
+	@Test
+	void testRecordNewToOld() {
+		final RecordClass recordClass = new RecordClass("1", 2, 3L, 4d);
+
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		OldRecordClass deserialized = kryo.readObject(input, OldRecordClass.class);
+		input.close();
+
+		assertEquals(deserialized.width(), recordClass.width());
+		assertEquals(deserialized.x(), recordClass.x());
+		assertEquals(deserialized.y(), recordClass.y());
+	}
+
+	@Test
+	void testRecordOldToNew() {
+		final OldRecordClass recordClass = new OldRecordClass(3L, 4d, 2);
+
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		RecordClass deserialized = kryo.readObject(input, RecordClass.class);
+		input.close();
+
+		assertNull(deserialized.height());
+		assertEquals(deserialized.width(), recordClass.width());
+		assertEquals(deserialized.x(), recordClass.x());
+		assertEquals(deserialized.y(), recordClass.y());
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/851
+	@Test
+	void testNullOverwritesDefaultValue () {
+		testNullOverwritesDefaultValue(false);
+		testNullOverwritesDefaultValue(true);
+	}
+
+	private void testNullOverwritesDefaultValue (boolean chunked) {
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(chunked);
+		kryo = new Kryo();
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		kryo.register(DefaultValue.class);
+
+		// A non-null value is written and read first, so the field has been used with a value class before.
+		Output output = new Output(64);
+		kryo.writeObject(output, new DefaultValue(5));
+		kryo.writeObject(output, new DefaultValue(null));
+		Input input = new Input(output.toBytes());
+		assertEquals(5, kryo.readObject(input, DefaultValue.class).value);
+		assertNull(kryo.readObject(input, DefaultValue.class).value);
+	}
+
+	@Test
+	void testNullRecordComponent () {
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(NullableRecord.class);
+		roundTrip(8, new NullableRecord(null));
 	}
 
 	public static class TestClass {
@@ -809,4 +943,60 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 			return Objects.equals(value, that.value);
 		}
 	}
+
+	public record OldRecordClass(long x, double y, int width) { }
+
+	public record RecordClass(String height, int width, long x, double y) { }
+	public record OldPrimitiveRecord(long x) { }
+
+	public static class GenericFieldsParent<T> {
+		public List<T> inherited = new ArrayList<>();
+	}
+
+	public static class GenericFields extends GenericFieldsParent<String> {
+		public String a = "a";
+		public List<String> list = new ArrayList<>(List.of("x", "y"));
+		public Map<Integer, String> map = new HashMap<>(Map.of(1, "one"));
+		public List<List<String>> nested = new ArrayList<>(List.of(new ArrayList<>(List.of("n"))));
+		public String z = "z";
+
+		public GenericFields () {
+			inherited.add("i");
+		}
+	}
+
+	/** {@link GenericFields} without the generic fields. */
+	public static class WithoutGenericFields {
+		public String a;
+		public String z;
+	}
+
+	public static class DuplicateFieldParent {
+		public int value = 1;
+	}
+
+	public static class DuplicateFieldChild extends DuplicateFieldParent {
+		public int value = 2;
+
+		public boolean equals (Object o) {
+			return o instanceof DuplicateFieldChild other && value == other.value
+				&& ((DuplicateFieldParent)this).value == ((DuplicateFieldParent)other).value;
+		}
+	}
+
+	public static class DefaultValue {
+		public Integer value = 10;
+
+		public DefaultValue () {
+		}
+
+		public DefaultValue (Integer value) {
+			this.value = value;
+		}
+	}
+
+	public record NullableRecord(Integer value) { }
+
+	public record NewPrimitiveRecord(long x, double added) { }
+
 }

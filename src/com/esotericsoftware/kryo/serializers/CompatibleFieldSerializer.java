@@ -42,12 +42,14 @@ import com.esotericsoftware.kryo.util.Util;
  * the serialized bytes, a simple schema is written containing the field name strings.
  * <p>
  * Note that the field data is identified by name. If a super class has a field with the same name as a subclass,
- * {@link CompatibleFieldSerializerConfig#setExtendedFieldNames(boolean)} must be true.
+ * {@link CompatibleFieldSerializerConfig#setExtendedFieldNames(boolean)} must be true, otherwise an exception is thrown.
  * @author Nathan Sweet */
 public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private static final int binarySearchThreshold = 32;
 
 	private final CompatibleFieldSerializerConfig config;
+	/** The error message if fields with the same name can't be distinguished, else null. */
+	private String duplicateFieldName;
 
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new CompatibleFieldSerializerConfig());
@@ -58,7 +60,43 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		this.config = config;
 	}
 
+	protected void initializeCachedFields () {
+		// Fields are sorted by name, so fields with the same name are adjacent. The exception is thrown when writing or reading,
+		// so the config can still be changed and updateFields called after the serializer is constructed.
+		duplicateFieldName = null;
+		CachedField[] fields = cachedFields.fields;
+		for (int i = 1, n = fields.length; i < n; i++) {
+			CachedField field = fields[i], previous = fields[i - 1];
+			if (field.name.equals(previous.name)) {
+				duplicateFieldName = "Field \"" + field.name + "\" is declared in both "
+					+ className(previous.field.getDeclaringClass())
+					+ " and " + className(field.field.getDeclaringClass())
+					+ ". CompatibleFieldSerializer identifies fields by name, so "
+					+ "CompatibleFieldSerializerConfig#setExtendedFieldNames must be true for " + className(type) + ".";
+				return;
+			}
+		}
+	}
+
+	/** Field values must be readable without the field, so they don't depend on the field's generic type when
+	 * {@link CompatibleFieldSerializerConfig#setReadUnknownFieldData(boolean) readUnknownFieldData} is true, unless
+	 * {@link CompatibleFieldSerializerConfig#setOptimizeGenerics(boolean) optimizeGenerics} is set. */
+	protected boolean optimizeGenerics () {
+		return config.optimizeGenerics || !config.readUnknownFieldData;
+	}
+
+	public void removeField (String fieldName) {
+		super.removeField(fieldName);
+		initializeCachedFields();
+	}
+
+	public void removeField (CachedField field) {
+		super.removeField(field);
+		initializeCachedFields();
+	}
+
 	public void write (Kryo kryo, Output output, T object) {
+		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
 		int pop = pushTypeVariables();
 
 		CachedField[] fields = cachedFields.fields;
@@ -112,10 +150,16 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
+		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
 		int pop = pushTypeVariables();
 
-		T object = create(kryo, input, type);
-		kryo.reference(object);
+		T object = null;
+		Object[] values = null;
+		if (recordConstructor == null) {
+			object = create(kryo, input, type);
+			kryo.reference(object);
+		} else
+			values = newRecordValues();
 
 		CachedField[] fields = (CachedField[])kryo.getGraphContext().get(this);
 		if (fields == null) fields = readFields(kryo, input);
@@ -142,6 +186,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					continue;
 				}
 				if (registration == null) {
+					// The value is null, overwrite the value set by the constructor. Record values are already null.
+					if (cachedField != null && object != null) setNull(cachedField, object);
 					if (chunked) inputChunked.nextChunk();
 					continue;
 				}
@@ -182,9 +228,14 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 
 			if (TRACE) log("Read", cachedField, input.position());
-			cachedField.read(fieldInput, object);
+			if (values == null)
+				cachedField.read(fieldInput, object);
+			else
+				values[cachedField.index] = cachedField.read(fieldInput);
 			if (chunked) inputChunked.nextChunk();
 		}
+
+		if (values != null) object = createRecord(values);
 
 		popTypeVariables(pop);
 		return object;
@@ -248,7 +299,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 	/** Configuration for CompatibleFieldSerializer instances. */
 	public static class CompatibleFieldSerializerConfig extends FieldSerializerConfig {
-		boolean readUnknownFieldData = true, chunked;
+		boolean readUnknownFieldData = true, chunked, optimizeGenerics;
 		int chunkSize = 1024;
 
 		public CompatibleFieldSerializerConfig clone () {
@@ -294,6 +345,18 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 		public int getChunkSize () {
 			return chunkSize;
+		}
+
+		/** When true, the generic type of a field is used to optimize its value, eg to omit the class of collection elements, even
+		 * if {@link #setReadUnknownFieldData(boolean) readUnknownFieldData} is true. Then the value can't be read anymore once the
+		 * field is removed, unless chunked encoding is enabled. This is needed to read data written by Kryo 5. Default is false. */
+		public void setOptimizeGenerics (boolean optimizeGenerics) {
+			this.optimizeGenerics = optimizeGenerics;
+			if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig setOptimizeGenerics: " + optimizeGenerics);
+		}
+
+		public boolean getOptimizeGenerics () {
+			return optimizeGenerics;
 		}
 	}
 }

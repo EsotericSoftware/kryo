@@ -25,86 +25,52 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
 import java.util.Comparator;
 
 /** Serializer for record classes.
  * @author Julia Boes {@literal <julia.boes@oracle.com>}
- * @author Chris Hegarty {@literal <chris.hegarty@oracle.com>} */
+ * @author Chris Hegarty {@literal <chris.hegarty@oracle.com>}
+ * @deprecated FieldSerializer and its subclasses serialize records by default and are faster. Use this serializer only to read
+ *             records written by Kryo 5, see {@link com.esotericsoftware.kryo.Kryo5Compatibility}. */
+@Deprecated
 public class RecordSerializer<T> extends ImmutableSerializer<T> {
-	private static final Method IS_RECORD;
-	private static final Method GET_RECORD_COMPONENTS;
-	private static final Method GET_NAME;
-	private static final Method GET_TYPE;
-
-	static {
-		Method isRecord;
-		Method getRecordComponents;
-		Method getName;
-		Method getType;
-
-		try {
-			// reflective machinery required to access the record components
-			// without a static dependency on Java SE 14 APIs
-			Class<?> c = Class.forName("java.lang.reflect.RecordComponent");
-			isRecord = Class.class.getDeclaredMethod("isRecord");
-			getRecordComponents = Class.class.getMethod("getRecordComponents");
-			getName = c.getMethod("getName");
-			getType = c.getMethod("getType");
-		} catch (ClassNotFoundException | NoSuchMethodException e) {
-			// pre-Java-14
-			isRecord = null;
-			getRecordComponents = null;
-			getName = null;
-			getType = null;
-		}
-
-		IS_RECORD = isRecord;
-		GET_RECORD_COMPONENTS = getRecordComponents;
-		GET_NAME = getName;
-		GET_TYPE = getType;
-	}
-
 	private static final ClassValue<Constructor<?>> CONSTRUCTOR = new ClassValue<Constructor<?>>() {
-		protected Constructor<?> computeValue (Class<?> clazz) {
-			final RecordComponent[] components = recordComponents(clazz, Comparator.comparing(RecordComponent::index));
-			return getCanonicalConstructor(clazz, components);
+		protected Constructor<?> computeValue (Class<?> type) {
+			return getCanonicalConstructor(type);
 		}
 	};
-	private static final ClassValue<RecordComponent[]> RECORD_COMPONENTS = new ClassValue<RecordComponent[]>() {
-		protected RecordComponent[] computeValue (Class<?> type) {
-			return recordComponents(type, Comparator.comparing(RecordComponent::name));
+	private static final ClassValue<Component[]> COMPONENTS = new ClassValue<Component[]>() {
+		protected Component[] computeValue (Class<?> type) {
+			return components(type);
 		}
 	};
 
 	private boolean fixedFieldTypes = false;
 
-	/** @deprecated use {@link #RecordSerializer(Class) instead} */
-	@Deprecated(forRemoval = true)
-	public RecordSerializer () {
-	}
-
 	public RecordSerializer (Class<T> clazz) {
-		if (!isRecord(clazz)) throw new KryoException(clazz + " is not a record");
+		if (!Util.isRecord(clazz)) throw new KryoException(clazz + " is not a record");
 	}
 
 	@Override
 	public void write (Kryo kryo, Output output, T object) {
-		for (RecordComponent rc : RECORD_COMPONENTS.get(object.getClass())) {
-			final Class<?> type = rc.type();
-			final String name = rc.name();
+		for (Component component : COMPONENTS.get(object.getClass())) {
+			final Class<?> type = component.type;
+			final String name = component.name;
 			try {
 				if (TRACE) trace("kryo", "Write property: " + name + " (" + type.getName() + ")");
 				if (type.isPrimitive()) {
-					kryo.writeObject(output, rc.getValue(object));
+					kryo.writeObject(output, component.getValue(object));
 				} else {
 					if (fixedFieldTypes || kryo.isFinal(type)) {
-						kryo.writeObjectOrNull(output, rc.getValue(object), type);
+						kryo.writeObjectOrNull(output, component.getValue(object), type);
 					} else {
-						kryo.writeClassAndObject(output, rc.getValue(object));
+						kryo.writeClassAndObject(output, component.getValue(object));
 					}
 				}
 			} catch (KryoException ex) {
@@ -120,22 +86,21 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 
 	@Override
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-		final RecordComponent[] components = RECORD_COMPONENTS.get(type);
+		final Component[] components = COMPONENTS.get(type);
 		final Object[] values = new Object[components.length];
-		for (int i = 0; i < components.length; i++) {
-			final RecordComponent rc = components[i];
-			final String name = rc.name();
-			final Class<?> rcType = rc.type();
+		for (Component component : components) {
+			final String name = component.name;
+			final Class<?> componentType = component.type;
 			try {
 				if (TRACE) trace("kryo", "Read property: " + name + " (" + type.getName() + ")");
 				// Populate values in the order required by the canonical constructor
-				if (rcType.isPrimitive()) {
-					values[rc.index()] = kryo.readObject(input, rcType);
+				if (componentType.isPrimitive()) {
+					values[component.index] = kryo.readObject(input, componentType);
 				} else {
-					if (fixedFieldTypes || kryo.isFinal(rcType)) {
-						values[rc.index()] = kryo.readObjectOrNull(input, rcType);
+					if (fixedFieldTypes || kryo.isFinal(componentType)) {
+						values[component.index] = kryo.readObjectOrNull(input, componentType);
 					} else {
-						values[rc.index()] = kryo.readClassAndObject(input);
+						values[component.index] = kryo.readClassAndObject(input);
 					}
 				}
 			} catch (KryoException ex) {
@@ -150,86 +115,47 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 		return invokeCanonicalConstructor(type, values);
 	}
 
-	/** Returns true if, and only if, the given class is a record class. */
-	private boolean isRecord (Class<?> type) {
-		try {
-			return (boolean)IS_RECORD.invoke(type);
-		} catch (Throwable t) {
-			throw new KryoException("Could not determine type (" + type + ")");
-		}
-	}
+	/** A record component with its index in the canonical constructor and its accessor. */
+	private static final class Component {
+		final String name;
+		final Class<?> type;
+		final int index;
+		private final Method accessor;
 
-	/** A record component, which has a name, a type and an index. The latter is the index of the record components in the class
-	 * file's record attribute, required to invoke the record's canonical constructor . */
-	static final class RecordComponent {
-		private final Class<?> recordType;
-		private final String name;
-		private final Class<?> type;
-		private final int index;
-		private final Method getter;
-
-		RecordComponent (Class<?> recordType, String name, Class<?> type, int index) {
-			this.recordType = recordType;
-			this.name = name;
-			this.type = type;
+		Component (RecordComponent component, int index) {
+			name = component.getName();
+			type = component.getType();
 			this.index = index;
-
+			accessor = component.getAccessor();
 			try {
-				getter = recordType.getDeclaredMethod(name);
-				if (!getter.isAccessible()) {
-					getter.setAccessible(true);
-				}
+				accessor.setAccessible(true);
 			} catch (Exception t) {
 				KryoException ex = new KryoException(t);
-				ex.addTrace("Could not retrieve record component getter (" + recordType.getName() + ")");
+				ex.addTrace("Could not retrieve record component accessor (" + component.getDeclaringRecord().getName() + ")");
 				throw ex;
 			}
 		}
 
-		String name () {
-			return name;
-		}
-
-		Class<?> type () {
-			return type;
-		}
-
-		int index () {
-			return index;
-		}
-
-		Object getValue (Object recordObject) {
+		Object getValue (Object record) {
 			try {
-				return getter.invoke(recordObject);
+				return accessor.invoke(record);
 			} catch (Exception t) {
 				KryoException ex = new KryoException(t);
-				ex.addTrace("Could not retrieve record component value (" + recordType.getName() + ")");
+				ex.addTrace("Could not retrieve record component value (" + record.getClass().getName() + ")");
 				throw ex;
 			}
 		}
 	}
 
-	/** Returns an ordered array of the record components for the given record class. The order is imposed by the given comparator.
-	 * If the given comparator is null, the order is that of the record components in the record attribute of the class file. */
-	static <T> RecordComponent[] recordComponents (Class<T> type,
-		Comparator<RecordComponent> comparator) {
-		try {
-			Object[] rawComponents = (Object[])GET_RECORD_COMPONENTS.invoke(type);
-			RecordComponent[] recordComponents = new RecordComponent[rawComponents.length];
-			for (int i = 0; i < rawComponents.length; i++) {
-				final Object comp = rawComponents[i];
-				recordComponents[i] = new RecordComponent(
-					type,
-					(String)GET_NAME.invoke(comp),
-					(Class<?>)GET_TYPE.invoke(comp), i);
-			}
-			if (comparator != null) Arrays.sort(recordComponents, comparator);
-			return recordComponents;
-		} catch (Throwable t) {
-			KryoException ex = new KryoException(t);
-			ex.addTrace("Could not retrieve record components (" + type.getName() + ")");
-			throw ex;
-		}
+	/** Returns the components of the given record class, sorted by name. The data is written in this order. */
+	private static Component[] components (Class<?> type) {
+		RecordComponent[] recordComponents = type.getRecordComponents();
+		if (recordComponents == null) throw new KryoException("Not a record: " + type.getName());
+		Component[] components = new Component[recordComponents.length];
+		for (int i = 0; i < recordComponents.length; i++)
+			components[i] = new Component(recordComponents[i], i);
+		Arrays.sort(components, Comparator.comparing(component -> component.name));
+		return components;
 	}
 
 	/** Invokes the canonical constructor of a record class with the given argument values. */
@@ -243,32 +169,19 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 		}
 	}
 
-	static <T> Constructor<T> getCanonicalConstructor (Class<T> recordType, RecordComponent[] recordComponents) {
+	private static Constructor<?> getCanonicalConstructor (Class<?> recordType) {
 		try {
-			Class<?>[] paramTypes = Arrays.stream(recordComponents)
-				.map(RecordComponent::type)
+			Class<?>[] paramTypes = Arrays.stream(recordType.getRecordComponents())
+				.map(RecordComponent::getType)
 				.toArray(Class<?>[]::new);
-			return getCanonicalConstructor(recordType, paramTypes);
+			Constructor<?> canonicalConstructor = recordType.getDeclaredConstructor(paramTypes);
+			canonicalConstructor.setAccessible(true);
+			return canonicalConstructor;
 		} catch (Throwable t) {
 			KryoException ex = new KryoException(t);
 			ex.addTrace("Could not retrieve record canonical constructor (" + recordType.getName() + ")");
 			throw ex;
 		}
-	}
-
-	private static <T> Constructor<T> getCanonicalConstructor (Class<T> recordType, Class<?>[] paramTypes)
-		throws NoSuchMethodException {
-		Constructor<T> canonicalConstructor;
-		try {
-			canonicalConstructor = recordType.getConstructor(paramTypes);
-			if (!canonicalConstructor.canAccess(null)) {
-				canonicalConstructor.setAccessible(true);
-			}
-		} catch (Exception e) {
-			canonicalConstructor = recordType.getDeclaredConstructor(paramTypes);
-			canonicalConstructor.setAccessible(true);
-		}
-		return canonicalConstructor;
 	}
 
 	/** Tells the RecordSerializer that all field types are effectively final. This allows the serializer to be more efficient,

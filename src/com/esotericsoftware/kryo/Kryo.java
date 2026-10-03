@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
+import com.esotericsoftware.kryo.SerializerFactory.BaseSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.SingletonSerializerFactory;
@@ -41,6 +42,10 @@ import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArray
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ShortArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.StringArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ArraysAsListSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicBooleanSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicIntegerSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicLongSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicReferenceSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigIntegerSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BitSetSerializer;
@@ -64,25 +69,31 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSetSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.FloatSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.IntSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.KeySetViewSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LocaleSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.PatternSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.PriorityQueueSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimeZoneSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimestampSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TreeSetSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.URISerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.URLSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.UUIDSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.VoidSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.serializers.OptionalSerializers;
-import com.esotericsoftware.kryo.serializers.RecordSerializer;
+import com.esotericsoftware.kryo.serializers.SynchronizedCollectionSerializers;
 import com.esotericsoftware.kryo.serializers.TimeSerializers;
+import com.esotericsoftware.kryo.serializers.UnmodifiableCollectionSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultGenerics;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
@@ -101,8 +112,10 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -119,8 +132,16 @@ import java.util.PriorityQueue;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.InstantiatorStrategy;
@@ -137,9 +158,10 @@ public class Kryo {
 	private static final int NO_REF = -2;
 	private static final int DEFAULT_SERIALIZER_SIZE = 68;
 
-	private SerializerFactory defaultSerializer = new FieldSerializerFactory();
-	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(DEFAULT_SERIALIZER_SIZE);
+	SerializerFactory defaultSerializer = new FieldSerializerFactory();
+	final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(DEFAULT_SERIALIZER_SIZE);
 	private final int lowPriorityDefaultSerializerCount;
+	private ObjectMap<String, Class> defaultSerializerTypes;
 
 	private final ClassResolver classResolver;
 	private int nextRegisterID;
@@ -189,52 +211,72 @@ public class Kryo {
 			references = true;
 		}
 
-		addDefaultSerializer(byte[].class, ByteArraySerializer.class);
-		addDefaultSerializer(char[].class, CharArraySerializer.class);
-		addDefaultSerializer(short[].class, ShortArraySerializer.class);
-		addDefaultSerializer(int[].class, IntArraySerializer.class);
-		addDefaultSerializer(long[].class, LongArraySerializer.class);
-		addDefaultSerializer(float[].class, FloatArraySerializer.class);
-		addDefaultSerializer(double[].class, DoubleArraySerializer.class);
-		addDefaultSerializer(boolean[].class, BooleanArraySerializer.class);
-		addDefaultSerializer(String[].class, StringArraySerializer.class);
-		addDefaultSerializer(Object[].class, ObjectArraySerializer.class);
-		addDefaultSerializer(BigInteger.class, BigIntegerSerializer.class);
-		addDefaultSerializer(BigDecimal.class, BigDecimalSerializer.class);
-		addDefaultSerializer(Class.class, ClassSerializer.class);
-		addDefaultSerializer(Date.class, DateSerializer.class);
-		addDefaultSerializer(Enum.class, EnumSerializer.class);
-		addDefaultSerializer(EnumSet.class, EnumSetSerializer.class);
-		addDefaultSerializer(Currency.class, CurrencySerializer.class);
-		addDefaultSerializer(StringBuffer.class, StringBufferSerializer.class);
-		addDefaultSerializer(StringBuilder.class, StringBuilderSerializer.class);
-		addDefaultSerializer(Collections.EMPTY_LIST.getClass(), CollectionsEmptyListSerializer.class);
-		addDefaultSerializer(Collections.EMPTY_MAP.getClass(), CollectionsEmptyMapSerializer.class);
-		addDefaultSerializer(Collections.EMPTY_SET.getClass(), CollectionsEmptySetSerializer.class);
-		addDefaultSerializer(Collections.singletonList(null).getClass(), CollectionsSingletonListSerializer.class);
-		addDefaultSerializer(Collections.singletonMap(null, null).getClass(), CollectionsSingletonMapSerializer.class);
-		addDefaultSerializer(Collections.singleton(null).getClass(), CollectionsSingletonSetSerializer.class);
-		addDefaultSerializer(TreeSet.class, TreeSetSerializer.class);
-		addDefaultSerializer(Collection.class, CollectionSerializer.class);
-		addDefaultSerializer(ConcurrentSkipListMap.class, ConcurrentSkipListMapSerializer.class);
-		addDefaultSerializer(TreeMap.class, TreeMapSerializer.class);
-		addDefaultSerializer(Map.class, MapSerializer.class);
-		addDefaultSerializer(TimeZone.class, TimeZoneSerializer.class);
-		addDefaultSerializer(Calendar.class, CalendarSerializer.class);
-		addDefaultSerializer(Locale.class, LocaleSerializer.class);
-		addDefaultSerializer(Charset.class, CharsetSerializer.class);
-		addDefaultSerializer(URL.class, URLSerializer.class);
-		addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer.class);
+		addDefaultSerializer(byte[].class, ByteArraySerializer::new);
+		addDefaultSerializer(char[].class, CharArraySerializer::new);
+		addDefaultSerializer(short[].class, ShortArraySerializer::new);
+		addDefaultSerializer(int[].class, IntArraySerializer::new);
+		addDefaultSerializer(long[].class, LongArraySerializer::new);
+		addDefaultSerializer(float[].class, FloatArraySerializer::new);
+		addDefaultSerializer(double[].class, DoubleArraySerializer::new);
+		addDefaultSerializer(boolean[].class, BooleanArraySerializer::new);
+		addDefaultSerializer(String[].class, StringArraySerializer::new);
+		addDefaultSerializer(Object[].class, new BaseSerializerFactory() {
+			public Serializer newSerializer (Kryo kryo, Class type) {
+				return new ObjectArraySerializer(kryo, type);
+			}
+		});
+		addDefaultSerializer(BigInteger.class, BigIntegerSerializer::new);
+		addDefaultSerializer(BigDecimal.class, BigDecimalSerializer::new);
+		addDefaultSerializer(Class.class, ClassSerializer::new);
+		addDefaultSerializer(Date.class, DateSerializer::new);
+		addDefaultSerializer(Enum.class, new BaseSerializerFactory() {
+			public Serializer newSerializer (Kryo kryo, Class type) {
+				return new EnumSerializer(type);
+			}
+		});
+		addDefaultSerializer(EnumSet.class, EnumSetSerializer::new);
+		addDefaultSerializer(Currency.class, CurrencySerializer::new);
+		addDefaultSerializer(StringBuffer.class, StringBufferSerializer::new);
+		addDefaultSerializer(StringBuilder.class, StringBuilderSerializer::new);
+		addDefaultSerializer(Collections.EMPTY_LIST.getClass(), CollectionsEmptyListSerializer::new);
+		addDefaultSerializer(Collections.EMPTY_MAP.getClass(), CollectionsEmptyMapSerializer::new);
+		addDefaultSerializer(Collections.EMPTY_SET.getClass(), CollectionsEmptySetSerializer::new);
+		addDefaultSerializer(Collections.singletonList(null).getClass(), CollectionsSingletonListSerializer::new);
+		addDefaultSerializer(Collections.singletonMap(null, null).getClass(), CollectionsSingletonMapSerializer::new);
+		addDefaultSerializer(Collections.singleton(null).getClass(), CollectionsSingletonSetSerializer::new);
+		addDefaultSerializer(TreeSet.class, TreeSetSerializer::new);
+		addDefaultSerializer(Collection.class, CollectionSerializer::new);
+		addDefaultSerializer(ConcurrentSkipListMap.class, ConcurrentSkipListMapSerializer::new);
+		addDefaultSerializer(TreeMap.class, TreeMapSerializer::new);
+		addDefaultSerializer(Map.class, MapSerializer::new);
+		addDefaultSerializer(TimeZone.class, TimeZoneSerializer::new);
+		addDefaultSerializer(Calendar.class, CalendarSerializer::new);
+		addDefaultSerializer(Locale.class, LocaleSerializer::new);
+		addDefaultSerializer(Charset.class, CharsetSerializer::new);
+		addDefaultSerializer(URL.class, URLSerializer::new);
+		addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer::new);
 		addDefaultSerializer(void.class, new VoidSerializer());
 		addDefaultSerializer(PriorityQueue.class, new PriorityQueueSerializer());
 		addDefaultSerializer(BitSet.class, new BitSetSerializer());
-		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer.class);
+		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer::new);
+		try {
+			addDefaultSerializer(Timestamp.class, TimestampSerializer::new);
+		} catch (NoClassDefFoundError ignored) { // java.sql is not available in a named module that doesn't require it.
+		}
+		addDefaultSerializer(ConcurrentHashMap.KeySetView.class, KeySetViewSerializer::new);
+		addDefaultSerializer(URI.class, URISerializer::new);
+		addDefaultSerializer(UUID.class, UUIDSerializer::new);
+		addDefaultSerializer(Pattern.class, PatternSerializer::new);
+		addDefaultSerializer(AtomicBoolean.class, AtomicBooleanSerializer::new);
+		addDefaultSerializer(AtomicInteger.class, AtomicIntegerSerializer::new);
+		addDefaultSerializer(AtomicLong.class, AtomicLongSerializer::new);
+		addDefaultSerializer(AtomicReference.class, AtomicReferenceSerializer::new);
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		ImmutableCollectionsSerializers.addDefaultSerializers(this);
-		// Add RecordSerializer if JDK 14+ available
-		if (isClassAvailable("java.lang.Record")) {
-			addDefaultSerializer("java.lang.Record", RecordSerializer.class);
+		if (!isAndroid) { // The wrapped collection can't be accessed on Android.
+			UnmodifiableCollectionSerializers.addDefaultSerializers(this);
+			SynchronizedCollectionSerializers.addDefaultSerializers(this);
 		}
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
@@ -286,15 +328,18 @@ public class Kryo {
 		insertDefaultSerializer(type, serializerFactory);
 	}
 
-	/** Instances with the specified class name will use the specified serializer when {@link #register(Class)} or
-	 * {@link #register(Class, int)} are called.
+	/** Instances of the specified class will use a new serializer from the specified supplier, eg a constructor reference like
+	 * {@code DateSerializer::new}, when {@link #register(Class)} or {@link #register(Class, int)} are called. Unlike
+	 * {@link #addDefaultSerializer(Class, Class)}, this doesn't use reflection, which needs metadata in a GraalVM native image.
 	 * @see #setDefaultSerializer(Class) */
-	private void addDefaultSerializer (String className, Class<? extends Serializer> serializer) {
-		try {
-			addDefaultSerializer(Class.forName(className), serializer);
-		} catch (ClassNotFoundException e) {
-			throw new KryoException("default serializer cannot be added: " + className);
-		}
+	public void addDefaultSerializer (Class type, Supplier<? extends Serializer> serializerSupplier) {
+		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		if (serializerSupplier == null) throw new IllegalArgumentException("serializerSupplier cannot be null.");
+		insertDefaultSerializer(type, new BaseSerializerFactory() {
+			public Serializer newSerializer (Kryo kryo, Class type) {
+				return serializerSupplier.get();
+			}
+		});
 	}
 
 	/** Instances of the specified class will use the specified serializer when {@link #register(Class)} or
@@ -436,7 +481,20 @@ public class Kryo {
 		for (int i = 0, n = defaultSerializers.size() - lowPriorityDefaultSerializerCount; i < n; i++)
 			if (type.isAssignableFrom(defaultSerializers.get(i).type)) lowest = i + 1;
 		defaultSerializers.add(lowest, new DefaultSerializerEntry(type, factory));
+		defaultSerializerTypes = null;
 		return lowest;
+	}
+
+	/** Returns the type with the specified name if it has a default serializer. This finds classes without reflection, eg
+	 * JDK-internal classes like the one returned by {@code List.of} in a GraalVM native image.
+	 * @return May be null. */
+	public Class getDefaultSerializerType (String className) {
+		if (defaultSerializerTypes == null) {
+			defaultSerializerTypes = new ObjectMap(defaultSerializers.size());
+			for (DefaultSerializerEntry entry : defaultSerializers)
+				defaultSerializerTypes.put(entry.type.getName(), entry.type);
+		}
+		return defaultSerializerTypes.get(className);
 	}
 
 	/** Returns the best matching serializer for a class. This method can be overridden to implement custom logic to choose a
@@ -1313,10 +1371,10 @@ public class Kryo {
 	 * class. This must be followed by {@link Generics#popGenericType() popGenericType}. See {@link MapSerializer} for an example.
 	 * <p>
 	 * {@link GenericsHierarchy} stores the type parameters for a class.
-	 * {@link Generics#pushTypeVariables(GenericsHierarchy, GenericType[]) pushTypeVariables} can be called before generic types
-	 * are {@link GenericType#resolve(Generics) resolved} so the type parameters are tracked as serialization moved through the
-	 * object graph. If {@code > 0} is returned, this must be followed by {@link Generics#popTypeVariables(int) popTypeVariables}.
-	 * See {@link FieldSerializer} for an example. */
+	 * {@link Generics#pushTypeVariables(GenericsHierarchy, GenericType) pushTypeVariables} can be called before generic types are
+	 * {@link GenericType#resolve(Generics) resolved} so the type parameters are tracked as serialization moved through the object
+	 * graph. If {@code > 0} is returned, this must be followed by {@link Generics#popTypeVariables(int) popTypeVariables}. See
+	 * {@link FieldSerializer} for an example. */
 	public Generics getGenerics () {
 		return generics;
 	}

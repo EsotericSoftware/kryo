@@ -43,7 +43,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 /** Timed Kryo serialization with various buffers and settings.
  * @author Roman Levenstein <romixlev@gmail.com>
  * @author Nathan Sweet */
-@TestMethodOrder(MethodOrderer.Alphanumeric.class)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 class SerializationBenchmarkTest extends KryoTestCase {
 	private static final int WARMUP_ITERATIONS = 1000;
 

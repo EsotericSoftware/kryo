@@ -52,14 +52,18 @@ class ImmutableListNullsTest extends KryoTestCase {
 
 	@Test
 	void testSameClassWithNull () {
-		// The default format doesn't support null elements of the same class.
-		assertThrows(IllegalArgumentException.class, () -> kryo.writeClassAndObject(new Output(64), Stream.of(null, 1, null).toList()));
-
-		((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(true);
 		assertImmutableWithNull(roundTrip(8, Stream.of(null, 1, null).toList()));
-		assertImmutableWithNull(roundTrip(8, Stream.of(1, "a", null).toList()));
 		assertImmutableWithNull(roundTrip(7, Stream.of(1, null).toList()));
 		roundTrip(7, List.of(1, 2, 3));
+	}
+
+	@Test
+	void testKryo5Format () {
+		// Kryo 5 didn't support null elements of the same class.
+		((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(false);
+		assertThrows(IllegalArgumentException.class, () -> kryo.writeClassAndObject(new Output(64), Stream.of(null, 1, null).toList()));
+		assertImmutableWithNull(roundTrip(8, Stream.of(1, "a", null).toList()));
+		roundTrip(6, List.of(1, 2, 3));
 	}
 
 	@Test

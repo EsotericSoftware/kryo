@@ -21,10 +21,6 @@ package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
 import com.esotericsoftware.minlog.Log;
 
 import java.lang.reflect.Method;
@@ -47,156 +43,58 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
 
-/** Serializer for unmodifiable Collections and Maps created via Collections. */
+/** Serializers for unmodifiable Collections and Maps created via {@link Collections}. */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class UnmodifiableCollectionSerializers {
+	private static final WrappedCollectionGetter collectionGetter = new WrappedCollectionGetter(
+		"java.util.Collections$UnmodifiableCollection", "c");
+	private static final WrappedCollectionGetter mapGetter = new WrappedCollectionGetter("java.util.Collections$UnmodifiableMap",
+		"m");
 
-	private static class Offset {
-		private static final long SOURCE_COLLECTION_FIELD_OFFSET;
-		private static final long SOURCE_MAP_FIELD_OFFSET;
-
-		static {
-			String clsName = "java.util.Collections$UnmodifiableCollection";
-			try {
-				SOURCE_COLLECTION_FIELD_OFFSET = UnsafeUtil.objectFieldOffset(Class.forName(clsName).getDeclaredField("c"));
-			} catch (Exception e) {
-				Log.warn("Could not access source collection field in " + clsName);
-				throw new KryoException(e);
-			}
-			clsName = "java.util.Collections$UnmodifiableMap";
-			try {
-				SOURCE_MAP_FIELD_OFFSET = UnsafeUtil.objectFieldOffset(Class.forName(clsName).getDeclaredField("m"));
-			} catch (Exception e) {
-				Log.warn("Could not access source map field in " + clsName);
-				throw new KryoException(e);
-			}
-		}
-	}
-
-	static final class UnmodifiableCollectionSerializer extends CollectionSerializer<Collection> {
-		private final Function factory;
-		private final long offset;
-
-		public UnmodifiableCollectionSerializer (Function factory, long offset) {
-			setAcceptsNull(false);
-			this.factory = factory;
-			this.offset = offset;
-		}
-
-		@Override
-		public void write (Kryo kryo, Output output, Collection collection) {
-			final Object fieldValue = UnsafeUtil.getObject(collection, offset);
-			kryo.writeClassAndObject(output, fieldValue);
-		}
-
-		@Override
-		public Collection read (Kryo kryo, Input input, Class<? extends Collection> type) {
-			final Object sourceCollection = kryo.readClassAndObject(input);
-			return (Collection)factory.apply(sourceCollection);
-		}
-
-		@Override
-		public Collection copy (Kryo kryo, Collection original) {
-			final Object collection = UnsafeUtil.getObject(original, offset);
-			return (Collection)factory.apply(kryo.copy(collection));
-		}
-	}
-
-	static final class UnmodifiableMapSerializer extends MapSerializer<Map> {
-		private final Function factory;
-		private final long offset;
-
-		public UnmodifiableMapSerializer (Function factory, long offset) {
-			setAcceptsNull(false);
-			this.factory = factory;
-			this.offset = offset;
-		}
-
-		@Override
-		public void write (Kryo kryo, Output output, Map map) {
-			Object fieldValue = UnsafeUtil.getObject(map, offset);
-			kryo.writeClassAndObject(output, fieldValue);
-		}
-
-		@Override
-		public Map read (Kryo kryo, Input input, Class<? extends Map> type) {
-			final Object sourceMap = kryo.readClassAndObject(input);
-			return (Map)factory.apply(sourceMap);
-		}
-
-		@Override
-		public Map copy (Kryo kryo, Map original) {
-			final Object map = UnsafeUtil.getObject(original, offset);
-			return (Map)factory.apply(kryo.copy(map));
-		}
-	}
-
-	private static Serializer<?> createSerializer (Map.Entry<Class<?>, Function> factory) {
-		if (Collection.class.isAssignableFrom(factory.getKey())) {
-			return new UnmodifiableCollectionSerializer(factory.getValue(), Offset.SOURCE_COLLECTION_FIELD_OFFSET);
-		} else {
-			return new UnmodifiableMapSerializer(factory.getValue(), Offset.SOURCE_MAP_FIELD_OFFSET);
-		}
-	}
-
-	@SuppressWarnings("RedundantUnmodifiable")
-	private static void putFactories (Map<Class<?>, Function> factories) {
-		factories.put(
-			Collections.unmodifiableCollection(Collections.singletonList("")).getClass(),
-			o -> Collections.unmodifiableCollection((Collection)o));
-		factories.put(
-			Collections.unmodifiableList(new ArrayList<Void>()).getClass(),
-			o1 -> Collections.unmodifiableList((List<?>)o1));
-		factories.put(
-			Collections.unmodifiableList(new LinkedList<Void>()).getClass(),
-			o2 -> Collections.unmodifiableList((List<?>)o2));
-		factories.put(
-			Collections.unmodifiableSet(new HashSet<Void>()).getClass(),
-			o3 -> Collections.unmodifiableSet((Set<?>)o3));
-		factories.put(
-			Collections.unmodifiableSortedSet(new TreeSet<>()).getClass(),
-			o4 -> Collections.unmodifiableSortedSet((SortedSet<?>)o4));
-		factories.put(
-			Collections.unmodifiableMap(new HashMap<>()).getClass(),
-			o5 -> Collections.unmodifiableMap((Map)o5));
-		factories.put(
-			Collections.unmodifiableSortedMap(new TreeMap<>()).getClass(),
-			o6 -> Collections.unmodifiableSortedMap((SortedMap)o6));
-	}
-
-	/** Used by the deprecated {@link #registerSerializers(Kryo)}. The iteration order of this HashMap determines the registration
-	 * IDs, so it must not change. */
-	private static Map<Class<?>, Function> legacyFactories () {
-		final Map<Class<?>, Function> factories = new HashMap<>();
-		putFactories(factories);
-		return factories;
+	private static CollectionWrapperSerializer createSerializer (Map.Entry<Class<?>, Function<Object, Object>> factory) {
+		WrappedCollectionGetter getter = Collection.class.isAssignableFrom(factory.getKey()) ? collectionGetter : mapGetter;
+		return new CollectionWrapperSerializer(factory.getValue(), getter, false);
 	}
 
 	/** The factories in a fixed order, which determines the IDs of {@link #register(Kryo)}. Only classes that exist on all
 	 * supported Java versions, so that the IDs don't change between Java versions. New ones must be added at the end. */
-	static Map<Class<?>, Function> orderedFactories () {
-		final Map<Class<?>, Function> factories = new LinkedHashMap<>();
-		putFactories(factories);
-		factories.put(
-			Collections.unmodifiableNavigableSet(new TreeSet<>()).getClass(),
-			o -> Collections.unmodifiableNavigableSet((NavigableSet<?>)o));
-		factories.put(
-			Collections.unmodifiableNavigableMap(new TreeMap<>()).getClass(),
+	@SuppressWarnings("RedundantUnmodifiable")
+	static Map<Class<?>, Function<Object, Object>> orderedFactories () {
+		Map<Class<?>, Function<Object, Object>> factories = new LinkedHashMap<>();
+		factories.put(Collections.unmodifiableCollection(Collections.singletonList("")).getClass(),
+			o -> Collections.unmodifiableCollection((Collection)o));
+		factories.put(Collections.unmodifiableList(new ArrayList<>()).getClass(), o -> Collections.unmodifiableList((List)o));
+		factories.put(Collections.unmodifiableList(new LinkedList<>()).getClass(), o -> Collections.unmodifiableList((List)o));
+		factories.put(Collections.unmodifiableSet(new HashSet<>()).getClass(), o -> Collections.unmodifiableSet((Set)o));
+		factories.put(Collections.unmodifiableSortedSet(new TreeSet<>()).getClass(),
+			o -> Collections.unmodifiableSortedSet((SortedSet)o));
+		factories.put(Collections.unmodifiableMap(new HashMap<>()).getClass(), o -> Collections.unmodifiableMap((Map)o));
+		factories.put(Collections.unmodifiableSortedMap(new TreeMap<>()).getClass(),
+			o -> Collections.unmodifiableSortedMap((SortedMap)o));
+		factories.put(Collections.unmodifiableNavigableSet(new TreeSet<>()).getClass(),
+			o -> Collections.unmodifiableNavigableSet((NavigableSet)o));
+		factories.put(Collections.unmodifiableNavigableMap(new TreeMap<>()).getClass(),
 			o -> Collections.unmodifiableNavigableMap((NavigableMap)o));
 		return factories;
 	}
 
-	static Map<Class<?>, Function> defaultFactories () {
-		final Map<Class<?>, Function> factories = orderedFactories();
+	/** Computed once, because the Kryo constructor adds the default serializers. */
+	private static final class DefaultFactories {
+		static final Map<Class<?>, Function<Object, Object>> factories = defaultFactories();
+	}
+
+	static Map<Class<?>, Function<Object, Object>> defaultFactories () {
+		Map<Class<?>, Function<Object, Object>> factories = orderedFactories();
 		putSequencedFactory(factories, "unmodifiableSequencedCollection", "java.util.SequencedCollection", new ArrayList<>());
 		putSequencedFactory(factories, "unmodifiableSequencedSet", "java.util.SequencedSet", new LinkedHashSet<>());
 		putSequencedFactory(factories, "unmodifiableSequencedMap", "java.util.SequencedMap", new LinkedHashMap<>());
 		return factories;
 	}
 
-	/** Adds a factory for a Java 21+ sequenced collection method, if available. */
-	private static void putSequencedFactory (Map<Class<?>, Function> factories, String methodName, String parameterType,
-		Object sample) {
+	/** Adds a factory for a Java 21+ sequenced collection method, if available. In a GraalVM native image, the method is only
+	 * found with reflection metadata for it. */
+	private static void putSequencedFactory (Map<Class<?>, Function<Object, Object>> factories, String methodName,
+		String parameterType, Object sample) {
 		try {
 			Method method = Collections.class.getMethod(methodName, Class.forName(parameterType));
 			factories.put(method.invoke(null, sample).getClass(), o -> {
@@ -210,55 +108,23 @@ public final class UnmodifiableCollectionSerializers {
 		}
 	}
 
-	/** Registers serializers for unmodifiable Collections and Maps created via {@link Collections} in a fixed order, so the
+	/** Registers serializers for unmodifiable Collections and Maps created via {@link Collections} in a fixed order, so that the
 	 * registration IDs are the same on all Java versions: unmodifiableCollection, unmodifiableList of a
 	 * {@link java.util.RandomAccess} list, unmodifiableList of another list, unmodifiableSet, unmodifiableSortedSet,
 	 * unmodifiableMap, unmodifiableSortedMap, unmodifiableNavigableSet and unmodifiableNavigableMap. The Java 21+ sequenced
-	 * wrappers, eg unmodifiableSequencedCollection, are not registered, so that the same classes are registered on all Java
-	 * versions. After {@link #addDefaultSerializers(Kryo)}, they can be registered with {@link Kryo#register(Class)}. */
+	 * wrappers, eg unmodifiableSequencedCollection, are not registered, because they don't exist on older Java versions. They have
+	 * default serializers and can be registered with {@link Kryo#register(Class)}. */
 	public static void register (Kryo kryo) {
-		for (Map.Entry<Class<?>, Function> factory : orderedFactories().entrySet())
+		for (Map.Entry<Class<?>, Function<Object, Object>> factory : orderedFactories().entrySet())
 			kryo.register(factory.getKey(), createSerializer(factory));
 	}
 
-	/** Registers serializers for unmodifiable Collections created via {@link Collections}, including {@link Map}s.
-	 * <p>
-	 * The registration IDs of these classes depend on the JVM, eg the Java version, so data written on one JVM may be read as a
-	 * different collection type on another.
-	 * @deprecated Use {@link #register(Kryo)}, which registers the classes in a fixed order.
-	 *
-	 * @see Collections#unmodifiableCollection(Collection)
-	 * @see Collections#unmodifiableList(List)
-	 * @see Collections#unmodifiableSet(Set)
-	 * @see Collections#unmodifiableSortedSet(SortedSet)
-	 * @see Collections#unmodifiableMap(Map)
-	 * @see Collections#unmodifiableSortedMap(SortedMap) */
-	@Deprecated
-	public static void registerSerializers (Kryo kryo) {
-		try {
-			for (Map.Entry<Class<?>, Function> factory : legacyFactories().entrySet()) {
-				kryo.register(factory.getKey(), createSerializer(factory));
-			}
-		} catch (Throwable t) {
-			Log.warn("Unable to register serializers for unmodifiable collections.", t);
-		}
-	}
-
-	/** Adds default serializers for unmodifiable Collections created via {@link Collections}, including {@link Map}s.
-	 *
-	 * @see Collections#unmodifiableCollection(Collection)
-	 * @see Collections#unmodifiableList(List)
-	 * @see Collections#unmodifiableSet(Set)
-	 * @see Collections#unmodifiableSortedSet(SortedSet)
-	 * @see Collections#unmodifiableMap(Map)
-	 * @see Collections#unmodifiableSortedMap(SortedMap)
-	 * @see Collections#unmodifiableNavigableSet(NavigableSet)
-	 * @see Collections#unmodifiableNavigableMap(NavigableMap) */
+	/** Adds default serializers for unmodifiable Collections and Maps created via {@link Collections}, including the navigable and
+	 * the Java 21+ sequenced wrappers. The Kryo constructor calls this, except on Android. */
 	public static void addDefaultSerializers (Kryo kryo) {
 		try {
-			for (Map.Entry<Class<?>, Function> factory : defaultFactories().entrySet()) {
+			for (Map.Entry<Class<?>, Function<Object, Object>> factory : DefaultFactories.factories.entrySet())
 				kryo.addDefaultSerializer(factory.getKey(), createSerializer(factory));
-			}
 		} catch (Throwable t) {
 			Log.warn("Unable to add default serializers for unmodifiable collections.", t);
 		}

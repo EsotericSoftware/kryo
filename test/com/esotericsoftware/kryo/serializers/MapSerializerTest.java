@@ -76,10 +76,8 @@ class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	void testWriteSameClassOnce () {
-		MapSerializer serializer = new MapSerializer();
-		serializer.setWriteSameClassOnce(true);
-		kryo.register(LinkedHashMap.class, serializer);
+	void testKeyAndValueClassesWrittenOnce () {
+		kryo.register(LinkedHashMap.class);
 		// The class of the keys and values is written once if they all have the same class.
 		LinkedHashMap map = new LinkedHashMap();
 		map.put("a", 1);
@@ -97,10 +95,11 @@ class MapSerializerTest extends KryoTestCase {
 		roundTrip(7, nullValues);
 	}
 
-	// By default, the class of each key and value is written.
 	@Test
 	void testWriteSameClassOnceDisabled () {
-		kryo.register(LinkedHashMap.class);
+		MapSerializer serializer = new MapSerializer();
+		serializer.setWriteSameClassOnce(false);
+		kryo.register(LinkedHashMap.class, serializer);
 		LinkedHashMap map = new LinkedHashMap();
 		map.put("a", 1);
 		map.put("b", 2);
@@ -114,9 +113,9 @@ class MapSerializerTest extends KryoTestCase {
 		HashMap map = new HashMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(18, map);
+		roundTrip(16, map);
 		roundTrip(2, new LinkedHashMap());
-		roundTrip(18, new LinkedHashMap(map));
+		roundTrip(16, new LinkedHashMap(map));
 
 		MapSerializer serializer = new MapSerializer();
 		kryo.register(HashMap.class, serializer);
@@ -206,7 +205,7 @@ class MapSerializerTest extends KryoTestCase {
         map.put(9, "456");
         map.put(3, "abc");
         map.put(1, 122);
-        roundTrip(20, map);
+        roundTrip(19, map);
 
         kryo.register(KeyThatIsntComparable.class);
         kryo.register(KeyComparator.class);
@@ -217,7 +216,7 @@ class MapSerializerTest extends KryoTestCase {
         cMap.put(key1, "257");
         key2.value = "213";
         cMap.put(key2, "455");
-        roundTrip(19, cMap);
+        roundTrip(17, cMap);
 
         kryo.register(ConcurrentSkipListMapSubclass.class);
         ConcurrentSkipListMapSubclass cSubMap = new ConcurrentSkipListMapSubclass();
@@ -225,7 +224,7 @@ class MapSerializerTest extends KryoTestCase {
         cSubMap.put("2", 68);
         cSubMap.put("3", 63);
         cSubMap.put("4", 22);
-        roundTrip(25, cSubMap);
+        roundTrip(19, cSubMap);
     }
 
 	@Test
@@ -234,7 +233,7 @@ class MapSerializerTest extends KryoTestCase {
 		TreeMap map = new TreeMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(19, map);
+		roundTrip(17, map);
 
 		kryo.register(KeyThatIsntComparable.class);
 		kryo.register(KeyComparator.class);
@@ -245,7 +244,7 @@ class MapSerializerTest extends KryoTestCase {
 		map.put(key1, "456");
 		key2.value = "1234";
 		map.put(key2, "4567");
-		roundTrip(21, map);
+		roundTrip(19, map);
 
 		kryo.register(TreeMapSubclass.class);
 		map = new TreeMapSubclass();
@@ -253,7 +252,7 @@ class MapSerializerTest extends KryoTestCase {
 		map.put("2", 34);
 		map.put("3", 65);
 		map.put("4", 44);
-		roundTrip(24, map);
+		roundTrip(18, map);
 	}
 
 	@Test
@@ -263,7 +262,7 @@ class MapSerializerTest extends KryoTestCase {
 		TreeMap map = new TreeMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(24, map);
+		roundTrip(22, map);
 
 		kryo.register(KeyThatIsntComparable.class);
 		kryo.register(KeyComparator.class);
@@ -274,7 +273,7 @@ class MapSerializerTest extends KryoTestCase {
 		map.put(key1, "456");
 		key2.value = "1234";
 		map.put(key2, "4567");
-		roundTrip(29, map);
+		roundTrip(27, map);
 
 		kryo.register(TreeMapSubclass.class);
 		map = new TreeMapSubclass();
@@ -282,7 +281,7 @@ class MapSerializerTest extends KryoTestCase {
 		map.put("2", 34);
 		map.put("3", 65);
 		map.put("4", 44);
-		roundTrip(29, map);
+		roundTrip(23, map);
 	}
 
 	@Test

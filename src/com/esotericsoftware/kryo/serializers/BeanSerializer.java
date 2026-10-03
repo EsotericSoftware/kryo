@@ -19,6 +19,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -26,12 +27,14 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.reflectasm.MethodAccess;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -39,8 +42,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 /** Serializes Java beans using bean accessor methods. Only bean properties with both a getter and setter are serialized. This
- * class is not as fast as {@link FieldSerializer} but is much faster and more efficient than Java serialization. Bytecode
- * generation is used to invoke the bean property methods, if possible.
+ * class is not as fast as {@link FieldSerializer} but is much faster and more efficient than Java serialization. Method handles
+ * are used to invoke the bean property methods, if possible.
  * <p>
  * BeanSerializer does not write header data, only the object data is stored. If the type of a bean property is not final (note
  * primitives are final) then an extra byte is written for that property.
@@ -50,7 +53,6 @@ import java.util.Comparator;
 public class BeanSerializer<T> extends Serializer<T> {
 	static final Object[] noArgs = {};
 	private CachedProperty[] properties;
-	Object access;
 
 	public BeanSerializer (Kryo kryo, Class type) {
 		BeanInfo info;
@@ -86,23 +88,24 @@ public class BeanSerializer<T> extends Serializer<T> {
 			cachedProperty.setMethod = setMethod;
 			cachedProperty.serializer = serializer;
 			cachedProperty.setMethodType = setMethod.getParameterTypes()[0];
+			if (!isAndroid && !isNativeImage) {
+				try {
+					getMethod.setAccessible(true);
+					setMethod.setAccessible(true);
+					MethodHandles.Lookup lookup = MethodHandles.lookup();
+					cachedProperty.getter = lookup.unreflect(getMethod).asType(MethodType.methodType(Object.class, Object.class));
+					cachedProperty.setter = lookup.unreflect(setMethod)
+						.asType(MethodType.methodType(void.class, Object.class, Object.class));
+				} catch (Exception ignored) {
+					// Reflection is used.
+					cachedProperty.getter = null;
+					cachedProperty.setter = null;
+				}
+			}
 			cachedProperties.add(cachedProperty);
 		}
 
 		properties = cachedProperties.toArray(new CachedProperty[cachedProperties.size()]);
-
-		try {
-			access = MethodAccess.get(type);
-			for (int i = 0, n = properties.length; i < n; i++) {
-				CachedProperty property = properties[i];
-				property.getterAccessIndex = ((MethodAccess)access).getIndex(property.getMethod.getName(),
-					property.getMethod.getParameterTypes());
-				property.setterAccessIndex = ((MethodAccess)access).getIndex(property.setMethod.getName(),
-					property.setMethod.getParameterTypes());
-			}
-		} catch (Throwable ignored) {
-			// ReflectASM is not available on Android.
-		}
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
@@ -188,20 +191,20 @@ public class BeanSerializer<T> extends Serializer<T> {
 		Method getMethod, setMethod;
 		Class setMethodType;
 		Serializer serializer;
-		int getterAccessIndex, setterAccessIndex;
+		MethodHandle getter, setter;
 
 		public String toString () {
 			return name;
 		}
 
-		Object get (Object object) throws IllegalAccessException, InvocationTargetException {
-			if (access != null) return ((MethodAccess)access).invoke(object, getterAccessIndex);
+		Object get (Object object) throws Throwable {
+			if (getter != null) return getter.invokeExact(object);
 			return getMethod.invoke(object, noArgs);
 		}
 
-		void set (Object object, Object value) throws IllegalAccessException, InvocationTargetException {
-			if (access != null) {
-				((MethodAccess)access).invoke(object, setterAccessIndex, value);
+		void set (Object object, Object value) throws Throwable {
+			if (setter != null) {
+				setter.invokeExact(object, value);
 				return;
 			}
 			setMethod.invoke(object, new Object[] {value});

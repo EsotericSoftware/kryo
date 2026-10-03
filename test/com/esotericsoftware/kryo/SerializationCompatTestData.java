@@ -27,8 +27,10 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -54,19 +56,29 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 /** Testdata for serialization compatibility check. */
 @SuppressWarnings("unused")
@@ -138,6 +150,8 @@ class SerializationCompatTestData {
 		private BigDecimal _bigDecimal;
 		private AtomicInteger _atomicInteger;
 		private AtomicLong _atomicLong;
+		private AtomicBoolean _atomicBoolean;
+		private AtomicReference<String> _atomicReference;
 
 		private String _string;
 		private StringBuilder _stringBuilder;
@@ -146,11 +160,15 @@ class SerializationCompatTestData {
 		private Class _class;
 		private Integer[] _integerArray;
 		private Date _date;
+		private Timestamp _timestamp;
 		private TimeZone _timeZone;
 		private Calendar _calendar;
 		private Locale _locale;
 		List<Charset> _charsets;
 		private URL _url;
+		private URI _uri;
+		private UUID _uuid;
+		private Pattern _pattern;
 
 		private Gender _enum;
 		private EnumSet<Gender> _enumSet;
@@ -166,6 +184,21 @@ class SerializationCompatTestData {
 		private TreeMap<String, Integer> _treeMap;
 		private List<String> _arrayList;
 		private Set<String> _hashSet;
+		private Set<String> _keySetView;
+		private List<String> _unmodifiableList;
+		private Set<String> _unmodifiableSet;
+		private SortedMap<String, Integer> _unmodifiableSortedMap;
+		private NavigableSet<String> _unmodifiableNavigableSet;
+		private List<String> _synchronizedList;
+		private Map<String, Integer> _synchronizedMap;
+		private NavigableMap<String, Integer> _synchronizedNavigableMap;
+		private List<String> _unmodifiableLinkedList;
+		private SortedSet<String> _unmodifiableSortedSet;
+		private NavigableMap<String, Integer> _unmodifiableNavigableMap;
+		private Set<String> _synchronizedSet;
+		private SortedSet<String> _synchronizedSortedSet;
+		private SortedMap<String, Integer> _synchronizedSortedMap;
+		private NavigableSet<String> _synchronizedNavigableSet;
 		private Map<String, Integer> _hashMap;
 		private List<Integer> _asList = Arrays.asList(1, 2, 3);
 		private int[] _intArray;
@@ -208,6 +241,8 @@ class SerializationCompatTestData {
 			_bigDecimal = new BigDecimal(9);
 			_atomicInteger = new AtomicInteger(10);
 			_atomicLong = new AtomicLong(11);
+			_atomicBoolean = new AtomicBoolean(true);
+			_atomicReference = new AtomicReference<>("12");
 
 			_string = "3";
 			_stringBuffer = new StringBuffer("foo");
@@ -217,6 +252,8 @@ class SerializationCompatTestData {
 			_integerArray = new Integer[] {13};
 
 			_date = new Date(42);
+			_timestamp = new Timestamp(42);
+			_timestamp.setNanos(42_000_043);
 			_calendar = Calendar.getInstance(Locale.ENGLISH);
 			_calendar.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
 			_calendar.set(2009, Calendar.JANUARY, 25, 10, 29, 0);
@@ -231,6 +268,9 @@ class SerializationCompatTestData {
 			} catch (MalformedURLException e) {
 				throw new RuntimeException(e);
 			}
+			_uri = URI.create("https://github.com/EsotericSoftware/kryo");
+			_uuid = UUID.fromString("e58ed763-928c-4155-bee9-fdbaaadc15f3");
+			_pattern = Pattern.compile("kryo.*", Pattern.CASE_INSENSITIVE);
 
 			_enum = Gender.FEMALE;
 			_enumSet = EnumSet.allOf(Gender.class);
@@ -250,6 +290,22 @@ class SerializationCompatTestData {
 			_arrayList = new ArrayList(Arrays.asList("foo", "bar"));
 			_hashSet = new HashSet();
 			_hashSet.add("14");
+			_keySetView = ConcurrentHashMap.newKeySet();
+			_keySetView.add("15");
+			_unmodifiableList = Collections.unmodifiableList(new ArrayList<>(Arrays.asList("16", "17")));
+			_unmodifiableSet = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("18")));
+			_unmodifiableSortedMap = Collections.unmodifiableSortedMap(new TreeMap<>(_treeMap));
+			_unmodifiableNavigableSet = Collections.unmodifiableNavigableSet(new TreeSet<>(Arrays.asList("19", "20")));
+			_synchronizedList = Collections.synchronizedList(new ArrayList<>(Arrays.asList("21")));
+			_synchronizedMap = Collections.synchronizedMap(new HashMap<>(_treeMap));
+			_synchronizedNavigableMap = Collections.synchronizedNavigableMap(new TreeMap<>(_treeMap));
+			_unmodifiableLinkedList = Collections.unmodifiableList(new LinkedList<>(Arrays.asList("22")));
+			_unmodifiableSortedSet = Collections.unmodifiableSortedSet(new TreeSet<>(Arrays.asList("23")));
+			_unmodifiableNavigableMap = Collections.unmodifiableNavigableMap(new TreeMap<>(_treeMap));
+			_synchronizedSet = Collections.synchronizedSet(new HashSet<>(Arrays.asList("24")));
+			_synchronizedSortedSet = Collections.synchronizedSortedSet(new TreeSet<>(Arrays.asList("25")));
+			_synchronizedSortedMap = Collections.synchronizedSortedMap(new TreeMap<>(_treeMap));
+			_synchronizedNavigableSet = Collections.synchronizedNavigableSet(new TreeSet<>(Arrays.asList("26")));
 			_hashMap = new HashMap();
 			_hashMap.put("foo", 23);
 			_hashMap.put("bar", 42);

@@ -1,0 +1,67 @@
+{
+  "reflection": [
+    {
+      "type": "com.esotericsoftware.kryo.nativeimage.NativeImageTest$Color"
+    },
+    {
+      "type": "com.esotericsoftware.kryo.nativeimage.NativeImageTest$Point",
+      "fields": [
+        {
+          "name": "name"
+        },
+        {
+          "name": "x"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "int",
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.esotericsoftware.kryo.nativeimage.NativeImageTest$Pojo",
+      "fields": [
+        {
+          "name": "date"
+        },
+        {
+          "name": "list"
+        },
+        {
+          "name": "map"
+        },
+        {
+          "name": "number"
+        },
+        {
+          "name": "text"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.esotericsoftware.kryo.nativeimage.NativeImageTest$WithFinal",
+      "fields": [
+        {
+          "name": "id"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    }
+  ]
+}

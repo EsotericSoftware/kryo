@@ -101,6 +101,13 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		this.writeTags = (CachedField[])writeTags.toArray(new CachedField[writeTags.size()]);
 	}
 
+	/** Field values must be readable without the field, so they don't depend on the field's generic type when
+	 * {@link TaggedFieldSerializerConfig#setReadUnknownTagData(boolean) readUnknownTagData} is true, unless
+	 * {@link TaggedFieldSerializerConfig#setOptimizeGenerics(boolean) optimizeGenerics} is set. */
+	protected boolean optimizeGenerics () {
+		return config.optimizeGenerics || !config.readUnknownTagData;
+	}
+
 	public void removeField (String fieldName) {
 		super.removeField(fieldName);
 		initializeCachedFields();
@@ -174,8 +181,13 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		int pop = pushTypeVariables();
 
-		T object = create(kryo, input, type);
-		kryo.reference(object);
+		T object = null;
+		Object[] values = null;
+		if (recordConstructor == null) {
+			object = create(kryo, input, type);
+			kryo.reference(object);
+		} else
+			values = newRecordValues();
 
 		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownTagData;
 		Input fieldInput;
@@ -202,6 +214,8 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 					continue;
 				}
 				if (registration == null) {
+					// The value is null, overwrite the value set by the constructor. Record values are already null.
+					if (cachedField != null && object != null) setNull(cachedField, object);
 					if (chunked) inputChunked.nextChunk();
 					continue;
 				}
@@ -231,9 +245,14 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			}
 
 			if (TRACE) log("Read", cachedField, input.position());
-			cachedField.read(fieldInput, object);
+			if (values == null)
+				cachedField.read(fieldInput, object);
+			else
+				values[cachedField.index] = cachedField.read(fieldInput);
 			if (chunked) inputChunked.nextChunk();
 		}
+
+		if (values != null) object = createRecord(values);
 
 		popTypeVariables(pop);
 		return object;
@@ -252,7 +271,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	/** Configuration for TaggedFieldSerializer instances. */
 	public static class TaggedFieldSerializerConfig extends FieldSerializerConfig {
-		boolean readUnknownTagData, chunked;
+		boolean readUnknownTagData, chunked, optimizeGenerics;
 		int chunkSize = 1024;
 
 		public TaggedFieldSerializerConfig clone () {
@@ -299,6 +318,18 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		public int getChunkSize () {
 			return chunkSize;
+		}
+
+		/** When true, the generic type of a field is used to optimize its value, eg to omit the class of collection elements, even
+		 * if {@link #setReadUnknownTagData(boolean) readUnknownTagData} is true. Then the value can't be read anymore once the
+		 * field is removed, unless chunked encoding is enabled. This is needed to read data written by Kryo 5. Default is false. */
+		public void setOptimizeGenerics (boolean optimizeGenerics) {
+			this.optimizeGenerics = optimizeGenerics;
+			if (TRACE) trace("kryo", "TaggedFieldSerializerConfig setOptimizeGenerics: " + optimizeGenerics);
+		}
+
+		public boolean getOptimizeGenerics () {
+			return optimizeGenerics;
 		}
 	}
 }

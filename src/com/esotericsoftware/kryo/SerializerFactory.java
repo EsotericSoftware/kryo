@@ -54,7 +54,7 @@ public interface SerializerFactory<T extends Serializer> {
 	 * found constructor is used, in the order they were just described.
 	 * @author Rafael Winterhalter {@literal <rafael.wth@web.de>} */
 	public static class ReflectionSerializerFactory<T extends Serializer> extends BaseSerializerFactory<T> {
-		private final Class<T> serializerClass;
+		final Class<T> serializerClass;
 
 		public ReflectionSerializerFactory (Class<T> serializerClass) {
 			this.serializerClass = serializerClass;
@@ -77,7 +77,7 @@ public interface SerializerFactory<T extends Serializer> {
 						try {
 							return serializerClass.getConstructor(Class.class).newInstance(type);
 						} catch (NoSuchMethodException ex3) {
-							return serializerClass.newInstance();
+							return serializerClass.getDeclaredConstructor().newInstance();
 						}
 					}
 				}

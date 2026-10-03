@@ -22,9 +22,12 @@ package com.esotericsoftware.kryo.util;
 import static com.esotericsoftware.kryo.util.Util.*;
 
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.reflectasm.ConstructorAccess;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 
 import org.objenesis.instantiator.ObjectInstantiator;
@@ -49,20 +52,29 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 	}
 
 	public ObjectInstantiator newInstantiatorOf (final Class type) {
+		Constructor ctor = null;
+		try {
+			ctor = type.getDeclaredConstructor((Class[])null);
+			// Also for public constructors, so that they can be called if the class is not public.
+			ctor.setAccessible(true);
+		} catch (Exception ex) {
+			// Without setAccessible, the constructor can only be called if it and the class are public.
+			if (ctor != null && (!Modifier.isPublic(ctor.getModifiers()) || !Modifier.isPublic(type.getModifiers()))) ctor = null;
+		}
 
-		if (!Util.isAndroid && !Util.isNativeImage) {
-			// Use ReflectASM if the class is not a non-static member class.
-			Class enclosingType = type.getEnclosingClass();
-			boolean isNonStaticMemberClass = enclosingType != null && type.isMemberClass()
-				&& !Modifier.isStatic(type.getModifiers());
-			if (!isNonStaticMemberClass) {
+		if (ctor != null) {
+			// Method handle, except on Android and in native images, where reflection is used.
+			if (!Util.isAndroid && !Util.isNativeImage) {
 				try {
-					final ConstructorAccess access = ConstructorAccess.get(type);
+					final MethodHandle handle = MethodHandles.lookup().unreflectConstructor(ctor)
+						.asType(MethodType.methodType(Object.class));
 					return new ObjectInstantiator() {
 						public Object newInstance () {
 							try {
-								return access.newInstance();
-							} catch (Exception | InstantiationError ex) {
+								return handle.invokeExact();
+							} catch (Error ex) {
+								throw ex;
+							} catch (Throwable ex) {
 								throw createInstantiationError(type, ex);
 							}
 						}
@@ -70,28 +82,21 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 				} catch (Exception ignored) {
 				}
 			}
-		}
 
-		// Reflection.
-		try {
-			Constructor ctor;
-			try {
-				ctor = type.getConstructor((Class[])null);
-			} catch (Exception ex) {
-				ctor = type.getDeclaredConstructor((Class[])null);
-				ctor.setAccessible(true);
-			}
+			// Reflection.
 			final Constructor constructor = ctor;
 			return new ObjectInstantiator() {
 				public Object newInstance () {
 					try {
 						return constructor.newInstance();
+					} catch (InvocationTargetException ex) {
+						if (ex.getCause() instanceof Error) throw (Error)ex.getCause();
+						throw createInstantiationError(type, ex.getCause());
 					} catch (Exception ex) {
 						throw createInstantiationError(type, ex);
 					}
 				}
 			};
-		} catch (Exception ignored) {
 		}
 
 		if (fallbackStrategy == null) {

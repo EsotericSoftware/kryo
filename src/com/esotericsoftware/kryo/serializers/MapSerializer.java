@@ -44,7 +44,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
 	private boolean keysCanBeNull = true, valuesCanBeNull = true;
-	private boolean writeSameClassOnce;
+	private boolean writeSameClassOnce = true;
 
 	public MapSerializer () {
 		setAcceptsNull(true);
@@ -115,8 +115,8 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	}
 
 	/** @param writeSameClassOnce True if the class of the keys or values is written only once when it is unknown and all keys or
-	 *           values are not null and have the same class, which is the default in Kryo 6. The writer and reader must use the
-	 *           same setting. False to write the class of each key and value (default). */
+	 *           values are not null and have the same class. False to read and write the format of Kryo 5, which writes the class
+	 *           of each key and value. Default is true. */
 	public void setWriteSameClassOnce (boolean writeSameClassOnce) {
 		this.writeSameClassOnce = writeSameClassOnce;
 	}
@@ -298,6 +298,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	}
 
 	protected T createCopy (Kryo kryo, T original) {
+		if (original.getClass() == HashMap.class) return (T)new HashMap(Math.max((int)(original.size() / 0.75f) + 1, 16));
 		return (T)kryo.newInstance(original.getClass());
 	}
 

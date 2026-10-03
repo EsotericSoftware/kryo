@@ -35,11 +35,10 @@ import java.util.OptionalLong;
  * serializers for Java 8 or later. */
 public final class OptionalSerializers {
 	public static void addDefaultSerializers (Kryo kryo) {
-		if (isClassAvailable("java.util.Optional")) kryo.addDefaultSerializer(Optional.class, OptionalSerializer.class);
-		if (isClassAvailable("java.util.OptionalInt")) kryo.addDefaultSerializer(OptionalInt.class, OptionalIntSerializer.class);
-		if (isClassAvailable("java.util.OptionalLong")) kryo.addDefaultSerializer(OptionalLong.class, OptionalLongSerializer.class);
-		if (isClassAvailable("java.util.OptionalDouble"))
-			kryo.addDefaultSerializer(OptionalDouble.class, OptionalDoubleSerializer.class);
+		kryo.addDefaultSerializer(Optional.class, OptionalSerializer::new);
+		kryo.addDefaultSerializer(OptionalInt.class, OptionalIntSerializer::new);
+		kryo.addDefaultSerializer(OptionalLong.class, OptionalLongSerializer::new);
+		kryo.addDefaultSerializer(OptionalDouble.class, OptionalDoubleSerializer::new);
 	}
 
 	public static class OptionalSerializer extends Serializer<Optional> {
