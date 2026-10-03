@@ -22,20 +22,14 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /** Serializers for java.util.ImmutableCollections, Are added as default serializers for Java 9 or later. */
 public final class ImmutableCollectionsSerializers {
@@ -56,21 +50,10 @@ public final class ImmutableCollectionsSerializers {
 		JdkImmutableSetSerializer.registerSerializers(kryo);
 	}
 
-	/** Serializer for the immutable lists created by {@code List.of} and {@code Stream.toList}. Lists created by
-	 * {@code Stream.toList} can contain null elements, which are only supported if {@link #setElementsCanBeNull(boolean)
-	 * elementsCanBeNull} is enabled. All list classes share one serializer:
-	 *
-	 * <pre>
-	 * // Changes the serialized format of immutable lists, so the writer and reader must both use this setting.
-	 * ((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(true);
-	 * </pre>
-	 */
+	/** Serializer for the immutable lists created by {@code List.of} and {@code Stream.toList}, which can contain null elements.
+	 * All list classes share one serializer. */
 	public static final class JdkImmutableListSerializer extends CollectionSerializer<List<Object>> {
-		/** {@code Stream.toList}, which is only available on Java 16+. */
-		private static final MethodHandle toList = toListHandle();
-
 		private JdkImmutableListSerializer () {
-			setElementsCanBeNull(false);
 		}
 
 		@Override
@@ -106,21 +89,7 @@ public final class ImmutableCollectionsSerializers {
 			if (size == 1 && first != null) return List.of(first);
 			if (size == 2 && first != null && list.get(1) != null) return List.of(first, list.get(1));
 			if (!list.contains(null)) return List.of(list.toArray());
-			// Only Stream.toList creates immutable lists with null elements. Before Java 16, use an unmodifiable list instead.
-			if (toList == null) return Collections.unmodifiableList(list);
-			try {
-				return (List)toList.invokeExact(list.stream());
-			} catch (Throwable ex) {
-				throw new KryoException(ex);
-			}
-		}
-
-		private static MethodHandle toListHandle () {
-			try {
-				return MethodHandles.publicLookup().findVirtual(Stream.class, "toList", MethodType.methodType(List.class));
-			} catch (ReflectiveOperationException ex) {
-				return null;
-			}
+			return list.stream().toList(); // Allows null elements.
 		}
 
 		static void addDefaultSerializers (Kryo kryo) {
