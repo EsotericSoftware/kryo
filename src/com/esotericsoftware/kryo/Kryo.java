@@ -1148,9 +1148,7 @@ public class Kryo {
 
 	private boolean isAllowedUnregistered (Class type) {
 		if (allowedUnregisteredClasses == null) return false;
-		while (type.isArray())
-			type = type.getComponentType();
-		return allowedUnregisteredClasses.test(type);
+		return allowedUnregisteredClasses.test(type.isArray() ? getElementClass(type) : type);
 	}
 
 	/** If true, kryo writes a warn log entry when an unregistered class is encountered. Default is false. */
