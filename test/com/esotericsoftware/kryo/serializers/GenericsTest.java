@@ -223,6 +223,14 @@ class GenericsTest extends KryoTestCase {
 		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderInner());
 	}
 
+	// The super class of an inner class passes a type parameter of the enclosing class to the declared type.
+	@Test
+	void testTypeParameterOfEnclosingClass () {
+		kryo.setRegistrationRequired(false);
+		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+		roundTrip(164, new DeclaredTypes.HolderEnclosing());
+	}
+
 	// The type parameter of the class is not passed to the declared interface.
 	@Test
 	void testTypeParameterNotPassedToDeclaredType () {
@@ -957,6 +965,22 @@ class GenericsTest extends KryoTestCase {
 
 			public boolean equals (Object o) {
 				return o instanceof HolderInner h && Objects.equals(inner, h.inner);
+			}
+		}
+
+		public static class Enclosing<X> {
+			public class Mid<Y> extends Base<X, Y> {
+			}
+
+			public class Inner<Z> extends Mid<Z> {
+			}
+		}
+
+		public static class HolderEnclosing {
+			public Base<String, Integer> base = new Enclosing<String>().new Inner<Integer>();
+
+			public boolean equals (Object o) {
+				return o instanceof HolderEnclosing h && base.getClass() == h.base.getClass();
 			}
 		}
 

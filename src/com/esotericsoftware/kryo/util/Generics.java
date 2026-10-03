@@ -226,8 +226,10 @@ public interface Generics {
 				List superParameters = Arrays.asList(((Class)superType).getTypeParameters());
 				Type[] arguments = superTypeArguments((Class)superType, declared);
 				for (int ii = 0; ii < arguments.length; ii++) {
-					if (arguments[ii] instanceof TypeVariable)
-						arguments[ii] = actual == null ? null : actual[superParameters.indexOf(arguments[ii])];
+					if (!(arguments[ii] instanceof TypeVariable)) continue;
+					// The type variable can belong to an enclosing class instead of the super type, then it is not known.
+					int index = superParameters.indexOf(arguments[ii]);
+					arguments[ii] = actual == null || index == -1 ? null : actual[index];
 				}
 				return arguments;
 			}
