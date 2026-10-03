@@ -20,11 +20,9 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
 import com.esotericsoftware.minlog.Log;
 
 import java.util.ArrayList;
@@ -47,41 +45,24 @@ import java.util.function.Function;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class SynchronizedCollectionSerializers {
 
-	private static class Offset {
-		private static final long SOURCE_COLLECTION_FIELD_OFFSET;
-		private static final long SOURCE_MAP_FIELD_OFFSET;
-
-		static {
-			String clsName = "java.util.Collections$SynchronizedCollection";
-			try {
-				SOURCE_COLLECTION_FIELD_OFFSET = UnsafeUtil.objectFieldOffset(Class.forName(clsName).getDeclaredField("c"));
-			} catch (Exception e) {
-				Log.warn("Could not access source collection field in " + clsName);
-				throw new KryoException(e);
-			}
-			clsName = "java.util.Collections$SynchronizedMap";
-			try {
-				SOURCE_MAP_FIELD_OFFSET = UnsafeUtil.objectFieldOffset(Class.forName(clsName).getDeclaredField("m"));
-			} catch (Exception e) {
-				Log.warn("Could not access source map field in " + clsName);
-				throw new KryoException(e);
-			}
-		}
-	}
+	private static final WrappedCollectionGetter collectionGetter = new WrappedCollectionGetter(
+		"java.util.Collections$SynchronizedCollection", "c");
+	private static final WrappedCollectionGetter mapGetter = new WrappedCollectionGetter("java.util.Collections$SynchronizedMap",
+		"m");
 
 	static final class SynchronizedCollectionSerializer extends CollectionSerializer<Collection> {
 		private final Function factory;
-		private final long offset;
+		private final WrappedCollectionGetter getter;
 
-		public SynchronizedCollectionSerializer (Function factory, long offset) {
+		public SynchronizedCollectionSerializer (Function factory, WrappedCollectionGetter getter) {
 			setAcceptsNull(false);
 			this.factory = factory;
-			this.offset = offset;
+			this.getter = getter;
 		}
 
 		@Override
 		public void write (Kryo kryo, Output output, Collection collection) {
-			Object unwrapped = UnsafeUtil.getObject(collection, offset);
+			Object unwrapped = getter.get(collection);
 			synchronized (collection) {
 				kryo.writeClassAndObject(output, unwrapped);
 			}
@@ -96,7 +77,7 @@ public final class SynchronizedCollectionSerializers {
 		@Override
 		public Collection copy (Kryo kryo, Collection original) {
 			synchronized (original) {
-				final Object collection = UnsafeUtil.getObject(original, offset);
+				final Object collection = getter.get(original);
 				return (Collection)factory.apply(kryo.copy(collection));
 			}
 		}
@@ -104,17 +85,17 @@ public final class SynchronizedCollectionSerializers {
 
 	static final class SynchronizedMapSerializer extends MapSerializer<Map> {
 		private final Function factory;
-		private final long offset;
+		private final WrappedCollectionGetter getter;
 
-		public SynchronizedMapSerializer (Function factory, long offset) {
+		public SynchronizedMapSerializer (Function factory, WrappedCollectionGetter getter) {
 			setAcceptsNull(false);
 			this.factory = factory;
-			this.offset = offset;
+			this.getter = getter;
 		}
 
 		@Override
 		public void write (Kryo kryo, Output output, Map map) {
-			Object unwrapped = UnsafeUtil.getObject(map, offset);
+			Object unwrapped = getter.get(map);
 			synchronized (map) {
 				kryo.writeClassAndObject(output, unwrapped);
 			}
@@ -129,7 +110,7 @@ public final class SynchronizedCollectionSerializers {
 		@Override
 		public Map copy (Kryo kryo, Map original) {
 			synchronized (original) {
-				final Object map = UnsafeUtil.getObject(original, offset);
+				final Object map = getter.get(original);
 				return (Map)factory.apply(kryo.copy(map));
 			}
 		}
@@ -137,9 +118,9 @@ public final class SynchronizedCollectionSerializers {
 
 	private static Serializer<?> createSerializer (Map.Entry<Class<?>, Function> factory) {
 		if (Collection.class.isAssignableFrom(factory.getKey())) {
-			return new SynchronizedCollectionSerializer(factory.getValue(), Offset.SOURCE_COLLECTION_FIELD_OFFSET);
+			return new SynchronizedCollectionSerializer(factory.getValue(), collectionGetter);
 		} else {
-			return new SynchronizedMapSerializer(factory.getValue(), Offset.SOURCE_MAP_FIELD_OFFSET);
+			return new SynchronizedMapSerializer(factory.getValue(), mapGetter);
 		}
 	}
 
