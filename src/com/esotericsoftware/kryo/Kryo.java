@@ -158,6 +158,7 @@ public class Kryo {
 	private SerializerFactory defaultSerializer = new FieldSerializerFactory();
 	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(DEFAULT_SERIALIZER_SIZE);
 	private final int lowPriorityDefaultSerializerCount;
+	private ObjectMap<String, Class> defaultSerializerTypes;
 
 	private final ClassResolver classResolver;
 	private int nextRegisterID;
@@ -472,7 +473,20 @@ public class Kryo {
 		for (int i = 0, n = defaultSerializers.size() - lowPriorityDefaultSerializerCount; i < n; i++)
 			if (type.isAssignableFrom(defaultSerializers.get(i).type)) lowest = i + 1;
 		defaultSerializers.add(lowest, new DefaultSerializerEntry(type, factory));
+		defaultSerializerTypes = null;
 		return lowest;
+	}
+
+	/** Returns the type with the specified name if it has a default serializer. This finds classes without reflection, eg
+	 * JDK-internal classes like the one returned by {@code List.of} in a GraalVM native image.
+	 * @return May be null. */
+	public Class getDefaultSerializerType (String className) {
+		if (defaultSerializerTypes == null) {
+			defaultSerializerTypes = new ObjectMap(defaultSerializers.size());
+			for (DefaultSerializerEntry entry : defaultSerializers)
+				defaultSerializerTypes.put(entry.type.getName(), entry.type);
+		}
+		return defaultSerializerTypes.get(className);
 	}
 
 	/** Returns the best matching serializer for a class. This method can be overridden to implement custom logic to choose a

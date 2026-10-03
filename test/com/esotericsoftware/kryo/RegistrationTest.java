@@ -27,6 +27,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +39,25 @@ class RegistrationTest {
 		FieldSerializer appleSerializer = new FieldSerializer(kryo, Apple.class);
 		kryo.addDefaultSerializer(Apple.class, appleSerializer);
 		assertSame(appleSerializer, kryo.getDefaultSerializer(Apple.class));
+	}
+
+	@Test
+	void testDefaultSerializerSupplier () {
+		Kryo kryo = new Kryo();
+		kryo.addDefaultSerializer(Apple.class, LongSerializer::new);
+		Serializer serializer = kryo.getDefaultSerializer(Apple.class);
+		assertTrue(serializer instanceof LongSerializer);
+		assertNotSame(serializer, kryo.getDefaultSerializer(Apple.class)); // A new serializer for each type.
+	}
+
+	@Test
+	void testDefaultSerializerType () {
+		Kryo kryo = new Kryo();
+		Class listN = List.of(1, 2, 3).getClass();
+		assertSame(listN, kryo.getDefaultSerializerType(listN.getName()));
+		assertNull(kryo.getDefaultSerializerType(Apple.class.getName()));
+		kryo.addDefaultSerializer(Apple.class, LongSerializer::new);
+		assertSame(Apple.class, kryo.getDefaultSerializerType(Apple.class.getName()));
 	}
 
 	@Test
