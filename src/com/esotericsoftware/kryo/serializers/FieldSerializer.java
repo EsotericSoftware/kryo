@@ -509,13 +509,16 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public @interface NotNull {
 	}
 
-	/** How {@link FieldSerializer} reads and writes fields. If a field can't be accessed this way, the next way in this order is
-	 * used, eg for final fields, which can't be written with VarHandles, or for records, which are never accessed with Unsafe.
-	 * Reflection works for all fields. */
+	/** How {@link FieldSerializer} reads and writes fields. If a field can't be accessed this way, VarHandles are used, and
+	 * reflection if they can't be used either, eg for final fields, which can't be written with VarHandles, or for records, which
+	 * are never accessed with Unsafe. Reflection works for all fields. */
 	public enum FieldAccessType {
 		/** {@code sun.misc.Unsafe}, if available. Fastest, but deprecated for removal by Java. */
 		UNSAFE,
-		/** ReflectASM for public, non-final fields of public classes. */
+		/** ReflectASM for public, non-final fields of public classes. It is only used if it is configured.
+		 * @deprecated VarHandles are as fast as ReflectASM. ASM will be removed in Kryo 7, together with the ReflectASM dependency.
+		 *             If VarHandles are slower for you than ReflectASM, please open an issue. */
+		@Deprecated
 		ASM,
 		/** {@link java.lang.invoke.VarHandle} for non-final fields. */
 		VARHANDLE,

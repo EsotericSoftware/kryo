@@ -1634,9 +1634,21 @@ class FieldSerializerTest extends KryoTestCase {
 	@Test
 	void testFieldAccess () {
 		assertFieldAccess(FieldAccessType.UNSAFE, "IntUnsafeField", "UnsafeField", "IntUnsafeField");
-		assertFieldAccess(FieldAccessType.ASM, "IntAsmField", "AsmField", "IntReflectField");
+		@SuppressWarnings("deprecation")
+		FieldAccessType asm = FieldAccessType.ASM;
+		assertFieldAccess(asm, "IntAsmField", "AsmField", "IntReflectField");
 		assertFieldAccess(FieldAccessType.VARHANDLE, "IntVarHandleField", "VarHandleField", "IntReflectField");
 		assertFieldAccess(FieldAccessType.REFLECTION, "IntReflectField", "ReflectField", "IntReflectField");
+	}
+
+	@Test
+	@SuppressWarnings("deprecation")
+	void testFieldAccessWithoutUnsafe () {
+		// Unsafe configured but not available: VarHandles, reflection on Android, never ReflectASM.
+		assertEquals(FieldAccessType.VARHANDLE, CachedFields.fieldAccess(FieldAccessType.UNSAFE, false, false));
+		assertEquals(FieldAccessType.REFLECTION, CachedFields.fieldAccess(FieldAccessType.UNSAFE, false, true));
+		assertEquals(FieldAccessType.UNSAFE, CachedFields.fieldAccess(FieldAccessType.UNSAFE, true, false));
+		assertEquals(FieldAccessType.ASM, CachedFields.fieldAccess(FieldAccessType.ASM, false, false));
 	}
 
 	@Test
