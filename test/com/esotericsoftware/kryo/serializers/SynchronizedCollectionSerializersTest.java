@@ -19,14 +19,19 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -43,7 +48,7 @@ class SynchronizedCollectionSerializersTest extends KryoTestCase {
 	public void setUp () throws Exception {
 		super.setUp();
 
-		SynchronizedCollectionSerializers.registerSerializers(kryo);
+		SynchronizedCollectionSerializers.register(kryo);
 
 		kryo.register(ArrayList.class);
 		kryo.register(LinkedList.class);
@@ -63,6 +68,49 @@ class SynchronizedCollectionSerializersTest extends KryoTestCase {
 		roundTrip(3, Collections.synchronizedSet(new HashSet<>()));
 		roundTrip(4, Collections.synchronizedSet(new TreeSet<>()));
 		roundTrip(6, Collections.synchronizedCollection(Arrays.asList("")));
+	}
+
+	@Test
+	void testNavigable () {
+		roundTrip(4, Collections.synchronizedNavigableSet(new TreeSet<>()));
+		roundTrip(4, Collections.synchronizedNavigableMap(new TreeMap<>()));
+	}
+
+	@Test
+	void testRegistrationOrder () {
+		Kryo kryo = new Kryo();
+		int firstId = kryo.getNextRegistrationId();
+		SynchronizedCollectionSerializers.register(kryo);
+		List<Class> types = Arrays.asList(Collections.synchronizedCollection(Arrays.asList("")).getClass(),
+			Collections.synchronizedList(new ArrayList<>()).getClass(), Collections.synchronizedList(new LinkedList<>()).getClass(),
+			Collections.synchronizedSet(new HashSet<>()).getClass(), Collections.synchronizedSortedSet(new TreeSet<>()).getClass(),
+			Collections.synchronizedMap(new HashMap<>()).getClass(), Collections.synchronizedSortedMap(new TreeMap<>()).getClass(),
+			Collections.synchronizedNavigableSet(new TreeSet<>()).getClass(),
+			Collections.synchronizedNavigableMap(new TreeMap<>()).getClass());
+		for (int i = 0; i < types.size(); i++)
+			Assertions.assertEquals(firstId + i, kryo.getRegistration(types.get(i)).getId());
+	}
+
+	@Test
+	void testDefaultSerializers () {
+		Kryo kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		SynchronizedCollectionSerializers.addDefaultSerializers(kryo);
+		TreeMap<String, String> map = new TreeMap<>();
+		map.put("a", "b");
+		assertDefaultRoundTrip(kryo, Collections.synchronizedList(new ArrayList<>(Arrays.asList("a"))));
+		assertDefaultRoundTrip(kryo, Collections.synchronizedSortedSet(new TreeSet<>(Arrays.asList("a"))));
+		assertDefaultRoundTrip(kryo, Collections.synchronizedNavigableSet(new TreeSet<>(Arrays.asList("a"))));
+		assertDefaultRoundTrip(kryo, Collections.synchronizedSortedMap(map));
+		assertDefaultRoundTrip(kryo, Collections.synchronizedNavigableMap(map));
+	}
+
+	private void assertDefaultRoundTrip (Kryo kryo, Object object) {
+		Output output = new Output(1024, -1);
+		kryo.writeClassAndObject(output, object);
+		Object result = kryo.readClassAndObject(new Input(output.toBytes()));
+		Assertions.assertEquals(object.getClass(), result.getClass());
+		Assertions.assertEquals(object.toString(), result.toString());
 	}
 
 	protected void doAssertEquals (Object object1, Object object2) {
