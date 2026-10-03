@@ -85,6 +85,10 @@ LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language ta
 * The serializers for unmodifiable and synchronized collections read the wrapped collection with method handles if `java.util` is open to Kryo, otherwise with Unsafe. If neither is allowed, they throw an exception on first use that explains how to allow it. Kryo 5 failed to register them without Unsafe.
 * The type parameters of a class are resolved from the declared type, eg the type of a field, through the super classes and interfaces of the class. Kryo 5 assigned the type arguments of the declared type by position to the type parameters of the class of the value, which failed with a ClassCastException when they didn't match, eg for a `Base<String, Integer>` field holding a `Sub<A, B> extends Base<B, A>`, and ignored them when their number didn't match. When Kryo 6 resolves a type parameter that Kryo 5 ignored, the serialized bytes can differ.
 
+## Deprecated APIs
+
+* RecordSerializer. Records are serialized by FieldSerializer and its subclasses. RecordSerializer is only needed to read records written by Kryo 5, see [Records](#records).
+
 ## Removed APIs
 
 * `CuckooObjectMap`, which was deprecated in Kryo 5.3.0.

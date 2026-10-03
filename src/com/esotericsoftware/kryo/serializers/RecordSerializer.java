@@ -35,7 +35,10 @@ import java.util.Comparator;
 
 /** Serializer for record classes.
  * @author Julia Boes {@literal <julia.boes@oracle.com>}
- * @author Chris Hegarty {@literal <chris.hegarty@oracle.com>} */
+ * @author Chris Hegarty {@literal <chris.hegarty@oracle.com>}
+ * @deprecated FieldSerializer and its subclasses serialize records by default and are faster. Use this serializer only to read
+ *             records written by Kryo 5, see {@link com.esotericsoftware.kryo.Kryo5Compatibility}. */
+@Deprecated
 public class RecordSerializer<T> extends ImmutableSerializer<T> {
 	private static final ClassValue<Constructor<?>> CONSTRUCTOR = new ClassValue<Constructor<?>>() {
 		protected Constructor<?> computeValue (Class<?> type) {
