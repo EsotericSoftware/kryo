@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimestampSerializer;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
@@ -110,6 +111,22 @@ class Kryo5CompatibilityTest {
 		assertEquals(List.of("e", "f"), read(newKryo(true, setup), TaggedGenerics.class, "standard").list);
 
 		assertNotReadable(() -> read(newKryo(false, setup), TaggedGenerics.class, "standard").list.equals(List.of("e", "f")));
+	}
+
+	// The serializers of the new default types were available in Kryo 5. If they were registered, they must still be used.
+	@Test
+	void testRegisteredSerializerOfNewDefaultType () {
+		Kryo kryo = new Kryo();
+		TimestampSerializer serializer = new TimestampSerializer();
+		kryo.register(Timestamp.class, serializer);
+		Kryo5Compatibility.configure(kryo);
+		assertSame(serializer, kryo.getSerializer(Timestamp.class));
+
+		Timestamp timestamp = new Timestamp(1234567890123L);
+		timestamp.setNanos(123456789);
+		Output output = new Output(64);
+		kryo.writeObject(output, timestamp);
+		assertEquals(timestamp, kryo.readObject(new Input(output.toBytes()), Timestamp.class)); // The nanoseconds are kept.
 	}
 
 	@Test

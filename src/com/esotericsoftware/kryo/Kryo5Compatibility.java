@@ -51,7 +51,11 @@ import java.util.regex.Pattern;
  * Call {@link #configure(Kryo)} once, after {@link Kryo#setDefaultSerializer(SerializerFactory) setting the default serializer}.
  * It changes the default serializers, so serializers that are registered explicitly or added as default serializers later need
  * the Kryo 5 settings themselves, eg {@link MapSerializer#setWriteSameClassOnce(boolean)}. Records are serialized with
- * RecordSerializer like in Kryo 5, which is slower than FieldSerializer. */
+ * RecordSerializer like in Kryo 5, which is slower than FieldSerializer.
+ * <p>
+ * For the types that have new default serializers in Kryo 6, the serializers Kryo 5 used by default are configured. If the
+ * serializers for these types that were already available in Kryo 5, eg UUIDSerializer, were registered with Kryo 5, they must
+ * still be registered. */
 public final class Kryo5Compatibility {
 	private Kryo5Compatibility () {
 	}
