@@ -102,9 +102,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	/** Field values must be readable without the field, so they don't depend on the field's generic type when
-	 * {@link TaggedFieldSerializerConfig#setReadUnknownTagData(boolean) readUnknownTagData} is true. */
+	 * {@link TaggedFieldSerializerConfig#setReadUnknownTagData(boolean) readUnknownTagData} is true, unless
+	 * {@link TaggedFieldSerializerConfig#setOptimizeGenerics(boolean) optimizeGenerics} is set. */
 	protected boolean optimizeGenerics () {
-		return !config.readUnknownTagData;
+		return config.optimizeGenerics || !config.readUnknownTagData;
 	}
 
 	public void removeField (String fieldName) {
@@ -270,7 +271,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	/** Configuration for TaggedFieldSerializer instances. */
 	public static class TaggedFieldSerializerConfig extends FieldSerializerConfig {
-		boolean readUnknownTagData, chunked;
+		boolean readUnknownTagData, chunked, optimizeGenerics;
 		int chunkSize = 1024;
 
 		public TaggedFieldSerializerConfig clone () {
@@ -317,6 +318,18 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		public int getChunkSize () {
 			return chunkSize;
+		}
+
+		/** When true, the generic type of a field is used to optimize its value, eg to omit the class of collection elements, even
+		 * if {@link #setReadUnknownTagData(boolean) readUnknownTagData} is true. Then the value can't be read anymore once the
+		 * field is removed, unless chunked encoding is enabled. This is needed to read data written by Kryo 5. Default is false. */
+		public void setOptimizeGenerics (boolean optimizeGenerics) {
+			this.optimizeGenerics = optimizeGenerics;
+			if (TRACE) trace("kryo", "TaggedFieldSerializerConfig setOptimizeGenerics: " + optimizeGenerics);
+		}
+
+		public boolean getOptimizeGenerics () {
+			return optimizeGenerics;
 		}
 	}
 }
