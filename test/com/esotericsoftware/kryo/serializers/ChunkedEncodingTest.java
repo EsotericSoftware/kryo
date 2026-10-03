@@ -115,6 +115,28 @@ class ChunkedEncodingTest {
 	}
 
 	@Test
+	void testTaggedLegacyChunks () {
+		// The tags are written outside the chunks.
+		for (boolean legacyChunks : new boolean[] {false, true}) {
+			TaggedEntity entity = new TaggedEntity();
+			entity.b = new TaggedEntity2();
+			entity.b.x = new Entity3(5);
+			entity.c = new Entity3(10);
+			byte[] bytes = write(taggedKryo(legacyChunks), entity);
+			TaggedEntity read = taggedKryo(legacyChunks).readObject(new Input(bytes), TaggedEntity.class);
+			assertEquals(5, read.b.x.a);
+			assertEquals(10, read.c.a);
+			assertNull(read.d);
+
+			Kryo reader = taggedKryo(legacyChunks);
+			((TaggedFieldSerializer)reader.getSerializer(TaggedEntity.class)).removeField("b");
+			read = reader.readObject(new Input(bytes), TaggedEntity.class);
+			assertNull(read.b);
+			assertEquals(10, read.c.a);
+		}
+	}
+
+	@Test
 	void testLegacyChunks () {
 		// With the chunked encoding of Kryo 5, the class name of Entity3 is lost with the skipped chunk.
 		byte[] bytes = removeEntity2(write(compatibleKryo(false, false, true), entity(false)));
@@ -269,9 +291,14 @@ class ChunkedEncodingTest {
 	}
 
 	private Kryo taggedKryo () {
+		return taggedKryo(false);
+	}
+
+	private Kryo taggedKryo (boolean legacyChunks) {
 		Kryo kryo = new Kryo();
 		TaggedFieldSerializerConfig config = new TaggedFieldSerializerConfig();
 		config.setChunkedEncoding(true);
+		config.setLegacyChunks(legacyChunks);
 		config.setReadUnknownTagData(true);
 		kryo.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
 		kryo.setReferences(true);
