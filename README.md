@@ -1350,6 +1350,14 @@ Log.TRACE();
 
 Kryo does no logging at `INFO` (the default) level. `WARN` is only used for a few exceptional cases, such as unregistered classes when `setWarnUnregisteredClasses` is enabled, or when serializers that rely on JDK internals cannot access them. `DEBUG` is convenient to use during development. `TRACE` is good to use when debugging a specific problem, but generally outputs too much information to leave on.
 
+To route Kryo's logging to SLF4J, Log4j, or another logging framework, install `SystemLogger`, which logs with `System.Logger`:
+
+```java
+SystemLogger.install();
+```
+
+SLF4J needs the `slf4j-jdk-platform-logging` adapter and Log4j `log4j-jpl`, otherwise the logging goes to `java.util.logging`. `install` sets MinLog's level to the most detailed level that is enabled for the `com.esotericsoftware.kryo` logger, so call it again after changing that level.
+
 MinLog supports a fixed logging level, which causes the Java compiler to remove logging statements below that level at compile time. Kryo must be compiled with a fixed logging level MinLog JAR.
 
 ## GraalVM native image
