@@ -137,6 +137,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
@@ -166,6 +167,7 @@ public class Kryo {
 	private InstantiatorStrategy strategy = new DefaultInstantiatorStrategy();
 	private boolean registrationRequired = true;
 	private boolean warnUnregisteredClasses;
+	private Predicate<Class> allowedUnregisteredClasses;
 
 	private int depth, maxDepth = Integer.MAX_VALUE;
 	private boolean autoReset = true;
@@ -628,7 +630,8 @@ public class Kryo {
 			else if (isClosure(type)) //
 				registration = classResolver.getRegistration(ClosureSerializer.Closure.class);
 			if (registration == null) {
-				if (registrationRequired) throw new IllegalArgumentException(unregisteredClassMessage(type));
+				if (registrationRequired && !isAllowedUnregistered(type))
+					throw new IllegalArgumentException(unregisteredClassMessage(type));
 				if (WARN && warnUnregisteredClasses) warn(unregisteredClassMessage(type));
 				registration = classResolver.registerImplicit(type);
 			}
@@ -1174,6 +1177,30 @@ public class Kryo {
 
 	public boolean isRegistrationRequired () {
 		return registrationRequired;
+	}
+
+	/** Allows classes that are not registered, even though {@link #setRegistrationRequired(boolean) registration is required}, if
+	 * the predicate accepts them, eg the classes of a package:
+	 * 
+	 * <pre>
+	 * kryo.setAllowedUnregisteredClasses(type -&gt; type.getName().startsWith("com.example."));
+	 * </pre>
+	 * 
+	 * Like with registration not required, the class names of these classes are written, and other classes, including the classes
+	 * in the serialized data when reading, must still be registered. For arrays, the predicate is called with the component type.
+	 * @param allowedUnregisteredClasses May be null to allow no unregistered classes (default). */
+	public void setAllowedUnregisteredClasses (Predicate<Class> allowedUnregisteredClasses) {
+		this.allowedUnregisteredClasses = allowedUnregisteredClasses;
+	}
+
+	/** @return May be null. */
+	public Predicate<Class> getAllowedUnregisteredClasses () {
+		return allowedUnregisteredClasses;
+	}
+
+	private boolean isAllowedUnregistered (Class type) {
+		if (allowedUnregisteredClasses == null) return false;
+		return allowedUnregisteredClasses.test(type.isArray() ? getElementClass(type) : type);
 	}
 
 	/** If true, kryo writes a warn log entry when an unregistered class is encountered. Default is false. */

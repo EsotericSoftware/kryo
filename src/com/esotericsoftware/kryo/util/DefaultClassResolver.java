@@ -202,10 +202,9 @@ public class DefaultClassResolver implements ClassResolver {
 	}
 
 	public void reset () {
-		if (!kryo.isRegistrationRequired()) {
-			if (classToNameId != null) classToNameId.clear(2048);
-			if (nameIdToClass != null) nameIdToClass.clear();
-			nextNameId = 0;
-		}
+		// Class names are written for unregistered classes, also if they are allowed although registration is required.
+		if (classToNameId != null) classToNameId.clear(2048);
+		if (nameIdToClass != null) nameIdToClass.clear();
+		nextNameId = 0;
 	}
 }

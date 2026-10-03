@@ -530,6 +530,15 @@ Use of registered and unregistered classes can be mixed. Unregistered classes ha
 
 If using Kryo only for copying, registration can be safely disabled.
 
+To avoid registering many classes, eg all classes of a package, while still limiting the classes that can be deserialized, registration can stay required and unregistered classes can be allowed with a predicate. For arrays, the predicate is called with the component type:
+
+```java
+kryo.setRegistrationRequired(true);
+kryo.setAllowedUnregisteredClasses(type -> type.getName().startsWith("com.example."));
+```
+
+Allowed unregistered classes have the same drawbacks as other unregistered classes, except that only the allowed classes can be created during deserialization. All other classes must be registered.
+
 When registration is not required, Kryo `setWarnUnregisteredClasses` can be enabled to log a message when an unregistered class is encountered. This can be used to easily obtain a list of all unregistered classes. Kryo `unregisteredClassMessage` can be overridden to customize the log message or take other actions.
 
 ### Default serializers

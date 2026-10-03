@@ -29,6 +29,9 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -73,6 +76,40 @@ class RegistrationTest {
 		assertNull(kryo.getDefaultSerializerType(Apple.class.getName()));
 		kryo.addDefaultSerializer(Apple.class, LongSerializer::new);
 		assertSame(Apple.class, kryo.getDefaultSerializerType(Apple.class.getName()));
+	}
+
+	@Test
+	void testAllowedUnregisteredClasses () {
+		Kryo kryo = new Kryo();
+		kryo.setAllowedUnregisteredClasses(type -> type.getName().startsWith(RegistrationTest.class.getName()));
+		kryo.register(ArrayList.class);
+
+		Fruit[] fruits = {new Apple(), new Apple()};
+		ArrayList<Fruit> list = new ArrayList<>(Arrays.asList(fruits));
+		Output output = new Output(1024);
+		kryo.writeClassAndObject(output, list);
+		kryo.writeClassAndObject(output, fruits); // Arrays are allowed by their component type.
+		Input input = new Input(output.toBytes());
+		assertEquals(2, ((ArrayList)kryo.readClassAndObject(input)).size());
+		assertEquals(2, ((Fruit[])kryo.readClassAndObject(input)).length);
+
+		// The class names are written again for the next object graph, so it can be read on its own.
+		Output second = new Output(1024);
+		kryo.writeClassAndObject(second, new Apple());
+		Kryo reader = new Kryo();
+		reader.setAllowedUnregisteredClasses(kryo.getAllowedUnregisteredClasses());
+		assertTrue(reader.readClassAndObject(new Input(second.toBytes())) instanceof Apple);
+
+		// Classes that are not allowed must still be registered, also when reading.
+		assertThrows(IllegalArgumentException.class, () -> kryo.writeClassAndObject(new Output(1024), new HashMap()));
+		Kryo writer = new Kryo();
+		writer.setRegistrationRequired(false);
+		Output other = new Output(1024);
+		writer.writeClassAndObject(other, new HashMap());
+		assertThrows(IllegalArgumentException.class, () -> new Kryo().readClassAndObject(new Input(other.toBytes())));
+		Kryo appleReader = new Kryo();
+		appleReader.setAllowedUnregisteredClasses(type -> type == Apple.class);
+		assertThrows(IllegalArgumentException.class, () -> appleReader.readClassAndObject(new Input(other.toBytes())));
 	}
 
 	@Test
