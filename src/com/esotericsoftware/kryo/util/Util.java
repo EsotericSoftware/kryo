@@ -37,6 +37,9 @@ import java.util.Map;
 public class Util {
 	public static final boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
 
+	/** True if running in a GraalVM native image, which can't define classes at runtime, so ReflectASM can't be used. */
+	public static final boolean isNativeImage = System.getProperty("org.graalvm.nativeimage.imagecode") != null;
+
 	/** True if Unsafe is available. Unsafe can be disabled by setting the system property "kryo.unsafe" to "false". */
 	public static final boolean unsafe;
 	static {

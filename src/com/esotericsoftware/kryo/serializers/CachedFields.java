@@ -92,7 +92,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 
 		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
-		boolean asm = !unsafe && !isAndroid && Modifier.isPublic(serializer.type.getModifiers());
+		boolean asm = !unsafe && !isAndroid && !isNativeImage && Modifier.isPublic(serializer.type.getModifiers());
 		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
 			for (Field field : nextClass.getDeclaredFields())
