@@ -92,6 +92,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
    * [JavaSerializer and ExternalizableSerializer](#javaserializer-and-externalizableserializer)
 - [Logging](#logging)
 - [GraalVM native image](#graalvm-native-image)
+- [JDK AOT cache](#jdk-aot-cache)
 - [Android](#android)
 - [Thread safety](#thread-safety)
    * [Pooling](#pooling)
@@ -1379,6 +1380,10 @@ java -Dorg.graalvm.nativeimage.imagecode=agent -agentlib:native-image-agent=conf
 ```
 
 Default serializers added with `addDefaultSerializer(Class, Class)` are created with reflection and need metadata too. `addDefaultSerializer(SomeClass.class, SomeSerializer::new)` creates them without reflection.
+
+## JDK AOT cache
+
+Kryo works with the JDK's [ahead-of-time cache](https://openjdk.org/jeps/483) (Java 24+) without any configuration. Kryo's classes are loaded and linked from the cache like the application's classes.
 
 ## Android
 
