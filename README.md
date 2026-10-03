@@ -1290,7 +1290,7 @@ Setting | Description | Default value
 
 ### Unmodifiable and synchronized collections
 
-Kryo provides serializers for the wrappers returned by `Collections.unmodifiableCollection`, `unmodifiableList`, `unmodifiableSet`, `unmodifiableMap`, `synchronizedList`, `synchronizedMap`, etc. The JDK offers no public API to get the wrapped collection, so these serializers read private JDK fields: with method handles if `java.util` is open to Kryo (`--add-opens java.base/java.util=ALL-UNNAMED`), otherwise with `sun.misc.Unsafe`, which warns on Java 24+. Because they depend on JDK internals that may change or become inaccessible in future Java versions, they are not registered by default and must be enabled manually:
+Kryo provides serializers for the wrappers returned by `Collections.unmodifiableCollection`, `unmodifiableList`, `unmodifiableSet`, `unmodifiableMap`, `synchronizedList`, `synchronizedMap`, etc. The JDK offers no public API to get the wrapped collection, so these serializers read private JDK fields: with method handles if `java.util` is open to Kryo (`--add-opens java.base/java.util=ALL-UNNAMED`, or with Kryo's module name instead of `ALL-UNNAMED` on the module path, eg `com.esotericsoftware.kryo`), otherwise with `sun.misc.Unsafe`, which warns on Java 24+. Because they depend on JDK internals that may change or become inaccessible in future Java versions, they are not registered by default and must be enabled manually:
 
 ```java
 Kryo kryo = new Kryo();
@@ -1303,7 +1303,7 @@ UnmodifiableCollectionSerializers.addDefaultSerializers(kryo);
 SynchronizedCollectionSerializers.addDefaultSerializers(kryo);
 ```
 
-If the JDK internals can't be accessed, a warning is logged and the serializers are not registered. Serializing these wrappers then falls back to the global default serializer and may fail.
+The JDK internals are accessed when a wrapper is serialized or copied for the first time. If neither is allowed, an exception explains how to allow it.
 
 Serializers for immutable collections created with `List.of`, `Set.of`, `Map.of`, etc. are added as default serializers on Java 9+. Since these collections are implemented by JDK-internal classes, they cannot be registered by name. When registration is required, register them all at once:
 
