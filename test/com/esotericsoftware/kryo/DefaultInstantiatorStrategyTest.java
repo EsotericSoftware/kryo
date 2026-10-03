@@ -72,7 +72,12 @@ public class DefaultInstantiatorStrategyTest {
         assertSame(ThrowingConstructor.exception, thrown.getCause());
     }
 
-    public void tryInstantiate(Class type) {
+    @Test
+    public void testConstructorError() {
+        assertSame(ErrorConstructor.error, assertThrows(Error.class, () -> tryInstantiate(ErrorConstructor.class)));
+    }
+
+        public void tryInstantiate(Class type) {
         instantiatorStrategy.newInstantiatorOf(type).newInstance();
     }
 
@@ -89,6 +94,14 @@ public class DefaultInstantiatorStrategyTest {
 
         public ThrowingConstructor() {
             throw exception;
+        }
+    }
+
+    static class ErrorConstructor {
+        static final Error error = new AssertionError();
+
+        public ErrorConstructor() {
+            throw error;
         }
     }
 }

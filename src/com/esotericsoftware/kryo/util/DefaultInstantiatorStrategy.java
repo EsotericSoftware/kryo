@@ -27,6 +27,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 
 import org.objenesis.instantiator.ObjectInstantiator;
@@ -57,7 +58,8 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 			// Also for public constructors, so that they can be called if the class is not public.
 			ctor.setAccessible(true);
 		} catch (Exception ex) {
-			if (ctor != null && !Modifier.isPublic(ctor.getModifiers())) ctor = null;
+			// Without setAccessible, the constructor can only be called if it and the class are public.
+			if (ctor != null && (!Modifier.isPublic(ctor.getModifiers()) || !Modifier.isPublic(type.getModifiers()))) ctor = null;
 		}
 
 		if (ctor != null) {
@@ -70,6 +72,8 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 						public Object newInstance () {
 							try {
 								return handle.invokeExact();
+							} catch (Error ex) {
+								throw ex;
 							} catch (Throwable ex) {
 								throw createInstantiationError(type, ex);
 							}
@@ -85,6 +89,9 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 				public Object newInstance () {
 					try {
 						return constructor.newInstance();
+					} catch (InvocationTargetException ex) {
+						if (ex.getCause() instanceof Error) throw (Error)ex.getCause();
+						throw createInstantiationError(type, ex.getCause());
 					} catch (Exception ex) {
 						throw createInstantiationError(type, ex);
 					}
