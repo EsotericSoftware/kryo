@@ -56,4 +56,22 @@ public interface ClassResolver {
 
 	/** Called by {@link Kryo#reset()}. */
 	public void reset ();
+
+	/** Returns the number of class names written in the current object graph. With chunked encoding, the class names written in a
+	 * chunk are written again after it, so they are known even if the chunk is skipped. The default implementation returns 0, so
+	 * no class names are written again. */
+	public default int getWrittenNameCount () {
+		return 0;
+	}
+
+	/** Writes the class names that were written in the current object graph after the specified number of class names.
+	 * @see #getWrittenNameCount() */
+	public default void writeNames (Output output, int start) {
+		throw new UnsupportedOperationException();
+	}
+
+	/** Reads class names written by {@link #writeNames(Output, int)} and remembers those that are not known yet. */
+	public default void readNames (Input input) {
+		throw new UnsupportedOperationException();
+	}
 }

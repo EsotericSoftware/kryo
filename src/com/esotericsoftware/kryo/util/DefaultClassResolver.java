@@ -43,6 +43,8 @@ public class DefaultClassResolver implements ClassResolver {
 	protected IntMap<Class> nameIdToClass;
 	protected ObjectMap<String, Class> nameToClass;
 	protected int nextNameId;
+	/** Names of classes that were not found, by name ID, so a later reference to the name ID can't be read as a class name. */
+	protected IntMap<String> unknownNameIdToName;
 
 	private int memoizedClassId = -1;
 	private Registration memoizedClassIdValue;
@@ -170,33 +172,72 @@ public class DefaultClassResolver implements ClassResolver {
 		if (nameIdToClass == null) nameIdToClass = new IntMap<>();
 		Class type = nameIdToClass.get(nameId);
 		if (type == null) {
-			// Only read the class name the first time encountered in object graph.
-			String className = input.readString();
-			type = getTypeByName(className);
-			if (type == null) {
-				// Classes with a default serializer, eg JDK-internal classes, are found without reflection.
-				type = kryo.getDefaultSerializerType(className);
-				if (type == null) {
-					try {
-						type = Class.forName(className, false, kryo.getClassLoader());
-					} catch (ClassNotFoundException ex) {
-						// Fallback to Kryo's class loader.
-						try {
-							type = Class.forName(className, false, Kryo.class.getClassLoader());
-						} catch (ClassNotFoundException ex2) {
-							throw new KryoException("Unable to find class: " + className, ex);
-						}
-					}
-				}
-				if (nameToClass == null) nameToClass = new ObjectMap<>();
-				nameToClass.put(className, type);
+			if (unknownNameIdToName != null) {
+				String className = unknownNameIdToName.get(nameId);
+				if (className != null) throw new KryoException("Unable to find class: " + className);
 			}
-			nameIdToClass.put(nameId, type);
-			if (TRACE) trace("kryo", "Read class name: " + className + pos(input.position()));
+			// Only read the class name the first time encountered in object graph.
+			type = readName(nameId, input.readString());
 		} else {
 			if (TRACE) trace("kryo", "Read class name reference " + nameId + ": " + className(type) + pos(input.position()));
 		}
 		return kryo.getRegistration(type);
+	}
+
+	/** Returns the class with the specified name and remembers it for the name ID.
+	 * @throws KryoException if the class is not found. The name is remembered as unknown for the name ID. */
+	private Class readName (int nameId, String className) {
+		Class type = getTypeByName(className);
+		if (type == null) {
+			// Classes with a default serializer, eg JDK-internal classes, are found without reflection.
+			type = kryo.getDefaultSerializerType(className);
+			if (type == null) {
+				try {
+					type = Class.forName(className, false, kryo.getClassLoader());
+				} catch (ClassNotFoundException ex) {
+					// Fallback to Kryo's class loader.
+					try {
+						type = Class.forName(className, false, Kryo.class.getClassLoader());
+					} catch (ClassNotFoundException ex2) {
+						if (unknownNameIdToName == null) unknownNameIdToName = new IntMap<>();
+						unknownNameIdToName.put(nameId, className);
+						throw new KryoException("Unable to find class: " + className, ex);
+					}
+				}
+			}
+			if (nameToClass == null) nameToClass = new ObjectMap<>();
+			nameToClass.put(className, type);
+		}
+		nameIdToClass.put(nameId, type);
+		if (TRACE) trace("kryo", "Read class name: " + className);
+		return type;
+	}
+
+	public int getWrittenNameCount () {
+		return nextNameId;
+	}
+
+	public void writeNames (Output output, int start) {
+		output.writeVarInt(nextNameId - start, true);
+		for (ObjectIntMap.Entry<Class> entry : classToNameId.entries()) {
+			if (entry.value < start) continue;
+			output.writeVarInt(entry.value, true);
+			output.writeString(entry.key.getName());
+		}
+	}
+
+	public void readNames (Input input) {
+		if (nameIdToClass == null) nameIdToClass = new IntMap<>();
+		for (int i = 0, n = input.readVarInt(true); i < n; i++) {
+			int nameId = input.readVarInt(true);
+			String className = input.readString();
+			if (nameIdToClass.containsKey(nameId)) continue;
+			if (unknownNameIdToName != null && unknownNameIdToName.containsKey(nameId)) continue;
+			try {
+				readName(nameId, className);
+			} catch (KryoException ignored) { // The class is unknown, a reference to it is read as an unknown class.
+			}
+		}
 	}
 
 	protected Class getTypeByName (final String className) {
@@ -207,6 +248,7 @@ public class DefaultClassResolver implements ClassResolver {
 		// Class names are written for unregistered classes, also if they are allowed although registration is required.
 		if (classToNameId != null) classToNameId.clear(2048);
 		if (nameIdToClass != null) nameIdToClass.clear();
+		if (unknownNameIdToName != null) unknownNameIdToName.clear();
 		nextNameId = 0;
 	}
 }
