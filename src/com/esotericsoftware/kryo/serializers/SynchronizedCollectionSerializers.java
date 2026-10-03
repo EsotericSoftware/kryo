@@ -31,9 +31,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -124,8 +127,7 @@ public final class SynchronizedCollectionSerializers {
 		}
 	}
 
-	static Map<Class<?>, Function> synchronizedFactories () {
-		final Map<Class<?>, Function> factories = new HashMap<>();
+	private static void putFactories (Map<Class<?>, Function> factories) {
 		factories.put(
 			Collections.synchronizedCollection(Arrays.asList("")).getClass(),
 			o -> Collections.synchronizedCollection((Collection)o));
@@ -147,10 +149,48 @@ public final class SynchronizedCollectionSerializers {
 		factories.put(
 			Collections.synchronizedSortedMap(new TreeMap<>()).getClass(),
 			o6 -> Collections.synchronizedSortedMap((SortedMap)o6));
+	}
+
+	/** Used by the deprecated {@link #registerSerializers(Kryo)}. The iteration order of this HashMap determines the registration
+	 * IDs, so it must not change. */
+	private static Map<Class<?>, Function> legacyFactories () {
+		final Map<Class<?>, Function> factories = new HashMap<>();
+		putFactories(factories);
 		return factories;
 	}
 
+	/** The factories in a fixed order, which determines the IDs of {@link #register(Kryo)}. Only classes that exist on all
+	 * supported Java versions, so that the IDs don't change between Java versions. New ones must be added at the end. */
+	static Map<Class<?>, Function> orderedFactories () {
+		final Map<Class<?>, Function> factories = new LinkedHashMap<>();
+		putFactories(factories);
+		factories.put(
+			Collections.synchronizedNavigableSet(new TreeSet<>()).getClass(),
+			o -> Collections.synchronizedNavigableSet((NavigableSet<?>)o));
+		factories.put(
+			Collections.synchronizedNavigableMap(new TreeMap<>()).getClass(),
+			o -> Collections.synchronizedNavigableMap((NavigableMap)o));
+		return factories;
+	}
+
+	static Map<Class<?>, Function> defaultFactories () {
+		return orderedFactories();
+	}
+
+	/** Registers serializers for synchronized Collections and Maps created via {@link Collections} in a fixed order, so the
+	 * registration IDs are the same on all Java versions: synchronizedCollection, synchronizedList of a
+	 * {@link java.util.RandomAccess} list, synchronizedList of another list, synchronizedSet, synchronizedSortedSet,
+	 * synchronizedMap, synchronizedSortedMap, synchronizedNavigableSet and synchronizedNavigableMap. */
+	public static void register (Kryo kryo) {
+		for (Map.Entry<Class<?>, Function> factory : orderedFactories().entrySet())
+			kryo.register(factory.getKey(), createSerializer(factory));
+	}
+
 	/** Registering serializers for synchronized Collections and Maps created via {@link Collections}.
+	 * <p>
+	 * The registration IDs of these classes depend on the JVM, eg the Java version, so data written on one JVM may be read as a
+	 * different collection type on another.
+	 * @deprecated Use {@link #register(Kryo)}, which registers the classes in a fixed order.
 	 *
 	 * @see Collections#synchronizedCollection(Collection)
 	 * @see Collections#synchronizedList(List)
@@ -158,9 +198,10 @@ public final class SynchronizedCollectionSerializers {
 	 * @see Collections#synchronizedSortedSet(SortedSet)
 	 * @see Collections#synchronizedMap(Map)
 	 * @see Collections#synchronizedSortedMap(SortedMap) **/
+	@Deprecated
 	public static void registerSerializers (Kryo kryo) {
 		try {
-			for (Map.Entry<Class<?>, Function> factory : synchronizedFactories().entrySet()) {
+			for (Map.Entry<Class<?>, Function> factory : legacyFactories().entrySet()) {
 				kryo.register(factory.getKey(), createSerializer(factory));
 			}
 		} catch (Throwable t) {
@@ -175,10 +216,12 @@ public final class SynchronizedCollectionSerializers {
 	 * @see Collections#synchronizedSet(Set)
 	 * @see Collections#synchronizedSortedSet(SortedSet)
 	 * @see Collections#synchronizedMap(Map)
-	 * @see Collections#synchronizedSortedMap(SortedMap) **/
+	 * @see Collections#synchronizedSortedMap(SortedMap)
+	 * @see Collections#synchronizedNavigableSet(NavigableSet)
+	 * @see Collections#synchronizedNavigableMap(NavigableMap) **/
 	public static void addDefaultSerializers (Kryo kryo) {
 		try {
-			for (Map.Entry<Class<?>, Function> factory : synchronizedFactories().entrySet()) {
+			for (Map.Entry<Class<?>, Function> factory : defaultFactories().entrySet()) {
 				kryo.addDefaultSerializer(factory.getKey(), createSerializer(factory));
 			}
 		} catch (Throwable t) {

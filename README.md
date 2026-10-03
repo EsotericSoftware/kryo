@@ -1311,13 +1311,15 @@ Kryo provides serializers for the wrappers returned by `Collections.unmodifiable
 ```java
 Kryo kryo = new Kryo();
 // register the wrapper classes (when registration is required)
-UnmodifiableCollectionSerializers.registerSerializers(kryo);
-SynchronizedCollectionSerializers.registerSerializers(kryo);
+UnmodifiableCollectionSerializers.register(kryo);
+SynchronizedCollectionSerializers.register(kryo);
 
 // or add them as default serializers (when registration is not required)
 UnmodifiableCollectionSerializers.addDefaultSerializers(kryo);
 SynchronizedCollectionSerializers.addDefaultSerializers(kryo);
 ```
+
+The registered classes include the navigable wrappers, but not the Java 21+ sequenced wrappers, such as `unmodifiableSequencedCollection`, so that the same classes and IDs are registered on all Java versions. Those have default serializers and can be registered after `addDefaultSerializers`, eg `kryo.register(Collections.unmodifiableSequencedCollection(new ArrayList<>()).getClass())`. The deprecated `registerSerializers(kryo)` registers the classes in an order that depends on the JVM, so their IDs can differ between Java versions.
 
 The JDK internals are accessed when a wrapper is serialized or copied for the first time. If neither is allowed, an exception explains how to allow it.
 
