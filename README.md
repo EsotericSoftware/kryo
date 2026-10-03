@@ -1304,6 +1304,12 @@ Serializers for immutable collections created with `List.of`, `Set.of`, `Map.of`
 ImmutableCollectionsSerializers.registerSerializers(kryo);
 ```
 
+Lists created by `Stream.toList` can contain null elements. To serialize them, enable null elements for the list serializer. This changes the serialized format of immutable lists, so the writer and reader must both use this setting:
+
+```java
+((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(true);
+```
+
 ### JavaSerializer and ExternalizableSerializer
 
 JavaSerializer and ExternalizableSerializer are Kryo serializers which use Java's built-in serialization. This is as slow as usual Java serialization, but may be necessary for legacy classes.
