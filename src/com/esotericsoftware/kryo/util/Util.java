@@ -40,6 +40,9 @@ public class Util {
 	/** True if running in a GraalVM native image, which can't define classes at runtime, so ReflectASM can't be used. */
 	public static final boolean isNativeImage = System.getProperty("org.graalvm.nativeimage.imagecode") != null;
 
+	/** True if records are available, which is not the case on Android before API level 34. */
+	private static final boolean records = isClassAvailable("java.lang.Record");
+
 	/** True if Unsafe is available. Unsafe can be disabled by setting the system property "kryo.unsafe" to "false". */
 	public static final boolean unsafe;
 	static {
@@ -74,6 +77,12 @@ public class Util {
 
 	public static boolean isUnsafeAvailable () {
 		return unsafe;
+	}
+
+	/** Returns true if the type is a record. Unlike {@link Class#isRecord()}, this can be called on Android before API level 34,
+	 * which doesn't have records. */
+	public static boolean isRecord (Class type) {
+		return records && type.isRecord();
 	}
 
 	public static boolean isClassAvailable (String className) {

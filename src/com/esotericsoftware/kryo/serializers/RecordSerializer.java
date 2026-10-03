@@ -25,6 +25,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -50,7 +51,7 @@ public class RecordSerializer<T> extends ImmutableSerializer<T> {
 	private boolean fixedFieldTypes = false;
 
 	public RecordSerializer (Class<T> clazz) {
-		if (!clazz.isRecord()) throw new KryoException(clazz + " is not a record");
+		if (!Util.isRecord(clazz)) throw new KryoException(clazz + " is not a record");
 	}
 
 	@Override
