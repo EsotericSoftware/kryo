@@ -51,6 +51,51 @@ class MapSerializerTest extends KryoTestCase {
 		supportsCopy = true;
 	}
 
+	// https://github.com/EsotericSoftware/kryo/issues/1157
+	@Test
+	void testLinkedHashMapAccessOrder () {
+		kryo.register(LinkedHashMap.class, new LinkedHashMapSerializer());
+		kryo.register(LruCache.class, new LinkedHashMapSerializer());
+		for (boolean accessOrder : new boolean[] {true, false}) {
+			LinkedHashMap<String, Integer> map = new LinkedHashMap<>(16, 0.75f, accessOrder);
+			map.put("a", 1);
+			map.put("b", 2);
+			map.put("c", 3);
+			map.get("a"); // With access order, "a" is moved to the end.
+			for (LinkedHashMap<String, Integer> result : List.of(writeRead(map), kryo.copy(map))) {
+				assertEquals(new ArrayList<>(map.keySet()), new ArrayList<>(result.keySet()));
+				result.get("b");
+				assertEquals(accessOrder ? List.of("c", "a", "b") : List.of("a", "b", "c"), new ArrayList<>(result.keySet()));
+			}
+
+			LinkedHashMap<String, Integer> empty = writeRead(new LinkedHashMap<>(16, 0.75f, accessOrder));
+			empty.put("x", 1);
+			empty.put("y", 2);
+			empty.get("x");
+			assertEquals(accessOrder ? List.of("y", "x") : List.of("x", "y"), new ArrayList<>(empty.keySet()));
+		}
+
+		// A subclass sets the access order in its constructor.
+		LruCache cache = new LruCache();
+		cache.put("a", 1);
+		cache.put("b", 2);
+		LruCache read = writeRead(cache);
+		read.get("a");
+		assertEquals(List.of("b", "a"), new ArrayList<>(read.keySet()));
+	}
+
+	private <T> T writeRead (T object) {
+		Output output = new Output(1024);
+		kryo.writeObject(output, object);
+		return (T)kryo.readObject(new Input(output.toBytes()), object.getClass());
+	}
+
+	public static class LruCache extends LinkedHashMap<String, Integer> {
+		public LruCache () {
+			super(16, 0.75f, true);
+		}
+	}
+
 	@Test
 	void testSizeChanged () {
 		// The size doesn't match the entries, eg because the map was modified concurrently (#1181).

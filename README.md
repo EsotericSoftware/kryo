@@ -1304,6 +1304,16 @@ Setting | Description | Default value
 `valueSerializer` | Sets the serializer to use for every value in the map. If the value serializer is set, some serializers require the value class to also be set. If null, the serializer registered with Kryo for each value's class will be used. | null
 `writeSameClassOnce` | When true and the class of the keys or values is unknown, the class is written only once if all keys or values are not null and have the same class. When false, the class of each key and value is written, which is the format of Kryo 5. | true
 
+#### LinkedHashMap with access order
+
+MapSerializer creates a LinkedHashMap with insertion order, also if it was created with access order, eg `new LinkedHashMap<>(16, 0.75f, true)` for an LRU cache. A subclass of LinkedHashMap is created with its no-arg constructor, which usually sets the access order. To keep the access order of a LinkedHashMap, register LinkedHashMapSerializer, which writes it as an additional byte:
+
+```java
+kryo.register(LinkedHashMap.class, new LinkedHashMapSerializer());
+```
+
+The access order is a private JDK field, which is read like the wrapped collection of the [unmodifiable and synchronized collections](#unmodifiable-and-synchronized-collections): with method handles if `java.util` is open to Kryo, otherwise with `sun.misc.Unsafe`. If neither is allowed, an exception explains how to allow it.
+
 ### Unmodifiable and synchronized collections
 
 Kryo has default serializers for the wrappers returned by `Collections.unmodifiableCollection`, `unmodifiableList`, `unmodifiableSet`, `unmodifiableMap`, `synchronizedList`, `synchronizedMap`, etc., including the navigable and the Java 21+ sequenced wrappers. The JDK offers no public API to get the wrapped collection, so these serializers read private JDK fields: with method handles if `java.util` is open to Kryo (`--add-opens java.base/java.util=ALL-UNNAMED`, or with Kryo's module name instead of `ALL-UNNAMED` on the module path, eg `com.esotericsoftware.kryo`), otherwise with `sun.misc.Unsafe`, which warns on Java 24+. The JDK internals are accessed when a wrapper is serialized or copied for the first time. If neither is allowed, an exception explains how to allow it. These serializers are not available on Android. With references enabled, a wrapper that is contained in the collection it wraps is read as null there, because the wrapper can only be created after the wrapped collection was read.
