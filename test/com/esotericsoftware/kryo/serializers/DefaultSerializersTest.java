@@ -39,6 +39,8 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -595,6 +597,36 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
+	void testByteBuffer () {
+		ByteBuffer heap = ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5}).limit(4).position(1);
+		ByteBuffer direct = ByteBuffer.allocateDirect(6).put(new byte[] {6, 7, 8}).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer slice = ByteBuffer.wrap(new byte[] {1, 2, 3, 4}).position(2).slice();
+		for (ByteBuffer buffer : List.of(heap, direct, heap.asReadOnlyBuffer(), direct.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN),
+			slice, ByteBuffer.allocate(0))) {
+			kryo.register(buffer.getClass());
+			for (ByteBuffer result : List.of(writeReadClass(buffer), kryo.copy(buffer))) {
+				assertSame(buffer.getClass(), result.getClass());
+				assertEquals(buffer.position(), result.position());
+				assertEquals(buffer.limit(), result.limit());
+				assertEquals(buffer.capacity(), result.capacity());
+				assertEquals(buffer.order(), result.order());
+				assertEquals(buffer, result); // The bytes from position to limit.
+				assertEquals(buffer.duplicate().position(0), result.duplicate().position(0)); // Also the bytes before the position.
+			}
+		}
+
+		// The position, limit and capacity are checked when reading, eg in corrupt data.
+		Output output = new Output(64);
+		output.writeByte(0);
+		output.writeVarInt(2, true); // Capacity.
+		output.writeVarInt(3, true); // Limit.
+		output.writeVarInt(0, true); // Position.
+		KryoException ex = assertThrows(KryoException.class,
+			() -> kryo.readObject(new Input(output.toBytes()), ByteBuffer.allocate(0).getClass()));
+		assertEquals("Invalid ByteBuffer, position: 0, limit: 3, capacity: 2", ex.getMessage());
+	}
+
+	@Test
 	void testEnumMap () {
 		kryo.register(EnumMap.class);
 		for (Class<? extends Enum> type : List.of(TestEnum.class, BodyEnum.class, EmptyEnum.class)) {
@@ -680,7 +712,8 @@ class DefaultSerializersTest extends KryoTestCase {
 		Kryo kryo = new Kryo();
 		kryo.setDefaultSerializer(JavaSerializer.class);
 		Kryo5Compatibility.configure(kryo);
-		for (Class type : new Class[] {File.class, Inet4Address.class, Inet6Address.class, InetSocketAddress.class})
+		for (Class type : new Class[] {File.class, Inet4Address.class, Inet6Address.class, InetSocketAddress.class,
+			ByteBuffer.allocate(0).getClass(), ByteBuffer.allocateDirect(0).getClass()})
 			assertInstanceOf(JavaSerializer.class, kryo.getDefaultSerializer(type), type.getName());
 	}
 

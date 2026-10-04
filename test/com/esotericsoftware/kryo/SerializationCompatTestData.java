@@ -33,6 +33,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -200,6 +201,7 @@ class SerializationCompatTestData {
 		private InetSocketAddress _inetSocketAddress;
 		private EnumMap<BodyEnum, String> _enumMap;
 		private EnumMap<BodyEnum, String> _emptyEnumMap;
+		private ByteBuffer _byteBuffer;
 		private List<String> _unmodifiableList;
 		private Set<String> _unmodifiableSet;
 		private SortedMap<String, Integer> _unmodifiableSortedMap;
@@ -323,6 +325,7 @@ class SerializationCompatTestData {
 			_enumMap = new EnumMap<>(BodyEnum.class);
 			_enumMap.put(BodyEnum.B, "19");
 			_emptyEnumMap = new EnumMap<>(BodyEnum.class);
+			_byteBuffer = ByteBuffer.wrap(new byte[] {20, 21, 22}).position(1);
 			_unmodifiableList = Collections.unmodifiableList(new ArrayList<>(Arrays.asList("16", "17")));
 			_unmodifiableSet = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("18")));
 			_unmodifiableSortedMap = Collections.unmodifiableSortedMap(new TreeMap<>(_treeMap));

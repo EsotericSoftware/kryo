@@ -50,6 +50,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.ArrayBlockingQue
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigIntegerSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BitSetSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.ByteBufferSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CaseInsensitiveOrderSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BooleanSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ByteSerializer;
@@ -129,6 +130,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -293,6 +295,7 @@ public class Kryo {
 		addDefaultSerializer(void.class, new VoidSerializer());
 		addDefaultSerializer(PriorityQueue.class, new PriorityQueueSerializer());
 		addDefaultSerializer(BitSet.class, new BitSetSerializer());
+		addDefaultSerializer(ByteBuffer.class, new ByteBufferSerializer());
 		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer::new);
 		try {
 			addDefaultSerializer(Timestamp.class, TimestampSerializer::new);

@@ -37,6 +37,7 @@ import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,7 +94,7 @@ public final class Kryo5Compatibility {
 			}
 		};
 		for (Class type : new Class[] {URI.class, UUID.class, Pattern.class, AtomicBoolean.class, AtomicInteger.class,
-			AtomicLong.class, AtomicReference.class, File.class, InetAddress.class, InetSocketAddress.class})
+			AtomicLong.class, AtomicReference.class, File.class, InetAddress.class, InetSocketAddress.class, ByteBuffer.class})
 			kryo.addDefaultSerializer(type, defaultSerializer);
 		// Kryo 5 wrote these with CollectionSerializer, without the comparator.
 		kryo.addDefaultSerializer(ConcurrentSkipListSet.class, CollectionSerializer::new);
