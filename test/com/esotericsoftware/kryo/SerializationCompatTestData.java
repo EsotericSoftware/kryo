@@ -186,6 +186,7 @@ class SerializationCompatTestData {
 		private Set<String> _singletonSet = Collections.emptySet();
 		private Map<String, String> _singletonMap;
 		private TreeSet<String> _treeSet;
+		private BodyEnum _bodyEnum;
 		private TreeMap<String, Integer> _treeMap;
 		private List<String> _arrayList;
 		private Set<String> _hashSet;
@@ -295,6 +296,7 @@ class SerializationCompatTestData {
 			_singletonSet = Collections.singleton("foo");
 			_singletonMap = Collections.singletonMap("foo", "bar");
 			_treeSet = new TreeSet(Arrays.asList("foo", "bar"));
+			_bodyEnum = BodyEnum.B;
 			_treeMap = new TreeMap();
 			_treeMap.put("foo", 23);
 			_treeMap.put("bar", 42);
@@ -655,4 +657,10 @@ class SerializationCompatTestData {
 		}
 	}
 
+	enum BodyEnum {
+		A {
+		},
+		B {
+		}
+	}
 }

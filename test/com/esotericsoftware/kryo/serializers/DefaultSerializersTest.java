@@ -372,7 +372,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		roundTrip(85, TestEnumWithMethods.c);
+		roundTrip(83, TestEnumWithMethods.c); // The name of the enum, not of the body of the constant.
 	}
 
 	@Test

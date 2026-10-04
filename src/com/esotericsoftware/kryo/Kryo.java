@@ -182,6 +182,7 @@ public class Kryo {
 	private InstantiatorStrategy strategy = new DefaultInstantiatorStrategy();
 	private boolean registrationRequired = true;
 	private boolean warnUnregisteredClasses;
+	private boolean enumsFinal = true;
 	private Predicate<Class> allowedUnregisteredClasses;
 
 	private int depth, maxDepth = Integer.MAX_VALUE;
@@ -1386,8 +1387,21 @@ public class Kryo {
 	 * ArrayList field. */
 	public boolean isFinal (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		if (type.isArray()) return Modifier.isFinal(Util.getElementClass(type).getModifiers());
+		if (type.isArray()) type = Util.getElementClass(type);
+		if (enumsFinal && type.isEnum()) return true; // Also with constant bodies, which are subclasses.
 		return Modifier.isFinal(type.getModifiers());
+	}
+
+	/** If true, {@link #isFinal(Class)} returns true for enums, also if their constants have bodies, which are subclasses. Then
+	 * the class of an enum value is not written if the enum is known, eg from the type of a field, also if a constant has a body,
+	 * so adding or removing bodies doesn't change the serialized bytes. If false, the class is written for enums with constant
+	 * bodies, like in Kryo 5. This must be set before classes are registered. Default is true. */
+	public void setEnumsFinal (boolean enumsFinal) {
+		this.enumsFinal = enumsFinal;
+	}
+
+	public boolean getEnumsFinal () {
+		return enumsFinal;
 	}
 
 	/** Returns true if the specified type is a closure. When true, Kryo uses {@link Closure} instead of the specified type to find
