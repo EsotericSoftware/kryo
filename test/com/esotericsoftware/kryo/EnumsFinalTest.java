@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -81,6 +82,18 @@ class EnumsFinalTest {
 		assertSame(BodyOp.MINUS, kryo.readClassAndObject(new Input(output.toBytes())));
 	}
 
+	@Test
+	void testEnumNameOnce () {
+		// Constants with different bodies have different classes, but the name of their enum is written only once.
+		Kryo kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		Output output = new Output(256);
+		kryo.writeClassAndObject(output, new ArrayList<>(Arrays.asList(BodyOp.PLUS, BodyOp.MINUS, BodyOp.PLUS)));
+		String bytes = new String(output.toBytes(), StandardCharsets.ISO_8859_1);
+		assertEquals(bytes.indexOf("BodyO"), bytes.lastIndexOf("BodyO"), bytes);
+		assertEquals(List.of(BodyOp.PLUS, BodyOp.MINUS, BodyOp.PLUS), kryo.readClassAndObject(new Input(output.toBytes())));
+	}
+
 	private Kryo kryo (boolean enumsFinal, Class op, Class holder) {
 		Kryo kryo = new Kryo();
 		kryo.setEnumsFinal(enumsFinal);
@@ -116,13 +129,13 @@ class EnumsFinalTest {
 
 	public static class PlainHolder {
 		public PlainOp op = PlainOp.MINUS;
-		public List<PlainOp> list = new java.util.ArrayList<>(Arrays.asList(PlainOp.PLUS, PlainOp.MINUS));
+		public List<PlainOp> list = new ArrayList<>(Arrays.asList(PlainOp.PLUS, PlainOp.MINUS));
 		public PlainOp[] array = {PlainOp.MINUS};
 	}
 
 	public static class BodyHolder {
 		public BodyOp op = BodyOp.MINUS;
-		public List<BodyOp> list = new java.util.ArrayList<>(Arrays.asList(BodyOp.PLUS, BodyOp.MINUS));
+		public List<BodyOp> list = new ArrayList<>(Arrays.asList(BodyOp.PLUS, BodyOp.MINUS));
 		public BodyOp[] array = {BodyOp.MINUS};
 	}
 }

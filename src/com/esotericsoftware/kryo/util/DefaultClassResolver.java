@@ -121,6 +121,8 @@ public class DefaultClassResolver implements ClassResolver {
 
 	protected void writeName (Output output, Class type, Registration registration) {
 		output.writeByte(1); // NAME + 2
+		// An enum constant with a body is written as its enum, so the name and its ID don't depend on the bodies.
+		if (registration.getType().isEnum()) type = registration.getType();
 		if (classToNameId != null) {
 			int nameId = classToNameId.get(type, -1);
 			if (nameId != -1) {
@@ -135,12 +137,10 @@ public class DefaultClassResolver implements ClassResolver {
 		if (classToNameId == null) classToNameId = new IdentityObjectIntMap<>();
 		classToNameId.put(type, nameId);
 		output.writeVarInt(nameId, true);
-		// An enum constant with a body is written as its enum, so the name doesn't depend on the bodies.
-		String name = (registration.getType().isEnum() ? registration.getType() : type).getName();
 		if (registration.isTypeNameAscii())
-			output.writeAscii(name);
+			output.writeAscii(type.getName());
 		else
-			output.writeString(name);
+			output.writeString(type.getName());
 	}
 
 	public Registration readClass (Input input) {
