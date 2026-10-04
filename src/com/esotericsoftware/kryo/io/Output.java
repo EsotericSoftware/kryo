@@ -188,7 +188,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		}
 		if (capacity == 0) capacity = 16;
 		do {
-			capacity = Math.min(capacity * 2, maxCapacity);
+			capacity = (int)Math.min(capacity * 2L, maxCapacity); // Long, so it does not overflow above 1 GiB.
 		} while (capacity - position < required);
 		byte[] newBuffer = new byte[capacity];
 		System.arraycopy(buffer, 0, newBuffer, 0, position);

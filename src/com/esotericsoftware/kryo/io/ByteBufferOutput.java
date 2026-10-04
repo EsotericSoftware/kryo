@@ -190,7 +190,7 @@ public class ByteBufferOutput extends Output {
 		}
 		if (capacity == 0) capacity = 16;
 		do {
-			capacity = Math.min(capacity * 2, maxCapacity);
+			capacity = (int)Math.min(capacity * 2L, maxCapacity); // Long, so it does not overflow above 1 GiB.
 		} while (capacity - position < required);
 		ByteBuffer newBuffer = !byteBuffer.isDirect() ? ByteBuffer.allocate(capacity) : ByteBuffer.allocateDirect(capacity);
 		setBufferPosition(byteBuffer, 0);
