@@ -38,9 +38,26 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-/** Sets the final fields of serializable classes with the method handles the JDK provides for deserialization, which can set
- * final fields also if setting them with reflection is denied (JEP 500). It is only used then. The values of the final fields are
- * collected while reading, all other fields are set as usual. */
+/** Sets the final fields of serializable classes if setting final fields with reflection is denied (JEP 500, eg with
+ * {@code --illegal-final-field-mutation=deny}). Otherwise final fields are set with reflection like other fields, and this class
+ * is not used. Whether it is denied is checked once, by setting a final field of {@link Probe}.
+ * <p>
+ * Java serialization is allowed to set final fields. Since Java 24, {@code ReflectionFactory.defaultReadObjectForSerialization}
+ * provides a method handle that does what {@link ObjectInputStream#defaultReadObject()} does for one class: it sets all
+ * serializable fields declared by that class, including final fields, to the values it gets from
+ * {@link ObjectInputStream#readFields()}. This class calls that method handle with its own {@link ObjectInputStream}, which
+ * doesn't read Java serialization data, but returns the field values read by Kryo:
+ * <ul>
+ * <li>While FieldSerializer and its subclasses read or copy an object, the values of final fields are collected in an array,
+ * indexed by {@link CachedField#index}, like for records. All other fields are set as usual.
+ * <li>After all fields are read, {@link #set(Object, Object[])} calls the method handle of each class with final fields.
+ * {@link FieldsInput} returns the collected value for each final field, and the current value of the object for each other
+ * serializable field, so those keep their values. A final field that was not read, eg because it was removed, keeps its value
+ * too.
+ * </ul>
+ * The object is still created by the serializer before its fields are read, so references to it work as before. Only final fields
+ * of serializable classes that are not transient can be set this way. If a class has other final fields, eg in a superclass that
+ * isn't serializable, it is not used and setting these fields fails as before. */
 final class FinalFieldSetter {
 	static private final Object reflectionFactory;
 	static private final Method defaultReadObject;
