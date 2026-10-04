@@ -179,6 +179,9 @@ public class ByteBufferInput extends Input {
 			}
 		}
 
+		// Nothing can be filled into a read-only buffer, which also can't be compacted.
+		if (byteBuffer.isReadOnly()) throw new KryoBufferUnderflowException("Buffer underflow.");
+
 		// Compact.
 		byteBuffer.compact(); // Buffer's position is at end of compacted bytes.
 		total += position;
