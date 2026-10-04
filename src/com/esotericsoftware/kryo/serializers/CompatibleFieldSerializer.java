@@ -378,22 +378,31 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		 * chunks. If a chunk is skipped, class names, field names, and objects first written in it are unknown afterwards, which
 		 * can make reading the rest of the data fail. Kryo 6 writes each field with its length instead, and the class names and
 		 * field names first written in an object before it. Must be true to read data written by Kryo 5 with chunked encoding.
-		 * Default is false. */
+		 * Default is false.
+		 * @deprecated Only needed to read data written by Kryo 5, see {@link com.esotericsoftware.kryo.Kryo5Compatibility}. Will be
+		 *             removed in Kryo 7. */
+		@Deprecated
 		public void setLegacyChunks (boolean legacyChunks) {
 			this.legacyChunks = legacyChunks;
 			if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig setLegacyChunks: " + legacyChunks);
 		}
 
+		/** @deprecated See {@link #setLegacyChunks(boolean)}. */
+		@Deprecated
 		public boolean getLegacyChunks () {
 			return legacyChunks;
 		}
 
-		/** The maximum size of each chunk for {@link #setLegacyChunks(boolean) the chunked encoding of Kryo 5}. Default is 1024. */
+		/** The maximum size of each chunk for {@link #setLegacyChunks(boolean) the chunked encoding of Kryo 5}. Default is 1024.
+		 * @deprecated Only needed with {@link #setLegacyChunks(boolean)}. Will be removed in Kryo 7. */
+		@Deprecated
 		public void setChunkSize (int chunkSize) {
 			this.chunkSize = chunkSize;
 			if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig setChunkSize: " + chunkSize);
 		}
 
+		/** @deprecated See {@link #setChunkSize(int)}. */
+		@Deprecated
 		public int getChunkSize () {
 			return chunkSize;
 		}

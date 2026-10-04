@@ -321,22 +321,31 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		/** When true, {@link #setChunkedEncoding(boolean) chunked encoding} uses the format of Kryo 5, see
 		 * {@link CompatibleFieldSerializer.CompatibleFieldSerializerConfig#setLegacyChunks(boolean)}. Must be true to read data
-		 * written by Kryo 5 with chunked encoding. Default is false. */
+		 * written by Kryo 5 with chunked encoding. Default is false.
+		 * @deprecated Only needed to read data written by Kryo 5, see {@link com.esotericsoftware.kryo.Kryo5Compatibility}. Will be
+		 *             removed in Kryo 7. */
+		@Deprecated
 		public void setLegacyChunks (boolean legacyChunks) {
 			this.legacyChunks = legacyChunks;
 			if (TRACE) trace("kryo", "TaggedFieldSerializerConfig setLegacyChunks: " + legacyChunks);
 		}
 
+		/** @deprecated See {@link #setLegacyChunks(boolean)}. */
+		@Deprecated
 		public boolean getLegacyChunks () {
 			return legacyChunks;
 		}
 
-		/** The maximum size of each chunk for {@link #setLegacyChunks(boolean) the chunked encoding of Kryo 5}. Default is 1024. */
+		/** The maximum size of each chunk for {@link #setLegacyChunks(boolean) the chunked encoding of Kryo 5}. Default is 1024.
+		 * @deprecated Only needed with {@link #setLegacyChunks(boolean)}. Will be removed in Kryo 7. */
+		@Deprecated
 		public void setChunkSize (int chunkSize) {
 			this.chunkSize = chunkSize;
 			if (TRACE) trace("kryo", "TaggedFieldSerializerConfig setChunkSize: " + chunkSize);
 		}
 
+		/** @deprecated See {@link #setChunkSize(int)}. */
+		@Deprecated
 		public int getChunkSize () {
 			return chunkSize;
 		}

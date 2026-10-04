@@ -73,6 +73,7 @@ public class ChunkedEncodingBenchmark {
 			input.setBuffer(output.getBuffer(), 0, output.position());
 		}
 
+		@SuppressWarnings("deprecation") // legacyChunks
 		private Kryo kryo (boolean registerContent) {
 			Kryo kryo = new Kryo();
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();

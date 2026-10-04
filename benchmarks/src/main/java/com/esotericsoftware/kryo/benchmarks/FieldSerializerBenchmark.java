@@ -136,6 +136,7 @@ public class FieldSerializerBenchmark {
 		/** Only used if chunked. */
 		@Param({"false", "true"}) public boolean legacyChunks;
 
+		@SuppressWarnings("deprecation") // legacyChunks
 		public void setup () {
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
 			factory.getConfig().setChunkedEncoding(chunked);
@@ -151,6 +152,7 @@ public class FieldSerializerBenchmark {
 		/** Only used if chunked. */
 		@Param({"false", "true"}) public boolean legacyChunks;
 
+		@SuppressWarnings("deprecation") // legacyChunks
 		public void setup () {
 			TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
 			factory.getConfig().setChunkedEncoding(chunked);

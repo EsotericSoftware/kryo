@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
 
 /** Skipping a chunk, eg because the class of a removed field no longer exists, must not break the rest of the object graph
  * (#1247). */
+@SuppressWarnings("deprecation") // legacyChunks
 class ChunkedEncodingTest {
 	@Test
 	void testUnregisteredClassNameInSkippedChunk () {
