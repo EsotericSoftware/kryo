@@ -920,7 +920,12 @@ public class DefaultSerializers {
 	/** Creates an instance of a subclass with the public constructor for the parameter types. */
 	static <T> T newInstance (Class<? extends T> type, Class[] parameterTypes, Object... arguments) {
 		try {
-			return type.getConstructor(parameterTypes).newInstance(arguments);
+			Constructor<? extends T> constructor = type.getConstructor(parameterTypes);
+			try {
+				constructor.setAccessible(true); // A public constructor of a class that isn't public.
+			} catch (RuntimeException ignored) {
+			}
+			return constructor.newInstance(arguments);
 		} catch (Exception ex) {
 			throw new KryoException("Unable to create " + className(type) + " with a constructor for " + classNames(parameterTypes)
 				+ ".", ex);
