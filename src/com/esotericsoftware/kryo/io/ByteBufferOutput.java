@@ -271,7 +271,7 @@ public class ByteBufferOutput extends Output {
 			count -= copyCount;
 			if (count == 0) return;
 			offset += copyCount;
-			copyCount = Math.min(capacity, count);
+			copyCount = Math.min(Math.max(capacity, 1), count);
 			require(copyCount);
 		}
 	}

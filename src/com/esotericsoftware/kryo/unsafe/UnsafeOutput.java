@@ -189,7 +189,7 @@ public class UnsafeOutput extends Output {
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = (int)Math.min(capacity, count);
+			copyCount = (int)Math.min(Math.max(capacity, 1), count);
 			require(copyCount);
 		}
 	}
