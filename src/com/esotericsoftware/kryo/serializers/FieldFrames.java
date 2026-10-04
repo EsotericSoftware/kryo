@@ -49,7 +49,7 @@ import java.util.ArrayList;
  * references varint number of objects, then the field data.
  * <p>
  * The chunked encoding of Kryo 5 splits each field into chunks with {@link OutputChunked} and {@link InputChunked}, which hold
- * all its state. */
+ * all its state. The callers pass the same {@code legacyChunks} value to all calls for an object. */
 final class FieldFrames {
 	private static final Object contextKey = new Object();
 	/** Larger buffers are not kept for the next scope. */
