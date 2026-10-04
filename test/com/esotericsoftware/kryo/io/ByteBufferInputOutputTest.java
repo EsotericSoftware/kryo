@@ -57,6 +57,26 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 	}
 
 	@Test
+	void testReadOnlyBufferOptionalReads () {
+		// The InputStream methods read the bytes of a read-only buffer and then report its end.
+		for (ByteBufferInput input : new ByteBufferInput[] {new ByteBufferInput(ByteBuffer.allocate(3).asReadOnlyBuffer()),
+			new UnsafeByteBufferInput(ByteBuffer.allocateDirect(3).asReadOnlyBuffer())}) {
+			byte[] bytes = new byte[4];
+			assertEquals(2, input.read(bytes, 0, 2));
+			assertEquals(1, input.read(bytes, 0, 4));
+			assertEquals(-1, input.read());
+			assertEquals(-1, input.read(bytes, 0, 4));
+			assertTrue(input.end());
+		}
+
+		// They can't fill it from a stream.
+		ByteBufferInput input = new ByteBufferInput(ByteBuffer.allocate(8).asReadOnlyBuffer());
+		input.setInputStream(new ByteArrayInputStream(new byte[8]));
+		KryoException ex = assertThrows(KryoException.class, input::read);
+		assertTrue(ex.getMessage().contains("read-only"), ex.getMessage());
+	}
+
+	@Test
 	void testByteBufferInputEnd () {
 		ByteBufferInput in = new ByteBufferInput(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
 		assertFalse(in.end());
