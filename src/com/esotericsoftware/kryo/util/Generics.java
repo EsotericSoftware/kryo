@@ -62,6 +62,15 @@ public interface Generics {
 	 * @return May be null. */
 	GenericType[] nextGenericTypes ();
 
+	/** Returns the type parameters of {@link #nextGenericType()} for the specified super class or interface of the declared type,
+	 * eg the key and value types of {@link java.util.Map} if the declared type is {@code class IntMap<V> extends HashMap<Integer,
+	 * V>}. A type parameter that is not known is Object. Otherwise like {@link #nextGenericTypes()}, but the last of the returned
+	 * type parameters is used to advance to the next level. The default implementation returns {@link #nextGenericTypes()}.
+	 * @return May be null. */
+	default GenericType[] nextGenericTypes (Class superType) {
+		return nextGenericTypes();
+	}
+
 	/** Resolves the first type parameter and returns the class, or null if it could not be resolved or there are no type
 	 * parameters. Uses {@link #nextGenericTypes()}, so must be balanced by {@link #popGenericType()} (optional if null is
 	 * returned).
@@ -262,9 +271,14 @@ public interface Generics {
 
 	/** Stores a type and its type parameters, recursively. */
 	class GenericType {
+		/** A type parameter that is not known. */
+		static final GenericType unknown = new GenericType(Object.class, Object.class, Object.class);
+
 		Type type; // Either a Class or TypeVariable.
 		GenericType[] arguments;
 		private TypeVariable[] typeVariables;
+		private Class superType;
+		private GenericType[] superTypeArguments;
 
 		public GenericType (Class fromClass, Class toClass, Type context) {
 			initialize(fromClass, toClass, context);
@@ -316,6 +330,38 @@ public interface Generics {
 
 		public Type getType () {
 			return type;
+		}
+
+		/** Returns the type arguments for the super class or interface, cached for the last super type. If this type is not a
+		 * subtype, its own type arguments are returned.
+		 * @return May be null. */
+		GenericType[] superTypeArguments (Class superType) {
+			if (superType != this.superType) {
+				superTypeArguments = computeSuperTypeArguments(superType);
+				this.superType = superType;
+			}
+			return superTypeArguments;
+		}
+
+		private GenericType[] computeSuperTypeArguments (Class superType) {
+			if (arguments == null || !(type instanceof Class) || !superType.isAssignableFrom((Class)type)) return arguments;
+			Type[] superArguments = GenericsHierarchy.superTypeArguments((Class)type, superType);
+			TypeVariable[] parameters = typeVariables();
+			// Usually the type parameters are passed to the super type unchanged, eg for HashMap<K, V> and Map<K, V>.
+			if (Arrays.equals(superArguments, parameters) || superArguments.length == 0) return arguments;
+			List parameterList = Arrays.asList(parameters);
+			GenericType[] result = new GenericType[superArguments.length];
+			for (int i = 0; i < superArguments.length; i++) {
+				Type argument = superArguments[i];
+				int index = parameterList.indexOf(argument);
+				if (index != -1 && index < arguments.length)
+					result[i] = arguments[index];
+				else if (argument instanceof Class)
+					result[i] = new GenericType((Class)type, (Class)type, argument);
+				else
+					result[i] = unknown; // Not known, eg List<V> or a raw super type.
+			}
+			return result;
 		}
 
 		/** Returns the type parameters of the class, cached because {@link Class#getTypeParameters()} returns a copy. */

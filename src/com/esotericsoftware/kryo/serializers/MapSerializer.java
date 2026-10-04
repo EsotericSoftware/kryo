@@ -139,7 +139,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 
 		Serializer keySerializer = this.keySerializer, valueSerializer = this.valueSerializer;
 
-		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
+		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes(Map.class);
 		if (genericTypes != null) {
 			if (keySerializer == null) {
 				Class keyType = genericTypes[0].resolve(kryo.getGenerics());
@@ -238,7 +238,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		Class valueClass = this.valueClass;
 		Serializer keySerializer = this.keySerializer, valueSerializer = this.valueSerializer;
 
-		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
+		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes(Map.class);
 		if (genericTypes != null) {
 			if (keySerializer == null) {
 				Class genericClass = genericTypes[0].resolve(kryo.getGenerics());
