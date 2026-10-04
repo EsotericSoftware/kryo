@@ -88,9 +88,9 @@ final class FinalFieldSetter {
 		this.positions = positions;
 	}
 
-	/** Called if the class has final fields. Returns null if final fields are set with reflection: setting them with reflection is
-	 * allowed, the method handles are not available, or a final field is not a serializable field of a serializable class.
-	 * Otherwise sets {@link CachedField#index} for each final field. */
+	/** Called if the class had final fields when its fields were cached. Returns null if final fields are set with reflection:
+	 * setting them with reflection is allowed, the method handles are not available, or a final field is not a serializable field
+	 * of a serializable class. Otherwise sets {@link CachedField#index} for each final field. */
 	static FinalFieldSetter create (Class type, CachedField[] fields, CachedField[] copyFields) {
 		if (defaultReadObject == null || isRecord(type) || !mutationDenied()) return null;
 		// Both arrays have the same CachedField for a field that is read and copied.
@@ -98,6 +98,7 @@ final class FinalFieldSetter {
 		for (CachedField[] array : new CachedField[][] {fields, copyFields})
 			for (CachedField cachedField : array)
 				if (Modifier.isFinal(cachedField.field.getModifiers())) finalFields.add(cachedField);
+		if (finalFields.isEmpty()) return null; // Eg the final fields were removed.
 		try {
 			LinkedHashMap<Class, ClassFields> classesByType = new LinkedHashMap<>();
 			ClassFields[] classes = new ClassFields[finalFields.size()];

@@ -50,7 +50,7 @@ class FinalFieldsTest {
 		List<BiFunction<Kryo, Class, Serializer>> serializers = List.of(FieldSerializer::new, CompatibleFieldSerializer::new,
 			TaggedFieldSerializer::new, VersionFieldSerializer::new);
 		// The detected mode, and the method handles also if setting final fields with reflection is allowed. Without the method
-		// handles (Java < 22), final fields are always set with reflection.
+		// handles (Java < 24), final fields are always set with reflection.
 		boolean detected = FinalFieldSetter.mutationDenied();
 		try {
 			for (boolean denied : detected ? new boolean[] {true} : new boolean[] {false, true}) {
@@ -145,6 +145,26 @@ class FinalFieldsTest {
 	}
 
 	@Test
+	void testRemovedFields () {
+		// The setter is created for the fields that remain after fields were removed, eg untagged fields by TaggedFieldSerializer.
+		assumeTrue(Runtime.version().feature() >= 24 && !isAndroid);
+		Boolean denied = FinalFieldSetter.denied;
+		try {
+			FinalFieldSetter.denied = true;
+			Kryo kryo = new Kryo();
+			assertNotNull(new TaggedFieldSerializer(kryo, TaggedSubclass.class).finalFieldSetter);
+			FieldSerializer serializer = new FieldSerializer(kryo, NotSerializableSuperclass.class);
+			assertNull(serializer.finalFieldSetter);
+			serializer.removeField("a");
+			assertNotNull(serializer.finalFieldSetter);
+			serializer.removeField("b");
+			assertNull(serializer.finalFieldSetter);
+		} finally {
+			FinalFieldSetter.denied = denied;
+		}
+	}
+
+	@Test
 	void testUnsafe () {
 		// Unsafe sets final fields also if setting them with reflection is denied.
 		assumeTrue(unsafe);
@@ -226,6 +246,10 @@ class FinalFieldsTest {
 
 	public static class NotSerializableSuperclass extends NotSerializable implements Serializable {
 		final int b = 2;
+	}
+
+	public static class TaggedSubclass extends NotSerializable implements Serializable {
+		@Tag(1) final int tagged = 4;
 	}
 
 	public static class TransientField implements Serializable {

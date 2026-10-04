@@ -124,12 +124,21 @@ class CachedFields implements Comparator<CachedField> {
 		if (copyFields.length != newCopyFields.size()) copyFields = new CachedField[newCopyFields.size()];
 		newCopyFields.toArray(copyFields);
 		Arrays.sort(copyFields, this);
-		// Unsafe sets final fields, also if setting them with reflection is denied.
-		serializer.finalFieldSetter = hasFinalFields && fieldAccess() != FieldAccessType.UNSAFE
-			? FinalFieldSetter.create(serializer.type, fields, copyFields)
-			: null;
-
 		serializer.initializeCachedFields();
+		updateFinalFieldSetter();
+	}
+
+	/** Creates the {@link FinalFieldSetter} for the current fields, after they were added or removed. */
+	private void updateFinalFieldSetter () {
+		serializer.finalFieldSetter = null;
+		// Unsafe sets final fields, also if setting them with reflection is denied. Records set them with their constructor and use
+		// the index for their components.
+		if (!hasFinalFields || fieldAccess() == FieldAccessType.UNSAFE || isRecord(serializer.type)) return;
+		for (CachedField cachedField : fields)
+			cachedField.index = -1;
+		for (CachedField cachedField : copyFields)
+			cachedField.index = -1;
+		serializer.finalFieldSetter = FinalFieldSetter.create(serializer.type, fields, copyFields);
 	}
 
 	/** @param recordComponents May be null if the type is not a record. */
@@ -352,6 +361,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + serializer.type.getName());
+		updateFinalFieldSetter();
 	}
 
 	/** Removes a field so that it won't be serialized. */
@@ -383,6 +393,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
+		updateFinalFieldSetter();
 	}
 
 	/** Sets serializers using annotations.
