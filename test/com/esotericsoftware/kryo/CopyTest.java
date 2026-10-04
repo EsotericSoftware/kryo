@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -68,6 +69,17 @@ class CopyTest extends KryoTestCase {
 		ArrayList copy = kryo.copy(new ArrayList(List.of(shared, shared)));
 		assertNotSame(shared, copy.get(0));
 		assertSame(copy.get(0), copy.get(1));
+	}
+
+	@Test
+	void testImmutableCollectionReferences () {
+		// An immutable collection that is referenced twice is copied once, as an immutable collection.
+		for (Object shared : new Object[] {List.of("a", "b"), Map.of("a", "b"), Set.of("a", "b")}) {
+			ArrayList copy = kryo.copy(new ArrayList(List.of(shared, shared)));
+			assertEquals(shared, copy.get(0));
+			assertSame(copy.get(0), copy.get(1));
+			assertSame(shared.getClass(), copy.get(1).getClass());
+		}
 	}
 
 	@Test

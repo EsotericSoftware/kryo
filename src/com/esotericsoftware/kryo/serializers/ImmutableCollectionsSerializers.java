@@ -78,7 +78,10 @@ public final class ImmutableCollectionsSerializers {
 
 		@Override
 		public List<Object> copy (Kryo kryo, List<Object> original) {
-			List<Object> copy = super.copy(kryo, original);
+			// Not super.copy, which references the mutable list. Kryo references the immutable list, which can't contain itself.
+			ArrayList<Object> copy = new ArrayList<>(original.size());
+			for (Object element : original)
+				copy.add(kryo.copy(element));
 			return immutableList(copy);
 		}
 
@@ -138,7 +141,10 @@ public final class ImmutableCollectionsSerializers {
 
 		@Override
 		public Map<Object, Object> copy (Kryo kryo, Map<Object, Object> original) {
-			final Map<Object, Object> copy = super.copy(kryo, original);
+			// Not super.copy, which references the mutable map. Kryo references the immutable map, which can't contain itself.
+			HashMap<Object, Object> copy = new HashMap<>();
+			for (Map.Entry<Object, Object> entry : original.entrySet())
+				copy.put(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));
 			return Map.copyOf(copy);
 		}
 
@@ -184,7 +190,10 @@ public final class ImmutableCollectionsSerializers {
 
 		@Override
 		public Set<Object> copy (Kryo kryo, Set<Object> original) {
-			final Set<Object> copy = super.copy(kryo, original);
+			// Not super.copy, which references the mutable set. Kryo references the immutable set, which can't contain itself.
+			HashSet<Object> copy = new HashSet<>();
+			for (Object element : original)
+				copy.add(kryo.copy(element));
 			return Set.copyOf(copy);
 		}
 
