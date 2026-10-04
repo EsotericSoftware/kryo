@@ -362,6 +362,11 @@ public interface Generics {
 			int index = parameterList.indexOf(argument);
 			if (index != -1) return index < arguments.length ? arguments[index] : unknown;
 			if (argument instanceof Class) return new GenericType((Class)type, (Class)type, argument);
+			if (argument instanceof GenericArrayType) { // Eg V[] or List<V>[].
+				GenericType component = substitute(((GenericArrayType)argument).getGenericComponentType(), parameterList);
+				if (!(component.type instanceof Class)) return unknown;
+				return new GenericType((Class)type, (Class)type, Array.newInstance((Class)component.type, 0).getClass());
+			}
 			if (!(argument instanceof ParameterizedType)) return unknown; // Not known, eg a raw super type or a wildcard.
 			ParameterizedType parameterized = (ParameterizedType)argument;
 			GenericType result = new GenericType((Class)type, (Class)type, parameterized.getRawType());

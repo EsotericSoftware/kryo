@@ -99,6 +99,42 @@ class FieldSerializerGenericsTest extends KryoTestCase {
 		assertEquals(output.position(), subtypeLength);
 	}
 
+	@Test
+	void testGenericArrayTypeArgumentOfMapSubtype () {
+		// The value type List<V[]> of the subtype is resolved like List<String[]> of HashMap<String, List<String[]>>.
+		kryo.register(ArrayListValueMapField.class, 100);
+		kryo.register(ArrayHashMapField.class, 101);
+		kryo.register(ArrayListValueMap.class, 102);
+		kryo.register(HashMap.class, 103);
+		kryo.register(ArrayList.class, 104);
+		kryo.register(String[].class, 105);
+		ArrayListValueMapField subtype = new ArrayListValueMapField();
+		subtype.map = new ArrayListValueMap<>();
+		subtype.map.put("a", new ArrayList<>(List.of(new String[] {"b"}, new String[] {"c"})));
+		ArrayHashMapField hashMap = new ArrayHashMapField();
+		hashMap.map = new HashMap<>(subtype.map);
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, subtype);
+		int subtypeLength = output.position();
+		ArrayListValueMapField read = kryo.readObject(new Input(output.toBytes()), ArrayListValueMapField.class);
+		assertArrayEquals(subtype.map.get("a").get(1), read.map.get("a").get(1));
+		output.reset();
+		kryo.writeObject(output, hashMap);
+		assertEquals(output.position(), subtypeLength);
+	}
+
+	public static class ArrayListValueMapField {
+		public ArrayListValueMap<String> map;
+	}
+
+	public static class ArrayHashMapField {
+		public HashMap<String, List<String[]>> map;
+	}
+
+	public static class ArrayListValueMap<V> extends HashMap<String, List<V[]>> {
+	}
+
 	public static class ListValueMapField {
 		public ListValueMap<Long> map;
 	}
