@@ -78,7 +78,7 @@ class CachedFields implements Comparator<CachedField> {
 	CachedField[] fields = new CachedField[0];
 	CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
-	private boolean finalFields;
+	private boolean hasFinalFields;
 	private Object access;
 
 	public CachedFields (FieldSerializer serializer) {
@@ -106,7 +106,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 
 		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
-		finalFields = false;
+		hasFinalFields = false;
 		boolean asm = fieldAccess() == FieldAccessType.ASM && !isAndroid && !isNativeImage
 			&& Modifier.isPublic(serializer.type.getModifiers());
 		RecordComponent[] recordComponents = isRecord(serializer.type) ? serializer.type.getRecordComponents() : null;
@@ -125,7 +125,7 @@ class CachedFields implements Comparator<CachedField> {
 		newCopyFields.toArray(copyFields);
 		Arrays.sort(copyFields, this);
 		// Unsafe sets final fields, also if setting them with reflection is denied.
-		serializer.finalFields = finalFields && fieldAccess() != FieldAccessType.UNSAFE
+		serializer.finalFieldSetter = hasFinalFields && fieldAccess() != FieldAccessType.UNSAFE
 			? FinalFieldSetter.create(serializer.type, fields, copyFields)
 			: null;
 
@@ -227,7 +227,7 @@ class CachedFields implements Comparator<CachedField> {
 
 		applyAnnotations(cachedField);
 
-		if (Modifier.isFinal(modifiers)) finalFields = true;
+		if (Modifier.isFinal(modifiers)) hasFinalFields = true;
 		if (isTransient) {
 			if (config.serializeTransient) fields.add(cachedField);
 			if (config.copyTransient) copyFields.add(cachedField);

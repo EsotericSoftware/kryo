@@ -20,6 +20,7 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.*;
 
@@ -31,7 +32,6 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldAccessType;
-import com.esotericsoftware.kryo.util.Util;
 
 import java.io.Serializable;
 import java.util.HashSet;
@@ -124,9 +124,30 @@ class FinalFieldsTest {
 	}
 
 	@Test
+	void testNotSerializable () {
+		// Final fields that are not serializable fields of a serializable class are set with reflection.
+		Boolean denied = FinalFieldSetter.denied;
+		try {
+			FinalFieldSetter.denied = true;
+			Kryo kryo = new Kryo();
+			for (Class type : new Class[] {NotSerializable.class, NotSerializableSuperclass.class, TransientField.class}) {
+				FieldSerializer serializer = new FieldSerializer(kryo, type);
+				serializer.getFieldSerializerConfig().setSerializeTransient(true);
+				serializer.updateFields();
+				assertNull(serializer.finalFieldSetter, type.getSimpleName());
+			}
+			// The method handles are available since Java 24.
+			if (Runtime.version().feature() >= 24 && !isAndroid)
+				assertNotNull(new FieldSerializer(kryo, Defaults.class).finalFieldSetter);
+		} finally {
+			FinalFieldSetter.denied = denied;
+		}
+	}
+
+	@Test
 	void testUnsafe () {
 		// Unsafe sets final fields also if setting them with reflection is denied.
-		assumeTrue(Util.unsafe);
+		assumeTrue(unsafe);
 		Boolean denied = FinalFieldSetter.denied;
 		try {
 			FinalFieldSetter.denied = true;
@@ -134,7 +155,7 @@ class FinalFieldsTest {
 			FieldSerializer serializer = new FieldSerializer(kryo, Defaults.class);
 			serializer.getFieldSerializerConfig().setFieldAccess(FieldAccessType.UNSAFE);
 			serializer.updateFields();
-			assertNull(serializer.finalFields);
+			assertNull(serializer.finalFieldSetter);
 		} finally {
 			FinalFieldSetter.denied = denied;
 		}
@@ -197,6 +218,18 @@ class FinalFieldsTest {
 		public boolean equals (Object object) {
 			return object instanceof HashNode other && Objects.equals(other.id, id);
 		}
+	}
+
+	public static class NotSerializable {
+		final int a = 1;
+	}
+
+	public static class NotSerializableSuperclass extends NotSerializable implements Serializable {
+		final int b = 2;
+	}
+
+	public static class TransientField implements Serializable {
+		final transient int c = 3;
 	}
 
 	public static class Base implements Serializable {

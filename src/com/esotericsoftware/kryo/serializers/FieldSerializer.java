@@ -72,7 +72,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	// For records.
 	final Constructor recordConstructor;
 	/** Sets final fields if setting them with reflection is denied, else null. */
-	FinalFieldSetter finalFields;
+	FinalFieldSetter finalFieldSetter;
 	private final Object[] recordDefaults;
 
 	public FieldSerializer (Kryo kryo, Class type) {
@@ -192,24 +192,27 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Reads the value of a field and sets it, with {@link FinalFieldSetter} for a final field if needed. */
 	void readField (CachedField field, Input input, Object object) {
-		if (finalFields == null || field.index == -1)
+		if (finalFieldSetter == null || field.index == -1)
 			field.read(input, object);
 		else
-			finalFields.set(object, field.index, field.read(input));
+			finalFieldSetter.set(object, field.index, field.read(input));
 	}
 
 	/** Copies the value of a field, with {@link FinalFieldSetter} for a final field if needed. */
 	void copyField (Kryo kryo, CachedField field, Object original, Object copy) {
-		if (finalFields == null || field.index == -1) {
+		if (finalFieldSetter == null || field.index == -1) {
 			field.copy(original, copy);
 			return;
 		}
 		try {
 			Object value = field.get(original);
 			// Primitive values are immutable, all other values are copied like other field values.
-			finalFields.set(copy, field.index, field.field.getType().isPrimitive() ? value : kryo.copy(value));
+			finalFieldSetter.set(copy, field.index, field.field.getType().isPrimitive() ? value : kryo.copy(value));
 		} catch (IllegalAccessException ex) {
 			throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
+		} catch (KryoException ex) {
+			ex.addTrace(field.name + " (" + className(type) + ")");
+			throw ex;
 		}
 	}
 
@@ -259,8 +262,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Sets a non-primitive field to null. */
 	void setNull (CachedField cachedField, Object object) {
 		if (cachedField.field.getType().isPrimitive()) return;
-		if (finalFields != null && cachedField.index != -1) {
-			finalFields.set(object, cachedField.index, null);
+		if (finalFieldSetter != null && cachedField.index != -1) {
+			finalFieldSetter.set(object, cachedField.index, null);
 			return;
 		}
 		try {
