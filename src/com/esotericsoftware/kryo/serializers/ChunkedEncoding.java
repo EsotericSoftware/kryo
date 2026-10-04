@@ -40,28 +40,36 @@ interface ChunkedEncoding {
 	 * @param output The output returned by {@link #beginWrite(Output)}. */
 	Output fieldOutput (Output output);
 
+	/** Ends writing an object started by {@link #beginWrite(Output)}, eg writing data that was buffered. */
 	void endWrite ();
 
 	/** Takes the field names of CompatibleFieldSerializer for the class, which are written the first time in the object graph.
 	 * @return false if the field names are not written by the chunked encoding, so the serializer writes them. */
 	boolean writeFieldNames (Class type, String[] names);
 
-	/** Starts a field. Returns a mark for {@link #endField(Output, long)}. */
+	/** Starts a field.
+	 * @param output The output returned by {@link #fieldOutput(Output)}.
+	 * @return The mark for {@link #endField(Output, long)}. */
 	long beginField (Output output);
 
+	/** Ends a field started by {@link #beginField(Output)}.
+	 * @param output The output returned by {@link #fieldOutput(Output)}. */
 	void endField (Output output, long mark);
 
 	/** Returns the input for the fields of an object. Must be followed by {@link #endRead()}. */
 	Input beginRead (Input input);
 
+	/** Ends reading an object started by {@link #beginRead(Input)}. */
 	void endRead ();
 
 	/** Returns the field names of CompatibleFieldSerializer for the class, which has no field names for the object graph yet.
 	 * @return null if the field names are not written by the chunked encoding, so the serializer reads them. */
 	String[] readFieldNames (Class type);
 
-	/** Starts a field. Returns the end of the field for {@link #endField(Input, long, int)}. {@link #fieldObjects()} must be
-	 * called directly afterward, before reading the field data, which can start nested fields. */
+	/** Starts a field. {@link #fieldObjects()} must be called directly afterward, before reading the field data, which can start
+	 * nested fields.
+	 * @param input The input returned by {@link #beginRead(Input)}.
+	 * @return The end of the field for {@link #endField(Input, long, int)}. */
 	long beginField (Input input);
 
 	/** Returns the number of objects read after the field started by the last {@link #beginField(Input)}, for
@@ -69,6 +77,9 @@ interface ChunkedEncoding {
 	 * field fails after reading nested objects. */
 	int fieldObjects ();
 
-	/** Ends a field, skipping the rest of it. */
+	/** Ends a field started by {@link #beginField(Input)}, skipping the rest of it.
+	 * @param input The input returned by {@link #beginRead(Input)}.
+	 * @param end The end returned by {@link #beginField(Input)}.
+	 * @param objects The value of {@link #fieldObjects()}. */
 	void endField (Input input, long end, int objects);
 }

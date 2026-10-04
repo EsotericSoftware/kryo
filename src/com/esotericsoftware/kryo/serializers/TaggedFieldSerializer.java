@@ -127,15 +127,15 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		boolean readUnknownTagData = config.readUnknownTagData;
 		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
 		boolean chunked = chunks != null;
-		Output out = chunked ? chunks.beginWrite(output) : output;
-		Output fieldOutput = chunked ? chunks.fieldOutput(out) : out;
+		Output objectOutput = chunked ? chunks.beginWrite(output) : output;
+		Output fieldOutput = chunked ? chunks.fieldOutput(objectOutput) : objectOutput;
 		int pop = pushTypeVariables();
-		writeHeader(kryo, out, object);
+		writeHeader(kryo, objectOutput, object);
 
 		for (int i = 0, n = writeTags.length; i < n; i++) {
 			CachedField cachedField = writeTags[i];
-			if (TRACE) log("Write", cachedField, out.position());
-			out.writeVarInt(cachedField.tag, true);
+			if (TRACE) log("Write", cachedField, objectOutput.position());
+			objectOutput.writeVarInt(cachedField.tag, true);
 			long mark = chunked ? chunks.beginField(fieldOutput) : 0;
 
 			// Write the value class so the field data can be read even if the field is removed.
