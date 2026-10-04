@@ -46,6 +46,8 @@ kryo.register(ConcurrentSkipListSet.class, new CollectionSerializer());
 kryo.register(PriorityBlockingQueue.class, new CollectionSerializer());
 ```
 
+Kryo 6 also adds default serializers for `File`, `InetAddress` and `InetSocketAddress`, which use only public API and don't look up host names. Kryo 5 serialized them with FieldSerializer, which can't access their fields on Java 17+ without `--add-opens`, and even with it lost the IP address of `InetAddress` and couldn't create `File` and `InetSocketAddress` without StdInstantiatorStrategy. FileSerializer writes the path like FieldSerializer did, so a `File` written by Kryo 5 without references can still be read.
+
 Kryo 6 also adds default serializers for the unmodifiable and synchronized collections returned by `Collections`, eg `Collections.unmodifiableList`, except on Android. Kryo 5 serialized them with CollectionSerializer or MapSerializer, which couldn't read them back, so there is no readable Kryo 5 data for them. If you added these serializers with `addDefaultSerializers` in Kryo 5, the data is the same. See [Unmodifiable and synchronized collections](README.md#unmodifiable-and-synchronized-collections) for the JDK internals they access.
 
 ### Generic fields with CompatibleFieldSerializer and TaggedFieldSerializer

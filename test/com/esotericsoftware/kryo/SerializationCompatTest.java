@@ -72,14 +72,14 @@ class SerializationCompatTest extends KryoTestCase {
 	private static final boolean DELETE_FAILED_TEST_FILES = false;
 
 	// Also change Kryo#defaultSerializers. Java 21+ has 3 more for the unmodifiable sequenced collections.
-	private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = Runtime.version().feature() >= 21 ? 103 : 100;
+	private static final int EXPECTED_DEFAULT_SERIALIZER_COUNT = Runtime.version().feature() >= 21 ? 106 : 103;
 	private static final List<TestDataDescription> TEST_DATAS = new ArrayList<>();
 
 	static {
-		TEST_DATAS.add(new TestDataDescription<>(new TestData(), 3243, 3262));
-		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava8(), 3401, 3420));
-		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava11(), 3485, 3514));
-		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava17(), 3251, 3270));
+		TEST_DATAS.add(new TestDataDescription<>(new TestData(), 3346, 3365));
+		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava8(), 3504, 3523));
+		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava11(), 3588, 3617));
+		TEST_DATAS.add(new TestDataDescription<>(new TestDataJava17(), 3354, 3373));
 	};
 
 	@BeforeEach
