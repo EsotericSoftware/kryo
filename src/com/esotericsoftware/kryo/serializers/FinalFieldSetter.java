@@ -35,8 +35,9 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 
 /** Sets the final fields of serializable classes if setting final fields with reflection is denied (JEP 500, eg with
  * {@code --illegal-final-field-mutation=deny}). Otherwise final fields are set with reflection like other fields, and this class
@@ -92,45 +93,32 @@ final class FinalFieldSetter {
 		input = new FieldsInput();
 	}
 
-	/** Called if the class has final fields. Returns null if final fields are set with reflection: the method handles are not
-	 * available, or a final field is not a serializable field of a serializable class. Otherwise sets {@link CachedField#index}
-	 * for each final field. */
+	/** Called if the class has final fields. Returns null if final fields are set with reflection: setting them with reflection is
+	 * allowed, the method handles are not available, or a final field is not a serializable field of a serializable class.
+	 * Otherwise sets {@link CachedField#index} for each final field. */
 	static FinalFieldSetter create (Class type, CachedField[] fields, CachedField[] copyFields) {
-		// Reflection is used if setting final fields with it is allowed.
 		if (defaultReadObject == null || isRecord(type) || !mutationDenied()) return null;
-
-		ArrayList<ClassFields> classes = new ArrayList<>();
-		ArrayList<CachedField> finalFields = new ArrayList<>();
-		for (CachedField[] array : new CachedField[][] {fields, copyFields}) {
-			for (CachedField cachedField : array) {
-				Field field = cachedField.field;
-				if (!Modifier.isFinal(field.getModifiers()) || finalFields.contains(cachedField)) continue;
-				Class declaringClass = field.getDeclaringClass();
-				if (!Serializable.class.isAssignableFrom(declaringClass) || Modifier.isTransient(field.getModifiers())) return null;
-				finalFields.add(cachedField);
-				ClassFields classFields = null;
-				for (ClassFields c : classes)
-					if (c.type == declaringClass) classFields = c;
-				if (classFields == null) {
-					try {
-						classes.add(classFields = new ClassFields(declaringClass));
-					} catch (Throwable ex) {
-						if (DEBUG) debug("kryo", "Final fields are set with reflection: " + className(declaringClass), ex);
-						return null;
-					}
-				}
-				int fieldIndex = classFields.indexOf(field.getName());
-				if (fieldIndex == -1) return null; // Eg serialPersistentFields.
-				classFields.valueIndexes[fieldIndex] = finalFields.size() - 1;
-			}
-		}
-		if (finalFields.isEmpty()) return null;
+		// Both arrays have the same CachedField for a field that is read and copied.
+		LinkedHashSet<CachedField> finalFields = new LinkedHashSet<>();
+		for (CachedField[] array : new CachedField[][] {fields, copyFields})
+			for (CachedField cachedField : array)
+				if (Modifier.isFinal(cachedField.field.getModifiers())) finalFields.add(cachedField);
 		try {
-			FinalFieldSetter setter = new FinalFieldSetter(classes.toArray(new ClassFields[classes.size()]), finalFields.size());
-			for (int i = 0, n = finalFields.size(); i < n; i++)
-				finalFields.get(i).index = i;
+			LinkedHashMap<Class, ClassFields> classes = new LinkedHashMap<>();
+			int index = 0;
+			for (CachedField cachedField : finalFields) {
+				Class declaringClass = cachedField.field.getDeclaringClass();
+				ClassFields classFields = classes.get(declaringClass);
+				if (classFields == null) classes.put(declaringClass, classFields = new ClassFields(declaringClass));
+				classFields.setValueIndex(cachedField.field.getName(), index++);
+			}
+			FinalFieldSetter setter = new FinalFieldSetter(classes.values().toArray(new ClassFields[classes.size()]), index);
+			index = 0;
+			for (CachedField cachedField : finalFields)
+				cachedField.index = index++;
 			return setter;
-		} catch (IOException ex) {
+		} catch (Throwable ex) {
+			if (DEBUG) debug("kryo", "Final fields are set with reflection: " + className(type), ex);
 			return null;
 		}
 	}
@@ -200,8 +188,9 @@ final class FinalFieldSetter {
 
 		ClassFields (Class type) throws Exception {
 			this.type = type;
+			if (!Serializable.class.isAssignableFrom(type)) throw new KryoException("Class is not serializable.");
 			MethodHandle handle = (MethodHandle)defaultReadObject.invoke(reflectionFactory, type);
-			if (handle == null) throw new KryoException("No method handle.");
+			if (handle == null) throw new KryoException("No method handle, eg because of serialPersistentFields.");
 			this.handle = handle.asType(MethodType.methodType(void.class, Object.class, ObjectInputStream.class));
 			streamClass = ObjectStreamClass.lookup(type);
 			ObjectStreamField[] streamFields = streamClass.getFields();
@@ -214,6 +203,13 @@ final class FinalFieldSetter {
 				fields[i].setAccessible(true);
 				valueIndexes[i] = -1;
 			}
+		}
+
+		/** @throws KryoException If the field is not serializable, eg because it is transient. */
+		void setValueIndex (String name, int valueIndex) {
+			int i = indexOf(name);
+			if (i == -1) throw new KryoException("Field is not serializable: " + name);
+			valueIndexes[i] = valueIndex;
 		}
 
 		int indexOf (String name) {
