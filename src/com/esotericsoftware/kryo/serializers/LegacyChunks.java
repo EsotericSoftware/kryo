@@ -1,0 +1,91 @@
+/* Copyright (c) 2008-2026, Nathan Sweet
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following
+ * conditions are met:
+ *
+ * - Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+ * disclaimer in the documentation and/or other materials provided with the distribution.
+ * - Neither the name of Esoteric Software nor the names of its contributors may be used to endorse or promote products derived
+ * from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+ * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+
+package com.esotericsoftware.kryo.serializers;
+
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.InputChunked;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.io.OutputChunked;
+
+/** The chunked encoding of Kryo 5, which splits each field into chunks. If a chunk is skipped, class names, field names, and
+ * objects first written in it are unknown afterwards. The chunked output and input of each object hold all its state, so
+ * instances are immutable and shared. */
+final class LegacyChunks implements ChunkedFields {
+	/** The last instance, reused while the chunk size is the same. */
+	private static LegacyChunks last = new LegacyChunks(1024);
+
+	private final int chunkSize;
+
+	private LegacyChunks (int chunkSize) {
+		this.chunkSize = chunkSize;
+	}
+
+	static LegacyChunks get (int chunkSize) {
+		LegacyChunks chunks = last;
+		if (chunks.chunkSize != chunkSize) last = chunks = new LegacyChunks(chunkSize);
+		return chunks;
+	}
+
+	public Output beginWrite (Output output) {
+		return output;
+	}
+
+	public Output fieldOutput (Output output) {
+		return new OutputChunked(output, chunkSize);
+	}
+
+	public void endWrite () {
+	}
+
+	public boolean writeFieldNames (Class type, String[] names) {
+		return false; // The serializer writes them before the first chunk.
+	}
+
+	public long beginField (Output output) {
+		return 0;
+	}
+
+	public void endField (Output output, long mark) {
+		((OutputChunked)output).endChunk(); // The output returned by fieldOutput.
+	}
+
+	public Input beginRead (Input input) {
+		return new InputChunked(input, chunkSize);
+	}
+
+	public void endRead () {
+	}
+
+	public String[] readFieldNames (Class type) {
+		return null; // The serializer reads them before the first chunk.
+	}
+
+	public long beginField (Input input) {
+		return 0;
+	}
+
+	public int fieldObjects () {
+		return 0;
+	}
+
+	public void endField (Input input, long end, int objects) {
+		((InputChunked)input).nextChunk(); // The input returned by beginRead.
+	}
+}

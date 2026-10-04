@@ -27,9 +27,7 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.ReferenceResolver;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.OutputChunked;
 
 import java.util.ArrayList;
 
@@ -46,11 +44,8 @@ import java.util.ArrayList;
  * Format of a scope: varint number of class names, each with varint name ID and name; varint number of field names shifted left
  * by 1, bit 1 if the first are those of the outermost object, each with the class and the field names; then the object data. A
  * class is written as varint registration ID + 1, or 0 and the class written by Kryo. Format of a field: varint length, with
- * references varint number of objects, then the field data.
- * <p>
- * The chunked encoding of Kryo 5 splits each field into chunks with {@link OutputChunked} and {@link InputChunked}, which hold
- * all its state. The callers pass the same {@code legacyChunks} value to all calls for an object. */
-final class FieldFrames {
+ * references varint number of objects, then the field data. */
+final class FieldFrames implements ChunkedFields {
 	private static final Object contextKey = new Object();
 	/** Larger buffers are not kept for the next scope. */
 	private static final int maxBufferSize = 1024 * 1024;
@@ -64,7 +59,7 @@ final class FieldFrames {
 	private final ArrayList<Class> fieldNameTypes = new ArrayList();
 	private final ArrayList<String[]> fieldNames = new ArrayList();
 
-	/** The number of objects read after the field started by {@link #beginField(Input, boolean)}. Nested fields overwrite it. */
+	/** The number of objects read after the field started by {@link #beginField(Input)}. Nested fields overwrite it. */
 	private int fieldObjects;
 
 	private FieldFrames (Kryo kryo) {
@@ -86,10 +81,8 @@ final class FieldFrames {
 		return newGraph;
 	}
 
-	/** Returns the output for the fields: for the format of Kryo 5 a chunked output, otherwise the buffer of the current scope if
-	 * the output is that buffer, or the buffer of a new scope. Must be followed by {@link #endWrite(boolean)}. */
-	Output beginWrite (Output output, boolean legacyChunks, int chunkSize) {
-		if (legacyChunks) return new OutputChunked(output, chunkSize);
+	/** Returns the buffer of the current scope if the output is that buffer, otherwise the buffer of a new scope. */
+	public Output beginWrite (Output output) {
 		if (writeDepth > 0) {
 			WriteScope scope = writeScopes.get(writeDepth - 1);
 			if (scope.buffer == output) {
@@ -111,9 +104,12 @@ final class FieldFrames {
 		return scope.buffer;
 	}
 
+	public Output fieldOutput (Output output) {
+		return output;
+	}
+
 	/** If the object started the current scope, writes the data first written in it and then the object data. */
-	void endWrite (boolean legacyChunks) {
-		if (legacyChunks) return;
+	public void endWrite () {
 		WriteScope scope = writeScopes.get(writeDepth - 1);
 		if (scope.nested > 0) {
 			scope.nested--;
@@ -159,33 +155,32 @@ final class FieldFrames {
 		}
 	}
 
-	/** Remembers the field names of CompatibleFieldSerializer for the class, to write them before the object data. */
-	void writeFieldNames (Class type, String[] names) {
+	/** Remembers the field names to write them before the object data. */
+	public boolean writeFieldNames (Class type, String[] names) {
 		WriteScope scope = writeScopes.get(writeDepth - 1);
 		// The outermost object writes its field names before any nested object, so they are first.
 		if (scope.nested == 0) scope.outermostFieldNames = true;
 		scope.fieldNameTypes.add(type);
 		scope.fieldNames.add(names);
+		return true;
 	}
 
-	/** Writes the number of strings and the strings, eg the field names of CompatibleFieldSerializer. */
-	static void writeStrings (Output output, String[] values) {
+	private static void writeStrings (Output output, String[] values) {
 		output.writeVarInt(values.length, true);
 		for (String value : values)
 			output.writeString(value);
 	}
 
-	static String[] readStrings (Input input) {
+	private static String[] readStrings (Input input) {
 		String[] values = new String[input.validateArrayLength(input.readVarInt(true))];
 		for (int i = 0; i < values.length; i++)
 			values[i] = input.readString();
 		return values;
 	}
 
-	/** Starts a field, reserving space for its length. Returns the start of the field and the number of objects written before it,
-	 * or -1 for the format of Kryo 5, for {@link #endField(Output, long)}. */
-	long beginField (Output output, boolean legacyChunks) {
-		if (legacyChunks) return -1;
+	/** Starts a field, reserving space for its length. Returns the start of the field and the number of objects written before
+	 * it. */
+	public long beginField (Output output) {
 		int start = output.position();
 		if (!kryo.getReferences()) {
 			output.writeByte(0);
@@ -195,13 +190,8 @@ final class FieldFrames {
 		return (long)kryo.getReferenceResolver().getObjectCount() << 32 | start;
 	}
 
-	/** Ends a field: writes its length and the number of objects before the field data, moving the data if it needs more space.
-	 * For the format of Kryo 5, ends the chunk. */
-	void endField (Output output, long mark) {
-		if (mark == -1) {
-			((OutputChunked)output).endChunk();
-			return;
-		}
+	/** Ends a field: writes its length and the number of objects before the field data, moving the data if it needs more space. */
+	public void endField (Output output, long mark) {
 		int start = (int)mark;
 		boolean references = kryo.getReferences();
 		int reserved = references ? 2 : 1;
@@ -223,10 +213,8 @@ final class FieldFrames {
 			trace("kryo", "Write field: " + length + " bytes" + (references ? ", " + objects + " objects" : "") + pos(start));
 	}
 
-	/** Returns the input for the fields: for the format of Kryo 5 a chunked input, otherwise the input after reading the data
-	 * first written in the scope, if the input starts a new scope. Must be followed by {@link #endRead(boolean)}. */
-	Input beginRead (Input input, boolean legacyChunks, int chunkSize) {
-		if (legacyChunks) return new InputChunked(input, chunkSize);
+	/** Reads the data first written in the scope, if the input starts a new scope. */
+	public Input beginRead (Input input) {
 		if (readDepth > 0) {
 			ReadScope scope = readScopes.get(readDepth - 1);
 			if (scope.input == input) {
@@ -273,8 +261,8 @@ final class FieldFrames {
 		}
 	}
 
-	/** Returns the field names of CompatibleFieldSerializer for the class, read in the current object graph. */
-	String[] fieldNames (Class type) {
+	/** Returns the field names for the class, read in the current object graph. */
+	public String[] readFieldNames (Class type) {
 		for (int i = fieldNameTypes.size() - 1; i >= 0; i--)
 			if (fieldNameTypes.get(i) == type) return fieldNames.get(i);
 		// The object is read as a different class than it was written, if it started the scope and its field names were new.
@@ -287,8 +275,7 @@ final class FieldFrames {
 		return scope.outermostFieldNames;
 	}
 
-	void endRead (boolean legacyChunks) {
-		if (legacyChunks) return;
+	public void endRead () {
 		ReadScope scope = readScopes.get(readDepth - 1);
 		if (scope.nested > 0)
 			scope.nested--;
@@ -298,32 +285,21 @@ final class FieldFrames {
 		}
 	}
 
-	/** Starts a field, reading its length and the number of objects in it. Returns the {@link Input#total()} where the field ends,
-	 * or -1 for the format of Kryo 5, for {@link #endField(Input, long, int)}. {@link #fieldObjects()} must be called directly
-	 * afterward, before reading the field data, which can start nested fields. */
-	long beginField (Input input, boolean legacyChunks) {
-		if (legacyChunks) return -1;
+	/** Starts a field, reading its length and the number of objects in it. Returns the {@link Input#total()} where the field
+	 * ends. */
+	public long beginField (Input input) {
 		int length = input.readVarInt(true);
 		fieldObjects = kryo.getReferences() ? kryo.getReferenceResolver().getObjectCount() + input.readVarInt(true) : 0;
 		if (TRACE) trace("kryo", "Read field: " + length + " bytes" + pos(input.position()));
 		return input.total() + length;
 	}
 
-	/** Returns the number of objects read after the field started by the last {@link #beginField(Input, boolean)}, for
-	 * {@link #endField(Input, long, int)}. Must be called directly after beginField, because nested fields overwrite it. It is
-	 * needed to reserve the IDs of objects that were not read, eg if reading an unknown field fails after reading nested
-	 * objects. */
-	int fieldObjects () {
+	public int fieldObjects () {
 		return fieldObjects;
 	}
 
-	/** Ends a field: skips the rest of it and reserves the IDs of the objects in it that were not read. For the format of Kryo 5,
-	 * skips to the next chunk. */
-	void endField (Input input, long end, int objects) {
-		if (end == -1) {
-			((InputChunked)input).nextChunk();
-			return;
-		}
+	/** Ends a field: skips the rest of it and reserves the IDs of the objects in it that were not read. */
+	public void endField (Input input, long end, int objects) {
 		long remaining = end - input.total();
 		if (remaining < 0) throw new KryoException("More data was read than the field contains: " + -remaining + " bytes");
 		if (remaining > 0) {
