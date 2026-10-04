@@ -29,6 +29,7 @@ import com.esotericsoftware.kryo.util.ObjectMap;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputFilter;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
@@ -42,6 +43,22 @@ import java.io.ObjectStreamClass;
 public class JavaSerializer extends Serializer {
 	/** The graph context key for the input stream. The output stream is stored with this serializer as key. */
 	private final Object readKey = new Object();
+	private ObjectInputFilter objectInputFilter;
+
+	/** Sets an {@link ObjectInputFilter} on each {@link ObjectInputStream} this serializer creates for reading, before any object
+	 * is read from it. The filter then decides about every class, array length, reference and depth in the Java serialization
+	 * data, as described in {@link ObjectInputStream#setObjectInputFilter(ObjectInputFilter)}. As with any such filter, a class is
+	 * resolved, without being initialized, before the filter sees it. This is opt-in protection for reading data from an untrusted
+	 * source. When null (the default), this serializer sets no filter and behavior is unchanged.
+	 * @param objectInputFilter May be null. */
+	public void setObjectInputFilter (ObjectInputFilter objectInputFilter) {
+		this.objectInputFilter = objectInputFilter;
+	}
+
+	/** @return May be null. */
+	public ObjectInputFilter getObjectInputFilter () {
+		return objectInputFilter;
+	}
 
 	public void write (Kryo kryo, Output output, Object object) {
 		try {
@@ -64,6 +81,7 @@ public class JavaSerializer extends Serializer {
 			ObjectInputStream objectStream = (ObjectInputStream)graphContext.get(readKey);
 			if (objectStream == null) {
 				objectStream = new ObjectInputStreamWithKryoClassLoader(input, kryo);
+				if (objectInputFilter != null) objectStream.setObjectInputFilter(objectInputFilter);
 				graphContext.put(readKey, objectStream);
 			}
 			return objectStream.readObject();
