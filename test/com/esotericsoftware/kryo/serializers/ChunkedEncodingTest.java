@@ -178,6 +178,39 @@ class ChunkedEncodingTest {
 	}
 
 	@Test
+	void testCreate () {
+		// A subclass writes data for create before the object, as described in the README. For the outermost object, this data
+		// comes before the class names and field names of the scope.
+		for (boolean legacyChunks : new boolean[] {false, true}) {
+			Kryo kryo = compatibleKryo(true, false, legacyChunks);
+			kryo.register(Entity3.class, new Entity3Serializer(kryo, legacyChunks), 21);
+			byte[] bytes = write(kryo, new Entity3(5));
+			Kryo reader = compatibleKryo(true, false, legacyChunks);
+			reader.register(Entity3.class, new Entity3Serializer(reader, legacyChunks), 21);
+			Entity3 read = reader.readObject(new Input(bytes), Entity3.class);
+			assertEquals(5, read.a);
+			assertEquals("s5", read.s);
+		}
+	}
+
+	static class Entity3Serializer extends CompatibleFieldSerializer<Entity3> {
+		Entity3Serializer (Kryo kryo, boolean legacyChunks) {
+			super(kryo, Entity3.class);
+			getCompatibleFieldSerializerConfig().setChunkedEncoding(true);
+			getCompatibleFieldSerializerConfig().setLegacyChunks(legacyChunks);
+		}
+
+		public void write (Kryo kryo, Output output, Entity3 object) {
+			output.writeInt(object.a);
+			super.write(kryo, output, object);
+		}
+
+		protected Entity3 create (Kryo kryo, Input input, Class<? extends Entity3> type) {
+			return new Entity3(input.readInt());
+		}
+	}
+
+	@Test
 	void testLegacyChunks () {
 		// With the chunked encoding of Kryo 5, the class name of Entity3 is lost with the skipped chunk.
 		byte[] bytes = removeEntity2(write(compatibleKryo(false, false, true), entity(false)));

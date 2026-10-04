@@ -29,6 +29,8 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import java.util.ArrayList;
+
 /** Resolves classes by ID or by fully qualified class name.
  * @author Nathan Sweet */
 public class DefaultClassResolver implements ClassResolver {
@@ -47,6 +49,8 @@ public class DefaultClassResolver implements ClassResolver {
 	protected IntMap<String> unknownNameIdToName;
 	/** The nesting depth of {@link #beginDeferredNames()}. */
 	protected int deferredNames;
+	/** The classes whose names are deferred, in the order of their name IDs. */
+	protected ArrayList<Class> deferredClasses;
 
 	private int memoizedClassId = -1;
 	private Registration memoizedClassIdValue;
@@ -141,7 +145,11 @@ public class DefaultClassResolver implements ClassResolver {
 		if (classToNameId == null) classToNameId = new IdentityObjectIntMap<>();
 		classToNameId.put(type, nameId);
 		output.writeVarInt(nameId, true);
-		if (deferredNames > 0) return; // The class name is written by endDeferredNames.
+		if (deferredNames > 0) { // The class name is written by endDeferredNames.
+			if (deferredClasses == null) deferredClasses = new ArrayList<>();
+			deferredClasses.add(type);
+			return;
+		}
 		if (registration.isTypeNameAscii())
 			output.writeAscii(type.getName());
 		else
@@ -218,23 +226,25 @@ public class DefaultClassResolver implements ClassResolver {
 
 	public int beginDeferredNames () {
 		deferredNames++;
-		return nextNameId;
+		return deferredClasses == null ? 0 : deferredClasses.size();
 	}
 
 	public void endDeferredNames (Output output, int mark) {
 		deferredNames--;
-		int count = nextNameId - mark;
-		output.writeVarInt(count, true);
-		if (count == 0) return;
-		for (ObjectIntMap.Entry<Class> entry : classToNameId.entries()) {
-			if (entry.value < mark) continue;
-			output.writeVarInt(entry.value, true);
-			Registration registration = getRegistration(entry.key);
+		ArrayList<Class> deferredClasses = this.deferredClasses;
+		int size = deferredClasses == null ? 0 : deferredClasses.size();
+		output.writeVarInt(size - mark, true);
+		for (int i = mark; i < size; i++) {
+			Class type = deferredClasses.get(i);
+			output.writeVarInt(classToNameId.get(type, -1), true);
+			Registration registration = getRegistration(type);
 			if (registration != null && registration.isTypeNameAscii())
-				output.writeAscii(entry.key.getName());
+				output.writeAscii(type.getName());
 			else
-				output.writeString(entry.key.getName());
+				output.writeString(type.getName());
 		}
+		// The outer scopes write the class names too, in case an inner scope is skipped.
+		if (deferredNames == 0 && deferredClasses != null) deferredClasses.clear();
 	}
 
 	public void readDeferredNames (Input input) {
@@ -262,5 +272,6 @@ public class DefaultClassResolver implements ClassResolver {
 		if (unknownNameIdToName != null) unknownNameIdToName.clear();
 		nextNameId = 0;
 		deferredNames = 0;
+		if (deferredClasses != null) deferredClasses.clear();
 	}
 }

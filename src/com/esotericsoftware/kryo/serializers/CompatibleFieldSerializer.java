@@ -115,7 +115,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			if (chunked && !legacyChunks)
 				frames.writeFieldNames(type, fieldNames);
 			else
-				writeFieldNames(output);
+				FieldFrames.writeStrings(output, fieldNames);
 		}
 
 		CachedField[] fields = cachedFields.fields;
@@ -156,8 +156,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
 		boolean chunked = config.chunked, legacyChunks = chunked && config.legacyChunks,
 			readUnknownFieldData = config.readUnknownFieldData;
-		FieldFrames frames = chunked ? FieldFrames.get(kryo) : null;
-		Input fieldInput = chunked ? frames.beginRead(input, legacyChunks, config.chunkSize) : input;
 		int pop = pushTypeVariables();
 
 		T object = null;
@@ -167,6 +165,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			kryo.reference(object);
 		} else
 			values = newRecordValues();
+
+		// After create, which can read data written before the object, eg by a subclass.
+		FieldFrames frames = chunked ? FieldFrames.get(kryo) : null;
+		Input fieldInput = chunked ? frames.beginRead(input, legacyChunks, config.chunkSize) : input;
 
 		CachedField[] fields = (CachedField[])kryo.getGraphContext().get(this);
 		if (fields == null) fields = readFields(kryo, input, chunked && !legacyChunks ? frames : null);
@@ -251,25 +253,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 	/** Returns the fields of the data for the current object graph, read from the input or the frames. */
 	private CachedField[] readFields (Kryo kryo, Input input, FieldFrames frames) {
-		return fields(kryo, frames != null ? frames.fieldNames(type) : readFieldNames(input));
-	}
-
-	private void writeFieldNames (Output output) {
-		output.writeVarInt(fieldNames.length, true);
-		for (String name : fieldNames) {
-			if (TRACE) trace("kryo", "Write field name: " + name + pos(output.position()));
-			output.writeString(name);
-		}
-	}
-
-	private String[] readFieldNames (Input input) {
-		int length = input.validateArrayLength(input.readVarInt(true));
-		String[] names = new String[length];
-		for (int i = 0; i < length; i++) {
-			names[i] = input.readString();
-			if (TRACE) trace("kryo", "Read field name: " + names[i]);
-		}
-		return names;
+		return fields(kryo, frames != null ? frames.fieldNames(type) : FieldFrames.readStrings(input));
 	}
 
 	/** Returns the fields of the data for the current object graph from their names, which can contain unknown fields. */

@@ -107,7 +107,7 @@ final class FieldFrames {
 		else
 			scope.buffer.reset();
 		scope.outermostFieldNames = false;
-		scope.names = kryo.getClassResolver().beginDeferredNames();
+		scope.namesMark = kryo.getClassResolver().beginDeferredNames();
 		return scope.buffer;
 	}
 
@@ -125,7 +125,7 @@ final class FieldFrames {
 			trace("kryo", "Write scope: " + scope.fieldNameTypes.size() + " field names, " + scope.buffer.position() + " bytes"
 				+ pos(parent.position()));
 		}
-		kryo.getClassResolver().endDeferredNames(parent, scope.names);
+		kryo.getClassResolver().endDeferredNames(parent, scope.namesMark);
 		ArrayList<Class> types = scope.fieldNameTypes;
 		ArrayList<String[]> fieldNames = scope.fieldNames;
 		parent.writeVarInt(types.size() << 1 | (scope.outermostFieldNames ? 1 : 0), true);
@@ -168,13 +168,14 @@ final class FieldFrames {
 		scope.fieldNames.add(names);
 	}
 
-	private static void writeStrings (Output output, String[] values) {
+	/** Writes the number of strings and the strings, eg the field names of CompatibleFieldSerializer. */
+	static void writeStrings (Output output, String[] values) {
 		output.writeVarInt(values.length, true);
 		for (String value : values)
 			output.writeString(value);
 	}
 
-	private static String[] readStrings (Input input) {
+	static String[] readStrings (Input input) {
 		String[] values = new String[input.validateArrayLength(input.readVarInt(true))];
 		for (int i = 0; i < values.length; i++)
 			values[i] = input.readString();
@@ -246,16 +247,16 @@ final class FieldFrames {
 
 		if (TRACE) trace("kryo", "Read scope" + pos(input.position()));
 		kryo.getClassResolver().readDeferredNames(input);
-		int fieldNames = input.readVarInt(true);
-		for (int i = 0, n = fieldNames >>> 1; i < n; i++) {
+		int entries = input.readVarInt(true);
+		for (int i = 0, n = entries >>> 1; i < n; i++) {
 			Registration registration = readClass(input);
 			String[] names = readStrings(input);
 			if (TRACE)
 				trace("kryo", "Read field names: " + (registration == null ? "<unknown class>" : className(registration.getType())));
-			if (i == 0 && (fieldNames & 1) != 0) scope.outermostFieldNames = names;
+			if (i == 0 && (entries & 1) != 0) scope.outermostFieldNames = names;
 			if (registration != null) {
 				fieldNameTypes.add(registration.getType());
-				this.fieldNames.add(names);
+				fieldNames.add(names);
 			}
 		}
 		return input;
@@ -344,7 +345,7 @@ final class FieldFrames {
 		/** The number of nested objects being written to the buffer. */
 		int nested;
 		/** The mark of {@link com.esotericsoftware.kryo.ClassResolver#beginDeferredNames()}. */
-		int names;
+		int namesMark;
 		boolean outermostFieldNames;
 		final ArrayList<Class> fieldNameTypes = new ArrayList();
 		final ArrayList<String[]> fieldNames = new ArrayList();
