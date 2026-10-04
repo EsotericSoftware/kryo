@@ -124,7 +124,10 @@ class CachedFields implements Comparator<CachedField> {
 		if (copyFields.length != newCopyFields.size()) copyFields = new CachedField[newCopyFields.size()];
 		newCopyFields.toArray(copyFields);
 		Arrays.sort(copyFields, this);
-		serializer.finalFields = finalFields ? FinalFieldSetter.create(serializer.type, fields, copyFields) : null;
+		// Unsafe sets final fields, also if setting them with reflection is denied.
+		serializer.finalFields = finalFields && fieldAccess() != FieldAccessType.UNSAFE
+			? FinalFieldSetter.create(serializer.type, fields, copyFields)
+			: null;
 
 		serializer.initializeCachedFields();
 	}

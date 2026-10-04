@@ -71,7 +71,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	// For records.
 	final Constructor recordConstructor;
-	/** Sets the final fields if they can't be set with reflection, null if they are set like other fields. */
+	/** Sets final fields if setting them with reflection is denied, else null. */
 	FinalFieldSetter finalFields;
 	private final Object[] recordDefaults;
 
@@ -165,7 +165,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 		if (recordConstructor == null) {
 			object = create(kryo, input, type);
 			kryo.reference(object);
-			if (finalFields != null) values = finalFields.newValues();
 		} else
 			values = newRecordValues();
 
@@ -174,8 +173,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 			if (TRACE) log("Read", fields[i], input.position());
 			try {
 				final CachedField field = fields[i];
-				if (values == null || field.index == -1)
-					field.read(input, object);
+				if (values == null)
+					readField(field, input, object);
 				else
 					values[field.index] = field.read(input);
 			} catch (KryoException e) {
@@ -185,17 +184,33 @@ public class FieldSerializer<T> extends Serializer<T> {
 			}
 		}
 
-		if (values != null) object = setValues(object, values);
+		if (values != null) object = createRecord(values);
 
 		popTypeVariables(pop);
 		return object;
 	}
 
-	/** Creates the record or sets the final fields, if the values of their fields were collected. */
-	T setValues (T object, Object[] values) {
-		if (recordConstructor != null) return createRecord(values);
-		finalFields.set(object, values);
-		return object;
+	/** Reads the value of a field and sets it, with {@link FinalFieldSetter} for a final field if needed. */
+	void readField (CachedField field, Input input, Object object) {
+		if (finalFields == null || field.index == -1)
+			field.read(input, object);
+		else
+			finalFields.set(object, field.index, field.read(input));
+	}
+
+	/** Copies the value of a field, with {@link FinalFieldSetter} for a final field if needed. */
+	void copyField (Kryo kryo, CachedField field, Object original, Object copy) {
+		if (finalFields == null || field.index == -1) {
+			field.copy(original, copy);
+			return;
+		}
+		try {
+			Object value = field.get(original);
+			// Primitive values are immutable, all other values are copied like other field values.
+			finalFields.set(copy, field.index, field.field.getType().isPrimitive() ? value : kryo.copy(value));
+		} catch (IllegalAccessException ex) {
+			throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
+		}
 	}
 
 	/** Returns a new array for the component values of a record, indexed by {@link CachedField#index}. */
@@ -244,6 +259,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Sets a non-primitive field to null. */
 	void setNull (CachedField cachedField, Object object) {
 		if (cachedField.field.getType().isPrimitive()) return;
+		if (finalFields != null && cachedField.index != -1) {
+			finalFields.set(object, cachedField.index, null);
+			return;
+		}
 		try {
 			cachedField.field.set(object, null);
 		} catch (IllegalAccessException ex) {
@@ -317,20 +336,17 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	public T copy (Kryo kryo, T original) {
 		final CachedField[] copyFields = cachedFields.copyFields;
-		T copy = null;
-		Object[] values;
 		if (recordConstructor == null) {
-			copy = createCopy(kryo, original);
+			T copy = createCopy(kryo, original);
 			kryo.reference(copy);
-			values = finalFields != null ? finalFields.newValues() : null;
-		} else
-			values = newRecordValues();
+			for (int i = 0, n = copyFields.length; i < n; i++)
+				copyField(kryo, copyFields[i], original, copy);
+			return copy;
+		}
+
+		Object[] values = newRecordValues();
 		for (int i = 0, n = copyFields.length; i < n; i++) {
 			CachedField field = copyFields[i];
-			if (values == null || field.index == -1) {
-				field.copy(original, copy);
-				continue;
-			}
 			try {
 				Object value = field.get(original);
 				// Primitive values are immutable, all other values are copied like other field values.
@@ -342,7 +358,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 				throw ex;
 			}
 		}
-		return values != null ? setValues(copy, values) : copy;
+		return createRecord(values);
 	}
 
 	/** Settings for serializing a field. */
@@ -357,7 +373,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		FieldAccess access;
 		int accessIndex = -1;
 
-		// For records, and final fields set by FinalFieldSetter. -1 if the field is set directly.
+		// For records, and final fields set by FinalFieldSetter. -1 if not used.
 		int index = -1;
 
 		// For UnsafeField.

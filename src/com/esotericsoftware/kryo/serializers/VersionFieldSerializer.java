@@ -129,7 +129,6 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		if (recordConstructor == null) {
 			object = create(kryo, input, type);
 			kryo.reference(object);
-			if (finalFields != null) values = finalFields.newValues();
 		} else
 			values = newRecordValues();
 
@@ -141,13 +140,13 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 				continue;
 			}
 			if (TRACE) log("Read", fields[i], input.position());
-			if (values == null || fields[i].index == -1)
-				fields[i].read(input, object);
+			if (values == null)
+				readField(fields[i], input, object);
 			else
 				values[fields[i].index] = fields[i].read(input);
 		}
 
-		if (values != null) object = setValues(object, values);
+		if (values != null) object = createRecord(values);
 
 		popTypeVariables(pop);
 		return object;

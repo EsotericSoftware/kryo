@@ -35,35 +35,30 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
 /** Sets the final fields of serializable classes if setting final fields with reflection is denied (JEP 500, eg with
  * {@code --illegal-final-field-mutation=deny}). Otherwise final fields are set with reflection like other fields, and this class
- * is not used. Whether it is denied is checked once, by setting a final field of {@link Probe}.
+ * is not used. Whether it is denied is checked once, by setting a final field of {@link Probe}. With Unsafe field access, final
+ * fields are set with Unsafe, which is not affected, so this class is not used either.
  * <p>
  * Java serialization is allowed to set final fields. Since Java 24, {@code ReflectionFactory.defaultReadObjectForSerialization}
  * provides a method handle that does what {@link ObjectInputStream#defaultReadObject()} does for one class: it sets all
  * serializable fields declared by that class, including final fields, to the values it gets from
  * {@link ObjectInputStream#readFields()}. This class calls that method handle with its own {@link ObjectInputStream}, which
- * doesn't read Java serialization data, but returns the field values read by Kryo:
- * <ul>
- * <li>While FieldSerializer and its subclasses read or copy an object, the values of final fields are collected in an array,
- * indexed by {@link CachedField#index}, like for records. All other fields are set as usual.
- * <li>After all fields are read, {@link #set(Object, Object[])} calls the method handle of each class with final fields.
- * {@link FieldsInput} returns the collected value for each final field, and the current value of the object for each other
- * serializable field, so those keep their values. A final field that was not read, eg because it was removed, keeps its value
- * too.
- * </ul>
- * The object is still created by the serializer before its fields are read, so references to it work as before. Only final fields
- * of serializable classes that are not transient can be set this way. If a class has other final fields, eg in a superclass that
- * isn't serializable, it is not used and setting these fields fails as before. */
+ * doesn't read Java serialization data. {@link FieldsInput} returns the new value for the field to set, and the current value of
+ * the object for all other serializable fields of the class, so those keep their values.
+ * <p>
+ * FieldSerializer and its subclasses call {@link #set(Object, int, Object)} right after reading or copying the value of a final
+ * field, with {@link CachedField#index} of the field. So the fields are set in the same order as with reflection, which matters
+ * eg if the object is added to a HashSet while its other fields are read.
+ * <p>
+ * Only final fields of serializable classes that are not transient can be set this way. If a class has other final fields, eg in
+ * a superclass that isn't serializable, this class is not used and setting these fields fails as before. */
 final class FinalFieldSetter {
 	static private final Object reflectionFactory;
 	static private final Method defaultReadObject;
-	/** A final field that was not read keeps its value. */
-	static private final Object unset = new Object();
 	/** Null until a class with final fields is used. Can be set by tests. */
 	static Boolean denied;
 
@@ -83,14 +78,14 @@ final class FinalFieldSetter {
 		defaultReadObject = method;
 	}
 
+	/** For each final field, by {@link CachedField#index}: its class and its position in the serializable fields of the class. */
 	private final ClassFields[] classes;
-	private final int count;
-	private final FieldsInput input;
+	private final int[] positions;
+	private final FieldsInput input = new FieldsInput();
 
-	private FinalFieldSetter (ClassFields[] classes, int count) throws IOException {
+	private FinalFieldSetter (ClassFields[] classes, int[] positions) throws IOException {
 		this.classes = classes;
-		this.count = count;
-		input = new FieldsInput();
+		this.positions = positions;
 	}
 
 	/** Called if the class has final fields. Returns null if final fields are set with reflection: setting them with reflection is
@@ -104,15 +99,18 @@ final class FinalFieldSetter {
 			for (CachedField cachedField : array)
 				if (Modifier.isFinal(cachedField.field.getModifiers())) finalFields.add(cachedField);
 		try {
-			LinkedHashMap<Class, ClassFields> classes = new LinkedHashMap<>();
+			LinkedHashMap<Class, ClassFields> classesByType = new LinkedHashMap<>();
+			ClassFields[] classes = new ClassFields[finalFields.size()];
+			int[] positions = new int[classes.length];
 			int index = 0;
 			for (CachedField cachedField : finalFields) {
 				Class declaringClass = cachedField.field.getDeclaringClass();
-				ClassFields classFields = classes.get(declaringClass);
-				if (classFields == null) classes.put(declaringClass, classFields = new ClassFields(declaringClass));
-				classFields.setValueIndex(cachedField.field.getName(), index++);
+				ClassFields classFields = classesByType.get(declaringClass);
+				if (classFields == null) classesByType.put(declaringClass, classFields = new ClassFields(declaringClass));
+				classes[index] = classFields;
+				positions[index++] = classFields.position(cachedField.field.getName());
 			}
-			FinalFieldSetter setter = new FinalFieldSetter(classes.values().toArray(new ClassFields[classes.size()]), index);
+			FinalFieldSetter setter = new FinalFieldSetter(classes, positions);
 			index = 0;
 			for (CachedField cachedField : finalFields)
 				cachedField.index = index++;
@@ -152,42 +150,34 @@ final class FinalFieldSetter {
 		}
 	}
 
-	Object[] newValues () {
-		Object[] values = new Object[count];
-		Arrays.fill(values, unset);
-		return values;
-	}
-
-	/** Sets the final fields to the values, indexed by {@link CachedField#index}. */
-	void set (Object object, Object[] values) {
+	/** Sets a final field.
+	 * @param index The {@link CachedField#index} of the field. */
+	void set (Object object, int index, Object value) {
+		ClassFields classFields = classes[index];
 		FieldsInput input = this.input;
-		for (ClassFields classFields : classes) {
-			input.classFields = classFields;
-			input.object = object;
-			input.values = values;
-			input.next = 0;
-			try {
-				classFields.handle.invokeExact(object, (ObjectInputStream)input);
-			} catch (Throwable ex) {
-				throw new KryoException("Error setting final fields: " + className(classFields.type), ex);
-			} finally {
-				input.object = null;
-				input.values = null;
-			}
+		input.classFields = classFields;
+		input.object = object;
+		input.position = positions[index];
+		input.value = value;
+		input.next = 0;
+		try {
+			classFields.handle.invokeExact(object, (ObjectInputStream)input);
+		} catch (Throwable ex) {
+			throw new KryoException("Error setting final field: " + classFields.fields[positions[index]], ex);
+		} finally {
+			input.object = null;
+			input.value = null;
 		}
 	}
 
 	/** The serializable fields of a class, which the method handle sets. */
 	static final class ClassFields {
-		final Class type;
 		final MethodHandle handle;
 		final ObjectStreamClass streamClass;
 		final String[] names;
 		final Field[] fields;
-		final int[] valueIndexes; // -1 if the field keeps its current value.
 
 		ClassFields (Class type) throws Exception {
-			this.type = type;
 			if (!Serializable.class.isAssignableFrom(type)) throw new KryoException("Class is not serializable.");
 			MethodHandle handle = (MethodHandle)defaultReadObject.invoke(reflectionFactory, type);
 			if (handle == null) throw new KryoException("No method handle, eg because of serialPersistentFields.");
@@ -196,20 +186,18 @@ final class FinalFieldSetter {
 			ObjectStreamField[] streamFields = streamClass.getFields();
 			names = new String[streamFields.length];
 			fields = new Field[streamFields.length];
-			valueIndexes = new int[streamFields.length];
 			for (int i = 0; i < streamFields.length; i++) {
 				names[i] = streamFields[i].getName();
 				fields[i] = type.getDeclaredField(names[i]);
 				fields[i].setAccessible(true);
-				valueIndexes[i] = -1;
 			}
 		}
 
 		/** @throws KryoException If the field is not serializable, eg because it is transient. */
-		void setValueIndex (String name, int valueIndex) {
+		int position (String name) {
 			int i = indexOf(name);
 			if (i == -1) throw new KryoException("Field is not serializable: " + name);
-			valueIndexes[i] = valueIndex;
+			return i;
 		}
 
 		int indexOf (String name) {
@@ -222,8 +210,8 @@ final class FinalFieldSetter {
 	/** Provides the field values to the method handle, instead of reading them with Java serialization. */
 	static final class FieldsInput extends ObjectInputStream {
 		ClassFields classFields;
-		Object object;
-		Object[] values;
+		Object object, value;
+		int position;
 		int next; // The handle gets the fields in the order of the ObjectStreamClass.
 		private final GetField getField = new GetField() {
 			public ObjectStreamClass getObjectStreamClass () {
@@ -234,6 +222,7 @@ final class FinalFieldSetter {
 				return false;
 			}
 
+			/** Returns the new value for the field to set, else the current value of the field. */
 			private Object value (String name) {
 				ClassFields classFields = FieldsInput.this.classFields;
 				int i = next;
@@ -243,8 +232,7 @@ final class FinalFieldSetter {
 					i = classFields.indexOf(name);
 					if (i == -1) throw new IllegalArgumentException(name);
 				}
-				int valueIndex = classFields.valueIndexes[i];
-				if (valueIndex != -1 && values[valueIndex] != unset) return values[valueIndex];
+				if (i == position) return value;
 				try {
 					return classFields.fields[i].get(object);
 				} catch (IllegalAccessException ex) {

@@ -21,6 +21,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
@@ -29,8 +30,12 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldAccessType;
+import com.esotericsoftware.kryo.util.Util;
 
 import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Objects;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -89,6 +94,52 @@ class FinalFieldsTest {
 		}
 	}
 
+	@Test
+	void testHashSetCycle () {
+		// A final field is set right after it is read, like with reflection, so the hash code of an object that is added to a
+		// HashSet while its other fields are read uses the value.
+		boolean detected = FinalFieldSetter.mutationDenied();
+		try {
+			for (boolean denied : detected ? new boolean[] {true} : new boolean[] {false, true}) {
+				FinalFieldSetter.denied = denied;
+				Kryo kryo = new Kryo();
+				kryo.setReferences(true);
+				kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+				kryo.register(HashNode.class);
+				kryo.register(HashSet.class);
+				HashNode a = new HashNode("a"), b = new HashNode("b");
+				a.neighbors.add(b);
+				b.neighbors.add(a);
+				Output output = new Output(1024, -1);
+				kryo.writeObject(output, a);
+				for (HashNode read : List.of(kryo.readObject(new Input(output.toBytes()), HashNode.class), kryo.copy(a))) {
+					HashNode readB = read.neighbors.iterator().next();
+					assertEquals("b", readB.id);
+					assertTrue(readB.neighbors.contains(read));
+				}
+			}
+		} finally {
+			FinalFieldSetter.denied = detected;
+		}
+	}
+
+	@Test
+	void testUnsafe () {
+		// Unsafe sets final fields also if setting them with reflection is denied.
+		assumeTrue(Util.unsafe);
+		Boolean denied = FinalFieldSetter.denied;
+		try {
+			FinalFieldSetter.denied = true;
+			Kryo kryo = new Kryo();
+			FieldSerializer serializer = new FieldSerializer(kryo, Defaults.class);
+			serializer.getFieldSerializerConfig().setFieldAccess(FieldAccessType.UNSAFE);
+			serializer.updateFields();
+			assertNull(serializer.finalFields);
+		} finally {
+			FinalFieldSetter.denied = denied;
+		}
+	}
+
 	private void testFinalFields (List<BiFunction<Kryo, Class, Serializer>> serializers) {
 		for (BiFunction<Kryo, Class, Serializer> factory : serializers) {
 			Kryo kryo = new Kryo();
@@ -128,6 +179,23 @@ class FinalFieldsTest {
 		Defaults (String name, int number) {
 			this.name = name;
 			this.number = number;
+		}
+	}
+
+	public static class HashNode implements Serializable {
+		final String id;
+		final HashSet<HashNode> neighbors = new HashSet<>();
+
+		HashNode (String id) {
+			this.id = id;
+		}
+
+		public int hashCode () {
+			return id == null ? 0 : id.hashCode();
+		}
+
+		public boolean equals (Object object) {
+			return object instanceof HashNode other && Objects.equals(other.id, id);
 		}
 	}
 
