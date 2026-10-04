@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -46,6 +47,8 @@ import java.util.PriorityQueue;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -450,6 +453,58 @@ class DefaultSerializersTest extends KryoTestCase {
 		PriorityQueue<Integer> queue = new PriorityQueueSubclass();
 		kryo.register(PriorityQueueSubclass.class);
 		roundTrip(3, queue);
+	}
+
+	@Test
+	void testConcurrentSkipListSet () {
+		kryo.register(ConcurrentSkipListSet.class);
+		kryo.register(ConcurrentSkipListSetSubclass.class);
+		kryo.register(IntegerComparator.class);
+		for (ConcurrentSkipListSet<Integer> set : List.of(new ConcurrentSkipListSet<Integer>(new IntegerComparator()),
+			new ConcurrentSkipListSetSubclass(new IntegerComparator()))) {
+			set.addAll(Arrays.asList(7, 0, 5, 123));
+			for (ConcurrentSkipListSet<Integer> result : List.of(writeRead(set), kryo.copy(set))) {
+				assertSame(set.getClass(), result.getClass());
+				assertInstanceOf(IntegerComparator.class, result.comparator());
+				assertEquals(List.of(123, 7, 5, 0), new ArrayList<>(result));
+			}
+		}
+		assertNull(writeRead(new ConcurrentSkipListSet<Integer>()).comparator());
+	}
+
+	@Test
+	void testPriorityBlockingQueue () {
+		kryo.register(PriorityBlockingQueue.class);
+		kryo.register(IntegerComparator.class);
+		PriorityBlockingQueue<Integer> queue = new PriorityBlockingQueue<>(3, new IntegerComparator());
+		queue.addAll(Arrays.asList(7, 0, 5, 123));
+		for (PriorityBlockingQueue<Integer> result : List.of(writeRead(queue), kryo.copy(queue))) {
+			assertInstanceOf(IntegerComparator.class, result.comparator());
+			assertEquals(123, result.poll());
+			assertEquals(7, result.poll());
+		}
+		assertTrue(writeRead(new PriorityBlockingQueue<Integer>()).isEmpty());
+	}
+
+	@Test
+	void testConcurrentSortedCollectionsKryo5 () {
+		// Kryo 5 wrote them with CollectionSerializer.
+		Kryo kryo = new Kryo();
+		Kryo5Compatibility.configure(kryo);
+		for (Class type : new Class[] {ConcurrentSkipListSet.class, PriorityBlockingQueue.class})
+			assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(type).getClass());
+	}
+
+	private <T> T writeRead (T object) {
+		Output output = new Output(1024);
+		kryo.writeObject(output, object);
+		return (T)kryo.readObject(new Input(output.toBytes()), object.getClass());
+	}
+
+	static class ConcurrentSkipListSetSubclass extends ConcurrentSkipListSet<Integer> {
+		public ConcurrentSkipListSetSubclass (Comparator comparator) {
+			super(comparator);
+		}
 	}
 
 	@Test

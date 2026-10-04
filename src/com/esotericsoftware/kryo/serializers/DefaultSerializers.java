@@ -65,6 +65,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -869,6 +871,59 @@ public class DefaultSerializers {
 			} catch (Exception ex) {
 				throw new KryoException(ex);
 			}
+		}
+	}
+
+	/** Serializer for {@link ConcurrentSkipListSet} and any subclass, which writes its comparator like
+	 * {@link TreeSetSerializer}. */
+	public static class ConcurrentSkipListSetSerializer extends CollectionSerializer<ConcurrentSkipListSet> {
+		protected void writeHeader (Kryo kryo, Output output, ConcurrentSkipListSet set) {
+			kryo.writeClassAndObject(output, set.comparator());
+		}
+
+		protected ConcurrentSkipListSet create (Kryo kryo, Input input, Class<? extends ConcurrentSkipListSet> type, int size) {
+			return createSet(type, (Comparator)kryo.readClassAndObject(input));
+		}
+
+		protected ConcurrentSkipListSet createCopy (Kryo kryo, ConcurrentSkipListSet original) {
+			return createSet(original.getClass(), original.comparator());
+		}
+
+		private ConcurrentSkipListSet createSet (Class<? extends ConcurrentSkipListSet> type, Comparator comparator) {
+			if (type == ConcurrentSkipListSet.class || type == null) return new ConcurrentSkipListSet(comparator);
+			return newInstance(type, new Class[] {Comparator.class}, comparator); // Subclass.
+		}
+	}
+
+	/** Serializer for {@link PriorityBlockingQueue} and any subclass, which writes its comparator like
+	 * {@link PriorityQueueSerializer}. */
+	public static class PriorityBlockingQueueSerializer extends CollectionSerializer<PriorityBlockingQueue> {
+		protected void writeHeader (Kryo kryo, Output output, PriorityBlockingQueue queue) {
+			kryo.writeClassAndObject(output, queue.comparator());
+		}
+
+		protected PriorityBlockingQueue create (Kryo kryo, Input input, Class<? extends PriorityBlockingQueue> type, int size) {
+			return createQueue(type, size, (Comparator)kryo.readClassAndObject(input));
+		}
+
+		protected PriorityBlockingQueue createCopy (Kryo kryo, PriorityBlockingQueue original) {
+			return createQueue(original.getClass(), original.size(), original.comparator());
+		}
+
+		private PriorityBlockingQueue createQueue (Class<? extends PriorityBlockingQueue> type, int size, Comparator comparator) {
+			int initialCapacity = Math.max(size, 1);
+			if (type == PriorityBlockingQueue.class || type == null) return new PriorityBlockingQueue(initialCapacity, comparator);
+			return newInstance(type, new Class[] {int.class, Comparator.class}, initialCapacity, comparator); // Subclass.
+		}
+	}
+
+	/** Creates an instance of a subclass with the public constructor for the parameter types. */
+	static <T> T newInstance (Class<? extends T> type, Class[] parameterTypes, Object... arguments) {
+		try {
+			return type.getConstructor(parameterTypes).newInstance(arguments);
+		} catch (Exception ex) {
+			throw new KryoException("Unable to create " + className(type) + " with a constructor for " + classNames(parameterTypes)
+				+ ".", ex);
 		}
 	}
 

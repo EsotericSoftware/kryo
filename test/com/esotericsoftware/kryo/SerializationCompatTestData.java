@@ -74,6 +74,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -185,6 +186,7 @@ class SerializationCompatTestData {
 		private List<String> _arrayList;
 		private Set<String> _hashSet;
 		private Set<String> _keySetView;
+		private Set<String> _concurrentSkipListSet; // PriorityBlockingQueue has no equals.
 		private List<String> _unmodifiableList;
 		private Set<String> _unmodifiableSet;
 		private SortedMap<String, Integer> _unmodifiableSortedMap;
@@ -292,6 +294,7 @@ class SerializationCompatTestData {
 			_hashSet.add("14");
 			_keySetView = ConcurrentHashMap.newKeySet();
 			_keySetView.add("15");
+			_concurrentSkipListSet = new ConcurrentSkipListSet<>(Arrays.asList("15", "16"));
 			_unmodifiableList = Collections.unmodifiableList(new ArrayList<>(Arrays.asList("16", "17")));
 			_unmodifiableSet = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("18")));
 			_unmodifiableSortedMap = Collections.unmodifiableSortedMap(new TreeMap<>(_treeMap));

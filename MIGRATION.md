@@ -39,6 +39,8 @@ kryo.register(UUID.class, new FieldSerializer<>(kryo, UUID.class));
 
 These serializers were already available in Kryo 5, eg `UUIDSerializer`. If you registered them with Kryo 5, keep registering them, because `Kryo5Compatibility` only applies what Kryo 5 used by default. Registered serializers take precedence over its settings.
 
+Kryo 6 also adds default serializers for `ConcurrentSkipListSet` and `PriorityBlockingQueue`, which write the comparator like the serializers for `TreeSet` and `PriorityQueue`. Kryo 5 serialized them with CollectionSerializer, which lost the comparator. `Kryo5Compatibility` uses CollectionSerializer for them, or register it to read data written by Kryo 5: `kryo.register(ConcurrentSkipListSet.class, new CollectionSerializer())`.
+
 Kryo 6 also adds default serializers for the unmodifiable and synchronized collections returned by `Collections`, eg `Collections.unmodifiableList`, except on Android. Kryo 5 serialized them with CollectionSerializer or MapSerializer, which couldn't read them back, so there is no readable Kryo 5 data for them. If you added these serializers with `addDefaultSerializers` in Kryo 5, the data is the same. See [Unmodifiable and synchronized collections](README.md#unmodifiable-and-synchronized-collections) for the JDK internals they access.
 
 ### Generic fields with CompatibleFieldSerializer and TaggedFieldSerializer
