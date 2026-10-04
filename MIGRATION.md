@@ -104,6 +104,7 @@ LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language ta
 
 * RecordSerializer. Records are serialized by FieldSerializer and its subclasses. RecordSerializer is only needed to read records written by Kryo 5, see [Records](#records).
 * `FieldAccessType.ASM`, which uses ReflectASM like Kryo 5 did for public fields of public classes when Unsafe was not used. ReflectASM is only used if `ASM` is configured, Kryo 6 uses VarHandles instead, which are as fast. `ASM` and the ReflectASM dependency will be removed in Kryo 7. If VarHandles are slower for you than ReflectASM, please open an issue.
+* BlowfishSerializer. Blowfish is an outdated cipher, the key is shared by all instances, and an encrypted object can only be read as the last object of the input. Encrypt the serialized bytes instead, eg with AES-GCM. BlowfishSerializer will be removed in Kryo 7.
 
 ## Removed APIs
 

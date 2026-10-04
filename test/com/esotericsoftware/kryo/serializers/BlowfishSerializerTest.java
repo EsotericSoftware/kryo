@@ -27,6 +27,7 @@ import javax.crypto.KeyGenerator;
 import org.junit.jupiter.api.Test;
 
 /** @author Nathan Sweet */
+@SuppressWarnings("deprecation")
 class BlowfishSerializerTest extends KryoTestCase {
 	@Test
 	void testZip () throws Exception {

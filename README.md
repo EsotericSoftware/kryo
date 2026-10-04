@@ -733,7 +733,7 @@ kryo.writeObject(output, object);
 output.close();
 ```
 
-If needed, a serializer can be used to compress or encrypt the bytes for only a subset of the bytes for an object graph. For example, see DeflateSerializer or BlowfishSerializer. These serializers wrap another serializer to encode and decode the bytes.
+If needed, a serializer can be used to compress or encrypt the bytes for only a subset of the bytes for an object graph. For example, see DeflateSerializer. Such serializers wrap another serializer to encode and decode the bytes.
 
 ## Implementing a serializer
 
