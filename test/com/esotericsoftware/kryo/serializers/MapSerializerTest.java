@@ -52,6 +52,35 @@ class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testSizeChanged () {
+		// The size doesn't match the entries, eg because the map was modified concurrently (#1181).
+		kryo.register(WrongSizeMap.class);
+		for (int sizeDelta : new int[] {-1, 1}) {
+			WrongSizeMap map = new WrongSizeMap(sizeDelta);
+			map.put("a", 1);
+			map.put("b", "c");
+			KryoException ex = assertThrows(KryoException.class, () -> kryo.writeObject(new Output(1024), map));
+			assertTrue(ex.getMessage().contains("changed while it was written"), ex.getMessage());
+		}
+	}
+
+	public static class WrongSizeMap extends HashMap<Object, Object> {
+		final int sizeDelta;
+
+		public WrongSizeMap () {
+			this(0);
+		}
+
+		public WrongSizeMap (int sizeDelta) {
+			this.sizeDelta = sizeDelta;
+		}
+
+		public int size () {
+			return super.size() + sizeDelta;
+		}
+	}
+
+	@Test
 	void testMaliciousMapSize () {
 		kryo.setReferences(false);
 		kryo.register(HashMap.class);

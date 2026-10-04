@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.Kryo.*;
+import static com.esotericsoftware.kryo.util.Util.*;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -30,6 +31,7 @@ import java.util.Collection;
 import java.util.HashSet;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
@@ -130,7 +132,9 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 			} else { // Serializer is unknown, check if all elements are the same type.
 				Class elementType = null;
 				boolean hasNull = false;
+				int scanned = 0;
 				for (Object element : collection) {
+					scanned++;
 					if (element == null)
 						hasNull = true;
 					else if (elementType == null)
@@ -144,6 +148,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				output.writeVarIntFlag(true, length + 1, true);
 				writeHeader(kryo, output, collection);
 				if (elementType == null) { // All elements are null.
+					if (scanned != length) throw sizeChanged(collection, length, scanned);
 					output.writeByte(NULL);
 					return;
 				}
@@ -156,18 +161,26 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				}
 			}
 
+			int count = 0;
 			if (elementSerializer != null) {
 				if (elementsCanBeNull) {
-					for (Object element : collection)
+					for (Object element : collection) {
 						kryo.writeObjectOrNull(output, element, elementSerializer);
+						count++;
+					}
 				} else {
-					for (Object element : collection)
+					for (Object element : collection) {
 						kryo.writeObject(output, element, elementSerializer);
+						count++;
+					}
 				}
 			} else {
-				for (Object element : collection)
+				for (Object element : collection) {
 					kryo.writeClassAndObject(output, element);
+					count++;
+				}
 			}
+			if (count != length) throw sizeChanged(collection, length, count);
 		} finally {
 			kryo.getGenerics().popGenericType();
 		}
@@ -176,6 +189,13 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class, int)}. The default implementation does
 	 * nothing. */
 	protected void writeHeader (Kryo kryo, Output output, T collection) {
+	}
+
+	/** Returns the exception for a collection or map whose size doesn't match the number of elements written. The data can't be
+	 * read, because the size is written first. */
+	static KryoException sizeChanged (Object collection, int size, int count) {
+		return new KryoException("The size of " + className(collection.getClass()) + " changed while it was written: " + size
+			+ " != " + count + " elements. It may have been modified concurrently.");
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation (eg
