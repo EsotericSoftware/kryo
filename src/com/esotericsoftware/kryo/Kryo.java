@@ -1160,6 +1160,7 @@ public class Kryo {
 	public <T> T copyShallow (T object) {
 		if (object == null) return null;
 		copyDepth++;
+		boolean outerCopyShallow = copyShallow; // Restored, because a serializer can make a nested shallow copy.
 		copyShallow = true;
 		try {
 			if (originalToCopy == null) originalToCopy = new IdentityMap();
@@ -1178,7 +1179,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy, -1);
 			return (T)copy;
 		} finally {
-			copyShallow = false;
+			copyShallow = outerCopyShallow;
 			if (--copyDepth == 0) reset();
 		}
 	}
@@ -1189,12 +1190,14 @@ public class Kryo {
 	public <T> T copyShallow (T object, Serializer serializer) {
 		if (object == null) return null;
 		copyDepth++;
+		boolean outerCopyShallow = copyShallow; // Restored, because a serializer can make a nested shallow copy.
 		copyShallow = true;
 		try {
 			if (originalToCopy == null) originalToCopy = new IdentityMap();
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
+			Object outerNeedsCopyReference = needsCopyReference; // See copy(Object).
 			if (copyReferences) needsCopyReference = object;
 			Object copy;
 			if (object instanceof KryoCopyable)
@@ -1202,10 +1205,11 @@ public class Kryo {
 			else
 				copy = serializer.copy(this, object);
 			if (needsCopyReference != null) reference(copy);
+			needsCopyReference = outerNeedsCopyReference;
 			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy, -1);
 			return (T)copy;
 		} finally {
-			copyShallow = false;
+			copyShallow = outerCopyShallow;
 			if (--copyDepth == 0) reset();
 		}
 	}

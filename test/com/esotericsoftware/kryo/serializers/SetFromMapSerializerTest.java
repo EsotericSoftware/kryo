@@ -84,6 +84,17 @@ class SetFromMapSerializerTest extends KryoTestCase {
 		assertSame(copy, copiedNode.set);
 	}
 
+	@Test
+	void testCopyShallow () {
+		kryo.register(Node.class);
+		Set<Node> set = Collections.newSetFromMap(new LinkedHashMap<>());
+		Node node = new Node();
+		set.add(node);
+		Set<Node> copy = kryo.copyShallow(set);
+		assertNotSame(set, copy);
+		assertSame(node, copy.iterator().next()); // The elements are not copied.
+	}
+
 	static class Node {
 		Set<Node> set;
 	}
