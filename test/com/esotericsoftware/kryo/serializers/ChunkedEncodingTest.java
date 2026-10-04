@@ -115,6 +115,28 @@ class ChunkedEncodingTest {
 	}
 
 	@Test
+	void testChangedFieldType () {
+		// Without readUnknownFieldData, the class of a field with a final type is not written. If the type changed, the field
+		// names are not found for the new class.
+		for (boolean legacyChunks : new boolean[] {false, true}) {
+			Kryo kryo = new Kryo();
+			CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
+			config.setChunkedEncoding(true);
+			config.setLegacyChunks(legacyChunks);
+			config.setReadUnknownFieldData(false);
+			kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+			kryo.setRegistrationRequired(false);
+			byte[] bytes = write(kryo, new Outer1());
+			if (legacyChunks) // The field names are identified by their position.
+				assertEquals(5, kryo.readObject(new Input(bytes), Outer2.class).inner.a);
+			else {
+				KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(bytes), Outer2.class));
+				assertTrue(ex.getMessage().contains("readUnknownFieldData"));
+			}
+		}
+	}
+
+	@Test
 	void testTaggedLegacyChunks () {
 		// The tags are written outside the chunks.
 		for (boolean legacyChunks : new boolean[] {false, true}) {
@@ -373,6 +395,22 @@ class ChunkedEncodingTest {
 	public static class FailingEntity {
 		public Entity3 c;
 		public Failing failing;
+	}
+
+	public static final class Inner1 {
+		public int a = 5;
+	}
+
+	public static final class Inner2 {
+		public int a;
+	}
+
+	public static class Outer1 {
+		public Inner1 inner = new Inner1();
+	}
+
+	public static class Outer2 {
+		public Inner2 inner;
 	}
 
 	public static class TaggedEntity {

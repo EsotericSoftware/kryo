@@ -271,8 +271,11 @@ final class FieldFrames {
 			if (fieldNameTypes.get(i) == type) return fieldNames.get(i);
 		// The object is read as a different class than it was written, if it started the scope and its field names were new.
 		ReadScope scope = readScopes.get(readDepth - 1);
-		if (scope.nested > 0 || scope.outermostFieldNames == null)
-			throw new KryoException("Field names not found: " + type.getName());
+		if (scope.nested > 0 || scope.outermostFieldNames == null) {
+			throw new KryoException("Field names not found for class: " + type.getName()
+				+ ". With chunked encoding, an object can only be read as a different class than it was written if its class is written, "
+				+ "eg if the type of a field changed, with readUnknownFieldData true.");
+		}
 		return scope.outermostFieldNames;
 	}
 
