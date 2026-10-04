@@ -36,6 +36,9 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSe
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
@@ -336,6 +339,135 @@ class ChunkedEncodingTest {
 		assertSame(read.b.x, read.d);
 	}
 
+	@Test
+	void testUnknownDataOptimizedGenerics () {
+		// With optimizeGenerics, the class of the elements is not written, so the data of a removed field can't be read. It is
+		// skipped.
+		for (boolean references : new boolean[] {false, true}) {
+			Kryo writer = optimizedKryo(references);
+			writer.register(GenericEntity.class, 30);
+			GenericEntity entity = new GenericEntity();
+			entity.a = new ArrayList<>(List.of("a", "b"));
+			entity.b = new HashMap<>(Map.of(1, "b"));
+			entity.z = "z";
+			byte[] bytes = write(writer, entity);
+
+			Kryo reader = optimizedKryo(references);
+			reader.register(GenericEntity2.class, 30);
+			assertEquals("z", reader.readObject(new Input(bytes), GenericEntity2.class).z);
+
+			TaggedFieldSerializerConfig config = new TaggedFieldSerializerConfig();
+			config.setChunkedEncoding(true);
+			config.setReadUnknownTagData(true);
+			config.setOptimizeGenerics(true);
+			writer.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
+			writer.register(TaggedGenericEntity.class, 33);
+			TaggedGenericEntity tagged = new TaggedGenericEntity();
+			tagged.a = entity.a;
+			tagged.b = entity.b;
+			tagged.z = "z";
+			byte[] taggedBytes = write(writer, tagged);
+
+			reader.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
+			reader.register(TaggedGenericEntity2.class, 33);
+			assertEquals("z", reader.readObject(new Input(taggedBytes), TaggedGenericEntity2.class).z);
+		}
+	}
+
+	private Kryo optimizedKryo (boolean references) {
+		Kryo kryo = compatibleKryo(true, references, false);
+		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setOptimizeGenerics(true);
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		kryo.register(ArrayList.class, 31);
+		kryo.register(HashMap.class, 32);
+		return kryo;
+	}
+
+	@Test
+	void testMisreadUnknownData () {
+		// The class of a removed field was replaced by an incompatible class. Reading its data past the field or reading more
+		// objects than it contains throws, so the reference IDs after the field are never wrong.
+		for (boolean references : new boolean[] {false, true}) {
+			Kryo writer = compatibleKryo(true, references, false);
+			writer.register(MisreadEntity.class, 30);
+			writer.register(MisreadInner.class, new FieldSerializer(writer, MisreadInner.class), 31);
+			MisreadEntity entity = new MisreadEntity();
+			entity.a = new MisreadInner();
+			entity.z = "z";
+			byte[] bytes = write(writer, entity);
+
+			Kryo reader = compatibleKryo(true, references, false);
+			reader.register(MisreadEntity2.class, 30);
+			reader.register(MisreadInner2.class, new FieldSerializer(reader, MisreadInner2.class), 31);
+			KryoException ex = assertThrows(KryoException.class, () -> reader.readObject(new Input(bytes), MisreadEntity2.class));
+			assertTrue(ex.getMessage().startsWith("More data was read than the field contains"));
+		}
+
+		Kryo writer = compatibleKryo(true, true, false);
+		writer.register(MisreadEntity.class, 30);
+		writer.register(MisreadInner3.class, new FieldSerializer(writer, MisreadInner3.class), 31);
+		writer.register(ArrayList.class, 32);
+		MisreadEntity entity = new MisreadEntity();
+		entity.a = new MisreadInner3();
+		entity.d = new ArrayList<>(List.of("d"));
+		entity.e = entity.d;
+		byte[] bytes = write(writer, entity);
+
+		Kryo reader = compatibleKryo(true, true, false);
+		reader.register(MisreadEntity2.class, 30);
+		reader.register(MisreadInner4.class, new FieldSerializer(reader, MisreadInner4.class), 31);
+		reader.register(ArrayList.class, 32);
+		reader.register(Phantom.class, new FieldSerializer(reader, Phantom.class), 33);
+		KryoException ex = assertThrows(KryoException.class, () -> reader.readObject(new Input(bytes), MisreadEntity2.class));
+		assertTrue(ex.getMessage().startsWith("More objects were read than the field contains"));
+	}
+
+	@Test
+	void testExceptionInUnknownData () {
+		// An exception while reading the data of a removed field, inside a nested object, must not affect the next object.
+		Kryo writer = compatibleKryo(true, false, false);
+		writer.register(FailingEntity.class, 30);
+		writer.register(Failing.class, new Serializer<Failing>() {
+			public void write (Kryo kryo, Output output, Failing object) {
+			}
+
+			public Failing read (Kryo kryo, Input input, Class<? extends Failing> type) {
+				return null;
+			}
+		}, 31);
+		writer.register(ArrayList.class, 32);
+		writer.register(NestedEntity.class, 33);
+		ArrayList<NestedEntity> list = new ArrayList<>();
+		for (int i = 0; i < 2; i++) {
+			NestedEntity entity = new NestedEntity();
+			entity.a = new FailingEntity();
+			entity.a.c = new Entity3(i);
+			entity.a.failing = new Failing();
+			entity.z = "z" + i;
+			list.add(entity);
+		}
+		Output output = new Output(1024, -1);
+		writer.writeObject(output, list);
+
+		Kryo reader = compatibleKryo(true, false, false);
+		reader.register(FailingEntity.class, 30);
+		reader.register(Failing.class, new Serializer<Failing>() {
+			public void write (Kryo kryo, Output output, Failing object) {
+			}
+
+			public Failing read (Kryo kryo, Input input, Class<? extends Failing> type) {
+				throw new KryoException("failed");
+			}
+		}, 31);
+		reader.register(ArrayList.class, 32);
+		reader.register(NestedEntity2.class, 33);
+		ArrayList<NestedEntity2> read = reader.readObject(new Input(output.toBytes()), ArrayList.class);
+		assertEquals("z0", read.get(0).z);
+		assertEquals("z1", read.get(1).z);
+	}
+
 	private Entity entity (boolean references) {
 		Entity entity = new Entity();
 		entity.b = new Entity2();
@@ -474,5 +606,63 @@ class ChunkedEncodingTest {
 
 	public static class TaggedEntity2 {
 		@Tag(1) public Entity3 x;
+	}
+
+	public static class GenericEntity {
+		public ArrayList<String> a;
+		public HashMap<Integer, String> b;
+		public String z;
+	}
+
+	public static class GenericEntity2 {
+		public String z;
+	}
+
+	public static class TaggedGenericEntity {
+		@Tag(1) public ArrayList<String> a;
+		@Tag(2) public HashMap<Integer, String> b;
+		@Tag(3) public String z;
+	}
+
+	public static class TaggedGenericEntity2 {
+		@Tag(3) public String z;
+	}
+
+	public static class MisreadEntity {
+		public Object a, d, e;
+		public String z;
+	}
+
+	public static class MisreadEntity2 {
+		public Object d, e;
+		public String z;
+	}
+
+	public static class MisreadInner {
+		public String a = "a";
+	}
+
+	public static class MisreadInner2 {
+		public String a, b, c;
+	}
+
+	public static class MisreadInner3 {
+		public int a = -1;
+	}
+
+	public static class MisreadInner4 {
+		public Phantom a;
+	}
+
+	public static final class Phantom {
+	}
+
+	public static class NestedEntity {
+		public FailingEntity a;
+		public String z;
+	}
+
+	public static class NestedEntity2 {
+		public String z;
 	}
 }

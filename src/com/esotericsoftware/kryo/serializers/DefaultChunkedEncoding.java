@@ -309,6 +309,9 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		if (objects > 0) {
 			ReferenceResolver referenceResolver = kryo.getReferenceResolver();
 			int read = referenceResolver.getObjectCount();
+			// The IDs of the objects after the field would be wrong.
+			if (read > objects)
+				throw new KryoException("More objects were read than the field contains: " + (read - objects) + " objects");
 			if (TRACE && read < objects) trace("kryo", "Skip field references: " + (objects - read));
 			for (int i = read; i < objects; i++)
 				referenceResolver.nextReadId(Object.class);
