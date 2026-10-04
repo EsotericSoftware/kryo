@@ -57,6 +57,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Currency;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -197,6 +198,8 @@ class SerializationCompatTestData {
 		private File _file;
 		private InetAddress _inetAddress;
 		private InetSocketAddress _inetSocketAddress;
+		private EnumMap<BodyEnum, String> _enumMap;
+		private EnumMap<BodyEnum, String> _emptyEnumMap;
 		private List<String> _unmodifiableList;
 		private Set<String> _unmodifiableSet;
 		private SortedMap<String, Integer> _unmodifiableSortedMap;
@@ -317,6 +320,9 @@ class SerializationCompatTestData {
 				throw new RuntimeException(ex);
 			}
 			_inetSocketAddress = new InetSocketAddress(_inetAddress, 21);
+			_enumMap = new EnumMap<>(BodyEnum.class);
+			_enumMap.put(BodyEnum.B, "19");
+			_emptyEnumMap = new EnumMap<>(BodyEnum.class);
 			_unmodifiableList = Collections.unmodifiableList(new ArrayList<>(Arrays.asList("16", "17")));
 			_unmodifiableSet = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("18")));
 			_unmodifiableSortedMap = Collections.unmodifiableSortedMap(new TreeMap<>(_treeMap));
