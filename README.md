@@ -1205,7 +1205,7 @@ When an element, key, or value serializer or serializer factory is set, the matc
 
 VersionFieldSerializer extends FieldSerializer and provides backward compatibility. This means fields can be added without invalidating previously serialized bytes. Removing, renaming, or changing the type of a field is not supported.
 
-When a field is added, it must have the `@Since(int)` annotation to indicate the version it was added in order to be compatible with previously serialized bytes. The annotation value must never change.
+When a field is added, it must have the `@Since(int)` annotation to indicate the version it was added in order to be compatible with previously serialized bytes. The annotation value must never change. Bytes serialized by a newer version, which can have fields that are unknown, can't be read.
 
 VersionFieldSerializer adds very little overhead to FieldSerializer: a single additional varint.
 
@@ -1213,7 +1213,7 @@ VersionFieldSerializer adds very little overhead to FieldSerializer: a single ad
 
 Setting | Description | Default value
 --- | --- | ---
-`compatible` | When false, an exception is thrown when reading an object with a different version. The version of an object is the maximum version of any field. | true
+`compatible` | When false, an exception is thrown when reading an object with a different version. The version of an object is the maximum version of any field. Objects with a newer version can't be read in any case. | true
 
 VersionFieldSerializer also inherits all the settings of FieldSerializer.
 

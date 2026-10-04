@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.serializers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -83,11 +84,10 @@ class VersionedFieldSerializerTest extends KryoTestCase {
 		kryo.writeObject(output, recordClass);
 		output.close();
 
+		// The new component is unknown, so the data can't be read (#846).
 		Input input = new Input(output.toBytes());
-		Object deserialized = kryo.readObject(input, OldRecordClass.class);
-		input.close();
-		
-		assertNotNull(deserialized);
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, OldRecordClass.class));
+		assertTrue(ex.getMessage().startsWith("Data was written by a newer version: 1 > 0"), ex.getMessage());
 	}
 
 	@Test
