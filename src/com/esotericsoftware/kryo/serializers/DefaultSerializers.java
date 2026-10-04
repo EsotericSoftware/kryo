@@ -31,13 +31,18 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -963,6 +968,75 @@ public class DefaultSerializers {
 		} catch (Exception ex) {
 			throw new KryoException("Unable to create " + className(type) + " with a constructor for " + classNames(parameterTypes)
 				+ ".", ex);
+		}
+	}
+
+	/** Serializer for {@link File}, which writes its path. */
+	public static class FileSerializer extends ImmutableSerializer<File> {
+		public void write (Kryo kryo, Output output, File file) {
+			output.writeString(file.getPath());
+		}
+
+		public File read (Kryo kryo, Input input, Class<? extends File> type) {
+			return new File(input.readString());
+		}
+	}
+
+	/** Serializer for {@link InetAddress}, {@link java.net.Inet4Address} and {@link Inet6Address}, which writes the host name, if
+	 * known, and the IP address. Reading doesn't look up the host name or the address. */
+	public static class InetAddressSerializer extends ImmutableSerializer<InetAddress> {
+		public void write (Kryo kryo, Output output, InetAddress address) {
+			write(output, address);
+		}
+
+		public InetAddress read (Kryo kryo, Input input, Class<? extends InetAddress> type) {
+			return read(input);
+		}
+
+		static void write (Output output, InetAddress address) {
+			// toString is "host name/IP address", with an empty host name if it is not known. getHostName would look it up.
+			String string = address.toString();
+			int slash = string.indexOf('/');
+			output.writeString(slash > 0 ? string.substring(0, slash) : null);
+			byte[] bytes = address.getAddress();
+			output.writeByte(bytes.length);
+			output.writeBytes(bytes);
+			if (address instanceof Inet6Address inet6) {
+				// -1 if no scope is set, getScopeId returns 0 then.
+				output.writeVarInt(string.indexOf('%', slash) == -1 ? -1 : inet6.getScopeId(), false);
+			}
+		}
+
+		static InetAddress read (Input input) {
+			String host = input.readString();
+			byte[] bytes = input.readBytes(input.readByte());
+			try {
+				// Inet6Address keeps the class for IPv4-mapped addresses, which InetAddress.getByAddress returns as Inet4Address.
+				if (bytes.length == 16) return Inet6Address.getByAddress(host, bytes, input.readVarInt(false));
+				return InetAddress.getByAddress(host, bytes);
+			} catch (UnknownHostException ex) { // Invalid address length.
+				throw new KryoException("Invalid IP address length: " + bytes.length, ex);
+			}
+		}
+	}
+
+	/** Serializer for {@link InetSocketAddress}, which writes the address or, if it is unresolved, the host name, and the port.
+	 * Reading doesn't resolve an unresolved address. */
+	public static class InetSocketAddressSerializer extends ImmutableSerializer<InetSocketAddress> {
+		public void write (Kryo kryo, Output output, InetSocketAddress address) {
+			output.writeVarInt(address.getPort(), true);
+			boolean unresolved = address.isUnresolved();
+			output.writeBoolean(unresolved);
+			if (unresolved)
+				output.writeString(address.getHostString());
+			else
+				InetAddressSerializer.write(output, address.getAddress());
+		}
+
+		public InetSocketAddress read (Kryo kryo, Input input, Class<? extends InetSocketAddress> type) {
+			int port = input.readVarInt(true);
+			if (input.readBoolean()) return InetSocketAddress.createUnresolved(input.readString(), port);
+			return new InetSocketAddress(InetAddressSerializer.read(input), port);
 		}
 	}
 

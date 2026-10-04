@@ -68,8 +68,11 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.CurrencySerializ
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DateSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DoubleSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.FileSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.EnumSetSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.FloatSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.InetAddressSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.InetSocketAddressSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.IntSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KeySetViewSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
@@ -112,11 +115,14 @@ import com.esotericsoftware.kryo.util.NoGenerics;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 
+import java.io.File;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -267,6 +273,9 @@ public class Kryo {
 		addDefaultSerializer(Locale.class, LocaleSerializer::new);
 		addDefaultSerializer(Charset.class, CharsetSerializer::new);
 		addDefaultSerializer(URL.class, URLSerializer::new);
+		addDefaultSerializer(File.class, exactType(File.class, new FileSerializer()));
+		addDefaultSerializer(InetAddress.class, new InetAddressSerializer());
+		addDefaultSerializer(InetSocketAddress.class, exactType(InetSocketAddress.class, new InetSocketAddressSerializer()));
 		addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer::new);
 		addDefaultSerializer(void.class, new VoidSerializer());
 		addDefaultSerializer(PriorityQueue.class, new PriorityQueueSerializer());
@@ -502,6 +511,15 @@ public class Kryo {
 		defaultSerializers.add(lowest, new DefaultSerializerEntry(type, factory));
 		defaultSerializerTypes = null;
 		return lowest;
+	}
+
+	/** Returns a factory for the serializer that is used for the type, but not its subclasses, which may have more state. */
+	private static SerializerFactory exactType (Class type, Serializer serializer) {
+		return new SingletonSerializerFactory(serializer) {
+			public boolean isSupported (Class subtype) {
+				return subtype == type;
+			}
+		};
 	}
 
 	/** Returns the type with the specified name if it has a default serializer. This finds classes without reflection, eg

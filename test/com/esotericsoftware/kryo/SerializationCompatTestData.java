@@ -23,12 +23,16 @@ import com.esotericsoftware.kryo.SerializationCompatTestData.Person.Gender;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -189,6 +193,9 @@ class SerializationCompatTestData {
 		private Set<String> _concurrentSkipListSet; // PriorityBlockingQueue has no equals.
 		private TreeSet<String> _reverseOrderTreeSet;
 		private TreeSet<String> _reverseCaseInsensitiveTreeSet;
+		private File _file;
+		private InetAddress _inetAddress;
+		private InetSocketAddress _inetSocketAddress;
 		private List<String> _unmodifiableList;
 		private Set<String> _unmodifiableSet;
 		private SortedMap<String, Integer> _unmodifiableSortedMap;
@@ -301,6 +308,13 @@ class SerializationCompatTestData {
 			_reverseOrderTreeSet.addAll(Arrays.asList("17", "18"));
 			_reverseCaseInsensitiveTreeSet = new TreeSet<>(Collections.reverseOrder(String.CASE_INSENSITIVE_ORDER));
 			_reverseCaseInsensitiveTreeSet.addAll(Arrays.asList("a", "B"));
+			_file = new File("/tmp/19.txt");
+			try {
+				_inetAddress = InetAddress.getByAddress("host20", new byte[] {10, 0, 0, 20});
+			} catch (UnknownHostException ex) {
+				throw new RuntimeException(ex);
+			}
+			_inetSocketAddress = new InetSocketAddress(_inetAddress, 21);
 			_unmodifiableList = Collections.unmodifiableList(new ArrayList<>(Arrays.asList("16", "17")));
 			_unmodifiableSet = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("18")));
 			_unmodifiableSortedMap = Collections.unmodifiableSortedMap(new TreeMap<>(_treeMap));

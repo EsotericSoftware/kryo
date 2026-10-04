@@ -28,8 +28,13 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -537,6 +542,16 @@ class DefaultSerializersTest extends KryoTestCase {
 			assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(type).getClass());
 	}
 
+	@Test
+	void testFileAndInetAddressKryo5 () {
+		// Kryo 5 wrote them with the default serializer, which FieldSerializer can't create without --add-opens.
+		Kryo kryo = new Kryo();
+		kryo.setDefaultSerializer(JavaSerializer.class);
+		Kryo5Compatibility.configure(kryo);
+		for (Class type : new Class[] {File.class, Inet4Address.class, Inet6Address.class, InetSocketAddress.class})
+			assertInstanceOf(JavaSerializer.class, kryo.getDefaultSerializer(type), type.getName());
+	}
+
 	private <T> T writeRead (T object) {
 		Output output = new Output(1024);
 		kryo.writeObject(output, object);
@@ -546,6 +561,60 @@ class DefaultSerializersTest extends KryoTestCase {
 	static class ConcurrentSkipListSetSubclass extends ConcurrentSkipListSet<Integer> {
 		public ConcurrentSkipListSetSubclass (Comparator comparator) {
 			super(comparator);
+		}
+	}
+
+	@Test
+	void testFile () {
+		kryo.register(File.class);
+		for (File file : new File[] {new File("a/b.txt"), new File("/tmp/c.txt"), new File("")}) {
+			assertEquals(file, writeRead(file));
+			assertSame(file, kryo.copy(file));
+		}
+		// A subclass may have more state, so it doesn't use FileSerializer. FieldSerializer may not access the fields of File.
+		assertInstanceOf(DefaultSerializers.FileSerializer.class, kryo.getDefaultSerializer(File.class));
+		try {
+			assertFalse(kryo.getDefaultSerializer(FileSubclass.class) instanceof DefaultSerializers.FileSerializer);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
+	@Test
+	void testInetAddress () throws Exception {
+		kryo.register(Inet4Address.class);
+		kryo.register(Inet6Address.class);
+		byte[] loopback6 = InetAddress.getByName("::1").getAddress();
+		byte[] mapped = new byte[16];
+		mapped[10] = mapped[11] = (byte)0xff;
+		mapped[15] = 1;
+		for (InetAddress address : new InetAddress[] {InetAddress.getByAddress("host", new byte[] {10, 0, 0, 1}),
+			InetAddress.getByAddress(new byte[] {10, 0, 0, 2}), InetAddress.getLoopbackAddress(),
+			Inet6Address.getByAddress(null, loopback6, -1), Inet6Address.getByAddress("host6", loopback6, 3),
+			Inet6Address.getByAddress(null, loopback6, 0), Inet6Address.getByAddress(null, mapped, -1)}) {
+			InetAddress read = writeRead(address);
+			assertSame(address.getClass(), read.getClass());
+			assertEquals(address, read);
+			assertEquals(address.toString(), read.toString()); // Host name and scope.
+		}
+	}
+
+	@Test
+	void testInetSocketAddress () throws Exception {
+		kryo.register(InetSocketAddress.class);
+		for (InetSocketAddress address : new InetSocketAddress[] {
+			new InetSocketAddress(InetAddress.getByAddress("host", new byte[] {10, 0, 0, 1}), 80),
+			new InetSocketAddress(InetAddress.getByAddress(new byte[] {10, 0, 0, 2}), 0),
+			InetSocketAddress.createUnresolved("example.invalid", 443)}) {
+			InetSocketAddress read = writeRead(address);
+			assertEquals(address, read);
+			assertEquals(address.isUnresolved(), read.isUnresolved());
+			assertEquals(address.toString(), read.toString());
+		}
+	}
+
+	static class FileSubclass extends File {
+		public FileSubclass (String path) {
+			super(path);
 		}
 	}
 
