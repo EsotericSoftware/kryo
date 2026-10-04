@@ -159,6 +159,25 @@ class ChunkedEncodingTest {
 	}
 
 	@Test
+	void testOtherSerializerInField () {
+		// The class names and references in data written by other serializers in a skipped field are not lost.
+		for (boolean deflate : new boolean[] {false, true}) {
+			Kryo writer = compatibleKryo(false, true, false);
+			Serializer serializer = new FieldSerializer(writer, Entity2.class);
+			writer.register(Entity2.class, deflate ? new DeflateSerializer(serializer) : serializer, 22);
+			Entity entity = entity(true); // Entity3 is unregistered and first written by FieldSerializer in the skipped field.
+			byte[] bytes = write(writer, entity);
+
+			Kryo reader = compatibleKryo(false, true, false); // Entity2 is not registered, so the field is skipped.
+			Entity read = reader.readObject(new Input(bytes), Entity.class);
+			assertNull(read.b);
+			assertEquals(10, read.c.a);
+			assertNull(read.d); // A reference to the object in the skipped field.
+			assertSame(read.c, read.e);
+		}
+	}
+
+	@Test
 	void testLegacyChunks () {
 		// With the chunked encoding of Kryo 5, the class name of Entity3 is lost with the skipped chunk.
 		byte[] bytes = removeEntity2(write(compatibleKryo(false, false, true), entity(false)));
