@@ -25,12 +25,15 @@ import static com.esotericsoftware.minlog.Log.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.io.OutputChunked;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
+
+import java.util.Arrays;
 
 /** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
  * added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported.
@@ -50,6 +53,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private final CompatibleFieldSerializerConfig config;
 	/** The graph context key for the field names written. The fields read are stored with this serializer as key. */
 	private final Object writeKey = new Object();
+	private byte[] fieldNames;
+	private CachedField[] fieldNamesFields;
 	/** The error message if fields with the same name can't be distinguished, else null. */
 	private String duplicateFieldName;
 
@@ -106,11 +111,11 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		if (!context.containsKey(writeKey)) {
 			if (TRACE) trace("kryo", "Write fields for class: " + type.getName());
 			context.put(writeKey, null);
-			output.writeVarInt(fields.length, true);
-			for (int i = 0, n = fields.length; i < n; i++) {
-				if (TRACE) trace("kryo", "Write field name: " + fields[i].name + pos(output.position()));
-				output.writeString(fields[i].name);
+			if (TRACE) {
+				for (int i = 0, n = fields.length; i < n; i++)
+					trace("kryo", "Write field name: " + fields[i].name + pos(output.position()));
 			}
+			output.writeBytes(fieldNames(fields));
 		}
 
 		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownFieldData;
@@ -244,8 +249,39 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		return object;
 	}
 
+	/** Returns the field names as they are written: the number of fields, then the names. Cached until the fields change. All
+	 * outputs of Kryo write varints and strings the same way, so the bytes can be written to any output. */
+	private byte[] fieldNames (CachedField[] fields) {
+		if (fieldNamesFields != fields) {
+			Output output = new Output(64, -1);
+			output.writeVarInt(fields.length, true);
+			for (CachedField field : fields)
+				output.writeString(field.name);
+			fieldNames = output.toBytes();
+			fieldNamesFields = fields;
+		}
+		return fieldNames;
+	}
+
 	private CachedField[] readFields (Kryo kryo, Input input) {
 		if (TRACE) trace("kryo", "Read fields for class: " + type.getName());
+
+		// The field names are usually the ones this serializer writes, which can be compared without reading them.
+		CachedField[] allFields = cachedFields.fields;
+		if (!(input instanceof ByteBufferInput)) {
+			byte[] fieldNames = fieldNames(allFields);
+			int position = input.position();
+			if (input.limit() - position >= fieldNames.length
+				&& Arrays.equals(input.getBuffer(), position, position + fieldNames.length, fieldNames, 0, fieldNames.length)) {
+				input.setPosition(position + fieldNames.length);
+				if (TRACE) {
+					for (int i = 0, n = allFields.length; i < n; i++)
+						trace("kryo", "Read field name: " + allFields[i].name);
+				}
+				kryo.getGraphContext().put(this, allFields);
+				return allFields;
+			}
+		}
 
 		int length = input.validateArrayLength(input.readVarInt(true));
 		String[] names = new String[length];
@@ -255,7 +291,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		CachedField[] fields = new CachedField[length];
-		CachedField[] allFields = cachedFields.fields;
 		if (length < binarySearchThreshold) {
 			outer:
 			for (int i = 0; i < length; i++) {

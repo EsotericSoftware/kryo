@@ -25,9 +25,11 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
+import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import java.io.ByteArrayInputStream;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -737,6 +739,72 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
 		kryo.register(NullableRecord.class);
 		roundTrip(8, new NullableRecord(null));
+	}
+
+	@Test
+	void testFieldNames () {
+		// The field names are written like before: the number of fields and the names.
+		CompatibleFieldSerializer<Names> serializer = new CompatibleFieldSerializer<>(kryo, Names.class);
+		kryo.register(Names.class, serializer);
+		Names names = new Names();
+		Output output = new Output(256);
+		kryo.writeObject(output, names);
+		Output expected = new Output(256);
+		expected.writeVarInt(3, true);
+		expected.writeString("a");
+		expected.writeString("b");
+		expected.writeString("c");
+		byte[] header = expected.toBytes();
+		assertArrayEquals(header, Arrays.copyOf(output.toBytes(), header.length));
+		byte[] bytes = output.toBytes();
+
+		// Read from a byte[], where the field names are compared without reading them, and from a stream with a buffer smaller
+		// than the field names and a ByteBuffer, where they are read.
+		assertEquals(names, kryo.readObject(new Input(bytes), Names.class));
+		assertEquals(names, kryo.readObject(new Input(new ByteArrayInputStream(bytes), 4), Names.class));
+		assertEquals(names, kryo.readObject(new ByteBufferInput(bytes), Names.class));
+
+		// Data with other field names is read as before.
+		Kryo writer = new Kryo();
+		CompatibleFieldSerializer<Names> removed = new CompatibleFieldSerializer<>(writer, Names.class);
+		removed.removeField("b");
+		writer.register(Names.class, removed);
+		Output output2 = new Output(256);
+		writer.writeObject(output2, new Names(7, 8, 9));
+		Names read = kryo.readObject(new Input(output2.toBytes()), Names.class);
+		assertEquals(7, read.a);
+		assertEquals(2, read.b); // Not in the data, keeps the value set by the constructor.
+		assertEquals(9, read.c);
+
+		// Removing a field after the field names were written changes them.
+		serializer.removeField("b");
+		output.reset();
+		kryo.writeObject(output, new Names(4, 5, 6));
+		assertArrayEquals(Arrays.copyOf(output2.toBytes(), 5), Arrays.copyOf(output.toBytes(), 5)); // 2, "a", "c".
+		read = kryo.readObject(new Input(output.toBytes()), Names.class);
+		assertEquals(4, read.a);
+		assertEquals(6, read.c);
+	}
+
+	public static class Names {
+		public int a = 1, b = 2, c = 3;
+
+		public Names () {
+		}
+
+		Names (int a, int b, int c) {
+			this.a = a;
+			this.b = b;
+			this.c = c;
+		}
+
+		public boolean equals (Object object) {
+			return object instanceof Names other && other.a == a && other.b == b && other.c == c;
+		}
+
+		public int hashCode () {
+			return Objects.hash(a, b, c);
+		}
 	}
 
 	public static class TestClass {
