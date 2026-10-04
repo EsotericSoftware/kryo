@@ -765,6 +765,10 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals(names, kryo.readObject(new Input(bytes), Names.class));
 		assertEquals(names, kryo.readObject(new Input(new ByteArrayInputStream(bytes), 4), Names.class));
 		assertEquals(names, kryo.readObject(new ByteBufferInput(bytes), Names.class));
+		// The number of field names is limited by maxArraySize, also if they are compared.
+		Input limited = new Input(bytes);
+		limited.setMaxArraySize(2);
+		assertThrows(KryoException.class, () -> kryo.readObject(limited, Names.class));
 
 		// Data with other field names is read as before.
 		Kryo writer = new Kryo();

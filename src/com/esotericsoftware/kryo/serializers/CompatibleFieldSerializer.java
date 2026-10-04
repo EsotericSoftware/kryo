@@ -270,7 +270,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 		// The field names are usually the ones this serializer writes, which can be compared without reading them.
 		CachedField[] allFields = cachedFields.fields;
-		if (!(input instanceof ByteBufferInput)) {
+		if (!(input instanceof ByteBufferInput) && allFields.length <= input.getMaxArraySize()) {
 			byte[] fieldNames = fieldNames(allFields);
 			int position = input.position();
 			if (input.limit() - position >= fieldNames.length
