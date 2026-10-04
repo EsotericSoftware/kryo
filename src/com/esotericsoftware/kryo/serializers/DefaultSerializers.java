@@ -917,6 +917,40 @@ public class DefaultSerializers {
 		}
 	}
 
+	/** Serializer for {@link Collections#reverseOrder()} and {@link Comparator#reverseOrder()}. It has no fields, so the data is
+	 * the same as with FieldSerializer, which can't create it without a no-arg constructor. */
+	public static class ReverseOrderSerializer extends ImmutableSerializer<Comparator> {
+		public void write (Kryo kryo, Output output, Comparator comparator) {
+		}
+
+		public Comparator read (Kryo kryo, Input input, Class<? extends Comparator> type) {
+			return Collections.reverseOrder();
+		}
+	}
+
+	/** Serializer for {@link Collections#reverseOrder(Comparator)}. It writes the reversed comparator like FieldSerializer writes
+	 * its field, which is private in java.util. */
+	public static class ReverseOrderComparatorSerializer extends ImmutableSerializer<Comparator> {
+		public void write (Kryo kryo, Output output, Comparator comparator) {
+			kryo.writeClassAndObject(output, comparator.reversed());
+		}
+
+		public Comparator read (Kryo kryo, Input input, Class<? extends Comparator> type) {
+			return Collections.reverseOrder((Comparator)kryo.readClassAndObject(input));
+		}
+	}
+
+	/** Serializer for {@link String#CASE_INSENSITIVE_ORDER}. It has no fields, so the data is the same as with FieldSerializer,
+	 * which can't create it without a no-arg constructor. */
+	public static class CaseInsensitiveOrderSerializer extends ImmutableSerializer<Comparator> {
+		public void write (Kryo kryo, Output output, Comparator comparator) {
+		}
+
+		public Comparator read (Kryo kryo, Input input, Class<? extends Comparator> type) {
+			return String.CASE_INSENSITIVE_ORDER;
+		}
+	}
+
 	/** Creates an instance of a subclass with the public constructor for the parameter types. */
 	static <T> T newInstance (Class<? extends T> type, Class[] parameterTypes, Object... arguments) {
 		try {
