@@ -132,7 +132,9 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 			} else { // Serializer is unknown, check if all elements are the same type.
 				Class elementType = null;
 				boolean hasNull = false;
+				int scanned = 0;
 				for (Object element : collection) {
+					scanned++;
 					if (element == null)
 						hasNull = true;
 					else if (elementType == null)
@@ -146,6 +148,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				output.writeVarIntFlag(true, length + 1, true);
 				writeHeader(kryo, output, collection);
 				if (elementType == null) { // All elements are null.
+					if (scanned != length) throw sizeChanged(collection, length, scanned);
 					output.writeByte(NULL);
 					return;
 				}

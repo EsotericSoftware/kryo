@@ -53,7 +53,8 @@ class CollectionSerializerTest extends KryoTestCase {
 		// The size doesn't match the elements, eg because the collection was modified concurrently (#1181).
 		kryo.register(WrongSizeList.class);
 		for (int sizeDelta : new int[] {-1, 1}) {
-			for (List<Object> elements : List.<List<Object>> of(List.of("a", "b"), Arrays.asList("a", null), List.of("a", 1))) {
+			for (List<Object> elements : List.<List<Object>> of(List.of("a", "b"), Arrays.asList("a", null), List.of("a", 1),
+				Arrays.asList(null, null))) {
 				WrongSizeList list = new WrongSizeList(sizeDelta);
 				list.addAll(elements);
 				KryoException ex = assertThrows(KryoException.class, () -> kryo.writeObject(new Output(1024), list));
