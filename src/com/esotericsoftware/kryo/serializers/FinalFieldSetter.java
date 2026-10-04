@@ -31,6 +31,7 @@ import java.io.ObjectStreamClass;
 import java.io.ObjectStreamField;
 import java.io.Serializable;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -117,8 +118,9 @@ final class FinalFieldSetter {
 			input.classFields = classFields;
 			input.object = object;
 			input.values = values;
+			input.next = 0;
 			try {
-				classFields.handle.invoke(object, input);
+				classFields.handle.invokeExact(object, (ObjectInputStream)input);
 			} catch (Throwable ex) {
 				throw new KryoException("Error setting final fields: " + className(classFields.type), ex);
 			} finally {
@@ -139,8 +141,9 @@ final class FinalFieldSetter {
 
 		ClassFields (Class type) throws Exception {
 			this.type = type;
-			handle = (MethodHandle)defaultReadObject.invoke(reflectionFactory, type);
+			MethodHandle handle = (MethodHandle)defaultReadObject.invoke(reflectionFactory, type);
 			if (handle == null) throw new KryoException("No method handle.");
+			this.handle = handle.asType(MethodType.methodType(void.class, Object.class, ObjectInputStream.class));
 			streamClass = ObjectStreamClass.lookup(type);
 			ObjectStreamField[] streamFields = streamClass.getFields();
 			names = new String[streamFields.length];
@@ -166,6 +169,7 @@ final class FinalFieldSetter {
 		ClassFields classFields;
 		Object object;
 		Object[] values;
+		int next; // The handle gets the fields in the order of the ObjectStreamClass.
 		private final GetField getField = new GetField() {
 			public ObjectStreamClass getObjectStreamClass () {
 				return classFields.streamClass;
@@ -176,8 +180,14 @@ final class FinalFieldSetter {
 			}
 
 			private Object value (String name) {
-				int i = classFields.indexOf(name);
-				if (i == -1) throw new IllegalArgumentException(name);
+				ClassFields classFields = FieldsInput.this.classFields;
+				int i = next;
+				if (i < classFields.names.length && classFields.names[i].equals(name))
+					next++;
+				else {
+					i = classFields.indexOf(name);
+					if (i == -1) throw new IllegalArgumentException(name);
+				}
 				int valueIndex = classFields.valueIndexes[i];
 				if (valueIndex != -1) return values[valueIndex];
 				try {
