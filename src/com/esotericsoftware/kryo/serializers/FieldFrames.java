@@ -19,6 +19,9 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
+import static com.esotericsoftware.minlog.Log.*;
+
 import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -123,6 +126,10 @@ final class FieldFrames {
 		ClassResolver classResolver = kryo.getClassResolver();
 		classResolver.deferNames(scope.deferNames);
 		Output parent = scope.parent;
+		if (TRACE) {
+			trace("kryo", "Write scope: " + (classResolver.getWrittenNameCount() - scope.names) + " class names, "
+				+ scope.fieldNameTypes.size() + " field names, " + scope.buffer.position() + " bytes" + pos(parent.position()));
+		}
 		classResolver.writeNames(parent, scope.names);
 		ArrayList<Class> types = scope.fieldNameTypes;
 		ArrayList<String[]> fieldNames = scope.fieldNames;
@@ -216,6 +223,8 @@ final class FieldFrames {
 		output.writeVarInt(length, true);
 		if (references) output.writeVarInt(objects, true);
 		output.setPosition(end);
+		if (TRACE)
+			trace("kryo", "Write field: " + length + " bytes" + (references ? ", " + objects + " objects" : "") + pos(start));
 	}
 
 	/** Returns the input for the fields: for the format of Kryo 5 a chunked input, otherwise the input after reading the data
@@ -240,11 +249,14 @@ final class FieldFrames {
 		scope.nested = 0;
 		scope.outermostFieldNames = null;
 
+		if (TRACE) trace("kryo", "Read scope" + pos(input.position()));
 		kryo.getClassResolver().readNames(input);
 		int fieldNames = input.readVarInt(true);
 		for (int i = 0, n = fieldNames >>> 1; i < n; i++) {
 			Registration registration = readClass(input);
 			String[] names = readStrings(input);
+			if (TRACE)
+				trace("kryo", "Read field names: " + (registration == null ? "<unknown class>" : className(registration.getType())));
 			if (i == 0 && (fieldNames & 1) != 0) scope.outermostFieldNames = names;
 			if (registration != null) {
 				fieldNameTypes.add(registration.getType());
@@ -296,6 +308,7 @@ final class FieldFrames {
 		if (legacyChunks) return -1;
 		int length = input.readVarInt(true);
 		fieldObjects = kryo.getReferences() ? kryo.getReferenceResolver().getReadCount() + input.readVarInt(true) : 0;
+		if (TRACE) trace("kryo", "Read field: " + length + " bytes" + pos(input.position()));
 		return input.total() + length;
 	}
 
@@ -314,10 +327,15 @@ final class FieldFrames {
 		}
 		long remaining = end - input.total();
 		if (remaining < 0) throw new KryoException("More data was read than the field contains: " + -remaining + " bytes");
-		if (remaining > 0) input.skip(remaining);
+		if (remaining > 0) {
+			if (TRACE) trace("kryo", "Skip field: " + remaining + " bytes");
+			input.skip(remaining);
+		}
 		if (objects > 0) {
 			ReferenceResolver referenceResolver = kryo.getReferenceResolver();
-			for (int i = referenceResolver.getReadCount(); i < objects; i++)
+			int read = referenceResolver.getReadCount();
+			if (TRACE && read < objects) trace("kryo", "Skip field references: " + (objects - read));
+			for (int i = read; i < objects; i++)
 				referenceResolver.nextReadId(Object.class);
 		}
 	}
