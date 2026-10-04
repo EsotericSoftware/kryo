@@ -376,7 +376,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		FieldAccess access;
 		int accessIndex = -1;
 
-		// For records, and final fields set by FinalFieldSetter. -1 if not used.
+		// For records: the component index, for every field. For other classes: the index of a final field set by FinalFieldSetter,
+		// -1 for all other fields. Records never have a FinalFieldSetter, so the two uses don't mix.
 		int index = -1;
 
 		// For UnsafeField.
