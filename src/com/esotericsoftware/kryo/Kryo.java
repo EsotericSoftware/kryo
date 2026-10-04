@@ -62,6 +62,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingl
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonMapSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CollectionsSingletonSetSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ConcurrentSkipListMapSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.ConcurrentSkipListSetSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CurrencySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DateSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DoubleSerializer;
@@ -74,6 +75,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializable
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LocaleSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.PatternSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.PriorityBlockingQueueSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.PriorityQueueSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
@@ -135,6 +137,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -245,6 +249,8 @@ public class Kryo {
 		addDefaultSerializer(Collections.singletonMap(null, null).getClass(), CollectionsSingletonMapSerializer::new);
 		addDefaultSerializer(Collections.singleton(null).getClass(), CollectionsSingletonSetSerializer::new);
 		addDefaultSerializer(TreeSet.class, TreeSetSerializer::new);
+		addDefaultSerializer(ConcurrentSkipListSet.class, ConcurrentSkipListSetSerializer::new);
+		addDefaultSerializer(PriorityBlockingQueue.class, PriorityBlockingQueueSerializer::new);
 		addDefaultSerializer(Collection.class, CollectionSerializer::new);
 		addDefaultSerializer(ConcurrentSkipListMap.class, ConcurrentSkipListMapSerializer::new);
 		addDefaultSerializer(TreeMap.class, TreeMapSerializer::new);
@@ -424,6 +430,10 @@ public class Kryo {
 	 * <td>ConcurrentSkipListMap</td>
 	 * <td>TreeSet</td>
 	 * <td>PriorityQueue</td>
+	 * </tr>
+	 * <tr>
+	 * <td>ConcurrentSkipListSet</td>
+	 * <td>PriorityBlockingQueue</td>
 	 * </tr>
 	 * </table>
 	 * </p>
