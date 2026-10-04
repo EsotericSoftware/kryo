@@ -633,8 +633,15 @@ public class Kryo {
 				}
 			} else if (EnumSet.class.isAssignableFrom(type))
 				registration = classResolver.getRegistration(EnumSet.class);
-			else if (isClosure(type)) //
+			else if (isClosure(type)) {
 				registration = classResolver.getRegistration(ClosureSerializer.Closure.class);
+				// The class of a closure can't be found by its name when reading, so it can't be registered implicitly.
+				if (registration == null) {
+					throw new IllegalArgumentException("Class is a closure, but ClosureSerializer.Closure is not registered: "
+						+ className(type)
+						+ "\nNote: To register it use: kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());");
+				}
+			}
 			if (registration == null) {
 				if (registrationRequired && !isAllowedUnregistered(type))
 					throw new IllegalArgumentException(unregisteredClassMessage(type));
