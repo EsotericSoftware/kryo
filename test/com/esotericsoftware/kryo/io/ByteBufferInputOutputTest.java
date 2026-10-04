@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.io;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.io.ByteArrayInputStream;
@@ -43,6 +44,35 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 			input.readInt();
 			assertThrows(KryoBufferUnderflowException.class, input::readLong); // Some bytes remaining.
 		}
+
+		// A read-only buffer can't be filled from a stream.
+		ByteBufferInput input = new ByteBufferInput(ByteBuffer.allocate(8).asReadOnlyBuffer());
+		input.setInputStream(new ByteArrayInputStream(new byte[8]));
+		KryoException ex = assertThrows(KryoException.class, input::readInt);
+		assertTrue(ex.getMessage().contains("read-only"), ex.getMessage());
+	}
+
+	@Test
+	void testReadOnlyBufferOptionalReads () {
+		// The InputStream methods read the bytes of a read-only buffer and then report its end.
+		assertReadOnlyOptionalReads(new ByteBufferInput(ByteBuffer.allocate(3).asReadOnlyBuffer()));
+		assertReadOnlyOptionalReads(new ByteBufferInput(ByteBuffer.allocateDirect(3).asReadOnlyBuffer()));
+
+		// They can't fill it from a stream.
+		ByteBufferInput input = new ByteBufferInput(ByteBuffer.allocate(8).asReadOnlyBuffer());
+		input.setInputStream(new ByteArrayInputStream(new byte[8]));
+		KryoException ex = assertThrows(KryoException.class, input::read);
+		assertTrue(ex.getMessage().contains("read-only"), ex.getMessage());
+	}
+
+	/** Reads the 3 bytes of a read-only buffer with the InputStream methods, then checks that they report its end. */
+	static void assertReadOnlyOptionalReads (ByteBufferInput input) {
+		byte[] bytes = new byte[4];
+		assertEquals(2, input.read(bytes, 0, 2));
+		assertEquals(1, input.read(bytes, 0, 4));
+		assertEquals(-1, input.read());
+		assertEquals(-1, input.read(bytes, 0, 4));
+		assertTrue(input.end());
 	}
 
 	@Test

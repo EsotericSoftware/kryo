@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,13 @@ import org.junit.jupiter.api.Test;
 @Unsafe
 @SuppressWarnings("restriction")
 class UnsafeByteBufferInputOutputTest {
+	@Test
+	void testReadOnlyBuffer () {
+		UnsafeByteBufferInput input = new UnsafeByteBufferInput(ByteBuffer.allocateDirect(8).asReadOnlyBuffer());
+		input.readInt();
+		assertThrows(KryoBufferUnderflowException.class, input::readLong);
+		ByteBufferInputOutputTest.assertReadOnlyOptionalReads(new UnsafeByteBufferInput(ByteBuffer.allocateDirect(3).asReadOnlyBuffer()));
+	}
 
 	@Test
 	void testByteBufferOutputWithPreallocatedMemory () {
