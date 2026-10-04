@@ -1676,6 +1676,36 @@ class FieldSerializerTest extends KryoTestCase {
 		assertEquals(1, copy.value);
 	}
 
+	@Test
+	void testIncompatibleClassInData () {
+		// The class in the data is not assignable to the field type, eg because the field type changed. Unsafe doesn't check the
+		// type, so the field would hold a value of the wrong type.
+		Kryo writer = new Kryo();
+		writer.register(ObjectValue.class, 100);
+		Output output = new Output(64);
+		writer.writeObject(output, new ObjectValue());
+
+		@SuppressWarnings("deprecation")
+		FieldAccessType asm = FieldAccessType.ASM;
+		for (FieldAccessType fieldAccess : new FieldAccessType[] {FieldAccessType.UNSAFE, asm, FieldAccessType.VARHANDLE,
+			FieldAccessType.REFLECTION}) {
+			Kryo reader = new Kryo();
+			FieldSerializerConfig config = new FieldSerializerConfig();
+			config.setFieldAccess(fieldAccess);
+			reader.register(NumberValue.class, new FieldSerializer(reader, NumberValue.class, config), 100);
+			assertThrows(KryoException.class, () -> reader.readObject(new Input(output.toBytes()), NumberValue.class),
+				fieldAccess.toString());
+		}
+	}
+
+	public static class ObjectValue {
+		public Object value = "string";
+	}
+
+	public static class NumberValue {
+		public Number value;
+	}
+
 	public static class FieldAccessTypes {
 		public int value;
 		public Object object;

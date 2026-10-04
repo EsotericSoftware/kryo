@@ -33,9 +33,12 @@ import java.lang.reflect.Field;
  * @author Nathan Sweet */
 @SuppressWarnings("restriction")
 class UnsafeField extends ReflectField {
+	private final Class type;
+
 	public UnsafeField (Field field, FieldSerializer serializer, GenericType genericType) {
 		super(field, serializer, genericType);
 		offset = unsafe.objectFieldOffset(field);
+		type = field.getType();
 	}
 
 	public Object get (Object object) throws IllegalAccessException {
@@ -43,6 +46,11 @@ class UnsafeField extends ReflectField {
 	}
 
 	public void set (Object object, Object value) throws IllegalAccessException {
+		// Unsafe doesn't check the type like reflection and VarHandles do, eg if the class in the data changed.
+		if (value != null && !type.isInstance(value)) {
+			throw new IllegalArgumentException(
+				"Can not set " + type.getName() + " field " + field.getName() + " to " + value.getClass().getName());
+		}
 		unsafe.putObject(object, offset, value);
 	}
 

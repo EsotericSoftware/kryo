@@ -29,6 +29,9 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -516,6 +519,77 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		GenericBoxHolder read = kryo.readObject(new Input(output.toBytes()), GenericBoxHolder.class);
 		assertEquals(holder.box.ids, read.box.ids);
 		assertEquals(holder.box.value, read.box.value);
+	}
+
+	@Test
+	void testIncompatibleTypeFirstRead () {
+		// The type is checked for the first object read, before the field has a value class.
+		for (boolean chunked : new boolean[] {false, true}) {
+			CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+			config.setChunkedEncoding(chunked);
+			Kryo writer = new Kryo();
+			writer.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+			writer.register(ObjectField.class, 100);
+			Output output = new Output(64);
+			writer.writeObject(output, new ObjectField());
+
+			Kryo reader = new Kryo();
+			reader.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+			reader.register(NumberField.class, 100);
+			Input input = new Input(output.toBytes());
+			if (chunked) { // The field is skipped.
+				NumberField read = reader.readObject(input, NumberField.class);
+				assertNull(read.value);
+				assertEquals("z", read.z);
+			} else {
+				KryoException ex = assertThrows(KryoException.class, () -> reader.readObject(input, NumberField.class));
+				assertTrue(ex.getMessage().startsWith("Read type is incompatible with the field type: String -> java.lang.Number"),
+					ex.getMessage());
+			}
+		}
+	}
+
+	@Test
+	void testProxy () {
+		// A proxy is written as InvocationHandler, which is compatible with a field of an interface type.
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(ProxyField.class);
+		kryo.register(InvocationHandler.class, new JavaSerializer());
+		ProxyField object = new ProxyField();
+		object.value = (Runnable)Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {Runnable.class},
+			new NameHandler());
+		Output output = new Output(1024);
+		kryo.writeObject(output, object);
+
+		// A new Kryo checks the type for the first object read too.
+		Kryo reader = new Kryo();
+		reader.setDefaultSerializer(CompatibleFieldSerializer.class);
+		reader.register(ProxyField.class);
+		reader.register(InvocationHandler.class, new JavaSerializer());
+		for (Kryo kryo : new Kryo[] {reader, reader, this.kryo}) {
+			ProxyField read = kryo.readObject(new Input(output.toBytes()), ProxyField.class);
+			assertEquals("name", read.value.toString());
+		}
+	}
+
+	public static class ObjectField {
+		public Object value = "string";
+		public String z = "z";
+	}
+
+	public static class NumberField {
+		public Number value;
+		public String z;
+	}
+
+	public static class ProxyField {
+		public Runnable value;
+	}
+
+	public static class NameHandler implements InvocationHandler, Serializable {
+		public Object invoke (Object proxy, Method method, Object[] args) {
+			return method.getName().equals("toString") ? "name" : null;
+		}
 	}
 
 	private void testExtendedClass (int length, boolean references, boolean chunked) {

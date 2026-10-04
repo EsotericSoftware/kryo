@@ -28,6 +28,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
@@ -279,6 +280,7 @@ public class Util {
 		if (from.isPrimitive()) return isPrimitiveWrapperOf(to, from) || to.isAssignableFrom(getPrimitiveWrapper(from));
 		if (to.isPrimitive()) return isPrimitiveWrapperOf(from, to);
 		if (from == ClosureSerializer.Closure.class) return to.isInterface();
+		if (from == InvocationHandler.class) return to.isInterface(); // A proxy is written as InvocationHandler.
 		return false;
 	}
 
