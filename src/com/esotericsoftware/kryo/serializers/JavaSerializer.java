@@ -40,6 +40,9 @@ import java.io.ObjectStreamClass;
  * @see KryoSerializable
  * @author Nathan Sweet */
 public class JavaSerializer extends Serializer {
+	/** The graph context key for the input stream. The output stream is stored with this serializer as key. */
+	private final Object readKey = new Object();
+
 	public void write (Kryo kryo, Output output, Object object) {
 		try {
 			ObjectMap graphContext = kryo.getGraphContext();
@@ -58,10 +61,10 @@ public class JavaSerializer extends Serializer {
 	public Object read (Kryo kryo, Input input, Class type) {
 		try {
 			ObjectMap graphContext = kryo.getGraphContext();
-			ObjectInputStream objectStream = (ObjectInputStream)graphContext.get(this);
+			ObjectInputStream objectStream = (ObjectInputStream)graphContext.get(readKey);
 			if (objectStream == null) {
 				objectStream = new ObjectInputStreamWithKryoClassLoader(input, kryo);
-				graphContext.put(this, objectStream);
+				graphContext.put(readKey, objectStream);
 			}
 			return objectStream.readObject();
 		} catch (Exception ex) {

@@ -48,6 +48,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private static final int binarySearchThreshold = 32;
 
 	private final CompatibleFieldSerializerConfig config;
+	/** The graph context key for the field names written. The fields read are stored with this serializer as key. */
+	private final Object writeKey = new Object();
 	/** The error message if fields with the same name can't be distinguished, else null. */
 	private String duplicateFieldName;
 
@@ -101,9 +103,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 		CachedField[] fields = cachedFields.fields;
 		ObjectMap context = kryo.getGraphContext();
-		if (!context.containsKey(this)) {
+		if (!context.containsKey(writeKey)) {
 			if (TRACE) trace("kryo", "Write fields for class: " + type.getName());
-			context.put(this, null);
+			context.put(writeKey, null);
 			output.writeVarInt(fields.length, true);
 			for (int i = 0, n = fields.length; i < n; i++) {
 				if (TRACE) trace("kryo", "Write field name: " + fields[i].name + pos(output.position()));

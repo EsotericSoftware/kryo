@@ -1041,6 +1041,30 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	public record RecordClass(String height, int width, long x, double y) { }
 	public record OldPrimitiveRecord(long x) { }
 
+	@Test
+	void testReadThenWriteWithoutReset () {
+		// With autoReset false, field names read in the object graph must not prevent writing them.
+		for (boolean chunked : new boolean[] {false, true}) {
+			CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+			config.setChunkedEncoding(chunked);
+			Kryo kryo = new Kryo();
+			kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+			kryo.register(ClassWithStringField.class);
+			kryo.setAutoReset(false);
+			Output output = new Output(64);
+			kryo.writeObject(output, new ClassWithStringField("a"));
+			kryo.reset();
+			assertEquals("a", kryo.readObject(new Input(output.toBytes()), ClassWithStringField.class).value);
+
+			output.reset();
+			kryo.writeObject(output, new ClassWithStringField("b"));
+			Kryo reader = new Kryo();
+			reader.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+			reader.register(ClassWithStringField.class);
+			assertEquals("b", reader.readObject(new Input(output.toBytes()), ClassWithStringField.class).value);
+		}
+	}
+
 	public static class GenericBox<T> {
 		public List<Long> ids;
 		public T value;
