@@ -44,6 +44,20 @@ class FinalFieldsTest {
 	void testFinalFields () {
 		List<BiFunction<Kryo, Class, Serializer>> serializers = List.of(FieldSerializer::new, CompatibleFieldSerializer::new,
 			TaggedFieldSerializer::new, VersionFieldSerializer::new);
+		// The detected mode, and the method handles also if setting final fields with reflection is allowed. Without the method
+		// handles (Java < 22), final fields are always set with reflection.
+		boolean detected = FinalFieldSetter.mutationDenied();
+		try {
+			for (boolean denied : detected ? new boolean[] {true} : new boolean[] {false, true}) {
+				FinalFieldSetter.mutationDenied = denied;
+				testFinalFields(serializers);
+			}
+		} finally {
+			FinalFieldSetter.mutationDenied = detected;
+		}
+	}
+
+	private void testFinalFields (List<BiFunction<Kryo, Class, Serializer>> serializers) {
 		for (BiFunction<Kryo, Class, Serializer> factory : serializers) {
 			Kryo kryo = new Kryo();
 			kryo.setReferences(true);

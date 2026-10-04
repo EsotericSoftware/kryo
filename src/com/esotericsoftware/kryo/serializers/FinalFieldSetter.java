@@ -38,11 +38,13 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 
 /** Sets the final fields of serializable classes with the method handles the JDK provides for deserialization, which can set
- * final fields also if setting them with reflection is denied (JEP 500). The values of the final fields are collected while
- * reading, all other fields are set as usual. */
+ * final fields also if setting them with reflection is denied (JEP 500). It is only used then. The values of the final fields are
+ * collected while reading, all other fields are set as usual. */
 final class FinalFieldSetter {
 	static private final Object reflectionFactory;
 	static private final Method defaultReadObject;
+	/** Null until a class with final fields is used. Can be set by tests. */
+	static Boolean mutationDenied;
 
 	static {
 		Object factory = null;
@@ -70,10 +72,13 @@ final class FinalFieldSetter {
 		input = new FieldsInput();
 	}
 
-	/** Returns null if final fields are set with reflection: the method handles are not available, or a final field is not a
-	 * serializable field of a serializable class. Otherwise sets {@link CachedField#index} for each final field. */
+	/** Called if the class has final fields. Returns null if final fields are set with reflection: the method handles are not
+	 * available, or a final field is not a serializable field of a serializable class. Otherwise sets {@link CachedField#index}
+	 * for each final field. */
 	static FinalFieldSetter create (Class type, CachedField[] fields, CachedField[] copyFields) {
-		if (defaultReadObject == null || isRecord(type)) return null;
+		// Reflection is used if setting final fields with it is allowed.
+		if (defaultReadObject == null || isRecord(type) || !mutationDenied()) return null;
+
 		ArrayList<ClassFields> classes = new ArrayList<>();
 		ArrayList<CachedField> finalFields = new ArrayList<>();
 		for (CachedField[] array : new CachedField[][] {fields, copyFields}) {
@@ -104,6 +109,35 @@ final class FinalFieldSetter {
 			return new FinalFieldSetter(classes.toArray(new ClassFields[classes.size()]), finalFields.size());
 		} catch (IOException ex) {
 			return null;
+		}
+	}
+
+	/** Returns true if setting final fields with reflection is denied (JEP 500), eg with
+	 * {@code --illegal-final-field-mutation=deny}. Java has no API for this, so a final field of a class in Kryo's module is set
+	 * once. If it is allowed with a warning, the warning is shown then. */
+	static boolean mutationDenied () {
+		if (mutationDenied == null) {
+			try {
+				Field field = Probe.class.getDeclaredField("value");
+				field.setAccessible(true);
+				field.set(new Probe(), null);
+				mutationDenied = false;
+			} catch (IllegalAccessException ex) {
+				mutationDenied = true;
+			} catch (Throwable ex) {
+				if (DEBUG) debug("kryo", "Unable to check if final fields can be set.", ex);
+				mutationDenied = false;
+			}
+			if (DEBUG && mutationDenied) debug("kryo", "Final fields of serializable classes are set with method handles.");
+		}
+		return mutationDenied;
+	}
+
+	static private final class Probe {
+		final Object value;
+
+		Probe () {
+			value = null;
 		}
 	}
 
