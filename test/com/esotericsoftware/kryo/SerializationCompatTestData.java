@@ -62,6 +62,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -202,6 +203,7 @@ class SerializationCompatTestData {
 		private EnumMap<BodyEnum, String> _enumMap;
 		private EnumMap<BodyEnum, String> _emptyEnumMap;
 		private ByteBuffer _byteBuffer;
+		private Set<String> _setFromMap;
 		private List<String> _unmodifiableList;
 		private Set<String> _unmodifiableSet;
 		private SortedMap<String, Integer> _unmodifiableSortedMap;
@@ -326,6 +328,8 @@ class SerializationCompatTestData {
 			_enumMap.put(BodyEnum.B, "19");
 			_emptyEnumMap = new EnumMap<>(BodyEnum.class);
 			_byteBuffer = ByteBuffer.wrap(new byte[] {20, 21, 22}).position(1);
+			_setFromMap = Collections.newSetFromMap(new LinkedHashMap<>());
+			_setFromMap.add("23");
 			_unmodifiableList = Collections.unmodifiableList(new ArrayList<>(Arrays.asList("16", "17")));
 			_unmodifiableSet = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("18")));
 			_unmodifiableSortedMap = Collections.unmodifiableSortedMap(new TreeMap<>(_treeMap));
