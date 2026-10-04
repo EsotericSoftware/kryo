@@ -19,7 +19,12 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 import java.io.Serializable;
 import java.net.URL;
@@ -53,6 +58,25 @@ class JavaSerializerTest extends KryoTestCase {
 		TestClass test = new TestClass();
 		test.intField = 54321;
 		roundTrip(139, test);
+	}
+
+	@Test
+	void testReadThenWriteWithoutReset () {
+		// With autoReset false, the object stream used for reading must not be used for writing.
+		kryo.register(TestClass.class, new JavaSerializer());
+		kryo.setAutoReset(false);
+		TestClass test = new TestClass();
+		test.stringField = "fubar";
+		Output output = new Output(1024);
+		kryo.writeObject(output, test);
+		kryo.reset();
+		assertEquals(test, kryo.readObject(new Input(output.toBytes()), TestClass.class));
+
+		output = new Output(1024);
+		kryo.writeObject(output, test);
+		Kryo reader = new Kryo();
+		reader.register(TestClass.class, new JavaSerializer());
+		assertEquals(test, reader.readObject(new Input(output.toBytes()), TestClass.class));
 	}
 
 	public static class TestClass implements Serializable {
