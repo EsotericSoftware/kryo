@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
@@ -554,6 +555,39 @@ class DefaultSerializersTest extends KryoTestCase {
 				assertEquals(new ArrayList<>(queue), new ArrayList<>(result));
 			}
 		}
+	}
+
+	@Test
+	void testBlockingQueueCapacity () {
+		// A capacity that can't hold the elements, eg in corrupt data.
+		Kryo writer = new Kryo();
+		writer.register(ArrayBlockingQueue.class, new DefaultSerializers.ArrayBlockingQueueSerializer() {
+			protected void writeHeader (Kryo kryo, Output output, ArrayBlockingQueue queue) {
+				output.writeVarInt(2, true);
+			}
+		});
+		ArrayBlockingQueue<Integer> queue = new ArrayBlockingQueue<>(5);
+		queue.addAll(List.of(3, 1, 2));
+		Output output = new Output(64);
+		writer.writeObject(output, queue);
+		kryo.register(ArrayBlockingQueue.class);
+		KryoException ex = assertThrows(KryoException.class,
+			() -> kryo.readObject(new Input(output.toBytes()), ArrayBlockingQueue.class));
+		assertTrue(ex.getMessage().startsWith("Invalid capacity: 2"), ex.getMessage());
+
+		// maxArraySize limits the array that ArrayBlockingQueue allocates, but not the capacity of LinkedBlockingQueue.
+		output.reset();
+		kryo.writeObject(output, queue);
+		Input input = new Input(output.toBytes());
+		input.setMaxArraySize(4);
+		ex = assertThrows(KryoException.class, () -> kryo.readObject(input, ArrayBlockingQueue.class));
+		assertTrue(ex.getMessage().startsWith("Capacity larger than maxArraySize: 5 > 4"), ex.getMessage());
+		kryo.register(LinkedBlockingQueue.class);
+		output.reset();
+		kryo.writeObject(output, new LinkedBlockingQueue<>(List.of(1)));
+		Input unbounded = new Input(output.toBytes());
+		unbounded.setMaxArraySize(4);
+		assertEquals(Integer.MAX_VALUE - 1, kryo.readObject(unbounded, LinkedBlockingQueue.class).remainingCapacity());
 	}
 
 	static class ArrayBlockingQueueSubclass extends ArrayBlockingQueue<Integer> {

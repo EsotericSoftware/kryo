@@ -932,7 +932,7 @@ public class DefaultSerializers {
 		}
 
 		protected ArrayBlockingQueue create (Kryo kryo, Input input, Class<? extends ArrayBlockingQueue> type, int size) {
-			return createQueue(type, input.readVarInt(true));
+			return createQueue(type, readCapacity(input, size, true));
 		}
 
 		protected ArrayBlockingQueue createCopy (Kryo kryo, ArrayBlockingQueue original) {
@@ -952,7 +952,7 @@ public class DefaultSerializers {
 		}
 
 		protected LinkedBlockingQueue create (Kryo kryo, Input input, Class<? extends LinkedBlockingQueue> type, int size) {
-			return createQueue(type, input.readVarInt(true));
+			return createQueue(type, readCapacity(input, size, false));
 		}
 
 		protected LinkedBlockingQueue createCopy (Kryo kryo, LinkedBlockingQueue original) {
@@ -963,6 +963,17 @@ public class DefaultSerializers {
 			if (type == LinkedBlockingQueue.class || type == null) return new LinkedBlockingQueue(capacity);
 			return newInstance(type, new Class[] {int.class}, capacity); // Subclass.
 		}
+	}
+
+	/** Reads the capacity of a bounded queue, which must hold its elements.
+	 * @param allocates If true, the queue allocates an array for the capacity. The capacity isn't backed by bytes in the input, so
+	 *           {@link Input#getMaxArraySize()} is the only limit for a corrupt or malicious capacity. */
+	static int readCapacity (Input input, int size, boolean allocates) {
+		int capacity = input.readVarInt(true);
+		if (capacity < Math.max(size, 1)) throw new KryoException("Invalid capacity: " + capacity + ", size: " + size);
+		if (allocates && capacity > input.getMaxArraySize())
+			throw new KryoException("Capacity larger than maxArraySize: " + capacity + " > " + input.getMaxArraySize());
+		return capacity;
 	}
 
 	/** Serializer for {@link Collections#reverseOrder()} and {@link Comparator#reverseOrder()}. It has no fields, so the data is

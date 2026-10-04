@@ -46,7 +46,7 @@ kryo.register(ConcurrentSkipListSet.class, new CollectionSerializer());
 kryo.register(PriorityBlockingQueue.class, new CollectionSerializer());
 ```
 
-Kryo 6 also adds default serializers for `ArrayBlockingQueue` and `LinkedBlockingQueue`, which write the capacity. Kryo 5 couldn't create an `ArrayBlockingQueue` and read a `LinkedBlockingQueue` with CollectionSerializer, without its capacity. `Kryo5Compatibility` uses CollectionSerializer for `LinkedBlockingQueue`.
+Kryo 6 also adds default serializers for `ArrayBlockingQueue` and `LinkedBlockingQueue`, which write the capacity. Kryo 5 couldn't read an `ArrayBlockingQueue`, and read a `LinkedBlockingQueue` with CollectionSerializer, which lost the capacity. `Kryo5Compatibility` uses CollectionSerializer for `LinkedBlockingQueue`.
 
 Kryo 6 also adds default serializers for `File`, `InetAddress` and `InetSocketAddress`, which use only public API and don't look up host names. Kryo 5 serialized them with FieldSerializer, which can't access their fields on Java 17+ without `--add-opens`, and even with it lost the IP address of `InetAddress` and couldn't create `File` and `InetSocketAddress` without StdInstantiatorStrategy. `Kryo5Compatibility` uses the default serializer for them, like Kryo 5, so the data stays aligned. Without it, data written by Kryo 5 can be read with FileSerializer only for `File` without references, because FileSerializer writes the path like FieldSerializer did.
 
