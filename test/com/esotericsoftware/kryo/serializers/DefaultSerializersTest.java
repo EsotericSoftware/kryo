@@ -45,8 +45,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.TimeZone;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -484,6 +486,46 @@ class DefaultSerializersTest extends KryoTestCase {
 			assertEquals(7, result.poll());
 		}
 		assertTrue(writeRead(new PriorityBlockingQueue<Integer>()).isEmpty());
+	}
+
+	@Test
+	void testReverseOrderComparators () {
+		kryo.register(TreeSet.class);
+		kryo.register(PriorityQueue.class);
+		kryo.register(ConcurrentSkipListMap.class);
+		kryo.register(IntegerComparator.class);
+		kryo.register(Collections.reverseOrder().getClass());
+		kryo.register(Collections.reverseOrder(String.CASE_INSENSITIVE_ORDER).getClass());
+		kryo.register(String.CASE_INSENSITIVE_ORDER.getClass());
+
+		TreeSet<String> set = new TreeSet<>(Comparator.reverseOrder());
+		set.addAll(Arrays.asList("a", "c", "b"));
+		TreeSet<String> readSet = writeRead(set);
+		assertSame(Collections.reverseOrder(), readSet.comparator());
+		assertEquals(List.of("c", "b", "a"), new ArrayList<>(readSet));
+
+		ConcurrentSkipListMap<String, Integer> map = new ConcurrentSkipListMap<>(Collections.reverseOrder());
+		map.put("a", 1);
+		map.put("b", 2);
+		assertEquals("b", writeRead(map).firstKey());
+
+		PriorityQueue<String> queue = new PriorityQueue<>(Collections.reverseOrder(String.CASE_INSENSITIVE_ORDER));
+		queue.addAll(Arrays.asList("a", "C", "b"));
+		assertEquals("C", writeRead(queue).poll());
+
+		TreeSet<Integer> custom = new TreeSet<>(Collections.reverseOrder(new IntegerComparator()));
+		custom.addAll(Arrays.asList(1, 3, 2));
+		assertEquals(List.of(1, 2, 3), new ArrayList<>(writeRead(custom))); // IntegerComparator is reversed already.
+
+		assertSame(String.CASE_INSENSITIVE_ORDER, writeRead(String.CASE_INSENSITIVE_ORDER));
+		Comparator reverse = Collections.reverseOrder(new IntegerComparator());
+		assertSame(reverse, kryo.copy(reverse));
+
+		// Without fields, the data is the same as with FieldSerializer in Kryo 5.
+		Output output = new Output(16);
+		kryo.writeObject(output, Collections.reverseOrder());
+		kryo.writeObject(output, String.CASE_INSENSITIVE_ORDER);
+		assertEquals(0, output.position());
 	}
 
 	@Test

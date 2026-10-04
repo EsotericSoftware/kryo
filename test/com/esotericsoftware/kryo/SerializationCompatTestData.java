@@ -187,6 +187,8 @@ class SerializationCompatTestData {
 		private Set<String> _hashSet;
 		private Set<String> _keySetView;
 		private Set<String> _concurrentSkipListSet; // PriorityBlockingQueue has no equals.
+		private TreeSet<String> _reverseOrderTreeSet;
+		private TreeSet<String> _reverseCaseInsensitiveTreeSet;
 		private List<String> _unmodifiableList;
 		private Set<String> _unmodifiableSet;
 		private SortedMap<String, Integer> _unmodifiableSortedMap;
@@ -295,6 +297,10 @@ class SerializationCompatTestData {
 			_keySetView = ConcurrentHashMap.newKeySet();
 			_keySetView.add("15");
 			_concurrentSkipListSet = new ConcurrentSkipListSet<>(Arrays.asList("15", "16"));
+			_reverseOrderTreeSet = new TreeSet<>(Collections.reverseOrder());
+			_reverseOrderTreeSet.addAll(Arrays.asList("17", "18"));
+			_reverseCaseInsensitiveTreeSet = new TreeSet<>(Collections.reverseOrder(String.CASE_INSENSITIVE_ORDER));
+			_reverseCaseInsensitiveTreeSet.addAll(Arrays.asList("a", "B"));
 			_unmodifiableList = Collections.unmodifiableList(new ArrayList<>(Arrays.asList("16", "17")));
 			_unmodifiableSet = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("18")));
 			_unmodifiableSortedMap = Collections.unmodifiableSortedMap(new TreeMap<>(_treeMap));

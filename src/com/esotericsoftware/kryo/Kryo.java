@@ -49,6 +49,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicReferenceS
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigIntegerSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BitSetSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.CaseInsensitiveOrderSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BooleanSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ByteSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.CalendarSerializer;
@@ -77,6 +78,8 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.PatternSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.PriorityBlockingQueueSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.PriorityQueueSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.ReverseOrderComparatorSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.ReverseOrderSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSerializer;
@@ -251,6 +254,10 @@ public class Kryo {
 		addDefaultSerializer(TreeSet.class, TreeSetSerializer::new);
 		addDefaultSerializer(ConcurrentSkipListSet.class, ConcurrentSkipListSetSerializer::new);
 		addDefaultSerializer(PriorityBlockingQueue.class, PriorityBlockingQueueSerializer::new);
+		addDefaultSerializer(Collections.reverseOrder().getClass(), new ReverseOrderSerializer());
+		addDefaultSerializer(Collections.reverseOrder(String.CASE_INSENSITIVE_ORDER).getClass(),
+			new ReverseOrderComparatorSerializer());
+		addDefaultSerializer(String.CASE_INSENSITIVE_ORDER.getClass(), new CaseInsensitiveOrderSerializer());
 		addDefaultSerializer(Collection.class, CollectionSerializer::new);
 		addDefaultSerializer(ConcurrentSkipListMap.class, ConcurrentSkipListMapSerializer::new);
 		addDefaultSerializer(TreeMap.class, TreeMapSerializer::new);
@@ -434,6 +441,8 @@ public class Kryo {
 	 * <tr>
 	 * <td>ConcurrentSkipListSet</td>
 	 * <td>PriorityBlockingQueue</td>
+	 * <td>Collections.reverseOrder</td>
+	 * <td>String.CASE_INSENSITIVE_ORDER</td>
 	 * </tr>
 	 * </table>
 	 * </p>
