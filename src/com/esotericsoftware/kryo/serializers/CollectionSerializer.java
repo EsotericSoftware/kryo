@@ -37,6 +37,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 /** Serializes objects that implement the {@link Collection} interface.
  * <p>
@@ -107,7 +108,8 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		boolean elementsCanBeNull = this.elementsCanBeNull;
 		Serializer elementSerializer = this.elementSerializer;
 		if (elementSerializer == null) {
-			Class genericClass = kryo.getGenerics().nextGenericClass();
+			GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes(Collection.class);
+			Class genericClass = genericTypes == null ? null : genericTypes[0].resolve(kryo.getGenerics());
 			if (genericClass != null && kryo.isFinal(genericClass)) elementSerializer = kryo.getSerializer(genericClass);
 		}
 		try {
@@ -213,7 +215,8 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		Class elementClass = this.elementClass;
 		Serializer elementSerializer = this.elementSerializer;
 		if (elementSerializer == null) {
-			Class genericClass = kryo.getGenerics().nextGenericClass();
+			GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes(Collection.class);
+			Class genericClass = genericTypes == null ? null : genericTypes[0].resolve(kryo.getGenerics());
 			if (genericClass != null && kryo.isFinal(genericClass)) {
 				elementSerializer = kryo.getSerializer(genericClass);
 				elementClass = genericClass;

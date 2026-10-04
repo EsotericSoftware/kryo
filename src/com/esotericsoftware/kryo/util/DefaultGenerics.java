@@ -98,6 +98,23 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
+	public GenericType[] nextGenericTypes (Class superType) {
+		int index = genericTypesSize;
+		if (index > 0) {
+			index--;
+			GenericType genericType = genericTypes[index];
+			if (genericType.arguments == null) return null;
+			// The depth must match to prevent the types being wrong if a serializer doesn't call nextGenericTypes.
+			if (depths[index] == kryo.getDepth() - 1) {
+				GenericType[] arguments = genericType.superTypeArguments(superType);
+				pushGenericType(arguments[arguments.length - 1]);
+				return arguments;
+			}
+		}
+		return null;
+	}
+
+	@Override
 	public Class nextGenericClass () {
 		GenericType[] arguments = nextGenericTypes();
 		if (arguments == null) return null;
