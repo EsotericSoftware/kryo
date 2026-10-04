@@ -69,6 +69,25 @@ class SetFromMapSerializerTest extends KryoTestCase {
 		roundTrip(3, Collections.newSetFromMap(new HashMap<>()));
 	}
 
+	@Test
+	void testCopyCycle () {
+		// An element that refers to the set gets the copy of the set.
+		kryo.register(Node.class);
+		Set<Node> set = Collections.newSetFromMap(new LinkedHashMap<>());
+		Node node = new Node();
+		node.set = set;
+		set.add(node);
+		Set<Node> copy = kryo.copy(set);
+		assertNotSame(set, copy);
+		Node copiedNode = copy.iterator().next();
+		assertNotSame(node, copiedNode);
+		assertSame(copy, copiedNode.set);
+	}
+
+	static class Node {
+		Set<Node> set;
+	}
+
 	private Set<String> setFromMap (Map<String, Boolean> map) {
 		Set<String> set = Collections.newSetFromMap(map);
 		Collections.addAll(set, "b", "a", "c");

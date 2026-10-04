@@ -1166,6 +1166,7 @@ public class Kryo {
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
+			Object outerNeedsCopyReference = needsCopyReference; // See copy(Object).
 			if (copyReferences) needsCopyReference = object;
 			Object copy;
 			if (object instanceof KryoCopyable)
@@ -1173,6 +1174,7 @@ public class Kryo {
 			else
 				copy = getSerializer(object.getClass()).copy(this, object);
 			if (needsCopyReference != null) reference(copy);
+			needsCopyReference = outerNeedsCopyReference;
 			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy, -1);
 			return (T)copy;
 		} finally {

@@ -51,7 +51,15 @@ public final class SetFromMapSerializer extends Serializer<Set> {
 	}
 
 	public Set copy (Kryo kryo, Set original) {
-		return newSetFromMap((Map)kryo.copy(mapGetter.get(original)));
+		// The set is created and referenced before the keys are copied, so a key that refers to the set gets the copy.
+		Map map = kryo.copyShallow((Map)mapGetter.get(original));
+		ArrayList keys = new ArrayList(map.keySet());
+		map.clear();
+		Set set = Collections.newSetFromMap(map);
+		kryo.reference(set);
+		for (Object key : keys)
+			set.add(kryo.copy(key));
+		return set;
 	}
 
 	/** {@link Collections#newSetFromMap(Map)} requires an empty map, so the keys are added again. */
