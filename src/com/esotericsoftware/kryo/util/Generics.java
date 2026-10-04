@@ -351,16 +351,24 @@ public interface Generics {
 			if (Arrays.equals(superArguments, parameters) || superArguments.length == 0) return arguments;
 			List parameterList = Arrays.asList(parameters);
 			GenericType[] result = new GenericType[superArguments.length];
-			for (int i = 0; i < superArguments.length; i++) {
-				Type argument = superArguments[i];
-				int index = parameterList.indexOf(argument);
-				if (index != -1 && index < arguments.length)
-					result[i] = arguments[index];
-				else if (argument instanceof Class)
-					result[i] = new GenericType((Class)type, (Class)type, argument);
-				else
-					result[i] = unknown; // Not known, eg List<V> or a raw super type.
-			}
+			for (int i = 0; i < superArguments.length; i++)
+				result[i] = substitute(superArguments[i], parameterList);
+			return result;
+		}
+
+		/** Returns the generic type for a type argument of the super type, with the type parameters of this type replaced by its
+		 * type arguments, eg {@code List<Long>} for {@code List<V>} if this type is {@code ListMap<Long>}. */
+		private GenericType substitute (Type argument, List parameterList) {
+			int index = parameterList.indexOf(argument);
+			if (index != -1) return index < arguments.length ? arguments[index] : unknown;
+			if (argument instanceof Class) return new GenericType((Class)type, (Class)type, argument);
+			if (!(argument instanceof ParameterizedType)) return unknown; // Not known, eg a raw super type or a wildcard.
+			ParameterizedType parameterized = (ParameterizedType)argument;
+			GenericType result = new GenericType((Class)type, (Class)type, parameterized.getRawType());
+			Type[] actual = parameterized.getActualTypeArguments();
+			result.arguments = new GenericType[actual.length];
+			for (int i = 0; i < actual.length; i++)
+				result.arguments[i] = substitute(actual[i], parameterList);
 			return result;
 		}
 

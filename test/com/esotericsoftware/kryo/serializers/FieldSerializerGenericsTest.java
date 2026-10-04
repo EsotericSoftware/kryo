@@ -76,6 +76,40 @@ class FieldSerializerGenericsTest extends KryoTestCase {
 		}
 	}
 
+	@Test
+	void testParameterizedTypeArgumentOfMapSubtype () {
+		// The value type List<V> of the subtype is resolved like List<Long> of HashMap<String, List<Long>>.
+		kryo.register(ListValueMapField.class, 100);
+		kryo.register(HashMapField.class, 101);
+		kryo.register(ListValueMap.class, 102);
+		kryo.register(HashMap.class, 103);
+		kryo.register(ArrayList.class, 104);
+		ListValueMapField subtype = new ListValueMapField();
+		subtype.map = new ListValueMap<>();
+		subtype.map.put("a", new ArrayList<>(List.of(1L, 2L)));
+		HashMapField hashMap = new HashMapField();
+		hashMap.map = new HashMap<>(subtype.map);
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, subtype);
+		int subtypeLength = output.position();
+		assertEquals(subtype.map, kryo.readObject(new Input(output.toBytes()), ListValueMapField.class).map);
+		output.reset();
+		kryo.writeObject(output, hashMap);
+		assertEquals(output.position(), subtypeLength);
+	}
+
+	public static class ListValueMapField {
+		public ListValueMap<Long> map;
+	}
+
+	public static class HashMapField {
+		public HashMap<String, List<Long>> map;
+	}
+
+	public static class ListValueMap<V> extends HashMap<String, List<V>> {
+	}
+
 	public static class SubtypeFields {
 		public IntKeyMap<String> intKeys;
 		public SwappedMap<String, Integer> swapped;
