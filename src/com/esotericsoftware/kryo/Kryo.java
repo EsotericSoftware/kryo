@@ -77,6 +77,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.InetSocketAddres
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.IntSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KeySetViewSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.LinkedBlockingDequeSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LinkedBlockingQueueSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LocaleSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
@@ -150,6 +151,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -267,6 +269,7 @@ public class Kryo {
 		addDefaultSerializer(PriorityBlockingQueue.class, PriorityBlockingQueueSerializer::new);
 		addDefaultSerializer(ArrayBlockingQueue.class, ArrayBlockingQueueSerializer::new);
 		addDefaultSerializer(LinkedBlockingQueue.class, LinkedBlockingQueueSerializer::new);
+		addDefaultSerializer(LinkedBlockingDeque.class, LinkedBlockingDequeSerializer::new);
 		addDefaultSerializer(Collections.reverseOrder().getClass(), new ReverseOrderSerializer());
 		addDefaultSerializer(Collections.reverseOrder(String.CASE_INSENSITIVE_ORDER).getClass(),
 			new ReverseOrderComparatorSerializer());
@@ -463,6 +466,9 @@ public class Kryo {
 	 * <tr>
 	 * <td>ArrayBlockingQueue</td>
 	 * <td>LinkedBlockingQueue</td>
+	 * </tr>
+	 * <tr>
+	 * <td>LinkedBlockingDeque</td>
 	 * </tr>
 	 * </table>
 	 * </p>

@@ -58,6 +58,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -541,9 +542,11 @@ class DefaultSerializersTest extends KryoTestCase {
 	void testBlockingQueues () {
 		kryo.register(ArrayBlockingQueue.class);
 		kryo.register(LinkedBlockingQueue.class);
+		kryo.register(LinkedBlockingDeque.class);
 		kryo.register(ArrayBlockingQueueSubclass.class);
 		for (BlockingQueue<Integer> queue : List.of(new ArrayBlockingQueue<Integer>(5), new LinkedBlockingQueue<Integer>(7),
-			new LinkedBlockingQueue<Integer>(), new ArrayBlockingQueueSubclass(4))) {
+			new LinkedBlockingQueue<Integer>(), new LinkedBlockingDeque<Integer>(6), new LinkedBlockingDeque<Integer>(),
+			new ArrayBlockingQueueSubclass(4))) {
 			for (BlockingQueue<Integer> empty : List.of(writeRead(queue), kryo.copy(queue))) {
 				assertSame(queue.getClass(), empty.getClass());
 				assertEquals(queue.remainingCapacity(), empty.remainingCapacity());
@@ -601,7 +604,8 @@ class DefaultSerializersTest extends KryoTestCase {
 		// Kryo 5 wrote them with CollectionSerializer.
 		Kryo kryo = new Kryo();
 		Kryo5Compatibility.configure(kryo);
-		for (Class type : new Class[] {ConcurrentSkipListSet.class, PriorityBlockingQueue.class, LinkedBlockingQueue.class})
+		for (Class type : new Class[] {ConcurrentSkipListSet.class, PriorityBlockingQueue.class, LinkedBlockingQueue.class,
+			LinkedBlockingDeque.class})
 			assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(type).getClass());
 	}
 
