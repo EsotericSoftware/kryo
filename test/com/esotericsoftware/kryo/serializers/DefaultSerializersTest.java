@@ -52,9 +52,12 @@ import java.util.PriorityQueue;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -534,11 +537,37 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
+	void testBlockingQueues () {
+		kryo.register(ArrayBlockingQueue.class);
+		kryo.register(LinkedBlockingQueue.class);
+		kryo.register(ArrayBlockingQueueSubclass.class);
+		for (BlockingQueue<Integer> queue : List.of(new ArrayBlockingQueue<Integer>(5), new LinkedBlockingQueue<Integer>(7),
+			new LinkedBlockingQueue<Integer>(), new ArrayBlockingQueueSubclass(4))) {
+			for (BlockingQueue<Integer> empty : List.of(writeRead(queue), kryo.copy(queue))) {
+				assertSame(queue.getClass(), empty.getClass());
+				assertEquals(queue.remainingCapacity(), empty.remainingCapacity());
+			}
+			queue.addAll(List.of(3, 1, 2));
+			for (BlockingQueue<Integer> result : List.of(writeRead(queue), kryo.copy(queue))) {
+				assertSame(queue.getClass(), result.getClass());
+				assertEquals(queue.remainingCapacity(), result.remainingCapacity()); // The capacity is kept.
+				assertEquals(new ArrayList<>(queue), new ArrayList<>(result));
+			}
+		}
+	}
+
+	static class ArrayBlockingQueueSubclass extends ArrayBlockingQueue<Integer> {
+		public ArrayBlockingQueueSubclass (int capacity) {
+			super(capacity);
+		}
+	}
+
+	@Test
 	void testConcurrentSortedCollectionsKryo5 () {
 		// Kryo 5 wrote them with CollectionSerializer.
 		Kryo kryo = new Kryo();
 		Kryo5Compatibility.configure(kryo);
-		for (Class type : new Class[] {ConcurrentSkipListSet.class, PriorityBlockingQueue.class})
+		for (Class type : new Class[] {ConcurrentSkipListSet.class, PriorityBlockingQueue.class, LinkedBlockingQueue.class})
 			assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(type).getClass());
 	}
 
