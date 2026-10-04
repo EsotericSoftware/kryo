@@ -500,6 +500,24 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		assertEquals("z", read.z);
 	}
 
+	@Test
+	void testGenericTypeOfOuterField () {
+		// The type argument of the field holding the object must not be used for the object's fields.
+		kryo.register(ArrayList.class);
+		kryo.register(GenericBox.class, new CompatibleFieldSerializer<>(kryo, GenericBox.class));
+		kryo.register(GenericBoxHolder.class, new FieldSerializer<>(kryo, GenericBoxHolder.class));
+		GenericBoxHolder holder = new GenericBoxHolder();
+		holder.box = new GenericBox<>();
+		holder.box.ids = new ArrayList<>(List.of(1L, 2L));
+		holder.box.value = new ArrayList<>(List.of("x"));
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, holder);
+		GenericBoxHolder read = kryo.readObject(new Input(output.toBytes()), GenericBoxHolder.class);
+		assertEquals(holder.box.ids, read.box.ids);
+		assertEquals(holder.box.value, read.box.value);
+	}
+
 	private void testExtendedClass (int length, boolean references, boolean chunked) {
 		kryo.setReferences(references);
 
@@ -948,6 +966,15 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	public record RecordClass(String height, int width, long x, double y) { }
 	public record OldPrimitiveRecord(long x) { }
+
+	public static class GenericBox<T> {
+		public List<Long> ids;
+		public T value;
+	}
+
+	public static class GenericBoxHolder {
+		public GenericBox<List<String>> box;
+	}
 
 	public static class GenericFieldsParent<T> {
 		public List<T> inherited = new ArrayList<>();

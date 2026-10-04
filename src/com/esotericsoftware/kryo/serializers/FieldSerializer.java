@@ -211,11 +211,15 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Prepares the type variables for the serialized type. Must be balanced with {@link #popTypeVariables(int)} if {@code > 0} is
 	 * returned. */
 	protected int pushTypeVariables () {
-		GenericType genericType = kryo.getGenerics().nextGenericType();
+		Generics generics = kryo.getGenerics();
+		GenericType genericType = generics.nextGenericType();
 		if (genericType == null) return 0;
+		// nextGenericType pushes the last type argument for the values of a collection or map. It must not be used for the fields,
+		// which don't push their own generic type if optimizeGenerics is false.
+		generics.popGenericType();
 
-		int pop = kryo.getGenerics().pushTypeVariables(genericsHierarchy, genericType);
-		if (TRACE && pop > 0) trace("kryo", "Generics: " + kryo.getGenerics());
+		int pop = generics.pushTypeVariables(genericsHierarchy, genericType);
+		if (TRACE && pop > 0) trace("kryo", "Generics: " + generics);
 		return pop;
 	}
 

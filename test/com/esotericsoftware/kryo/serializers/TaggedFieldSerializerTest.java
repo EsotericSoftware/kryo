@@ -418,6 +418,35 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		assertEquals("z", read.z);
 	}
 
+	@Test
+	void testGenericTypeOfOuterField () {
+		// The type argument of the field holding the object must not be used for the object's fields.
+		TaggedFieldSerializer.TaggedFieldSerializerConfig config = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+		config.setReadUnknownTagData(true);
+		kryo.register(ArrayList.class);
+		kryo.register(GenericBox.class, new TaggedFieldSerializer<>(kryo, GenericBox.class, config));
+		kryo.register(GenericBoxHolder.class, new TaggedFieldSerializer<>(kryo, GenericBoxHolder.class));
+		GenericBoxHolder holder = new GenericBoxHolder();
+		holder.box = new GenericBox<>();
+		holder.box.ids = new ArrayList<>(List.of(1L, 2L));
+		holder.box.value = new ArrayList<>(List.of("x"));
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, holder);
+		GenericBoxHolder read = kryo.readObject(new Input(output.toBytes()), GenericBoxHolder.class);
+		assertEquals(holder.box.ids, read.box.ids);
+		assertEquals(holder.box.value, read.box.value);
+	}
+
+	public static class GenericBox<T> {
+		@Tag(0) public List<Long> ids;
+		@Tag(1) public T value;
+	}
+
+	public static class GenericBoxHolder {
+		@Tag(0) public GenericBox<List<String>> box;
+	}
+
 	public static class GenericField {
 		@Tag(0) public String a = "a";
 		@Tag(1) public List<String> list = new ArrayList<>(List.of("x", "y"));
