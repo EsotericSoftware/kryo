@@ -65,6 +65,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	protected void initializeCachedFields () {
 		CachedField[] fields = cachedFields.fields;
 		fieldVersion = new int[fields.length];
+		typeVersion = 0; // Fields may have been removed.
 		for (int i = 0, n = fields.length; i < n; i++) {
 			Field field = fields[i].field;
 			Since since = field.getAnnotation(Since.class);

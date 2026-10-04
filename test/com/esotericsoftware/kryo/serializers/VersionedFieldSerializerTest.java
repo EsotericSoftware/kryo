@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.serializers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
@@ -46,6 +47,36 @@ class VersionedFieldSerializerTest extends KryoTestCase {
 		kryo.writeObject(output, new OldPrimitiveRecord(3L));
 		NewPrimitiveRecord deserialized = kryo.readObject(new Input(output.toBytes()), NewPrimitiveRecord.class);
 		assertEquals(new NewPrimitiveRecord(0, 3L), deserialized);
+	}
+
+	@Test
+	void testRemoveFieldWithHighestVersion () {
+		// After removing the field with the highest version, the type version is that of the remaining fields.
+		VersionFieldSerializer serializer = new VersionFieldSerializer(kryo, VersionedClass.class);
+		serializer.removeField("c");
+		kryo.register(VersionedClass.class, serializer);
+		VersionedClass object = new VersionedClass();
+		object.a = 1;
+		object.b = 2;
+		Output output = new Output(64);
+		kryo.writeObject(output, object);
+
+		Kryo reader = new Kryo();
+		reader.register(OldVersionedClass.class, new VersionFieldSerializer(reader, OldVersionedClass.class));
+		OldVersionedClass read = reader.readObject(new Input(output.toBytes()), OldVersionedClass.class);
+		assertEquals(1, read.a);
+		assertEquals(2, read.b);
+	}
+
+	public static class VersionedClass {
+		public int a;
+		@Since(1) public int b;
+		@Since(2) public int c;
+	}
+
+	public static class OldVersionedClass {
+		public int a;
+		@Since(1) public int b;
 	}
 
 	@Test
