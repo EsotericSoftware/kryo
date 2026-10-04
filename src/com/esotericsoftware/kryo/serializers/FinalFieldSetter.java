@@ -36,6 +36,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /** Sets the final fields of serializable classes with the method handles the JDK provides for deserialization, which can set
  * final fields also if setting them with reflection is denied (JEP 500). It is only used then. The values of the final fields are
@@ -43,14 +44,16 @@ import java.util.ArrayList;
 final class FinalFieldSetter {
 	static private final Object reflectionFactory;
 	static private final Method defaultReadObject;
+	/** A final field that was not read keeps its value. */
+	static private final Object unset = new Object();
 	/** Null until a class with final fields is used. Can be set by tests. */
-	static Boolean mutationDenied;
+	static Boolean denied;
 
 	static {
 		Object factory = null;
 		Method method = null;
 		if (!isAndroid) {
-			try { // Java 22+.
+			try { // Java 24+.
 				Class factoryClass = Class.forName("sun.reflect.ReflectionFactory");
 				factory = factoryClass.getMethod("getReflectionFactory").invoke(null);
 				method = factoryClass.getMethod("defaultReadObjectForSerialization", Class.class);
@@ -91,11 +94,13 @@ final class FinalFieldSetter {
 				ClassFields classFields = null;
 				for (ClassFields c : classes)
 					if (c.type == declaringClass) classFields = c;
-				try {
-					if (classFields == null) classes.add(classFields = new ClassFields(declaringClass));
-				} catch (Throwable ex) {
-					if (DEBUG) debug("kryo", "Final fields are set with reflection: " + className(declaringClass), ex);
-					return null;
+				if (classFields == null) {
+					try {
+						classes.add(classFields = new ClassFields(declaringClass));
+					} catch (Throwable ex) {
+						if (DEBUG) debug("kryo", "Final fields are set with reflection: " + className(declaringClass), ex);
+						return null;
+					}
 				}
 				int fieldIndex = classFields.indexOf(field.getName());
 				if (fieldIndex == -1) return null; // Eg serialPersistentFields.
@@ -103,10 +108,11 @@ final class FinalFieldSetter {
 			}
 		}
 		if (finalFields.isEmpty()) return null;
-		for (int i = 0, n = finalFields.size(); i < n; i++)
-			finalFields.get(i).index = i;
 		try {
-			return new FinalFieldSetter(classes.toArray(new ClassFields[classes.size()]), finalFields.size());
+			FinalFieldSetter setter = new FinalFieldSetter(classes.toArray(new ClassFields[classes.size()]), finalFields.size());
+			for (int i = 0, n = finalFields.size(); i < n; i++)
+				finalFields.get(i).index = i;
+			return setter;
 		} catch (IOException ex) {
 			return null;
 		}
@@ -116,21 +122,21 @@ final class FinalFieldSetter {
 	 * {@code --illegal-final-field-mutation=deny}. Java has no API for this, so a final field of a class in Kryo's module is set
 	 * once. If it is allowed with a warning, the warning is shown then. */
 	static boolean mutationDenied () {
-		if (mutationDenied == null) {
+		if (denied == null) {
 			try {
 				Field field = Probe.class.getDeclaredField("value");
 				field.setAccessible(true);
 				field.set(new Probe(), null);
-				mutationDenied = false;
+				denied = false;
 			} catch (IllegalAccessException ex) {
-				mutationDenied = true;
+				denied = true;
 			} catch (Throwable ex) {
 				if (DEBUG) debug("kryo", "Unable to check if final fields can be set.", ex);
-				mutationDenied = false;
+				denied = false;
 			}
-			if (DEBUG && mutationDenied) debug("kryo", "Final fields of serializable classes are set with method handles.");
+			if (DEBUG && denied) debug("kryo", "Final fields of serializable classes are set with method handles.");
 		}
-		return mutationDenied;
+		return denied;
 	}
 
 	static private final class Probe {
@@ -142,7 +148,9 @@ final class FinalFieldSetter {
 	}
 
 	Object[] newValues () {
-		return new Object[count];
+		Object[] values = new Object[count];
+		Arrays.fill(values, unset);
+		return values;
 	}
 
 	/** Sets the final fields to the values, indexed by {@link CachedField#index}. */
@@ -223,7 +231,7 @@ final class FinalFieldSetter {
 					if (i == -1) throw new IllegalArgumentException(name);
 				}
 				int valueIndex = classFields.valueIndexes[i];
-				if (valueIndex != -1) return values[valueIndex];
+				if (valueIndex != -1 && values[valueIndex] != unset) return values[valueIndex];
 				try {
 					return classFields.fields[i].get(object);
 				} catch (IllegalAccessException ex) {

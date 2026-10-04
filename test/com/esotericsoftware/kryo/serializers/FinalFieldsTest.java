@@ -49,11 +49,43 @@ class FinalFieldsTest {
 		boolean detected = FinalFieldSetter.mutationDenied();
 		try {
 			for (boolean denied : detected ? new boolean[] {true} : new boolean[] {false, true}) {
-				FinalFieldSetter.mutationDenied = denied;
+				FinalFieldSetter.denied = denied;
 				testFinalFields(serializers);
 			}
 		} finally {
-			FinalFieldSetter.mutationDenied = detected;
+			FinalFieldSetter.denied = detected;
+		}
+	}
+
+	@Test
+	void testMissingAndNullFields () {
+		boolean detected = FinalFieldSetter.mutationDenied();
+		try {
+			for (boolean denied : detected ? new boolean[] {true} : new boolean[] {false, true}) {
+				FinalFieldSetter.denied = denied;
+				// A final field that is not in the data keeps the value set by the constructor.
+				Kryo writer = new Kryo();
+				CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(writer, Defaults.class);
+				serializer.removeField("name");
+				serializer.removeField("number");
+				writer.register(Defaults.class, serializer);
+				Output output = new Output(1024, -1);
+				writer.writeObject(output, new Defaults("written", 1));
+				Kryo reader = new Kryo();
+				reader.register(Defaults.class, new CompatibleFieldSerializer(reader, Defaults.class));
+				Defaults read = reader.readObject(new Input(output.toBytes()), Defaults.class);
+				assertEquals("default", read.name);
+				assertEquals(7, read.number);
+
+				// A final field written as null is read as null.
+				output.reset();
+				reader.writeObject(output, new Defaults(null, 1));
+				read = reader.readObject(new Input(output.toBytes()), Defaults.class);
+				assertNull(read.name);
+				assertEquals(1, read.number);
+			}
+		} finally {
+			FinalFieldSetter.denied = detected;
 		}
 	}
 
@@ -82,6 +114,21 @@ class FinalFieldsTest {
 		assertEquals(7L, node.base);
 		assertEquals("mutable", node.mutable);
 		assertSame(node, node.self); // A final field that refers to the object itself.
+	}
+
+	public static class Defaults implements Serializable {
+		final String name;
+		final int number;
+
+		Defaults () {
+			name = "default";
+			number = 7;
+		}
+
+		Defaults (String name, int number) {
+			this.name = name;
+			this.number = number;
+		}
 	}
 
 	public static class Base implements Serializable {

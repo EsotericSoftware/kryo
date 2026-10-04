@@ -190,7 +190,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				if (registration == null) {
 					// The value is null, overwrite the value set by the constructor. Record values are already null.
-					if (cachedField != null && object != null && cachedField.index == -1) setNull(cachedField, object);
+					if (cachedField != null && object != null) {
+						if (values == null || cachedField.index == -1)
+							setNull(cachedField, object);
+						else
+							values[cachedField.index] = null;
+					}
 					if (chunked) inputChunked.nextChunk();
 					continue;
 				}

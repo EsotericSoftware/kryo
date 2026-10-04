@@ -1152,7 +1152,7 @@ Setting | Description | Default value
 `extendedFieldNames` | If true, field names are prefixed by their declaring class. This can avoid conflicts when a subclass has a field with the same name as a super class. | false
 `fieldAccess` | How fields are read and written: `UNSAFE` (fastest, but deprecated for removal by Java and warns on Java 24+), `VARHANDLE`, `REFLECTION`, or the deprecated `ASM` (ReflectASM, for public fields of public classes). If a field can't be accessed this way, VarHandles are used, and reflection if they can't be used either, eg for final fields. | `UNSAFE` before Java 24 or with `--sun-misc-unsafe-memory-access=allow`, otherwise `VARHANDLE`. Also `VARHANDLE` if Unsafe is not available or disabled with `-Dkryo.unsafe=false`. `REFLECTION` on Android.
 
-VarHandles cannot set final fields, so these are set with reflection. Java 26+ warns when final fields are set with reflection and will deny it in the future. To allow it, start Java with `--enable-final-field-mutation=ALL-UNNAMED` (or the name of Kryo's module). Alternatively, make the fields non-final, use records, or register a serializer for the class.
+VarHandles cannot set final fields, so these are set with reflection. Java 26+ warns when final fields are set with reflection and will deny it in the future. To allow it, start Java with `--enable-final-field-mutation=ALL-UNNAMED` (or the name of Kryo's module). If it is denied, Kryo sets the final fields of serializable classes with the method handles that Java provides for deserialization, on Java 24+. Kryo checks this once by setting a final field of its own, so the warning can name a Kryo class. Alternatively, make the fields non-final, use records, or register a serializer for the class.
 
 #### CachedField settings
 
