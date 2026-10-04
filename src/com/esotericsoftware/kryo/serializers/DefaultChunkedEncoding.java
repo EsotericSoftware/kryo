@@ -103,6 +103,9 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		else
 			scope.buffer.reset();
 		scope.outermostFieldNames = false;
+		// Not empty if an exception was thrown while writing the previous object graph.
+		scope.fieldNameTypes.clear();
+		scope.fieldNames.clear();
 		scope.namesMark = kryo.getClassResolver().beginDeferredNames();
 		return scope.buffer;
 	}

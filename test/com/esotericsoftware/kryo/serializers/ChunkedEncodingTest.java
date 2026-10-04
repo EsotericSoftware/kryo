@@ -314,6 +314,8 @@ class ChunkedEncodingTest {
 		assertThrows(KryoException.class, () -> write(kryo, failing));
 
 		byte[] bytes = write(kryo, entity(false));
+		// The field names collected before the exception are not written.
+		assertArrayEquals(write(compatibleKryo(false, false, false), entity(false)), bytes);
 		Entity read = compatibleKryo(false, false, false).readObject(new Input(bytes), Entity.class);
 		assertEquals(5, read.b.x.a);
 		assertEquals(10, read.c.a);
