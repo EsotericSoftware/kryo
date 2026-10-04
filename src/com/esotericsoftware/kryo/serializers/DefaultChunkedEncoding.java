@@ -45,7 +45,7 @@ import java.util.ArrayList;
  * by 1, bit 1 if the first are those of the outermost object, each with the class and the field names; then the object data. A
  * class is written as varint registration ID + 1, or 0 and the class written by Kryo. Format of a field: varint length, with
  * references varint number of objects, then the field data. */
-final class FieldFrames implements ChunkedFields {
+final class DefaultChunkedEncoding implements ChunkedEncoding {
 	private static final Object contextKey = new Object();
 	/** Larger buffers are not kept for the next scope. */
 	private static final int maxBufferSize = 1024 * 1024;
@@ -62,15 +62,15 @@ final class FieldFrames implements ChunkedFields {
 	/** The number of objects read after the field started by {@link #beginField(Input)}. Nested fields overwrite it. */
 	private int fieldObjects;
 
-	private FieldFrames (Kryo kryo) {
+	private DefaultChunkedEncoding (Kryo kryo) {
 		this.kryo = kryo;
 	}
 
 	/** Returns the instance for the Kryo, which is kept in its {@link Kryo#getContext() context} so the buffers are reused. */
-	static FieldFrames get (Kryo kryo) {
-		FieldFrames frames = (FieldFrames)kryo.getContext().get(contextKey);
-		if (frames == null) kryo.getContext().put(contextKey, frames = new FieldFrames(kryo));
-		return frames;
+	static DefaultChunkedEncoding get (Kryo kryo) {
+		DefaultChunkedEncoding encoding = (DefaultChunkedEncoding)kryo.getContext().get(contextKey);
+		if (encoding == null) kryo.getContext().put(contextKey, encoding = new DefaultChunkedEncoding(kryo));
+		return encoding;
 	}
 
 	/** Returns true if the scopes are from a previous object graph, eg left over after an exception. The graph context is cleared

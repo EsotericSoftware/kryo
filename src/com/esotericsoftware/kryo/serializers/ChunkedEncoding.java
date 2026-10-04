@@ -24,12 +24,12 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 /** Chunked encoding of {@link CompatibleFieldSerializer} and {@link TaggedFieldSerializer}, which allows skipping the data of a
- * field. Implemented by {@link FieldFrames} and, for the format of Kryo 5, by {@link LegacyChunks}. */
-interface ChunkedFields {
+ * field. Implemented by {@link DefaultChunkedEncoding} and, for the format of Kryo 5, by {@link LegacyChunkedEncoding}. */
+interface ChunkedEncoding {
 	/** Returns the chunked encoding for the serializer config, or null if chunked encoding is disabled. */
-	static ChunkedFields get (Kryo kryo, boolean chunked, boolean legacyChunks, int chunkSize) {
+	static ChunkedEncoding get (Kryo kryo, boolean chunked, boolean legacyChunks, int chunkSize) {
 		if (!chunked) return null;
-		return legacyChunks ? LegacyChunks.get(chunkSize) : FieldFrames.get(kryo);
+		return legacyChunks ? LegacyChunkedEncoding.get(chunkSize) : DefaultChunkedEncoding.get(kryo);
 	}
 
 	/** Returns the output for the data of an object outside its fields, eg the tags of TaggedFieldSerializer. Must be followed by

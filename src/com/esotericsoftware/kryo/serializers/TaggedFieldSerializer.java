@@ -125,7 +125,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		CachedField[] writeTags = this.writeTags;
 		output.writeVarInt(writeTags.length + 1, true);
 		boolean readUnknownTagData = config.readUnknownTagData;
-		ChunkedFields chunks = ChunkedFields.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
+		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
 		boolean chunked = chunks != null;
 		Output out = chunked ? chunks.beginWrite(output) : output;
 		Output fieldOutput = chunked ? chunks.fieldOutput(out) : out;
@@ -174,7 +174,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		fieldCount--;
 
 		boolean readUnknownTagData = config.readUnknownTagData;
-		ChunkedFields chunks = ChunkedFields.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
+		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
 		boolean chunked = chunks != null;
 		Input fieldInput = chunked ? chunks.beginRead(input) : input;
 		int pop = pushTypeVariables();

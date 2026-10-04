@@ -27,19 +27,19 @@ import com.esotericsoftware.kryo.io.OutputChunked;
 /** The chunked encoding of Kryo 5, which splits each field into chunks. If a chunk is skipped, class names, field names, and
  * objects first written in it are unknown afterwards. The chunked output and input of each object hold all its state, so
  * instances are immutable and shared. */
-final class LegacyChunks implements ChunkedFields {
+final class LegacyChunkedEncoding implements ChunkedEncoding {
 	/** The last instance, reused while the chunk size is the same. */
-	private static LegacyChunks last = new LegacyChunks(1024);
+	private static LegacyChunkedEncoding last = new LegacyChunkedEncoding(1024);
 
 	private final int chunkSize;
 
-	private LegacyChunks (int chunkSize) {
+	private LegacyChunkedEncoding (int chunkSize) {
 		this.chunkSize = chunkSize;
 	}
 
-	static LegacyChunks get (int chunkSize) {
-		LegacyChunks chunks = last;
-		if (chunks.chunkSize != chunkSize) last = chunks = new LegacyChunks(chunkSize);
+	static LegacyChunkedEncoding get (int chunkSize) {
+		LegacyChunkedEncoding chunks = last;
+		if (chunks.chunkSize != chunkSize) last = chunks = new LegacyChunkedEncoding(chunkSize);
 		return chunks;
 	}
 

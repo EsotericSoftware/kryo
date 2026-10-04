@@ -103,7 +103,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	public void write (Kryo kryo, Output output, T object) {
 		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
 		boolean readUnknownFieldData = config.readUnknownFieldData;
-		ChunkedFields chunks = ChunkedFields.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
+		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
 		boolean chunked = chunks != null;
 		Output fieldOutput = chunked ? chunks.fieldOutput(chunks.beginWrite(output)) : output;
 		int pop = pushTypeVariables();
@@ -163,7 +163,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			values = newRecordValues();
 
 		// After create, which can read data written before the object, eg by a subclass.
-		ChunkedFields chunks = ChunkedFields.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
+		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
 		boolean chunked = chunks != null;
 		Input fieldInput = chunked ? chunks.beginRead(input) : input;
 
@@ -249,7 +249,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	/** Returns the fields of the data for the current object graph, from the chunked encoding or read from the input. */
-	private CachedField[] readFields (Kryo kryo, Input input, ChunkedFields chunks) {
+	private CachedField[] readFields (Kryo kryo, Input input, ChunkedEncoding chunks) {
 		String[] names = chunks != null ? chunks.readFieldNames(type) : null;
 		return fields(kryo, names != null ? names : readFieldNames(input));
 	}
