@@ -57,6 +57,19 @@ class InputOutputTest extends KryoTestCase {
 			assertTrue(input.end(), input.getClass().getSimpleName());
 			assertThrows(KryoBufferUnderflowException.class, input::readInt);
 		}
+
+		// The bytes that were not read yet stay readable, after compacting the buffer (4 bytes) or without it (3 bytes).
+		for (byte[] bytes : new byte[][] {{1, 2, 3, 4}, {1, 2, 3}}) {
+			for (Input input : new Input[] {new Input(new ByteArrayInputStream(bytes), 4),
+				new ByteBufferInput(new ByteArrayInputStream(bytes), 4)}) {
+				String name = input.getClass().getSimpleName() + " " + bytes.length;
+				assertEquals(1, input.readByte());
+				assertThrows(KryoBufferUnderflowException.class, input::readInt);
+				for (int i = 1; i < bytes.length; i++)
+					assertEquals(bytes[i], input.readByte(), name);
+				assertTrue(input.end(), name);
+			}
+		}
 	}
 
 	@Test

@@ -170,8 +170,8 @@ public class ByteBufferInput extends Input {
 		// Try to fill the buffer.
 		if (remaining > 0) {
 			count = fill(byteBuffer, limit, capacity - limit);
+			setBufferPosition(byteBuffer, position); // Also before the exception, so the input stays consistent.
 			if (count == -1) throw new KryoBufferUnderflowException("Buffer underflow.");
-			setBufferPosition(byteBuffer, position);
 			remaining += count;
 			if (remaining >= required) {
 				limit += count;
