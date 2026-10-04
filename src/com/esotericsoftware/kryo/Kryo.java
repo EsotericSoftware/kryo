@@ -46,6 +46,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicBooleanSer
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicIntegerSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicLongSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicReferenceSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.ArrayBlockingQueueSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigDecimalSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BigIntegerSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.BitSetSerializer;
@@ -76,6 +77,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.InetSocketAddres
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.IntSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KeySetViewSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.LinkedBlockingQueueSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LocaleSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.PatternSerializer;
@@ -144,9 +146,11 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -261,6 +265,8 @@ public class Kryo {
 		addDefaultSerializer(TreeSet.class, TreeSetSerializer::new);
 		addDefaultSerializer(ConcurrentSkipListSet.class, ConcurrentSkipListSetSerializer::new);
 		addDefaultSerializer(PriorityBlockingQueue.class, PriorityBlockingQueueSerializer::new);
+		addDefaultSerializer(ArrayBlockingQueue.class, ArrayBlockingQueueSerializer::new);
+		addDefaultSerializer(LinkedBlockingQueue.class, LinkedBlockingQueueSerializer::new);
 		addDefaultSerializer(Collections.reverseOrder().getClass(), new ReverseOrderSerializer());
 		addDefaultSerializer(Collections.reverseOrder(String.CASE_INSENSITIVE_ORDER).getClass(),
 			new ReverseOrderComparatorSerializer());
@@ -453,6 +459,10 @@ public class Kryo {
 	 * <td>PriorityBlockingQueue</td>
 	 * <td>Collections.reverseOrder</td>
 	 * <td>String.CASE_INSENSITIVE_ORDER</td>
+	 * </tr>
+	 * <tr>
+	 * <td>ArrayBlockingQueue</td>
+	 * <td>LinkedBlockingQueue</td>
 	 * </tr>
 	 * </table>
 	 * </p>

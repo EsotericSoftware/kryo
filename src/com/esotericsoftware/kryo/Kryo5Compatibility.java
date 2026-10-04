@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -96,6 +97,8 @@ public final class Kryo5Compatibility {
 		// Kryo 5 wrote these with CollectionSerializer, without the comparator.
 		kryo.addDefaultSerializer(ConcurrentSkipListSet.class, CollectionSerializer::new);
 		kryo.addDefaultSerializer(PriorityBlockingQueue.class, CollectionSerializer::new);
+		// Kryo 5 wrote this with CollectionSerializer, without the capacity. It couldn't read ArrayBlockingQueue.
+		kryo.addDefaultSerializer(LinkedBlockingQueue.class, CollectionSerializer::new);
 
 		// Kryo 5 wrote the class of each map key and value. The factories of the default serializers are wrapped, so the more
 		// specific default serializers keep their priority.

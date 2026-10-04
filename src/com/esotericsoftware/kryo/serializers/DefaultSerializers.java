@@ -67,10 +67,12 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -920,6 +922,58 @@ public class DefaultSerializers {
 			if (type == PriorityBlockingQueue.class || type == null) return new PriorityBlockingQueue(initialCapacity, comparator);
 			return newInstance(type, new Class[] {int.class, Comparator.class}, initialCapacity, comparator); // Subclass.
 		}
+	}
+
+	/** Serializer for {@link ArrayBlockingQueue} and any subclass, which writes the capacity. The fairness is not written, because
+	 * it can't be read with public API, so the queue is read as not fair. */
+	public static class ArrayBlockingQueueSerializer extends CollectionSerializer<ArrayBlockingQueue> {
+		protected void writeHeader (Kryo kryo, Output output, ArrayBlockingQueue queue) {
+			output.writeVarInt(queue.size() + queue.remainingCapacity(), true);
+		}
+
+		protected ArrayBlockingQueue create (Kryo kryo, Input input, Class<? extends ArrayBlockingQueue> type, int size) {
+			return createQueue(type, readCapacity(input, size, true));
+		}
+
+		protected ArrayBlockingQueue createCopy (Kryo kryo, ArrayBlockingQueue original) {
+			return createQueue(original.getClass(), original.size() + original.remainingCapacity());
+		}
+
+		private ArrayBlockingQueue createQueue (Class<? extends ArrayBlockingQueue> type, int capacity) {
+			if (type == ArrayBlockingQueue.class || type == null) return new ArrayBlockingQueue(capacity);
+			return newInstance(type, new Class[] {int.class}, capacity); // Subclass.
+		}
+	}
+
+	/** Serializer for {@link LinkedBlockingQueue} and any subclass, which writes the capacity. */
+	public static class LinkedBlockingQueueSerializer extends CollectionSerializer<LinkedBlockingQueue> {
+		protected void writeHeader (Kryo kryo, Output output, LinkedBlockingQueue queue) {
+			output.writeVarInt(queue.size() + queue.remainingCapacity(), true); // Integer.MAX_VALUE if not bounded.
+		}
+
+		protected LinkedBlockingQueue create (Kryo kryo, Input input, Class<? extends LinkedBlockingQueue> type, int size) {
+			return createQueue(type, readCapacity(input, size, false));
+		}
+
+		protected LinkedBlockingQueue createCopy (Kryo kryo, LinkedBlockingQueue original) {
+			return createQueue(original.getClass(), original.size() + original.remainingCapacity());
+		}
+
+		private LinkedBlockingQueue createQueue (Class<? extends LinkedBlockingQueue> type, int capacity) {
+			if (type == LinkedBlockingQueue.class || type == null) return new LinkedBlockingQueue(capacity);
+			return newInstance(type, new Class[] {int.class}, capacity); // Subclass.
+		}
+	}
+
+	/** Reads the capacity of a bounded queue, which must hold its elements.
+	 * @param allocates If true, the queue allocates an array for the capacity. The capacity isn't backed by bytes in the input, so
+	 *           {@link Input#getMaxArraySize()} is the only limit for a corrupt or malicious capacity. */
+	static int readCapacity (Input input, int size, boolean allocates) {
+		int capacity = input.readVarInt(true);
+		if (capacity < Math.max(size, 1)) throw new KryoException("Invalid capacity: " + capacity + ", size: " + size);
+		if (allocates && capacity > input.getMaxArraySize())
+			throw new KryoException("Capacity larger than maxArraySize: " + capacity + " > " + input.getMaxArraySize());
+		return capacity;
 	}
 
 	/** Serializer for {@link Collections#reverseOrder()} and {@link Comparator#reverseOrder()}. It has no fields, so the data is

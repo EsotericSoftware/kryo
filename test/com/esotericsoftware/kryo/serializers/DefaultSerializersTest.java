@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
@@ -52,9 +53,12 @@ import java.util.PriorityQueue;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -534,11 +538,70 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
+	void testBlockingQueues () {
+		kryo.register(ArrayBlockingQueue.class);
+		kryo.register(LinkedBlockingQueue.class);
+		kryo.register(ArrayBlockingQueueSubclass.class);
+		for (BlockingQueue<Integer> queue : List.of(new ArrayBlockingQueue<Integer>(5), new LinkedBlockingQueue<Integer>(7),
+			new LinkedBlockingQueue<Integer>(), new ArrayBlockingQueueSubclass(4))) {
+			for (BlockingQueue<Integer> empty : List.of(writeRead(queue), kryo.copy(queue))) {
+				assertSame(queue.getClass(), empty.getClass());
+				assertEquals(queue.remainingCapacity(), empty.remainingCapacity());
+			}
+			queue.addAll(List.of(3, 1, 2));
+			for (BlockingQueue<Integer> result : List.of(writeRead(queue), kryo.copy(queue))) {
+				assertSame(queue.getClass(), result.getClass());
+				assertEquals(queue.remainingCapacity(), result.remainingCapacity()); // The capacity is kept.
+				assertEquals(new ArrayList<>(queue), new ArrayList<>(result));
+			}
+		}
+	}
+
+	@Test
+	void testBlockingQueueCapacity () {
+		// A capacity that can't hold the elements, eg in corrupt data.
+		Kryo writer = new Kryo();
+		writer.register(ArrayBlockingQueue.class, new DefaultSerializers.ArrayBlockingQueueSerializer() {
+			protected void writeHeader (Kryo kryo, Output output, ArrayBlockingQueue queue) {
+				output.writeVarInt(2, true);
+			}
+		});
+		ArrayBlockingQueue<Integer> queue = new ArrayBlockingQueue<>(5);
+		queue.addAll(List.of(3, 1, 2));
+		Output output = new Output(64);
+		writer.writeObject(output, queue);
+		kryo.register(ArrayBlockingQueue.class);
+		KryoException ex = assertThrows(KryoException.class,
+			() -> kryo.readObject(new Input(output.toBytes()), ArrayBlockingQueue.class));
+		assertTrue(ex.getMessage().startsWith("Invalid capacity: 2"), ex.getMessage());
+
+		// maxArraySize limits the array that ArrayBlockingQueue allocates, but not the capacity of LinkedBlockingQueue.
+		output.reset();
+		kryo.writeObject(output, queue);
+		Input input = new Input(output.toBytes());
+		input.setMaxArraySize(4);
+		ex = assertThrows(KryoException.class, () -> kryo.readObject(input, ArrayBlockingQueue.class));
+		assertTrue(ex.getMessage().startsWith("Capacity larger than maxArraySize: 5 > 4"), ex.getMessage());
+		kryo.register(LinkedBlockingQueue.class);
+		output.reset();
+		kryo.writeObject(output, new LinkedBlockingQueue<>(List.of(1)));
+		Input unbounded = new Input(output.toBytes());
+		unbounded.setMaxArraySize(4);
+		assertEquals(Integer.MAX_VALUE - 1, kryo.readObject(unbounded, LinkedBlockingQueue.class).remainingCapacity());
+	}
+
+	static class ArrayBlockingQueueSubclass extends ArrayBlockingQueue<Integer> {
+		public ArrayBlockingQueueSubclass (int capacity) {
+			super(capacity);
+		}
+	}
+
+	@Test
 	void testConcurrentSortedCollectionsKryo5 () {
 		// Kryo 5 wrote them with CollectionSerializer.
 		Kryo kryo = new Kryo();
 		Kryo5Compatibility.configure(kryo);
-		for (Class type : new Class[] {ConcurrentSkipListSet.class, PriorityBlockingQueue.class})
+		for (Class type : new Class[] {ConcurrentSkipListSet.class, PriorityBlockingQueue.class, LinkedBlockingQueue.class})
 			assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(type).getClass());
 	}
 
