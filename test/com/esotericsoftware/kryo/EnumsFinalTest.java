@@ -32,6 +32,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** Enums with constant bodies are serialized like other enums, so bodies can be added or removed. */
+@SuppressWarnings("deprecation")
 class EnumsFinalTest {
 	@Test
 	void testIsFinal () {

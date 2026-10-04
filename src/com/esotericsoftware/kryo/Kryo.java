@@ -1395,11 +1395,15 @@ public class Kryo {
 	/** If true, {@link #isFinal(Class)} returns true for enums, also if their constants have bodies, which are subclasses. Then
 	 * the class of an enum value is not written if the enum is known, eg from the type of a field, also if a constant has a body,
 	 * so adding or removing bodies doesn't change the serialized bytes. If false, the class is written for enums with constant
-	 * bodies, like in Kryo 5. This must be set before classes are registered. Default is true. */
+	 * bodies, like in Kryo 5. This must be set before classes are registered. Default is true.
+	 * @deprecated Only needed to read data written by Kryo 5, see {@link Kryo5Compatibility}. Will be removed in Kryo 7. */
+	@Deprecated
 	public void setEnumsFinal (boolean enumsFinal) {
 		this.enumsFinal = enumsFinal;
 	}
 
+	/** @deprecated See {@link #setEnumsFinal(boolean)}. */
+	@Deprecated
 	public boolean getEnumsFinal () {
 		return enumsFinal;
 	}
