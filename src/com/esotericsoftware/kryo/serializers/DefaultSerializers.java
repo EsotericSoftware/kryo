@@ -1008,7 +1008,7 @@ public class DefaultSerializers {
 		public ByteBuffer read (Kryo kryo, Input input, Class<? extends ByteBuffer> type) {
 			int flags = input.readByte(), capacity = input.readVarInt(true), limit = input.readVarInt(true);
 			int position = input.readVarInt(true);
-			if (position > limit || limit > capacity || capacity > input.getMaxArraySize())
+			if (position < 0 || position > limit || limit > capacity || capacity > input.getMaxArraySize())
 				throw new KryoException(
 					"Invalid ByteBuffer, position: " + position + ", limit: " + limit + ", capacity: " + capacity);
 			ByteBuffer buffer = (flags & DIRECT) != 0 ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);

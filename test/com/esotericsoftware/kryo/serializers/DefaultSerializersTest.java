@@ -624,6 +624,15 @@ class DefaultSerializersTest extends KryoTestCase {
 		KryoException ex = assertThrows(KryoException.class,
 			() -> kryo.readObject(new Input(output.toBytes()), ByteBuffer.allocate(0).getClass()));
 		assertEquals("Invalid ByteBuffer, position: 0, limit: 3, capacity: 2", ex.getMessage());
+
+		// A negative value from a corrupt varint.
+		output.reset();
+		output.writeByte(0);
+		output.writeVarInt(2, true);
+		output.writeVarInt(1, true);
+		output.writeVarInt(-1, true);
+		ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(output.toBytes()), ByteBuffer.allocate(0).getClass()));
+		assertEquals("Invalid ByteBuffer, position: -1, limit: 1, capacity: 2", ex.getMessage());
 	}
 
 	@Test
