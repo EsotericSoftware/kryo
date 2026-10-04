@@ -104,6 +104,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.serializers.OptionalSerializers;
+import com.esotericsoftware.kryo.serializers.SetFromMapSerializer;
 import com.esotericsoftware.kryo.serializers.SynchronizedCollectionSerializers;
 import com.esotericsoftware.kryo.serializers.TimeSerializers;
 import com.esotericsoftware.kryo.serializers.UnmodifiableCollectionSerializers;
@@ -144,6 +145,7 @@ import java.util.Currency;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -315,6 +317,7 @@ public class Kryo {
 		if (!isAndroid) { // The wrapped collection can't be accessed on Android.
 			UnmodifiableCollectionSerializers.addDefaultSerializers(this);
 			SynchronizedCollectionSerializers.addDefaultSerializers(this);
+			addDefaultSerializer(Collections.newSetFromMap(new HashMap<>()).getClass(), new SetFromMapSerializer());
 		}
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
