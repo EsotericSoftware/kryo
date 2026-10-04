@@ -49,6 +49,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
       + [ClassResolver](#classresolver)
       + [Optional registration](#optional-registration)
    * [Default serializers](#default-serializers)
+      + [Built-in default serializers](#built-in-default-serializers)
       + [Serializer factories](#serializer-factories)
    * [Object creation](#object-creation)
       + [InstantiatorStrategy](#instantiatorstrategy)
@@ -552,7 +553,7 @@ kryo.register(SomeClass.class, new SomeSerializer());
 kryo.register(AnotherClass.class, new AnotherSerializer());
 ```
 
-If a serializer is not specified or when an unregistered class is encountered, a serializer is chosen automatically from a list of "default serializers" that maps a class to a serializer. Having many default serializers doesn't affect serialization performance, so by default Kryo has [50+ default serializers](https://github.com/EsotericSoftware/kryo/blob/master/src/com/esotericsoftware/kryo/Kryo.java) for various JRE classes. Additional default serializers can be added:
+If a serializer is not specified or when an unregistered class is encountered, a serializer is chosen automatically from a list of "default serializers" that maps a class to a serializer. Default serializers don't reserve registration IDs and are only looked up when a class is registered or first encountered, so having many of them doesn't affect serialization performance. Kryo has [built-in default serializers](#built-in-default-serializers) for more than 100 JDK classes. Additional default serializers can be added:
 
 ```java
 Kryo kryo = new Kryo();
@@ -569,8 +570,6 @@ This will cause a SomeSerializer instance to be created when SomeClass or any cl
 Default serializers are sorted so more specific classes are matched first, but otherwise the most recently added default serializer is matched first. Default serializers added with `addDefaultSerializer` always take precedence over Kryo's built-in default serializers. The order they are added can be relevant for interfaces.
 
 If no default serializers match a class, then the global default serializer is used. The global default serializer is set to [FieldSerializer](#fieldserializer) by default, but can be changed. Usually the global serializer is one that can handle many different types.
-
-Kryo 6 adds default serializers for several JDK types. To read data written by Kryo 5, see [MIGRATION.md](MIGRATION.md#new-default-serializers).
 
 ```java
 Kryo kryo = new Kryo();
@@ -590,6 +589,47 @@ public class SomeClass {
 ```
 
 For maximum flexibility, Kryo `getDefaultSerializer` can be overridden to implement custom logic for choosing and instantiating a serializer.
+
+#### Built-in default serializers
+
+Kryo has default serializers for these JDK classes, and for their subclasses unless noted otherwise. Kryo 6 added many of them; to read data written by Kryo 5, see [MIGRATION.md](MIGRATION.md#new-default-serializers).
+
+Kind | Classes
+--- | ---
+Primitives and strings | Primitives and their wrappers, `void`, `String`, `StringBuilder`, `StringBuffer`
+Arrays | Arrays of primitives, `String[]`, `Object[]` and other object arrays
+Numbers and atomics | `BigInteger`, `BigDecimal`, `AtomicBoolean`, `AtomicInteger`, `AtomicLong`, `AtomicReference`
+Date and time | `Date`, `java.sql.Date`, `Time`, `Timestamp`, `Calendar`, `TimeZone`, and `Duration`, `Instant`, `LocalDate`, `LocalTime`, `LocalDateTime`, `ZoneOffset`, `ZoneId`, `OffsetTime`, `OffsetDateTime`, `ZonedDateTime`, `Year`, `YearMonth`, `MonthDay`, `Period`
+Other value types | `Class`, `Enum`, `Optional`, `OptionalInt`, `OptionalLong`, `OptionalDouble`, `UUID`, `URI`, `URL`, `Pattern`, `Locale`, `Currency`, `Charset`, `BitSet`
+Collections | Any `Collection` with a no-arg constructor (CollectionSerializer), `TreeSet`, `PriorityQueue`, `EnumSet`, `ConcurrentSkipListSet`, `PriorityBlockingQueue`, `ArrayBlockingQueue`, `LinkedBlockingQueue`, `LinkedBlockingDeque`, `ConcurrentHashMap.keySet`, `Arrays.asList`
+Maps | Any `Map` with a no-arg constructor (MapSerializer), `TreeMap`, `ConcurrentSkipListMap`, `EnumMap` (not subclasses)
+JDK collection factories | `Collections.emptyList`/`emptySet`/`emptyMap`, `singletonList`/`singleton`/`singletonMap`, the immutable collections of `List.of`, `Set.of` and `Map.of`, the [unmodifiable and synchronized wrappers](#unmodifiable-and-synchronized-collections) and `Collections.newSetFromMap`
+Comparators | `Collections.reverseOrder()`, `Collections.reverseOrder(Comparator)`, `String.CASE_INSENSITIVE_ORDER`
+Files and network | `File` and `InetSocketAddress` (not subclasses), `InetAddress`, `ByteBuffer`
+Kryo | Classes implementing [KryoSerializable](#kryoserializable)
+
+All other classes use the global default serializer, FieldSerializer unless it was changed, which also handles [records](#records). Lambdas use [ClosureSerializer](#closures).
+
+Some of these classes are JDK-internal, so when registration is required they can't be registered by name. Register them with an instance of the class instead:
+
+```java
+kryo.register(Arrays.asList().getClass());
+kryo.register(Collections.reverseOrder().getClass());
+kryo.register(Collections.newSetFromMap(new HashMap<>()).getClass());
+kryo.register(ByteBuffer.allocate(0).getClass()); // Also allocateDirect and asReadOnlyBuffer.
+ImmutableCollectionsSerializers.registerSerializers(kryo);
+UnmodifiableCollectionSerializers.register(kryo);
+SynchronizedCollectionSerializers.register(kryo);
+```
+
+The serializers for the unmodifiable and synchronized wrappers and for `Collections.newSetFromMap` read private JDK fields, because the JDK offers no public API to get the wrapped collection. They need `--add-opens java.base/java.util=ALL-UNNAMED` or Unsafe, and are not available on Android. All other built-in default serializers use only public API.
+
+Some JDK classes have no built-in default serializer, because they can't be serialized with public API or only partially:
+
+* Exceptions: FieldSerializer needs `--add-opens java.base/java.lang=ALL-UNNAMED`. See [JavaSerializer](#javaserializer-and-externalizableserializer) for an alternative.
+* `java.nio.file.Path`: a `Path` of the default file system can be written with `toString()` and read with `Path.of(String)` in a custom serializer.
+* Subclasses of collections and maps: CollectionSerializer and MapSerializer don't write the fields of a subclass. Use FieldSerializer or a custom serializer for them.
+* Classes that rely on Java serialization hooks, eg `readResolve` for a singleton: FieldSerializer doesn't call them. Register a custom serializer or [JavaSerializer](#javaserializer-and-externalizableserializer) for them.
 
 #### Serializer factories
 
