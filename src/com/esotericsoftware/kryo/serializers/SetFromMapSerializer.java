@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -33,7 +34,11 @@ import java.util.Set;
  * class and comparator are kept. The JDK offers no public API to get the map, so it is read from a private JDK field, like for
  * the unmodifiable and synchronized collections. The Kryo constructor adds it as a default serializer, except on Android. When
  * registration is required, register {@code Collections.newSetFromMap(new HashMap<>()).getClass()}, which is the class for all
- * maps. */
+ * maps.
+ * <p>
+ * The set can only be created after its map was read or copied. So with references, an element that refers to the set through the
+ * map is read as null there, like for the unmodifiable and synchronized collections, and gets a different set when copied. A
+ * shallow copy is not supported, because the copy needs its own map. */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class SetFromMapSerializer extends Serializer<Set> {
 	private static final WrappedCollectionGetter mapGetter = new WrappedCollectionGetter("java.util.Collections$SetFromMap", "m");
@@ -51,15 +56,13 @@ public final class SetFromMapSerializer extends Serializer<Set> {
 	}
 
 	public Set copy (Kryo kryo, Set original) {
-		// The set is created and referenced before the keys are copied, so a key that refers to the set gets the copy.
-		Map map = kryo.copyShallow((Map)mapGetter.get(original));
-		ArrayList keys = new ArrayList(map.keySet());
-		map.clear();
-		Set set = Collections.newSetFromMap(map);
-		kryo.reference(set);
-		for (Object key : keys)
-			set.add(kryo.copy(key));
-		return set;
+		Map map = (Map)mapGetter.get(original);
+		Map copy = (Map)kryo.copy(map);
+		if (copy == map) {
+			throw new KryoException(
+				"A shallow copy of a set returned by Collections.newSetFromMap is not supported, the copy needs its own map.");
+		}
+		return newSetFromMap(copy);
 	}
 
 	/** {@link Collections#newSetFromMap(Map)} requires an empty map, so the keys are added again. */

@@ -103,6 +103,45 @@ class CopyTest extends KryoTestCase {
 		assertSame(copy.get(0), copy.get(1));
 	}
 
+	@Test
+	void testNestedShallowCopy () {
+		// A serializer that makes a shallow copy of one value and a copy of another value, after referencing its copy.
+		kryo.register(Pair.class, new Serializer<Pair>() {
+			public void write (Kryo kryo, Output output, Pair object) {
+			}
+
+			public Pair read (Kryo kryo, Input input, Class<? extends Pair> type) {
+				return null;
+			}
+
+			public Pair copy (Kryo kryo, Pair original) {
+				Pair copy = new Pair();
+				copy.a = kryo.copyShallow(original.a);
+				kryo.reference(copy);
+				copy.b = kryo.copy(original.b);
+				return copy;
+			}
+		});
+
+		// The nested shallow copy doesn't end the outer shallow copy.
+		Pair pair = new Pair();
+		pair.a = new ArrayList(List.of("a"));
+		pair.b = new ArrayList(List.of("b"));
+		Pair copy = kryo.copyShallow(pair);
+		assertNotSame(pair.a, copy.a);
+		assertSame(pair.b, copy.b);
+
+		// The nested shallow copy doesn't drop the reference of the outer copy.
+		pair.b = new ArrayList(List.of(pair));
+		copy = kryo.copy(pair);
+		assertNotSame(pair.b, copy.b);
+		assertSame(copy, ((List)copy.b).get(0));
+	}
+
+	static class Pair {
+		Object a, b;
+	}
+
 	static class Box {
 		final Object value;
 

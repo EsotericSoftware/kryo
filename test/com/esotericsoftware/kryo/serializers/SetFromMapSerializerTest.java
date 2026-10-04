@@ -17,11 +17,11 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-
 package com.esotericsoftware.kryo.serializers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.util.Collections;
@@ -38,10 +38,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class SetFromMapSerializerTest extends KryoTestCase {
-	{
-		supportsCopy = true;
-	}
-
 	@BeforeEach
 	public void setUp () throws Exception {
 		super.setUp();
@@ -70,33 +66,22 @@ class SetFromMapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	void testCopyCycle () {
-		// An element that refers to the set gets the copy of the set.
-		kryo.register(Node.class);
-		Set<Node> set = Collections.newSetFromMap(new LinkedHashMap<>());
-		Node node = new Node();
-		node.set = set;
-		set.add(node);
-		Set<Node> copy = kryo.copy(set);
-		assertNotSame(set, copy);
-		Node copiedNode = copy.iterator().next();
-		assertNotSame(node, copiedNode);
-		assertSame(copy, copiedNode.set);
-	}
+	void testCopy () {
+		// A copy has its own map, also if the map is a wrapper.
+		SynchronizedCollectionSerializers.register(kryo);
+		Set<String> set = setFromMap(Collections.synchronizedMap(new HashMap<>()));
+		Set<String> copy = kryo.copy(set);
+		assertEquals(Set.of("a", "b", "c"), copy);
+		assertEquals(Set.of("a", "b", "c"), set);
+		copy.add("d");
+		assertFalse(set.contains("d"));
 
-	@Test
-	void testCopyShallow () {
-		kryo.register(Node.class);
-		Set<Node> set = Collections.newSetFromMap(new LinkedHashMap<>());
-		Node node = new Node();
-		set.add(node);
-		Set<Node> copy = kryo.copyShallow(set);
-		assertNotSame(set, copy);
-		assertSame(node, copy.iterator().next()); // The elements are not copied.
-	}
+		Set<String> sorted = kryo.copy(setFromMap(new TreeMap<>(Comparator.reverseOrder())));
+		assertEquals(List.of("c", "b", "a"), List.copyOf(sorted));
+		assertEquals(List.of("b", "a", "c"), List.copyOf(kryo.copy(setFromMap(new LinkedHashMap<>()))));
 
-	static class Node {
-		Set<Node> set;
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.copyShallow(set));
+		assertTrue(ex.getMessage().startsWith("A shallow copy"), ex.getMessage());
 	}
 
 	private Set<String> setFromMap (Map<String, Boolean> map) {
