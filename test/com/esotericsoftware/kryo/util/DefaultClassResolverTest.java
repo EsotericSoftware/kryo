@@ -114,6 +114,40 @@ class DefaultClassResolverTest {
 	}
 
 	@Test
+	void testRejectedClassName () {
+		// A class resolver can reject a class by throwing. A later reference to its name ID must not be read as a class name.
+		for (boolean deferred : new boolean[] {false, true}) {
+			Output names = new Output(64, -1), data = new Output(64, -1);
+			Output nameOutput = deferred ? names : data;
+			if (deferred)
+				names.writeVarInt(1, true);
+			else
+				data.writeVarInt(1, true); // NAME + 2
+			nameOutput.writeVarInt(0, true); // Name ID.
+			nameOutput.writeString(A.class.getName());
+			data.writeVarInt(1, true);
+			data.writeVarInt(0, true); // Reference to the name ID.
+
+			Kryo reader = new Kryo(new DefaultClassResolver() {
+				protected Class getTypeByName (String className) {
+					if (className.equals(A.class.getName())) throw new KryoException("Rejected: " + className);
+					return super.getTypeByName(className);
+				}
+			}, null);
+			reader.setRegistrationRequired(false);
+			reader.setAutoReset(false);
+			Input input = new Input(data.toBytes());
+			if (deferred)
+				reader.getClassResolver().readDeferredNames(new Input(names.toBytes())); // Doesn't throw.
+			else
+				assertThrows(KryoException.class, () -> reader.readClass(input));
+			KryoException ex = assertThrows(KryoException.class, () -> reader.readClass(input));
+			assertTrue(ex.getMessage().contains(A.class.getName()), ex.getMessage());
+			assertEquals(data.position(), input.position());
+		}
+	}
+
+	@Test
 	void testResetEndsDeferredNames () {
 		// Eg after an exception while deferring.
 		Kryo kryo = kryo();

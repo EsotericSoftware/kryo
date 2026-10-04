@@ -198,7 +198,13 @@ public class DefaultClassResolver implements ClassResolver {
 	/** Returns the class with the specified name and remembers it for the name ID.
 	 * @throws KryoException if the class is not found. The name is remembered as unknown for the name ID. */
 	private Class readName (int nameId, String className) {
-		Class type = getTypeByName(className);
+		Class type;
+		try {
+			type = getTypeByName(className);
+		} catch (RuntimeException ex) { // A subclass can reject a class.
+			unknownName(nameId, className);
+			throw ex;
+		}
 		if (type == null) {
 			// Classes with a default serializer, eg JDK-internal classes, are found without reflection.
 			type = kryo.getDefaultSerializerType(className);
@@ -210,8 +216,7 @@ public class DefaultClassResolver implements ClassResolver {
 					try {
 						type = Class.forName(className, false, Kryo.class.getClassLoader());
 					} catch (ClassNotFoundException ex2) {
-						if (unknownNameIdToName == null) unknownNameIdToName = new IntMap<>();
-						unknownNameIdToName.put(nameId, className);
+						unknownName(nameId, className);
 						throw new KryoException("Unable to find class: " + className, ex);
 					}
 				}
@@ -222,6 +227,12 @@ public class DefaultClassResolver implements ClassResolver {
 		nameIdToClass.put(nameId, type);
 		if (TRACE) trace("kryo", "Read class name: " + className);
 		return type;
+	}
+
+	/** Remembers the name of a class that is not found, so a later reference to the name ID is not read as a class name. */
+	private void unknownName (int nameId, String className) {
+		if (unknownNameIdToName == null) unknownNameIdToName = new IntMap<>();
+		unknownNameIdToName.put(nameId, className);
 	}
 
 	public int beginDeferredNames () {
@@ -256,7 +267,7 @@ public class DefaultClassResolver implements ClassResolver {
 			if (unknownNameIdToName != null && unknownNameIdToName.containsKey(nameId)) continue;
 			try {
 				readName(nameId, className);
-			} catch (KryoException ignored) { // The class is unknown, a reference to it is read as an unknown class.
+			} catch (RuntimeException ignored) { // The class is unknown, a reference to it is read as an unknown class.
 			}
 		}
 	}
