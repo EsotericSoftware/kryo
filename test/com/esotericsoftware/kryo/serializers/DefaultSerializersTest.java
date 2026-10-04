@@ -542,6 +542,16 @@ class DefaultSerializersTest extends KryoTestCase {
 			assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(type).getClass());
 	}
 
+	@Test
+	void testFileAndInetAddressKryo5 () {
+		// Kryo 5 wrote them with the default serializer, which FieldSerializer can't create without --add-opens.
+		Kryo kryo = new Kryo();
+		kryo.setDefaultSerializer(JavaSerializer.class);
+		Kryo5Compatibility.configure(kryo);
+		for (Class type : new Class[] {File.class, Inet4Address.class, Inet6Address.class, InetSocketAddress.class})
+			assertInstanceOf(JavaSerializer.class, kryo.getDefaultSerializer(type), type.getName());
+	}
+
 	private <T> T writeRead (T object) {
 		Output output = new Output(1024);
 		kryo.writeObject(output, object);

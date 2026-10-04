@@ -33,6 +33,9 @@ import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.serializers.RecordSerializer;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
 
+import java.io.File;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -85,7 +88,7 @@ public final class Kryo5Compatibility {
 			}
 		};
 		for (Class type : new Class[] {URI.class, UUID.class, Pattern.class, AtomicBoolean.class, AtomicInteger.class,
-			AtomicLong.class, AtomicReference.class})
+			AtomicLong.class, AtomicReference.class, File.class, InetAddress.class, InetSocketAddress.class})
 			kryo.addDefaultSerializer(type, defaultSerializer);
 		// Kryo 5 wrote these with CollectionSerializer, without the comparator.
 		kryo.addDefaultSerializer(ConcurrentSkipListSet.class, CollectionSerializer::new);
