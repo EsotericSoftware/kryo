@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationHandler;
 
 class UtilTest {
 
@@ -40,7 +41,10 @@ class UtilTest {
         assertTrue(Util.isAssignableTo(int.class, Comparable.class));
         assertTrue(Util.isAssignableTo(int.class, Serializable.class));
 
+        assertTrue(Util.isAssignableTo(InvocationHandler.class, Runnable.class));
+
         assertFalse(Util.isAssignableTo(String.class, Long.class));
+        assertFalse(Util.isAssignableTo(InvocationHandler.class, String.class));
         assertFalse(Util.isAssignableTo(String.class, long.class));
     }
 
