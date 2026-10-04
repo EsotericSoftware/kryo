@@ -84,8 +84,9 @@ public class StateBenchmark {
 			Object copy = kryo.readObject(new Input(first), AppState.class);
 			output.reset();
 			kryo.writeObject(output, copy);
-			// HashMap iteration order may differ after a round trip, so compare the graphs instead of the bytes.
-			if (first.length != output.position() || !deepEquals(object, copy, new java.util.IdentityHashMap<>()))
+			// HashMap iteration order may differ after a round trip, which with references also changes the reference IDs, so
+			// compare the graphs instead of the bytes.
+			if (!deepEquals(object, copy, new java.util.IdentityHashMap<>()))
 				throw new IllegalStateException("Round trip mismatch.");
 			System.out.println("\nPayload: " + first.length + " bytes, objects: " + countObjects(object));
 			input = new Input(output.getBuffer());

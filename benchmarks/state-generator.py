@@ -1,4 +1,4 @@
-"""Usage: gen.py <source dir> [class count]
+"""Usage: gen.py <source dir> [class count] [--no-strings]
 
 Generates a synthetic "complex application state" object model for benchmarking Kryo.
 
@@ -7,6 +7,8 @@ directly, through List/Map fields and through abstract base types (polymorphic f
 """
 import os, random, sys
 
+NO_STRINGS = "--no-strings" in sys.argv
+sys.argv = [a for a in sys.argv if a != "--no-strings"]
 OUT = sys.argv[1]
 PKG = "com.esotericsoftware.kryo.benchmarks.state"
 rnd = random.Random(42)
@@ -65,13 +67,14 @@ def gen_fields(c):
         elif tier > 0 and lower_bases and r < 0.28: kind = ("poly", rnd.choice(lower_bases)[0])
         else:
             kind = (rnd.choices(["int", "long", "double", "boolean", "String", "enum", "Integer", "Long", "int[]", "double[]"],
-                [22, 9, 7, 9, 22, 9, 3, 2, 2, 1])[0], None)
+                [22, 9, 7, 9, 0 if NO_STRINGS else 22, 9, 3, 2, 2, 1])[0], None)
             if kind[0] == "enum": kind = ("enum", rnd.choice(enums)[0])
         fields.append(("f%d_%s" % (i, c["name"].lower()), kind))
     c["fields"] = fields
 
 for c in classes: gen_fields(c)
 
+KEY = "Integer" if NO_STRINGS else "String"
 JTYPE = {"int": "int", "long": "long", "double": "double", "boolean": "boolean", "String": "String", "Integer": "Integer",
     "Long": "Long", "int[]": "int[]", "double[]": "double[]"}
 
@@ -79,7 +82,7 @@ def jtype(kind):
     k, t = kind
     if k == "ref" or k == "poly" or k == "enum": return t
     if k == "list": return "List<%s>" % t
-    if k == "map": return "Map<String, %s>" % t
+    if k == "map": return "Map<%s, %s>" % (KEY, t)
     return JTYPE[k]
 
 def create_expr(name):
@@ -146,7 +149,7 @@ root = HDR + "public class AppState {\n"
 root += "\t@Tag(0) private String name;\n\t@Tag(1) private long version;\n"
 for i, t in enumerate(tops):
     root += "\t@Tag(%d) private List<%s> list%d;\n" % (i + 3, t, i)
-root += "\t@Tag(2) private Map<String, %s> index;\n\n\tpublic AppState () {\n\t}\n\n" % tops[0]
+root += "\t@Tag(2) private Map<%s, %s> index;\n\n\tpublic AppState () {\n\t}\n\n" % (KEY, tops[0])
 root += "\tpublic static AppState create (long seed, int scale) {\n\t\tGen g = new Gen(seed);\n\t\tAppState s = new AppState();\n"
 root += "\t\ts.name = \"state\";\n\t\ts.version = 7;\n"
 for i, t in enumerate(tops):
@@ -193,8 +196,8 @@ final class Gen {
 		return b.toString();
 	}
 
-	String key () {
-		return WORDS[r.nextInt(WORDS.length)] + "-" + r.nextInt(100000);
+	%s key () {
+		return %s;
 	}
 
 	int[] ints () {
@@ -217,7 +220,7 @@ final class Gen {
 		return values[r.nextInt(values.length)];
 	}
 }
-''' % " ".join(WORDS)
+''' % (" ".join(WORDS), KEY, "r.nextInt(100000)" if NO_STRINGS else 'WORDS[r.nextInt(WORDS.length)] + "-" + r.nextInt(100000)')
 open(os.path.join(pkgdir, "Gen.java"), "w").write(gen)
 
 nf = [len(c["fields"]) for c in classes if not c["abstract"]]
