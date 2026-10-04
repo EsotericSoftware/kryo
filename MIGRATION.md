@@ -79,7 +79,7 @@ config.setLegacyChunks(true);
 kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
 ```
 
-A custom ClassResolver needs to implement `beginDeferredNames`, `endDeferredNames`, and `readDeferredNames`, and a custom ReferenceResolver `getObjectCount`, otherwise class names and references first written in a skipped field are lost like in Kryo 5. DefaultClassResolver and the reference resolvers of Kryo implement them.
+A custom ClassResolver needs to implement `beginDeferredNames`, `endDeferredNames`, and `readDeferredNames`, and a custom ReferenceResolver `getObjectCount`, otherwise class names first written in a skipped field are lost, and the reference IDs of the objects read after a skipped field are shifted, like in Kryo 5. The new format is used anyway. DefaultClassResolver and the reference resolvers of Kryo implement them.
 
 ### Maps
 
