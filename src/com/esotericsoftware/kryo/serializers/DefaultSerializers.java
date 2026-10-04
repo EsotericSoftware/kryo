@@ -72,6 +72,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -961,6 +962,26 @@ public class DefaultSerializers {
 
 		private LinkedBlockingQueue createQueue (Class<? extends LinkedBlockingQueue> type, int capacity) {
 			if (type == LinkedBlockingQueue.class || type == null) return new LinkedBlockingQueue(capacity);
+			return newInstance(type, new Class[] {int.class}, capacity); // Subclass.
+		}
+	}
+
+	/** Serializer for {@link LinkedBlockingDeque} and any subclass, which writes the capacity. */
+	public static class LinkedBlockingDequeSerializer extends CollectionSerializer<LinkedBlockingDeque> {
+		protected void writeHeader (Kryo kryo, Output output, LinkedBlockingDeque deque) {
+			output.writeVarInt(deque.size() + deque.remainingCapacity(), true); // Integer.MAX_VALUE if not bounded.
+		}
+
+		protected LinkedBlockingDeque create (Kryo kryo, Input input, Class<? extends LinkedBlockingDeque> type, int size) {
+			return createDeque(type, readCapacity(input, size, false));
+		}
+
+		protected LinkedBlockingDeque createCopy (Kryo kryo, LinkedBlockingDeque original) {
+			return createDeque(original.getClass(), original.size() + original.remainingCapacity());
+		}
+
+		private LinkedBlockingDeque createDeque (Class<? extends LinkedBlockingDeque> type, int capacity) {
+			if (type == LinkedBlockingDeque.class || type == null) return new LinkedBlockingDeque(capacity);
 			return newInstance(type, new Class[] {int.class}, capacity); // Subclass.
 		}
 	}
