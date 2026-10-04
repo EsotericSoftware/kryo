@@ -186,6 +186,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		if (recordConstructor == null) {
 			object = create(kryo, input, type);
 			kryo.reference(object);
+			if (finalFields != null) values = finalFields.newValues();
 		} else
 			values = newRecordValues();
 
@@ -215,7 +216,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				if (registration == null) {
 					// The value is null, overwrite the value set by the constructor. Record values are already null.
-					if (cachedField != null && object != null) setNull(cachedField, object);
+					if (cachedField != null && object != null && cachedField.index == -1) setNull(cachedField, object);
 					if (chunked) inputChunked.nextChunk();
 					continue;
 				}
@@ -245,14 +246,14 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			}
 
 			if (TRACE) log("Read", cachedField, input.position());
-			if (values == null)
+			if (values == null || cachedField.index == -1)
 				cachedField.read(fieldInput, object);
 			else
 				values[cachedField.index] = cachedField.read(fieldInput);
 			if (chunked) inputChunked.nextChunk();
 		}
 
-		if (values != null) object = createRecord(values);
+		if (values != null) object = setValues(object, values);
 
 		popTypeVariables(pop);
 		return object;

@@ -71,6 +71,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	// For records.
 	final Constructor recordConstructor;
+	/** Sets the final fields if they can't be set with reflection, null if they are set like other fields. */
+	FinalFieldSetter finalFields;
 	private final Object[] recordDefaults;
 
 	public FieldSerializer (Kryo kryo, Class type) {
@@ -163,6 +165,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		if (recordConstructor == null) {
 			object = create(kryo, input, type);
 			kryo.reference(object);
+			if (finalFields != null) values = finalFields.newValues();
 		} else
 			values = newRecordValues();
 
@@ -171,7 +174,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			if (TRACE) log("Read", fields[i], input.position());
 			try {
 				final CachedField field = fields[i];
-				if (values == null)
+				if (values == null || field.index == -1)
 					field.read(input, object);
 				else
 					values[field.index] = field.read(input);
@@ -182,9 +185,16 @@ public class FieldSerializer<T> extends Serializer<T> {
 			}
 		}
 
-		if (values != null) object = createRecord(values);
+		if (values != null) object = setValues(object, values);
 
 		popTypeVariables(pop);
+		return object;
+	}
+
+	/** Creates the record or sets the final fields, if the values of their fields were collected. */
+	T setValues (T object, Object[] values) {
+		if (recordConstructor != null) return createRecord(values);
+		finalFields.set(object, values);
 		return object;
 	}
 
@@ -307,17 +317,20 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	public T copy (Kryo kryo, T original) {
 		final CachedField[] copyFields = cachedFields.copyFields;
+		T copy = null;
+		Object[] values;
 		if (recordConstructor == null) {
-			T copy = createCopy(kryo, original);
+			copy = createCopy(kryo, original);
 			kryo.reference(copy);
-			for (int i = 0, n = copyFields.length; i < n; i++)
-				copyFields[i].copy(original, copy);
-			return copy;
-		}
-
-		Object[] values = newRecordValues();
+			values = finalFields != null ? finalFields.newValues() : null;
+		} else
+			values = newRecordValues();
 		for (int i = 0, n = copyFields.length; i < n; i++) {
 			CachedField field = copyFields[i];
+			if (values == null || field.index == -1) {
+				field.copy(original, copy);
+				continue;
+			}
 			try {
 				Object value = field.get(original);
 				// Primitive values are immutable, all other values are copied like other field values.
@@ -329,7 +342,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 				throw ex;
 			}
 		}
-		return createRecord(values);
+		return values != null ? setValues(copy, values) : copy;
 	}
 
 	/** Settings for serializing a field. */
@@ -344,8 +357,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		FieldAccess access;
 		int accessIndex = -1;
 
-		// For Records
-		int index;
+		// For records, and final fields set by FinalFieldSetter. -1 if the field is set directly.
+		int index = -1;
 
 		// For UnsafeField.
 		long offset;
