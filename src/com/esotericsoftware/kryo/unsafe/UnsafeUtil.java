@@ -99,6 +99,10 @@ public class UnsafeUtil {
 		return unsafe.getObject(object, offset);
 	}
 
+	public static boolean getBoolean (Object object, long offset) {
+		return unsafe.getBoolean(object, offset);
+	}
+
 	// Use a static inner class to defer initialization of direct buffer methods until first use
 	private static final class DirectBuffers {
 		// Constructor to be used for creation of ByteBuffers that use pre-allocated memory regions.

@@ -30,9 +30,9 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.util.function.Function;
 
-/** Gets the collection or map that is wrapped by an unmodifiable or synchronized wrapper of {@link java.util.Collections}. The
- * wrapped object is in a private field of java.util, which is read with a method handle if java.util is open to Kryo, or else
- * with Unsafe, if available. The field is resolved on first use. */
+/** Gets the collection or map that is wrapped by an unmodifiable or synchronized wrapper of {@link java.util.Collections}, or
+ * another private field of java.util, eg the access order of a LinkedHashMap. The field is read with a method handle if java.util
+ * is open to Kryo, or else with Unsafe, if available. A primitive value is boxed. The field is resolved on first use. */
 final class WrappedCollectionGetter {
 	private final String className, fieldName;
 	// Not volatile: the instances are shared, but a getter only has final fields, so another thread sees it fully initialized or
@@ -73,6 +73,7 @@ final class WrappedCollectionGetter {
 		}
 		if (unsafe) {
 			long offset = UnsafeUtil.objectFieldOffset(field);
+			if (field.getType() == boolean.class) return object -> UnsafeUtil.getBoolean(object, offset);
 			return wrapper -> UnsafeUtil.getObject(wrapper, offset);
 		}
 		if (isAndroid) {
