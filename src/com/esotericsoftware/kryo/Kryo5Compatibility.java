@@ -67,6 +67,9 @@ public final class Kryo5Compatibility {
 
 	@SuppressWarnings("deprecation")
 	public static void configure (Kryo kryo) {
+		// Kryo 5 wrote the class of enums with constant bodies.
+		kryo.setEnumsFinal(false);
+
 		// Kryo 5 serialized records with RecordSerializer. Android has records only since API level 34.
 		if (!isAndroid || isClassAvailable("java.lang.Record")) {
 			kryo.addDefaultSerializer(Record.class, new BaseSerializerFactory() {

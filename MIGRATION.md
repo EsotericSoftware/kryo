@@ -80,6 +80,14 @@ The serializer for immutable lists created by `List.of` and `Stream.toList` supp
 ((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(false);
 ```
 
+### Enums with constant bodies
+
+The class of an enum value is not written if the enum is known, eg from the type of a field, also if its constants have bodies like `PLUS { ... }`. Kryo 5 wrote the class for these enums, because they aren't final, so adding or removing a body changed the serialized bytes ([#454](https://github.com/EsotericSoftware/kryo/issues/454)). The name of an unregistered enum constant with a body is the name of its enum, which Kryo 5 can read too. To read data written by Kryo 5, set this before registering classes, which `Kryo5Compatibility` does. The setting is deprecated, because it is only needed for that:
+
+```java
+kryo.setEnumsFinal(false);
+```
+
 ### Locales with a script
 
 LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language tag, so the script and extensions are kept ([#1053](https://github.com/EsotericSoftware/kryo/issues/1053)). Kryo 5 lost them. Other locales are written as before, so Kryo 6 reads all locales written by Kryo 5.
@@ -107,6 +115,7 @@ LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language ta
 * RecordSerializer. Records are serialized by FieldSerializer and its subclasses. RecordSerializer is only needed to read records written by Kryo 5, see [Records](#records).
 * `FieldAccessType.ASM`, which uses ReflectASM like Kryo 5 did for public fields of public classes when Unsafe was not used. ReflectASM is only used if `ASM` is configured, Kryo 6 uses VarHandles instead, which are as fast. `ASM` and the ReflectASM dependency will be removed in Kryo 7. If VarHandles are slower for you than ReflectASM, please open an issue.
 * BlowfishSerializer. Blowfish is an outdated cipher, the key is shared by all instances, and an encrypted object can only be read as the last object of the input. Encrypt the serialized bytes instead, eg with AES-GCM. BlowfishSerializer will be removed in Kryo 7.
+* `Kryo#setEnumsFinal`, which is only needed to read data written by Kryo 5, see [Enums with constant bodies](#enums-with-constant-bodies).
 
 ## Removed APIs
 
