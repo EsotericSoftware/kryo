@@ -165,6 +165,11 @@ public class ByteBufferInput extends Input {
 		if (remaining >= required) return remaining;
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
 
+		if (byteBuffer.isReadOnly()) {
+			checkReadOnly();
+			throw new KryoBufferUnderflowException("Buffer underflow.");
+		}
+
 		int count;
 
 		// Try to fill the buffer.
@@ -178,9 +183,6 @@ public class ByteBufferInput extends Input {
 				return remaining;
 			}
 		}
-
-		// Nothing can be filled into a read-only buffer, which also can't be compacted.
-		if (byteBuffer.isReadOnly()) throw new KryoBufferUnderflowException("Buffer underflow.");
 
 		// Compact.
 		byteBuffer.compact(); // Buffer's position is at end of compacted bytes.
@@ -202,6 +204,12 @@ public class ByteBufferInput extends Input {
 		return remaining;
 	}
 
+	/** A read-only buffer can't be filled or compacted, so there are no more bytes than it contains.
+	 * @throws KryoException if bytes would be filled from an InputStream. */
+	private void checkReadOnly () {
+		if (inputStream != null) throw new KryoException("A read-only ByteBuffer can't be filled from an InputStream.");
+	}
+
 	/** Fills the buffer with at least the number of bytes specified, if possible.
 	 * @param optional Must be {@code > 0}.
 	 * @return the number of bytes remaining, but not more than optional, or -1 if {@link #fill(ByteBuffer, int, int)} is unable to
@@ -210,6 +218,10 @@ public class ByteBufferInput extends Input {
 		int remaining = limit - position;
 		if (remaining >= optional) return optional;
 		optional = Math.min(optional, capacity);
+		if (byteBuffer.isReadOnly()) {
+			checkReadOnly();
+			return remaining == 0 ? -1 : Math.min(remaining, optional);
+		}
 
 		// Try to fill the buffer.
 		int count = fill(byteBuffer, limit, capacity - limit);

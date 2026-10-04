@@ -21,7 +21,9 @@ package com.esotericsoftware.kryo.io;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -43,6 +45,15 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 			input.readInt();
 			assertThrows(KryoBufferUnderflowException.class, input::readLong); // Some bytes remaining.
 		}
+		UnsafeByteBufferInput unsafeInput = new UnsafeByteBufferInput(ByteBuffer.allocateDirect(8).asReadOnlyBuffer());
+		unsafeInput.readInt();
+		assertThrows(KryoBufferUnderflowException.class, unsafeInput::readLong);
+
+		// A read-only buffer can't be filled from a stream.
+		ByteBufferInput input = new ByteBufferInput(ByteBuffer.allocate(8).asReadOnlyBuffer());
+		input.setInputStream(new ByteArrayInputStream(new byte[8]));
+		KryoException ex = assertThrows(KryoException.class, input::readInt);
+		assertTrue(ex.getMessage().contains("read-only"), ex.getMessage());
 	}
 
 	@Test
