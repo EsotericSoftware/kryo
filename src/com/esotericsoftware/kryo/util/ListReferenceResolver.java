@@ -63,11 +63,7 @@ public class ListReferenceResolver implements ReferenceResolver {
 		return seenObjects.get(id);
 	}
 
-	public int getWrittenCount () {
-		return seenObjects.size();
-	}
-
-	public int getReadCount () {
+	public int getObjectCount () {
 		return seenObjects.size();
 	}
 

@@ -22,7 +22,6 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 
-import com.esotericsoftware.kryo.ClassResolver;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.ReferenceResolver;
@@ -108,9 +107,7 @@ final class FieldFrames {
 		else
 			scope.buffer.reset();
 		scope.outermostFieldNames = false;
-		ClassResolver classResolver = kryo.getClassResolver();
-		scope.names = classResolver.getWrittenNameCount();
-		scope.deferNames = classResolver.deferNames(true);
+		scope.names = kryo.getClassResolver().beginDeferredNames();
 		return scope.buffer;
 	}
 
@@ -123,14 +120,12 @@ final class FieldFrames {
 			return;
 		}
 		writeDepth--;
-		ClassResolver classResolver = kryo.getClassResolver();
-		classResolver.deferNames(scope.deferNames);
 		Output parent = scope.parent;
 		if (TRACE) {
-			trace("kryo", "Write scope: " + (classResolver.getWrittenNameCount() - scope.names) + " class names, "
-				+ scope.fieldNameTypes.size() + " field names, " + scope.buffer.position() + " bytes" + pos(parent.position()));
+			trace("kryo", "Write scope: " + scope.fieldNameTypes.size() + " field names, " + scope.buffer.position() + " bytes"
+				+ pos(parent.position()));
 		}
-		classResolver.writeNames(parent, scope.names);
+		kryo.getClassResolver().endDeferredNames(parent, scope.names);
 		ArrayList<Class> types = scope.fieldNameTypes;
 		ArrayList<String[]> fieldNames = scope.fieldNames;
 		parent.writeVarInt(types.size() << 1 | (scope.outermostFieldNames ? 1 : 0), true);
@@ -196,7 +191,7 @@ final class FieldFrames {
 			return start;
 		}
 		output.writeShort(0);
-		return (long)kryo.getReferenceResolver().getWrittenCount() << 32 | start;
+		return (long)kryo.getReferenceResolver().getObjectCount() << 32 | start;
 	}
 
 	/** Ends a field: writes its length and the number of objects before the field data, moving the data if it needs more space.
@@ -210,7 +205,7 @@ final class FieldFrames {
 		boolean references = kryo.getReferences();
 		int reserved = references ? 2 : 1;
 		int end = output.position(), length = end - start - reserved;
-		int objects = references ? kryo.getReferenceResolver().getWrittenCount() - (int)(mark >>> 32) : 0;
+		int objects = references ? kryo.getReferenceResolver().getObjectCount() - (int)(mark >>> 32) : 0;
 		int header = Output.varIntLength(length, true) + (references ? Output.varIntLength(objects, true) : 0);
 		if (header > reserved) {
 			for (int i = reserved; i < header; i++)
@@ -250,7 +245,7 @@ final class FieldFrames {
 		scope.outermostFieldNames = null;
 
 		if (TRACE) trace("kryo", "Read scope" + pos(input.position()));
-		kryo.getClassResolver().readNames(input);
+		kryo.getClassResolver().readDeferredNames(input);
 		int fieldNames = input.readVarInt(true);
 		for (int i = 0, n = fieldNames >>> 1; i < n; i++) {
 			Registration registration = readClass(input);
@@ -308,7 +303,7 @@ final class FieldFrames {
 	long beginField (Input input, boolean legacyChunks) {
 		if (legacyChunks) return -1;
 		int length = input.readVarInt(true);
-		fieldObjects = kryo.getReferences() ? kryo.getReferenceResolver().getReadCount() + input.readVarInt(true) : 0;
+		fieldObjects = kryo.getReferences() ? kryo.getReferenceResolver().getObjectCount() + input.readVarInt(true) : 0;
 		if (TRACE) trace("kryo", "Read field: " + length + " bytes" + pos(input.position()));
 		return input.total() + length;
 	}
@@ -336,7 +331,7 @@ final class FieldFrames {
 		}
 		if (objects > 0) {
 			ReferenceResolver referenceResolver = kryo.getReferenceResolver();
-			int read = referenceResolver.getReadCount();
+			int read = referenceResolver.getObjectCount();
 			if (TRACE && read < objects) trace("kryo", "Skip field references: " + (objects - read));
 			for (int i = read; i < objects; i++)
 				referenceResolver.nextReadId(Object.class);
@@ -348,9 +343,9 @@ final class FieldFrames {
 		Output buffer, parent;
 		/** The number of nested objects being written to the buffer. */
 		int nested;
-		/** The number of class names written before the scope. */
+		/** The mark of {@link com.esotericsoftware.kryo.ClassResolver#beginDeferredNames()}. */
 		int names;
-		boolean deferNames, outermostFieldNames;
+		boolean outermostFieldNames;
 		final ArrayList<Class> fieldNameTypes = new ArrayList();
 		final ArrayList<String[]> fieldNames = new ArrayList();
 	}

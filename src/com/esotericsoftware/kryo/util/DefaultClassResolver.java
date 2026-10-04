@@ -45,7 +45,8 @@ public class DefaultClassResolver implements ClassResolver {
 	protected int nextNameId;
 	/** Names of classes that were not found, by name ID, so a later reference to the name ID can't be read as a class name. */
 	protected IntMap<String> unknownNameIdToName;
-	protected boolean deferNames;
+	/** The nesting depth of {@link #beginDeferredNames()}. */
+	protected int deferredNames;
 
 	private int memoizedClassId = -1;
 	private Registration memoizedClassIdValue;
@@ -140,7 +141,7 @@ public class DefaultClassResolver implements ClassResolver {
 		if (classToNameId == null) classToNameId = new IdentityObjectIntMap<>();
 		classToNameId.put(type, nameId);
 		output.writeVarInt(nameId, true);
-		if (deferNames) return; // The class name is written by writeNames.
+		if (deferredNames > 0) return; // The class name is written by endDeferredNames.
 		if (registration.isTypeNameAscii())
 			output.writeAscii(type.getName());
 		else
@@ -215,22 +216,18 @@ public class DefaultClassResolver implements ClassResolver {
 		return type;
 	}
 
-	public boolean deferNames (boolean defer) {
-		boolean previous = deferNames;
-		deferNames = defer;
-		return previous;
-	}
-
-	public int getWrittenNameCount () {
+	public int beginDeferredNames () {
+		deferredNames++;
 		return nextNameId;
 	}
 
-	public void writeNames (Output output, int start) {
-		int count = nextNameId - start;
+	public void endDeferredNames (Output output, int mark) {
+		deferredNames--;
+		int count = nextNameId - mark;
 		output.writeVarInt(count, true);
 		if (count == 0) return;
 		for (ObjectIntMap.Entry<Class> entry : classToNameId.entries()) {
-			if (entry.value < start) continue;
+			if (entry.value < mark) continue;
 			output.writeVarInt(entry.value, true);
 			Registration registration = getRegistration(entry.key);
 			if (registration != null && registration.isTypeNameAscii())
@@ -240,7 +237,7 @@ public class DefaultClassResolver implements ClassResolver {
 		}
 	}
 
-	public void readNames (Input input) {
+	public void readDeferredNames (Input input) {
 		if (nameIdToClass == null) nameIdToClass = new IntMap<>();
 		for (int i = 0, n = input.readVarInt(true); i < n; i++) {
 			int nameId = input.readVarInt(true);
@@ -264,6 +261,6 @@ public class DefaultClassResolver implements ClassResolver {
 		if (nameIdToClass != null) nameIdToClass.clear();
 		if (unknownNameIdToName != null) unknownNameIdToName.clear();
 		nextNameId = 0;
-		deferNames = false;
+		deferredNames = 0;
 	}
 }
