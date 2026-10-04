@@ -59,8 +59,13 @@ class EnumsFinalTest {
 				assertArrayEquals(new BodyOp[] {BodyOp.MINUS}, read.array);
 				PlainHolder readPlain = kryo(true, PlainOp.class, PlainHolder.class).readObject(new Input(body), PlainHolder.class);
 				assertSame(PlainOp.MINUS, readPlain.op);
-			} else
+			} else {
 				assertTrue(body.length > plain.length); // The class of each value is written, like in Kryo 5.
+				BodyHolder read = kryo(false, BodyOp.class, BodyHolder.class).readObject(new Input(body), BodyHolder.class);
+				assertSame(BodyOp.MINUS, read.op);
+				assertEquals(List.of(BodyOp.PLUS, BodyOp.MINUS), read.list);
+				assertArrayEquals(new BodyOp[] {BodyOp.MINUS}, read.array);
+			}
 		}
 	}
 
