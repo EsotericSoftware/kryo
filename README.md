@@ -1353,6 +1353,12 @@ kryo.register(SomeClass.class, new JavaSerializer());
 kryo.register(SomeClass.class, new ExternalizableSerializer());
 ```
 
+Exceptions can't be serialized with FieldSerializer on Java 17+ without `--add-opens java.base/java.lang=ALL-UNNAMED`, and even with it the stack trace is lost if it wasn't accessed before. JavaSerializer serializes them completely, including the message, cause, stack trace and the fields of subclasses. Java deserialization can run code of any serializable class in the data, so only use it for trusted data.
+
+```java
+kryo.addDefaultSerializer(Throwable.class, JavaSerializer.class);
+```
+
 ## Logging
 
 Kryo makes use of the low overhead, lightweight [MinLog logging library](https://github.com/EsotericSoftware/minlog). The logging level can be set by one of the following methods:
