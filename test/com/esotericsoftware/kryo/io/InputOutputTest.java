@@ -36,6 +36,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Random;
 
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,23 @@ import org.junit.jupiter.api.Test;
 /** @author Nathan Sweet */
 @SuppressWarnings("all")
 class InputOutputTest extends KryoTestCase {
+	@Test
+	void testZeroCapacity () {
+		// Copying more bytes than a buffer with capacity 0 holds must throw instead of looping forever.
+		assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+			assertThrows(KryoException.class, () -> new Input(new byte[0]).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new Input(new byte[0]).skip(5));
+			assertThrows(KryoException.class, () -> new Input(new ByteArrayInputStream(new byte[10]), 0).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new ByteBufferInput(new byte[0]).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new ByteBufferInput(new byte[0]).skip(5));
+			assertThrows(KryoException.class, () -> new ByteBufferOutput(0).writeBytes(new byte[5]));
+
+			ByteBufferOutput output = new ByteBufferOutput(0, -1);
+			output.writeBytes(new byte[] {1, 2, 3});
+			assertArrayEquals(new byte[] {1, 2, 3}, output.toBytes());
+		});
+	}
+
 	@Test
 	void testByteBufferInputEnd () {
 		Input in = new Input(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
