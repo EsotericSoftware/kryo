@@ -170,7 +170,8 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 			}
 		}
 
-		for (Iterator iter = map.entrySet().iterator(); iter.hasNext();) {
+		int count = 0;
+		for (Iterator iter = map.entrySet().iterator(); iter.hasNext(); count++) {
 			Entry entry = (Entry)iter.next();
 			if (genericTypes != null) kryo.getGenerics().pushGenericType(genericTypes[0]);
 			if (keySerializer != null) {
@@ -190,6 +191,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 				kryo.writeClassAndObject(output, entry.getValue());
 		}
 		kryo.getGenerics().popGenericType();
+		if (count != size) throw CollectionSerializer.sizeChanged(map, size, count);
 	}
 
 	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class, int)}. The default implementation does

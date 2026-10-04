@@ -89,6 +89,7 @@ LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language ta
 * DefaultInstantiatorStrategy and BeanSerializer use method handles instead of ReflectASM. If a constructor throws an exception, that exception is the cause of the KryoException, like with ReflectASM in Kryo 5.
 * Serializing or copying a closure throws an exception if `ClosureSerializer.Closure` is not registered, also if `registrationRequired` is false ([#1137](https://github.com/EsotericSoftware/kryo/issues/1137)). Kryo 5 registered the closure's class implicitly and wrote it with the default serializer, which can't be read because the class of a closure can't be found by its name.
 * VersionFieldSerializer throws an exception when reading an object written by a newer version of its class ([#846](https://github.com/EsotericSoftware/kryo/issues/846)). Kryo 5 read it without an exception, but the fields added in the newer version were read into other fields or left unread, so the values and the following data were wrong.
+* CollectionSerializer and MapSerializer throw an exception if the number of elements written doesn't match the size written before them, eg because the collection was modified concurrently ([#1181](https://github.com/EsotericSoftware/kryo/issues/1181)). Kryo 5 wrote data that couldn't be read correctly, which often failed later with an unrelated error, such as an unregistered class ID or a buffer underflow.
 
 ## Deprecated APIs
 
