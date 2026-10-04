@@ -38,7 +38,9 @@ class EnumsFinalTest {
 	void testIsFinal () {
 		Kryo kryo = new Kryo();
 		assertTrue(kryo.isFinal(BodyOp.class));
+		assertTrue(kryo.isFinal(BodyOp.MINUS.getClass())); // The class of the body.
 		assertTrue(kryo.isFinal(BodyOp[].class));
+		assertFalse(kryo.isFinal(Enum.class));
 		kryo.setEnumsFinal(false);
 		assertFalse(kryo.isFinal(BodyOp.class));
 		assertTrue(kryo.isFinal(PlainOp.class));
