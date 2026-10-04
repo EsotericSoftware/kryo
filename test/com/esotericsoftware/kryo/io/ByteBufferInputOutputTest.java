@@ -33,6 +33,19 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("all")
 class ByteBufferInputOutputTest extends KryoTestCase {
 	@Test
+	void testReadOnlyBufferUnderflow () {
+		// Reading past the end of a read-only buffer throws buffer underflow, not ReadOnlyBufferException from compacting it.
+		for (ByteBuffer buffer : new ByteBuffer[] {ByteBuffer.allocate(8), ByteBuffer.allocateDirect(8)}) {
+			ByteBufferInput input = new ByteBufferInput(buffer.asReadOnlyBuffer());
+			input.readLong();
+			assertThrows(KryoBufferUnderflowException.class, input::readInt);
+			input = new ByteBufferInput(buffer.asReadOnlyBuffer());
+			input.readInt();
+			assertThrows(KryoBufferUnderflowException.class, input::readLong); // Some bytes remaining.
+		}
+	}
+
+	@Test
 	void testByteBufferInputEnd () {
 		ByteBufferInput in = new ByteBufferInput(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
 		assertFalse(in.end());
