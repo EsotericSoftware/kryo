@@ -21,7 +21,17 @@ package com.esotericsoftware.kryo;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +53,62 @@ class CopyTest extends KryoTestCase {
 		ArrayList copy = kryo.copy(test);
 		assertNotSame(test, copy);
 		assertEquals(test, copy);
+	}
+
+	@Test
+	void testMapReferences () {
+		// A map that contains itself, and a map that is referenced twice, are copied once.
+		for (Map map : new Map[] {new HashMap(), new TreeMap(), new LinkedHashMap(), new ConcurrentHashMap()}) {
+			map.put("self", map);
+			Map copy = kryo.copy(map);
+			assertNotSame(map, copy);
+			assertSame(copy, copy.get("self"));
+		}
+		HashMap shared = new HashMap();
+		shared.put("a", "b");
+		ArrayList copy = kryo.copy(new ArrayList(List.of(shared, shared)));
+		assertNotSame(shared, copy.get(0));
+		assertSame(copy.get(0), copy.get(1));
+	}
+
+	@Test
+	void testImmutableCollectionReferences () {
+		// An immutable collection that is referenced twice is copied once, as an immutable collection.
+		for (Object shared : new Object[] {List.of("a", "b"), Map.of("a", "b"), Set.of("a", "b")}) {
+			ArrayList copy = kryo.copy(new ArrayList(List.of(shared, shared)));
+			assertEquals(shared, copy.get(0));
+			assertSame(copy.get(0), copy.get(1));
+			assertSame(shared.getClass(), copy.get(1).getClass());
+		}
+	}
+
+	@Test
+	void testSerializerWithoutReference () {
+		// A serializer that copies nested objects first and doesn't call Kryo#reference still copies a shared object once.
+		kryo.register(Box.class, new Serializer<Box>() {
+			public void write (Kryo kryo, Output output, Box object) {
+			}
+
+			public Box read (Kryo kryo, Input input, Class<? extends Box> type) {
+				return null;
+			}
+
+			public Box copy (Kryo kryo, Box original) {
+				return new Box(kryo.copy(original.value));
+			}
+		});
+		Box box = new Box(new ArrayList(List.of("a")));
+		ArrayList copy = kryo.copy(new ArrayList(List.of(box, box)));
+		assertNotSame(box, copy.get(0));
+		assertSame(copy.get(0), copy.get(1));
+	}
+
+	static class Box {
+		final Object value;
+
+		Box (Object value) {
+			this.value = value;
+		}
 	}
 
 	@Test
