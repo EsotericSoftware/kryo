@@ -28,12 +28,14 @@ import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFact
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 
 import java.io.ByteArrayInputStream;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -784,6 +786,34 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		read = kryo.readObject(new Input(output.toBytes()), Names.class);
 		assertEquals(4, read.a);
 		assertEquals(6, read.c);
+	}
+
+	@Test
+	void testFieldNamesAfterUpdateFields () {
+		// updateFields can replace the fields with as many other fields, which reuses the array of cached fields.
+		kryo.getContext().put("first", true);
+		CompatibleFieldSerializer<Swapped> serializer = new CompatibleFieldSerializer<>(kryo, Swapped.class);
+		kryo.register(Swapped.class, serializer);
+		Output output = new Output(256);
+		kryo.writeObject(output, new Swapped());
+		assertTrue(new String(output.toBytes(), StandardCharsets.ISO_8859_1).contains("firs"));
+
+		kryo.getContext().remove("first");
+		kryo.getContext().put("second", true);
+		serializer.updateFields();
+		output.reset();
+		kryo.writeObject(output, new Swapped());
+		String bytes = new String(output.toBytes(), StandardCharsets.ISO_8859_1);
+		assertTrue(bytes.contains("secon"), bytes);
+		assertFalse(bytes.contains("firs"), bytes);
+		Swapped read = kryo.readObject(new Input(output.toBytes()), Swapped.class);
+		assertEquals(5, read.first); // Not in the data.
+		assertEquals(6, read.second);
+	}
+
+	public static class Swapped {
+		@Optional("first") public int first = 5;
+		@Optional("second") public int second = 6;
 	}
 
 	public static class Names {

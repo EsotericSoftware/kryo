@@ -71,6 +71,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		// Fields are sorted by name, so fields with the same name are adjacent. The exception is thrown when writing or reading,
 		// so the config can still be changed and updateFields called after the serializer is constructed.
 		duplicateFieldName = null;
+		fieldNamesFields = null; // The fields may have changed, also if the array was reused.
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 1, n = fields.length; i < n; i++) {
 			CachedField field = fields[i], previous = fields[i - 1];
@@ -249,8 +250,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		return object;
 	}
 
-	/** Returns the field names as they are written: the number of fields, then the names. Cached until the fields change. All
-	 * outputs of Kryo write varints and strings the same way, so the bytes can be written to any output. */
+	/** Returns the field names as they are written: the number of fields, then the names. Cached until the fields change, see
+	 * {@link #initializeCachedFields()} and removeField, which creates a new array. All outputs of Kryo write varints and strings
+	 * the same way, so the bytes can be written to any output. */
 	private byte[] fieldNames (CachedField[] fields) {
 		if (fieldNamesFields != fields) {
 			Output output = new Output(64, -1);
