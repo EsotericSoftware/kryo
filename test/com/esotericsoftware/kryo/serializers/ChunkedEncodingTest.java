@@ -25,6 +25,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Kryo5Compatibility;
+import com.esotericsoftware.kryo.SerializerFactory.BaseSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -117,6 +118,41 @@ class ChunkedEncodingTest {
 		assertEquals(10, read.c.a);
 		assertNull(read.d);
 		assertSame(read.c, read.e);
+	}
+
+	@Test
+	void testNestedStreamClassName () {
+		// The class name first written in the field names of a nested scope is deferred to the outer scope, which writes it before
+		// the nested scope.
+		for (boolean references : new boolean[] {false, true}) {
+			NestedOuter outer = new NestedOuter();
+			outer.inner = new NestedInner();
+			outer.inner.a = 42;
+			outer.after = "after";
+			byte[] bytes = write(nestedStreamKryo(references), outer);
+			String text = new String(bytes, StandardCharsets.ISO_8859_1);
+			assertTrue(text.contains("NestedInne"), "Class name not in the outer definitions."); // The last char has the high bit.
+			NestedOuter read = nestedStreamKryo(references).readObject(new Input(bytes), NestedOuter.class);
+			assertEquals(42, read.inner.a);
+			assertEquals("after", read.after);
+		}
+	}
+
+	/** Unregistered classes, NestedInner is written with DeflateSerializer and without its class. */
+	private Kryo nestedStreamKryo (boolean references) {
+		Kryo kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		kryo.setReferences(references);
+		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setReadUnknownFieldData(false);
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		kryo.addDefaultSerializer(NestedInner.class, new BaseSerializerFactory() {
+			public Serializer newSerializer (Kryo kryo, Class type) {
+				return new DeflateSerializer(new CompatibleFieldSerializer(kryo, type, config));
+			}
+		});
+		return kryo;
 	}
 
 	@Test
@@ -616,6 +652,15 @@ class ChunkedEncodingTest {
 	}
 
 	public static final class Inner2 {
+		public int a;
+	}
+
+	public static class NestedOuter {
+		public NestedInner inner;
+		public String after;
+	}
+
+	public static final class NestedInner {
 		public int a;
 	}
 
