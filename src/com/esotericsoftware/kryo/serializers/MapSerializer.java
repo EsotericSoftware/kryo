@@ -306,6 +306,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 
 	public T copy (Kryo kryo, T original) {
 		T copy = createCopy(kryo, original);
+		kryo.reference(copy);
 		for (Iterator iter = original.entrySet().iterator(); iter.hasNext();) {
 			Entry entry = (Entry)iter.next();
 			copy.put(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));
