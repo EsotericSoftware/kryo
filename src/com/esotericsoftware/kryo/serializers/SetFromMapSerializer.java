@@ -38,7 +38,8 @@ import java.util.Set;
  * <p>
  * The set can only be created after its map was read or copied. So with references, an element that refers to the set through the
  * map is read as null there, like for the unmodifiable and synchronized collections, and gets a different set when copied. A
- * shallow copy is not supported, because the copy needs its own map. */
+ * shallow copy is not supported, because the copy needs its own map. A set backed by an immutable map, eg
+ * {@code Collections.newSetFromMap(Map.of())}, which can't hold elements, can be written but not read or copied. */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class SetFromMapSerializer extends Serializer<Set> {
 	private static final WrappedCollectionGetter mapGetter = new WrappedCollectionGetter("java.util.Collections$SetFromMap", "m");
