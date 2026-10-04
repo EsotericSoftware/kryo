@@ -45,6 +45,21 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("all")
 class InputOutputTest extends KryoTestCase {
 	@Test
+	void testStateAfterUnderflow () {
+		// After buffer underflow, the input is at the end and reading again throws instead of reading old bytes.
+		Input[] inputs = {new Input(new byte[8]), new Input(new ByteArrayInputStream(new byte[8]), 4),
+			new ByteBufferInput(ByteBuffer.allocate(8)), new ByteBufferInput(new ByteArrayInputStream(new byte[8]), 4)};
+		for (Input input : inputs) {
+			input.readInt();
+			input.readInt();
+			assertThrows(KryoBufferUnderflowException.class, input::readInt);
+			assertEquals(8, input.total(), input.getClass().getSimpleName());
+			assertTrue(input.end(), input.getClass().getSimpleName());
+			assertThrows(KryoBufferUnderflowException.class, input::readInt);
+		}
+	}
+
+	@Test
 	void testZeroCapacity () {
 		// Copying more bytes than a buffer with capacity 0 holds must throw instead of looping forever.
 		assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {

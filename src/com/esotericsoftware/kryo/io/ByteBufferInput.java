@@ -189,6 +189,9 @@ public class ByteBufferInput extends Input {
 			count = fill(byteBuffer, remaining, capacity - remaining);
 			if (count == -1) {
 				if (remaining >= required) break;
+				// The compacted bytes, so the input is consistent after the exception.
+				limit = remaining;
+				setBufferPosition(byteBuffer, 0);
 				throw new KryoBufferUnderflowException("Buffer underflow.");
 			}
 			remaining += count;

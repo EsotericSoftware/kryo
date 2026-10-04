@@ -237,6 +237,7 @@ public class Input extends InputStream implements Poolable {
 			count = fill(buffer, remaining, capacity - remaining);
 			if (count == -1) {
 				if (remaining >= required) break;
+				limit = remaining; // The compacted bytes, so the input is consistent after the exception.
 				throw new KryoBufferUnderflowException("Buffer underflow.");
 			}
 			remaining += count;
