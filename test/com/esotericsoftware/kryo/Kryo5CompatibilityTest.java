@@ -41,6 +41,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -85,6 +86,22 @@ class Kryo5CompatibilityTest {
 		assertEquals("ref", actual.atomicReference.get());
 
 		assertThrows(Throwable.class, () -> read(newKryo(false), NewDefaults.class, "standard").timestamp.getTime());
+	}
+
+	@Test
+	void testEnumsWithConstantBodies () throws IOException {
+		// Kryo 5 wrote the class of each value, because enums with constant bodies weren't final.
+		BodyEnums actual = read(newKryo(true), BodyEnums.class, "standard");
+		assertSame(BodyOp.MINUS, actual.op);
+		assertEquals(List.of(BodyOp.PLUS, BodyOp.MINUS), actual.list);
+		assertArrayEquals(new BodyOp[] {BodyOp.MINUS, BodyOp.PLUS}, actual.array);
+		assertSame(BodyOp.PLUS, actual.object);
+
+		assertNotReadable(() -> {
+			BodyEnums read = read(newKryo(false), BodyEnums.class, "standard");
+			return read.op == BodyOp.MINUS && read.list.equals(List.of(BodyOp.PLUS, BodyOp.MINUS))
+				&& Arrays.equals(read.array, new BodyOp[] {BodyOp.MINUS, BodyOp.PLUS}) && read.object == BodyOp.PLUS;
+		});
 	}
 
 	// A record with a generic component and a generic field, written with CompatibleFieldSerializer set as a class.
@@ -227,6 +244,27 @@ class Kryo5CompatibilityTest {
 	/** Written by Kryo 5 with TaggedFieldSerializer and readUnknownTagData to TaggedGenerics-standard.ser. */
 	public static class TaggedGenerics {
 		@Tag(1) public List<String> list;
+	}
+
+	public enum BodyOp {
+		PLUS {
+			public String toString () {
+				return "+";
+			}
+		},
+		MINUS {
+			public String toString () {
+				return "-";
+			}
+		}
+	}
+
+	/** Enums with constant bodies, written by Kryo 5.7.0 to BodyEnums-standard.ser. */
+	static class BodyEnums {
+		public BodyOp op;
+		public List<BodyOp> list;
+		public BodyOp[] array;
+		public Object object;
 	}
 
 	/** Types that have new default serializers in Kryo 6, written by Kryo 5 to NewDefaults-standard.ser. */
