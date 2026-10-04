@@ -38,7 +38,8 @@ import java.lang.reflect.Field;
  * supported.
  * <p>
  * When a field is added, it must have the {@link Since} annotation to indicate the version it was added in order to be compatible
- * with previously serialized bytes. The annotation value must never change.
+ * with previously serialized bytes. The annotation value must never change. Bytes serialized by a newer version, which can have
+ * fields that are unknown, can't be read.
  * <p>
  * Compared to {@link FieldSerializer}, VersionFieldSerializer writes a single additional varint and requires annotations for
  * added fields, but provides backward compatibility so fields can be added. {@link TaggedFieldSerializer} provides more
@@ -64,6 +65,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 	protected void initializeCachedFields () {
 		CachedField[] fields = cachedFields.fields;
 		fieldVersion = new int[fields.length];
+		typeVersion = 0; // Fields may have been removed.
 		for (int i = 0, n = fields.length; i < n; i++) {
 			Field field = fields[i].field;
 			Since since = field.getAnnotation(Since.class);
@@ -114,6 +116,11 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		version--;
 		if (!config.compatible && version != typeVersion)
 			throw new KryoException("Version is not compatible: " + version + " != " + typeVersion);
+		// The fields added in the newer version are unknown, so they can't be skipped.
+		if (version > typeVersion) {
+			throw new KryoException("Data was written by a newer version: " + version + " > " + typeVersion + " ("
+				+ getType().getName() + "). VersionFieldSerializer can only read data written by the same or an older version.");
+		}
 
 		int pop = pushTypeVariables();
 
@@ -166,7 +173,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		/** When false, an exception is thrown when reading an object with a different version. The version of an object is the
-		 * maximum version of any field. Default is true. */
+		 * maximum version of any field. Objects with a newer version can't be read in any case. Default is true. */
 		public void setCompatible (boolean compatible) {
 			this.compatible = compatible;
 			if (TRACE) trace("kryo", "VersionFieldSerializerConfig setCompatible: " + compatible);
