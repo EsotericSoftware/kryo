@@ -46,6 +46,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -591,6 +592,70 @@ class DefaultSerializersTest extends KryoTestCase {
 		Input unbounded = new Input(output.toBytes());
 		unbounded.setMaxArraySize(4);
 		assertEquals(Integer.MAX_VALUE - 1, kryo.readObject(unbounded, LinkedBlockingQueue.class).remainingCapacity());
+	}
+
+	@Test
+	void testEnumMap () {
+		kryo.register(EnumMap.class);
+		for (Class<? extends Enum> type : List.of(TestEnum.class, BodyEnum.class, EmptyEnum.class)) {
+			kryo.register(type);
+			EnumMap map = new EnumMap(type);
+			for (int i = 0; i < 2; i++) {
+				for (EnumMap result : List.of(writeReadClass(map), kryo.copy(map))) {
+					assertEquals(map, result);
+					assertSame(EnumMap.class, result.getClass());
+					// The key type is kept, also for an empty map.
+					Enum[] constants = type.getEnumConstants();
+					if (constants.length > 0) {
+						result.put(constants[0], "x");
+						assertThrows(ClassCastException.class, () -> result.put(Thread.State.NEW, "x"));
+					}
+				}
+				for (Enum constant : type.getEnumConstants())
+					map.put(constant, constant.name());
+			}
+		}
+	}
+
+	@Test
+	void testEnumMapKeyType () {
+		kryo.register(EnumMap.class);
+		kryo.register(TestEnum.class);
+		kryo.register(String.class);
+		// A key type that isn't an enum, eg in corrupt data.
+		Output output = new Output(64);
+		output.writeByte(1); // Empty map.
+		kryo.writeClass(output, String.class);
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(output.toBytes()), EnumMap.class));
+		assertEquals("Invalid EnumMap key type: java.lang.String", ex.getMessage());
+
+		// A registered EnumMapSerializer for an enum type doesn't write the key type, like in Kryo 5.
+		Kryo kryo5 = new Kryo();
+		kryo5.register(EnumMap.class, new EnumMapSerializer(TestEnum.class));
+		kryo5.register(TestEnum.class);
+		EnumMap<TestEnum, String> map = new EnumMap<>(TestEnum.class);
+		map.put(TestEnum.b, "b");
+		Output withType = new Output(64), withoutType = new Output(64);
+		kryo.writeObject(withType, map);
+		kryo5.writeObject(withoutType, map);
+		assertTrue(withoutType.position() < withType.position());
+		assertEquals(map, kryo5.readObject(new Input(withoutType.toBytes()), EnumMap.class));
+	}
+
+	private <T> T writeReadClass (T object) {
+		Output output = new Output(256);
+		kryo.writeClassAndObject(output, object);
+		return (T)kryo.readClassAndObject(new Input(output.toBytes()));
+	}
+
+	enum BodyEnum {
+		A {
+		},
+		B {
+		}
+	}
+
+	enum EmptyEnum {
 	}
 
 	static class ArrayBlockingQueueSubclass extends ArrayBlockingQueue<Integer> {

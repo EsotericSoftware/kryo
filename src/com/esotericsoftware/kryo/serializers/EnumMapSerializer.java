@@ -20,23 +20,77 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.EnumMap;
 
-/** @author Nathan Sweet */
+/** Serializer for {@link EnumMap}. The default serializer writes the enum type of the keys. With
+ * {@link #EnumMapSerializer(Class)}, the enum type is known and not written.
+ * @author Nathan Sweet */
 public class EnumMapSerializer extends MapSerializer<EnumMap> {
 	private final Class<? extends Enum> enumType;
 
+	/** Writes the enum type of the keys. */
+	public EnumMapSerializer () {
+		enumType = null;
+	}
+
+	/** @param enumType The enum type of the keys, which is not written. */
 	public EnumMapSerializer (Class<? extends Enum> enumType) {
 		this.enumType = enumType;
 	}
 
+	protected void writeHeader (Kryo kryo, Output output, EnumMap map) {
+		if (enumType == null) kryo.writeClass(output, keyType(map));
+	}
+
 	protected EnumMap create (Kryo kryo, Input input, Class<? extends EnumMap> type, int size) {
-		return new EnumMap(enumType);
+		if (enumType != null) return new EnumMap(enumType);
+		Registration registration = kryo.readClass(input);
+		if (registration == null || !registration.getType().isEnum())
+			throw new KryoException("Invalid EnumMap key type: " + (registration == null ? null : registration.getType().getName()));
+		return new EnumMap(registration.getType());
 	}
 
 	protected EnumMap createCopy (Kryo kryo, EnumMap original) {
 		return new EnumMap(original);
+	}
+
+	/** Returns the enum type of the keys. It is not public API, but part of the serialized form of {@link EnumMap}, so for an
+	 * empty map it is taken from Java serialization. */
+	static Class keyType (EnumMap map) {
+		if (!map.isEmpty()) return ((Enum)map.keySet().iterator().next()).getDeclaringClass();
+		try (KeyTypeOutput output = new KeyTypeOutput()) {
+			output.writeObject(map);
+			if (output.keyType == null) throw new KryoException("EnumMap key type not found.");
+			return output.keyType;
+		} catch (IOException ex) {
+			throw new KryoException("Unable to find the EnumMap key type.", ex);
+		}
+	}
+
+	/** Discards the data and remembers the first enum class written, which is the key type of an empty {@link EnumMap}. */
+	static class KeyTypeOutput extends ObjectOutputStream {
+		Class keyType;
+
+		KeyTypeOutput () throws IOException {
+			super(new OutputStream() { // OutputStream.nullOutputStream needs Android API level 33.
+				public void write (int b) {
+				}
+
+				public void write (byte[] bytes, int offset, int length) {
+				}
+			});
+		}
+
+		protected void annotateClass (Class type) {
+			if (keyType == null && type.isEnum()) keyType = type;
+		}
 	}
 }

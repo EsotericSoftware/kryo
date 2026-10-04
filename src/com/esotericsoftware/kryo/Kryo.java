@@ -98,6 +98,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.URISerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.URLSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.UUIDSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.VoidSerializer;
+import com.esotericsoftware.kryo.serializers.EnumMapSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
@@ -139,6 +140,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Currency;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
@@ -277,6 +279,7 @@ public class Kryo {
 		addDefaultSerializer(Collection.class, CollectionSerializer::new);
 		addDefaultSerializer(ConcurrentSkipListMap.class, ConcurrentSkipListMapSerializer::new);
 		addDefaultSerializer(TreeMap.class, TreeMapSerializer::new);
+		addDefaultSerializer(EnumMap.class, exactType(EnumMap.class, new EnumMapSerializer()));
 		addDefaultSerializer(Map.class, MapSerializer::new);
 		addDefaultSerializer(TimeZone.class, TimeZoneSerializer::new);
 		addDefaultSerializer(Calendar.class, CalendarSerializer::new);
@@ -469,6 +472,7 @@ public class Kryo {
 	 * </tr>
 	 * <tr>
 	 * <td>LinkedBlockingDeque</td>
+	 * <td>EnumMap</td>
 	 * </tr>
 	 * </table>
 	 * </p>
