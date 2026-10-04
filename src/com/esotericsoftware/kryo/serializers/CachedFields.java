@@ -398,7 +398,7 @@ class CachedFields implements Comparator<CachedField> {
 			if (valueClass != null) cachedField.setValueClass(valueClass);
 
 			Serializer serializer = newSerializer(field, valueClass, annotation.serializer(), annotation.serializerFactory(), false,
-				"@Bind serializerFactory requires valueClass");
+				"@Bind serializer and serializerFactory require valueClass");
 			if (serializer != null) cachedField.setSerializer(serializer);
 
 			cachedField.setCanBeNull(annotation.canBeNull() && !field.isAnnotationPresent(NotNull.class));
@@ -462,7 +462,7 @@ class CachedFields implements Comparator<CachedField> {
 	}
 
 	/** @param warnIfClassMissing If true, a warning is logged when a serializer or factory is set without the value class.
-	 *           Otherwise the value class is only reported as missing if a custom factory fails to create the serializer.
+	 *           Otherwise the value class is only reported as missing if creating the serializer fails.
 	 * @param missingClassMessage The message used when the value class is missing. */
 	private Serializer newSerializer (Field field, Class valueClass, Class serializerClass, Class factoryClass,
 		boolean warnIfClassMissing, String missingClassMessage) {
@@ -471,14 +471,13 @@ class CachedFields implements Comparator<CachedField> {
 		if (factoryClass == null && serializerClass == null) return null;
 		String fieldName = field.getDeclaringClass().getName() + "." + field.getName();
 		if (warnIfClassMissing && valueClass == null && WARN) warn("kryo", missingClassMessage + ": " + fieldName);
-		boolean customFactory = factoryClass != null;
 		if (factoryClass == null) factoryClass = ReflectionSerializerFactory.class;
 		SerializerFactory factory = newFactory(factoryClass, serializerClass);
 		try {
 			return factory.newSerializer(serializer.kryo, valueClass);
 		} catch (RuntimeException ex) {
-			// Most factories need the class, give a hint if it was not set
-			if (!customFactory || valueClass != null) throw ex;
+			// Most serializers and factories need the class, give a hint if it was not set.
+			if (valueClass != null) throw ex;
 			throw new KryoException(missingClassMessage + ": " + fieldName, ex);
 		}
 	}

@@ -798,7 +798,15 @@ class FieldSerializerTest extends KryoTestCase {
 	@Test
 	void testBindSerializerFactoryWithoutClass () {
 		KryoException ex = assertThrows(KryoException.class, () -> kryo.register(BindSerializerFactoryWithoutClassFields.class));
-		assertTrue(ex.getMessage().contains("@Bind serializerFactory requires valueClass"), ex.getMessage());
+		assertTrue(ex.getMessage().contains("@Bind serializer and serializerFactory require valueClass"), ex.getMessage());
+	}
+
+	@Test
+	void testBindSerializerWithoutClass () {
+		// The serializer is created for the value class, so the message tells that it is missing and names the field.
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.register(BindSerializerWithoutClassFields.class));
+		assertTrue(ex.getMessage().contains("@Bind serializer and serializerFactory require valueClass"), ex.getMessage());
+		assertTrue(ex.getMessage().contains("BindSerializerWithoutClassFields.value"), ex.getMessage());
 	}
 
 	@Test
@@ -1386,6 +1394,10 @@ class FieldSerializerTest extends KryoTestCase {
 			BindSerializerFactoryFields other = (BindSerializerFactoryFields)o;
 			return Objects.equals(value, other.value) && Objects.equals(list, other.list) && Objects.equals(map, other.map);
 		}
+	}
+
+	public static class BindSerializerWithoutClassFields {
+		@Bind(serializer = FieldSerializer.class) TaggedValue value;
 	}
 
 	public static class BindSerializerFactoryWithoutClassFields {
