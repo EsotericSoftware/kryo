@@ -47,6 +47,8 @@ import java.util.ArrayList;
  * references varint number of objects, then the field data. */
 final class DefaultChunkedEncoding implements ChunkedEncoding {
 	private static final Object contextKey = new Object();
+	/** The graph context keys for writing and reading, separate so reading doesn't hide stale write scopes and vice versa. */
+	private static final Object writeGraphKey = new Object(), readGraphKey = new Object();
 	/** Larger buffers are not kept for the next scope. */
 	private static final int maxBufferSize = 1024 * 1024;
 
@@ -74,10 +76,11 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 	}
 
 	/** Returns true if the scopes are from a previous object graph, eg left over after an exception. The graph context is cleared
-	 * when the object graph is reset. */
-	private boolean newGraph () {
-		boolean newGraph = !kryo.getGraphContext().containsKey(contextKey);
-		if (newGraph) kryo.getGraphContext().put(contextKey, Boolean.TRUE);
+	 * when the object graph is reset.
+	 * @param key The graph context key for writing or reading. */
+	private boolean newGraph (Object key) {
+		boolean newGraph = !kryo.getGraphContext().containsKey(key);
+		if (newGraph) kryo.getGraphContext().put(key, Boolean.TRUE);
 		return newGraph;
 	}
 
@@ -90,7 +93,7 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 				return output;
 			}
 		}
-		if (newGraph()) writeDepth = 0;
+		if (newGraph(writeGraphKey)) writeDepth = 0;
 		if (writeDepth == writeScopes.size()) writeScopes.add(new WriteScope());
 		WriteScope scope = writeScopes.get(writeDepth++);
 		scope.parent = output;
@@ -222,7 +225,7 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 				return input;
 			}
 		}
-		if (newGraph()) {
+		if (newGraph(readGraphKey)) {
 			readDepth = 0;
 			fieldNameTypes.clear();
 			fieldNames.clear();

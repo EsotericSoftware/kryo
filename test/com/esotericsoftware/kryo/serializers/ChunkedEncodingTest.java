@@ -35,6 +35,7 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSe
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -279,6 +280,34 @@ class ChunkedEncodingTest {
 		Entity read = compatibleKryo(false, false, false).readObject(new Input(bytes), Entity.class);
 		assertEquals(5, read.b.x.a);
 		assertEquals(10, read.c.a);
+	}
+
+	@Test
+	void testExceptionThenRead () throws Exception {
+		// Reading in the same object graph must not keep the scope left over by an exception while writing.
+		Kryo kryo = compatibleKryo(false, false, false);
+		kryo.setAutoReset(false);
+		kryo.register(Failing.class, new Serializer<Failing>() {
+			public void write (Kryo kryo, Output output, Failing object) {
+				throw new KryoException("failed");
+			}
+
+			public Failing read (Kryo kryo, Input input, Class<? extends Failing> type) {
+				return null;
+			}
+		});
+		FailingEntity failing = new FailingEntity();
+		failing.c = new Entity3(1);
+		failing.failing = new Failing();
+		assertThrows(KryoException.class, () -> write(kryo, failing));
+		kryo.reset();
+
+		kryo.readObject(new Input(write(compatibleKryo(false, false, false), entity(false))), Entity.class);
+		byte[] bytes = write(kryo, entity(false));
+		Field writeDepth = DefaultChunkedEncoding.class.getDeclaredField("writeDepth");
+		writeDepth.setAccessible(true);
+		assertEquals(0, writeDepth.getInt(DefaultChunkedEncoding.get(kryo)));
+		assertEquals(10, compatibleKryo(false, false, false).readObject(new Input(bytes), Entity.class).c.a);
 	}
 
 	@Test
