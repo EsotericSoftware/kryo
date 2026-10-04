@@ -196,7 +196,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			int objects = 0;
 			if (chunked) {
 				end = frames.beginField(fieldInput, legacyChunks);
-				objects = frames.fieldObjects();
+				objects = frames.fieldObjects(); // Directly after beginField, nested fields overwrite it.
 			}
 
 			if (readUnknownTagData) {

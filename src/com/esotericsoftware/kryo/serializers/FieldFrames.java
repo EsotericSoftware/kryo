@@ -65,7 +65,7 @@ final class FieldFrames {
 	private final ArrayList<Class> fieldNameTypes = new ArrayList();
 	private final ArrayList<String[]> fieldNames = new ArrayList();
 
-	/** The number of objects read after the field started by {@link #beginField(Input, boolean)}. */
+	/** The number of objects read after the field started by {@link #beginField(Input, boolean)}. Nested fields overwrite it. */
 	private int fieldObjects;
 
 	private FieldFrames (Kryo kryo) {
@@ -303,7 +303,8 @@ final class FieldFrames {
 	}
 
 	/** Starts a field, reading its length and the number of objects in it. Returns the {@link Input#total()} where the field ends,
-	 * or -1 for the format of Kryo 5, for {@link #endField(Input, long, int)}. */
+	 * or -1 for the format of Kryo 5, for {@link #endField(Input, long, int)}. {@link #fieldObjects()} must be called directly
+	 * afterward, before reading the field data, which can start nested fields. */
 	long beginField (Input input, boolean legacyChunks) {
 		if (legacyChunks) return -1;
 		int length = input.readVarInt(true);
@@ -313,7 +314,9 @@ final class FieldFrames {
 	}
 
 	/** Returns the number of objects read after the field started by the last {@link #beginField(Input, boolean)}, for
-	 * {@link #endField(Input, long, int)}. */
+	 * {@link #endField(Input, long, int)}. Must be called directly after beginField, because nested fields overwrite it. It is
+	 * needed to reserve the IDs of objects that were not read, eg if reading an unknown field fails after reading nested
+	 * objects. */
 	int fieldObjects () {
 		return fieldObjects;
 	}
