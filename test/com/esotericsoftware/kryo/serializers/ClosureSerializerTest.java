@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.serializers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -41,6 +42,20 @@ class ClosureSerializerTest extends KryoTestCase {
 		kryo.register(Class.class);
 		kryo.register(getClass()); // The closure's capturing class must be registered.
 		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
+	}
+
+	@Test
+	void testClosureNotRegistered () {
+		// The class of a closure can't be found by its name, so it is not registered implicitly (#1137).
+		for (boolean registrationRequired : new boolean[] {true, false}) {
+			Kryo kryo = new Kryo();
+			kryo.setRegistrationRequired(registrationRequired);
+			Callable<Integer> closure = (Callable<Integer> & java.io.Serializable)( () -> 72363);
+			IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+				() -> kryo.writeClassAndObject(new Output(1024), closure));
+			assertTrue(ex.getMessage().contains("new ClosureSerializer()"), ex.getMessage());
+			assertThrows(IllegalArgumentException.class, () -> kryo.copy(closure));
+		}
 	}
 
 	@Test
