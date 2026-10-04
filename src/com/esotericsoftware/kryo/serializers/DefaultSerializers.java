@@ -43,6 +43,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -983,6 +985,44 @@ public class DefaultSerializers {
 		private LinkedBlockingDeque createDeque (Class<? extends LinkedBlockingDeque> type, int capacity) {
 			if (type == LinkedBlockingDeque.class || type == null) return new LinkedBlockingDeque(capacity);
 			return newInstance(type, new Class[] {int.class}, capacity); // Subclass.
+		}
+	}
+
+	/** Serializer for {@link ByteBuffer}, which writes the bytes up to the limit, the position, limit and capacity, the byte order
+	 * and whether it is direct or read-only. The mark can't be read with public API and is not written. A buffer that shares its
+	 * content, eg a slice, is read with its own content. */
+	public static class ByteBufferSerializer extends Serializer<ByteBuffer> {
+		private static final int DIRECT = 1, READ_ONLY = 2, LITTLE_ENDIAN = 4;
+
+		public void write (Kryo kryo, Output output, ByteBuffer buffer) {
+			output.writeByte((buffer.isDirect() ? DIRECT : 0) | (buffer.isReadOnly() ? READ_ONLY : 0)
+				| (buffer.order() == ByteOrder.LITTLE_ENDIAN ? LITTLE_ENDIAN : 0));
+			output.writeVarInt(buffer.capacity(), true);
+			output.writeVarInt(buffer.limit(), true);
+			output.writeVarInt(buffer.position(), true);
+			byte[] bytes = new byte[buffer.limit()];
+			buffer.duplicate().position(0).get(bytes);
+			output.writeBytes(bytes);
+		}
+
+		public ByteBuffer read (Kryo kryo, Input input, Class<? extends ByteBuffer> type) {
+			int flags = input.readByte(), capacity = input.readVarInt(true), limit = input.readVarInt(true);
+			int position = input.readVarInt(true);
+			if (position < 0 || position > limit || limit > capacity || capacity > input.getMaxArraySize())
+				throw new KryoException(
+					"Invalid ByteBuffer, position: " + position + ", limit: " + limit + ", capacity: " + capacity);
+			ByteBuffer buffer = (flags & DIRECT) != 0 ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
+			buffer.put(input.readBytes(limit)).limit(limit).position(position);
+			if ((flags & READ_ONLY) != 0) buffer = buffer.asReadOnlyBuffer();
+			return buffer.order((flags & LITTLE_ENDIAN) != 0 ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
+		}
+
+		public ByteBuffer copy (Kryo kryo, ByteBuffer original) {
+			ByteBuffer copy = original.isDirect() ? ByteBuffer.allocateDirect(original.capacity())
+				: ByteBuffer.allocate(original.capacity());
+			copy.put(original.duplicate().clear()).limit(original.limit()).position(original.position());
+			if (original.isReadOnly()) copy = copy.asReadOnlyBuffer();
+			return copy.order(original.order());
 		}
 	}
 
