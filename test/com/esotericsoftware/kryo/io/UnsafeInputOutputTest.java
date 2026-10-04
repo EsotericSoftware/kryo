@@ -23,13 +23,16 @@ import static com.esotericsoftware.kryo.KryoAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Unsafe;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
 import com.esotericsoftware.kryo.unsafe.UnsafeInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.time.Duration;
 import java.util.Random;
 
 import org.junit.jupiter.api.Test;
@@ -37,6 +40,24 @@ import org.junit.jupiter.api.Test;
 /** @author Nathan Sweet <misc@n4te.com> */
 @Unsafe
 class UnsafeInputOutputTest {
+	@Test
+	void testZeroCapacity () {
+		// Copying more bytes than a buffer with capacity 0 holds must throw instead of looping forever.
+		assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+			assertThrows(KryoException.class, () -> new UnsafeInput(new byte[0]).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new UnsafeInput(new ByteArrayInputStream(new byte[80]), 0).readLongs(5));
+			assertThrows(KryoException.class, () -> new UnsafeByteBufferInput(new byte[0]).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new UnsafeOutput(0, 0).writeLongs(new long[5], 0, 5));
+
+			UnsafeOutput output = new UnsafeOutput(0, -1);
+			output.writeBytes(new byte[] {1, 2, 3});
+			assertArrayEquals(new byte[] {1, 2, 3}, output.toBytes());
+			UnsafeByteBufferOutput bufferOutput = new UnsafeByteBufferOutput(0, -1);
+			bufferOutput.writeBytes(new byte[] {1, 2, 3});
+			assertArrayEquals(new byte[] {1, 2, 3}, bufferOutput.toBytes());
+		});
+	}
+
 	@Test
 	void testArrayLengthValidation () {
 		int hugeLength = 2000000000;

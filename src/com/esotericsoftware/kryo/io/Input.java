@@ -189,7 +189,7 @@ public class Input extends InputStream implements Poolable {
 			position += skipCount;
 			count -= skipCount;
 			if (count == 0) break;
-			skipCount = Math.min(count, capacity);
+			skipCount = Math.min(count, Math.max(capacity, 1));
 			require(skipCount);
 		}
 	}
@@ -387,7 +387,7 @@ public class Input extends InputStream implements Poolable {
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = Math.min(count, capacity);
+			copyCount = Math.min(count, Math.max(capacity, 1));
 			require(copyCount);
 		}
 	}
