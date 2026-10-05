@@ -83,7 +83,7 @@ A custom ClassResolver needs to implement `beginDeferredNames`, `endDeferredName
 
 ### Maps
 
-If the class of the keys or values of a map is unknown, MapSerializer writes it only once if all keys or values are not null and have the same class. Kryo 5 wrote the class of each key and value. To read data written by Kryo 5, disable this for the MapSerializer instances, eg for all maps that use the default MapSerializer:
+If the class of the keys or values of a map is unknown, MapSerializer writes it only once if all keys or values are not null and have the same class. Kryo 5 wrote the class of each key and value. If the map contains no null key or value, which is written with the size of the map, keys and values are written without a null marker. Kryo 5 wrote a null marker for each key or value whose serializer doesn't accept null, eg for the values of a `Map<String, Integer>` field, and for each with references. To read data written by Kryo 5, disable this for the MapSerializer instances, eg for all maps that use the default MapSerializer:
 
 ```java
 MapSerializer mapSerializer = new MapSerializer();
