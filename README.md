@@ -1534,12 +1534,13 @@ Pool `getPeak` returns the all-time highest number of free objects. This can hel
 
 ## Benchmarks
 
-Kryo provides a number of [JMH](https://openjdk.org/projects/code-tools/jmh/)-based [benchmarks and R/ggplot2 files](https://github.com/EsotericSoftware/kryo/tree/master/benchmarks).
+Kryo provides a number of [JMH](https://openjdk.org/projects/code-tools/jmh/)-based [benchmarks](https://github.com/EsotericSoftware/kryo/tree/master/benchmarks). The charts are [generated](https://github.com/EsotericSoftware/kryo/tree/master/benchmarks#charts) from the benchmark results.
 
-![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/fieldSerializer.png)
-![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/string.png)
-![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/variableEncoding.png)
-![](https://raw.github.com/wiki/EsotericSoftware/kryo/images/benchmarks/array.png)
+![FieldSerializerBenchmark](benchmarks/charts/fieldSerializer.svg)
+![ObjectGraphBenchmark](benchmarks/charts/objectGraph.svg)
+![StringBenchmark](benchmarks/charts/string.svg)
+![VariableEncodingBenchmark](benchmarks/charts/variableEncoding.svg)
+![ArrayBenchmark](benchmarks/charts/array.svg)
 
 Kryo can be compared to many other serialization libraries in the [JVM Serializers](https://github.com/eishay/jvm-serializers/wiki) project. The benchmarks are small, dated, and homegrown rather than using JMH, so are less trustworthy. Also, it is very difficult to thoroughly compare serialization libraries using a benchmark. Libraries have many different features and often have different goals, so they may excel at solving completely different problems. To understand these benchmarks, the code being run and data being serialized should be analyzed and contrasted with your specific needs. Some serializers are highly optimized and use pages of code, others use only a few lines. This is good to show what is possible, but may not be a relevant comparison for many situations.
 
