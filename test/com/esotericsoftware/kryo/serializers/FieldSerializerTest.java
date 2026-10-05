@@ -1673,8 +1673,8 @@ class FieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testDefaultFieldAccess () {
-		// The system property if the tests run with -Dkryo.fieldAccess, else Unsafe where it can be used without a warning. The
-		// tests don't set --sun-misc-unsafe-memory-access.
+		// The default is the system property if the tests run with -Dkryo.fieldAccess, else it is Unsafe where it can be used
+		// without a warning. The tests don't set --sun-misc-unsafe-memory-access.
 		String configured = System.getProperty("kryo.fieldAccess");
 		FieldAccessType expected = configured != null ? FieldAccessType.valueOf(configured)
 			: Runtime.version().feature() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
