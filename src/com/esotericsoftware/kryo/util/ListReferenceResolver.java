@@ -63,12 +63,17 @@ public class ListReferenceResolver implements ReferenceResolver {
 		return seenObjects.get(id);
 	}
 
+	public int getObjectCount () {
+		return seenObjects.size();
+	}
+
 	public void reset () {
 		seenObjects.clear();
 	}
 
-	/** Returns false for all primitive wrappers and enums. */
+	/** Returns false for all primitive wrappers, enums and strings. Strings are rarely shared, so tracking them costs more than it
+	 * saves. */
 	public boolean useReferences (Class type) {
-		return !Util.isWrapperClass(type) && !Util.isEnum(type);
+		return !Util.isWrapperClass(type) && !Util.isEnum(type) && type != String.class;
 	}
 }

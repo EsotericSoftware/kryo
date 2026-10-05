@@ -279,6 +279,8 @@ input.setMaxArraySize(1024 * 1024); // reject any declared array/string/collecti
 
 The default is `Integer.MAX_VALUE`, ie no limit, so by default behavior is unchanged and Kryo's trusted-source assumption is preserved: a valid payload never declares more elements than the input can supply, so the limit never fires on valid input. A declared size above the limit throws a `KryoException` before allocating. Callers that decode untrusted input, especially from a stream, should set a limit suited to their application.
 
+With [chunked encoding](#compatiblefieldserializer-settings) and references, the number of objects in each field is read from the data and reserved if the field is skipped. It is limited by `setMaxArraySize` for any Input, because it can't be checked against the bytes remaining: a field can contain compressed data with more objects than bytes.
+
 ### ByteBuffers
 
 The ByteBufferOutput and ByteBufferInput classes work exactly like Output and Input, except they use a ByteBuffer rather than a byte array.
@@ -460,13 +462,15 @@ Under the covers, a ReferenceResolver handles tracking objects that have been re
 2. HashMapReferenceResolver uses an IdentityHashMap to track written objects. This kind of map allocates for put, so it is generally slightly slower than MapReferenceResolver.
 3. ListReferenceResolver uses an ArrayList to track written objects. For object graphs with relatively few objects, this can be faster than using a map (~15% faster in some tests). This should not be used for graphs with many objects because it has a linear look up to find objects that have already been written.
 
-ReferenceResolver `useReferences(Class)` can be overridden. It returns a boolean to decide if references are supported for a class. If a class doesn't support references, the varint reference ID is not written before objects of that type. If a class does not need references and objects of that type appear in the object graph many times, the serialized size can be greatly reduced by disabling references for that class. The default reference resolver returns false for all primitive wrappers and enums. It is common to also return false for String and other classes, depending on the object graphs being serialized.
+ReferenceResolver `useReferences(Class)` can be overridden. It returns a boolean to decide if references are supported for a class. If a class doesn't support references, the varint reference ID is not written before objects of that type. If a class does not need references and objects of that type appear in the object graph many times, the serialized size can be greatly reduced by disabling references for that class. Kryo's reference resolvers return false for all primitive wrappers, enums, and strings: strings are rarely shared, so tracking them costs more than it saves. It is common to also return false for other classes, depending on the object graphs being serialized:
 
 ```java
 public boolean useReferences (Class type) {
-   return !Util.isWrapperClass(type) && !Util.isEnum(type) && type != String.class;
+   return !Util.isWrapperClass(type) && !Util.isEnum(type) && type != String.class && type != MyValue.class;
 }
 ```
+
+Without `type != String.class`, strings use references, like in Kryo 5.
 
 #### Reference limits
 
@@ -1273,9 +1277,10 @@ TaggedFieldSerializer (with `readUnknownTagData` and `chunkedEncoding` false) is
 
 Setting | Description | Default value
 --- | --- | ---
-`readUnknownTagData` | When false and an unknown tag is encountered, an exception is thrown or, if `chunkedEncoding` is true, the data is skipped.<br><br>When true, the class for each field value is written before the value. When an unknown tag is encountered, an attempt to read the data is made. This is used to skip the data and, if references are enabled, any other values in the object graph referencing that data can still be deserialized. If reading the data fails (eg the class is unknown or has been removed) then an exception is thrown or, if `chunkedEncoding` is true, the data is skipped.<br><br>In either case, if the data is skipped and references are enabled, then any references in the skipped data are not read and further deserialization may receive the wrong references and fail. Similarly, if registration is not required, class names first written in the skipped data are not read, and later values of those classes may fail to deserialize or be skipped. To avoid this, register the classes, or make new classes available to all parties before using them in serialized data. | false
-`chunkedEncoding` | When true, fields are written with chunked encoding to allow unknown field data to be skipped. This impacts performance. | false
-`chunkSize` | The maximum size of each chunk for chunked encoding. | 1024
+`readUnknownTagData` | When false and an unknown tag is encountered, an exception is thrown or, if `chunkedEncoding` is true, the data is skipped.<br><br>When true, the class for each field value is written before the value. When an unknown tag is encountered, an attempt to read the data is made. This is used to skip the data and, if references are enabled, any other values in the object graph referencing that data can still be deserialized. If reading the data fails (eg the class is unknown or has been removed) then an exception is thrown or, if `chunkedEncoding` is true, the data is skipped.<br><br>With chunked encoding, references to objects in skipped data are read as null. With `legacyChunks`, or a custom ReferenceResolver without `getObjectCount`, references in skipped data are not read and further deserialization may receive the wrong references and fail. | false
+`chunkedEncoding` | When true, fields are written with chunked encoding to allow unknown field data to be skipped, eg when the class of a removed field no longer exists. Each field is written with its length. Class names and field names first written in an object, and the number of objects in each field, are written so that skipping a field doesn't affect the rest of the data. A CompatibleFieldSerializer without chunked encoding or with `legacyChunks` writes its field names inside the data, so they are lost if a field that contains its first object is skipped. The outermost object with chunked encoding is buffered until it is written completely, it is not streamed. This impacts performance. | false
+`legacyChunks` | Deprecated, only needed to read data written by Kryo 5. When true, chunked encoding uses the format of Kryo 5, which splits each field into chunks. Skipping a chunk can make reading the rest of the data fail if it contains the first class name, field names, or reference of something used later. Must be true to read data written by Kryo 5 with chunked encoding, see [MIGRATION.md](MIGRATION.md). | false
+`chunkSize` | Deprecated. The maximum size of each chunk with `legacyChunks`. | 1024
 
 TaggedFieldSerializer also inherits all the settings of FieldSerializer.
 
@@ -1289,9 +1294,10 @@ The forward and backward compatibility and serialization [performance](https://r
 
 Setting | Description | Default value
 --- | --- | ---
-`readUnknownFieldData` | When false and an unknown field is encountered, an exception is thrown or, if `chunkedEncoding` is true, the data is skipped.<br><br>When true, the class for each field value is written before the value. When an unknown field is encountered, an attempt to read the data is made. This is used to skip the data and, if references are enabled, any other values in the object graph referencing that data can still be deserialized. If reading the data fails (eg the class is unknown or has been removed) then an exception is thrown or, if `chunkedEncoding` is true, the data is skipped.<br><br>In either case, if the data is skipped and references are enabled, then any references in the skipped data are not read and further deserialization may receive the wrong references and fail. Similarly, if registration is not required, class names first written in the skipped data are not read, and later values of those classes may fail to deserialize or be skipped. To avoid this, register the classes, or make new classes available to all parties before using them in serialized data. | true
-`chunkedEncoding` | When true, fields are written with chunked encoding to allow unknown field data to be skipped. This impacts performance. | false
-`chunkSize` | The maximum size of each chunk for chunked encoding. | 1024
+`readUnknownFieldData` | When false and an unknown field is encountered, an exception is thrown or, if `chunkedEncoding` is true, the data is skipped.<br><br>When true, the class for each field value is written before the value. When an unknown field is encountered, an attempt to read the data is made. This is used to skip the data and, if references are enabled, any other values in the object graph referencing that data can still be deserialized. If reading the data fails (eg the class is unknown or has been removed) then an exception is thrown or, if `chunkedEncoding` is true, the data is skipped.<br><br>With chunked encoding, references to objects in skipped data are read as null. With `legacyChunks`, or a custom ReferenceResolver without `getObjectCount`, references in skipped data are not read and further deserialization may receive the wrong references and fail. | true
+`chunkedEncoding` | When true, fields are written with chunked encoding to allow unknown field data to be skipped, eg when the class of a removed field no longer exists. Each field is written with its length. Class names and field names first written in an object, and the number of objects in each field, are written so that skipping a field doesn't affect the rest of the data. A CompatibleFieldSerializer without chunked encoding or with `legacyChunks` writes its field names inside the data, so they are lost if a field that contains its first object is skipped. The outermost object with chunked encoding is buffered until it is written completely, it is not streamed. This impacts performance. | false
+`legacyChunks` | Deprecated, only needed to read data written by Kryo 5. When true, chunked encoding uses the format of Kryo 5, which splits each field into chunks. Skipping a chunk can make reading the rest of the data fail if it contains the first class name, field names, or reference of something used later. Must be true to read data written by Kryo 5 with chunked encoding, see [MIGRATION.md](MIGRATION.md). | false
+`chunkSize` | Deprecated. The maximum size of each chunk with `legacyChunks`. | 1024
 
 CompatibleFieldSerializer also inherits all the settings of FieldSerializer.
 

@@ -336,7 +336,7 @@ class MapSerializerTest extends KryoTestCase {
 		TreeMap map = new TreeMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(22, map);
+		roundTrip(18, map);
 
 		kryo.register(KeyThatIsntComparable.class);
 		kryo.register(KeyComparator.class);
@@ -347,7 +347,7 @@ class MapSerializerTest extends KryoTestCase {
 		map.put(key1, "456");
 		key2.value = "1234";
 		map.put(key2, "4567");
-		roundTrip(27, map);
+		roundTrip(23, map);
 
 		kryo.register(TreeMapSubclass.class);
 		map = new TreeMapSubclass();
@@ -355,7 +355,7 @@ class MapSerializerTest extends KryoTestCase {
 		map.put("2", 34);
 		map.put("3", 65);
 		map.put("4", 44);
-		roundTrip(23, map);
+		roundTrip(19, map);
 	}
 
 	@Test

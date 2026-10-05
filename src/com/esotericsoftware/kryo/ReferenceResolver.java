@@ -49,6 +49,13 @@ public interface ReferenceResolver {
 	/** Called by {@link Kryo#reset()}. */
 	public void reset ();
 
+	/** Returns the number of objects written and read in the current object graph, or -1 if unknown. Chunked encoding writes the
+	 * number of objects in each field, so the reference IDs stay in sync when a field is skipped. If unknown, the reference IDs of
+	 * the objects read after a skipped field are shifted, like in Kryo 5. */
+	public default int getObjectCount () {
+		return -1;
+	}
+
 	/** Returns true if references will be written for the specified type.
 	 * @param type Will never be a primitive type, but may be a primitive type wrapper. */
 	public boolean useReferences (Class type);
