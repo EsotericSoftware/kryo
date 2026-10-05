@@ -108,6 +108,33 @@ class GenericsResetTest extends KryoTestCase {
 	}
 
 	/** A bare HashMap with two non-empty nested maps, mirroring the payload that triggers the AIOOBE on a poisoned instance. */
+	@Test
+	void testGenericsStackAfterDeserializationExceptionWithoutReset () {
+		// Kryo.reset() discards leaked generic types, so the stack is checked without it. The components of a record are read as
+		// values before the record is created.
+		kryo.setAutoReset(false);
+		kryo.setReferences(false);
+		kryo.setRegistrationRequired(false);
+		kryo.register(Holder.class);
+		kryo.register(RecordHolder.class);
+		kryo.register(Item.class);
+		kryo.register(Payload.class, new ThrowOnReadSerializer());
+
+		Item item = new Item();
+		item.payload = new Payload();
+		Holder holder = new Holder();
+		holder.items = new ArrayList();
+		holder.items.add(item);
+		for (Object object : new Object[] {holder, new RecordHolder(holder.items)}) {
+			Output output = new Output(512);
+			kryo.writeClassAndObject(output, object);
+			kryo.reset();
+			assertThrows(KryoException.class, () -> kryo.readClassAndObject(new Input(output.toBytes())));
+			assertEquals(0, kryo.getGenerics().getGenericTypesSize(), object.getClass().getSimpleName());
+			kryo.reset();
+		}
+	}
+
 	private byte[] writeNestedMaps () {
 		Map<String, Object> map = new HashMap();
 		Map<String, String> nested1 = new HashMap();
@@ -124,6 +151,9 @@ class GenericsResetTest extends KryoTestCase {
 
 	public static class Holder {
 		public List<Item> items;
+	}
+
+	public record RecordHolder (List<Item> items) {
 	}
 
 	public static class Item {
