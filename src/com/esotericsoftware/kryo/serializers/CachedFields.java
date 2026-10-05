@@ -49,6 +49,7 @@ import com.esotericsoftware.kryo.serializers.ReflectField.FloatReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.IntReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.LongReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.ShortReflectField;
+import com.esotericsoftware.kryo.serializers.ReflectField.StringReflectField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.BooleanUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.ByteUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.CharUnsafeField;
@@ -75,9 +76,16 @@ class CachedFields implements Comparator<CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
 
 	private final FieldSerializer serializer;
+	/** Hidden classes can't be defined on Android or in a native image, and can be disabled by setting the system property
+	 * "kryo.hiddenFields" to "false". Checked before {@link HiddenFields} is used, which can't be loaded on Android. Can be set by
+	 * tests. */
+	static boolean hiddenFields = !isAndroid && !isNativeImage && !"false".equals(System.getProperty("kryo.hiddenFields"));
+
 	CachedField[] fields = new CachedField[0];
 	CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
+	/** True while {@link FieldSerializer#initializeCachedFields()} is called. */
+	private boolean initializing;
 	private Object access;
 
 	public CachedFields (FieldSerializer serializer) {
@@ -100,7 +108,7 @@ class CachedFields implements Comparator<CachedField> {
 		if (serializer.type.isInterface()) { // No fields to serialize.
 			fields = emptyCachedFields;
 			copyFields = emptyCachedFields;
-			serializer.initializeCachedFields();
+			initialize();
 			return;
 		}
 
@@ -123,7 +131,23 @@ class CachedFields implements Comparator<CachedField> {
 		newCopyFields.toArray(copyFields);
 		Arrays.sort(copyFields, this);
 
-		serializer.initializeCachedFields();
+		initialize();
+	}
+
+	private void initialize () {
+		initializing = true;
+		try {
+			serializer.initializeCachedFields();
+		} finally {
+			initializing = false;
+		}
+		serializer.cachedFieldsChanged();
+	}
+
+	/** Called after a field was removed. A field removed by {@link FieldSerializer#initializeCachedFields()} is not remembered,
+	 * because it is removed again when the fields are rebuilt. */
+	private void removed (CachedField cachedField) {
+		if (!initializing) removedFields.add(cachedField.field);
 	}
 
 	/** @param recordComponents May be null if the type is not a record. */
@@ -240,6 +264,14 @@ class CachedFields implements Comparator<CachedField> {
 		return true;
 	}
 
+	/** Returns true if a String field is written directly as a string, which all field access types decide the same way, so they
+	 * write the same data, eg for a final field that VarHandles can't set. Not with references for strings, and not with
+	 * {@link Bind} or {@link NotNull}, which only the fields for objects apply. */
+	private boolean isStringField (Field field, Class fieldClass) {
+		return fieldClass == String.class && !field.isAnnotationPresent(Bind.class) && !field.isAnnotationPresent(NotNull.class)
+			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class));
+	}
+
 	private CachedField newUnsafeField (Field field, Class fieldClass, GenericType genericType) {
 		if (fieldClass.isPrimitive()) {
 			if (fieldClass == int.class) return new IntUnsafeField(field);
@@ -251,13 +283,19 @@ class CachedFields implements Comparator<CachedField> {
 			if (fieldClass == char.class) return new CharUnsafeField(field);
 			if (fieldClass == byte.class) return new ByteUnsafeField(field);
 		}
-		if (fieldClass == String.class
-			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-			return new StringUnsafeField(field);
+		if (isStringField(field, fieldClass)) return new StringUnsafeField(field);
 		return new UnsafeField(field, serializer, genericType);
 	}
 
 	private CachedField newVarHandleField (Field field, Class fieldClass, GenericType genericType) {
+		boolean string = isStringField(field, fieldClass);
+		if (hiddenFields) {
+			try {
+				return HiddenFields.create(field, fieldClass, string, serializer, genericType);
+			} catch (KryoException ex) {
+				if (DEBUG) debug("kryo", "Unable to access field with a hidden class, using a VarHandle: " + field, ex);
+			}
+		}
 		try {
 			if (fieldClass.isPrimitive()) {
 				if (fieldClass == int.class) return new VarHandleField.IntVarHandleField(field);
@@ -269,9 +307,7 @@ class CachedFields implements Comparator<CachedField> {
 				if (fieldClass == char.class) return new VarHandleField.CharVarHandleField(field);
 				if (fieldClass == byte.class) return new VarHandleField.ByteVarHandleField(field);
 			}
-			if (fieldClass == String.class
-				&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-				return new VarHandleField.StringVarHandleField(field);
+			if (string) return new VarHandleField.StringVarHandleField(field);
 			return new VarHandleField(field, serializer, genericType);
 		} catch (KryoException ex) {
 			// Eg a public field in a package that is exported but not open to Kryo, which can be accessed with reflection.
@@ -291,9 +327,7 @@ class CachedFields implements Comparator<CachedField> {
 			if (fieldClass == char.class) return new CharAsmField(field);
 			if (fieldClass == byte.class) return new ByteAsmField(field);
 		}
-		if (fieldClass == String.class
-			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-			return new StringAsmField(field);
+		if (isStringField(field, fieldClass)) return new StringAsmField(field);
 		return new AsmField(field, serializer, genericType);
 	}
 
@@ -308,6 +342,7 @@ class CachedFields implements Comparator<CachedField> {
 			if (fieldClass == char.class) return new CharReflectField(field);
 			if (fieldClass == byte.class) return new ByteReflectField(field);
 		}
+		if (isStringField(field, fieldClass)) return new StringReflectField(field);
 		return new ReflectField(field, serializer, genericType);
 	}
 
@@ -326,7 +361,7 @@ class CachedFields implements Comparator<CachedField> {
 				System.arraycopy(fields, 0, newFields, 0, i);
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
 				fields = newFields;
-				removedFields.add(cachedField.field);
+				removed(cachedField);
 				found = true;
 				break;
 			}
@@ -338,13 +373,14 @@ class CachedFields implements Comparator<CachedField> {
 				System.arraycopy(copyFields, 0, newFields, 0, i);
 				System.arraycopy(copyFields, i + 1, newFields, i, newFields.length - i);
 				copyFields = newFields;
-				removedFields.add(cachedField.field);
+				removed(cachedField);
 				found = true;
 				break;
 			}
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + serializer.type.getName());
+		if (!initializing) serializer.cachedFieldsChanged();
 	}
 
 	/** Removes a field so that it won't be serialized. */
@@ -357,7 +393,7 @@ class CachedFields implements Comparator<CachedField> {
 				System.arraycopy(fields, 0, newFields, 0, i);
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
 				fields = newFields;
-				removedFields.add(cachedField.field);
+				removed(cachedField);
 				found = true;
 				break;
 			}
@@ -369,13 +405,14 @@ class CachedFields implements Comparator<CachedField> {
 				System.arraycopy(copyFields, 0, newFields, 0, i);
 				System.arraycopy(copyFields, i + 1, newFields, i, newFields.length - i);
 				copyFields = newFields;
-				removedFields.add(cachedField.field);
+				removed(cachedField);
 				found = true;
 				break;
 			}
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
+		if (!initializing) serializer.cachedFieldsChanged();
 	}
 
 	/** Sets serializers using annotations.

@@ -84,6 +84,8 @@ public class FieldSerializerBenchmark {
 
 		@Setup(Level.Trial)
 		public void setup () {
+			// Before registering, because FieldSerializer decides when it is created whether String fields use references.
+			kryo.setReferences(references);
 			switch (objectType) {
 			case sample:
 				object = new Sample().populate(references);
@@ -107,8 +109,6 @@ public class FieldSerializerBenchmark {
 				kryo.register(MediaContent.class);
 				break;
 			}
-
-			kryo.setReferences(references);
 		}
 
 		public void roundTrip () {
@@ -133,10 +133,14 @@ public class FieldSerializerBenchmark {
 
 	static public class CompatibleState extends BenchmarkState {
 		@Param({"true", "false"}) public boolean chunked;
+		/** Only used if chunked. */
+		@Param({"false", "true"}) public boolean legacyChunks;
 
+		@SuppressWarnings("deprecation") // legacyChunks
 		public void setup () {
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
 			factory.getConfig().setChunkedEncoding(chunked);
+			factory.getConfig().setLegacyChunks(legacyChunks);
 			factory.getConfig().setReadUnknownFieldData(true); // Typical to always use.
 			kryo.setDefaultSerializer(factory);
 			super.setup();
@@ -145,10 +149,14 @@ public class FieldSerializerBenchmark {
 
 	static public class TaggedState extends BenchmarkState {
 		@Param({"true", "false"}) public boolean chunked;
+		/** Only used if chunked. */
+		@Param({"false", "true"}) public boolean legacyChunks;
 
+		@SuppressWarnings("deprecation") // legacyChunks
 		public void setup () {
 			TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
 			factory.getConfig().setChunkedEncoding(chunked);
+			factory.getConfig().setLegacyChunks(legacyChunks);
 			if (chunked) factory.getConfig().setReadUnknownTagData(true); // Typical to use with chunked.
 			kryo.setDefaultSerializer(factory);
 			super.setup();

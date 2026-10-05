@@ -202,7 +202,7 @@ public class Kryo {
 	private volatile Thread thread;
 	private ObjectMap context, graphContext;
 
-	private ReferenceResolver referenceResolver;
+	ReferenceResolver referenceResolver;
 	private final IntArray readReferenceIds = new IntArray(0);
 	private boolean references, copyReferences = true;
 	private Object readObject;
@@ -1306,6 +1306,9 @@ public class Kryo {
 	 * to the same object and cyclic graphs to be serialized, but typically adds overhead of one byte per object. When set to true
 	 * and no {@link #setReferenceResolver(ReferenceResolver) reference resolver} has been set, {@link MapReferenceResolver} is
 	 * used. Default is false.
+	 * <p>
+	 * String fields of {@link FieldSerializer} and its subclasses decide when the serializer is created whether they use
+	 * references, so if the reference resolver uses references for strings, this should be called before registering classes.
 	 * @return The previous value. */
 	public boolean setReferences (boolean references) {
 		boolean old = this.references;
@@ -1380,7 +1383,8 @@ public class Kryo {
 	/** Name/value pairs that are available to all serializers and are cleared after each object graph is serialized or
 	 * deserialized. */
 	public ObjectMap getGraphContext () {
-		if (graphContext == null) graphContext = new ObjectMap();
+		// Small, because it usually has few entries and clearing it after each object graph is notable for small graphs.
+		if (graphContext == null) graphContext = new ObjectMap(4);
 		return graphContext;
 	}
 

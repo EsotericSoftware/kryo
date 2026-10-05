@@ -155,17 +155,17 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		boolean keysCanBeNull = this.keysCanBeNull, valuesCanBeNull = this.valuesCanBeNull;
 		if (keySerializer == null && writeSameClassOnce) {
 			Class keyClass = sameClass(map.keySet());
-			kryo.writeClass(output, keyClass);
-			if (keyClass != null) {
-				keySerializer = kryo.getSerializer(keyClass);
+			Registration registration = kryo.writeClass(output, keyClass);
+			if (registration != null) {
+				keySerializer = registration.getSerializer();
 				keysCanBeNull = false;
 			}
 		}
 		if (valueSerializer == null && writeSameClassOnce) {
 			Class valueClass = sameClass(map.values());
-			kryo.writeClass(output, valueClass);
-			if (valueClass != null) {
-				valueSerializer = kryo.getSerializer(valueClass);
+			Registration registration = kryo.writeClass(output, valueClass);
+			if (registration != null) {
+				valueSerializer = registration.getSerializer();
 				valuesCanBeNull = false;
 			}
 		}
@@ -261,7 +261,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 			Registration registration = kryo.readClass(input);
 			if (registration != null) {
 				keyClass = registration.getType();
-				keySerializer = kryo.getSerializer(keyClass);
+				keySerializer = registration.getSerializer();
 				keysCanBeNull = false;
 			}
 		}
@@ -269,7 +269,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 			Registration registration = kryo.readClass(input);
 			if (registration != null) {
 				valueClass = registration.getType();
-				valueSerializer = kryo.getSerializer(valueClass);
+				valueSerializer = registration.getSerializer();
 				valuesCanBeNull = false;
 			}
 		}
