@@ -116,8 +116,9 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 
 	/** @param writeSameClassOnce True if the class of the keys or values is written only once when it is unknown and all keys or
 	 *           values are not null and have the same class, and keys and values are written without a null marker if the map
-	 *           contains no null key or value. False to read and write the format of Kryo 5, which writes the class and a null
-	 *           marker for each key and value. Default is true. */
+	 *           contains no null key or value. False to read and write the format of Kryo 5, which writes the class of each key
+	 *           and value if it is unknown, and otherwise a null marker if the serializer doesn't accept null or references are
+	 *           enabled, also if the map contains no null. Default is true. */
 	public void setWriteSameClassOnce (boolean writeSameClassOnce) {
 		this.writeSameClassOnce = writeSameClassOnce;
 	}

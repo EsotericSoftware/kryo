@@ -154,14 +154,17 @@ class MapSerializerTest extends KryoTestCase {
 		// The key and value serializers are known from the generic type of the field. Keys and values are written without a null
 		// marker if the map contains no null key or value, which is written with the size.
 		for (boolean references : new boolean[] {false, true}) {
-			for (int size : new int[] {3, 100}) {
+			for (int size : new int[] {3, 100, 200}) {
 				TypedMap object = new TypedMap();
 				for (int i = 0; i < size; i++)
 					object.map.put("key" + i, i);
 				byte[] bytes = writeTypedMap(object, references, true);
 				// The format of Kryo 5 has a null marker for each value, and for each key with references.
 				int markers = references ? size * 2 : size;
-				assertEquals(writeTypedMap(object, references, false).length - markers + (size < 63 ? 0 : 1), bytes.length);
+				// The flag takes one bit of the first byte of the size, which then needs a second byte from 63 entries instead of
+				// from 127 entries.
+				int flag = size >= 63 && size < 127 ? 1 : 0;
+				assertEquals(writeTypedMap(object, references, false).length - markers + flag, bytes.length);
 
 				object.map.put("null", null);
 				writeTypedMap(object, references, true);
