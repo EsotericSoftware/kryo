@@ -171,44 +171,7 @@ class ReflectField extends CachedField {
 	}
 
 	public Object read (Input input) {
-		Kryo kryo = fieldSerializer.kryo;
-		try {
-			Object value;
-
-			Serializer serializer = this.serializer;
-			Class concreteType = resolveFieldClass();
-			if (concreteType == null) {
-				// The concrete type of the field is unknown, read the class first.
-				Registration registration = kryo.readClass(input);
-				if (registration == null) {
-					return null;
-				}
-				if (serializer == null) serializer = registration.getSerializer();
-				if (fieldSerializer.optimizeGenerics()) kryo.getGenerics().pushGenericType(genericType);
-				value = kryo.readObject(input, registration.getType(), serializer);
-			} else {
-				if (serializer == null) {
-					serializer = kryo.getSerializer(concreteType);
-					// The concrete type of the field is known, always use the same serializer.
-					if (valueClass != null && reuseSerializer) this.serializer = serializer;
-				}
-				if (fieldSerializer.optimizeGenerics()) kryo.getGenerics().pushGenericType(genericType);
-				if (canBeNull)
-					value = kryo.readObjectOrNull(input, concreteType, serializer);
-				else
-					value = kryo.readObject(input, concreteType, serializer);
-			}
-			kryo.getGenerics().popGenericType();
-
-			return value;
-		} catch (KryoException ex) {
-			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
-			throw ex;
-		} catch (Throwable t) {
-			KryoException ex = new KryoException(t);
-			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
-			throw ex;
-		}
+		return readValue(input);
 	}
 
 	Class resolveFieldClass () {

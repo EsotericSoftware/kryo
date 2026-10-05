@@ -264,10 +264,14 @@ class CachedFields implements Comparator<CachedField> {
 				if (fieldClass == long.class) return HiddenFields.longField(field);
 				if (fieldClass == double.class) return HiddenFields.doubleField(field);
 				if (fieldClass == boolean.class) return HiddenFields.booleanField(field);
+				if (fieldClass == float.class) return HiddenFields.floatField(field);
+				if (fieldClass == short.class) return HiddenFields.shortField(field);
+				if (fieldClass == char.class) return HiddenFields.charField(field);
+				if (fieldClass == byte.class) return HiddenFields.byteField(field);
 				if (fieldClass == String.class
 					&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
 					return HiddenFields.stringField(field);
-				if (!fieldClass.isPrimitive()) return HiddenFields.objectField(field, serializer, genericType);
+				return HiddenFields.objectField(field, serializer, genericType);
 			}
 			if (fieldClass.isPrimitive()) {
 				if (fieldClass == int.class) return new VarHandleField.IntVarHandleField(field);

@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
+
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -38,7 +40,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /** PROTOTYPE: each template class below is defined once per field as a hidden class, with the field's VarHandle as class data.
  * The template stores it in a static final field, which the JIT treats as a constant, so the VarHandle access is inlined. */
 final class HiddenFields {
-	static final boolean ENABLED = Boolean.getBoolean("kryo.hidden");
+	/** Hidden classes can't be defined on Android or in a native image. */
+	static final boolean ENABLED = Boolean.getBoolean("kryo.hidden") && !isAndroid && !isNativeImage;
 
 	static CachedField intField (Field field) {
 		return define(IntHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
@@ -54,6 +57,22 @@ final class HiddenFields {
 
 	static CachedField booleanField (Field field) {
 		return define(BooleanHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
+	}
+
+	static CachedField floatField (Field field) {
+		return define(FloatHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
+	}
+
+	static CachedField shortField (Field field) {
+		return define(ShortHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
+	}
+
+	static CachedField charField (Field field) {
+		return define(CharHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
+	}
+
+	static CachedField byteField (Field field) {
+		return define(ByteHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
 	}
 
 	static CachedField stringField (Field field) {
@@ -214,6 +233,102 @@ final class BooleanHiddenField extends CachedField {
 	}
 }
 
+final class FloatHiddenField extends CachedField {
+	static final VarHandle handle = HiddenFields.classData(MethodHandles.lookup());
+
+	FloatHiddenField (Field field) {
+		super(field);
+	}
+
+	public void write (Output output, Object object) {
+		output.writeFloat((float)handle.get(object));
+	}
+
+	public void read (Input input, Object object) {
+		handle.set(object, input.readFloat());
+	}
+
+	public Object read (Input input) {
+		return input.readFloat();
+	}
+
+	public void copy (Object original, Object copy) {
+		handle.set(copy, (float)handle.get(original));
+	}
+}
+
+final class ShortHiddenField extends CachedField {
+	static final VarHandle handle = HiddenFields.classData(MethodHandles.lookup());
+
+	ShortHiddenField (Field field) {
+		super(field);
+	}
+
+	public void write (Output output, Object object) {
+		output.writeShort((short)handle.get(object));
+	}
+
+	public void read (Input input, Object object) {
+		handle.set(object, input.readShort());
+	}
+
+	public Object read (Input input) {
+		return input.readShort();
+	}
+
+	public void copy (Object original, Object copy) {
+		handle.set(copy, (short)handle.get(original));
+	}
+}
+
+final class CharHiddenField extends CachedField {
+	static final VarHandle handle = HiddenFields.classData(MethodHandles.lookup());
+
+	CharHiddenField (Field field) {
+		super(field);
+	}
+
+	public void write (Output output, Object object) {
+		output.writeChar((char)handle.get(object));
+	}
+
+	public void read (Input input, Object object) {
+		handle.set(object, input.readChar());
+	}
+
+	public Object read (Input input) {
+		return input.readChar();
+	}
+
+	public void copy (Object original, Object copy) {
+		handle.set(copy, (char)handle.get(original));
+	}
+}
+
+final class ByteHiddenField extends CachedField {
+	static final VarHandle handle = HiddenFields.classData(MethodHandles.lookup());
+
+	ByteHiddenField (Field field) {
+		super(field);
+	}
+
+	public void write (Output output, Object object) {
+		output.writeByte((byte)handle.get(object));
+	}
+
+	public void read (Input input, Object object) {
+		handle.set(object, input.readByte());
+	}
+
+	public Object read (Input input) {
+		return input.readByte();
+	}
+
+	public void copy (Object original, Object copy) {
+		handle.set(copy, (byte)handle.get(original));
+	}
+}
+
 final class StringHiddenField extends CachedField {
 	static final VarHandle handle = HiddenFields.classData(MethodHandles.lookup());
 
@@ -250,7 +365,27 @@ final class ObjectHiddenField extends ReflectField {
 	}
 
 	public void read (Input input, Object object) {
-		handle.set(object, readValue(input));
+		Object value = readValue(input);
+		try {
+			handle.set(object, value);
+		} catch (Throwable t) { // Eg the value has the wrong type.
+			KryoException ex = new KryoException(t);
+			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
+			throw ex;
+		}
+	}
+
+	public void copy (Object original, Object copy) {
+		try {
+			handle.set(copy, fieldSerializer.kryo.copy((Object)handle.get(original)));
+		} catch (KryoException ex) {
+			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
+			throw ex;
+		} catch (Throwable t) {
+			KryoException ex = new KryoException(t);
+			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
+			throw ex;
+		}
 	}
 
 	public Object get (Object object) {
