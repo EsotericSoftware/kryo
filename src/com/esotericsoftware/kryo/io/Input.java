@@ -139,6 +139,9 @@ public class Input extends InputStream implements Poolable {
 	 * behavior: a valid payload never declares more elements than the input can supply, so the limit never fires on valid input.
 	 * Callers that decode untrusted input, especially from an {@link InputStream} where the declared size cannot be checked
 	 * against the buffered bytes, should set a limit suited to their application.
+	 * <p>
+	 * It also limits the number of objects of a field written with chunked encoding, which is read from the data and can't be
+	 * checked against the buffered bytes.
 	 * @param maxArraySize must be {@code >= 0}. */
 	public void setMaxArraySize (int maxArraySize) {
 		if (maxArraySize < 0) throw new IllegalArgumentException("maxArraySize must be >= 0: " + maxArraySize);

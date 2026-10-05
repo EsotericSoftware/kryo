@@ -29,6 +29,15 @@ import java.lang.reflect.InvocationHandler;
 class UtilTest {
 
     @Test
+    void testRangeEquals() {
+        byte[] a = {1, 2, 3, 4, 5}, b = {9, 3, 4, 5};
+        assertTrue(Util.rangeEquals(a, 2, b, 1, 3));
+        assertTrue(Util.rangeEquals(a, 0, b, 0, 0));
+        assertFalse(Util.rangeEquals(a, 1, b, 1, 3));
+        assertFalse(Util.rangeEquals(a, 2, b, 0, 3));
+    }
+
+    @Test
     void testIsAssignableTo() {
         assertTrue(Util.isAssignableTo(Long.class, long.class));
         assertTrue(Util.isAssignableTo(long.class, Long.class));
