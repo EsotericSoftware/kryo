@@ -83,7 +83,7 @@ A custom ClassResolver needs to implement `beginDeferredNames`, `endDeferredName
 
 ### Maps
 
-If the class of the keys or values of a map is unknown, MapSerializer writes it only once if all keys or values are not null and have the same class. Kryo 5 wrote the class of each key and value. To read data written by Kryo 5, disable this for the MapSerializer instances, eg for all maps that use the default MapSerializer:
+If the class of the keys or values of a map is unknown, MapSerializer writes it only once if all keys or values are not null and have the same class. Kryo 5 wrote the class of each key and value. If the map contains no null key or value, which is written with the size of the map, keys and values are written without a null marker. Kryo 5 wrote a null marker for each key or value whose serializer doesn't accept null, eg for the values of a `Map<String, Integer>` field, and for each with references. To read data written by Kryo 5, disable this for the MapSerializer instances, eg for all maps that use the default MapSerializer:
 
 ```java
 MapSerializer mapSerializer = new MapSerializer();
@@ -148,6 +148,7 @@ Like in Kryo 5, String fields of FieldSerializer and its subclasses decide when 
 * With Unsafe field access, FieldSerializer and its subclasses no longer store a value read whose class is not assignable to the field type, eg after the type of a field changed ([#1068](https://github.com/EsotericSoftware/kryo/issues/1068)). They throw an exception, or skip the field if CompatibleFieldSerializer uses chunked encoding, see below. Kryo 5 stored the value anyway, which could crash the JVM when the field was used. With reflection and VarHandles, an exception was already thrown.
 * CompatibleFieldSerializer checks that the class of a value read is assignable to the field type for every object. Kryo 5 checked it only after the field had been read or written once, so the first object could fail with a ClassCastException or get a value of the wrong type, instead of throwing "Read type is incompatible" or, with chunked encoding, skipping the field. Proxies, which are written as `InvocationHandler`, are compatible with fields of an interface type, like closures. Kryo 5 rejected them, except for the first object read.
 * A subclass of a field serializer can remove fields in `initializeCachedFields`, as its javadoc says. With TaggedFieldSerializer and VersionFieldSerializer this threw "Field not found" in Kryo 5, because their `removeField` called `initializeCachedFields` again. It no longer does, like FieldSerializer and CompatibleFieldSerializer never did in Kryo 5, so a subclass of these two serializers that derives something from the fields there needs to override `removeField` too.
+* `@Bind` and `@NotNull` are applied to String fields with all field access types. Kryo 5 ignored them for a String field without references if it accessed the field with Unsafe or ReflectASM, and applied them with reflection, so the data depended on the field access. A String field with `@Bind` and a serializer that Kryo 5 wrote this way was written as a plain string, to read it remove the serializer from the annotation. A null value of a String field with `@NotNull` throws an exception when it is written.
 
 ## Deprecated APIs
 

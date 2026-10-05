@@ -534,7 +534,7 @@ class FieldSerializerTest extends KryoTestCase {
 		test.container.list.add("three");
 		test.container.list.add("four");
 		test.container.list.add("five");
-		roundTrip(61, test);
+		roundTrip(60, test);
 
 		ArrayList[] al = new ArrayList[1];
 		al[0] = new ArrayList(Arrays.asList(new String[] {"A", "B", "S"}));
@@ -1649,13 +1649,14 @@ class FieldSerializerTest extends KryoTestCase {
 		@SuppressWarnings("deprecation")
 		FieldAccessType asm = FieldAccessType.ASM;
 		assertFieldAccess(asm, "IntAsmField", "AsmField", "IntReflectField");
-		assertFieldAccess(FieldAccessType.VARHANDLE, "IntHiddenField", "ObjectHiddenField", "IntReflectField");
+		boolean hiddenFields = CachedFields.hiddenFields; // False if the tests run with -Dkryo.hiddenFields=false.
+		if (hiddenFields) assertFieldAccess(FieldAccessType.VARHANDLE, "IntHiddenField", "ObjectHiddenField", "IntReflectField");
 		// Without hidden classes, eg in a native image.
 		CachedFields.hiddenFields = false;
 		try {
 			assertFieldAccess(FieldAccessType.VARHANDLE, "IntVarHandleField", "VarHandleField", "IntReflectField");
 		} finally {
-			CachedFields.hiddenFields = true;
+			CachedFields.hiddenFields = hiddenFields;
 		}
 		assertFieldAccess(FieldAccessType.REFLECTION, "IntReflectField", "ReflectField", "IntReflectField");
 	}
@@ -1672,8 +1673,11 @@ class FieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testDefaultFieldAccess () {
-		// Unsafe where it can be used without a warning. The tests don't set --sun-misc-unsafe-memory-access.
-		FieldAccessType expected = Runtime.version().feature() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+		// The default is the system property if the tests run with -Dkryo.fieldAccess, else it is Unsafe where it can be used
+		// without a warning. The tests don't set --sun-misc-unsafe-memory-access.
+		String configured = System.getProperty("kryo.fieldAccess");
+		FieldAccessType expected = configured != null ? FieldAccessType.valueOf(configured)
+			: Runtime.version().feature() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
 		assertEquals(expected, new FieldSerializerConfig().getFieldAccess());
 	}
 
@@ -1700,6 +1704,84 @@ class FieldSerializerTest extends KryoTestCase {
 		String name = field.getClass().getSimpleName();
 		int slash = name.indexOf('/');
 		return slash == -1 ? name : name.substring(0, slash);
+	}
+
+	@Test
+	void testSameDataWithAllFieldAccessTypes () {
+		// All field access types write the same data, also for final fields, which VarHandles can't set, and for String fields with
+		// references, which are written without references. They all apply @Bind and @NotNull to String fields.
+		@SuppressWarnings("deprecation")
+		FieldAccessType asm = FieldAccessType.ASM;
+		for (boolean references : new boolean[] {false, true}) {
+			byte[] expected = null;
+			for (FieldAccessType fieldAccess : new FieldAccessType[] {FieldAccessType.UNSAFE, asm, FieldAccessType.VARHANDLE,
+				FieldAccessType.REFLECTION}) {
+				Kryo kryo = new Kryo();
+				kryo.setReferences(references);
+				FieldSerializerConfig config = new FieldSerializerConfig();
+				config.setFieldAccess(fieldAccess);
+				kryo.register(FieldAccessData.class, new FieldSerializer(kryo, FieldAccessData.class, config));
+				kryo.register(ArrayList.class);
+				Output output = new Output(64, -1);
+				kryo.writeObject(output, new FieldAccessData("string", 5));
+				byte[] bytes = output.toBytes();
+				if (expected == null) expected = bytes;
+				assertArrayEquals(expected, bytes, fieldAccess + ", references: " + references);
+				FieldAccessData read = kryo.readObject(new Input(bytes), FieldAccessData.class);
+				assertEquals("string", read.string);
+				assertEquals("string", read.finalString);
+				assertEquals(5, read.finalValue);
+				assertEquals(new ArrayList(), read.finalObject);
+				assertEquals("STRING", read.bound, fieldAccess.toString());
+				assertEquals("STRING", read.finalBound, fieldAccess.toString());
+
+				FieldAccessData nullValue = new FieldAccessData("string", 5);
+				nullValue.notNull = null;
+				assertThrows(KryoException.class, () -> kryo.writeObject(new Output(64, -1), nullValue), fieldAccess.toString());
+				assertThrows(KryoException.class, () -> kryo.writeObject(new Output(64, -1), new FieldAccessData()),
+					fieldAccess.toString()); // finalNotNull is null.
+			}
+		}
+	}
+
+	public static class FieldAccessData {
+		public String string;
+		public int value;
+		public Object object = new ArrayList();
+		public final String finalString;
+		public final int finalValue;
+		public final Object finalObject = new ArrayList();
+		@Bind(serializer = UpperCaseSerializer.class, valueClass = String.class) public String bound;
+		@Bind(serializer = UpperCaseSerializer.class, valueClass = String.class) public final String finalBound;
+		@NotNull public String notNull = "notNull";
+		@NotNull public final String finalNotNull;
+
+		public FieldAccessData () {
+			finalString = null;
+			finalValue = 0;
+			finalBound = "";
+			finalNotNull = null;
+		}
+
+		public FieldAccessData (String string, int value) {
+			this.string = string;
+			this.value = value;
+			finalString = string;
+			finalValue = value;
+			bound = string;
+			finalBound = string;
+			finalNotNull = string;
+		}
+	}
+
+	public static class UpperCaseSerializer extends Serializer<String> {
+		public void write (Kryo kryo, Output output, String object) {
+			output.writeString(object.toUpperCase());
+		}
+
+		public String read (Kryo kryo, Input input, Class<? extends String> type) {
+			return input.readString();
+		}
 	}
 
 	@Test
