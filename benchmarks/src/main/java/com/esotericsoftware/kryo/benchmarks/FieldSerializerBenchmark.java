@@ -84,6 +84,8 @@ public class FieldSerializerBenchmark {
 
 		@Setup(Level.Trial)
 		public void setup () {
+			// Before registering, because FieldSerializer decides when it is created whether String fields use references.
+			kryo.setReferences(references);
 			switch (objectType) {
 			case sample:
 				object = new Sample().populate(references);
@@ -107,8 +109,6 @@ public class FieldSerializerBenchmark {
 				kryo.register(MediaContent.class);
 				break;
 			}
-
-			kryo.setReferences(references);
 		}
 
 		public void roundTrip () {

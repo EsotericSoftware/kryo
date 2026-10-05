@@ -32,6 +32,9 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.DateSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.serializers.RecordSerializer;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
+import com.esotericsoftware.kryo.util.HashMapReferenceResolver;
+import com.esotericsoftware.kryo.util.ListReferenceResolver;
+import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -59,7 +62,9 @@ import java.util.regex.Pattern;
  * Call {@link #configure(Kryo)} once, after {@link Kryo#setDefaultSerializer(SerializerFactory) setting the default serializer}.
  * It changes the default serializers, so serializers that are registered explicitly or added as default serializers later need
  * the Kryo 5 settings themselves, eg {@link MapSerializer#setWriteSameClassOnce(boolean)}. Records are serialized with
- * RecordSerializer like in Kryo 5, which is slower than FieldSerializer.
+ * RecordSerializer like in Kryo 5, which is slower than FieldSerializer. Strings use references like in Kryo 5 with Kryo's
+ * reference resolvers, which are replaced. Subclasses of them and custom reference resolvers decide in
+ * {@link ReferenceResolver#useReferences(Class)}.
  * <p>
  * For the types that have new default serializers in Kryo 6, the serializers Kryo 5 used by default are configured. If the
  * serializers for these types that were already available in Kryo 5, eg UUIDSerializer, were registered with Kryo 5, they must
@@ -72,6 +77,41 @@ public final class Kryo5Compatibility {
 	public static void configure (Kryo kryo) {
 		// Kryo 5 wrote the class of enums with constant bodies.
 		kryo.setEnumsFinal(false);
+
+		// Kryo 5 used references for strings. Kryo's reference resolvers are replaced by ones that do, without changing whether
+		// references are enabled. Without a reference resolver, setReferences uses the one set here. Subclasses and custom
+		// reference resolvers decide themselves.
+		ReferenceResolver referenceResolver = kryo.referenceResolver, kryo5Resolver = null;
+		Class resolverClass = referenceResolver == null ? null : referenceResolver.getClass();
+		if (referenceResolver == null) {
+			kryo5Resolver = new MapReferenceResolver() {
+				public boolean useReferences (Class type) {
+					return kryo5UseReferences(type);
+				}
+			};
+		} else if (resolverClass == MapReferenceResolver.class) {
+			kryo5Resolver = new MapReferenceResolver(((MapReferenceResolver)referenceResolver).getMaximumCapacity()) {
+				public boolean useReferences (Class type) {
+					return kryo5UseReferences(type);
+				}
+			};
+		} else if (resolverClass == ListReferenceResolver.class) {
+			kryo5Resolver = new ListReferenceResolver() {
+				public boolean useReferences (Class type) {
+					return kryo5UseReferences(type);
+				}
+			};
+		} else if (resolverClass == HashMapReferenceResolver.class) {
+			kryo5Resolver = new HashMapReferenceResolver() {
+				public boolean useReferences (Class type) {
+					return kryo5UseReferences(type);
+				}
+			};
+		}
+		if (kryo5Resolver != null) {
+			kryo5Resolver.setKryo(kryo);
+			kryo.referenceResolver = kryo5Resolver;
+		}
 
 		// Kryo 5 serialized records with RecordSerializer. Android has records only since API level 34.
 		if (!isAndroid || isClassAvailable("java.lang.Record")) {
@@ -146,5 +186,10 @@ public final class Kryo5Compatibility {
 			factory.getConfig().setOptimizeGenerics(true);
 		else if (kryo.defaultSerializer instanceof TaggedFieldSerializerFactory factory) //
 			factory.getConfig().setOptimizeGenerics(true);
+	}
+
+	/** Kryo 5 used references for all types except primitive wrappers and enums, also for strings. */
+	private static boolean kryo5UseReferences (Class type) {
+		return !isWrapperClass(type) && !isEnum(type);
 	}
 }

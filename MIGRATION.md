@@ -100,6 +100,22 @@ kryo.setEnumsFinal(false);
 
 LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language tag, so the script and extensions are kept ([#1053](https://github.com/EsotericSoftware/kryo/issues/1053)). Kryo 5 lost them. Other locales are written as before, so Kryo 6 reads all locales written by Kryo 5.
 
+### Strings with references
+
+With references enabled, Kryo's reference resolvers no longer use references for strings: strings are rarely shared, so tracking them costs more than it saves (eg about 17% throughput for an object graph with many strings). The data is usually smaller, because no reference marker is written before each string. Strings that are shared by identity are now written each time, so data with many shared strings can grow. To read data written by Kryo 5 with references, use references for strings:
+
+```java
+kryo.setReferenceResolver(new MapReferenceResolver() {
+	public boolean useReferences (Class type) {
+		return !Util.isWrapperClass(type) && !Util.isEnum(type);
+	}
+});
+```
+
+`Kryo5Compatibility` does this for Kryo's reference resolvers, also if none has been set yet. Subclasses of them and custom reference resolvers decide in `useReferences` as before.
+
+Like in Kryo 5, String fields of FieldSerializer and its subclasses decide when the serializer is created whether they use references: Kryo 5 wrote String fields without references if `setReferences(true)` was called after registering the classes, but strings in collections and arrays with references. To read such data, keep the order of `setReferences` and `register` the Kryo 5 code used, and call `Kryo5Compatibility.configure` before registering classes.
+
 ## Behavior changes
 
 * RecordSerializer is no longer a default serializer. Records are serialized by FieldSerializer and its subclasses, see [Records](README.md#records).
