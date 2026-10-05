@@ -68,13 +68,13 @@ public class StateBenchmark {
 
 		@Setup(Level.Trial)
 		public void setup () {
+			kryo.setReferences(references); // Before registering, String fields decide then whether they use references.
 			kryo.register(ArrayList.class);
 			kryo.register(HashMap.class);
 			kryo.register(int[].class);
 			kryo.register(double[].class);
 			for (Class type : AppState.classes())
 				kryo.register(type);
-			kryo.setReferences(references);
 			object = AppState.create(1, scale);
 
 			// Sanity check: a round trip must serialize to the same bytes.
