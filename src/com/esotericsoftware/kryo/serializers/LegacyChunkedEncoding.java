@@ -81,11 +81,7 @@ final class LegacyChunkedEncoding implements ChunkedEncoding {
 		return 0;
 	}
 
-	public int fieldObjects () {
-		return 0;
-	}
-
-	public void endField (Input input, long end, int objects) {
+	public void endField (Input input, long mark) {
 		((InputChunked)input).nextChunk(); // The input returned by beginRead.
 	}
 }

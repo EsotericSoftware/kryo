@@ -66,20 +66,12 @@ interface ChunkedEncoding {
 	 * @return null if the field names are not written by the chunked encoding, so the serializer reads them. */
 	String[] readFieldNames (Class type);
 
-	/** Starts a field. {@link #fieldObjects()} must be called directly afterward, before reading the field data, which can start
-	 * nested fields.
+	/** Starts a field.
 	 * @param input The input returned by {@link #beginRead(Input)}.
-	 * @return The end of the field for {@link #endField(Input, long, int)}. */
+	 * @return The mark for {@link #endField(Input, long)}. */
 	long beginField (Input input);
 
-	/** Returns the number of objects read after the field started by the last {@link #beginField(Input)}, for
-	 * {@link #endField(Input, long, int)}. It is needed to reserve the IDs of objects that were not read, eg if reading an unknown
-	 * field fails after reading nested objects. */
-	int fieldObjects ();
-
 	/** Ends a field started by {@link #beginField(Input)}, skipping the rest of it.
-	 * @param input The input returned by {@link #beginRead(Input)}.
-	 * @param end The end returned by {@link #beginField(Input)}.
-	 * @param objects The value of {@link #fieldObjects()}. */
-	void endField (Input input, long end, int objects);
+	 * @param input The input returned by {@link #beginRead(Input)}. */
+	void endField (Input input, long mark);
 }

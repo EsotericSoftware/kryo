@@ -61,9 +61,6 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 	private final ArrayList<Class> fieldNameTypes = new ArrayList();
 	private final ArrayList<String[]> fieldNames = new ArrayList();
 
-	/** The number of objects read after the field started by {@link #beginField(Input)}. Nested fields overwrite it. */
-	private int fieldObjects;
-
 	private DefaultChunkedEncoding (Kryo kryo) {
 		this.kryo = kryo;
 	}
@@ -293,22 +290,20 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		}
 	}
 
-	/** Starts a field, reading its length and the number of objects in it. Returns the {@link Input#total()} where the field
-	 * ends. */
+	/** Starts a field, reading its length and the number of objects in it. Returns the number of objects read after the field and
+	 * the lower 32 bits of the {@link Input#total()} where the field ends. Nested fields can be started before the field ends, so
+	 * the caller keeps both. */
 	public long beginField (Input input) {
 		int length = input.readVarInt(true);
-		fieldObjects = kryo.getReferences() ? kryo.getReferenceResolver().getObjectCount() + input.readVarInt(true) : 0;
+		int objects = kryo.getReferences() ? kryo.getReferenceResolver().getObjectCount() + input.readVarInt(true) : 0;
 		if (TRACE) trace("kryo", "Read field: " + length + " bytes" + pos(input.position()));
-		return input.total() + length;
-	}
-
-	public int fieldObjects () {
-		return fieldObjects;
+		return (long)objects << 32 | (input.total() + length & 0xFFFFFFFFL);
 	}
 
 	/** Ends a field: skips the rest of it and reserves the IDs of the objects in it that were not read. */
-	public void endField (Input input, long end, int objects) {
-		long remaining = end - input.total();
+	public void endField (Input input, long mark) {
+		// A field is shorter than 2 GiB, so the lower 32 bits of the end and of the total are enough for their difference.
+		int remaining = (int)mark - (int)input.total(), objects = (int)(mark >>> 32);
 		if (remaining < 0) throw new KryoException("More data was read than the field contains: " + -remaining + " bytes");
 		if (remaining > 0) {
 			if (TRACE) trace("kryo", "Skip field: " + remaining + " bytes");
