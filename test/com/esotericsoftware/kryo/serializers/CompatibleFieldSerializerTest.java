@@ -25,13 +25,17 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
+import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 
+import java.io.ByteArrayInputStream;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -737,6 +741,108 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
 		kryo.register(NullableRecord.class);
 		roundTrip(8, new NullableRecord(null));
+	}
+
+	@Test
+	void testFieldNames () {
+		// The field names are written like before: the number of fields and the names.
+		CompatibleFieldSerializer<Names> serializer = new CompatibleFieldSerializer<>(kryo, Names.class);
+		kryo.register(Names.class, serializer);
+		Names names = new Names();
+		Output output = new Output(256);
+		kryo.writeObject(output, names);
+		Output expected = new Output(256);
+		expected.writeVarInt(3, true);
+		expected.writeString("a");
+		expected.writeString("b");
+		expected.writeString("c");
+		byte[] header = expected.toBytes();
+		assertArrayEquals(header, Arrays.copyOf(output.toBytes(), header.length));
+		byte[] bytes = output.toBytes();
+
+		// Read from a byte[], where the field names are compared without reading them, and from a stream with a buffer smaller
+		// than the field names and a ByteBuffer, where they are read.
+		assertEquals(names, kryo.readObject(new Input(bytes), Names.class));
+		assertEquals(names, kryo.readObject(new Input(new ByteArrayInputStream(bytes), 4), Names.class));
+		assertEquals(names, kryo.readObject(new ByteBufferInput(bytes), Names.class));
+		// The number of field names is limited by maxArraySize, also if they are compared.
+		Input limited = new Input(bytes);
+		limited.setMaxArraySize(2);
+		assertThrows(KryoException.class, () -> kryo.readObject(limited, Names.class));
+
+		// Data with other field names is read as before.
+		Kryo writer = new Kryo();
+		CompatibleFieldSerializer<Names> removed = new CompatibleFieldSerializer<>(writer, Names.class);
+		removed.removeField("b");
+		writer.register(Names.class, removed);
+		Output output2 = new Output(256);
+		writer.writeObject(output2, new Names(7, 8, 9));
+		Names read = kryo.readObject(new Input(output2.toBytes()), Names.class);
+		assertEquals(7, read.a);
+		assertEquals(2, read.b); // Not in the data, keeps the value set by the constructor.
+		assertEquals(9, read.c);
+
+		// Removing a field after the field names were written changes them.
+		serializer.removeField("b");
+		output.reset();
+		kryo.writeObject(output, new Names(4, 5, 6));
+		assertArrayEquals(Arrays.copyOf(output2.toBytes(), 5), Arrays.copyOf(output.toBytes(), 5)); // 2, "a", "c".
+		read = kryo.readObject(new Input(output.toBytes()), Names.class);
+		assertEquals(4, read.a);
+		assertEquals(6, read.c);
+	}
+
+	@Test
+	void testFieldNamesAfterUpdateFields () {
+		// updateFields can replace the fields with as many other fields, which reuses the array of cached fields. Also if a
+		// subclass doesn't call super.initializeCachedFields.
+		kryo.getContext().put("first", true);
+		CompatibleFieldSerializer<Swapped> serializer = new CompatibleFieldSerializer<Swapped>(kryo, Swapped.class) {
+			protected void initializeCachedFields () {
+			}
+		};
+		kryo.register(Swapped.class, serializer);
+		Output output = new Output(256);
+		kryo.writeObject(output, new Swapped());
+		assertTrue(new String(output.toBytes(), StandardCharsets.ISO_8859_1).contains("firs"));
+
+		kryo.getContext().remove("first");
+		kryo.getContext().put("second", true);
+		serializer.updateFields();
+		output.reset();
+		kryo.writeObject(output, new Swapped());
+		String bytes = new String(output.toBytes(), StandardCharsets.ISO_8859_1);
+		assertTrue(bytes.contains("secon"), bytes);
+		assertFalse(bytes.contains("firs"), bytes);
+		Swapped read = kryo.readObject(new Input(output.toBytes()), Swapped.class);
+		assertEquals(5, read.first); // Not in the data.
+		assertEquals(6, read.second);
+	}
+
+	public static class Swapped {
+		@Optional("first") public int first = 5;
+		@Optional("second") public int second = 6;
+	}
+
+	public static class Names {
+		public int a = 1, b = 2, c = 3;
+
+		public Names () {
+		}
+
+		Names (int a, int b, int c) {
+			this.a = a;
+			this.b = b;
+			this.c = c;
+		}
+
+		public boolean equals (Object object) {
+			return object instanceof Names other && other.a == a && other.b == b && other.c == c;
+		}
+
+		public int hashCode () {
+			return Objects.hash(a, b, c);
+		}
 	}
 
 	public static class TestClass {

@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.util.Generics.GenericType;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -87,6 +88,17 @@ public class Util {
 	 * which doesn't have records. */
 	public static boolean isRecord (Class type) {
 		return records && type.isRecord();
+	}
+
+	/** Returns true if the bytes of both arrays in the ranges are equal. Unlike
+	 * {@link Arrays#equals(byte[], int, int, byte[], int, int)}, this can be called on Android before API level 33. */
+	public static boolean rangeEquals (byte[] a, int aFromIndex, byte[] b, int bFromIndex, int length) {
+		if (isAndroid) {
+			for (int i = 0; i < length; i++)
+				if (a[aFromIndex + i] != b[bFromIndex + i]) return false;
+			return true;
+		}
+		return Arrays.equals(a, aFromIndex, aFromIndex + length, b, bFromIndex, bFromIndex + length);
 	}
 
 	/** Returns the name of Kryo's module for command line options like {@code --add-opens}: the module name if Kryo is in a named

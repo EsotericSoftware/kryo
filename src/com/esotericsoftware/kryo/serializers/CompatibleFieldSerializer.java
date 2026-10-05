@@ -25,6 +25,7 @@ import static com.esotericsoftware.minlog.Log.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
+import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.ObjectMap;
@@ -50,8 +51,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private final Object writeKey = new Object();
 	/** The error message if fields with the same name can't be distinguished, else null. */
 	private String duplicateFieldName;
-	/** The names of the cached fields, in the same order. */
+	/** The names of the cached fields in the same order, and as they are written inline. See {@link #updateFieldNames}. */
 	private String[] fieldNames;
+	private byte[] fieldNameBytes;
+	private CachedField[] fieldNamesFields;
 
 	public CompatibleFieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new CompatibleFieldSerializerConfig());
@@ -67,9 +70,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		// so the config can still be changed and updateFields called after the serializer is constructed.
 		duplicateFieldName = null;
 		CachedField[] fields = cachedFields.fields;
-		fieldNames = new String[fields.length];
-		for (int i = 0, n = fields.length; i < n; i++)
-			fieldNames[i] = fields[i].name;
 		for (int i = 1, n = fields.length; i < n; i++) {
 			CachedField field = fields[i], previous = fields[i - 1];
 			if (field.name.equals(previous.name)) {
@@ -90,6 +90,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		return config.optimizeGenerics || !config.readUnknownFieldData;
 	}
 
+	public void updateFields () {
+		super.updateFields();
+		// The fields may have changed, also if the array was reused. Not in initializeCachedFields, which subclasses can override.
+		fieldNamesFields = null;
+	}
+
 	public void removeField (String fieldName) {
 		super.removeField(fieldName);
 		initializeCachedFields();
@@ -108,14 +114,21 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		Output fieldOutput = chunked ? chunks.fieldOutput(chunks.beginWrite(output)) : output;
 		int pop = pushTypeVariables();
 
+		CachedField[] fields = cachedFields.fields;
 		ObjectMap context = kryo.getGraphContext();
 		if (!context.containsKey(writeKey)) {
 			if (TRACE) trace("kryo", "Write fields for class: " + type.getName());
 			context.put(writeKey, null);
-			if (!chunked || !chunks.writeFieldNames(type, fieldNames)) writeFieldNames(output);
+			updateFieldNames(fields);
+			if (!chunked || !chunks.writeFieldNames(type, fieldNames)) {
+				if (TRACE) {
+					for (String name : fieldNames)
+						trace("kryo", "Write field name: " + name + pos(output.position()));
+				}
+				output.writeBytes(fieldNameBytes);
+			}
 		}
 
-		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			if (TRACE) log("Write", cachedField, fieldOutput.position());
@@ -258,18 +271,46 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		return object;
 	}
 
+	/** Updates the field names if the fields changed, see {@link #updateFields()} and removeField, which creates a new array. The
+	 * bytes are the number of fields, then the names. All outputs of Kryo write varints and strings the same way, so the bytes can
+	 * be written to any output. */
+	private void updateFieldNames (CachedField[] fields) {
+		if (fieldNamesFields == fields) return;
+		String[] names = new String[fields.length];
+		Output output = new Output(64, -1);
+		output.writeVarInt(fields.length, true);
+		for (int i = 0, n = fields.length; i < n; i++) {
+			names[i] = fields[i].name;
+			output.writeString(names[i]);
+		}
+		fieldNames = names;
+		fieldNameBytes = output.toBytes();
+		fieldNamesFields = fields;
+	}
+
 	/** Returns the fields of the data for the current object graph, from the chunked encoding or read from the input. */
 	private CachedField[] readFields (Kryo kryo, Input input, ChunkedEncoding chunks) {
 		String[] names = chunks != null ? chunks.readFieldNames(type) : null;
-		return fields(kryo, names != null ? names : readFieldNames(input));
-	}
+		if (names != null) return fields(kryo, names);
 
-	private void writeFieldNames (Output output) {
-		output.writeVarInt(fieldNames.length, true);
-		for (String name : fieldNames) {
-			if (TRACE) trace("kryo", "Write field name: " + name + pos(output.position()));
-			output.writeString(name);
+		// The field names are usually the ones this serializer writes, which can be compared without reading them.
+		CachedField[] allFields = cachedFields.fields;
+		if (!(input instanceof ByteBufferInput) && allFields.length <= input.getMaxArraySize()) {
+			updateFieldNames(allFields);
+			byte[] bytes = fieldNameBytes;
+			int position = input.position();
+			if (input.limit() - position >= bytes.length && rangeEquals(input.getBuffer(), position, bytes, 0, bytes.length)) {
+				input.setPosition(position + bytes.length);
+				if (TRACE) {
+					trace("kryo", "Read fields for class: " + type.getName());
+					for (String name : fieldNames)
+						trace("kryo", "Read field name: " + name);
+				}
+				kryo.getGraphContext().put(this, allFields);
+				return allFields;
+			}
 		}
+		return fields(kryo, readFieldNames(input));
 	}
 
 	private String[] readFieldNames (Input input) {
@@ -284,9 +325,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	/** Returns the fields of the data for the current object graph from their names, which can contain unknown fields. */
 	private CachedField[] fields (Kryo kryo, String[] names) {
 		if (TRACE) trace("kryo", "Read fields for class: " + type.getName());
+		CachedField[] allFields = cachedFields.fields;
 		int length = names.length;
 		CachedField[] fields = new CachedField[length];
-		CachedField[] allFields = cachedFields.fields;
 		if (length < binarySearchThreshold) {
 			outer:
 			for (int i = 0; i < length; i++) {
