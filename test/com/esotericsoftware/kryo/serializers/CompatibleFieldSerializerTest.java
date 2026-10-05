@@ -794,9 +794,13 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testFieldNamesAfterUpdateFields () {
-		// updateFields can replace the fields with as many other fields, which reuses the array of cached fields.
+		// updateFields can replace the fields with as many other fields, which reuses the array of cached fields. Also if a
+		// subclass doesn't call super.initializeCachedFields.
 		kryo.getContext().put("first", true);
-		CompatibleFieldSerializer<Swapped> serializer = new CompatibleFieldSerializer<>(kryo, Swapped.class);
+		CompatibleFieldSerializer<Swapped> serializer = new CompatibleFieldSerializer<Swapped>(kryo, Swapped.class) {
+			protected void initializeCachedFields () {
+			}
+		};
 		kryo.register(Swapped.class, serializer);
 		Output output = new Output(256);
 		kryo.writeObject(output, new Swapped());
