@@ -33,8 +33,6 @@ import com.esotericsoftware.kryo.io.OutputChunked;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 
-import java.util.Arrays;
-
 /** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
  * added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported.
  * Like {@link FieldSerializer}, it can serialize most classes without needing annotations.
@@ -279,7 +277,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			byte[] fieldNames = fieldNames(allFields);
 			int position = input.position();
 			if (input.limit() - position >= fieldNames.length
-				&& Arrays.equals(input.getBuffer(), position, position + fieldNames.length, fieldNames, 0, fieldNames.length)) {
+				&& rangeEquals(input.getBuffer(), position, fieldNames, 0, fieldNames.length)) {
 				input.setPosition(position + fieldNames.length);
 				if (TRACE) {
 					for (int i = 0, n = allFields.length; i < n; i++)
