@@ -1705,7 +1705,7 @@ class FieldSerializerTest extends KryoTestCase {
 	@Test
 	void testSameDataWithAllFieldAccessTypes () {
 		// All field access types write the same data, also for final fields, which VarHandles can't set, and for String fields with
-		// references, which are written without references.
+		// references, which are written without references. They all apply @Bind and @NotNull to String fields.
 		@SuppressWarnings("deprecation")
 		FieldAccessType asm = FieldAccessType.ASM;
 		for (boolean references : new boolean[] {false, true}) {
@@ -1728,6 +1728,14 @@ class FieldSerializerTest extends KryoTestCase {
 				assertEquals("string", read.finalString);
 				assertEquals(5, read.finalValue);
 				assertEquals(new ArrayList(), read.finalObject);
+				assertEquals("STRING", read.bound, fieldAccess.toString());
+				assertEquals("STRING", read.finalBound, fieldAccess.toString());
+
+				FieldAccessData nullValue = new FieldAccessData("string", 5);
+				nullValue.notNull = null;
+				assertThrows(KryoException.class, () -> kryo.writeObject(new Output(64, -1), nullValue), fieldAccess.toString());
+				assertThrows(KryoException.class, () -> kryo.writeObject(new Output(64, -1), new FieldAccessData()),
+					fieldAccess.toString()); // finalNotNull is null.
 			}
 		}
 	}
@@ -1739,10 +1747,16 @@ class FieldSerializerTest extends KryoTestCase {
 		public final String finalString;
 		public final int finalValue;
 		public final Object finalObject = new ArrayList();
+		@Bind(serializer = UpperCaseSerializer.class, valueClass = String.class) public String bound;
+		@Bind(serializer = UpperCaseSerializer.class, valueClass = String.class) public final String finalBound;
+		@NotNull public String notNull = "notNull";
+		@NotNull public final String finalNotNull;
 
 		public FieldAccessData () {
 			finalString = null;
 			finalValue = 0;
+			finalBound = "";
+			finalNotNull = null;
 		}
 
 		public FieldAccessData (String string, int value) {
@@ -1750,6 +1764,19 @@ class FieldSerializerTest extends KryoTestCase {
 			this.value = value;
 			finalString = string;
 			finalValue = value;
+			bound = string;
+			finalBound = string;
+			finalNotNull = string;
+		}
+	}
+
+	public static class UpperCaseSerializer extends Serializer<String> {
+		public void write (Kryo kryo, Output output, String object) {
+			output.writeString(object.toUpperCase());
+		}
+
+		public String read (Kryo kryo, Input input, Class<? extends String> type) {
+			return input.readString();
 		}
 	}
 

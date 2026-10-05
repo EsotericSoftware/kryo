@@ -263,6 +263,14 @@ class CachedFields implements Comparator<CachedField> {
 		return true;
 	}
 
+	/** Returns true if a String field is written directly as a string, which all field access types decide the same way, so they
+	 * write the same data, eg for a final field that VarHandles can't set. Not with references for strings, and not with
+	 * {@link Bind} or {@link NotNull}, which only the fields for objects apply. */
+	private boolean isStringField (Field field, Class fieldClass) {
+		return fieldClass == String.class && !field.isAnnotationPresent(Bind.class) && !field.isAnnotationPresent(NotNull.class)
+			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class));
+	}
+
 	private CachedField newUnsafeField (Field field, Class fieldClass, GenericType genericType) {
 		if (fieldClass.isPrimitive()) {
 			if (fieldClass == int.class) return new IntUnsafeField(field);
@@ -274,15 +282,12 @@ class CachedFields implements Comparator<CachedField> {
 			if (fieldClass == char.class) return new CharUnsafeField(field);
 			if (fieldClass == byte.class) return new ByteUnsafeField(field);
 		}
-		if (fieldClass == String.class
-			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-			return new StringUnsafeField(field);
+		if (isStringField(field, fieldClass)) return new StringUnsafeField(field);
 		return new UnsafeField(field, serializer, genericType);
 	}
 
 	private CachedField newVarHandleField (Field field, Class fieldClass, GenericType genericType) {
-		boolean string = fieldClass == String.class
-			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class));
+		boolean string = isStringField(field, fieldClass);
 		if (hiddenFields) {
 			try {
 				return HiddenFields.create(field, fieldClass, string, serializer, genericType);
@@ -321,9 +326,7 @@ class CachedFields implements Comparator<CachedField> {
 			if (fieldClass == char.class) return new CharAsmField(field);
 			if (fieldClass == byte.class) return new ByteAsmField(field);
 		}
-		if (fieldClass == String.class
-			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-			return new StringAsmField(field);
+		if (isStringField(field, fieldClass)) return new StringAsmField(field);
 		return new AsmField(field, serializer, genericType);
 	}
 
@@ -338,10 +341,7 @@ class CachedFields implements Comparator<CachedField> {
 			if (fieldClass == char.class) return new CharReflectField(field);
 			if (fieldClass == byte.class) return new ByteReflectField(field);
 		}
-		// Like the other field access types, so the data is the same, eg for a final field that VarHandles can't set.
-		if (fieldClass == String.class
-			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-			return new StringReflectField(field);
+		if (isStringField(field, fieldClass)) return new StringReflectField(field);
 		return new ReflectField(field, serializer, genericType);
 	}
 
