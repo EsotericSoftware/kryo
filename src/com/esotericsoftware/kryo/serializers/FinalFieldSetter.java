@@ -53,7 +53,9 @@ import java.lang.reflect.Method;
  * is added to a HashSet while its other fields are read.
  * <p>
  * Only final fields of serializable classes that are not transient can be set this way. Other final fields, eg in a superclass
- * that isn't serializable or a transient final field that is copied, are set with reflection, which fails as before. */
+ * that isn't serializable or a transient final field that is copied, are set with reflection, which fails as before.
+ * <p>
+ * Not used on Android. */
 final class FinalFieldSetter extends ObjectInputStream {
 	static private final Object reflectionFactory;
 	static private final Method defaultReadObject;
@@ -63,14 +65,12 @@ final class FinalFieldSetter extends ObjectInputStream {
 	static {
 		Object factory = null;
 		Method method = null;
-		if (!isAndroid) {
-			try { // Java 24+.
-				Class factoryClass = Class.forName("sun.reflect.ReflectionFactory");
-				factory = factoryClass.getMethod("getReflectionFactory").invoke(null);
-				method = factoryClass.getMethod("defaultReadObjectForSerialization", Class.class);
-			} catch (Throwable ex) {
-				if (TRACE) trace("kryo", "Final fields are set with reflection.", ex);
-			}
+		try { // Java 24+.
+			Class factoryClass = Class.forName("sun.reflect.ReflectionFactory");
+			factory = factoryClass.getMethod("getReflectionFactory").invoke(null);
+			method = factoryClass.getMethod("defaultReadObjectForSerialization", Class.class);
+		} catch (Throwable ex) {
+			if (TRACE) trace("kryo", "Final fields are set with reflection.", ex);
 		}
 		reflectionFactory = factory;
 		defaultReadObject = method;
@@ -95,8 +95,8 @@ final class FinalFieldSetter extends ObjectInputStream {
 	}
 
 	/** Returns null if the final field is set with reflection: that is allowed, the method handles are not available (before Java
-	 * 24, Android), or the field is not a serializable field of a serializable class, eg it is transient. Setting it with
-	 * reflection fails in the last case. */
+	 * 24), or the field is not a serializable field of a serializable class, eg it is transient. Setting it with reflection fails
+	 * in the last case. */
 	static FinalFieldSetter create (Field field) {
 		if (defaultReadObject == null) return null;
 		if (!force) {
