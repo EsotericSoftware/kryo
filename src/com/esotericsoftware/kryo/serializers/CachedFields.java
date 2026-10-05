@@ -209,8 +209,13 @@ class CachedFields implements Comparator<CachedField> {
 		// Android has VarHandles only since API level 33, so they are only used there if configured explicitly.
 			&& (!isAndroid || fieldAccess == FieldAccessType.VARHANDLE))
 			cachedField = newVarHandleField(field, fieldClass, genericType);
-		else
+		else {
 			cachedField = newReflectField(field, fieldClass, genericType);
+			// A final field is set with reflection, which may be denied. Records set them with their constructor.
+			// FinalFieldSetter is not loaded on Android, which has ClassValue only since API level 34.
+			if (Modifier.isFinal(modifiers) && recordComponents == null && !isAndroid)
+				cachedField.finalSetter = FinalFieldSetter.create(field);
+		}
 
 		cachedField.varEncoding = config.varEncoding;
 		if (config.extendedFieldNames)

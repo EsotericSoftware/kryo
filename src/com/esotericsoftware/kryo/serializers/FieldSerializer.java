@@ -177,7 +177,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			try {
 				final CachedField field = fields[i];
 				if (values == null)
-					field.read(input, object);
+					readField(field, input, object);
 				else
 					values[field.index] = field.read(input);
 			} catch (KryoException e) {
@@ -191,6 +191,32 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		popTypeVariables(pop);
 		return object;
+	}
+
+	/** Reads the value of a field and sets it, with {@link FinalFieldSetter} for a final field if needed. */
+	void readField (CachedField field, Input input, Object object) {
+		if (field.finalSetter == null)
+			field.read(input, object);
+		else
+			field.finalSetter.set(object, field.read(input));
+	}
+
+	/** Copies the value of a field, with {@link FinalFieldSetter} for a final field if needed. */
+	void copyField (Kryo kryo, CachedField field, Object original, Object copy) {
+		if (field.finalSetter == null) {
+			field.copy(original, copy);
+			return;
+		}
+		try {
+			Object value = field.get(original);
+			// Primitive values are immutable, all other values are copied like other field values.
+			field.finalSetter.set(copy, field.field.getType().isPrimitive() ? value : kryo.copy(value));
+		} catch (IllegalAccessException ex) {
+			throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
+		} catch (KryoException ex) {
+			ex.addTrace(field.name + " (" + className(type) + ")");
+			throw ex;
+		}
 	}
 
 	/** Returns a new array for the component values of a record, indexed by {@link CachedField#index}. */
@@ -239,6 +265,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Sets a non-primitive field to null. */
 	void setNull (CachedField cachedField, Object object) {
 		if (cachedField.field.getType().isPrimitive()) return;
+		if (cachedField.finalSetter != null) {
+			cachedField.finalSetter.set(object, null);
+			return;
+		}
 		try {
 			cachedField.field.set(object, null);
 		} catch (IllegalAccessException ex) {
@@ -316,7 +346,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			T copy = createCopy(kryo, original);
 			kryo.reference(copy);
 			for (int i = 0, n = copyFields.length; i < n; i++)
-				copyFields[i].copy(original, copy);
+				copyField(kryo, copyFields[i], original, copy);
 			return copy;
 		}
 
@@ -351,6 +381,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		// For Records
 		int index;
+
+		/** Sets the field if it is final and setting it with reflection is denied, else null. */
+		FinalFieldSetter finalSetter;
 
 		// For UnsafeField.
 		long offset;

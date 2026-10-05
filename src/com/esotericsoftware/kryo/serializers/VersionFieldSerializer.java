@@ -129,7 +129,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 			}
 			if (TRACE) log("Read", fields[i], input.position());
 			if (values == null)
-				fields[i].read(input, object);
+				readField(fields[i], input, object);
 			else
 				values[fields[i].index] = fields[i].read(input);
 		}

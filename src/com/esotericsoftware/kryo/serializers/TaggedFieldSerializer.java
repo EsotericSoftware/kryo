@@ -238,7 +238,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 				if (TRACE) log("Read", cachedField, input.position());
 				if (values == null)
-					cachedField.read(fieldInput, object);
+					readField(cachedField, fieldInput, object);
 				else
 					values[cachedField.index] = cachedField.read(fieldInput);
 				if (chunked) chunks.endField(fieldInput, end);
