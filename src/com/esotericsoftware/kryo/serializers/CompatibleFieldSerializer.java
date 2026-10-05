@@ -385,8 +385,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		 * {@link #setChunkedEncoding(boolean) chunked encoding} is enabled, the data is skipped.
 		 * <p>
 		 * If the data is skipped and {@link Kryo#setReferences(boolean) references} are enabled, references to objects in the
-		 * skipped data are read as null. Without chunked encoding, or with {@link #setLegacyChunks(boolean) the chunked encoding of
-		 * Kryo 5}, references in skipped data are not read and further deserialization receives the wrong references and fails.
+		 * skipped data are read as null. With {@link #setLegacyChunks(boolean) the chunked encoding of Kryo 5}, or a custom
+		 * ReferenceResolver without {@link com.esotericsoftware.kryo.ReferenceResolver#getObjectCount() getObjectCount}, references
+		 * in skipped data are not read and further deserialization receives the wrong references and fails.
 		 * <p>
 		 * Default is true. */
 		public void setReadUnknownFieldData (boolean readUnknownTagData) {
@@ -398,7 +399,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		/** When true, fields are written with chunked encoding to allow unknown field data to be skipped, eg when the class of a
-		 * removed field no longer exists. Each field is written with its length. Default is false.
+		 * removed field no longer exists. Each field is written with its length. The outermost object with chunked encoding is
+		 * buffered until it is written completely, it is not streamed. This impacts performance. Default is false.
 		 * @see #setReadUnknownFieldData(boolean)
 		 * @see #setLegacyChunks(boolean) */
 		public void setChunkedEncoding (boolean chunked) {
@@ -445,7 +447,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 		/** When true, the generic type of a field is used to optimize its value, eg to omit the class of collection elements, even
 		 * if {@link #setReadUnknownFieldData(boolean) readUnknownFieldData} is true. Then the value can't be read anymore once the
-		 * field is removed, unless chunked encoding is enabled. This is needed to read data written by Kryo 5. Default is false. */
+		 * field is removed: an exception is thrown or, if chunked encoding is enabled, the data is skipped. This is needed to read
+		 * data written by Kryo 5. Default is false. */
 		public void setOptimizeGenerics (boolean optimizeGenerics) {
 			this.optimizeGenerics = optimizeGenerics;
 			if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig setOptimizeGenerics: " + optimizeGenerics);
