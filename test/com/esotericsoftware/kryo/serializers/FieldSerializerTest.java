@@ -1651,11 +1651,11 @@ class FieldSerializerTest extends KryoTestCase {
 		assertFieldAccess(asm, "IntAsmField", "AsmField", "IntReflectField");
 		assertFieldAccess(FieldAccessType.VARHANDLE, "IntHiddenField", "ObjectHiddenField", "IntReflectField");
 		// Without hidden classes, eg in a native image.
-		HiddenFields.supported = false;
+		CachedFields.hiddenFields = false;
 		try {
 			assertFieldAccess(FieldAccessType.VARHANDLE, "IntVarHandleField", "VarHandleField", "IntReflectField");
 		} finally {
-			HiddenFields.supported = true;
+			CachedFields.hiddenFields = true;
 		}
 		assertFieldAccess(FieldAccessType.REFLECTION, "IntReflectField", "ReflectField", "IntReflectField");
 	}

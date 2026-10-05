@@ -75,6 +75,10 @@ class CachedFields implements Comparator<CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
 
 	private final FieldSerializer serializer;
+	/** Hidden classes can't be defined on Android or in a native image. Checked before {@link HiddenFields} is used, which can't
+	 * be loaded on Android. Can be set by tests. */
+	static boolean hiddenFields = !isAndroid && !isNativeImage;
+
 	CachedField[] fields = new CachedField[0];
 	CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
@@ -260,7 +264,7 @@ class CachedFields implements Comparator<CachedField> {
 	private CachedField newVarHandleField (Field field, Class fieldClass, GenericType genericType) {
 		boolean string = fieldClass == String.class
 			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class));
-		if (HiddenFields.supported) {
+		if (hiddenFields) {
 			try {
 				return HiddenFields.create(field, fieldClass, string, serializer, genericType);
 			} catch (KryoException ex) {

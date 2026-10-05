@@ -19,8 +19,6 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.kryo.util.Util.*;
-
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -44,9 +42,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * The code that reads and writes the value is in the templates and not in a superclass, because a call from shared code to the
  * hidden class would be another indirect call. */
 final class HiddenFields {
-	/** Hidden classes can't be defined on Android or in a native image. Can be set by tests. */
-	static boolean supported = !isAndroid && !isNativeImage;
-
 	static private final MethodType fieldConstructor = MethodType.methodType(void.class, Field.class);
 	static private final MethodType objectConstructor = MethodType.methodType(void.class, Field.class, FieldSerializer.class,
 		GenericType.class);
@@ -101,16 +96,17 @@ final class HiddenFields {
 
 	private static CachedField define (Class template, Field field, MethodType constructorType, Object... args) {
 		try {
-			ConcurrentHashMap<String, MethodHandle> map = constructors.get(field.getDeclaringClass());
 			String key = template.getSimpleName() + ' ' + field.getName();
-			MethodHandle constructor = map.get(key);
-			if (constructor == null) {
-				Lookup lookup = MethodHandles.lookup().defineHiddenClassWithClassData(templateBytes.get(template),
-					VarHandleField.varHandle(field), false);
-				constructor = lookup.findConstructor(lookup.lookupClass(), constructorType);
-				MethodHandle existing = map.putIfAbsent(key, constructor);
-				if (existing != null) constructor = existing;
-			}
+			// Atomic, so only one hidden class is defined if serializers for the field are created concurrently.
+			MethodHandle constructor = constructors.get(field.getDeclaringClass()).computeIfAbsent(key, ignored -> {
+				try {
+					Lookup lookup = MethodHandles.lookup().defineHiddenClassWithClassData(templateBytes.get(template),
+						VarHandleField.varHandle(field), false);
+					return lookup.findConstructor(lookup.lookupClass(), constructorType);
+				} catch (ReflectiveOperationException ex) {
+					throw new KryoException(ex);
+				}
+			});
 			return (CachedField)constructor.invokeWithArguments(args);
 		} catch (Throwable t) {
 			throw new KryoException("Unable to define a hidden class for field: " + field, t);
