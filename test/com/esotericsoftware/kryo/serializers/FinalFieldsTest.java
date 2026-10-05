@@ -130,7 +130,7 @@ class FinalFieldsTest {
 		try {
 			FinalFieldSetter.denied = true;
 			Kryo kryo = new Kryo();
-			for (Class type : new Class[] {NotSerializable.class, NotSerializableSuperclass.class, TransientField.class}) {
+			for (Class type : new Class[] {NotSerializable.class, TransientField.class}) {
 				FieldSerializer serializer = new FieldSerializer(kryo, type);
 				serializer.getFieldSerializerConfig().setSerializeTransient(true);
 				serializer.updateFields();
@@ -139,6 +139,31 @@ class FinalFieldsTest {
 			// The method handles are available since Java 24.
 			if (Runtime.version().feature() >= 24 && !isAndroid)
 				assertNotNull(new FieldSerializer(kryo, Defaults.class).finalFieldSetter);
+		} finally {
+			FinalFieldSetter.denied = denied;
+		}
+	}
+
+	@Test
+	void testOtherFinalFields () {
+		// A final field that can't be set, eg a transient final field that is only copied, doesn't affect the other final fields.
+		assumeTrue(Runtime.version().feature() >= 24 && !isAndroid);
+		Boolean denied = FinalFieldSetter.denied;
+		try {
+			FinalFieldSetter.denied = true;
+			Kryo kryo = new Kryo();
+			FieldSerializer<TransientLock> serializer = new FieldSerializer(kryo, TransientLock.class);
+			kryo.register(TransientLock.class, serializer);
+			assertNotNull(serializer.finalFieldSetter);
+			for (FieldSerializer.CachedField field : serializer.getCopyFields())
+				assertEquals(field.getName().equals("a"), field.index != -1, field.getName());
+			Output output = new Output(64, -1);
+			kryo.writeObject(output, new TransientLock(5));
+			assertEquals(5, kryo.readObject(new Input(output.toBytes()), TransientLock.class).a);
+
+			serializer = new FieldSerializer(kryo, NotSerializableSuperclass.class);
+			assertEquals(-1, serializer.getField("a").index);
+			assertNotEquals(-1, serializer.getField("b").index);
 		} finally {
 			FinalFieldSetter.denied = denied;
 		}
@@ -154,10 +179,8 @@ class FinalFieldsTest {
 			Kryo kryo = new Kryo();
 			assertNotNull(new TaggedFieldSerializer(kryo, TaggedSubclass.class).finalFieldSetter);
 			FieldSerializer serializer = new FieldSerializer(kryo, NotSerializableSuperclass.class);
-			assertNull(serializer.finalFieldSetter);
-			serializer.removeField("a");
 			assertNotNull(serializer.finalFieldSetter);
-			serializer.removeField("b");
+			serializer.removeField("b"); // Only the final field of the superclass is left, which can't be set.
 			assertNull(serializer.finalFieldSetter);
 		} finally {
 			FinalFieldSetter.denied = denied;
@@ -254,6 +277,19 @@ class FinalFieldsTest {
 
 	public static class TransientField implements Serializable {
 		final transient int c = 3;
+	}
+
+	public static class TransientLock implements Serializable {
+		final int a;
+		final transient Object lock = new Object();
+
+		TransientLock () {
+			a = 0;
+		}
+
+		TransientLock (int a) {
+			this.a = a;
+		}
 	}
 
 	public static class Base implements Serializable {

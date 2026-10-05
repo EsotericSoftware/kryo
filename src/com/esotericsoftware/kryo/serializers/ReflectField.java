@@ -181,8 +181,6 @@ class ReflectField extends CachedField {
 				else
 					value = kryo.readObject(input, concreteType, serializer);
 			}
-			kryo.getGenerics().popGenericType();
-
 			return value;
 		} catch (KryoException ex) {
 			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
@@ -191,6 +189,9 @@ class ReflectField extends CachedField {
 			KryoException ex = new KryoException(t);
 			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
+		} finally {
+			// Pop in a finally so an exception thrown by the nested read does not leave the generics stack unbalanced.
+			kryo.getGenerics().popGenericType();
 		}
 	}
 

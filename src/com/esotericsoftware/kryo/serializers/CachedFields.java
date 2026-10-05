@@ -138,7 +138,7 @@ class CachedFields implements Comparator<CachedField> {
 			cachedField.index = -1;
 		for (CachedField cachedField : copyFields)
 			cachedField.index = -1;
-		serializer.finalFieldSetter = FinalFieldSetter.create(serializer.type, fields, copyFields);
+		serializer.finalFieldSetter = FinalFieldSetter.create(fields, copyFields);
 	}
 
 	/** @param recordComponents May be null if the type is not a record. */
