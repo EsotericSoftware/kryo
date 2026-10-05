@@ -68,8 +68,8 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	void testCompatibleFieldSerializer () {
 		testCompatibleFieldSerializer(83, false, false);
 		testCompatibleFieldSerializer(100, false, true);
-		testCompatibleFieldSerializer(80, true, false);
-		testCompatibleFieldSerializer(110, true, true);
+		testCompatibleFieldSerializer(86, true, false);
+		testCompatibleFieldSerializer(116, true, true);
 	}
 
 	private void testCompatibleFieldSerializer (int length, boolean references, final boolean chunked) {
@@ -96,8 +96,8 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	void testAddedField () {
 		testAddedField(59, false, false);
 		testAddedField(74, false, true);
-		testAddedField(63, true, false);
-		testAddedField(89, true, true);
+		testAddedField(62, true, false);
+		testAddedField(88, true, true);
 	}
 
 	private void testAddedField (int length, boolean references, boolean chunked) {
@@ -132,11 +132,11 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		testAddedFieldToClassWithManyFields(229, false, true, true);
 		testAddedFieldToClassWithManyFields(192, false, true, false);
 
-		testAddedFieldToClassWithManyFields(227, true, false, true);
-		testAddedFieldToClassWithManyFields(190, true, false, false);
+		testAddedFieldToClassWithManyFields(190, true, false, true);
+		testAddedFieldToClassWithManyFields(153, true, false, false);
 
-		testAddedFieldToClassWithManyFields(304, true, true, true);
-		testAddedFieldToClassWithManyFields(267, true, true, false);
+		testAddedFieldToClassWithManyFields(267, true, true, true);
+		testAddedFieldToClassWithManyFields(230, true, true, false);
 	}
 
 	private void testAddedFieldToClassWithManyFields (int length, boolean references, boolean chunked,
@@ -201,8 +201,8 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	void testRemovedField () {
 		testRemovedField(92, false, false);
 		testRemovedField(109, false, true);
-		testRemovedField(87, true, false);
-		testRemovedField(117, true, true);
+		testRemovedField(95, true, false);
+		testRemovedField(125, true, true);
 	}
 
 	private void testRemovedField (int length, boolean references, boolean chunked) {
@@ -297,11 +297,11 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		testRemovedFieldFromClassWithManyFields(239, false, true, true);
 		testRemovedFieldFromClassWithManyFields(201, false, true, false);
 
-		testRemovedFieldFromClassWithManyFields(237, true, false, true);
+		testRemovedFieldFromClassWithManyFields(199, true, false, true);
 		// testRemovedFieldFromClassWithManyFields(0, true, false, false); // Doesn't support remove.
 
-		testRemovedFieldFromClassWithManyFields(316, true, true, true);
-		testRemovedFieldFromClassWithManyFields(278, true, true, false);
+		testRemovedFieldFromClassWithManyFields(278, true, true, true);
+		testRemovedFieldFromClassWithManyFields(240, true, true, false);
 	}
 
 	private void testRemovedFieldFromClassWithManyFields (int length, boolean references, boolean chunked,
@@ -374,11 +374,11 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		testRemovedMultipleFieldsFromClassWithManyFields(211, false, true, true);
 		testRemovedMultipleFieldsFromClassWithManyFields(185, false, true, false);
 
-		testRemovedMultipleFieldsFromClassWithManyFields(197, true, false, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(171, true, false, true);
 		// testRemovedMultipleFieldsFromClassWithManyFields(0, true, false, false); // Doesn't support remove.
 
-		testRemovedMultipleFieldsFromClassWithManyFields(276, true, true, true);
-		testRemovedMultipleFieldsFromClassWithManyFields(250, true, true, false);
+		testRemovedMultipleFieldsFromClassWithManyFields(250, true, true, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(224, true, true, false);
 	}
 
 	private void testRemovedMultipleFieldsFromClassWithManyFields (int length, boolean references, boolean chunked,
@@ -457,8 +457,8 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	void testExtendedClass () {
 		testExtendedClass(270, false, false);
 		testExtendedClass(285, false, true);
-		testExtendedClass(273, true, false);
-		testExtendedClass(300, true, true);
+		testExtendedClass(271, true, false);
+		testExtendedClass(298, true, true);
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/699

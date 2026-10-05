@@ -49,6 +49,11 @@ public class MapReferenceResolver implements ReferenceResolver {
 		this.maximumCapacity = maximumCapacity;
 	}
 
+	/** Returns the capacity to trim written and read objects to when {@link #reset()} is called. */
+	public int getMaximumCapacity () {
+		return maximumCapacity;
+	}
+
 	public void setKryo (Kryo kryo) {
 		this.kryo = kryo;
 	}
@@ -91,8 +96,9 @@ public class MapReferenceResolver implements ReferenceResolver {
 		writtenObjects.clear(maximumCapacity);
 	}
 
-	/** Returns false for all primitive wrappers and enums. */
+	/** Returns false for all primitive wrappers, enums and strings. Strings are rarely shared, so tracking them costs more than it
+	 * saves. */
 	public boolean useReferences (Class type) {
-		return !Util.isWrapperClass(type) && !Util.isEnum(type);
+		return !Util.isWrapperClass(type) && !Util.isEnum(type) && type != String.class;
 	}
 }

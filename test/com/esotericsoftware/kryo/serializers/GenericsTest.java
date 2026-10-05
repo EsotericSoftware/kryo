@@ -64,7 +64,7 @@ class GenericsTest extends KryoTestCase {
 			new SerializableObjectFoo("three"));
 		BaseGeneric<SerializableObjectFoo> bg1 = new BaseGeneric(list);
 
-		roundTrip(117, bg1);
+		roundTrip(114, bg1);
 	}
 
 	@Test
@@ -78,7 +78,7 @@ class GenericsTest extends KryoTestCase {
 			new SerializableObjectFoo("three"));
 		ConcreteClass cc1 = new ConcreteClass(list);
 
-		roundTrip(117, cc1);
+		roundTrip(114, cc1);
 	}
 
 	// Test for/from https://github.com/EsotericSoftware/kryo/issues/377

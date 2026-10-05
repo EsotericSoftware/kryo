@@ -33,6 +33,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.CompatibleFieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSerializerConfig;
+import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -384,12 +385,20 @@ class ChunkedEncodingTest {
 	@Test
 	void testKryo5Compatibility () {
 		// Kryo5Compatibility enables the chunked encoding of Kryo 5.
-		Kryo writer = compatibleKryo(true, true, true);
+		Kryo writer = new Kryo();
 		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
 		config.setChunkedEncoding(true);
 		config.setLegacyChunks(true);
 		config.setOptimizeGenerics(true);
 		writer.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		writer.setReferenceResolver(new MapReferenceResolver() { // Kryo 5 used references for strings.
+			public boolean useReferences (Class type) {
+				return type == String.class || super.useReferences(type);
+			}
+		});
+		writer.register(Entity.class, 20);
+		writer.register(Entity3.class, 21);
+		writer.register(Entity2.class, 22);
 		Entity entity = entity(true);
 		byte[] bytes = write(writer, entity);
 
