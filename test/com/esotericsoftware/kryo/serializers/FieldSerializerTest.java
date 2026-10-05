@@ -1703,6 +1703,57 @@ class FieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testSameDataWithAllFieldAccessTypes () {
+		// All field access types write the same data, also for final fields, which VarHandles can't set, and for String fields with
+		// references, which are written without references.
+		@SuppressWarnings("deprecation")
+		FieldAccessType asm = FieldAccessType.ASM;
+		for (boolean references : new boolean[] {false, true}) {
+			byte[] expected = null;
+			for (FieldAccessType fieldAccess : new FieldAccessType[] {FieldAccessType.UNSAFE, asm, FieldAccessType.VARHANDLE,
+				FieldAccessType.REFLECTION}) {
+				Kryo kryo = new Kryo();
+				kryo.setReferences(references);
+				FieldSerializerConfig config = new FieldSerializerConfig();
+				config.setFieldAccess(fieldAccess);
+				kryo.register(FieldAccessData.class, new FieldSerializer(kryo, FieldAccessData.class, config));
+				kryo.register(ArrayList.class);
+				Output output = new Output(64, -1);
+				kryo.writeObject(output, new FieldAccessData("string", 5));
+				byte[] bytes = output.toBytes();
+				if (expected == null) expected = bytes;
+				assertArrayEquals(expected, bytes, fieldAccess + ", references: " + references);
+				FieldAccessData read = kryo.readObject(new Input(bytes), FieldAccessData.class);
+				assertEquals("string", read.string);
+				assertEquals("string", read.finalString);
+				assertEquals(5, read.finalValue);
+				assertEquals(new ArrayList(), read.finalObject);
+			}
+		}
+	}
+
+	public static class FieldAccessData {
+		public String string;
+		public int value;
+		public Object object = new ArrayList();
+		public final String finalString;
+		public final int finalValue;
+		public final Object finalObject = new ArrayList();
+
+		public FieldAccessData () {
+			finalString = null;
+			finalValue = 0;
+		}
+
+		public FieldAccessData (String string, int value) {
+			this.string = string;
+			this.value = value;
+			finalString = string;
+			finalValue = value;
+		}
+	}
+
+	@Test
 	void testIncompatibleClassInData () {
 		// The class in the data is not assignable to the field type, eg because the field type changed. Unsafe doesn't check the
 		// type, so the field would hold a value of the wrong type.

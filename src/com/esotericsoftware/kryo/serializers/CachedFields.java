@@ -49,6 +49,7 @@ import com.esotericsoftware.kryo.serializers.ReflectField.FloatReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.IntReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.LongReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.ShortReflectField;
+import com.esotericsoftware.kryo.serializers.ReflectField.StringReflectField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.BooleanUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.ByteUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.CharUnsafeField;
@@ -337,6 +338,10 @@ class CachedFields implements Comparator<CachedField> {
 			if (fieldClass == char.class) return new CharReflectField(field);
 			if (fieldClass == byte.class) return new ByteReflectField(field);
 		}
+		// Like the other field access types, so the data is the same, eg for a final field that VarHandles can't set.
+		if (fieldClass == String.class
+			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
+			return new StringReflectField(field);
 		return new ReflectField(field, serializer, genericType);
 	}
 
