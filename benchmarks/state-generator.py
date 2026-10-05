@@ -10,7 +10,7 @@ import os, random, sys
 NO_STRINGS = "--no-strings" in sys.argv
 sys.argv = [a for a in sys.argv if a != "--no-strings"]
 OUT = sys.argv[1]
-PKG = "com.esotericsoftware.kryo.benchmarks.state"
+PKG = "com.esotericsoftware.kryo.benchmarks.state.model"
 rnd = random.Random(42)
 
 # Total class count (default 78), split into tiers 0..3 with proportions 30:25:15:8. One class hierarchy (abstract base +
@@ -111,9 +111,9 @@ def init(fname, kind):
 
 pkgdir = os.path.join(OUT, *PKG.split("."))
 os.makedirs(pkgdir, exist_ok=True)
-# Remove previously generated files (all but StateBenchmark.java), in case the class count shrank.
+# Remove previously generated files, in case the class count shrank. The package contains only generated files.
 for f in os.listdir(pkgdir):
-    if f.endswith(".java") and f != "StateBenchmark.java": os.remove(os.path.join(pkgdir, f))
+    if f.endswith(".java"): os.remove(os.path.join(pkgdir, f))
 LICENSE = '''/* Copyright (c) 2008-2026, Nathan Sweet
  * All rights reserved.
  *

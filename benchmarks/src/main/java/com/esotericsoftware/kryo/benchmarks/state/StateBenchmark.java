@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.benchmarks.state;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
+import com.esotericsoftware.kryo.benchmarks.state.model.AppState;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;

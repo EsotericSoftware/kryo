@@ -51,7 +51,7 @@ To run only a subset of a benchmark, specify the benchmark class name and the me
 
 ## StateBenchmark
 
-Most benchmarks serialize a single small object. `StateBenchmark` does a round trip of a larger object graph that resembles the state of an application: 78 classes in the `state` package with about 10 fields each, lists, maps, fields with an abstract type, and 20% shared objects. It has a method for each field serializer (`field`, `compatible`, `tagged`, `version`) and these parameters:
+Most benchmarks serialize a single small object. `StateBenchmark` does a round trip of a larger object graph that resembles the state of an application: 78 classes in the `state.model` package with about 10 fields each, lists, maps, fields with an abstract type, and 20% shared objects. It has a method for each field serializer (`field`, `compatible`, `tagged`, `version`) and these parameters:
 
 Parameter | Description | Default
 --- | --- | ---
