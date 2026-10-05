@@ -19,15 +19,17 @@
 
 package com.esotericsoftware.kryo.benchmarks.io;
 
+import java.util.concurrent.TimeUnit;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
-@BenchmarkMode(Mode.SingleShotTime)
-@Measurement(batchSize = 12000000)
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class ArrayBenchmark {
 	@Benchmark
 	public void writeInts (WriteIntsState state) {
@@ -48,7 +50,7 @@ public class ArrayBenchmark {
 	}
 
 	@Benchmark
-	public void readVarInts (ReadIntsState state) {
+	public void readVarInts (ReadVarIntsState state) {
 		state.reset();
 		state.input.readInts(state.ints.length, true);
 	}
@@ -72,7 +74,7 @@ public class ArrayBenchmark {
 	}
 
 	@Benchmark
-	public void readVarLongs (ReadLongsState state) {
+	public void readVarLongs (ReadVarLongsState state) {
 		state.reset();
 		state.input.readLongs(state.longs.length, true);
 	}
@@ -106,6 +108,14 @@ public class ArrayBenchmark {
 	}
 
 	@State(Scope.Thread)
+	static public class ReadVarIntsState extends WriteIntsState {
+		public void setup () {
+			super.setup();
+			new ArrayBenchmark().writeVarInts(this);
+		}
+	}
+
+	@State(Scope.Thread)
 	static public class WriteLongsState extends InputOutputState {
 		public long[] longs = {0, 1, 2, 3, 4, 5, 63, 64, 65, 127, 128, 129, 4000, 5000, 6000, 16000, 32000, 256000, 1024000, -1, -2,
 			-3, -4, Integer.MIN_VALUE, Integer.MAX_VALUE, Long.MIN_VALUE, Long.MAX_VALUE, 9999999999l};
@@ -121,6 +131,14 @@ public class ArrayBenchmark {
 		public void setup () {
 			super.setup();
 			new ArrayBenchmark().writeLongs(this);
+		}
+	}
+
+	@State(Scope.Thread)
+	static public class ReadVarLongsState extends WriteLongsState {
+		public void setup () {
+			super.setup();
+			new ArrayBenchmark().writeVarLongs(this);
 		}
 	}
 
