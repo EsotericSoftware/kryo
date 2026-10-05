@@ -524,7 +524,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		 *             If VarHandles are slower for you than ReflectASM, please open an issue. */
 		@Deprecated
 		ASM,
-		/** {@link java.lang.invoke.VarHandle} for non-final fields. */
+		/** {@link java.lang.invoke.VarHandle} for non-final fields. Where hidden classes can be defined, which is not on Android or
+		 * in a native image, each field is accessed by a hidden class that has the VarHandle as a constant, which is much faster
+		 * and close to Unsafe. */
 		VARHANDLE,
 		/** {@link Field} reflection. */
 		REFLECTION
