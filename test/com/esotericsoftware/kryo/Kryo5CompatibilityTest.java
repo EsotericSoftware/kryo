@@ -171,6 +171,29 @@ class Kryo5CompatibilityTest {
 			() -> kryo.writeClassAndObject(new Output(64), Stream.of(null, 1, null).toList()));
 	}
 
+	@Test
+	void testReferenceResolver () {
+		// Kryo's reference resolvers are replaced by ones that use references for strings, without enabling references.
+		Kryo kryo = new Kryo();
+		Kryo5Compatibility.configure(kryo);
+		assertFalse(kryo.getReferences());
+		kryo.setReferences(true);
+		assertTrue(kryo.getReferenceResolver().useReferences(String.class));
+
+		kryo = new Kryo(new MapReferenceResolver(100));
+		Kryo5Compatibility.configure(kryo);
+		assertTrue(kryo.getReferenceResolver().useReferences(String.class));
+		assertEquals(100, ((MapReferenceResolver)kryo.getReferenceResolver()).getMaximumCapacity());
+
+		// Subclasses decide themselves.
+		MapReferenceResolver custom = new MapReferenceResolver() {
+		};
+		kryo = new Kryo(custom);
+		Kryo5Compatibility.configure(kryo);
+		assertSame(custom, kryo.getReferenceResolver());
+		assertFalse(kryo.getReferenceResolver().useReferences(String.class));
+	}
+
 	/** Fails if the data is read correctly without the Kryo 5 settings. */
 	private void assertNotReadable (Callable<Boolean> read) {
 		boolean correct;

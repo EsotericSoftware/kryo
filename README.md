@@ -460,11 +460,11 @@ Under the covers, a ReferenceResolver handles tracking objects that have been re
 2. HashMapReferenceResolver uses an IdentityHashMap to track written objects. This kind of map allocates for put, so it is generally slightly slower than MapReferenceResolver.
 3. ListReferenceResolver uses an ArrayList to track written objects. For object graphs with relatively few objects, this can be faster than using a map (~15% faster in some tests). This should not be used for graphs with many objects because it has a linear look up to find objects that have already been written.
 
-ReferenceResolver `useReferences(Class)` can be overridden. It returns a boolean to decide if references are supported for a class. If a class doesn't support references, the varint reference ID is not written before objects of that type. If a class does not need references and objects of that type appear in the object graph many times, the serialized size can be greatly reduced by disabling references for that class. The default reference resolver returns false for all primitive wrappers and enums. It is common to also return false for String and other classes, depending on the object graphs being serialized.
+ReferenceResolver `useReferences(Class)` can be overridden. It returns a boolean to decide if references are supported for a class. If a class doesn't support references, the varint reference ID is not written before objects of that type. If a class does not need references and objects of that type appear in the object graph many times, the serialized size can be greatly reduced by disabling references for that class. Kryo's reference resolvers return false for all primitive wrappers, enums, and strings: strings are rarely shared, so tracking them costs more than it saves. Override `useReferences` to use references for strings, like Kryo 5 did. It is common to also return false for other classes, depending on the object graphs being serialized.
 
 ```java
 public boolean useReferences (Class type) {
-   return !Util.isWrapperClass(type) && !Util.isEnum(type) && type != String.class;
+   return !Util.isWrapperClass(type) && !Util.isEnum(type) && type != String.class && type != MyValue.class;
 }
 ```
 

@@ -28,6 +28,8 @@ import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.MapReferenceResolver;
+import com.esotericsoftware.kryo.util.Util;
 
 import java.io.File;
 import java.math.BigDecimal;
@@ -179,6 +181,14 @@ class DefaultSerializersTest extends KryoTestCase {
 	void testString () {
 		kryo = new Kryo();
 		kryo.setReferences(true);
+		// Strings don't use references by default.
+		roundTrip(5, "meow");
+		roundTrip(69, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+		kryo.setReferenceResolver(new MapReferenceResolver() {
+			public boolean useReferences (Class type) {
+				return !Util.isWrapperClass(type) && !Util.isEnum(type);
+			}
+		});
 		roundTrip(6, "meow");
 		roundTrip(70, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 
