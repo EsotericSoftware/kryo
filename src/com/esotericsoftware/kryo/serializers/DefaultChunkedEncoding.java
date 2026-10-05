@@ -102,6 +102,8 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 			scope.buffer = new Output(256, -1);
 		else
 			scope.buffer.reset();
+		// The object data is read from the input directly, which has the encoding of the output.
+		scope.buffer.setVariableLengthEncoding(output.getVariableLengthEncoding());
 		scope.outermostFieldNames = false;
 		// Not empty if an exception was thrown while writing the previous object graph.
 		scope.fieldNameTypes.clear();

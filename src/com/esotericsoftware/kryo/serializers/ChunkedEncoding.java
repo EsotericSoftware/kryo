@@ -56,7 +56,7 @@ interface ChunkedEncoding {
 	 * @param output The output returned by {@link #fieldOutput(Output)}. */
 	void endField (Output output, long mark);
 
-	/** Returns the input for the fields of an object. Must be followed by {@link #endRead()}. */
+	/** Returns the input for the fields of an object. Must be followed by {@link #endRead()}, also if it throws an exception. */
 	Input beginRead (Input input);
 
 	/** Ends reading an object started by {@link #beginRead(Input)}. */

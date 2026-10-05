@@ -176,10 +176,11 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		boolean readUnknownTagData = config.readUnknownTagData;
 		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
 		boolean chunked = chunks != null;
-		Input fieldInput = chunked ? chunks.beginRead(input) : input;
 		int pop = pushTypeVariables();
 		T object = null;
 		try {
+			// In the try block, so the read is ended if the data first written in the object can't be read.
+			Input fieldInput = chunked ? chunks.beginRead(input) : input;
 			Object[] values = null;
 			if (recordConstructor == null) {
 				object = create(kryo, input, type);

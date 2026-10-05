@@ -351,6 +351,45 @@ class ChunkedEncodingTest {
 	}
 
 	@Test
+	void testFixedLengthEncoding () {
+		// The object is buffered when writing and read from the input directly, with the same encoding.
+		Output output = new Output(1024, -1);
+		output.setVariableLengthEncoding(false);
+		MisreadEntity entity = new MisreadEntity();
+		entity.a = new int[] {1, 2, 300};
+		entity.z = "z";
+		compatibleKryo(false, false, false).writeObject(output, entity);
+		Input input = new Input(output.toBytes());
+		input.setVariableLengthEncoding(false);
+		MisreadEntity read = compatibleKryo(false, false, false).readObject(input, MisreadEntity.class);
+		assertArrayEquals((int[])entity.a, (int[])read.a);
+		assertEquals("z", read.z);
+	}
+
+	@Test
+	void testTruncatedData () {
+		// An exception at any position must not affect the next object graph read from the same input.
+		TaggedEntity entity = new TaggedEntity();
+		entity.b = new TaggedEntity2();
+		entity.b.x = new Entity3(5);
+		entity.e = new Entity3(10);
+		for (boolean tagged : new boolean[] {false, true}) {
+			Kryo writer = tagged ? taggedKryo() : compatibleKryo(false, true, false);
+			byte[] bytes = write(writer, entity);
+			Kryo reader = tagged ? taggedKryo() : compatibleKryo(false, true, false);
+			Input input = new Input(bytes);
+			for (int length = 0; length < bytes.length; length++) {
+				input.setBuffer(bytes, 0, length);
+				assertThrows(KryoException.class, () -> reader.readObject(input, TaggedEntity.class));
+				input.setBuffer(bytes);
+				TaggedEntity read = reader.readObject(input, TaggedEntity.class);
+				assertEquals(5, read.b.x.a);
+				assertEquals("s10", read.e.s);
+			}
+		}
+	}
+
+	@Test
 	void testMultipleObjects () {
 		// Each element is written with the class names and field names first written in it.
 		ArrayList<Entity> list = new ArrayList<>();
