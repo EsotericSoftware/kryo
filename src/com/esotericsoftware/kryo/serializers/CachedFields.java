@@ -82,7 +82,6 @@ class CachedFields implements Comparator<CachedField> {
 	CachedField[] fields = new CachedField[0];
 	CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
-	private boolean hasFinalFields;
 	/** True while {@link FieldSerializer#initializeCachedFields()} is called. */
 	private boolean initializing;
 	private Object access;
@@ -112,7 +111,6 @@ class CachedFields implements Comparator<CachedField> {
 		}
 
 		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
-		hasFinalFields = false;
 		boolean asm = fieldAccess() == FieldAccessType.ASM && !isAndroid && !isNativeImage
 			&& Modifier.isPublic(serializer.type.getModifiers());
 		RecordComponent[] recordComponents = isRecord(serializer.type) ? serializer.type.getRecordComponents() : null;
@@ -141,33 +139,13 @@ class CachedFields implements Comparator<CachedField> {
 		} finally {
 			initializing = false;
 		}
-		changed();
-	}
-
-	/** Called after the fields changed: after {@link FieldSerializer#initializeCachedFields()}, which can remove fields, and after
-	 * a field was removed. */
-	private void changed () {
 		serializer.cachedFieldsChanged();
-		updateFinalFieldSetter();
 	}
 
 	/** Called after a field was removed. A field removed by {@link FieldSerializer#initializeCachedFields()} is not remembered,
 	 * because it is removed again when the fields are rebuilt. */
 	private void removed (CachedField cachedField) {
 		if (!initializing) removedFields.add(cachedField.field);
-	}
-
-	/** Creates the {@link FinalFieldSetter} for the current fields, after they were added or removed. */
-	private void updateFinalFieldSetter () {
-		serializer.finalFieldSetter = null;
-		// Unsafe sets final fields, also if setting them with reflection is denied. Records set them with their constructor and use
-		// the index for their components.
-		if (!hasFinalFields || fieldAccess() == FieldAccessType.UNSAFE || isRecord(serializer.type)) return;
-		for (CachedField cachedField : fields)
-			cachedField.index = -1;
-		for (CachedField cachedField : copyFields)
-			cachedField.index = -1;
-		serializer.finalFieldSetter = FinalFieldSetter.create(fields, copyFields);
 	}
 
 	/** @param recordComponents May be null if the type is not a record. */
@@ -229,8 +207,11 @@ class CachedFields implements Comparator<CachedField> {
 		// Android has VarHandles only since API level 33, so they are only used there if configured explicitly.
 			&& (!isAndroid || fieldAccess == FieldAccessType.VARHANDLE))
 			cachedField = newVarHandleField(field, fieldClass, genericType);
-		else
+		else {
 			cachedField = newReflectField(field, fieldClass, genericType);
+			// A final field is set with reflection, which may be denied. Records set them with their constructor.
+			if (Modifier.isFinal(modifiers) && recordComponents == null) cachedField.finalSetter = FinalFieldSetter.create(field);
+		}
 
 		cachedField.varEncoding = config.varEncoding;
 		if (config.extendedFieldNames)
@@ -265,7 +246,6 @@ class CachedFields implements Comparator<CachedField> {
 
 		applyAnnotations(cachedField);
 
-		if (Modifier.isFinal(modifiers)) hasFinalFields = true;
 		if (isTransient) {
 			if (config.serializeTransient) fields.add(cachedField);
 			if (config.copyTransient) copyFields.add(cachedField);
@@ -397,7 +377,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + serializer.type.getName());
-		if (!initializing) changed();
+		if (!initializing) serializer.cachedFieldsChanged();
 	}
 
 	/** Removes a field so that it won't be serialized. */
@@ -429,7 +409,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
-		if (!initializing) changed();
+		if (!initializing) serializer.cachedFieldsChanged();
 	}
 
 	/** Sets serializers using annotations.

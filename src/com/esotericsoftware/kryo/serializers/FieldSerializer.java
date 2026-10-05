@@ -71,8 +71,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	// For records.
 	final Constructor recordConstructor;
-	/** Sets final fields if setting them with reflection is denied, else null. */
-	FinalFieldSetter finalFieldSetter;
 	private final Object[] recordDefaults;
 
 	public FieldSerializer (Kryo kryo, Class type) {
@@ -197,22 +195,22 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Reads the value of a field and sets it, with {@link FinalFieldSetter} for a final field if needed. */
 	void readField (CachedField field, Input input, Object object) {
-		if (finalFieldSetter == null || field.index == -1)
+		if (field.finalSetter == null)
 			field.read(input, object);
 		else
-			finalFieldSetter.set(object, field.index, field.read(input));
+			field.finalSetter.set(object, field.read(input));
 	}
 
 	/** Copies the value of a field, with {@link FinalFieldSetter} for a final field if needed. */
 	void copyField (Kryo kryo, CachedField field, Object original, Object copy) {
-		if (finalFieldSetter == null || field.index == -1) {
+		if (field.finalSetter == null) {
 			field.copy(original, copy);
 			return;
 		}
 		try {
 			Object value = field.get(original);
 			// Primitive values are immutable, all other values are copied like other field values.
-			finalFieldSetter.set(copy, field.index, field.field.getType().isPrimitive() ? value : kryo.copy(value));
+			field.finalSetter.set(copy, field.field.getType().isPrimitive() ? value : kryo.copy(value));
 		} catch (IllegalAccessException ex) {
 			throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
 		} catch (KryoException ex) {
@@ -267,8 +265,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Sets a non-primitive field to null. */
 	void setNull (CachedField cachedField, Object object) {
 		if (cachedField.field.getType().isPrimitive()) return;
-		if (finalFieldSetter != null && cachedField.index != -1) {
-			finalFieldSetter.set(object, cachedField.index, null);
+		if (cachedField.finalSetter != null) {
+			cachedField.finalSetter.set(object, null);
 			return;
 		}
 		try {
@@ -381,9 +379,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 		FieldAccess access;
 		int accessIndex = -1;
 
-		// For records: the component index, for every field. For other classes: the index of a final field set by FinalFieldSetter,
-		// -1 for all other fields. Records never have a FinalFieldSetter, so the two uses don't mix.
-		int index = -1;
+		// For Records
+		int index;
+
+		/** Sets the field if it is final and setting it with reflection is denied, else null. */
+		FinalFieldSetter finalSetter;
 
 		// For UnsafeField.
 		long offset;

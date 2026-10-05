@@ -49,25 +49,23 @@ class FinalFieldsTest {
 	void testFinalFields () {
 		List<BiFunction<Kryo, Class, Serializer>> serializers = List.of(FieldSerializer::new, CompatibleFieldSerializer::new,
 			TaggedFieldSerializer::new, VersionFieldSerializer::new);
-		// The detected mode, and the method handles also if setting final fields with reflection is allowed. Without the method
-		// handles (Java < 24), final fields are always set with reflection.
-		boolean detected = FinalFieldSetter.mutationDenied();
+		// As configured for Java, and with the method handles also if setting final fields with reflection is allowed. Without the
+		// method handles (Java < 24), final fields are always set with reflection.
 		try {
-			for (boolean denied : detected ? new boolean[] {true} : new boolean[] {false, true}) {
-				FinalFieldSetter.denied = denied;
+			for (boolean force : new boolean[] {false, true}) {
+				FinalFieldSetter.force = force;
 				testFinalFields(serializers);
 			}
 		} finally {
-			FinalFieldSetter.denied = detected;
+			FinalFieldSetter.force = false;
 		}
 	}
 
 	@Test
 	void testMissingAndNullFields () {
-		boolean detected = FinalFieldSetter.mutationDenied();
 		try {
-			for (boolean denied : detected ? new boolean[] {true} : new boolean[] {false, true}) {
-				FinalFieldSetter.denied = denied;
+			for (boolean force : new boolean[] {false, true}) {
+				FinalFieldSetter.force = force;
 				// A final field that is not in the data keeps the value set by the constructor.
 				Kryo writer = new Kryo();
 				CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(writer, Defaults.class);
@@ -90,7 +88,7 @@ class FinalFieldsTest {
 				assertEquals(1, read.number);
 			}
 		} finally {
-			FinalFieldSetter.denied = detected;
+			FinalFieldSetter.force = false;
 		}
 	}
 
@@ -98,10 +96,9 @@ class FinalFieldsTest {
 	void testHashSetCycle () {
 		// A final field is set right after it is read, like with reflection, so the hash code of an object that is added to a
 		// HashSet while its other fields are read uses the value.
-		boolean detected = FinalFieldSetter.mutationDenied();
 		try {
-			for (boolean denied : detected ? new boolean[] {true} : new boolean[] {false, true}) {
-				FinalFieldSetter.denied = denied;
+			for (boolean force : new boolean[] {false, true}) {
+				FinalFieldSetter.force = force;
 				Kryo kryo = new Kryo();
 				kryo.setReferences(true);
 				kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
@@ -119,28 +116,27 @@ class FinalFieldsTest {
 				}
 			}
 		} finally {
-			FinalFieldSetter.denied = detected;
+			FinalFieldSetter.force = false;
 		}
 	}
 
 	@Test
 	void testNotSerializable () {
 		// Final fields that are not serializable fields of a serializable class are set with reflection.
-		Boolean denied = FinalFieldSetter.denied;
 		try {
-			FinalFieldSetter.denied = true;
+			FinalFieldSetter.force = true;
 			Kryo kryo = new Kryo();
 			for (Class type : new Class[] {NotSerializable.class, TransientField.class}) {
 				FieldSerializer serializer = new FieldSerializer(kryo, type);
 				serializer.getFieldSerializerConfig().setSerializeTransient(true);
 				serializer.updateFields();
-				assertNull(serializer.finalFieldSetter, type.getSimpleName());
+				assertFalse(hasFinalSetter(serializer), type.getSimpleName());
 			}
 			// The method handles are available since Java 24.
 			if (Runtime.version().feature() >= 24 && !isAndroid)
-				assertNotNull(new FieldSerializer(kryo, Defaults.class).finalFieldSetter);
+				assertTrue(hasFinalSetter(new FieldSerializer(kryo, Defaults.class)));
 		} finally {
-			FinalFieldSetter.denied = denied;
+			FinalFieldSetter.force = false;
 		}
 	}
 
@@ -148,42 +144,49 @@ class FinalFieldsTest {
 	void testOtherFinalFields () {
 		// A final field that can't be set, eg a transient final field that is only copied, doesn't affect the other final fields.
 		assumeTrue(Runtime.version().feature() >= 24 && !isAndroid);
-		Boolean denied = FinalFieldSetter.denied;
 		try {
-			FinalFieldSetter.denied = true;
+			FinalFieldSetter.force = true;
 			Kryo kryo = new Kryo();
 			FieldSerializer<TransientLock> serializer = new FieldSerializer(kryo, TransientLock.class);
 			kryo.register(TransientLock.class, serializer);
-			assertNotNull(serializer.finalFieldSetter);
+			assertTrue(hasFinalSetter(serializer));
 			for (FieldSerializer.CachedField field : serializer.getCopyFields())
-				assertEquals(field.getName().equals("a"), field.index != -1, field.getName());
+				assertEquals(field.getName().equals("a"), field.finalSetter != null, field.getName());
 			Output output = new Output(64, -1);
 			kryo.writeObject(output, new TransientLock(5));
 			assertEquals(5, kryo.readObject(new Input(output.toBytes()), TransientLock.class).a);
 
 			serializer = new FieldSerializer(kryo, NotSerializableSuperclass.class);
-			assertEquals(-1, serializer.getField("a").index);
-			assertNotEquals(-1, serializer.getField("b").index);
+			assertNull(serializer.getField("a").finalSetter);
+			assertNotNull(serializer.getField("b").finalSetter);
 		} finally {
-			FinalFieldSetter.denied = denied;
+			FinalFieldSetter.force = false;
 		}
+	}
+
+	/** Returns true if a final field of the serializer is set with a {@link FinalFieldSetter}. */
+	static private boolean hasFinalSetter (FieldSerializer serializer) {
+		for (FieldSerializer.CachedField field : serializer.getFields())
+			if (field.finalSetter != null) return true;
+		for (FieldSerializer.CachedField field : serializer.getCopyFields())
+			if (field.finalSetter != null) return true;
+		return false;
 	}
 
 	@Test
 	void testRemovedFields () {
-		// The setter is created for the fields that remain after fields were removed, eg untagged fields by TaggedFieldSerializer.
+		// Only the fields that remain after fields were removed have a setter, eg not the untagged fields of TaggedFieldSerializer.
 		assumeTrue(Runtime.version().feature() >= 24 && !isAndroid);
-		Boolean denied = FinalFieldSetter.denied;
 		try {
-			FinalFieldSetter.denied = true;
+			FinalFieldSetter.force = true;
 			Kryo kryo = new Kryo();
-			assertNotNull(new TaggedFieldSerializer(kryo, TaggedSubclass.class).finalFieldSetter);
+			assertTrue(hasFinalSetter(new TaggedFieldSerializer(kryo, TaggedSubclass.class)));
 			FieldSerializer serializer = new FieldSerializer(kryo, NotSerializableSuperclass.class);
-			assertNotNull(serializer.finalFieldSetter);
+			assertTrue(hasFinalSetter(serializer));
 			serializer.removeField("b"); // Only the final field of the superclass is left, which can't be set.
-			assertNull(serializer.finalFieldSetter);
+			assertFalse(hasFinalSetter(serializer));
 		} finally {
-			FinalFieldSetter.denied = denied;
+			FinalFieldSetter.force = false;
 		}
 	}
 
@@ -191,16 +194,15 @@ class FinalFieldsTest {
 	void testUnsafe () {
 		// Unsafe sets final fields also if setting them with reflection is denied.
 		assumeTrue(unsafe);
-		Boolean denied = FinalFieldSetter.denied;
 		try {
-			FinalFieldSetter.denied = true;
+			FinalFieldSetter.force = true;
 			Kryo kryo = new Kryo();
 			FieldSerializer serializer = new FieldSerializer(kryo, Defaults.class);
 			serializer.getFieldSerializerConfig().setFieldAccess(FieldAccessType.UNSAFE);
 			serializer.updateFields();
-			assertNull(serializer.finalFieldSetter);
+			assertFalse(hasFinalSetter(serializer));
 		} finally {
-			FinalFieldSetter.denied = denied;
+			FinalFieldSetter.force = false;
 		}
 	}
 
