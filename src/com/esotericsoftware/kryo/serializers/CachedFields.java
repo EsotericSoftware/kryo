@@ -70,6 +70,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** @author Nathan Sweet */
 class CachedFields implements Comparator<CachedField> {
@@ -111,6 +112,21 @@ class CachedFields implements Comparator<CachedField> {
 				return type.getDeclaredFields();
 			}
 		};
+
+		/** The generic types of the fields of a serialized class, including the fields of its super classes. */
+		static final ClassValue<ConcurrentHashMap<Field, GenericType>> genericTypes = new ClassValue<>() {
+			protected ConcurrentHashMap<Field, GenericType> computeValue (Class type) {
+				return new ConcurrentHashMap();
+			}
+		};
+	}
+
+	/** Returns the generic type of a field, which all serializers and Kryo instances share, like the Field objects. The generic
+	 * type of a primitive field is only needed while the field is added. */
+	static private GenericType genericType (Class declaringClass, Class type, Field field) {
+		if (isAndroid || field.getType().isPrimitive()) return new GenericType(declaringClass, type, field.getGenericType());
+		return DeclaredFields.genericTypes.get(type).computeIfAbsent(field,
+			key -> new GenericType(declaringClass, type, key.getGenericType()));
 	}
 
 	@SuppressWarnings("deprecation") // FieldAccessType.ASM
@@ -192,7 +208,7 @@ class CachedFields implements Comparator<CachedField> {
 
 		Class type = serializer.type;
 		Class declaringClass = field.getDeclaringClass();
-		GenericType genericType = new GenericType(declaringClass, type, field.getGenericType());
+		GenericType genericType = genericType(declaringClass, type, field);
 		Class fieldClass = genericType.getType() instanceof Class ? (Class)genericType.getType() : field.getType();
 		int accessIndex = -1;
 		if (asm //

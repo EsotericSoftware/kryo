@@ -277,11 +277,18 @@ public interface Generics {
 		Type type; // Either a Class or TypeVariable.
 		GenericType[] arguments;
 		private TypeVariable[] typeVariables;
-		private Class superType;
-		private GenericType[] superTypeArguments;
+		private SuperTypeArguments lastSuperType;
 
+		/** A GenericType can be used by multiple Kryo instances and threads after it was created. */
 		public GenericType (Class fromClass, Class toClass, Type context) {
 			initialize(fromClass, toClass, context);
+			cacheTypeVariables();
+		}
+
+		/** Caches the type parameters of the class, because {@link Class#getTypeParameters()} returns a copy. They are only needed
+		 * for a class with type arguments. */
+		private void cacheTypeVariables () {
+			if (arguments != null && type instanceof Class) typeVariables = ((Class)type).getTypeParameters();
 		}
 
 		private void initialize (Class fromClass, Class toClass, Type context) {
@@ -336,11 +343,11 @@ public interface Generics {
 		 * subtype, its own type arguments are returned.
 		 * @return May be null. */
 		GenericType[] superTypeArguments (Class superType) {
-			if (superType != this.superType) {
-				superTypeArguments = computeSuperTypeArguments(superType);
-				this.superType = superType;
-			}
-			return superTypeArguments;
+			// One immutable object for both values, so this is correct if multiple threads use this type.
+			SuperTypeArguments last = lastSuperType;
+			if (last == null || last.superType != superType)
+				lastSuperType = last = new SuperTypeArguments(superType, computeSuperTypeArguments(superType));
+			return last.arguments;
 		}
 
 		private GenericType[] computeSuperTypeArguments (Class superType) {
@@ -374,18 +381,29 @@ public interface Generics {
 			result.arguments = new GenericType[actual.length];
 			for (int i = 0; i < actual.length; i++)
 				result.arguments[i] = substitute(actual[i], parameterList);
+			result.cacheTypeVariables();
 			return result;
 		}
 
-		/** Returns the type parameters of the class, cached because {@link Class#getTypeParameters()} returns a copy. */
+		/** Returns the type parameters of the class, for a class with type arguments. */
 		TypeVariable[] typeVariables () {
-			if (typeVariables == null) typeVariables = ((Class)type).getTypeParameters();
 			return typeVariables;
 		}
 
 		/** @return May be null. */
 		public GenericType[] getTypeParameters () {
 			return arguments;
+		}
+
+		/** The type arguments for a super type. */
+		static private final class SuperTypeArguments {
+			final Class superType;
+			final GenericType[] arguments;
+
+			SuperTypeArguments (Class superType, GenericType[] arguments) {
+				this.superType = superType;
+				this.arguments = arguments;
+			}
 		}
 
 		public String toString () {
