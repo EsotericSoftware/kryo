@@ -83,6 +83,8 @@ class CachedFields implements Comparator<CachedField> {
 	CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
 	private boolean hasFinalFields;
+	/** True while {@link FieldSerializer#initializeCachedFields()} is called. */
+	private boolean initializing;
 	private Object access;
 
 	public CachedFields (FieldSerializer serializer) {
@@ -105,7 +107,7 @@ class CachedFields implements Comparator<CachedField> {
 		if (serializer.type.isInterface()) { // No fields to serialize.
 			fields = emptyCachedFields;
 			copyFields = emptyCachedFields;
-			serializer.initializeCachedFields();
+			initialize();
 			return;
 		}
 
@@ -128,8 +130,31 @@ class CachedFields implements Comparator<CachedField> {
 		if (copyFields.length != newCopyFields.size()) copyFields = new CachedField[newCopyFields.size()];
 		newCopyFields.toArray(copyFields);
 		Arrays.sort(copyFields, this);
-		serializer.initializeCachedFields();
+
+		initialize();
+	}
+
+	private void initialize () {
+		initializing = true;
+		try {
+			serializer.initializeCachedFields();
+		} finally {
+			initializing = false;
+		}
+		changed();
+	}
+
+	/** Called after the fields changed: after {@link FieldSerializer#initializeCachedFields()}, which can remove fields, and after
+	 * a field was removed. */
+	private void changed () {
+		serializer.cachedFieldsChanged();
 		updateFinalFieldSetter();
+	}
+
+	/** Called after a field was removed. A field removed by {@link FieldSerializer#initializeCachedFields()} is not remembered,
+	 * because it is removed again when the fields are rebuilt. */
+	private void removed (CachedField cachedField) {
+		if (!initializing) removedFields.add(cachedField.field);
 	}
 
 	/** Creates the {@link FinalFieldSetter} for the current fields, after they were added or removed. */
@@ -353,7 +378,7 @@ class CachedFields implements Comparator<CachedField> {
 				System.arraycopy(fields, 0, newFields, 0, i);
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
 				fields = newFields;
-				removedFields.add(cachedField.field);
+				removed(cachedField);
 				found = true;
 				break;
 			}
@@ -365,14 +390,14 @@ class CachedFields implements Comparator<CachedField> {
 				System.arraycopy(copyFields, 0, newFields, 0, i);
 				System.arraycopy(copyFields, i + 1, newFields, i, newFields.length - i);
 				copyFields = newFields;
-				removedFields.add(cachedField.field);
+				removed(cachedField);
 				found = true;
 				break;
 			}
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + serializer.type.getName());
-		updateFinalFieldSetter();
+		if (!initializing) changed();
 	}
 
 	/** Removes a field so that it won't be serialized. */
@@ -385,7 +410,7 @@ class CachedFields implements Comparator<CachedField> {
 				System.arraycopy(fields, 0, newFields, 0, i);
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
 				fields = newFields;
-				removedFields.add(cachedField.field);
+				removed(cachedField);
 				found = true;
 				break;
 			}
@@ -397,14 +422,14 @@ class CachedFields implements Comparator<CachedField> {
 				System.arraycopy(copyFields, 0, newFields, 0, i);
 				System.arraycopy(copyFields, i + 1, newFields, i, newFields.length - i);
 				copyFields = newFields;
-				removedFields.add(cachedField.field);
+				removed(cachedField);
 				found = true;
 				break;
 			}
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
-		updateFinalFieldSetter();
+		if (!initializing) changed();
 	}
 
 	/** Sets serializers using annotations.

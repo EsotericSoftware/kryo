@@ -118,8 +118,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Called when {@link #getFields()} and {@link #getCopyFields()} have been repopulated. Subclasses can override this method to
-	 * configure or remove cached fields. */
+	 * configure or remove cached fields. It is not called when a field is removed. */
 	protected void initializeCachedFields () {
+	}
+
+	/** Called after the cached fields changed: after {@link #initializeCachedFields()}, which can remove fields, and after a field
+	 * was removed. Subclasses in this package update what they derive from the fields here. */
+	void cachedFieldsChanged () {
 	}
 
 	/** Returns true if the generic type of a field is used to optimize the serialization of its value, eg to omit the class of

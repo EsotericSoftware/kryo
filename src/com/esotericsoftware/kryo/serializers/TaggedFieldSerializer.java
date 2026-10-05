@@ -82,9 +82,11 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				super.removeField(fields[i]);
 			}
 		}
-		fields = cachedFields.fields; // removeField changes cached field array.
+	}
 
+	void cachedFieldsChanged () {
 		// Cache tag values.
+		CachedField[] fields = cachedFields.fields;
 		ArrayList writeTags = new ArrayList(fields.length);
 		readTags = new IntMap((int)(fields.length / 0.8f));
 		for (CachedField cachedField : fields) {
@@ -104,16 +106,6 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	 * {@link TaggedFieldSerializerConfig#setOptimizeGenerics(boolean) optimizeGenerics} is set. */
 	protected boolean optimizeGenerics () {
 		return config.optimizeGenerics || !config.readUnknownTagData;
-	}
-
-	public void removeField (String fieldName) {
-		super.removeField(fieldName);
-		initializeCachedFields();
-	}
-
-	public void removeField (CachedField field) {
-		super.removeField(field);
-		initializeCachedFields();
 	}
 
 	public void write (Kryo kryo, Output output, T object) {

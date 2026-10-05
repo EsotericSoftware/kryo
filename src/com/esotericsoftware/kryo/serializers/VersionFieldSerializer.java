@@ -58,11 +58,9 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		super(kryo, type, config);
 		this.config = config;
 		setAcceptsNull(true);
-		// Make sure this is done before any read/write operations.
-		initializeCachedFields();
 	}
 
-	protected void initializeCachedFields () {
+	void cachedFieldsChanged () {
 		CachedField[] fields = cachedFields.fields;
 		fieldVersion = new int[fields.length];
 		typeVersion = 0; // Fields may have been removed.
@@ -78,16 +76,6 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 			}
 		}
 		if (DEBUG) debug("Version for type " + getType().getName() + ": " + typeVersion);
-	}
-
-	public void removeField (String fieldName) {
-		super.removeField(fieldName);
-		initializeCachedFields();
-	}
-
-	public void removeField (CachedField field) {
-		super.removeField(field);
-		initializeCachedFields();
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
