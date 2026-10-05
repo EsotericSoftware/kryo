@@ -131,7 +131,7 @@ class MapSerializerTest extends KryoTestCase {
 		kryo.register(HashMap.class);
 		Output declared = new Output(8);
 		kryo.writeClass(declared, HashMap.class);
-		declared.writeVarInt(2000000001, true);
+		declared.writeVarIntFlag(false, 2000000001, true);
 		declared.flush();
 		assertThrows(KryoException.class, () -> kryo.readClassAndObject(new Input(declared.toBytes())));
 	}
@@ -142,11 +142,52 @@ class MapSerializerTest extends KryoTestCase {
 		kryo.register(HashMap.class);
 		Output declared = new Output(8);
 		kryo.writeClass(declared, HashMap.class);
-		declared.writeVarInt(2000000001, true);
+		declared.writeVarIntFlag(false, 2000000001, true);
 		declared.flush();
 		Input stream = new Input(new ByteArrayInputStream(declared.toBytes()));
 		stream.setMaxArraySize(1024);
 		assertThrows(KryoException.class, () -> kryo.readClassAndObject(stream));
+	}
+
+	@Test
+	void testNullMarkers () {
+		// The key and value serializers are known from the generic type of the field. Keys and values are written without a null
+		// marker if the map contains no null key or value, which is written with the size.
+		for (boolean references : new boolean[] {false, true}) {
+			for (int size : new int[] {3, 100}) {
+				TypedMap object = new TypedMap();
+				for (int i = 0; i < size; i++)
+					object.map.put("key" + i, i);
+				byte[] bytes = writeTypedMap(object, references, true);
+				// The format of Kryo 5 has a null marker for each value, and for each key with references.
+				int markers = references ? size * 2 : size;
+				assertEquals(writeTypedMap(object, references, false).length - markers + (size < 63 ? 0 : 1), bytes.length);
+
+				object.map.put("null", null);
+				writeTypedMap(object, references, true);
+				object.map.remove("null");
+				object.map.put(null, 5);
+				writeTypedMap(object, references, true);
+			}
+		}
+	}
+
+	/** Returns the bytes after checking that they are read as the same map. */
+	private byte[] writeTypedMap (TypedMap object, boolean references, boolean writeSameClassOnce) {
+		Kryo kryo = new Kryo();
+		kryo.setReferences(references);
+		kryo.register(TypedMap.class);
+		MapSerializer serializer = new MapSerializer();
+		serializer.setWriteSameClassOnce(writeSameClassOnce);
+		kryo.register(HashMap.class, serializer);
+		Output output = new Output(64, -1);
+		kryo.writeObject(output, object);
+		assertEquals(object.map, kryo.readObject(new Input(output.toBytes()), TypedMap.class).map);
+		return output.toBytes();
+	}
+
+	public static class TypedMap {
+		public HashMap<String, Integer> map = new HashMap();
 	}
 
 	@Test
