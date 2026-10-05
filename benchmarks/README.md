@@ -1,6 +1,6 @@
 # Kryo Benchmarks
 
-This subproject contains [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmarks for Kryo. The [R/ggplot2 files](https://github.com/EsotericSoftware/kryo/tree/master/benchmarks/charts) are used to generate charts from the benchmark results.
+This subproject contains [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmarks for Kryo. The [charts](#charts) are generated from the benchmark results by a Python script.
 
 ## Usage
 
@@ -47,6 +47,26 @@ To run only specific benchmarks, specify the benchmark class name(s):
 To run only a subset of a benchmark, specify the benchmark class name and the methods:
 ```
 -f 4 -wi 5 -i 3 -t 2 -w 2s -r 2s FieldSerializerBenchmark.field FieldSerializerBenchmark.tagged
+```
+
+## Charts
+
+`run.sh` builds Kryo, runs the benchmarks for the charts with `-f 4 -wi 5 -i 3 -w 2s -r 2s` and writes the results as JSON to `charts/results`. Then it runs `charts/charts.py`, which writes an SVG file to `charts` for each results file. The charts of the serializer benchmarks show round trips per second, the charts of the input and output benchmarks show nanoseconds per operation. Python 3 is needed, without additional packages.
+
+```
+benchmarks/run.sh
+```
+
+JMH parameters given to the script replace the defaults, eg to try the script with a short run:
+
+```
+benchmarks/run.sh -f 1 -wi 1 -i 2 -w 200ms -r 200ms
+```
+
+To generate the charts again from existing results:
+
+```
+python3 benchmarks/charts/charts.py [results directory] [output directory]
 ```
 
 ## ObjectGraphBenchmark
