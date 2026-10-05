@@ -102,7 +102,7 @@ LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language ta
 
 ### Strings with references
 
-With references enabled, Kryo's reference resolvers no longer use references for strings: strings are rarely shared, so tracking them costs more than it saves (eg about 17% throughput for an object graph with many strings, and slightly larger data). Equal strings that are the same instance are now written each time. To read data written by Kryo 5 with references, use references for strings:
+With references enabled, Kryo's reference resolvers no longer use references for strings: strings are rarely shared, so tracking them costs more than it saves (eg about 17% throughput for an object graph with many strings). The data is usually smaller, because no reference marker is written before each string. Strings that are shared by identity are now written each time, so data with many shared strings can grow. To read data written by Kryo 5 with references, use references for strings:
 
 ```java
 kryo.setReferenceResolver(new MapReferenceResolver() {

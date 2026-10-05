@@ -35,12 +35,15 @@ import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.HashMapReferenceResolver;
+import com.esotericsoftware.kryo.util.ListReferenceResolver;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -184,6 +187,23 @@ class Kryo5CompatibilityTest {
 		Kryo5Compatibility.configure(kryo);
 		assertTrue(kryo.getReferenceResolver().useReferences(String.class));
 		assertEquals(100, ((MapReferenceResolver)kryo.getReferenceResolver()).getMaximumCapacity());
+
+		// Strings shared by identity are written as references, with each of Kryo's reference resolvers.
+		for (ReferenceResolver resolver : new ReferenceResolver[] {new MapReferenceResolver(), new ListReferenceResolver(),
+			new HashMapReferenceResolver()}) {
+			kryo = new Kryo(resolver);
+			kryo.setRegistrationRequired(false);
+			Kryo5Compatibility.configure(kryo);
+			assertNotSame(resolver, kryo.getReferenceResolver());
+			assertTrue(kryo.getReferenceResolver().useReferences(String.class));
+			String shared = new String("shared");
+			ArrayList<String> list = new ArrayList<>(List.of(shared, shared));
+			Output output = new Output(64);
+			kryo.writeObject(output, list);
+			ArrayList<String> read = kryo.readObject(new Input(output.toBytes()), ArrayList.class);
+			assertEquals(list, read);
+			assertSame(read.get(0), read.get(1), resolver.getClass().getSimpleName());
+		}
 
 		// Subclasses decide themselves.
 		MapReferenceResolver custom = new MapReferenceResolver() {
