@@ -1380,7 +1380,8 @@ public class Kryo {
 	/** Name/value pairs that are available to all serializers and are cleared after each object graph is serialized or
 	 * deserialized. */
 	public ObjectMap getGraphContext () {
-		if (graphContext == null) graphContext = new ObjectMap();
+		// Small, because it usually has few entries and clearing it after each object graph is notable for small graphs.
+		if (graphContext == null) graphContext = new ObjectMap(4);
 		return graphContext;
 	}
 
