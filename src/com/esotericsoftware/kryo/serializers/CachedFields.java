@@ -103,6 +103,16 @@ class CachedFields implements Comparator<CachedField> {
 		return android ? FieldAccessType.REFLECTION : FieldAccessType.VARHANDLE;
 	}
 
+	/** Class#getDeclaredFields() returns new Field objects for each call, which take as much memory as the cached fields. So all
+	 * serializers and Kryo instances use the same Field objects. Not on Android, which has ClassValue only since API level 34. */
+	static private final class DeclaredFields {
+		static final ClassValue<Field[]> cache = new ClassValue<>() {
+			protected Field[] computeValue (Class type) {
+				return type.getDeclaredFields();
+			}
+		};
+	}
+
 	@SuppressWarnings("deprecation") // FieldAccessType.ASM
 	public void rebuild () {
 		if (serializer.type.isInterface()) { // No fields to serialize.
@@ -118,7 +128,7 @@ class CachedFields implements Comparator<CachedField> {
 		RecordComponent[] recordComponents = isRecord(serializer.type) ? serializer.type.getRecordComponents() : null;
 		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
-			for (Field field : nextClass.getDeclaredFields())
+			for (Field field : isAndroid ? nextClass.getDeclaredFields() : DeclaredFields.cache.get(nextClass))
 				addField(field, asm, recordComponents, newFields, newCopyFields);
 			nextClass = nextClass.getSuperclass();
 		}
