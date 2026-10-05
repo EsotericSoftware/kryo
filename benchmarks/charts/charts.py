@@ -264,6 +264,7 @@ def main():
         if not results:
             print("Skipped, results are not in %s: %s" % (chart["unit"], path))
             continue
+        os.makedirs(output_dir, exist_ok=True)
         output = os.path.join(output_dir, chart["name"] + ".svg")
         with open(output, "w") as file:
             file.write(render(chart, results))
