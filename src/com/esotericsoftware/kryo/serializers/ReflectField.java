@@ -381,6 +381,46 @@ class ReflectField extends CachedField {
 		}
 	}
 
+	static final class StringReflectField extends CachedField {
+		public StringReflectField (Field field) {
+			super(field);
+		}
+
+		public void write (Output output, Object object) {
+			try {
+				output.writeString((String)field.get(object));
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
+				ex.addTrace(name + " (String)");
+				throw ex;
+			}
+		}
+
+		public void read (Input input, Object object) {
+			try {
+				field.set(object, input.readString());
+			} catch (Throwable t) {
+				KryoException ex = accessError(field, t);
+				ex.addTrace(name + " (String)");
+				throw ex;
+			}
+		}
+
+		public Object read (Input input) {
+			return input.readString();
+		}
+
+		public void copy (Object original, Object copy) {
+			try {
+				field.set(copy, field.get(original));
+			} catch (Throwable t) {
+				KryoException ex = accessError(field, t);
+				ex.addTrace(name + " (String)");
+				throw ex;
+			}
+		}
+	}
+
 	static final class BooleanReflectField extends CachedField {
 		public BooleanReflectField (Field field) {
 			super(field);
