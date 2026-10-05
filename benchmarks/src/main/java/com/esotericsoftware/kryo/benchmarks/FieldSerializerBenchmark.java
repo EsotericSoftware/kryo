@@ -133,10 +133,14 @@ public class FieldSerializerBenchmark {
 
 	static public class CompatibleState extends BenchmarkState {
 		@Param({"true", "false"}) public boolean chunked;
+		/** Only used if chunked. */
+		@Param({"false", "true"}) public boolean legacyChunks;
 
+		@SuppressWarnings("deprecation") // legacyChunks
 		public void setup () {
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
 			factory.getConfig().setChunkedEncoding(chunked);
+			factory.getConfig().setLegacyChunks(legacyChunks);
 			factory.getConfig().setReadUnknownFieldData(true); // Typical to always use.
 			kryo.setDefaultSerializer(factory);
 			super.setup();
@@ -145,10 +149,14 @@ public class FieldSerializerBenchmark {
 
 	static public class TaggedState extends BenchmarkState {
 		@Param({"true", "false"}) public boolean chunked;
+		/** Only used if chunked. */
+		@Param({"false", "true"}) public boolean legacyChunks;
 
+		@SuppressWarnings("deprecation") // legacyChunks
 		public void setup () {
 			TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
 			factory.getConfig().setChunkedEncoding(chunked);
+			factory.getConfig().setLegacyChunks(legacyChunks);
 			if (chunked) factory.getConfig().setReadUnknownTagData(true); // Typical to use with chunked.
 			kryo.setDefaultSerializer(factory);
 			super.setup();

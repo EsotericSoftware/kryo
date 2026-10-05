@@ -67,9 +67,9 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	@Test
 	void testCompatibleFieldSerializer () {
 		testCompatibleFieldSerializer(83, false, false);
-		testCompatibleFieldSerializer(116, false, true);
+		testCompatibleFieldSerializer(100, false, true);
 		testCompatibleFieldSerializer(86, true, false);
-		testCompatibleFieldSerializer(119, true, true);
+		testCompatibleFieldSerializer(116, true, true);
 	}
 
 	private void testCompatibleFieldSerializer (int length, boolean references, final boolean chunked) {
@@ -95,9 +95,9 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	@Test
 	void testAddedField () {
 		testAddedField(59, false, false);
-		testAddedField(87, false, true);
+		testAddedField(74, false, true);
 		testAddedField(62, true, false);
-		testAddedField(90, true, true);
+		testAddedField(88, true, true);
 	}
 
 	private void testAddedField (int length, boolean references, boolean chunked) {
@@ -129,14 +129,14 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		testAddedFieldToClassWithManyFields(189, false, false, true);
 		testAddedFieldToClassWithManyFields(152, false, false, false);
 
-		testAddedFieldToClassWithManyFields(263, false, true, true);
-		testAddedFieldToClassWithManyFields(226, false, true, false);
+		testAddedFieldToClassWithManyFields(229, false, true, true);
+		testAddedFieldToClassWithManyFields(192, false, true, false);
 
 		testAddedFieldToClassWithManyFields(190, true, false, true);
 		testAddedFieldToClassWithManyFields(153, true, false, false);
 
-		testAddedFieldToClassWithManyFields(264, true, true, true);
-		testAddedFieldToClassWithManyFields(227, true, true, false);
+		testAddedFieldToClassWithManyFields(267, true, true, true);
+		testAddedFieldToClassWithManyFields(230, true, true, false);
 	}
 
 	private void testAddedFieldToClassWithManyFields (int length, boolean references, boolean chunked,
@@ -200,9 +200,9 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	@Test
 	void testRemovedField () {
 		testRemovedField(92, false, false);
-		testRemovedField(125, false, true);
+		testRemovedField(109, false, true);
 		testRemovedField(95, true, false);
-		testRemovedField(128, true, true);
+		testRemovedField(125, true, true);
 	}
 
 	private void testRemovedField (int length, boolean references, boolean chunked) {
@@ -237,7 +237,7 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testChangeFieldTypeWithChunkedEncodingEnabled () {
-		testChangeFieldType(16, true);
+		testChangeFieldType(18, true);
 	}
 
 	@Test
@@ -266,7 +266,7 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testChangePrimitiveAndWrapperFieldTypes () {
-		testChangePrimitiveAndWrapperFieldTypes(22, true);
+		testChangePrimitiveAndWrapperFieldTypes(23, true);
 		testChangePrimitiveAndWrapperFieldTypes(18, false);
 	}
 
@@ -294,14 +294,14 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		testRemovedFieldFromClassWithManyFields(198, false, false, true);
 		// testRemovedFieldFromClassWithManyFields(0, false, false, false); // Doesn't support remove.
 
-		testRemovedFieldFromClassWithManyFields(274, false, true, true);
-		testRemovedFieldFromClassWithManyFields(236, false, true, false);
+		testRemovedFieldFromClassWithManyFields(239, false, true, true);
+		testRemovedFieldFromClassWithManyFields(201, false, true, false);
 
 		testRemovedFieldFromClassWithManyFields(199, true, false, true);
 		// testRemovedFieldFromClassWithManyFields(0, true, false, false); // Doesn't support remove.
 
-		testRemovedFieldFromClassWithManyFields(275, true, true, true);
-		testRemovedFieldFromClassWithManyFields(237, true, true, false);
+		testRemovedFieldFromClassWithManyFields(278, true, true, true);
+		testRemovedFieldFromClassWithManyFields(240, true, true, false);
 	}
 
 	private void testRemovedFieldFromClassWithManyFields (int length, boolean references, boolean chunked,
@@ -371,14 +371,14 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		testRemovedMultipleFieldsFromClassWithManyFields(170, false, false, true);
 		// testRemovedMultipleFieldsFromClassWithManyFields(0, false, false, false); // Doesn't support remove.
 
-		testRemovedMultipleFieldsFromClassWithManyFields(246, false, true, true);
-		testRemovedMultipleFieldsFromClassWithManyFields(220, false, true, false);
+		testRemovedMultipleFieldsFromClassWithManyFields(211, false, true, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(185, false, true, false);
 
 		testRemovedMultipleFieldsFromClassWithManyFields(171, true, false, true);
 		// testRemovedMultipleFieldsFromClassWithManyFields(0, true, false, false); // Doesn't support remove.
 
-		testRemovedMultipleFieldsFromClassWithManyFields(247, true, true, true);
-		testRemovedMultipleFieldsFromClassWithManyFields(221, true, true, false);
+		testRemovedMultipleFieldsFromClassWithManyFields(250, true, true, true);
+		testRemovedMultipleFieldsFromClassWithManyFields(224, true, true, false);
 	}
 
 	private void testRemovedMultipleFieldsFromClassWithManyFields (int length, boolean references, boolean chunked,
@@ -456,9 +456,9 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	@Test
 	void testExtendedClass () {
 		testExtendedClass(270, false, false);
-		testExtendedClass(294, false, true);
+		testExtendedClass(285, false, true);
 		testExtendedClass(271, true, false);
-		testExtendedClass(295, true, true);
+		testExtendedClass(298, true, true);
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/699
@@ -625,7 +625,7 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 		config.setReadUnknownFieldData(true);
 		kryo.register(ClassWithSuperTypeFields.class, serializer);
 
-		roundTrip(71, new ClassWithSuperTypeFields("foo", Arrays.asList("bar"), "baz"));
+		roundTrip(72, new ClassWithSuperTypeFields("foo", Arrays.asList("bar"), "baz"));
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/774

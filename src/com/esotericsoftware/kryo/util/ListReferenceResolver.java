@@ -63,6 +63,10 @@ public class ListReferenceResolver implements ReferenceResolver {
 		return seenObjects.get(id);
 	}
 
+	public int getObjectCount () {
+		return seenObjects.size();
+	}
+
 	public void reset () {
 		seenObjects.clear();
 	}

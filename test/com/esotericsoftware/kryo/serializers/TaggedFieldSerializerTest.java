@@ -234,8 +234,8 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		config.setReadUnknownTagData(true);
 		kryo.register(ClassWithObjectField.class, serializer);
 
-		roundTrip(8, new ClassWithObjectField(123));
-		roundTrip(9, new ClassWithObjectField("foo"));
+		roundTrip(9, new ClassWithObjectField(123));
+		roundTrip(10, new ClassWithObjectField("foo"));
 	}
 
 	public static class ClassWithObjectField {

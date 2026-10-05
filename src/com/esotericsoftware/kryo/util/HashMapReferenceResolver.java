@@ -64,6 +64,10 @@ public class HashMapReferenceResolver implements ReferenceResolver {
 		return readObjects.get(id);
 	}
 
+	public int getObjectCount () {
+		return writtenObjects.size() + readObjects.size();
+	}
+
 	public void reset () {
 		readObjects.clear();
 		writtenObjects.clear();

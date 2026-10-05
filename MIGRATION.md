@@ -68,6 +68,19 @@ config.setOptimizeGenerics(true);
 kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
 ```
 
+### Chunked encoding
+
+CompatibleFieldSerializer and TaggedFieldSerializer with chunked encoding write each field with its length instead of in chunks. The class names and field names first written in an object are written before it, and with references the number of objects in each field is written too. So skipping a field, eg because the class of a removed field no longer exists, no longer breaks reading the rest of the data ([#1247](https://github.com/EsotericSoftware/kryo/issues/1247)). Kryo 5 lost class names, field names, and references first written in a skipped chunk, also if the classes were registered. The new format is smaller and faster. The outermost object with chunked encoding is buffered until it is written completely, Kryo 5 wrote it to the output in chunks. The field names are identified by class instead of their position, so a nested object can only be read as a different class than it was written if its class is written, which `readUnknownFieldData` (the default) does. Kryo 5 could read it, eg with `readUnknownFieldData` false after the final type of a field changed, although changing the type of a field is not supported. To read data written by Kryo 5 with chunked encoding, use `Kryo5Compatibility` or enable `legacyChunks`, which is deprecated because it is only needed for that:
+
+```java
+CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
+config.setChunkedEncoding(true);
+config.setLegacyChunks(true);
+kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+```
+
+A custom ClassResolver needs to implement `beginDeferredNames`, `endDeferredNames`, and `readDeferredNames`, and a custom ReferenceResolver `getObjectCount`, otherwise class names first written in a skipped field are lost, and the reference IDs of the objects read after a skipped field are shifted, like in Kryo 5. The new format is used anyway. DefaultClassResolver and the reference resolvers of Kryo implement them.
+
 ### Maps
 
 If the class of the keys or values of a map is unknown, MapSerializer writes it only once if all keys or values are not null and have the same class. Kryo 5 wrote the class of each key and value. To read data written by Kryo 5, disable this for the MapSerializer instances, eg for all maps that use the default MapSerializer:
@@ -128,6 +141,7 @@ Like in Kryo 5, String fields of FieldSerializer and its subclasses decide when 
 * The serializers for unmodifiable and synchronized collections read the wrapped collection with method handles if `java.util` is open to Kryo, otherwise with Unsafe. If neither is allowed, they throw an exception on first use that explains how to allow it. Kryo 5 failed to register them without Unsafe.
 * The type parameters of a class are resolved from the declared type, eg the type of a field, through the super classes and interfaces of the class. Kryo 5 assigned the type arguments of the declared type by position to the type parameters of the class of the value, which failed with a ClassCastException when they didn't match, eg for a `Base<String, Integer>` field holding a `Sub<A, B> extends Base<B, A>`, and ignored them when their number didn't match. When Kryo 6 resolves a type parameter that Kryo 5 ignored, the serialized bytes can differ. Likewise, MapSerializer and CollectionSerializer resolve the key, value and element types from the declared type, eg `Integer` keys for a field of type `class IntMap<V> extends HashMap<Integer, V>`. Kryo 5 used the type arguments of the declared type by position, which failed when they didn't match those of `Map` or `Collection` ([#860](https://github.com/EsotericSoftware/kryo/issues/860)).
 * DefaultInstantiatorStrategy and BeanSerializer use method handles instead of ReflectASM. If a constructor throws an exception, that exception is the cause of the KryoException, like with ReflectASM in Kryo 5.
+* If the class of a class name is not found, a later reference to the same class name throws the same exception. Kryo 5 read the following bytes as a class name.
 * Serializing or copying a closure throws an exception if `ClosureSerializer.Closure` is not registered, also if `registrationRequired` is false ([#1137](https://github.com/EsotericSoftware/kryo/issues/1137)). Kryo 5 registered the closure's class implicitly and wrote it with the default serializer, which can't be read because the class of a closure can't be found by its name.
 * VersionFieldSerializer throws an exception when reading an object written by a newer version of its class ([#846](https://github.com/EsotericSoftware/kryo/issues/846)). Kryo 5 read it without an exception, but the fields added in the newer version were read into other fields or left unread, so the values and the following data were wrong.
 * CollectionSerializer and MapSerializer throw an exception if the number of elements written doesn't match the size written before them, eg because the collection was modified concurrently ([#1181](https://github.com/EsotericSoftware/kryo/issues/1181)). Kryo 5 wrote data that couldn't be read correctly, which often failed later with an unrelated error, such as an unregistered class ID or a buffer underflow.
@@ -140,6 +154,7 @@ Like in Kryo 5, String fields of FieldSerializer and its subclasses decide when 
 * `FieldAccessType.ASM`, which uses ReflectASM like Kryo 5 did for public fields of public classes when Unsafe was not used. ReflectASM is only used if `ASM` is configured, Kryo 6 uses VarHandles instead, which are as fast. `ASM` and the ReflectASM dependency will be removed in Kryo 7. If VarHandles are slower for you than ReflectASM, please open an issue.
 * BlowfishSerializer. Blowfish is an outdated cipher, the key is shared by all instances, and an encrypted object can only be read as the last object of the input. Encrypt the serialized bytes instead, eg with AES-GCM. BlowfishSerializer will be removed in Kryo 7.
 * `Kryo#setEnumsFinal`, which is only needed to read data written by Kryo 5, see [Enums with constant bodies](#enums-with-constant-bodies).
+* `setLegacyChunks` and `setChunkSize` of CompatibleFieldSerializerConfig and TaggedFieldSerializerConfig, which are only needed to read data written by Kryo 5 with chunked encoding, see [Chunked encoding](#chunked-encoding).
 
 ## Removed APIs
 
