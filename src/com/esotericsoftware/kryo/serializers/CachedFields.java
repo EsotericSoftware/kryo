@@ -258,17 +258,17 @@ class CachedFields implements Comparator<CachedField> {
 	}
 
 	private CachedField newVarHandleField (Field field, Class fieldClass, GenericType genericType) {
-		if (HiddenFields.ENABLED) {
-			if (fieldClass == int.class) return HiddenFields.intField(field);
-			if (fieldClass == long.class) return HiddenFields.longField(field);
-			if (fieldClass == double.class) return HiddenFields.doubleField(field);
-			if (fieldClass == boolean.class) return HiddenFields.booleanField(field);
-			if (fieldClass == String.class
-				&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-				return HiddenFields.stringField(field);
-			if (!fieldClass.isPrimitive()) return HiddenFields.objectField(field, serializer, genericType);
-		}
 		try {
+			if (HiddenFields.ENABLED) {
+				if (fieldClass == int.class) return HiddenFields.intField(field);
+				if (fieldClass == long.class) return HiddenFields.longField(field);
+				if (fieldClass == double.class) return HiddenFields.doubleField(field);
+				if (fieldClass == boolean.class) return HiddenFields.booleanField(field);
+				if (fieldClass == String.class
+					&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
+					return HiddenFields.stringField(field);
+				if (!fieldClass.isPrimitive()) return HiddenFields.objectField(field, serializer, genericType);
+			}
 			if (fieldClass.isPrimitive()) {
 				if (fieldClass == int.class) return new VarHandleField.IntVarHandleField(field);
 				if (fieldClass == float.class) return new VarHandleField.FloatVarHandleField(field);

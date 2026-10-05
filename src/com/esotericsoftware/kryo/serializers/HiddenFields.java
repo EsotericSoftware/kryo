@@ -27,11 +27,13 @@ import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.io.InputStream;
 import java.lang.constant.ConstantDescs;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** PROTOTYPE: each template class below is defined once per field as a hidden class, with the field's VarHandle as class data.
  * The template stores it in a static final field, which the JIT treats as a constant, so the VarHandle access is inlined. */
@@ -64,14 +66,32 @@ final class HiddenFields {
 			genericType);
 	}
 
-	private static CachedField define (Class template, Field field, MethodType constructor, Object... args) {
+	/** The constructors of the hidden classes by template and field name, for the declaring class of the field. The hidden class
+	 * of a field is shared by all serializers and Kryo instances, so it is defined and compiled only once. The map is held by the
+	 * declaring class, so it doesn't prevent unloading it. */
+	private static final ClassValue<ConcurrentHashMap<String, MethodHandle>> constructors = new ClassValue<>() {
+		protected ConcurrentHashMap<String, MethodHandle> computeValue (Class type) {
+			return new ConcurrentHashMap<>();
+		}
+	};
+
+	private static CachedField define (Class template, Field field, MethodType constructorType, Object... args) {
 		try {
-			byte[] bytes;
-			try (InputStream in = template.getResourceAsStream(template.getSimpleName() + ".class")) {
-				bytes = in.readAllBytes();
+			ConcurrentHashMap<String, MethodHandle> map = constructors.get(field.getDeclaringClass());
+			String key = template.getSimpleName() + ' ' + field.getName();
+			MethodHandle constructor = map.get(key);
+			if (constructor == null) {
+				byte[] bytes;
+				try (InputStream in = template.getResourceAsStream(template.getSimpleName() + ".class")) {
+					bytes = in.readAllBytes();
+				}
+				Lookup lookup = MethodHandles.lookup().defineHiddenClassWithClassData(bytes, VarHandleField.varHandle(field),
+					false);
+				constructor = lookup.findConstructor(lookup.lookupClass(), constructorType);
+				MethodHandle existing = map.putIfAbsent(key, constructor);
+				if (existing != null) constructor = existing;
 			}
-			Lookup lookup = MethodHandles.lookup().defineHiddenClassWithClassData(bytes, VarHandleField.varHandle(field), false);
-			return (CachedField)lookup.findConstructor(lookup.lookupClass(), constructor).invokeWithArguments(args);
+			return (CachedField)constructor.invokeWithArguments(args);
 		} catch (Throwable t) {
 			throw new KryoException("Unable to define hidden field accessor: " + field, t);
 		}
