@@ -1649,13 +1649,14 @@ class FieldSerializerTest extends KryoTestCase {
 		@SuppressWarnings("deprecation")
 		FieldAccessType asm = FieldAccessType.ASM;
 		assertFieldAccess(asm, "IntAsmField", "AsmField", "IntReflectField");
-		assertFieldAccess(FieldAccessType.VARHANDLE, "IntHiddenField", "ObjectHiddenField", "IntReflectField");
+		boolean hiddenFields = CachedFields.hiddenFields; // False if the tests run with -Dkryo.hiddenFields=false.
+		if (hiddenFields) assertFieldAccess(FieldAccessType.VARHANDLE, "IntHiddenField", "ObjectHiddenField", "IntReflectField");
 		// Without hidden classes, eg in a native image.
 		CachedFields.hiddenFields = false;
 		try {
 			assertFieldAccess(FieldAccessType.VARHANDLE, "IntVarHandleField", "VarHandleField", "IntReflectField");
 		} finally {
-			CachedFields.hiddenFields = true;
+			CachedFields.hiddenFields = hiddenFields;
 		}
 		assertFieldAccess(FieldAccessType.REFLECTION, "IntReflectField", "ReflectField", "IntReflectField");
 	}
@@ -1672,8 +1673,11 @@ class FieldSerializerTest extends KryoTestCase {
 
 	@Test
 	void testDefaultFieldAccess () {
-		// Unsafe where it can be used without a warning. The tests don't set --sun-misc-unsafe-memory-access.
-		FieldAccessType expected = Runtime.version().feature() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+		// The system property if the tests run with -Dkryo.fieldAccess, else Unsafe where it can be used without a warning. The
+		// tests don't set --sun-misc-unsafe-memory-access.
+		String configured = System.getProperty("kryo.fieldAccess");
+		FieldAccessType expected = configured != null ? FieldAccessType.valueOf(configured)
+			: Runtime.version().feature() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
 		assertEquals(expected, new FieldSerializerConfig().getFieldAccess());
 	}
 

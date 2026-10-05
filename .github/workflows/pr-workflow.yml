@@ -40,6 +40,14 @@ jobs:
           java-version: 25
       - name: Test with JDK 25
         run: mvn -v && mvn -B test   
+      - name: Test with JDK 25 and reflection field access
+        run: mvn -B test -pl main
+        env:
+          JAVA_TOOL_OPTIONS: -Dkryo.fieldAccess=REFLECTION
+      - name: Test with JDK 25 and VarHandle field access without hidden classes
+        run: mvn -B test -pl main
+        env:
+          JAVA_TOOL_OPTIONS: -Dkryo.hiddenFields=false
 
       - uses: actions/setup-java@v5
         with:

@@ -76,9 +76,10 @@ class CachedFields implements Comparator<CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
 
 	private final FieldSerializer serializer;
-	/** Hidden classes can't be defined on Android or in a native image. Checked before {@link HiddenFields} is used, which can't
-	 * be loaded on Android. Can be set by tests. */
-	static boolean hiddenFields = !isAndroid && !isNativeImage;
+	/** Hidden classes can't be defined on Android or in a native image, and can be disabled by setting the system property
+	 * "kryo.hiddenFields" to "false". Checked before {@link HiddenFields} is used, which can't be loaded on Android. Can be set by
+	 * tests. */
+	static boolean hiddenFields = !isAndroid && !isNativeImage && !"false".equals(System.getProperty("kryo.hiddenFields"));
 
 	CachedField[] fields = new CachedField[0];
 	CachedField[] copyFields = new CachedField[0];
