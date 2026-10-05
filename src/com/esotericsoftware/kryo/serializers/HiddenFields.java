@@ -37,52 +37,47 @@ import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** PROTOTYPE: each template class below is defined once per field as a hidden class, with the field's VarHandle as class data.
- * The template stores it in a static final field, which the JIT treats as a constant, so the VarHandle access is inlined. */
+/** Fields that are accessed with a {@link VarHandle} that is a constant. A VarHandle in an instance field, like in
+ * {@link VarHandleField}, is not a constant for the JIT compiler, so each access is an indirect call that is not inlined. Each
+ * template class below is defined once per field as a hidden class with the VarHandle of the field as class data, which the
+ * template stores in a static final field. So the access is compiled like a direct field access, which is much faster.
+ * <p>
+ * The code that reads and writes the value is in the templates and not in a superclass, because a call from shared code to the
+ * hidden class would be another indirect call. */
 final class HiddenFields {
-	/** Hidden classes can't be defined on Android or in a native image. */
-	static final boolean ENABLED = Boolean.getBoolean("kryo.hidden") && !isAndroid && !isNativeImage;
+	/** Hidden classes can't be defined on Android or in a native image. Can be set by tests. */
+	static boolean supported = !isAndroid && !isNativeImage;
 
-	static CachedField intField (Field field) {
-		return define(IntHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
-	}
+	static private final MethodType fieldConstructor = MethodType.methodType(void.class, Field.class);
+	static private final MethodType objectConstructor = MethodType.methodType(void.class, Field.class, FieldSerializer.class,
+		GenericType.class);
 
-	static CachedField longField (Field field) {
-		return define(LongHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
-	}
-
-	static CachedField doubleField (Field field) {
-		return define(DoubleHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
-	}
-
-	static CachedField booleanField (Field field) {
-		return define(BooleanHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
-	}
-
-	static CachedField floatField (Field field) {
-		return define(FloatHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
-	}
-
-	static CachedField shortField (Field field) {
-		return define(ShortHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
-	}
-
-	static CachedField charField (Field field) {
-		return define(CharHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
-	}
-
-	static CachedField byteField (Field field) {
-		return define(ByteHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
-	}
-
-	static CachedField stringField (Field field) {
-		return define(StringHiddenField.class, field, MethodType.methodType(void.class, Field.class), field);
-	}
-
-	static CachedField objectField (Field field, FieldSerializer serializer, GenericType genericType) {
-		return define(ObjectHiddenField.class, field,
-			MethodType.methodType(void.class, Field.class, FieldSerializer.class, GenericType.class), field, serializer,
-			genericType);
+	/** @param string True for a String field that is written without references.
+	 * @throws KryoException if the hidden class can't be defined or the field can't be accessed with a VarHandle. */
+	static CachedField create (Field field, Class fieldClass, boolean string, FieldSerializer serializer,
+		GenericType genericType) {
+		Class template;
+		if (fieldClass == int.class)
+			template = IntHiddenField.class;
+		else if (fieldClass == long.class)
+			template = LongHiddenField.class;
+		else if (fieldClass == double.class)
+			template = DoubleHiddenField.class;
+		else if (fieldClass == boolean.class)
+			template = BooleanHiddenField.class;
+		else if (fieldClass == float.class)
+			template = FloatHiddenField.class;
+		else if (fieldClass == short.class)
+			template = ShortHiddenField.class;
+		else if (fieldClass == char.class)
+			template = CharHiddenField.class;
+		else if (fieldClass == byte.class)
+			template = ByteHiddenField.class;
+		else if (string)
+			template = StringHiddenField.class;
+		else
+			return define(ObjectHiddenField.class, field, objectConstructor, field, serializer, genericType);
+		return define(template, field, fieldConstructor, field);
 	}
 
 	/** The constructors of the hidden classes by template and field name, for the declaring class of the field. The hidden class
@@ -112,7 +107,7 @@ final class HiddenFields {
 			}
 			return (CachedField)constructor.invokeWithArguments(args);
 		} catch (Throwable t) {
-			throw new KryoException("Unable to define hidden field accessor: " + field, t);
+			throw new KryoException("Unable to define a hidden class for field: " + field, t);
 		}
 	}
 

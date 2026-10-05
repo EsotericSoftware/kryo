@@ -258,21 +258,16 @@ class CachedFields implements Comparator<CachedField> {
 	}
 
 	private CachedField newVarHandleField (Field field, Class fieldClass, GenericType genericType) {
-		try {
-			if (HiddenFields.ENABLED) {
-				if (fieldClass == int.class) return HiddenFields.intField(field);
-				if (fieldClass == long.class) return HiddenFields.longField(field);
-				if (fieldClass == double.class) return HiddenFields.doubleField(field);
-				if (fieldClass == boolean.class) return HiddenFields.booleanField(field);
-				if (fieldClass == float.class) return HiddenFields.floatField(field);
-				if (fieldClass == short.class) return HiddenFields.shortField(field);
-				if (fieldClass == char.class) return HiddenFields.charField(field);
-				if (fieldClass == byte.class) return HiddenFields.byteField(field);
-				if (fieldClass == String.class
-					&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-					return HiddenFields.stringField(field);
-				return HiddenFields.objectField(field, serializer, genericType);
+		boolean string = fieldClass == String.class
+			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class));
+		if (HiddenFields.supported) {
+			try {
+				return HiddenFields.create(field, fieldClass, string, serializer, genericType);
+			} catch (KryoException ex) {
+				if (DEBUG) debug("kryo", "Unable to access field with a hidden class, using a VarHandle: " + field, ex);
 			}
+		}
+		try {
 			if (fieldClass.isPrimitive()) {
 				if (fieldClass == int.class) return new VarHandleField.IntVarHandleField(field);
 				if (fieldClass == float.class) return new VarHandleField.FloatVarHandleField(field);
@@ -283,9 +278,7 @@ class CachedFields implements Comparator<CachedField> {
 				if (fieldClass == char.class) return new VarHandleField.CharVarHandleField(field);
 				if (fieldClass == byte.class) return new VarHandleField.ByteVarHandleField(field);
 			}
-			if (fieldClass == String.class
-				&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-				return new VarHandleField.StringVarHandleField(field);
+			if (string) return new VarHandleField.StringVarHandleField(field);
 			return new VarHandleField(field, serializer, genericType);
 		} catch (KryoException ex) {
 			// Eg a public field in a package that is exported but not open to Kryo, which can be accessed with reflection.

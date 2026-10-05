@@ -1649,7 +1649,14 @@ class FieldSerializerTest extends KryoTestCase {
 		@SuppressWarnings("deprecation")
 		FieldAccessType asm = FieldAccessType.ASM;
 		assertFieldAccess(asm, "IntAsmField", "AsmField", "IntReflectField");
-		assertFieldAccess(FieldAccessType.VARHANDLE, "IntVarHandleField", "VarHandleField", "IntReflectField");
+		assertFieldAccess(FieldAccessType.VARHANDLE, "IntHiddenField", "ObjectHiddenField", "IntReflectField");
+		// Without hidden classes, eg in a native image.
+		HiddenFields.supported = false;
+		try {
+			assertFieldAccess(FieldAccessType.VARHANDLE, "IntVarHandleField", "VarHandleField", "IntReflectField");
+		} finally {
+			HiddenFields.supported = true;
+		}
 		assertFieldAccess(FieldAccessType.REFLECTION, "IntReflectField", "ReflectField", "IntReflectField");
 	}
 
@@ -1674,10 +1681,10 @@ class FieldSerializerTest extends KryoTestCase {
 		FieldSerializerConfig config = new FieldSerializerConfig();
 		config.setFieldAccess(fieldAccess);
 		FieldSerializer serializer = new FieldSerializer(kryo, FieldAccessTypes.class, config);
-		assertEquals(intField, serializer.getField("value").getClass().getSimpleName());
-		assertEquals(objectField, serializer.getField("object").getClass().getSimpleName());
+		assertEquals(intField, fieldClassName(serializer.getField("value")));
+		assertEquals(objectField, fieldClassName(serializer.getField("object")));
 		// Final fields can't be written with ASM or VarHandles.
-		assertEquals(finalField, serializer.getField("finalValue").getClass().getSimpleName());
+		assertEquals(finalField, fieldClassName(serializer.getField("finalValue")));
 
 		kryo.register(FieldAccessTypes.class, serializer);
 		kryo.register(ArrayList.class);
@@ -1686,6 +1693,13 @@ class FieldSerializerTest extends KryoTestCase {
 		object.object = new ArrayList();
 		FieldAccessTypes copy = roundTrip(5, object);
 		assertEquals(1, copy.value);
+	}
+
+	/** The name of a hidden class ends with a slash and a suffix. */
+	static private String fieldClassName (CachedField field) {
+		String name = field.getClass().getSimpleName();
+		int slash = name.indexOf('/');
+		return slash == -1 ? name : name.substring(0, slash);
 	}
 
 	@Test
