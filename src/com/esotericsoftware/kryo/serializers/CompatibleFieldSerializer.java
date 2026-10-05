@@ -65,7 +65,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		this.config = config;
 	}
 
-	protected void initializeCachedFields () {
+	void cachedFieldsChanged () {
 		// Fields are sorted by name, so fields with the same name are adjacent. The exception is thrown when writing or reading,
 		// so the config can still be changed and updateFields called after the serializer is constructed.
 		duplicateFieldName = null;
@@ -94,16 +94,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		super.updateFields();
 		// The fields may have changed, also if the array was reused. Not in initializeCachedFields, which subclasses can override.
 		fieldNamesFields = null;
-	}
-
-	public void removeField (String fieldName) {
-		super.removeField(fieldName);
-		initializeCachedFields();
-	}
-
-	public void removeField (CachedField field) {
-		super.removeField(field);
-		initializeCachedFields();
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
