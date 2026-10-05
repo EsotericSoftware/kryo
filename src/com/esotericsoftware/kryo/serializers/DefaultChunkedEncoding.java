@@ -291,7 +291,17 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 	 * the caller keeps both. */
 	public long beginField (Input input) {
 		int length = input.readVarInt(true);
-		int objects = kryo.getReferences() ? kryo.getReferenceResolver().getObjectCount() + input.readVarInt(true) : 0;
+		int objects = 0;
+		if (kryo.getReferences()) {
+			// The IDs of the objects that are not read are reserved, so the number of objects is limited like an array length. It
+			// can't be limited by the length of the field, which can contain compressed data.
+			int count = input.readVarInt(true), read = kryo.getReferenceResolver().getObjectCount();
+			if (count < 0 || count > input.getMaxArraySize() || read + count < read) {
+				throw new KryoException(
+					"Invalid number of objects in the field: " + count + " (maxArraySize: " + input.getMaxArraySize() + ")");
+			}
+			if (read >= 0) objects = read + count; // Else the number of objects is unknown and no IDs are reserved.
+		}
 		if (TRACE) trace("kryo", "Read field: " + length + " bytes" + pos(input.position()));
 		return (long)objects << 32 | (input.total() + length & 0xFFFFFFFFL);
 	}

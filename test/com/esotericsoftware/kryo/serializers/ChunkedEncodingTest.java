@@ -390,6 +390,27 @@ class ChunkedEncodingTest {
 	}
 
 	@Test
+	void testFieldObjectsLimit () {
+		// The number of objects in a field is read from the data and limits the reference IDs reserved for a skipped field.
+		Kryo kryo = new Kryo();
+		kryo.setReferences(true);
+		DefaultChunkedEncoding encoding = DefaultChunkedEncoding.get(kryo);
+		for (int objects : new int[] {1000, 1001, Integer.MAX_VALUE, -1}) {
+			Output output = new Output(16);
+			output.writeVarInt(0, true); // Field length.
+			output.writeVarInt(objects, true);
+			Input input = new Input(output.toBytes());
+			input.setMaxArraySize(1000);
+			if (objects == 1000) {
+				encoding.endField(input, encoding.beginField(input));
+				assertEquals(1000, kryo.getReferenceResolver().getObjectCount());
+			} else
+				assertThrows(KryoException.class, () -> encoding.beginField(input));
+		}
+		assertEquals(1000, kryo.getReferenceResolver().getObjectCount());
+	}
+
+	@Test
 	void testMultipleObjects () {
 		// Each element is written with the class names and field names first written in it.
 		ArrayList<Entity> list = new ArrayList<>();
