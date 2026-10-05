@@ -44,10 +44,6 @@ final class LegacyChunkedEncoding implements ChunkedEncoding {
 	}
 
 	public Output beginWrite (Output output) {
-		return output;
-	}
-
-	public Output fieldOutput (Output output) {
 		return new OutputChunked(output, chunkSize);
 	}
 
@@ -63,7 +59,7 @@ final class LegacyChunkedEncoding implements ChunkedEncoding {
 	}
 
 	public void endField (Output output, long mark) {
-		((OutputChunked)output).endChunk(); // The output returned by fieldOutput.
+		((OutputChunked)output).endChunk(); // The output returned by beginWrite.
 	}
 
 	public Input beginRead (Input input) {

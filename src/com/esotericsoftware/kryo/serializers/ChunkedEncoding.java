@@ -32,13 +32,8 @@ interface ChunkedEncoding {
 		return legacyChunks ? LegacyChunkedEncoding.get(chunkSize) : DefaultChunkedEncoding.get(kryo);
 	}
 
-	/** Returns the output for the data of an object outside its fields, eg the tags of TaggedFieldSerializer. Must be followed by
-	 * {@link #endWrite()}. */
+	/** Returns the output for the fields of an object. Must be followed by {@link #endWrite()}. */
 	Output beginWrite (Output output);
-
-	/** Returns the output for the field data.
-	 * @param output The output returned by {@link #beginWrite(Output)}. */
-	Output fieldOutput (Output output);
 
 	/** Ends writing an object started by {@link #beginWrite(Output)}, eg writing data that was buffered. */
 	void endWrite ();
@@ -48,12 +43,12 @@ interface ChunkedEncoding {
 	boolean writeFieldNames (Class type, String[] names);
 
 	/** Starts a field.
-	 * @param output The output returned by {@link #fieldOutput(Output)}.
+	 * @param output The output returned by {@link #beginWrite(Output)}.
 	 * @return The mark for {@link #endField(Output, long)}. */
 	long beginField (Output output);
 
 	/** Ends a field started by {@link #beginField(Output)}.
-	 * @param output The output returned by {@link #fieldOutput(Output)}. */
+	 * @param output The output returned by {@link #beginWrite(Output)}. */
 	void endField (Output output, long mark);
 
 	/** Returns the input for the fields of an object. Must be followed by {@link #endRead()}, also if it throws an exception. */

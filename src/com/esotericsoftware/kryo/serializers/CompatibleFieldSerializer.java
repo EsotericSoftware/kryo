@@ -111,7 +111,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		boolean readUnknownFieldData = config.readUnknownFieldData;
 		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
 		boolean chunked = chunks != null;
-		Output fieldOutput = chunked ? chunks.fieldOutput(chunks.beginWrite(output)) : output;
+		Output fieldOutput = chunked ? chunks.beginWrite(output) : output;
 		int pop = pushTypeVariables();
 
 		CachedField[] fields = cachedFields.fields;

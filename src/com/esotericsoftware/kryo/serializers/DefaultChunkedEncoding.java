@@ -109,10 +109,6 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		return scope.buffer;
 	}
 
-	public Output fieldOutput (Output output) {
-		return output;
-	}
-
 	/** If the object started the current scope, writes the data first written in it and then the object data. */
 	public void endWrite () {
 		WriteScope scope = writeScopes.get(writeDepth - 1);

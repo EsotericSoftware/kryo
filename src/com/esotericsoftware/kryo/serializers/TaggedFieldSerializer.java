@@ -127,8 +127,9 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		boolean readUnknownTagData = config.readUnknownTagData;
 		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
 		boolean chunked = chunks != null;
-		Output objectOutput = chunked ? chunks.beginWrite(output) : output;
-		Output fieldOutput = chunked ? chunks.fieldOutput(objectOutput) : objectOutput;
+		Output fieldOutput = chunked ? chunks.beginWrite(output) : output;
+		// The chunked encoding of Kryo 5 writes the tags and the header outside the chunks.
+		Output objectOutput = config.legacyChunks ? output : fieldOutput;
 		int pop = pushTypeVariables();
 		writeHeader(kryo, objectOutput, object);
 
