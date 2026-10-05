@@ -28,7 +28,6 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.io.InputStream;
-import java.lang.constant.ConstantDescs;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -89,18 +88,25 @@ final class HiddenFields {
 		}
 	};
 
+	/** The class files of the templates, which are read only once. */
+	private static final ClassValue<byte[]> templateBytes = new ClassValue<>() {
+		protected byte[] computeValue (Class template) {
+			try (InputStream in = template.getResourceAsStream(template.getSimpleName() + ".class")) {
+				return in.readAllBytes();
+			} catch (Exception ex) {
+				throw new KryoException("Unable to read class file: " + template.getName(), ex);
+			}
+		}
+	};
+
 	private static CachedField define (Class template, Field field, MethodType constructorType, Object... args) {
 		try {
 			ConcurrentHashMap<String, MethodHandle> map = constructors.get(field.getDeclaringClass());
 			String key = template.getSimpleName() + ' ' + field.getName();
 			MethodHandle constructor = map.get(key);
 			if (constructor == null) {
-				byte[] bytes;
-				try (InputStream in = template.getResourceAsStream(template.getSimpleName() + ".class")) {
-					bytes = in.readAllBytes();
-				}
-				Lookup lookup = MethodHandles.lookup().defineHiddenClassWithClassData(bytes, VarHandleField.varHandle(field),
-					false);
+				Lookup lookup = MethodHandles.lookup().defineHiddenClassWithClassData(templateBytes.get(template),
+					VarHandleField.varHandle(field), false);
 				constructor = lookup.findConstructor(lookup.lookupClass(), constructorType);
 				MethodHandle existing = map.putIfAbsent(key, constructor);
 				if (existing != null) constructor = existing;
@@ -113,7 +119,7 @@ final class HiddenFields {
 
 	static VarHandle classData (Lookup lookup) {
 		try {
-			return MethodHandles.classData(lookup, ConstantDescs.DEFAULT_NAME, VarHandle.class);
+			return MethodHandles.classData(lookup, "_", VarHandle.class); // ConstantDescs.DEFAULT_NAME
 		} catch (IllegalAccessException ex) {
 			throw new KryoException(ex);
 		}
