@@ -155,8 +155,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 					return;
 				}
 				// All elements are the same class.
-				kryo.writeClass(output, elementType);
-				elementSerializer = kryo.getSerializer(elementType);
+				elementSerializer = kryo.writeClass(output, elementType).getSerializer();
 				if (elementsCanBeNull) {
 					output.writeBoolean(hasNull);
 					elementsCanBeNull = hasNull;
@@ -260,7 +259,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 						return collection;
 					}
 					elementClass = registration.getType();
-					elementSerializer = kryo.getSerializer(elementClass);
+					elementSerializer = registration.getSerializer();
 					if (elementsCanBeNull) elementsCanBeNull = input.readBoolean();
 				}
 			}
