@@ -539,13 +539,20 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Configuration for FieldSerializer instances. */
 	public static class FieldSerializerConfig implements Cloneable {
-		/** Unsafe where it can be used without a warning, otherwise VarHandles. Java warns about Unsafe memory access since Java
-		 * 24, unless it is allowed with {@code --sun-misc-unsafe-memory-access=allow}. On Android, which has VarHandles only since
-		 * API level 33, reflection. */
+		/** The value of the system property "kryo.fieldAccess" if it is set. Otherwise Unsafe where it can be used without a
+		 * warning, otherwise VarHandles. Java warns about Unsafe memory access since Java 24, unless it is allowed with
+		 * {@code --sun-misc-unsafe-memory-access=allow}. On Android, which has VarHandles only since API level 33, reflection. */
 		static final FieldAccessType defaultFieldAccess;
 		static {
 			String memoryAccess = System.getProperty("sun.misc.unsafe.memory.access");
-			if (isAndroid)
+			String configured = System.getProperty("kryo.fieldAccess");
+			if (configured != null) {
+				try {
+					defaultFieldAccess = FieldAccessType.valueOf(configured);
+				} catch (IllegalArgumentException ex) {
+					throw new KryoException("Invalid value of the system property kryo.fieldAccess: " + configured, ex);
+				}
+			} else if (isAndroid)
 				defaultFieldAccess = FieldAccessType.REFLECTION;
 			else if (!unsafe)
 				defaultFieldAccess = FieldAccessType.VARHANDLE;
@@ -671,10 +678,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return extendedFieldNames;
 		}
 
-		/** Sets how fields are read and written. Default is {@link FieldAccessType#UNSAFE} where Unsafe can be used without a
-		 * warning, which is before Java 24 or with {@code --sun-misc-unsafe-memory-access=allow},
-		 * {@link FieldAccessType#REFLECTION} on Android, otherwise {@link FieldAccessType#VARHANDLE}. Changes take effect for new
-		 * serializers or after {@link FieldSerializer#updateFields()}. */
+		/** Sets how fields are read and written. Default is the value of the system property "kryo.fieldAccess" if it is set,
+		 * otherwise {@link FieldAccessType#UNSAFE} where Unsafe can be used without a warning, which is before Java 24 or with
+		 * {@code --sun-misc-unsafe-memory-access=allow}, {@link FieldAccessType#REFLECTION} on Android, otherwise
+		 * {@link FieldAccessType#VARHANDLE}. Changes take effect for new serializers or after
+		 * {@link FieldSerializer#updateFields()}. */
 		public void setFieldAccess (FieldAccessType fieldAccess) {
 			if (fieldAccess == null) throw new IllegalArgumentException("fieldAccess cannot be null.");
 			this.fieldAccess = fieldAccess;
