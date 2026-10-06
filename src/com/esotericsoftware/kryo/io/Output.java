@@ -712,20 +712,13 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		writeVarIntFlag(true, charCount + 1, true);
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
-			// Try to write 7 bit chars.
-			byte[] buffer = this.buffer;
-			int p = position;
-			while (true) {
-				int c = value.charAt(charIndex);
-				if (c > 127) break;
-				buffer[p++] = (byte)c;
+			// Find the leading 7 bit chars and write them in bulk. The counted loop lets the JIT eliminate the charAt range checks.
+			while (charIndex < charCount && value.charAt(charIndex) <= 127)
 				charIndex++;
-				if (charIndex == charCount) {
-					position = p;
-					return;
-				}
+			if (charIndex > 0) {
+				value.getBytes(0, charIndex, buffer, position);
+				position += charIndex;
 			}
-			position = p;
 		}
 		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
