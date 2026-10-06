@@ -1356,9 +1356,8 @@ public class Kryo {
 	 * strings. {@link FieldSerializer} calls this when it creates a String field, after which the result can't change, see
 	 * {@link #setReferences(boolean)}. */
 	public boolean usesStringReferences () {
-		boolean use = stringReferences(references, referenceResolver);
-		stringFieldReferences = use ? 1 : 0;
-		return use;
+		if (stringFieldReferences == -1) stringFieldReferences = stringReferences(references, referenceResolver) ? 1 : 0;
+		return stringFieldReferences == 1;
 	}
 
 	/** Throws if a String field was created and the specified settings change whether strings use references. */

@@ -248,7 +248,7 @@ class Kryo5CompatibilityTest {
 		kryo7.register(WithString.class);
 		kryo7.setReferenceResolver(new MapReferenceResolver() {
 			public boolean useReferences (Class type) {
-				return !kryo.isFinal(type); // Needs the Kryo instance.
+				return !this.kryo.isFinal(type); // Needs the Kryo instance set by setKryo.
 			}
 		});
 		assertTrue(kryo7.getReferences());
