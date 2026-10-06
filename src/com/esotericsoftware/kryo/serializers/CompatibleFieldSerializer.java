@@ -31,6 +31,8 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 
+import java.util.Arrays;
+
 /** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
  * added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported.
  * Like {@link FieldSerializer}, it can serialize most classes without needing annotations.
@@ -382,6 +384,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 		}
 
+		// The serializer's own array when the data has its fields in its order, which the generated code can read.
+		if (Arrays.equals(fields, allFields)) fields = allFields;
 		kryo.getGraphContext().put(this, fields);
 		return fields;
 	}

@@ -153,13 +153,7 @@ class ReflectField extends CachedField {
 		Kryo kryo = fieldSerializer.kryo;
 		Registration registration = CodeGeneration.readClass(fieldSerializer, input, this, chunked);
 		if (registration == null) return null;
-		if (registration == CodeGeneration.skip) {
-			try {
-				return get(object);
-			} catch (IllegalAccessException ex) {
-				throw accessError(field, ex);
-			}
-		}
+		if (registration == CodeGeneration.skip) return CodeGeneration.currentValue(this, object);
 		Class valueClass = registration.getType();
 		boolean pushed = false;
 		try {

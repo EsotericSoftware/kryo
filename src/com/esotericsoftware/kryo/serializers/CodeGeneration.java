@@ -86,7 +86,9 @@ final class CodeGeneration {
 	static private final MethodTypeDesc MTD_beginFieldRead = MethodTypeDesc.of(CD_long, CD_Input);
 	static private final MethodTypeDesc MTD_endFieldRead = MethodTypeDesc.of(CD_void, CD_Input, CD_long);
 	static private final MethodTypeDesc MTD_writeVarInt = MethodTypeDesc.of(CD_int, CD_int, CD_boolean);
+	static private final MethodTypeDesc MTD_writeVarLong = MethodTypeDesc.of(CD_int, CD_long, CD_boolean);
 	static private final MethodTypeDesc MTD_readVarInt = MethodTypeDesc.of(CD_int, CD_boolean);
+	static private final MethodTypeDesc MTD_readVarLong = MethodTypeDesc.of(CD_long, CD_boolean);
 	static private final MethodTypeDesc MTD_readTag = MethodTypeDesc.of(CD_void, CD_Input, CD_int, CD_Object, CD_boolean);
 
 	/** Returned by {@link #readClass(FieldSerializer, Input, CachedField, boolean)} when the value is skipped. */
@@ -147,8 +149,8 @@ final class CodeGeneration {
 		if (field.finalSetter != null) return null;
 		Class type = field.field.getType();
 		if (type.isPrimitive()) {
-			if (type == int.class) return field.varEncoding ? Kind.varInt : Kind.int_;
-			if (type == long.class) return field.varEncoding ? Kind.varLong : Kind.long_;
+			if (type == int.class) return Kind.int_;
+			if (type == long.class) return Kind.long_;
 			if (type == double.class) return Kind.double_;
 			if (type == float.class) return Kind.float_;
 			if (type == boolean.class) return Kind.boolean_;
@@ -181,14 +183,17 @@ final class CodeGeneration {
 		boolean chunked) {
 		Registration registration = readClass(serializer, input, field, chunked);
 		if (registration == null) return null;
-		if (registration == skip) {
-			try {
-				return (String)field.get(object);
-			} catch (IllegalAccessException ex) {
-				throw ReflectField.accessError(field.field, ex);
-			}
-		}
+		if (registration == skip) return (String)currentValue(field, object);
 		return input.readString();
+	}
+
+	/** Returns the value of the field, to set it again when its value in the data is skipped. */
+	static Object currentValue (CachedField field, Object object) {
+		try {
+			return field.get(object);
+		} catch (IllegalAccessException ex) {
+			throw ReflectField.accessError(field.field, ex);
+		}
 	}
 
 	/** Reads the class of a primitive field value.
@@ -265,16 +270,8 @@ final class CodeGeneration {
 			// static { f0 = (VarHandle)MethodHandles.classDataAt(MethodHandles.lookup(), "_", VarHandle.class, 0); ... }
 			cb.withMethodBody(CLASS_INIT_NAME, MTD_void, ACC_STATIC, code -> {
 				for (int i = 0; i < n; i++) {
-					code.invokestatic(CD_MethodHandles, "lookup", MethodTypeDesc.of(CD_MethodHandles_Lookup)) //
-						.ldc("_").ldc(CD_VarHandle).loadConstant(i) //
-						.invokestatic(CD_MethodHandles, "classDataAt", MTD_classDataAt) //
-						.checkcast(CD_VarHandle).putstatic(thisClass, "f" + i, CD_VarHandle);
-					if (setters[i] != -1) {
-						code.invokestatic(CD_MethodHandles, "lookup", MethodTypeDesc.of(CD_MethodHandles_Lookup)) //
-							.ldc("_").ldc(CD_MethodHandle).loadConstant(setters[i]) //
-							.invokestatic(CD_MethodHandles, "classDataAt", MTD_classDataAt) //
-							.checkcast(CD_MethodHandle).putstatic(thisClass, "s" + i, CD_MethodHandle);
-					}
+					classData(code, i, CD_VarHandle).putstatic(thisClass, "f" + i, CD_VarHandle);
+					if (setters[i] != -1) classData(code, setters[i], CD_MethodHandle).putstatic(thisClass, "s" + i, CD_MethodHandle);
 				}
 				code.return_();
 			});
@@ -321,29 +318,30 @@ final class CodeGeneration {
 			if (chunked) code.aload(3).aload(1).invokeinterface(CD_ChunkedEncoding, "beginField", MTD_beginFieldWrite).lstore(mark);
 			if (kind == Kind.object) {
 				// ((ReflectField)fields[i]).writeValue(output, object, (Object)fi.get(object));
-				code.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload().checkcast(CD_ReflectField) //
-					.aload(1).aload(2) //
-					.getstatic(thisClass, "f" + i, CD_VarHandle).aload(2)
-					.invokevirtual(CD_VarHandle, "get", MethodTypeDesc.of(CD_Object, CD_Object)) //
-					.invokevirtual(CD_ReflectField, writeClasses ? "writeValueWithClass" : "writeValue", MTD_writeValue);
+				field(code, thisClass, i).checkcast(CD_ReflectField).aload(1).aload(2);
+				value(code, thisClass, i, CD_Object).invokevirtual(CD_ReflectField,
+					writeClasses ? "writeValueWithClass" : "writeValue",
+					MTD_writeValue);
 			} else if (writeClasses && kind == Kind.string) {
 				// CodeGeneration.writeStringWithClass(serializer.kryo, output, (String)fi.get(object));
-				code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).getfield(CD_FieldSerializer, "kryo", CD_Kryo) //
-					.aload(1).getstatic(thisClass, "f" + i, CD_VarHandle).aload(2)
-					.invokevirtual(CD_VarHandle, "get", MethodTypeDesc.of(CD_String, CD_Object)) //
-					.invokestatic(CD_CodeGeneration, "writeStringWithClass", MTD_writeStringWithClass);
+				kryo(code, thisClass).aload(1);
+				value(code, thisClass, i, CD_String).invokestatic(CD_CodeGeneration, "writeStringWithClass",
+					MTD_writeStringWithClass);
 			} else {
 				// serializer.kryo.writeClass(output, Integer.class);
-				if (writeClasses) {
-					code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).getfield(CD_FieldSerializer, "kryo", CD_Kryo) //
-						.aload(1).ldc(kind.wrapper).invokevirtual(CD_Kryo, "writeClass", MTD_writeClass).pop();
-				}
-				// output.writeX((X)fi.get(object));
-				code.aload(1).getstatic(thisClass, "f" + i, CD_VarHandle).aload(2)
-					.invokevirtual(CD_VarHandle, "get", MethodTypeDesc.of(kind.type, CD_Object));
-				if (kind.varEncoding) code.iconst_0(); // optimizePositive
-				code.invokevirtual(CD_Output, kind.write, kind.writeType);
-				if (kind.varEncoding) code.pop(); // The number of bytes written.
+				if (writeClasses)
+					kryo(code, thisClass).aload(1).ldc(kind.wrapper).invokevirtual(CD_Kryo, "writeClass", MTD_writeClass).pop();
+				// output.writeX((X)fi.get(object)), or writeVarX((X)fi.get(object), false) if fields[i].varEncoding
+				code.aload(1);
+				value(code, thisClass, i, kind.type);
+				if (kind.varEncodable) {
+					field(code, thisClass, i).getfield(CD_CachedField, "varEncoding", CD_boolean).ifThenElse(
+						java.lang.classfile.Opcode.IFNE, //
+						block -> block.iconst_0().invokevirtual(CD_Output, kind == Kind.int_ ? "writeVarInt" : "writeVarLong",
+							kind == Kind.int_ ? MTD_writeVarInt : MTD_writeVarLong).pop(), //
+						block -> block.invokevirtual(CD_Output, kind.write, kind.writeType));
+				} else
+					code.invokevirtual(CD_Output, kind.write, kind.writeType);
 			}
 			// chunks.endField(output, mark);
 			if (chunked) code.aload(3).aload(1).lload(mark).invokeinterface(CD_ChunkedEncoding, "endField", MTD_endFieldWrite);
@@ -384,8 +382,8 @@ final class CodeGeneration {
 		boolean readClass, boolean chunked) {
 		if (readClass && kind != Kind.object && kind != Kind.string) {
 			// if (CodeGeneration.readPrimitiveClass(serializer, input, fields[i], chunked)) fi.set(object, input.readX());
-			code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1) //
-				.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload().loadConstant(chunked ? 1 : 0) //
+			code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1);
+			field(code, thisClass, i).loadConstant(chunked ? 1 : 0) //
 				.invokestatic(CD_CodeGeneration, "readPrimitiveClass", MTD_readPrimitiveClass) //
 				.ifThen(java.lang.classfile.Opcode.IFNE, block -> readField(block, thisClass, i, kind, setter, false, chunked));
 			return;
@@ -397,8 +395,7 @@ final class CodeGeneration {
 		code.aload(2);
 		if (kind == Kind.object) {
 			// ((ReflectField)fields[i]).readValue(input) or readValueWithClass(input, object, chunked)
-			code.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload().checkcast(CD_ReflectField) //
-				.aload(1);
+			field(code, thisClass, i).checkcast(CD_ReflectField).aload(1);
 			if (readClass)
 				code.aload(2).loadConstant(chunked ? 1 : 0).invokevirtual(CD_ReflectField, "readValueWithClass",
 					MTD_readValueWithClass);
@@ -406,52 +403,70 @@ final class CodeGeneration {
 				code.invokevirtual(CD_ReflectField, "readValue", MTD_readValue);
 		} else if (readClass && kind == Kind.string) {
 			// CodeGeneration.readStringWithClass(serializer, input, fields[i], object, chunked)
-			code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1) //
-				.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload().aload(2)
-				.loadConstant(chunked ? 1 : 0) //
+			code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1);
+			field(code, thisClass, i).aload(2).loadConstant(chunked ? 1 : 0) //
 				.invokestatic(CD_CodeGeneration, "readStringWithClass", MTD_readStringWithClass);
-		} else {
-			// input.readX()
-			code.aload(1);
-			if (kind.varEncoding) code.iconst_0();
-			code.invokevirtual(CD_Input, kind.read, kind.readType);
-		}
+		} else if (kind.varEncodable) {
+			// fields[i].varEncoding ? input.readVarX(false) : input.readX()
+			field(code, thisClass, i).getfield(CD_CachedField, "varEncoding", CD_boolean).ifThenElse(java.lang.classfile.Opcode.IFNE, //
+				block -> block.aload(1).iconst_0().invokevirtual(CD_Input, kind == Kind.int_ ? "readVarInt" : "readVarLong",
+					kind == Kind.int_ ? MTD_readVarInt : MTD_readVarLong), //
+				block -> block.aload(1).invokevirtual(CD_Input, kind.read, kind.readType));
+		} else
+			code.aload(1).invokevirtual(CD_Input, kind.read, kind.readType); // input.readX()
 		if (setter == -1)
 			code.invokevirtual(CD_VarHandle, "set", MethodTypeDesc.of(CD_void, CD_Object, kind.type));
 		else
 			code.invokevirtual(CD_MethodHandle, "invokeExact", MethodTypeDesc.of(CD_void, CD_Object, kind.type));
 	}
 
+	/** Emits: (T)MethodHandles.classDataAt(MethodHandles.lookup(), "_", T.class, index) */
+	static private java.lang.classfile.CodeBuilder classData (java.lang.classfile.CodeBuilder code, int index, ClassDesc type) {
+		return code.invokestatic(CD_MethodHandles, "lookup", MethodTypeDesc.of(CD_MethodHandles_Lookup)) //
+			.ldc("_").ldc(type).loadConstant(index) //
+			.invokestatic(CD_MethodHandles, "classDataAt", MTD_classDataAt).checkcast(type);
+	}
+
+	/** Emits: fields[i] */
+	static private java.lang.classfile.CodeBuilder field (java.lang.classfile.CodeBuilder code, ClassDesc thisClass, int i) {
+		return code.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload();
+	}
+
+	/** Emits: serializer.kryo */
+	static private java.lang.classfile.CodeBuilder kryo (java.lang.classfile.CodeBuilder code, ClassDesc thisClass) {
+		return code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).getfield(CD_FieldSerializer, "kryo", CD_Kryo);
+	}
+
+	/** Emits: (T)fi.get(object) */
+	static private java.lang.classfile.CodeBuilder value (java.lang.classfile.CodeBuilder code, ClassDesc thisClass, int i,
+		ClassDesc type) {
+		return code.getstatic(thisClass, "f" + i, CD_VarHandle).aload(2).invokevirtual(CD_VarHandle, "get",
+			MethodTypeDesc.of(type, CD_Object));
+	}
+
 	/** How a field is written and read. */
 	private enum Kind {
-		varInt(CD_int, CD_Integer, "writeVarInt", "readVarInt", true), int_(CD_int, CD_Integer, "writeInt", "readInt", false), //
-		varLong(CD_long, CD_Long, "writeVarLong", "readVarLong", true), long_(CD_long, CD_Long, "writeLong", "readLong", false), //
-		double_(CD_double, CD_Double, "writeDouble", "readDouble", false), float_(CD_float, CD_Float, "writeFloat", "readFloat",
-			false), //
-		boolean_(CD_boolean, CD_Boolean, "writeBoolean", "readBoolean", false), short_(CD_short, CD_Short, "writeShort",
-			"readShort", false), //
-		char_(CD_char, CD_Character, "writeChar", "readChar", false), byte_(CD_byte, CD_Byte, "writeByte", "readByte", false), //
-		string(CD_String, CD_String, "writeString", "readString", false), object(CD_Object, null, null, null, false);
+		int_(CD_int, CD_Integer, "writeInt", "readInt"), long_(CD_long, CD_Long, "writeLong", "readLong"), //
+		double_(CD_double, CD_Double, "writeDouble", "readDouble"), float_(CD_float, CD_Float, "writeFloat", "readFloat"), //
+		boolean_(CD_boolean, CD_Boolean, "writeBoolean", "readBoolean"), short_(CD_short, CD_Short, "writeShort", "readShort"), //
+		char_(CD_char, CD_Character, "writeChar", "readChar"), byte_(CD_byte, CD_Byte, "writeByte", "readByte"), //
+		string(CD_String, CD_String, "writeString", "readString"), object(CD_Object, null, null, null);
 
 		final ClassDesc type, wrapper;
 		final String write, read;
-		final boolean varEncoding;
 		final MethodTypeDesc writeType, readType;
+		/** True for int and long, which are written with variable length if {@link CachedField#varEncoding}. */
+		final boolean varEncodable;
 
-		Kind (ClassDesc type, ClassDesc wrapper, String write, String read, boolean varEncoding) {
+		Kind (ClassDesc type, ClassDesc wrapper, String write, String read) {
 			this.type = type;
 			this.wrapper = wrapper;
 			this.write = write;
 			this.read = read;
-			this.varEncoding = varEncoding;
-			if (varEncoding) {
-				writeType = MethodTypeDesc.of(CD_int, type, CD_boolean);
-				readType = MethodTypeDesc.of(type, CD_boolean);
-			} else {
-				// writeShort(int) and writeChar(char) take their value as int and char, readShort() returns short.
-				writeType = MethodTypeDesc.of(CD_void, type == CD_short ? CD_int : type);
-				readType = MethodTypeDesc.of(type);
-			}
+			varEncodable = type == CD_int || type == CD_long;
+			// writeShort(int) takes its value as int.
+			writeType = MethodTypeDesc.of(CD_void, type == CD_short ? CD_int : type);
+			readType = MethodTypeDesc.of(type);
 		}
 	}
 }

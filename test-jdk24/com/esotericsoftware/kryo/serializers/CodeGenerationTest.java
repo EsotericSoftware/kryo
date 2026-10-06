@@ -181,13 +181,20 @@ class CodeGenerationTest extends KryoTestCase {
 		GeneratedFields generated = serializer.generated;
 		assertNotNull(generated);
 
+		// Field settings apply without updateFields, like for the cached fields.
+		Nested object = new Nested();
+		object.value = 123;
+		object.name = "name";
+		int length = write(kryo, object).length;
+		serializer.getField("value").setVariableLengthEncoding(false);
+		assertEquals(length + 2, write(kryo, object).length); // 4 instead of 2 bytes.
+		assertEquals(123, read(kryo, write(kryo, object), Nested.class).value);
+		serializer.getField("value").setVariableLengthEncoding(true);
+
 		serializer.removeField("value");
 		assertNotNull(serializer.generated);
 		assertNotSame(generated, serializer.generated);
 		assertNotSame(generated.getClass(), serializer.generated.getClass());
-		Nested object = new Nested();
-		object.value = 123;
-		object.name = "name";
 		Nested read = read(kryo, write(kryo, object), Nested.class);
 		assertEquals(0, read.value);
 		assertEquals("name", read.name);
