@@ -137,6 +137,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Generates the code for the fields if {@link #codeGenerated()}. If that fails, the cached fields are used and rebuilt with
 	 * their hidden classes, which {@link CachedFields} doesn't create when code is generated. */
 	final void regenerate () {
+		regenerate(true);
+	}
+
+	/** @param rebuild If false and no code could be generated, the cached fields are used as they are, eg while serializing. */
+	final void regenerate (boolean rebuild) {
 		generated = null;
 		if (!codeGenerated()) return;
 		try {
@@ -144,7 +149,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		} catch (KryoException ex) {
 			if (DEBUG) debug("kryo", "Unable to generate code for the fields of: " + className(type), ex);
 		}
-		if (generated == null && !codeGenerationFailed) {
+		if (generated == null && rebuild && !codeGenerationFailed) {
 			codeGenerationFailed = true;
 			cachedFields.rebuild();
 		}

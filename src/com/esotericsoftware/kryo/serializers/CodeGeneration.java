@@ -66,6 +66,7 @@ final class CodeGeneration {
 	static private final ClassDesc CD_ChunkedEncoding = ClassDesc.of(ChunkedEncoding.class.getName());
 	static private final ClassDesc CD_Kryo = ClassDesc.of(Kryo.class.getName());
 	static private final ClassDesc CD_Registration = ClassDesc.of(Registration.class.getName());
+	static private final ClassDesc CD_KryoException = ClassDesc.of(KryoException.class.getName());
 	static private final ClassDesc CD_Output = ClassDesc.of(Output.class.getName());
 	static private final ClassDesc CD_Input = ClassDesc.of(Input.class.getName());
 	static private final MethodTypeDesc MTD_classDataAt = MethodTypeDesc.of(CD_Object, CD_MethodHandles_Lookup, CD_String,
@@ -89,10 +90,15 @@ final class CodeGeneration {
 	static private final MethodTypeDesc MTD_readVarInt = MethodTypeDesc.of(CD_int, CD_boolean);
 	static private final MethodTypeDesc MTD_readVarLong = MethodTypeDesc.of(CD_long, CD_boolean);
 	static private final MethodTypeDesc MTD_readTag = MethodTypeDesc.of(CD_void, CD_Input, CD_int, CD_Object, CD_boolean);
+	static private final MethodTypeDesc MTD_writeError = MethodTypeDesc.of(CD_KryoException, CD_Throwable, CD_CachedField,
+		CD_Output);
+	static private final MethodTypeDesc MTD_readError = MethodTypeDesc.of(CD_KryoException, CD_Throwable, CD_CachedField,
+		CD_Input);
 
-	/** The constructors of the hidden classes, by type and field signature. */
-	static private final ClassValue<ConcurrentHashMap<String, MethodHandle>> constructors = new ClassValue<>() {
-		protected ConcurrentHashMap<String, MethodHandle> computeValue (Class type) {
+	/** The constructors of the hidden classes, by type and field signature. If defining a class failed, its KryoException, so it
+	 * isn't tried again for each serializer. */
+	static private final ClassValue<ConcurrentHashMap<String, Object>> constructors = new ClassValue<>() {
+		protected ConcurrentHashMap<String, Object> computeValue (Class type) {
 			return new ConcurrentHashMap<>();
 		}
 	};
@@ -135,10 +141,16 @@ final class CodeGeneration {
 			signature.append(';');
 		}
 
-		MethodHandle constructor = constructors.get(serializer.type).computeIfAbsent(signature.toString(),
-			key -> define(serializer.type, fields, kinds, writeClasses, tags));
+		Object constructor = constructors.get(serializer.type).computeIfAbsent(signature.toString(), key -> {
+			try {
+				return define(serializer.type, fields, kinds, writeClasses, tags);
+			} catch (KryoException ex) {
+				return ex;
+			}
+		});
+		if (constructor instanceof KryoException) throw (KryoException)constructor;
 		try {
-			GeneratedFields generated = (GeneratedFields)constructor.invokeExact(serializer, fields);
+			GeneratedFields generated = (GeneratedFields)((MethodHandle)constructor).invokeExact(serializer, fields);
 			generated.writesClasses = writeClasses;
 			return generated;
 		} catch (Throwable t) {
@@ -181,7 +193,9 @@ final class CodeGeneration {
 			if (!((VarHandle)classData.get(i)).isAccessModeSupported(AccessMode.SET)) {
 				try {
 					MethodHandle setter = MethodHandles.lookup().unreflectSetter(field); // The field is accessible.
-					Class valueType = kinds[i] == Kind.object ? Object.class : field.getType();
+					// The type the generated code passes: String for a type variable resolved to String, else the field type.
+					Class valueType = kinds[i] == Kind.object ? Object.class
+						: kinds[i] == Kind.string ? String.class : field.getType();
 					setters[i] = classData.size();
 					classData.add(setter.asType(MethodType.methodType(void.class, Object.class, valueType)));
 				} catch (IllegalAccessException ex) {
@@ -270,44 +284,57 @@ final class CodeGeneration {
 	static private void write (java.lang.classfile.CodeBuilder code, ClassDesc thisClass, Kind[] kinds, boolean writeClasses,
 		int[] tags, boolean chunked, int from, int to) {
 		int mark = chunked ? code.allocateLocal(java.lang.classfile.TypeKind.LONG) : -1;
-		for (int i = from; i < to; i++) {
-			Kind kind = kinds[i];
-			// output.writeVarInt(tag, true);
-			if (tags != null)
-				code.aload(1).loadConstant(tags[i]).iconst_1().invokevirtual(CD_Output, "writeVarInt", MTD_writeVarInt).pop();
-			// long mark = chunks.beginField(output);
-			if (chunked) code.aload(3).aload(1).invokeinterface(CD_ChunkedEncoding, "beginField", MTD_beginFieldWrite).lstore(mark);
-			if (kind == Kind.object) {
-				// ((ReflectField)fields[i]).writeValue(output, object, (Object)fi.get(object));
-				field(code, thisClass, i).checkcast(CD_ReflectField).aload(1).aload(2);
-				value(code, thisClass, i, CD_Object).invokevirtual(CD_ReflectField,
-					writeClasses ? "writeValueWithClass" : "writeValue",
-					MTD_writeValue);
-			} else if (writeClasses && kind == Kind.string) {
-				// CodeGeneration.writeStringWithClass(serializer.kryo, output, (String)fi.get(object));
-				kryo(code, thisClass).aload(1);
-				value(code, thisClass, i, CD_String).invokestatic(CD_GeneratedFields, "writeStringWithClass",
-					MTD_writeStringWithClass);
-			} else {
-				// serializer.kryo.writeClass(output, Integer.class);
-				if (writeClasses)
-					kryo(code, thisClass).aload(1).ldc(kind.wrapper).invokevirtual(CD_Kryo, "writeClass", MTD_writeClass).pop();
-				// output.writeX((X)fi.get(object)), or writeVarX((X)fi.get(object), false) if fields[i].varEncoding
-				code.aload(1);
-				value(code, thisClass, i, kind.type);
-				if (kind.varEncodable) {
-					field(code, thisClass, i).getfield(CD_CachedField, "varEncoding", CD_boolean).ifThenElse(
-						java.lang.classfile.Opcode.IFNE, //
-						block -> block.iconst_0().invokevirtual(CD_Output, kind == Kind.int_ ? "writeVarInt" : "writeVarLong",
-							kind == Kind.int_ ? MTD_writeVarInt : MTD_writeVarLong).pop(), //
-						block -> block.invokevirtual(CD_Output, kind.write, kind.writeType));
-				} else
-					code.invokevirtual(CD_Output, kind.write, kind.writeType);
+		// int index = from; try { index = i; write field i; ... } catch (Throwable t) { throw writeError(t, fields[index], output);
+		// }
+		int index = code.allocateLocal(java.lang.classfile.TypeKind.INT);
+		code.loadConstant(from).istore(index);
+		code.trying(block -> {
+			for (int i = from; i < to; i++) {
+				if (i != from) block.loadConstant(i).istore(index);
+				writeField(block, thisClass, kinds[i], i, writeClasses, tags, chunked, mark);
 			}
-			// chunks.endField(output, mark);
-			if (chunked) code.aload(3).aload(1).lload(mark).invokeinterface(CD_ChunkedEncoding, "endField", MTD_endFieldWrite);
-		}
+		}, catches -> catches.catchingAll(handler -> handler.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray)
+			.iload(index).aaload().aload(1).invokestatic(CD_GeneratedFields, "writeError", MTD_writeError).athrow()));
 		code.return_();
+	}
+
+	/** Emits the code that writes field i, see {@link #write}. */
+	static private void writeField (java.lang.classfile.CodeBuilder code, ClassDesc thisClass, Kind kind, int i,
+		boolean writeClasses, int[] tags, boolean chunked, int mark) {
+		// output.writeVarInt(tag, true);
+		if (tags != null)
+			code.aload(1).loadConstant(tags[i]).iconst_1().invokevirtual(CD_Output, "writeVarInt", MTD_writeVarInt).pop();
+		// long mark = chunks.beginField(output);
+		if (chunked) code.aload(3).aload(1).invokeinterface(CD_ChunkedEncoding, "beginField", MTD_beginFieldWrite).lstore(mark);
+		if (kind == Kind.object) {
+			// ((ReflectField)fields[i]).writeValue(output, object, (Object)fi.get(object));
+			field(code, thisClass, i).checkcast(CD_ReflectField).aload(1).aload(2);
+			value(code, thisClass, i, CD_Object).invokevirtual(CD_ReflectField,
+				writeClasses ? "writeValueWithClass" : "writeValue",
+				MTD_writeValue);
+		} else if (writeClasses && kind == Kind.string) {
+			// GeneratedFields.writeStringWithClass(serializer.kryo, output, (String)fi.get(object));
+			kryo(code, thisClass).aload(1);
+			value(code, thisClass, i, CD_String).invokestatic(CD_GeneratedFields, "writeStringWithClass",
+				MTD_writeStringWithClass);
+		} else {
+			// serializer.kryo.writeClass(output, Integer.class);
+			if (writeClasses)
+				kryo(code, thisClass).aload(1).ldc(kind.wrapper).invokevirtual(CD_Kryo, "writeClass", MTD_writeClass).pop();
+			// output.writeX((X)fi.get(object)), or writeVarX((X)fi.get(object), false) if fields[i].varEncoding
+			code.aload(1);
+			value(code, thisClass, i, kind.type);
+			if (kind.varEncodable) {
+				field(code, thisClass, i).getfield(CD_CachedField, "varEncoding", CD_boolean).ifThenElse(
+					java.lang.classfile.Opcode.IFNE, //
+					block -> block.iconst_0().invokevirtual(CD_Output, kind == Kind.int_ ? "writeVarInt" : "writeVarLong",
+						kind == Kind.int_ ? MTD_writeVarInt : MTD_writeVarLong).pop(), //
+					block -> block.invokevirtual(CD_Output, kind.write, kind.writeType));
+			} else
+				code.invokevirtual(CD_Output, kind.write, kind.writeType);
+		}
+		// chunks.endField(output, mark);
+		if (chunked) code.aload(3).aload(1).lload(mark).invokeinterface(CD_ChunkedEncoding, "endField", MTD_endFieldWrite);
 	}
 
 	/** Emits the body of read for the fields from (inclusive) to (exclusive): locals 1 input, 2 object, 3 chunks if chunked. */
@@ -315,26 +342,39 @@ final class CodeGeneration {
 		boolean readClasses, int[] tags, boolean chunked, int from, int to) {
 		int tag = tags != null ? code.allocateLocal(java.lang.classfile.TypeKind.INT) : -1;
 		int end = chunked ? code.allocateLocal(java.lang.classfile.TypeKind.LONG) : -1;
-		for (int i = from; i < to; i++) {
-			int index = i;
-			// int tag = input.readVarInt(true);
-			if (tags != null) code.aload(1).iconst_1().invokevirtual(CD_Input, "readVarInt", MTD_readVarInt).istore(tag);
-			// long end = chunks.beginField(input);
-			if (chunked) code.aload(3).aload(1).invokeinterface(CD_ChunkedEncoding, "beginField", MTD_beginFieldRead).lstore(end);
-			if (tags == null)
-				readField(code, thisClass, index, kinds[index], setters[index], readClasses, chunked);
-			else {
-				// if (tag == TAG) read the field, else ((TaggedFieldSerializer)serializer).readTag(input, tag, object, chunked);
-				code.iload(tag).loadConstant(tags[i]).ifThenElse(java.lang.classfile.Opcode.IF_ICMPEQ, //
-					block -> readField(block, thisClass, index, kinds[index], setters[index], readClasses, chunked), //
-					block -> block.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).checkcast(CD_TaggedFieldSerializer) //
-						.aload(1).iload(tag).aload(2).loadConstant(chunked ? 1 : 0)
-						.invokevirtual(CD_TaggedFieldSerializer, "readTag", MTD_readTag));
+		// int index = from; try { index = i; read field i; ... } catch (Throwable t) { throw readError(t, fields[index], input); }
+		int index = code.allocateLocal(java.lang.classfile.TypeKind.INT);
+		code.loadConstant(from).istore(index);
+		code.trying(block -> {
+			for (int i = from; i < to; i++) {
+				if (i != from) block.loadConstant(i).istore(index);
+				readEntry(block, thisClass, kinds, setters, readClasses, tags, chunked, tag, end, i);
 			}
-			// chunks.endField(input, end);
-			if (chunked) code.aload(3).aload(1).lload(end).invokeinterface(CD_ChunkedEncoding, "endField", MTD_endFieldRead);
-		}
+		}, catches -> catches.catchingAll(handler -> handler.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray)
+			.iload(index).aaload().aload(1).invokestatic(CD_GeneratedFields, "readError", MTD_readError).athrow()));
 		code.return_();
+	}
+
+	/** Emits the code that reads field i, with its tag and chunk if any, see {@link #read}. */
+	static private void readEntry (java.lang.classfile.CodeBuilder code, ClassDesc thisClass, Kind[] kinds, int[] setters,
+		boolean readClasses, int[] tags, boolean chunked, int tag, int end, int i) {
+		int index = i;
+		// int tag = input.readVarInt(true);
+		if (tags != null) code.aload(1).iconst_1().invokevirtual(CD_Input, "readVarInt", MTD_readVarInt).istore(tag);
+		// long end = chunks.beginField(input);
+		if (chunked) code.aload(3).aload(1).invokeinterface(CD_ChunkedEncoding, "beginField", MTD_beginFieldRead).lstore(end);
+		if (tags == null)
+			readField(code, thisClass, index, kinds[index], setters[index], readClasses, chunked);
+		else {
+			// if (tag == TAG) read the field, else ((TaggedFieldSerializer)serializer).readTag(input, tag, object, chunked);
+			code.iload(tag).loadConstant(tags[i]).ifThenElse(java.lang.classfile.Opcode.IF_ICMPEQ, //
+				block -> readField(block, thisClass, index, kinds[index], setters[index], readClasses, chunked), //
+				block -> block.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).checkcast(CD_TaggedFieldSerializer) //
+					.aload(1).iload(tag).aload(2).loadConstant(chunked ? 1 : 0)
+					.invokevirtual(CD_TaggedFieldSerializer, "readTag", MTD_readTag));
+		}
+		// chunks.endField(input, end);
+		if (chunked) code.aload(3).aload(1).lload(end).invokeinterface(CD_ChunkedEncoding, "endField", MTD_endFieldRead);
 	}
 
 	/** Emits: fi.set(object, value) or, for a final field, si.invokeExact(object, value). With readClass, the class is read first
@@ -342,7 +382,7 @@ final class CodeGeneration {
 	static private void readField (java.lang.classfile.CodeBuilder code, ClassDesc thisClass, int i, Kind kind, int setter,
 		boolean readClass, boolean chunked) {
 		if (readClass && kind != Kind.object && kind != Kind.string) {
-			// if (CodeGeneration.readPrimitiveClass(serializer, input, fields[i], chunked)) fi.set(object, input.readX());
+			// if (GeneratedFields.readPrimitiveClass(serializer, input, fields[i], chunked)) fi.set(object, input.readX());
 			code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1);
 			field(code, thisClass, i).loadConstant(chunked ? 1 : 0) //
 				.invokestatic(CD_GeneratedFields, "readPrimitiveClass", MTD_readPrimitiveClass) //
@@ -363,7 +403,7 @@ final class CodeGeneration {
 			else
 				code.invokevirtual(CD_ReflectField, "readValue", MTD_readValue);
 		} else if (readClass && kind == Kind.string) {
-			// CodeGeneration.readStringWithClass(serializer, input, fields[i], object, chunked)
+			// GeneratedFields.readStringWithClass(serializer, input, fields[i], object, chunked)
 			code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1);
 			field(code, thisClass, i).aload(2).loadConstant(chunked ? 1 : 0) //
 				.invokestatic(CD_GeneratedFields, "readStringWithClass", MTD_readStringWithClass);

@@ -273,6 +273,50 @@ class CodeGenerationTest extends KryoTestCase {
 	}
 
 	@Test
+	void testFinalTypeVariableField () {
+		// A final T resolved to String: the setter takes the field type Object, the generated code passes a String.
+		kryo.register(FinalStringBox.class);
+		assertGenerated(FinalStringBox.class);
+		roundTrip(6, new FinalStringBox("value"));
+	}
+
+	@Test
+	void testTypeVariableFieldWithOtherClass () {
+		// With unknown field data, the String field for a T resolved to String can only read a String, with and without generated
+		// code. Other data was read as a String, which corrupted the stream.
+		for (boolean generated : new boolean[] {true, false}) {
+			Kryo kryo = new Kryo();
+			CompatibleFieldSerializerFactory factory = compatible(true, false);
+			factory.getConfig().setCodeGeneration(generated);
+			kryo.setDefaultSerializer(factory);
+			kryo.register(StringBox.class);
+			assertEquals(generated, ((FieldSerializer)kryo.getSerializer(StringBox.class)).generated != null);
+			Output output = new Output(64);
+			output.writeVarInt(1, true);
+			output.writeString("value");
+			kryo.writeClass(output, Integer.class);
+			output.writeVarInt(5, false);
+			byte[] bytes = output.toBytes();
+			KryoException ex = assertThrows(KryoException.class, () -> read(kryo, bytes, StringBox.class));
+			assertTrue(ex.getMessage().contains("Read type is incompatible with the field type: int -> String"), ex.getMessage());
+		}
+	}
+
+	@Test
+	void testFieldNameInError () {
+		// The generated code names the field that failed, like the loop over the cached fields.
+		kryo.register(Nested.class);
+		GeneratedFields generated = assertGenerated(Nested.class);
+		KryoException ex = assertThrows(KryoException.class, () -> generated.write(new Output(64), null));
+		assertTrue(ex.getMessage().startsWith("Error writing name at position"), ex.getMessage());
+		Nested nested = new Nested();
+		nested.name = "name";
+		byte[] bytes = write(kryo, nested);
+		ex = assertThrows(KryoException.class, () -> generated.read(new Input(bytes), null));
+		assertTrue(ex.getMessage().startsWith("Error reading name at position"), ex.getMessage());
+	}
+
+	@Test
 	void testVersionFieldSerializer () {
 		VersionFieldSerializerFactory factory = new VersionFieldSerializerFactory();
 		factory.getConfig().setCodeGeneration(true);
@@ -793,6 +837,28 @@ class CodeGenerationTest extends KryoTestCase {
 	static public class StringBox extends Box<String> {
 		public boolean equals (Object obj) {
 			return Objects.equals(value, ((StringBox)obj).value);
+		}
+	}
+
+	static public class FinalBox<T> {
+		final T value;
+
+		public FinalBox (T value) {
+			this.value = value;
+		}
+	}
+
+	static public class FinalStringBox extends FinalBox<String> {
+		public FinalStringBox () {
+			this(null);
+		}
+
+		public FinalStringBox (String value) {
+			super(value);
+		}
+
+		public boolean equals (Object obj) {
+			return Objects.equals(value, ((FinalStringBox)obj).value);
 		}
 	}
 

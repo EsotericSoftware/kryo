@@ -105,6 +105,26 @@ abstract class GeneratedFields {
 		return input.readString();
 	}
 
+	/** Returns the type a value in the data must be compatible with: the field type, or String for a String field that is written
+	 * directly, which may be a type variable resolved to String. */
+	static Class readType (CachedField field) {
+		return field.valueClass == String.class && !(field instanceof ReflectField) ? String.class : field.field.getType();
+	}
+
+	/** Called by the generated code when writing a field fails, to name the field like the loop over the cached fields. */
+	static KryoException writeError (Throwable t, CachedField field, Output output) {
+		if (t instanceof KryoException) return (KryoException)t;
+		if (t instanceof Error) throw (Error)t;
+		return new KryoException("Error writing " + field + " at position " + output.position(), t);
+	}
+
+	/** Called by the generated code when reading a field fails, to name the field like the loop over the cached fields. */
+	static KryoException readError (Throwable t, CachedField field, Input input) {
+		if (t instanceof KryoException) return (KryoException)t;
+		if (t instanceof Error) throw (Error)t;
+		return new KryoException("Error reading " + field + " at position " + input.position(), t);
+	}
+
 	/** Returns the value of the field, to set it again when its value in the data is skipped. */
 	static Object currentValue (CachedField field, Object object) {
 		try {
@@ -137,7 +157,7 @@ abstract class GeneratedFields {
 			return skip;
 		}
 		if (registration == null) return null;
-		Class valueClass = registration.getType(), fieldType = field.field.getType();
+		Class valueClass = registration.getType(), fieldType = readType(field);
 		if (!isAssignableTo(valueClass, fieldType)) {
 			String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
 				+ className(fieldType)

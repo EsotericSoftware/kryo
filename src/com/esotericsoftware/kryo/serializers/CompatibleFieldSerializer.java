@@ -84,7 +84,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		if (generated == null || config.legacyChunks) return null;
 		// readUnknownFieldData can be changed without updateFields.
 		if (generated.writesClasses != config.readUnknownFieldData) {
-			regenerate();
+			regenerate(false);
 			return this.generated;
 		}
 		return generated;
@@ -257,7 +257,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					}
 
 					// Ensure the type in the data is compatible with the field type.
-					Class fieldType = cachedField.field.getType();
+					Class fieldType = GeneratedFields.readType(cachedField);
 					if (!Util.isAssignableTo(valueClass, fieldType)) {
 						String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
 							+ className(fieldType) + " (" + getType().getName() + "#" + cachedField + ")";
