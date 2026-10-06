@@ -257,7 +257,7 @@ public class FieldAccessBenchmark {
 		public Object o12 = "o12";
 	}
 
-	/** A typical class with private fields, which can't use ASM. */
+	/** A typical class with private fields. */
 	static class PrivateFields {
 		private int id;
 		private long timestamp;

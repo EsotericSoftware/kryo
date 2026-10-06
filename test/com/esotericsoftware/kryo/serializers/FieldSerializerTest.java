@@ -45,8 +45,8 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.util.Util;
-import com.esotericsoftware.minlog.Log;
-import com.esotericsoftware.minlog.Log.Logger;
+import com.esotericsoftware.kryo.util.Log;
+import com.esotericsoftware.kryo.util.Log.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -1646,9 +1646,6 @@ class FieldSerializerTest extends KryoTestCase {
 	@Test
 	void testFieldAccess () {
 		assertFieldAccess(FieldAccessType.UNSAFE, "IntUnsafeField", "UnsafeField", "IntUnsafeField");
-		@SuppressWarnings("deprecation")
-		FieldAccessType asm = FieldAccessType.ASM;
-		assertFieldAccess(asm, "IntAsmField", "AsmField", "IntReflectField");
 		boolean hiddenFields = CachedFields.hiddenFields; // False if the tests run with -Dkryo.hiddenFields=false.
 		if (hiddenFields) assertFieldAccess(FieldAccessType.VARHANDLE, "IntHiddenField", "ObjectHiddenField", "IntReflectField");
 		// Without hidden classes, eg in a native image.
@@ -1662,13 +1659,11 @@ class FieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
 	void testFieldAccessWithoutUnsafe () {
-		// Unsafe configured but not available: VarHandles, reflection on Android, never ReflectASM.
+		// Unsafe configured but not available: VarHandles, reflection on Android.
 		assertEquals(FieldAccessType.VARHANDLE, CachedFields.fieldAccess(FieldAccessType.UNSAFE, false, false));
 		assertEquals(FieldAccessType.REFLECTION, CachedFields.fieldAccess(FieldAccessType.UNSAFE, false, true));
 		assertEquals(FieldAccessType.UNSAFE, CachedFields.fieldAccess(FieldAccessType.UNSAFE, true, false));
-		assertEquals(FieldAccessType.ASM, CachedFields.fieldAccess(FieldAccessType.ASM, false, false));
 	}
 
 	@Test
@@ -1688,7 +1683,7 @@ class FieldSerializerTest extends KryoTestCase {
 		FieldSerializer serializer = new FieldSerializer(kryo, FieldAccessTypes.class, config);
 		assertEquals(intField, fieldClassName(serializer.getField("value")));
 		assertEquals(objectField, fieldClassName(serializer.getField("object")));
-		// Final fields can't be written with ASM or VarHandles.
+		// Final fields can't be written with VarHandles.
 		assertEquals(finalField, fieldClassName(serializer.getField("finalValue")));
 
 		kryo.register(FieldAccessTypes.class, serializer);
@@ -1711,11 +1706,9 @@ class FieldSerializerTest extends KryoTestCase {
 	void testSameDataWithAllFieldAccessTypes () {
 		// All field access types write the same data, also for final fields, which VarHandles can't set, and for String fields with
 		// references, which are written without references. They all apply @Bind and @NotNull to String fields.
-		@SuppressWarnings("deprecation")
-		FieldAccessType asm = FieldAccessType.ASM;
 		for (boolean references : new boolean[] {false, true}) {
 			byte[] expected = null;
-			for (FieldAccessType fieldAccess : new FieldAccessType[] {FieldAccessType.UNSAFE, asm, FieldAccessType.VARHANDLE,
+			for (FieldAccessType fieldAccess : new FieldAccessType[] {FieldAccessType.UNSAFE, FieldAccessType.VARHANDLE,
 				FieldAccessType.REFLECTION}) {
 				Kryo kryo = new Kryo();
 				kryo.setReferences(references);
@@ -1794,9 +1787,7 @@ class FieldSerializerTest extends KryoTestCase {
 		Output output = new Output(64);
 		writer.writeObject(output, new ObjectValue());
 
-		@SuppressWarnings("deprecation")
-		FieldAccessType asm = FieldAccessType.ASM;
-		for (FieldAccessType fieldAccess : new FieldAccessType[] {FieldAccessType.UNSAFE, asm, FieldAccessType.VARHANDLE,
+		for (FieldAccessType fieldAccess : new FieldAccessType[] {FieldAccessType.UNSAFE, FieldAccessType.VARHANDLE,
 			FieldAccessType.REFLECTION}) {
 			Kryo reader = new Kryo();
 			FieldSerializerConfig config = new FieldSerializerConfig();

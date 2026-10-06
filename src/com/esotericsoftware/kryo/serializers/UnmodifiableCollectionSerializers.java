@@ -21,7 +21,7 @@ package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.minlog.Log;
+import com.esotericsoftware.kryo.util.Log;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;

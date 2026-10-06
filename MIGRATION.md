@@ -157,7 +157,6 @@ Like in Kryo 5, String fields of FieldSerializer and its subclasses decide when 
 ## Deprecated APIs
 
 * RecordSerializer. Records are serialized by FieldSerializer and its subclasses. RecordSerializer is only needed to read records written by Kryo 5, see [Records](#records).
-* `FieldAccessType.ASM`, which uses ReflectASM like Kryo 5 did for public fields of public classes when Unsafe was not used. ReflectASM is only used if `ASM` is configured, Kryo 6 uses VarHandles instead, which are as fast. `ASM` and the ReflectASM dependency will be removed in Kryo 7. If VarHandles are slower for you than ReflectASM, please open an issue.
 * BlowfishSerializer. Blowfish is an outdated cipher, the key is shared by all instances, and an encrypted object can only be read as the last object of the input. Encrypt the serialized bytes instead, eg with AES-GCM. BlowfishSerializer will be removed in Kryo 7.
 * `Kryo#setEnumsFinal`, which is only needed to read data written by Kryo 5, see [Enums with constant bodies](#enums-with-constant-bodies).
 * `setOptimizeGenerics` of CompatibleFieldSerializerConfig and TaggedFieldSerializerConfig, which is only needed to read data written by Kryo 5, see [Generic fields](#generic-fields-with-compatiblefieldserializer-and-taggedfieldserializer).
@@ -168,4 +167,6 @@ Like in Kryo 5, String fields of FieldSerializer and its subclasses decide when 
 * `CuckooObjectMap`, which was deprecated in Kryo 5.3.0.
 * `UnmodifiableCollectionSerializers.registerSerializers(Kryo)` and `SynchronizedCollectionSerializers.registerSerializers(Kryo)`, which were deprecated in Kryo 5.7.1 because the IDs they assign depend on the JVM. Use `register(Kryo)` instead, which registers the classes in a fixed order. It assigns different IDs, so to read data written with `registerSerializers`, register the wrapper classes with the IDs that it assigned.
 * The deprecated no-arg constructor of RecordSerializer. Use `RecordSerializer(Class)` instead.
+* ReflectASM is no longer used and no longer a dependency. Kryo 5 used it for the public fields of public classes when Unsafe was not used. Kryo 6 uses VarHandles for all fields, which are as fast, see [FieldSerializer settings](README.md#fieldserializer-settings).
+* The MinLog dependency. Kryo logs with its own `com.esotericsoftware.kryo.util.Log`, a copy of MinLog with the same API, see [Logging](README.md#logging). To set Kryo's logging level or logger, use that class instead of `com.esotericsoftware.minlog.Log`. They are no longer shared with other libraries that use MinLog, so set them separately for each.
 * `Generics#pushTypeVariables(GenericsHierarchy, GenericType[])`. Use `pushTypeVariables(GenericsHierarchy, GenericType)` with the declared type returned by the new `Generics#nextGenericType()`.

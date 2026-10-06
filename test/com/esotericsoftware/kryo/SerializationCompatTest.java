@@ -29,7 +29,7 @@ import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-import com.esotericsoftware.minlog.Log;
+import com.esotericsoftware.kryo.util.Log;
 
 import java.io.File;
 import java.io.FileInputStream;
