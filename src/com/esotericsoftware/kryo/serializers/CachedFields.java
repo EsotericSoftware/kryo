@@ -116,7 +116,7 @@ class CachedFields implements Comparator<CachedField> {
 		/** The generic types of the fields of a serialized class, including the fields of its super classes. */
 		static final ClassValue<ConcurrentHashMap<Field, GenericType>> genericTypes = new ClassValue<>() {
 			protected ConcurrentHashMap<Field, GenericType> computeValue (Class type) {
-				return new ConcurrentHashMap();
+				return new ConcurrentHashMap<>();
 			}
 		};
 	}

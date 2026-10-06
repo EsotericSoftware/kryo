@@ -285,8 +285,8 @@ public interface Generics {
 			cacheTypeVariables();
 		}
 
-		/** Caches the type parameters of the class, because {@link Class#getTypeParameters()} returns a copy. They are only needed
-		 * for a class with type arguments. */
+		/** Caches the type parameters of a class with type arguments before this type is shared, so {@link #typeVariables()}
+		 * doesn't have to write them. */
 		private void cacheTypeVariables () {
 			if (arguments != null && type instanceof Class) typeVariables = ((Class)type).getTypeParameters();
 		}
@@ -343,7 +343,8 @@ public interface Generics {
 		 * subtype, its own type arguments are returned.
 		 * @return May be null. */
 		GenericType[] superTypeArguments (Class superType) {
-			// One immutable object for both values, so this is correct if multiple threads use this type.
+			// One immutable object for both values, so a thread never sees the arguments of another super type. The field is not
+			// volatile: a thread that sees an older value only computes the arguments again.
 			SuperTypeArguments last = lastSuperType;
 			if (last == null || last.superType != superType)
 				lastSuperType = last = new SuperTypeArguments(superType, computeSuperTypeArguments(superType));
@@ -385,8 +386,10 @@ public interface Generics {
 			return result;
 		}
 
-		/** Returns the type parameters of the class, for a class with type arguments. */
+		/** Returns the type parameters of the class, cached because {@link Class#getTypeParameters()} returns a copy. */
 		TypeVariable[] typeVariables () {
+			TypeVariable[] typeVariables = this.typeVariables;
+			if (typeVariables == null) this.typeVariables = typeVariables = ((Class)type).getTypeParameters();
 			return typeVariables;
 		}
 
