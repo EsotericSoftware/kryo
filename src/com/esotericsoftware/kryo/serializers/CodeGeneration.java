@@ -100,6 +100,10 @@ final class CodeGeneration {
 	static private final MethodType constructorType = MethodType.methodType(void.class, FieldSerializer.class,
 		CachedField[].class);
 
+	/** The fields per generated method: the largest field code (tagged, chunked, with classes) is ~60 bytes, the JIT doesn't
+	 * compile methods above 8000 bytes. */
+	static int batchSize = 64;
+
 	// From java.lang.classfile.ClassFile.
 	static private final int ACC_PUBLIC = 0x0001, ACC_PRIVATE = 0x0002, ACC_STATIC = 0x0008, ACC_FINAL = 0x0010,
 		ACC_SUPER = 0x0020;
@@ -158,7 +162,8 @@ final class CodeGeneration {
 			return null;
 		}
 		if (field instanceof ReflectField) return Kind.object;
-		if (type == String.class) return Kind.string; // A String field written without references.
+		if (field.valueClass == String.class) return Kind.string; // A String field written without references, maybe a type
+																						// variable.
 		return null;
 	}
 
@@ -175,8 +180,7 @@ final class CodeGeneration {
 			setters[i] = -1;
 			if (!((VarHandle)classData.get(i)).isAccessModeSupported(AccessMode.SET)) {
 				try {
-					MethodHandle setter = MethodHandles.privateLookupIn(field.getDeclaringClass(), MethodHandles.lookup())
-						.unreflectSetter(field);
+					MethodHandle setter = MethodHandles.lookup().unreflectSetter(field); // The field is accessible.
 					Class valueType = kinds[i] == Kind.object ? Object.class : field.getType();
 					setters[i] = classData.size();
 					classData.add(setter.asType(MethodType.methodType(void.class, Object.class, valueType)));
@@ -214,16 +218,17 @@ final class CodeGeneration {
 			});
 
 			// public void write (Output output, Object object) and write (Output output, Object object, ChunkedEncoding chunks)
-			cb.withMethodBody("write", MethodTypeDesc.of(CD_void, CD_Output, CD_Object), ACC_PUBLIC,
-				code -> write(code, thisClass, kinds, writeClasses, tags, false));
-			cb.withMethodBody("write", MethodTypeDesc.of(CD_void, CD_Output, CD_Object, CD_ChunkedEncoding), ACC_PUBLIC,
-				code -> write(code, thisClass, kinds, writeClasses, tags, true));
-
 			// public void read (Input input, Object object) and read (Input input, Object object, ChunkedEncoding chunks)
-			cb.withMethodBody("read", MethodTypeDesc.of(CD_void, CD_Input, CD_Object), ACC_PUBLIC,
-				code -> read(code, thisClass, kinds, setters, writeClasses, tags, false));
-			cb.withMethodBody("read", MethodTypeDesc.of(CD_void, CD_Input, CD_Object, CD_ChunkedEncoding), ACC_PUBLIC,
-				code -> read(code, thisClass, kinds, setters, writeClasses, tags, true));
+			for (boolean chunked : new boolean[] {false, true}) {
+				MethodTypeDesc writeType = chunked ? MethodTypeDesc.of(CD_void, CD_Output, CD_Object, CD_ChunkedEncoding)
+					: MethodTypeDesc.of(CD_void, CD_Output, CD_Object);
+				MethodTypeDesc readType = chunked ? MethodTypeDesc.of(CD_void, CD_Input, CD_Object, CD_ChunkedEncoding)
+					: MethodTypeDesc.of(CD_void, CD_Input, CD_Object);
+				batches(cb, thisClass, "write", writeType, n, chunked,
+					(code, from, to) -> write(code, thisClass, kinds, writeClasses, tags, chunked, from, to));
+				batches(cb, thisClass, "read", readType, n, chunked,
+					(code, from, to) -> read(code, thisClass, kinds, setters, writeClasses, tags, chunked, from, to));
+			}
 		});
 
 		try {
@@ -235,11 +240,37 @@ final class CodeGeneration {
 		}
 	}
 
-	/** Emits the body of write: locals 1 output, 2 object, 3 chunks if chunked. */
+	/** Emits the fields of a method in batches. The JIT doesn't compile methods above 8000 bytes, so a class with many fields gets
+	 * a private method per batch of fields, which the public method calls. */
+	static private void batches (java.lang.classfile.ClassBuilder cb, ClassDesc thisClass, String name, MethodTypeDesc type, int n,
+		boolean chunked, Batch batch) {
+		if (n <= batchSize) {
+			cb.withMethodBody(name, type, ACC_PUBLIC, code -> batch.emit(code, 0, n));
+			return;
+		}
+		cb.withMethodBody(name, type, ACC_PUBLIC, code -> {
+			for (int from = 0; from < n; from += batchSize) {
+				code.aload(0).aload(1).aload(2);
+				if (chunked) code.aload(3);
+				code.invokevirtual(thisClass, name + from, type);
+			}
+			code.return_();
+		});
+		for (int from = 0; from < n; from += batchSize) {
+			int start = from, end = Math.min(from + batchSize, n);
+			cb.withMethodBody(name + from, type, ACC_PRIVATE, code -> batch.emit(code, start, end));
+		}
+	}
+
+	private interface Batch {
+		void emit (java.lang.classfile.CodeBuilder code, int from, int to);
+	}
+
+	/** Emits the body of write for the fields from (inclusive) to (exclusive): locals 1 output, 2 object, 3 chunks if chunked. */
 	static private void write (java.lang.classfile.CodeBuilder code, ClassDesc thisClass, Kind[] kinds, boolean writeClasses,
-		int[] tags, boolean chunked) {
+		int[] tags, boolean chunked, int from, int to) {
 		int mark = chunked ? code.allocateLocal(java.lang.classfile.TypeKind.LONG) : -1;
-		for (int i = 0, n = kinds.length; i < n; i++) {
+		for (int i = from; i < to; i++) {
 			Kind kind = kinds[i];
 			// output.writeVarInt(tag, true);
 			if (tags != null)
@@ -279,12 +310,12 @@ final class CodeGeneration {
 		code.return_();
 	}
 
-	/** Emits the body of read: locals 1 input, 2 object, 3 chunks if chunked. */
+	/** Emits the body of read for the fields from (inclusive) to (exclusive): locals 1 input, 2 object, 3 chunks if chunked. */
 	static private void read (java.lang.classfile.CodeBuilder code, ClassDesc thisClass, Kind[] kinds, int[] setters,
-		boolean readClasses, int[] tags, boolean chunked) {
+		boolean readClasses, int[] tags, boolean chunked, int from, int to) {
 		int tag = tags != null ? code.allocateLocal(java.lang.classfile.TypeKind.INT) : -1;
 		int end = chunked ? code.allocateLocal(java.lang.classfile.TypeKind.LONG) : -1;
-		for (int i = 0, n = kinds.length; i < n; i++) {
+		for (int i = from; i < to; i++) {
 			int index = i;
 			// int tag = input.readVarInt(true);
 			if (tags != null) code.aload(1).iconst_1().invokevirtual(CD_Input, "readVarInt", MTD_readVarInt).istore(tag);

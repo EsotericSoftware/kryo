@@ -29,6 +29,7 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.IntMap;
+import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -103,7 +104,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		GeneratedFields generated = this.generated;
 		if (generated == null || config.legacyChunks) return null;
 		// readUnknownTagData can be changed without updateFields.
-		if (generated.writesClasses != config.readUnknownTagData) this.generated = generated = generateCode();
+		if (generated.writesClasses != config.readUnknownTagData) {
+			regenerate();
+			return this.generated;
+		}
 		return generated;
 	}
 
@@ -262,6 +266,18 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 						if (chunked) chunks.endField(fieldInput, end);
 						continue;
 					}
+
+					// Ensure the type in the data is compatible with the field type.
+					Class fieldType = cachedField.field.getType();
+					if (!Util.isAssignableTo(valueClass, fieldType)) {
+						String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
+							+ className(fieldType) + " (" + getType().getName() + "#" + cachedField + ")";
+						if (!chunked) throw new KryoException(message);
+						if (DEBUG) debug("kryo", message);
+						chunks.endField(fieldInput, end);
+						continue;
+					}
+
 					cachedField.setCanBeNull(false);
 					cachedField.setValueClass(valueClass);
 					cachedField.setReuseSerializer(false);
@@ -329,6 +345,17 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				return;
 			}
+
+			// Ensure the type in the data is compatible with the field type.
+			Class fieldType = cachedField.field.getType();
+			if (!Util.isAssignableTo(valueClass, fieldType)) {
+				String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
+					+ className(fieldType) + " (" + getType().getName() + "#" + cachedField + ")";
+				if (!chunked) throw new KryoException(message);
+				if (DEBUG) debug("kryo", message);
+				return;
+			}
+
 			cachedField.setCanBeNull(false);
 			cachedField.setValueClass(valueClass);
 			cachedField.setReuseSerializer(false);

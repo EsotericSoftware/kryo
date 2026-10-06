@@ -83,7 +83,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		GeneratedFields generated = this.generated;
 		if (generated == null || config.legacyChunks) return null;
 		// readUnknownFieldData can be changed without updateFields.
-		if (generated.writesClasses != config.readUnknownFieldData) this.generated = generated = generateCode();
+		if (generated.writesClasses != config.readUnknownFieldData) {
+			regenerate();
+			return this.generated;
+		}
 		return generated;
 	}
 

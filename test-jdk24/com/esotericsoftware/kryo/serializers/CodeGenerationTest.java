@@ -109,6 +109,17 @@ class CodeGenerationTest extends KryoTestCase {
 		// Read with each, write with the other.
 		assertEquals(object, read(kryo, write(cachedFields, object), AllKinds.class));
 		assertEquals(object, read(cachedFields, write(kryo, object), AllKinds.class));
+
+		// With references, which the object graph has (nested is in the list and the map).
+		kryo.setReferences(true);
+		cachedFields.setReferences(true);
+		byte[] bytes = write(kryo, object);
+		assertArrayEquals(write(cachedFields, object), bytes);
+		assertEquals(object, read(cachedFields, bytes, AllKinds.class));
+		AllKinds read = read(kryo, bytes, AllKinds.class);
+		assertEquals(object, read);
+		assertSame(read.nested, read.list.get(1));
+		assertSame(read.nested, read.map.get("key"));
 	}
 
 	@Test
@@ -227,6 +238,38 @@ class CodeGenerationTest extends KryoTestCase {
 		assertNull(((FieldSerializer)kryo.getSerializer(Point.class)).generated);
 		roundTrip(3, new Point(1, 2));
 
+	}
+
+	@Test
+	void testManyFields () {
+		// The fields are written and read in batches of private methods, which the JIT can compile.
+		kryo.register(Wide.class);
+		GeneratedFields generated = assertGenerated(Wide.class);
+		int batches = 0;
+		for (java.lang.reflect.Method method : generated.getClass().getDeclaredMethods())
+			if (method.getName().startsWith("write") && method.getName().length() > 5) batches++;
+		assertEquals(2 * ((Wide.count + CodeGeneration.batchSize - 1) / CodeGeneration.batchSize), batches);
+		Wide object = new Wide();
+		object.f0 = 1;
+		object.f99 = 99;
+		object.f199 = 199;
+		Wide read = read(kryo, write(kryo, object), Wide.class);
+		assertEquals(1, read.f0);
+		assertEquals(99, read.f99);
+		assertEquals(199, read.f199);
+		assertEquals(0, read.f100);
+	}
+
+	@Test
+	void testTypeVariableField () {
+		// T resolved to String: a String field with the field type Object.
+		kryo.register(StringBox.class);
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(StringBox.class);
+		assertNotNull(serializer.generated);
+		assertFalse(serializer.getField("value") instanceof ReflectField);
+		StringBox object = new StringBox();
+		object.value = "value";
+		roundTrip(6, object);
 	}
 
 	@Test
@@ -352,6 +395,37 @@ class CodeGenerationTest extends KryoTestCase {
 			assertTrue(ex.getMessage().contains("Read type is incompatible with the field type"), ex.getMessage());
 		}
 
+		if (readUnknownFieldData && chunked) {
+			// Incompatible classes of known fields are skipped in the chunks, the fields keep their values (also a final field).
+			Kryo wrongType = new Kryo();
+			wrongType.setDefaultSerializer(compatible(true, true));
+			wrongType.register(FinalFieldOther.class);
+			FinalFieldOther wrongObject = new FinalFieldOther();
+			wrongObject.value = "not an int";
+			wrongObject.name = 5;
+			byte[] otherBytes = write(wrongType, wrongObject);
+			kryo.register(FinalField.class);
+			kryo.register(FinalFieldOther.class, new CompatibleFieldSerializer<FinalField>(kryo, FinalField.class, factory.getConfig()) {
+				protected FinalField create (Kryo kryo, Input input, Class type) {
+					return new FinalField(7, "name");
+				}
+			});
+			assertGenerated(FinalField.class);
+			FinalField skipped = (FinalField)kryo.readObject(new Input(otherBytes), (Class)FinalFieldOther.class);
+			assertEquals(7, skipped.value);
+			assertEquals("name", skipped.name);
+		}
+
+		// readUnknownFieldData can be changed without updateFields: the code is regenerated.
+		CompatibleFieldSerializer serializer = (CompatibleFieldSerializer)kryo.getSerializer(Nested.class);
+		assertEquals(readUnknownFieldData, serializer.generated().writesClasses);
+		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(!readUnknownFieldData);
+		assertEquals(!readUnknownFieldData, serializer.generated().writesClasses);
+		cachedFieldsFactory.getConfig().setReadUnknownFieldData(!readUnknownFieldData);
+		cachedFields.register(Nested.class, new CompatibleFieldSerializer(cachedFields, Nested.class, cachedFieldsFactory.getConfig()));
+		assertArrayEquals(write(cachedFields, nested), write(kryo, nested));
+		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownFieldData);
+
 		// The chunked encoding of Kryo 5 uses the cached fields.
 		factory.getConfig().setChunkedEncoding(true);
 		factory.getConfig().setLegacyChunks(true);
@@ -461,6 +535,50 @@ class CodeGenerationTest extends KryoTestCase {
 		} else {
 			KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(otherBytes), (Class)OtherTagged.class));
 			assertTrue(ex.getMessage().contains("Unknown field tag: 99"), ex.getMessage());
+		}
+
+		// readUnknownTagData can be changed without updateFields: the code is regenerated.
+		TaggedFieldSerializer serializer = (TaggedFieldSerializer)kryo.getSerializer(Tagged.class);
+		assertEquals(readUnknownTagData, serializer.generated().writesClasses);
+		serializer.getTaggedFieldSerializerConfig().setReadUnknownTagData(!readUnknownTagData);
+		assertEquals(!readUnknownTagData, serializer.generated().writesClasses);
+		serializer.getTaggedFieldSerializerConfig().setReadUnknownTagData(readUnknownTagData);
+
+		if (readUnknownTagData) {
+			// A null class for a mismatched tag sets the field to null (readTag), an incompatible class of an expected tag is an
+			// error without chunks and skipped with chunks, in both cases the fields keep their values.
+			TaggedFieldSerializer<Tagged> nulls = new TaggedFieldSerializer<Tagged>(kryo, Tagged.class, factory.getConfig()) {
+				protected Tagged create (Kryo kryo, Input input, Class type) {
+					return Tagged.create();
+				}
+			};
+			kryo.register(OtherTagged.class, nulls);
+			Kryo nullsKryo = new Kryo();
+			nullsKryo.setDefaultSerializer(tagged(true, chunked));
+			nullsKryo.register(OtherTagged.class);
+			OtherTagged nullsObject = new OtherTagged(); // name null, value 0, unknown 0
+			Tagged read2 = (Tagged)kryo.readObject(new Input(write(nullsKryo, nullsObject)), (Class)OtherTagged.class);
+			assertNull(read2.name); // Tag 3 is mismatched (expected 1) and read by readTag, which sets null.
+			assertEquals(0, read2.value);
+			assertNotNull(read2.nested); // Not in the data, keeps the created value.
+
+			Kryo wrongType = new Kryo();
+			wrongType.setDefaultSerializer(tagged(true, chunked));
+			wrongType.register(WrongTypeTagged.class);
+			WrongTypeTagged wrongObject = new WrongTypeTagged();
+			wrongObject.value = "not an int";
+			wrongObject.name = "name";
+			byte[] wrongBytes = write(wrongType, wrongObject);
+			kryo.register(WrongTypeTagged.class, nulls);
+			if (chunked) {
+				read2 = (Tagged)kryo.readObject(new Input(wrongBytes), (Class)WrongTypeTagged.class);
+				assertEquals(5, read2.value); // Skipped, keeps the created value.
+				assertEquals("name", read2.name);
+			} else {
+				KryoException ex = assertThrows(KryoException.class,
+					() -> kryo.readObject(new Input(wrongBytes), (Class)WrongTypeTagged.class));
+				assertTrue(ex.getMessage().contains("Read type is incompatible with the field type"), ex.getMessage());
+			}
 		}
 
 		// The chunked encoding of Kryo 5 uses the cached fields.
@@ -653,6 +771,35 @@ class CodeGenerationTest extends KryoTestCase {
 			Versioned other = (Versioned)obj;
 			return value == other.value && Objects.equals(name, other.name) && Objects.equals(nested, other.nested);
 		}
+	}
+
+	/** Written by another version of Tagged: the same tags with other types. */
+	static public class WrongTypeTagged {
+		@Tag(1) String value;
+		@Tag(3) String name;
+		@Tag(4) Nested nested;
+	}
+
+	/** Written by another version of FinalField: the same field names with other types. */
+	static public class FinalFieldOther {
+		String value;
+		int name;
+	}
+
+	static public class Box<T> {
+		T value;
+	}
+
+	static public class StringBox extends Box<String> {
+		public boolean equals (Object obj) {
+			return Objects.equals(value, ((StringBox)obj).value);
+		}
+	}
+
+	/** More fields than a generated method has. */
+	static public class Wide {
+		static final int count = 200;
+		int f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22, f23, f24, f25, f26, f27, f28, f29, f30, f31, f32, f33, f34, f35, f36, f37, f38, f39, f40, f41, f42, f43, f44, f45, f46, f47, f48, f49, f50, f51, f52, f53, f54, f55, f56, f57, f58, f59, f60, f61, f62, f63, f64, f65, f66, f67, f68, f69, f70, f71, f72, f73, f74, f75, f76, f77, f78, f79, f80, f81, f82, f83, f84, f85, f86, f87, f88, f89, f90, f91, f92, f93, f94, f95, f96, f97, f98, f99, f100, f101, f102, f103, f104, f105, f106, f107, f108, f109, f110, f111, f112, f113, f114, f115, f116, f117, f118, f119, f120, f121, f122, f123, f124, f125, f126, f127, f128, f129, f130, f131, f132, f133, f134, f135, f136, f137, f138, f139, f140, f141, f142, f143, f144, f145, f146, f147, f148, f149, f150, f151, f152, f153, f154, f155, f156, f157, f158, f159, f160, f161, f162, f163, f164, f165, f166, f167, f168, f169, f170, f171, f172, f173, f174, f175, f176, f177, f178, f179, f180, f181, f182, f183, f184, f185, f186, f187, f188, f189, f190, f191, f192, f193, f194, f195, f196, f197, f198, f199;
 	}
 
 	public record Point (int x, int y) {

@@ -128,24 +128,36 @@ public class FieldSerializer<T> extends Serializer<T> {
 	void cachedFieldsChanged () {
 	}
 
-	/** Called by {@link CachedFields} after {@link #cachedFieldsChanged()}: generates the code for the fields if
-	 * {@link #codeGenerated()}. */
+	/** Called by {@link CachedFields} after {@link #cachedFieldsChanged()}. */
 	final void fieldsChanged () {
 		cachedFieldsChanged();
+		regenerate();
+	}
+
+	/** Generates the code for the fields if {@link #codeGenerated()}. If that fails, the cached fields are used and rebuilt with
+	 * their hidden classes, which {@link CachedFields} doesn't create when code is generated. */
+	final void regenerate () {
 		generated = null;
-		if (codeGenerated()) {
-			try {
-				generated = generateCode();
-			} catch (KryoException ex) {
-				if (DEBUG) debug("kryo", "Unable to generate code for the fields of: " + className(type), ex);
-			}
+		if (!codeGenerated()) return;
+		try {
+			generated = generateCode();
+		} catch (KryoException ex) {
+			if (DEBUG) debug("kryo", "Unable to generate code for the fields of: " + className(type), ex);
+		}
+		if (generated == null && !codeGenerationFailed) {
+			codeGenerationFailed = true;
+			cachedFields.rebuild();
 		}
 	}
+
+	/** True if code could not be generated for the fields, then the cached fields are used. Reset by {@link #updateFields()}. */
+	private boolean codeGenerationFailed;
 
 	/** Returns true if code is generated for the fields: {@link FieldSerializerConfig#setCodeGeneration(boolean)} is enabled, the
 	 * platform supports it, the class is not a record and {@link #usesCodeGeneration()}. */
 	final boolean codeGenerated () {
-		return config.codeGeneration && CachedFields.codeGeneration && recordConstructor == null && usesCodeGeneration();
+		return config.codeGeneration && CachedFields.codeGeneration && recordConstructor == null && !codeGenerationFailed
+			&& usesCodeGeneration();
 	}
 
 	/** Returns true if this serializer uses generated code in {@link #write(Kryo, Output, Object)} and
@@ -181,6 +193,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Must be called after {@link #getFieldSerializerConfig()} settings are changed to repopulate the cached fields. */
 	public void updateFields () {
 		if (TRACE) trace("kryo", "Update fields: " + className(type));
+		codeGenerationFailed = false;
 		cachedFields.rebuild();
 	}
 
