@@ -231,7 +231,7 @@ class GenericsTest extends KryoTestCase {
 	void testTypeParameterOfEnclosingClass () {
 		kryo.setRegistrationRequired(false);
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
-		roundTrip(164, new DeclaredTypes.HolderEnclosing());
+		roundTrip(242, new DeclaredTypes.HolderEnclosing()); // Includes the enclosing instance.
 	}
 
 	// The type parameter of the class is not passed to the declared interface.
