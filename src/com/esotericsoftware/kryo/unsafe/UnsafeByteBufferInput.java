@@ -92,7 +92,7 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 	}
 
 	public void setBuffer (ByteBuffer buffer) {
-		if (!buffer.isDirect()) throw new IllegalArgumentException("buffer must be direct.");
+		if (buffer == null || !buffer.isDirect()) throw new IllegalArgumentException("buffer must be direct.");
 		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
 		super.setBuffer(buffer);
 		updateBufferAddress();

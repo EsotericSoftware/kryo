@@ -84,7 +84,7 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	}
 
 	public void setBuffer (ByteBuffer buffer, int maxBufferSize) {
-		if (!buffer.isDirect()) throw new IllegalArgumentException("buffer must be direct.");
+		if (buffer == null || !buffer.isDirect()) throw new IllegalArgumentException("buffer must be direct.");
 		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
 		super.setBuffer(buffer, maxBufferSize);
 		updateBufferAddress();
