@@ -20,7 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.minlog.Log;
+import com.esotericsoftware.kryo.util.Log;
 
 import java.util.ArrayList;
 import java.util.Collection;

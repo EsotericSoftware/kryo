@@ -27,7 +27,7 @@ import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
 import com.esotericsoftware.kryo.unsafe.UnsafeInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
-import com.esotericsoftware.minlog.Log;
+import com.esotericsoftware.kryo.util.Log;
 
 import java.io.Externalizable;
 import java.io.IOException;

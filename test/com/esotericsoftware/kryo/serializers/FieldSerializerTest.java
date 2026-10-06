@@ -45,8 +45,8 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.util.Util;
-import com.esotericsoftware.minlog.Log;
-import com.esotericsoftware.minlog.Log.Logger;
+import com.esotericsoftware.kryo.util.Log;
+import com.esotericsoftware.kryo.util.Log.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
