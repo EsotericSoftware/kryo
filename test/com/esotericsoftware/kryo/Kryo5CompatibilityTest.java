@@ -214,6 +214,40 @@ class Kryo5CompatibilityTest {
 		assertFalse(kryo.getReferenceResolver().useReferences(String.class));
 	}
 
+	@Test
+	void testStringReferencesAfterStringField () {
+		// A String field decides when it is created whether it uses references, so that can't change afterward.
+		Kryo kryo = new Kryo();
+		kryo.register(WithString.class);
+		kryo.setReferences(true); // Kryo's reference resolvers don't use references for strings.
+		kryo.setReferences(false);
+		kryo.setReferenceResolver(new ListReferenceResolver());
+		assertThrows(KryoException.class, () -> Kryo5Compatibility.configure(kryo));
+		assertThrows(KryoException.class, () -> kryo.setReferenceResolver(new MapReferenceResolver() {
+			public boolean useReferences (Class type) {
+				return true;
+			}
+		}));
+
+		Kryo kryo5 = new Kryo();
+		Kryo5Compatibility.configure(kryo5);
+		kryo5.setReferences(true);
+		kryo5.register(WithString.class);
+		kryo5.setReferences(true);
+		assertThrows(KryoException.class, () -> kryo5.setReferences(false));
+		assertThrows(KryoException.class, () -> kryo5.setReferenceResolver(new MapReferenceResolver()));
+
+		// Without references, String fields are written directly, so the resolver can change.
+		Kryo kryo6 = new Kryo();
+		kryo6.register(WithString.class);
+		Kryo5Compatibility.configure(kryo6);
+		assertThrows(KryoException.class, () -> kryo6.setReferences(true));
+	}
+
+	static public class WithString {
+		String value;
+	}
+
 	/** Fails if the data is read correctly without the Kryo 5 settings. */
 	private void assertNotReadable (Callable<Boolean> read) {
 		boolean correct;

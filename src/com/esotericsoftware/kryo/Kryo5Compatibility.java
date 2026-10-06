@@ -95,7 +95,8 @@ public final class Kryo5Compatibility {
 
 	/** Kryo 5 used references for strings. Kryo's reference resolvers are replaced by ones that do, without changing whether
 	 * references are enabled. Without a reference resolver, {@link Kryo#setReferences(boolean)} uses the one set here. Subclasses
-	 * and custom reference resolvers decide themselves. */
+	 * and custom reference resolvers decide themselves. Throws if references are enabled and a String field was already created,
+	 * see {@link Kryo#setReferences(boolean)}. */
 	private static void restoreStringReferences (Kryo kryo) {
 		ReferenceResolver referenceResolver = kryo.referenceResolver, kryo5Resolver = null;
 		Class resolverClass = referenceResolver == null ? null : referenceResolver.getClass();
@@ -125,6 +126,7 @@ public final class Kryo5Compatibility {
 			};
 		}
 		if (kryo5Resolver != null) {
+			kryo.checkStringReferences(kryo.getReferences(), kryo5Resolver);
 			kryo5Resolver.setKryo(kryo);
 			kryo.referenceResolver = kryo5Resolver;
 		}

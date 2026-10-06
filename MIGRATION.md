@@ -127,7 +127,7 @@ kryo.setReferenceResolver(new MapReferenceResolver() {
 
 `Kryo5Compatibility` does this for Kryo's reference resolvers, also if none has been set yet. Subclasses of them and custom reference resolvers decide in `useReferences` as before.
 
-Like in Kryo 5, String fields of FieldSerializer and its subclasses decide when the serializer is created whether they use references: Kryo 5 wrote String fields without references if `setReferences(true)` was called after registering the classes, but strings in collections and arrays with references. To read such data, keep the order of `setReferences` and `register` the Kryo 5 code used, and call `Kryo5Compatibility.configure` before registering classes.
+Like in Kryo 5, String fields of FieldSerializer and its subclasses decide when the serializer is created whether they use references: Kryo 5 wrote String fields without references if `setReferences(true)` was called after registering the classes, but strings in collections and arrays with references. To read such data, keep the order of `setReferences` and `register` the Kryo 5 code used, and call `Kryo5Compatibility.configure` before registering classes. Unlike Kryo 5, Kryo 6 throws an exception if `setReferences`, `setReferenceResolver` or `Kryo5Compatibility.configure` changes whether strings use references after a String field was created, because the data of that field would differ from the data of a Kryo instance that was configured before registering the classes.
 
 ## Behavior changes
 
