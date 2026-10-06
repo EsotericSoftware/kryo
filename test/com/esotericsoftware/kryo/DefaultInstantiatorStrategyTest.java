@@ -45,7 +45,7 @@ public class DefaultInstantiatorStrategyTest {
     @Test
     public void testInterfaceMemberClassCannotBeInstantiated() {
         KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(MemberInterface.class));
-        assertTrue(thrown.getMessage().contains("The type you are trying to serialize into is abstract (interface)."));
+        assertTrue(thrown.getMessage().contains("Kryo can't create an instance of an interface or abstract class."));
     }
 
     @Test
@@ -57,7 +57,7 @@ public class DefaultInstantiatorStrategyTest {
     @Test
     public void testInterfaceClassCannotBeInstantiated() {
         KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(InterfaceClass.class));
-        assertTrue(thrown.getMessage().contains("The type you are trying to serialize into is abstract (interface)."));
+        assertTrue(thrown.getMessage().contains("Kryo can't create an instance of an interface or abstract class."));
     }
 
     @Test

@@ -100,30 +100,25 @@ public class DefaultInstantiatorStrategy implements InstantiatorStrategy {
 		}
 
 		if (fallbackStrategy == null) {
-			if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers())) {
-				throw new KryoException("Class cannot be created (non-static member class): " + className(type)
-					+ "\nNote: An inner class is serialized with its outer instance, but it has no no-arg constructor, so it needs an "
-					+ "instantiator strategy that can create it, eg new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()). "
-					+ "Making the class static is safer.");
-			} else {
-				StringBuilder message = new StringBuilder("Class cannot be created (missing no-arg constructor): " + className(type));
-				if (type.getSimpleName().equals("")) {
-					message
-						.append("\nNote: An anonymous class is serialized with its outer instance and captured variables, but it has "
-							+ "no no-arg constructor, so it needs an instantiator strategy that can create it, eg new "
-							+ "DefaultInstantiatorStrategy(new StdInstantiatorStrategy()). Anonymous classes have no predictable names, so "
-							+ "a named class is safer, eg instead of double brace initialization.");
-				}
-
-				if (type.isInterface()) {
-					message.append(
-						"\nNote: The type you are trying to serialize into is abstract (interface). Kryo will not be able to create an instance of it. Possible solutions:\n")
-						.append(
-							"You can either use a class that implements the interface or use a custom ObjectInstantiator to create an instance.");
-				}
-
-				throw new KryoException(message.toString());
+			if (type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
+				throw new KryoException("Class cannot be created (abstract): " + className(type)
+					+ "\nNote: Kryo can't create an instance of an interface or abstract class. Serialize a concrete class instead, or "
+					+ "register a serializer that creates the object.");
 			}
+			StringBuilder message = new StringBuilder("Class cannot be created (missing no-arg constructor): " + className(type));
+			if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers())) {
+				message.append("\nNote: An inner class is serialized with its outer instance, but it has no no-arg constructor. "
+					+ "Making the class static is safer.");
+			} else if (type.getSimpleName().isEmpty()) {
+				message.append("\nNote: An anonymous class is serialized with its outer instance and captured variables, but it "
+					+ "has no no-arg constructor. A named class is safer, eg instead of double brace initialization.");
+			}
+			message.append("\nKryo creates objects with their no-arg constructor, which can be private. To create objects without "
+				+ "calling a constructor, like Java serialization does, configure Kryo with:"
+				+ "\n    kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));"
+				+ "\nAlternatively, add a no-arg constructor, or register a serializer that creates the object, eg a FieldSerializer "
+				+ "that overrides create().");
+			throw new KryoException(message.toString());
 		}
 		// InstantiatorStrategy.
 		return fallbackStrategy.newInstantiatorOf(type);
