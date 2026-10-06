@@ -51,7 +51,7 @@ To run only a subset of a benchmark, specify the benchmark class name and the me
 
 ## Charts
 
-`run.sh` builds Kryo, runs the benchmarks for the charts with `-f 4 -wi 5 -i 3 -w 2s -r 2s` and writes the results as JSON to `charts/results`. Then it runs `charts/charts.py`, which writes an SVG file to `charts` for each results file. The charts of the serializer benchmarks show round trips per second, the charts of the input and output benchmarks show nanoseconds per operation. Python 3 is needed, without additional packages.
+`run.sh` builds Kryo, runs the benchmarks for the charts with `-f 4 -wi 5 -i 3 -w 2s -r 2s` and writes the results as JSON to `charts/results`. Then it runs `charts/charts.py`, which writes the SVG files to `charts`. The charts of the serializer benchmarks show round trips per second, the charts of the input and output benchmarks show nanoseconds per operation. ObjectGraphBenchmark is run with and without code generation, so it needs Java 24+, and its results make two charts: `objectGraph` with the cached fields and `codeGeneration` with both. Python 3 is needed, without additional packages.
 
 ```
 benchmarks/run.sh
@@ -62,6 +62,8 @@ JMH parameters given to the script replace the defaults, eg to try the script wi
 ```
 benchmarks/run.sh -f 1 -wi 1 -i 2 -w 200ms -r 200ms
 ```
+
+`charts/kryo5-vs-kryo6.svg` compares Kryo 5.7.0 with Kryo 6 and Kryo 6 with code generation: ObjectGraphBenchmark at scale 4 with references, both with their default settings on JDK 25, run with the same JMH arguments. The Kryo 5 bars come from the same benchmark compiled against Kryo 5.7.0 without the `codeGeneration` parameter, which Kryo 5 doesn't have, and the chart was rendered with `render` of `charts.py`. It is not part of `run.sh`.
 
 To generate the charts again from existing results:
 

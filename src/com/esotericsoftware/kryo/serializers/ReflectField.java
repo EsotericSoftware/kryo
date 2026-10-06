@@ -113,6 +113,69 @@ class ReflectField extends CachedField {
 		}
 	}
 
+	/** Writes the class of the value, then the value without null marker, like CompatibleFieldSerializer with unknown field data.
+	 * For generated code. */
+	final void writeValueWithClass (Output output, Object object, Object value) {
+		Kryo kryo = fieldSerializer.kryo;
+		if (value == null) {
+			kryo.writeClass(output, null);
+			return;
+		}
+		boolean pushed = false;
+		try {
+			Class valueClass = value.getClass();
+			kryo.writeClass(output, valueClass);
+			Serializer serializer = this.serializer;
+			if (serializer == null) serializer = kryo.getSerializer(valueClass);
+			if (fieldSerializer.optimizeGenerics()) {
+				kryo.getGenerics().pushGenericType(genericType);
+				pushed = true;
+			}
+			kryo.writeObject(output, value, serializer);
+		} catch (KryoException ex) {
+			ex.addTrace(name + " (" + object.getClass().getName() + ")");
+			throw ex;
+		} catch (Throwable t) {
+			if (isStackOverflow(t)) throw stackOverflow(kryo, value, t);
+			KryoException ex = new KryoException(t);
+			ex.addTrace(name + " (" + object.getClass().getName() + ")");
+			throw ex;
+		} finally {
+			if (pushed) kryo.getGenerics().popGenericType();
+		}
+	}
+
+	/** Reads the class, then the value without null marker, like CompatibleFieldSerializer with unknown field data. For generated
+	 * code.
+	 * @param chunked If true, the value is skipped if its class can't be read, then the current value of the field is returned.
+	 * @return null if the class was null. */
+	final Object readValueWithClass (Input input, Object object, boolean chunked) {
+		Kryo kryo = fieldSerializer.kryo;
+		Registration registration = GeneratedFields.readClass(fieldSerializer, input, this, chunked);
+		if (registration == null) return null;
+		if (registration == GeneratedFields.skip) return GeneratedFields.currentValue(this, object);
+		Class valueClass = registration.getType();
+		boolean pushed = false;
+		try {
+			Serializer serializer = this.serializer;
+			if (serializer == null) serializer = kryo.getSerializer(valueClass);
+			if (fieldSerializer.optimizeGenerics()) {
+				kryo.getGenerics().pushGenericType(genericType);
+				pushed = true;
+			}
+			return kryo.readObject(input, valueClass, serializer);
+		} catch (KryoException ex) {
+			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
+			throw ex;
+		} catch (Throwable t) {
+			KryoException ex = new KryoException(t);
+			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
+			throw ex;
+		} finally {
+			if (pushed) kryo.getGenerics().popGenericType();
+		}
+	}
+
 	/** Returns true for a stack overflow, also if it happened while a call site was linked, eg for a string concatenation in a
 	 * catch block deeper in the stack, which throws a BootstrapMethodError instead. */
 	static private boolean isStackOverflow (Throwable t) {

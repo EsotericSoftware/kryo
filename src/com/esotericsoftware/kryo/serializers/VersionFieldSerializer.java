@@ -90,6 +90,11 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		// Write type version.
 		output.writeVarInt(typeVersion + 1, true);
 		// Write fields.
+		if (generated() != null) {
+			writeGenerated(output, object, null);
+			popTypeVariables(pop);
+			return;
+		}
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Write", fields[i], output.position());
 			fields[i].write(output, object);
@@ -119,6 +124,13 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 			kryo.reference(object);
 		} else
 			values = newRecordValues();
+
+		// The generated code reads all fields, which the data of the same version has.
+		if (values == null && version == typeVersion && generated() != null) {
+			readGenerated(input, object, null);
+			popTypeVariables(pop);
+			return object;
+		}
 
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {

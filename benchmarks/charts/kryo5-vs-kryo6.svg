@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="445" viewBox="0 0 1024 445" role="img">
+<title>Kryo 5.7.0 vs Kryo 6: ObjectGraphBenchmark, 1,400 objects with references: round trips per second (higher is better)</title>
+<style>
+text { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #4D4D4D }
+.title { font-size: 19px; fill: #000000 }
+.axisTitle, .legendTitle { font-size: 16px; fill: #000000 }
+.legend { fill: #000000 }
+.background { fill: #FFFFFF }
+.plot { fill: #EBEBEB }
+.grid { stroke: #FFFFFF }
+.minor { stroke: #FFFFFF; stroke-width: 0.5 }
+.tick { stroke: #333333 }
+.bar, .line { stroke: #000000 }
+</style>
+<rect class="background" width="1024" height="445"/>
+<text class="title" x="48" y="22">Kryo 5.7.0 vs Kryo 6: ObjectGraphBenchmark, 1,400 objects with references, JDK 25</text>
+<rect class="plot" x="78" y="34" width="724" height="359"/>
+<line class="minor" x1="78" y1="303.3" x2="802" y2="303.3"/>
+<line class="grid" x1="78" y1="229.9" x2="802" y2="229.9"/>
+<line class="minor" x1="78" y1="156.6" x2="802" y2="156.6"/>
+<line class="grid" x1="78" y1="83.2" x2="802" y2="83.2"/>
+<line class="tick" x1="74" y1="376.7" x2="78" y2="376.7"/>
+<text x="71" y="381.2" text-anchor="end">0</text>
+<line class="tick" x1="74" y1="229.9" x2="78" y2="229.9"/>
+<text x="71" y="234.4" text-anchor="end">5K</text>
+<line class="tick" x1="74" y1="83.2" x2="78" y2="83.2"/>
+<text x="71" y="87.7" text-anchor="end">10K</text>
+<text class="axisTitle" transform="translate(22 213.5) rotate(-90)" text-anchor="middle">Round trips per second (higher is better)</text>
+<line class="grid" x1="148.1" y1="34" x2="148.1" y2="393"/>
+<line class="tick" x1="148.1" y1="393" x2="148.1" y2="397"/>
+<text x="148.1" y="412" text-anchor="middle">field</text>
+<line class="grid" x1="265.0" y1="34" x2="265.0" y2="393"/>
+<line class="tick" x1="265.0" y1="393" x2="265.0" y2="397"/>
+<text x="265.0" y="412" text-anchor="middle">version</text>
+<line class="grid" x1="381.8" y1="34" x2="381.8" y2="393"/>
+<line class="tick" x1="381.8" y1="393" x2="381.8" y2="397"/>
+<text x="381.8" y="412" text-anchor="middle">compatible</text>
+<line class="grid" x1="498.7" y1="34" x2="498.7" y2="393"/>
+<line class="tick" x1="498.7" y1="393" x2="498.7" y2="397"/>
+<text x="498.7" y="412" text-anchor="middle">tagged</text>
+<line class="grid" x1="615.5" y1="34" x2="615.5" y2="393"/>
+<line class="tick" x1="615.5" y1="393" x2="615.5" y2="397"/>
+<text x="615.5" y="412" text-anchor="middle">compatible chunked</text>
+<line class="grid" x1="732.4" y1="34" x2="732.4" y2="393"/>
+<line class="tick" x1="732.4" y1="393" x2="732.4" y2="397"/>
+<text x="732.4" y="412" text-anchor="middle">tagged chunked</text>
+<text class="axisTitle" x="440.2" y="437" text-anchor="middle">Serializer</text>
+<rect class="bar" fill="#F8766D" x="95.5" y="217.1" width="35.1" height="159.6"/>
+<path class="line" fill="none" d="M113.1 220.2V214.0M106.0 220.2h14.0M106.0 214.0h14.0"/>
+<rect class="bar" fill="#00BA38" x="130.6" y="192.8" width="35.1" height="183.9"/>
+<path class="line" fill="none" d="M148.1 200.8V184.8M141.1 200.8h14.0M141.1 184.8h14.0"/>
+<rect class="bar" fill="#619CFF" x="165.6" y="53.6" width="35.1" height="323.1"/>
+<path class="line" fill="none" d="M183.2 56.9V50.3M176.2 56.9h14.0M176.2 50.3h14.0"/>
+<rect class="bar" fill="#F8766D" x="212.4" y="215.8" width="35.1" height="160.9"/>
+<path class="line" fill="none" d="M229.9 219.0V212.5M222.9 219.0h14.0M222.9 212.5h14.0"/>
+<rect class="bar" fill="#00BA38" x="247.4" y="190.5" width="35.1" height="186.2"/>
+<path class="line" fill="none" d="M265.0 193.7V187.2M258.0 193.7h14.0M258.0 187.2h14.0"/>
+<rect class="bar" fill="#619CFF" x="282.5" y="55.7" width="35.1" height="321.0"/>
+<path class="line" fill="none" d="M300.0 58.3V53.1M293.0 58.3h14.0M293.0 53.1h14.0"/>
+<rect class="bar" fill="#F8766D" x="329.2" y="290.3" width="35.1" height="86.4"/>
+<path class="line" fill="none" d="M346.8 291.7V289.0M339.8 291.7h14.0M339.8 289.0h14.0"/>
+<rect class="bar" fill="#00BA38" x="364.3" y="282.3" width="35.1" height="94.4"/>
+<path class="line" fill="none" d="M381.8 284.0V280.7M374.8 284.0h14.0M374.8 280.7h14.0"/>
+<rect class="bar" fill="#619CFF" x="399.4" y="169.3" width="35.1" height="207.3"/>
+<path class="line" fill="none" d="M416.9 178.5V160.1M409.9 178.5h14.0M409.9 160.1h14.0"/>
+<rect class="bar" fill="#F8766D" x="446.1" y="239.5" width="35.1" height="137.2"/>
+<path class="line" fill="none" d="M463.6 242.3V236.7M456.6 242.3h14.0M456.6 236.7h14.0"/>
+<rect class="bar" fill="#00BA38" x="481.1" y="215.6" width="35.1" height="161.1"/>
+<path class="line" fill="none" d="M498.7 217.9V213.2M491.7 217.9h14.0M491.7 213.2h14.0"/>
+<rect class="bar" fill="#619CFF" x="516.2" y="85.9" width="35.1" height="290.8"/>
+<path class="line" fill="none" d="M533.7 88.9V82.9M526.7 88.9h14.0M526.7 82.9h14.0"/>
+<rect class="bar" fill="#F8766D" x="562.9" y="335.9" width="35.1" height="40.8"/>
+<path class="line" fill="none" d="M580.5 336.3V335.5M573.5 336.3h14.0M573.5 335.5h14.0"/>
+<rect class="bar" fill="#00BA38" x="598.0" y="300.2" width="35.1" height="76.4"/>
+<path class="line" fill="none" d="M615.5 302.6V297.9M608.5 302.6h14.0M608.5 297.9h14.0"/>
+<rect class="bar" fill="#619CFF" x="633.1" y="246.8" width="35.1" height="129.9"/>
+<path class="line" fill="none" d="M650.6 251.8V241.7M643.6 251.8h14.0M643.6 241.7h14.0"/>
+<rect class="bar" fill="#F8766D" x="679.8" y="334.8" width="35.1" height="41.8"/>
+<path class="line" fill="none" d="M697.3 335.2V334.5M690.3 335.2h14.0M690.3 334.5h14.0"/>
+<rect class="bar" fill="#00BA38" x="714.9" y="298.1" width="35.1" height="78.5"/>
+<path class="line" fill="none" d="M732.4 300.3V295.9M725.4 300.3h14.0M725.4 295.9h14.0"/>
+<rect class="bar" fill="#619CFF" x="749.9" y="235.0" width="35.1" height="141.7"/>
+<path class="line" fill="none" d="M767.4 237.7V232.2M760.4 237.7h14.0M760.4 232.2h14.0"/>
+<line class="line" x1="78" y1="376.7" x2="802" y2="376.7"/>
+<text class="legendTitle" x="818" y="191.0">Version</text>
+<rect class="bar" fill="#F8766D" x="818" y="199.0" width="17" height="17"/>
+<text class="legend" x="840" y="212.0">Kryo 5.7.0</text>
+<rect class="bar" fill="#00BA38" x="818" y="216.0" width="17" height="17"/>
+<text class="legend" x="840" y="229.0">Kryo 6</text>
+<rect class="bar" fill="#619CFF" x="818" y="233.0" width="17" height="17"/>
+<text class="legend" x="840" y="246.0">Kryo 6 with code generation</text>
+</svg>

@@ -26,12 +26,22 @@ def references_chunked(params):
     return references(params) + (", chunked" if params.get("chunked") == "true" else "")
 
 
+def code_generation(params):
+    return params.get("codeGeneration") == "true"
+
+
+def code_generation_chunked(params):
+    return ("generated code" if code_generation(params) else "cached fields") + (
+        ", chunked" if params.get("chunked") == "true" else "")
+
+
 BUFFER_TYPES = ["array", "byteBuffer", "unsafeArray", "unsafeByteBuffer"]
 
-# name: the results file and the chart file. unit: the JMH score unit of the results. axis: the title of the y axis. series: returns the series
-# of a result, from its parameters. order: the order of the series. legend: the title of the legend. panel: a parameter that
-# splits the chart into panels, each with its own axis. benchmarks: the benchmark methods to show and their order, the default is all in
-# the order of the results.
+# name: the chart file and, unless results is given, the results file. results: the results file, if it is shared with another
+# chart. filter: returns whether a result is shown, from its parameters. unit: the JMH score unit of the results. axis: the title
+# of the y axis. series: returns the series of a result, from its parameters. order: the order of the series. legend: the title
+# of the legend. panel: a parameter that splits the chart into panels, each with its own axis. benchmarks: the benchmark methods
+# to show and their order, the default is all in the order of the results.
 CHARTS = [
     {
         "name": "fieldSerializer",
@@ -48,10 +58,24 @@ CHARTS = [
     {
         "name": "objectGraph",
         "title": "ObjectGraphBenchmark",
+        "filter": lambda params: not code_generation(params),
         "unit": "ops/s",
         "axis": "Round trips per second (higher is better)",
         "series": chunked,
         "order": ["not chunked", "chunked"],
+        "legend": "Serializer settings",
+        "panel": "scale",
+        "panels": {"4": "Scale 4 (about 1,400 objects)", "16": "Scale 16 (about 5,200 objects)"},
+        "benchmarks": ["field", "version", "compatible", "tagged"],
+    },
+    {
+        "name": "codeGeneration",
+        "results": "objectGraph",
+        "title": "ObjectGraphBenchmark with code generation",
+        "unit": "ops/s",
+        "axis": "Round trips per second (higher is better)",
+        "series": code_generation_chunked,
+        "order": ["cached fields", "generated code", "cached fields, chunked", "generated code, chunked"],
         "legend": "Serializer settings",
         "panel": "scale",
         "panels": {"4": "Scale 4 (about 1,400 objects)", "16": "Scale 16 (about 5,200 objects)"},
@@ -256,13 +280,18 @@ def main():
     results_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(directory, "results")
     output_dir = sys.argv[2] if len(sys.argv) > 2 else directory
     for chart in CHARTS:
-        path = os.path.join(results_dir, chart["name"] + ".json")
+        path = os.path.join(results_dir, chart.get("results", chart["name"]) + ".json")
         if not os.path.exists(path):
             print("Skipped, no results:", path)
             continue
         results = load(path, chart["unit"])
         if not results:
             print("Skipped, results are not in %s: %s" % (chart["unit"], path))
+            continue
+        if "filter" in chart:
+            results = [result for result in results if chart["filter"](result["params"])]
+        if not results:
+            print("Skipped, no results for the chart:", chart["name"])
             continue
         os.makedirs(output_dir, exist_ok=True)
         output = os.path.join(output_dir, chart["name"] + ".svg")

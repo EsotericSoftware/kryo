@@ -37,6 +37,35 @@
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
 			</plugin>
+			<!-- The build needs JDK 24+, but the classes must only use the Java 17 API, which javac checks with release 17. The
+				classes that are only loaded on newer Java versions are compiled separately, against the API of the JDK. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>default-compile</id>
+						<configuration>
+							<release>${javac.target}</release>
+							<excludes>
+								<exclude>**/serializers/CodeGeneration.java</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+					<execution>
+						<id>compile-newer-java</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>compile</goal>
+						</goals>
+						<configuration>
+							<includes>
+								<include>**/serializers/CodeGeneration.java</include>
+							</includes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>

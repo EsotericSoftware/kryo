@@ -174,7 +174,11 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-/** Maps classes to serializers so object graphs can be serialized automatically.
+/** Maps classes to serializers so object graphs can be serialized automatically. The README describes how to configure and use
+ * Kryo.
+ * <p>
+ * Kryo is not thread safe. Each thread should have its own Kryo, {@link Input} and {@link Output} instances, eg from a
+ * {@link com.esotericsoftware.kryo.util.Pool}.
  * @author Nathan Sweet */
 public class Kryo {
 	public static final byte NULL = 0;
@@ -391,146 +395,12 @@ public class Kryo {
 
 	/** Instances of the specified class will use the specified serializer when {@link #register(Class)} or
 	 * {@link #register(Class, int)} are called. Serializer instances are created as needed via
-	 * {@link ReflectionSerializerFactory#newSerializer(Kryo, Class, Class)}. By default, the following classes have a default
-	 * serializer set:
+	 * {@link ReflectionSerializerFactory#newSerializer(Kryo, Class, Class)}.
 	 * <p>
-	 * <table>
-	 * <tr>
-	 * <td>boolean</td>
-	 * <td>Boolean</td>
-	 * <td>byte</td>
-	 * <td>Byte</td>
-	 * <td>char</td>
-	 * <tr>
-	 * </tr>
-	 * <td>Character</td>
-	 * <td>short</td>
-	 * <td>Short</td>
-	 * <td>int</td>
-	 * <td>Integer</td>
-	 * <tr>
-	 * </tr>
-	 * <td>long</td>
-	 * <td>Long</td>
-	 * <td>float</td>
-	 * <td>Float</td>
-	 * <td>double</td>
-	 * <tr>
-	 * </tr>
-	 * <td>Double</td>
-	 * <td>String</td>
-	 * <td>byte[]</td>
-	 * <td>char[]</td>
-	 * <td>short[]</td>
-	 * <tr>
-	 * </tr>
-	 * <td>int[]</td>
-	 * <td>long[]</td>
-	 * <td>float[]</td>
-	 * <td>double[]</td>
-	 * <td>String[]</td>
-	 * <tr>
-	 * </tr>
-	 * <td>Object[]</td>
-	 * <td>Map</td>
-	 * <td>BigInteger</td>
-	 * <td>BigDecimal</td>
-	 * <td>KryoSerializable</td>
-	 * </tr>
-	 * <tr>
-	 * <td>Collection</td>
-	 * <td>Date</td>
-	 * <td>Collections.emptyList</td>
-	 * <td>Collections.singleton</td>
-	 * <td>Currency</td>
-	 * </tr>
-	 * <tr>
-	 * <td>StringBuilder</td>
-	 * <td>Enum</td>
-	 * <td>Collections.emptyMap</td>
-	 * <td>Collections.emptySet</td>
-	 * <td>Calendar</td>
-	 * </tr>
-	 * <tr>
-	 * <td>StringBuffer</td>
-	 * <td>Class</td>
-	 * <td>Collections.singletonList</td>
-	 * <td>Collections.singletonMap</td>
-	 * <td>TimeZone</td>
-	 * </tr>
-	 * <tr>
-	 * <td>BitSet</td>
-	 * <td>Locale</td>
-	 * <td>Arrays.asList</td>
-	 * <td>TreeMap</td>
-	 * <td>URL</td>
-	 * </tr>
-	 * <tr>
-	 * <td>EnumSet</td>
-	 * <td>Charset</td>
-	 * <td>ConcurrentSkipListMap</td>
-	 * <td>TreeSet</td>
-	 * <td>PriorityQueue</td>
-	 * </tr>
-	 * <tr>
-	 * <td>ConcurrentSkipListSet</td>
-	 * <td>PriorityBlockingQueue</td>
-	 * <td>Collections.reverseOrder</td>
-	 * <td>String.CASE_INSENSITIVE_ORDER</td>
-	 * </tr>
-	 * <tr>
-	 * <td>ArrayBlockingQueue</td>
-	 * <td>LinkedBlockingQueue</td>
-	 * </tr>
-	 * <tr>
-	 * <td>LinkedBlockingDeque</td>
-	 * <td>EnumMap</td>
-	 * </tr>
-	 * </table>
-	 * </p>
-	 * The following classes have serializers set on JDK8 and above:
-	 * <p>
-	 * <table>
-	 * <tr>
-	 * <td>Optional</td>
-	 * <td>OptionalInt</td>
-	 * <td>OptionalLong</td>
-	 * <td>OptionalDouble</td>
-	 * </tr>
-	 * <tr>
-	 * <td>Duration</td>
-	 * <td>Instant</td>
-	 * <td>LocalDate</td>
-	 * <td>LocalTime</td>
-	 * <td>LocalDateTime</td>
-	 * </tr>
-	 * <tr>
-	 * <td>ZoneOffset</td>
-	 * <td>ZoneId</td>
-	 * <td>OffsetTime</td>
-	 * <td>OffsetDateTime</td>
-	 * <td>ZonedDateTime</td>
-	 * </tr>
-	 * <tr>
-	 * <td>Year</td>
-	 * <td>YearMonth</td>
-	 * <td>MonthDay</td>
-	 * <td>Period</td>
-	 * </tr>
-	 * </table>
-	 * </p>
-	 * The following classes have serializers set on JDK9 and above:
-	 * <p>
-	 * <table>
-	 * <tr>
-	 * <td>List.of</td>
-	 * <td>Set.of</td>
-	 * <td>Map.of</td>
-	 * </tr>
-	 * </table>
-	 * </p>
-	 * Note that the order default serializers are added is important for a class that may match multiple types. The above default
-	 * serializers always have a lower priority than subsequent default serializers that are added. */
+	 * Kryo has built-in default serializers for primitives and their wrappers, strings, arrays, enums, {@link Collection}s,
+	 * {@link Map}s and more than 100 other JDK classes, which are listed in the README. The order default serializers are added is
+	 * important for a class that may match multiple types: the built-in default serializers always have a lower priority than the
+	 * default serializers that are added. */
 	public void addDefaultSerializer (Class type, Class<? extends Serializer> serializerClass) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerClass == null) throw new IllegalArgumentException("serializerClass cannot be null.");
@@ -584,6 +454,7 @@ public class Kryo {
 		return newDefaultSerializer(type);
 	}
 
+	/** Returns a serializer created from the {@link DefaultSerializer} annotation of the type, or null if it has none. */
 	protected Serializer getDefaultSerializerForAnnotatedType (Class type) {
 		if (type.isAnnotationPresent(DefaultSerializer.class)) {
 			DefaultSerializer annotation = (DefaultSerializer)type.getAnnotation(DefaultSerializer.class);
@@ -645,8 +516,8 @@ public class Kryo {
 	 * cause the old entry to be overwritten. Registering a primitive also affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
-	 * @param id Must be {@code >= 0}. Smaller IDs are serialized more efficiently. IDs 0-9 are used by default for primitive types
-	 *           and their wrappers, String, and void, but these IDs can be repurposed. */
+	 * @param id Must be {@code >= 0}. Smaller IDs are serialized more efficiently. IDs 0-8 are used by default for primitive types
+	 *           and String, but these IDs can be repurposed. */
 	public Registration register (Class type, Serializer serializer, int id) {
 		if (id < 0) throw new IllegalArgumentException("id must be >= 0: " + id);
 		return register(new Registration(type, serializer, id));
@@ -657,7 +528,7 @@ public class Kryo {
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
 	 * <p>
-	 * Registration can be suclassed to efficiently store per type information, accessible in serializers via
+	 * Registration can be subclassed to efficiently store per type information, accessible in serializers via
 	 * {@link Kryo#getRegistration(Class)}. */
 	public Registration register (Registration registration) {
 		int id = registration.getId();
@@ -679,9 +550,11 @@ public class Kryo {
 		throw new KryoException("No registration IDs are available.");
 	}
 
-	/** If the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is false, it is automatically registered
-	 * using the {@link Kryo#addDefaultSerializer(Class, Class) default serializer}.
-	 * @throws IllegalArgumentException if the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is true.
+	/** If the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is false or
+	 * {@link #setAllowedUnregisteredClasses(Predicate)} allows the class, it is automatically registered using the
+	 * {@link Kryo#addDefaultSerializer(Class, Class) default serializer}.
+	 * @throws IllegalArgumentException if the class is not registered, {@link Kryo#setRegistrationRequired(boolean)} is true and
+	 *            the class is not allowed.
 	 * @see ClassResolver#getRegistration(Class) */
 	public Registration getRegistration (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
@@ -722,6 +595,9 @@ public class Kryo {
 		return registration;
 	}
 
+	/** Returns the message of the exception thrown and the warning logged for an unregistered class. This can be overridden to
+	 * customize the message or take other actions.
+	 * @see #setWarnUnregisteredClasses(boolean) */
 	protected String unregisteredClassMessage (Class type) {
 		return "Class is not registered: " + className(type) + "\nNote: To register this class use: kryo.register("
 			+ canonicalName(type) + ".class);";
@@ -1084,9 +960,10 @@ public class Kryo {
 	}
 
 	/** Resets object graph state: unregistered class names, references to previously serialized or deserialized objects, the
-	 * {@link #getOriginalToCopyMap() original to copy map}, and the {@link #getGraphContext() graph context}. If
-	 * {@link #setAutoReset(boolean) auto reset} is true, this method is called automatically when an object graph has been
-	 * completely serialized or deserialized. If overridden, the super method must be called. */
+	 * {@link #getOriginalToCopyMap() original to copy map}, the {@link #getGraphContext() graph context} and the
+	 * {@link #getGenerics() generic type information} collected during serialization. If {@link #setAutoReset(boolean) auto reset}
+	 * is true, this method is called automatically when an object graph has been completely serialized or deserialized. If
+	 * overridden, the super method must be called. */
 	public void reset () {
 		depth = 0;
 		if (graphContext != null) graphContext.clear(2048);
@@ -1262,9 +1139,10 @@ public class Kryo {
 	 * Registered classes are serialized as an int id, avoiding the overhead of serializing the class name, but have the drawback
 	 * of needing to know the classes to be serialized up front.
 	 * <p>
-	 * Requiring class registeration controls which classes Kryo will instantiate. When false, during deserialization Kryo will
+	 * Requiring class registration controls which classes Kryo will instantiate. When false, during deserialization Kryo will
 	 * invoke the constructor for whatever class name is found in the data. It can be a security problem to allow arbitrary classes
-	 * to be instantiated (and later finalized). */
+	 * to be instantiated (and later finalized). {@link #setAllowedUnregisteredClasses(Predicate)} can allow some unregistered
+	 * classes while registration stays required. */
 	public void setRegistrationRequired (boolean registrationRequired) {
 		this.registrationRequired = registrationRequired;
 		if (TRACE) trace("kryo", "Registration required: " + registrationRequired);
@@ -1377,10 +1255,10 @@ public class Kryo {
 		return references && referenceResolver != null && referenceResolver.useReferences(String.class);
 	}
 
-	/** Sets the strategy used by {@link #newInstantiator(Class)} for creating objects. See {@link StdInstantiatorStrategy} to
-	 * create objects via without calling any constructor. See {@link SerializingInstantiatorStrategy} to mimic Java's built-in
-	 * serialization.
-	 * @param strategy May be null. */
+	/** Sets the strategy used by {@link #newInstantiator(Class)} for creating objects. Default is
+	 * {@link DefaultInstantiatorStrategy}, which calls the zero argument constructor. See {@link StdInstantiatorStrategy} to
+	 * create objects without calling any constructor. See {@link SerializingInstantiatorStrategy} to mimic Java's built-in
+	 * serialization. */
 	public void setInstantiatorStrategy (InstantiatorStrategy strategy) {
 		this.strategy = strategy;
 	}
@@ -1389,9 +1267,9 @@ public class Kryo {
 		return strategy;
 	}
 
-	/** Returns a new instantiator for creating new instances of the specified type. By default, an instantiator is returned that
-	 * uses reflection if the class has a zero argument constructor, an exception is thrown. If a
-	 * {@link #setInstantiatorStrategy(InstantiatorStrategy) strategy} is set, it will be used instead of throwing an exception. */
+	/** Returns a new instantiator for creating new instances of the specified type, using the
+	 * {@link #setInstantiatorStrategy(InstantiatorStrategy) instantiator strategy}. By default, the instantiator calls the zero
+	 * argument constructor of the class, or throws an exception if it has none. */
 	protected ObjectInstantiator newInstantiator (Class type) {
 		return strategy.newInstantiatorOf(type);
 	}
@@ -1452,7 +1330,7 @@ public class Kryo {
 	/** Returns true if the specified type is final. Final types can be serialized more efficiently because they are
 	 * non-polymorphic.
 	 * <p>
-	 * .This can be overridden to force non-final classes to be treated as final. Eg, if an application uses ArrayList extensively
+	 * This can be overridden to force non-final classes to be treated as final. Eg, if an application uses ArrayList extensively
 	 * but never uses an ArrayList subclass, treating ArrayList as final could allow FieldSerializer to save 1-2 bytes per
 	 * ArrayList field. */
 	public boolean isFinal (Class type) {
@@ -1498,7 +1376,7 @@ public class Kryo {
 		return Proxy.isProxyClass(type);
 	}
 
-	/** Tracks the generic type arguments and actual classes for type variables in the object graph during seralization.
+	/** Tracks the generic type arguments and actual classes for type variables in the object graph during serialization.
 	 * <p>
 	 * When serializing a type with a single type parameter, {@link Generics#nextGenericClass() nextGenericClass} will return the
 	 * generic class (or null) and must be followed by {@link Generics#popGenericType() popGenericType}. See
@@ -1510,7 +1388,7 @@ public class Kryo {
 	 * <p>
 	 * {@link GenericsHierarchy} stores the type parameters for a class.
 	 * {@link Generics#pushTypeVariables(GenericsHierarchy, GenericType) pushTypeVariables} can be called before generic types are
-	 * {@link GenericType#resolve(Generics) resolved} so the type parameters are tracked as serialization moved through the object
+	 * {@link GenericType#resolve(Generics) resolved} so the type parameters are tracked as serialization moves through the object
 	 * graph. If {@code > 0} is returned, this must be followed by {@link Generics#popTypeVariables(int) popTypeVariables}. See
 	 * {@link FieldSerializer} for an example. */
 	public Generics getGenerics () {

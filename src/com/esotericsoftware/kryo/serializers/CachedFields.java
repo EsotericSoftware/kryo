@@ -90,6 +90,24 @@ class CachedFields implements Comparator<CachedField> {
 	 * tests. */
 	static boolean hiddenFields = !isAndroid && !isNativeImage && !"false".equals(System.getProperty("kryo.hiddenFields"));
 
+	/** True if {@link CodeGeneration} can be used: Java 24+, not on Android or in a native image. Checked before the class is
+	 * used, which can't be loaded on older Java versions. */
+	static final boolean codeGeneration = !isAndroid && !isNativeImage && Runtime.version().feature() >= 24;
+
+	/** Returns why {@link #codeGeneration} is false, for logging. */
+	static String codeGenerationUnavailable () {
+		if (isAndroid) return "Code generation is not available on Android.";
+		if (isNativeImage) return "Code generation is not available in a native image.";
+		return "Code generation needs Java 24 or later, this is Java " + Runtime.version().feature() + ".";
+	}
+
+	/** The simple name of the field implementation, without the suffix of a hidden class, for logging. */
+	static String implementationName (CachedField field) {
+		String name = field.getClass().getSimpleName();
+		int slash = name.indexOf('/');
+		return slash == -1 ? name : name.substring(0, slash);
+	}
+
 	CachedField[] fields = new CachedField[0];
 	CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
@@ -146,7 +164,7 @@ class CachedFields implements Comparator<CachedField> {
 		} finally {
 			initializing = false;
 		}
-		serializer.cachedFieldsChanged();
+		serializer.fieldsChanged();
 	}
 
 	/** Called after a field was removed. A field removed by {@link FieldSerializer#initializeCachedFields()} is not remembered,
@@ -215,16 +233,13 @@ class CachedFields implements Comparator<CachedField> {
 			cachedField.canBeNull = config.fieldsCanBeNull && !field.isAnnotationPresent(NotNull.class);
 			if (serializer.kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
 
-			if (TRACE) {
-				trace("kryo",
-					"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
-			}
 		} else { // Must be a primitive or String.
 			cachedField.canBeNull = fieldClass == String.class && config.fieldsCanBeNull;
 			cachedField.valueClass = fieldClass;
-
-			if (TRACE) trace("kryo",
-				"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
+		}
+		if (TRACE) {
+			trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass)
+				+ ") with " + implementationName(cachedField));
 		}
 
 		if (recordComponents != null) {
@@ -291,7 +306,8 @@ class CachedFields implements Comparator<CachedField> {
 
 	private CachedField newVarHandleField (Field field, Class fieldClass, GenericType genericType) {
 		boolean string = isStringField(field, fieldClass);
-		if (hiddenFields) {
+		// Generated code doesn't call the fields to write and read, so they don't need a hidden class each.
+		if (hiddenFields && !serializer.codeGenerated()) {
 			try {
 				return HiddenFields.create(field, fieldClass, string, serializer, genericType);
 			} catch (KryoException ex) {
@@ -367,7 +383,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + serializer.type.getName());
-		if (!initializing) serializer.cachedFieldsChanged();
+		if (!initializing) serializer.fieldsChanged();
 	}
 
 	/** Removes a field so that it won't be serialized. */
@@ -399,7 +415,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
-		if (!initializing) serializer.cachedFieldsChanged();
+		if (!initializing) serializer.fieldsChanged();
 	}
 
 	/** Sets serializers using annotations.
@@ -427,7 +443,6 @@ class CachedFields implements Comparator<CachedField> {
 
 			cachedField.setCanBeNull(annotation.canBeNull() && !field.isAnnotationPresent(NotNull.class));
 			cachedField.setVariableLengthEncoding(annotation.variableLengthEncoding());
-			cachedField.setOptimizePositive(annotation.optimizePositive());
 		}
 
 		// Set CollectionSerializer settings for a collection field.

@@ -31,6 +31,8 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 
+import java.util.Arrays;
+
 /** Serializes objects using direct field assignment, providing both forward and backward compatibility. This means fields can be
  * added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported.
  * Like {@link FieldSerializer}, it can serialize most classes without needing annotations.
@@ -83,6 +85,16 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		}
 	}
 
+	/** The chunked encoding of Kryo 5 doesn't use generated code. */
+	boolean usesGeneratedCode () {
+		// The super class config, because this is called by the super constructor.
+		return !((CompatibleFieldSerializerConfig)super.config).legacyChunks;
+	}
+
+	boolean writesClasses () {
+		return ((CompatibleFieldSerializerConfig)super.config).readUnknownFieldData;
+	}
+
 	/** Field values must be readable without the field, so they don't depend on the field's generic type when
 	 * {@link CompatibleFieldSerializerConfig#setReadUnknownFieldData(boolean) readUnknownFieldData} is true, unless
 	 * {@link CompatibleFieldSerializerConfig#setOptimizeGenerics(boolean) optimizeGenerics} is set. */
@@ -117,6 +129,13 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				output.writeBytes(fieldNameBytes);
 			}
+		}
+
+		if (generated() != null) {
+			writeGenerated(fieldOutput, object, chunks);
+			popTypeVariables(pop);
+			if (chunked) chunks.endWrite();
+			return;
 		}
 
 		for (int i = 0, n = fields.length; i < n; i++) {
@@ -174,6 +193,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			CachedField[] fields = (CachedField[])kryo.getGraphContext().get(this);
 			if (fields == null) fields = readFields(kryo, input, chunks);
 
+			// The generated code reads the fields of this serializer in its order, which the data usually has.
+			if (values == null && fields == cachedFields.fields && generated() != null) {
+				readGenerated(fieldInput, object, chunks);
+				return object;
+			}
+
 			for (int i = 0, n = fields.length; i < n; i++) {
 				CachedField cachedField = fields[i];
 				long end = chunked ? chunks.beginField(fieldInput) : 0;
@@ -219,7 +244,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 					}
 
 					// Ensure the type in the data is compatible with the field type.
-					Class fieldType = cachedField.field.getType();
+					Class fieldType = GeneratedFields.readType(cachedField);
 					if (!Util.isAssignableTo(valueClass, fieldType)) {
 						String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
 							+ className(fieldType) + " (" + getType().getName() + "#" + cachedField + ")";
@@ -349,6 +374,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 		}
 
+		// The serializer's own array when the data has its fields in its order, which the generated code can read.
+		if (Arrays.equals(fields, allFields)) fields = allFields;
 		kryo.getGraphContext().put(this, fields);
 		return fields;
 	}

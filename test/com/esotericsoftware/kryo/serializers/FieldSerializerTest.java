@@ -1679,6 +1679,7 @@ class FieldSerializerTest extends KryoTestCase {
 	private void assertFieldAccess (FieldAccessType fieldAccess, String intField, String objectField, String finalField) {
 		FieldSerializerConfig config = new FieldSerializerConfig();
 		config.setFieldAccess(fieldAccess);
+		config.setCodeGeneration(false); // With generated code, the fields don't use hidden classes.
 		FieldSerializer serializer = new FieldSerializer(kryo, FieldAccessTypes.class, config);
 		assertEquals(intField, fieldClassName(serializer.getField("value")));
 		assertEquals(objectField, fieldClassName(serializer.getField("object")));
@@ -1694,11 +1695,8 @@ class FieldSerializerTest extends KryoTestCase {
 		assertEquals(1, copy.value);
 	}
 
-	/** The name of a hidden class ends with a slash and a suffix. */
 	static private String fieldClassName (CachedField field) {
-		String name = field.getClass().getSimpleName();
-		int slash = name.indexOf('/');
-		return slash == -1 ? name : name.substring(0, slash);
+		return CachedFields.implementationName(field);
 	}
 
 	@Test
