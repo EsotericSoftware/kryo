@@ -23,7 +23,9 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
 import static java.lang.constant.ConstantDescs.*;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
@@ -57,7 +59,12 @@ import java.util.concurrent.ConcurrentHashMap;
 final class CodeGeneration {
 	static private final ClassDesc CD_GeneratedFields = ClassDesc.of(GeneratedFields.class.getName());
 	static private final ClassDesc CD_ReflectField = ClassDesc.of(ReflectField.class.getName());
-	static private final ClassDesc CD_ReflectFieldArray = CD_ReflectField.arrayType();
+	static private final ClassDesc CD_CachedField = ClassDesc.of(CachedField.class.getName());
+	static private final ClassDesc CD_CachedFieldArray = CD_CachedField.arrayType();
+	static private final ClassDesc CD_FieldSerializer = ClassDesc.of(FieldSerializer.class.getName());
+	static private final ClassDesc CD_Kryo = ClassDesc.of(Kryo.class.getName());
+	static private final ClassDesc CD_Registration = ClassDesc.of(Registration.class.getName());
+	static private final ClassDesc CD_CodeGeneration = ClassDesc.of(CodeGeneration.class.getName());
 	static private final ClassDesc CD_Output = ClassDesc.of(Output.class.getName());
 	static private final ClassDesc CD_Input = ClassDesc.of(Input.class.getName());
 	static private final MethodTypeDesc MTD_classDataAt = MethodTypeDesc.of(CD_Object, CD_MethodHandles_Lookup, CD_String,
@@ -65,6 +72,12 @@ final class CodeGeneration {
 		CD_int);
 	static private final MethodTypeDesc MTD_writeValue = MethodTypeDesc.of(CD_void, CD_Output, CD_Object, CD_Object);
 	static private final MethodTypeDesc MTD_readValue = MethodTypeDesc.of(CD_Object, CD_Input);
+	static private final MethodTypeDesc MTD_writeClass = MethodTypeDesc.of(CD_Registration, CD_Output, CD_Class);
+	static private final MethodTypeDesc MTD_writeStringWithClass = MethodTypeDesc.of(CD_void, CD_Kryo, CD_Output, CD_String);
+	static private final MethodTypeDesc MTD_readStringWithClass = MethodTypeDesc.of(CD_String, CD_FieldSerializer, CD_Input,
+		CD_CachedField);
+	static private final MethodTypeDesc MTD_readPrimitiveClass = MethodTypeDesc.of(CD_boolean, CD_FieldSerializer, CD_Input,
+		CD_CachedField);
 
 	/** The constructors of the hidden classes, by type and field signature. */
 	static private final ClassValue<ConcurrentHashMap<String, MethodHandle>> constructors = new ClassValue<>() {
@@ -73,7 +86,8 @@ final class CodeGeneration {
 		}
 	};
 
-	static private final MethodType constructorType = MethodType.methodType(void.class, ReflectField[].class);
+	static private final MethodType constructorType = MethodType.methodType(void.class, FieldSerializer.class,
+		CachedField[].class);
 
 	// From java.lang.classfile.ClassFile.
 	static private final int ACC_PUBLIC = 0x0001, ACC_PRIVATE = 0x0002, ACC_STATIC = 0x0008, ACC_FINAL = 0x0010,
@@ -81,12 +95,13 @@ final class CodeGeneration {
 	static private final String INIT_NAME = "<init>", CLASS_INIT_NAME = "<clinit>";
 
 	/** Returns the generated code for the fields, or null if code can't be generated for them.
+	 * @param writeClasses If true, the class of each value is written before the value, which is written without null marker, like
+	 *           CompatibleFieldSerializer with unknown field data.
 	 * @throws KryoException if the hidden class can't be defined. */
-	static GeneratedFields generate (FieldSerializer serializer, CachedField[] fields) {
+	static GeneratedFields generate (FieldSerializer serializer, CachedField[] fields, boolean writeClasses) {
 		if (serializer.recordConstructor != null) return null;
 		Kind[] kinds = new Kind[fields.length];
-		ArrayList<ReflectField> objectFields = new ArrayList<>();
-		StringBuilder signature = new StringBuilder();
+		StringBuilder signature = new StringBuilder(writeClasses ? "classes;" : "");
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField field = fields[i];
 			Kind kind = kind(field);
@@ -96,15 +111,14 @@ final class CodeGeneration {
 				return null;
 			}
 			kinds[i] = kind;
-			if (kind == Kind.object) objectFields.add((ReflectField)field);
 			signature.append(field.field.getDeclaringClass().getName()).append('.').append(field.field.getName()).append(':')
 				.append(kind).append(';');
 		}
 
 		MethodHandle constructor = constructors.get(serializer.type).computeIfAbsent(signature.toString(),
-			key -> define(serializer.type, fields, kinds));
+			key -> define(serializer.type, fields, kinds, writeClasses));
 		try {
-			return (GeneratedFields)constructor.invokeExact(objectFields.toArray(new ReflectField[0]));
+			return (GeneratedFields)constructor.invokeExact(serializer, fields);
 		} catch (Throwable t) {
 			throw new KryoException("Unable to create the generated fields for: " + className(serializer.type), t);
 		}
@@ -130,8 +144,51 @@ final class CodeGeneration {
 		return null;
 	}
 
+	// Called by the generated code when the classes are written:
+
+	static void writeStringWithClass (Kryo kryo, Output output, String value) {
+		if (value == null) {
+			kryo.writeClass(output, null);
+			return;
+		}
+		kryo.writeClass(output, String.class);
+		output.writeString(value);
+	}
+
+	/** @return null if the class was null. */
+	static String readStringWithClass (FieldSerializer serializer, Input input, CachedField field) {
+		if (readClass(serializer, input, field) == null) return null;
+		return input.readString();
+	}
+
+	/** Reads the class of a primitive field value.
+	 * @return false if the class was null, then the field keeps its value. */
+	static boolean readPrimitiveClass (FieldSerializer serializer, Input input, CachedField field) {
+		return readClass(serializer, input, field) != null;
+	}
+
+	/** Reads the class of a field value and ensures it is compatible with the field type, like CompatibleFieldSerializer with
+	 * unknown field data.
+	 * @return null if the class was null. */
+	static Registration readClass (FieldSerializer serializer, Input input, CachedField field) {
+		Registration registration;
+		try {
+			registration = serializer.kryo.readClass(input);
+		} catch (KryoException ex) {
+			throw new KryoException("Unable to read unknown data (unknown type). (" + serializer.type.getName() + "#" + field + ")",
+				ex);
+		}
+		if (registration == null) return null;
+		Class valueClass = registration.getType(), fieldType = field.field.getType();
+		if (!isAssignableTo(valueClass, fieldType)) {
+			throw new KryoException("Read type is incompatible with the field type: " + className(valueClass) + " -> "
+				+ className(fieldType) + " (" + serializer.type.getName() + "#" + field + ")");
+		}
+		return registration;
+	}
+
 	/** Defines the hidden class and returns its constructor. */
-	static private MethodHandle define (Class type, CachedField[] fields, Kind[] kinds) {
+	static private MethodHandle define (Class type, CachedField[] fields, Kind[] kinds, boolean writeClasses) {
 		// The class data: the VarHandle of each field, then the setter MethodHandle of each final field.
 		int n = fields.length;
 		ArrayList<Object> classData = new ArrayList<>(n);
@@ -162,7 +219,8 @@ final class CodeGeneration {
 				cb.withField("f" + i, CD_VarHandle, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
 				if (setters[i] != -1) cb.withField("s" + i, CD_MethodHandle, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
 			}
-			cb.withField("fields", CD_ReflectFieldArray, ACC_PRIVATE | ACC_FINAL);
+			cb.withField("serializer", CD_FieldSerializer, ACC_PRIVATE | ACC_FINAL);
+			cb.withField("fields", CD_CachedFieldArray, ACC_PRIVATE | ACC_FINAL);
 
 			// static { f0 = (VarHandle)MethodHandles.classDataAt(MethodHandles.lookup(), "_", VarHandle.class, 0); ... }
 			cb.withMethodBody(CLASS_INIT_NAME, MTD_void, ACC_STATIC, code -> {
@@ -181,24 +239,41 @@ final class CodeGeneration {
 				code.return_();
 			});
 
-			// public Generated$Type (ReflectField[] fields) { this.fields = fields; }
-			cb.withMethodBody(INIT_NAME, MethodTypeDesc.of(CD_void, CD_ReflectFieldArray), ACC_PUBLIC, code -> {
+			// public Generated$Type (FieldSerializer serializer, CachedField[] fields)
+			cb.withMethodBody(INIT_NAME, MethodTypeDesc.of(CD_void, CD_FieldSerializer, CD_CachedFieldArray), ACC_PUBLIC, code -> {
 				code.aload(0).invokespecial(CD_GeneratedFields, INIT_NAME, MTD_void) //
-					.aload(0).aload(1).putfield(thisClass, "fields", CD_ReflectFieldArray).return_();
+					.aload(0).aload(1).putfield(thisClass, "serializer", CD_FieldSerializer) //
+					.aload(0).aload(2).putfield(thisClass, "fields", CD_CachedFieldArray).return_();
 			});
 
 			// public void write (Output output, Object object)
 			cb.withMethodBody("write", MethodTypeDesc.of(CD_void, CD_Output, CD_Object), ACC_PUBLIC, code -> {
-				for (int i = 0, objectIndex = 0; i < n; i++) {
+				for (int i = 0; i < n; i++) {
 					Kind kind = kinds[i];
 					if (kind == Kind.object) {
-						// fields[objectIndex].writeValue(output, object, (Object)fi.get(object));
-						code.aload(0).getfield(thisClass, "fields", CD_ReflectFieldArray).loadConstant(objectIndex++).aaload() //
+						// ((ReflectField)fields[i]).writeValue(output, object, (Object)fi.get(object));
+						code.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload()
+							.checkcast(CD_ReflectField) //
 							.aload(1).aload(2) //
 							.getstatic(thisClass, "f" + i, CD_VarHandle).aload(2)
 							.invokevirtual(CD_VarHandle, "get", MethodTypeDesc.of(CD_Object, CD_Object)) //
-							.invokevirtual(CD_ReflectField, "writeValue", MTD_writeValue);
+							.invokevirtual(CD_ReflectField, writeClasses ? "writeValueWithClass" : "writeValue", MTD_writeValue);
 						continue;
+					}
+					if (writeClasses) {
+						if (kind == Kind.string) {
+							// CodeGeneration.writeStringWithClass(serializer.kryo, output, (String)fi.get(object));
+							code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer)
+								.getfield(CD_FieldSerializer, "kryo", CD_Kryo) //
+								.aload(1).getstatic(thisClass, "f" + i, CD_VarHandle).aload(2)
+								.invokevirtual(CD_VarHandle, "get", MethodTypeDesc.of(CD_String, CD_Object)) //
+								.invokestatic(CD_CodeGeneration, "writeStringWithClass", MTD_writeStringWithClass);
+							continue;
+						}
+						// serializer.kryo.writeClass(output, Integer.class);
+						code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer)
+							.getfield(CD_FieldSerializer, "kryo", CD_Kryo) //
+							.aload(1).ldc(kind.wrapper).invokevirtual(CD_Kryo, "writeClass", MTD_writeClass).pop();
 					}
 					// output.writeX((X)fi.get(object));
 					code.aload(1).getstatic(thisClass, "f" + i, CD_VarHandle).aload(2)
@@ -212,28 +287,19 @@ final class CodeGeneration {
 
 			// public void read (Input input, Object object)
 			cb.withMethodBody("read", MethodTypeDesc.of(CD_void, CD_Input, CD_Object), ACC_PUBLIC, code -> {
-				for (int i = 0, objectIndex = 0; i < n; i++) {
+				for (int i = 0; i < n; i++) {
 					Kind kind = kinds[i];
-					// fi.set(object, value) or, for a final field, si.invokeExact(object, value).
-					if (setters[i] == -1)
-						code.getstatic(thisClass, "f" + i, CD_VarHandle);
-					else
-						code.getstatic(thisClass, "s" + i, CD_MethodHandle);
-					code.aload(2);
-					if (kind == Kind.object) {
-						// fi.set(object, fields[objectIndex].readValue(input));
-						code.aload(0).getfield(thisClass, "fields", CD_ReflectFieldArray).loadConstant(objectIndex++).aaload() //
-							.aload(1).invokevirtual(CD_ReflectField, "readValue", MTD_readValue);
-					} else {
-						// fi.set(object, input.readX());
-						code.aload(1);
-						if (kind.varEncoding) code.iconst_0();
-						code.invokevirtual(CD_Input, kind.read, kind.readType);
+					if (writeClasses && kind != Kind.object && kind != Kind.string) {
+						// if (CodeGeneration.readPrimitiveClass(serializer, input, fields[i])) fi.set(object, input.readX());
+						int index = i;
+						code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1) //
+							.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload() //
+							.invokestatic(CD_CodeGeneration, "readPrimitiveClass", MTD_readPrimitiveClass) //
+							.ifThen(java.lang.classfile.Opcode.IFNE,
+								block -> readField(block, thisClass, index, kinds[index], setters[index], false));
+						continue;
 					}
-					if (setters[i] == -1)
-						code.invokevirtual(CD_VarHandle, "set", MethodTypeDesc.of(CD_void, CD_Object, kind.type));
-					else
-						code.invokevirtual(CD_MethodHandle, "invokeExact", MethodTypeDesc.of(CD_void, CD_Object, kind.type));
+					readField(code, thisClass, i, kind, setters[i], writeClasses);
 				}
 				code.return_();
 			});
@@ -248,22 +314,54 @@ final class CodeGeneration {
 		}
 	}
 
+	/** Emits: fi.set(object, value) or, for a final field, si.invokeExact(object, value). */
+	static private void readField (java.lang.classfile.CodeBuilder code, ClassDesc thisClass, int i, Kind kind, int setter,
+		boolean readClass) {
+		if (setter == -1)
+			code.getstatic(thisClass, "f" + i, CD_VarHandle);
+		else
+			code.getstatic(thisClass, "s" + i, CD_MethodHandle);
+		code.aload(2);
+		if (kind == Kind.object) {
+			// ((ReflectField)fields[i]).readValue(input)
+			code.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload().checkcast(CD_ReflectField) //
+				.aload(1).invokevirtual(CD_ReflectField, readClass ? "readValueWithClass" : "readValue", MTD_readValue);
+		} else if (readClass && kind == Kind.string) {
+			// CodeGeneration.readStringWithClass(serializer, input, fields[i])
+			code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1) //
+				.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload() //
+				.invokestatic(CD_CodeGeneration, "readStringWithClass", MTD_readStringWithClass);
+		} else {
+			// input.readX()
+			code.aload(1);
+			if (kind.varEncoding) code.iconst_0();
+			code.invokevirtual(CD_Input, kind.read, kind.readType);
+		}
+		if (setter == -1)
+			code.invokevirtual(CD_VarHandle, "set", MethodTypeDesc.of(CD_void, CD_Object, kind.type));
+		else
+			code.invokevirtual(CD_MethodHandle, "invokeExact", MethodTypeDesc.of(CD_void, CD_Object, kind.type));
+	}
+
 	/** How a field is written and read. */
 	private enum Kind {
-		varInt(CD_int, "writeVarInt", "readVarInt", true), int_(CD_int, "writeInt", "readInt", false), //
-		varLong(CD_long, "writeVarLong", "readVarLong", true), long_(CD_long, "writeLong", "readLong", false), //
-		double_(CD_double, "writeDouble", "readDouble", false), float_(CD_float, "writeFloat", "readFloat", false), //
-		boolean_(CD_boolean, "writeBoolean", "readBoolean", false), short_(CD_short, "writeShort", "readShort", false), //
-		char_(CD_char, "writeChar", "readChar", false), byte_(CD_byte, "writeByte", "readByte", false), //
-		string(CD_String, "writeString", "readString", false), object(CD_Object, null, null, false);
+		varInt(CD_int, CD_Integer, "writeVarInt", "readVarInt", true), int_(CD_int, CD_Integer, "writeInt", "readInt", false), //
+		varLong(CD_long, CD_Long, "writeVarLong", "readVarLong", true), long_(CD_long, CD_Long, "writeLong", "readLong", false), //
+		double_(CD_double, CD_Double, "writeDouble", "readDouble", false), float_(CD_float, CD_Float, "writeFloat", "readFloat",
+			false), //
+		boolean_(CD_boolean, CD_Boolean, "writeBoolean", "readBoolean", false), short_(CD_short, CD_Short, "writeShort",
+			"readShort", false), //
+		char_(CD_char, CD_Character, "writeChar", "readChar", false), byte_(CD_byte, CD_Byte, "writeByte", "readByte", false), //
+		string(CD_String, CD_String, "writeString", "readString", false), object(CD_Object, null, null, null, false);
 
-		final ClassDesc type;
+		final ClassDesc type, wrapper;
 		final String write, read;
 		final boolean varEncoding;
 		final MethodTypeDesc writeType, readType;
 
-		Kind (ClassDesc type, String write, String read, boolean varEncoding) {
+		Kind (ClassDesc type, ClassDesc wrapper, String write, String read, boolean varEncoding) {
 			this.type = type;
+			this.wrapper = wrapper;
 			this.write = write;
 			this.read = read;
 			this.varEncoding = varEncoding;

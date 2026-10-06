@@ -1684,6 +1684,7 @@ class FieldSerializerTest extends KryoTestCase {
 	private void assertFieldAccess (FieldAccessType fieldAccess, String intField, String objectField, String finalField) {
 		FieldSerializerConfig config = new FieldSerializerConfig();
 		config.setFieldAccess(fieldAccess);
+		config.setCodeGeneration(false); // With generated code, the fields don't use hidden classes.
 		FieldSerializer serializer = new FieldSerializer(kryo, FieldAccessTypes.class, config);
 		assertEquals(intField, fieldClassName(serializer.getField("value")));
 		assertEquals(objectField, fieldClassName(serializer.getField("object")));

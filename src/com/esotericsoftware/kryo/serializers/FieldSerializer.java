@@ -135,7 +135,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		generated = null;
 		if (config.codeGeneration && CachedFields.codeGeneration && usesCodeGeneration()) {
 			try {
-				generated = CodeGeneration.generate(this, cachedFields.fields);
+				generated = CodeGeneration.generate(this, cachedFields.fields, generatedWritesClasses());
 			} catch (KryoException ex) {
 				if (DEBUG) debug("kryo", "Unable to generate code for the fields of: " + className(type), ex);
 			}
@@ -146,6 +146,12 @@ public class FieldSerializer<T> extends Serializer<T> {
 	 * {@link #read(Kryo, Input, Class)}. Subclasses with their own field loops return false. */
 	boolean usesCodeGeneration () {
 		return true;
+	}
+
+	/** Returns true if the generated code writes the class of each field value before the value, like CompatibleFieldSerializer
+	 * with unknown field data. */
+	boolean generatedWritesClasses () {
+		return false;
 	}
 
 	/** Returns true if the generic type of a field is used to optimize the serialization of its value, eg to omit the class of

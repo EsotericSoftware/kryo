@@ -290,6 +290,12 @@ class CachedFields implements Comparator<CachedField> {
 			key -> new GenericType(declaringClass, type, key.getGenericType()));
 	}
 
+	/** Returns true if the serializer will use generated code for the fields, as far as it is known before they are created. */
+	private boolean codeGenerated () {
+		return serializer.config.codeGeneration && codeGeneration && serializer.usesCodeGeneration()
+			&& serializer.recordConstructor == null;
+	}
+
 	/** Returns true if the field can be read and written without {@link Field#setAccessible(boolean)}: a public, non-final field
 	 * of a public class. */
 	static private boolean isPublicApi (Field field) {
@@ -325,7 +331,8 @@ class CachedFields implements Comparator<CachedField> {
 
 	private CachedField newVarHandleField (Field field, Class fieldClass, GenericType genericType) {
 		boolean string = isStringField(field, fieldClass);
-		if (hiddenFields) {
+		// Generated code doesn't call the fields to write and read, so they don't need a hidden class each.
+		if (hiddenFields && !codeGenerated()) {
 			try {
 				return HiddenFields.create(field, fieldClass, string, serializer, genericType);
 			} catch (KryoException ex) {

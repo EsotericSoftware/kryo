@@ -65,11 +65,14 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		this.config = config;
 	}
 
-	/** Generated code is used without chunked encoding and without unknown field data, which write more than the field values. */
+	/** Generated code is used without chunked encoding. */
 	boolean usesCodeGeneration () {
 		// The super class config, because this is called by the super constructor.
-		CompatibleFieldSerializerConfig config = (CompatibleFieldSerializerConfig)super.config;
-		return !config.chunked && !config.readUnknownFieldData;
+		return !((CompatibleFieldSerializerConfig)super.config).chunked;
+	}
+
+	boolean generatedWritesClasses () {
+		return ((CompatibleFieldSerializerConfig)super.config).readUnknownFieldData;
 	}
 
 	void cachedFieldsChanged () {
@@ -126,7 +129,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 		}
 
-		if (generated != null && !chunked && !readUnknownFieldData) {
+		if (generated != null && !chunked) {
 			writeGenerated(output, object);
 			popTypeVariables(pop);
 			return;
@@ -188,7 +191,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			if (fields == null) fields = readFields(kryo, input, chunks);
 
 			// The generated code reads the fields of this serializer in its order, which the data usually has.
-			if (generated != null && !chunked && !readUnknownFieldData && values == null && fields == cachedFields.fields) {
+			if (generated != null && !chunked && values == null && fields == cachedFields.fields) {
 				readGenerated(input, object);
 				return object;
 			}
