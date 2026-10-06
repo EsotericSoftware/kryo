@@ -607,19 +607,16 @@ public class ByteBufferOutput extends Output {
 		writeVarIntFlag(true, charCount + 1, true);
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
-			// Try to write 7 bit chars.
+			// Try to write 7 bit chars. A counted loop is required for the JIT to eliminate the charAt range checks and unroll.
 			ByteBuffer byteBuffer = this.byteBuffer;
-			while (true) {
+			int p = position;
+			for (; charIndex < charCount; charIndex++) {
 				int c = value.charAt(charIndex);
 				if (c > 127) break;
-				byteBuffer.put((byte)c);
-				charIndex++;
-				if (charIndex == charCount) {
-					position = getBufferPosition(byteBuffer);
-					return;
-				}
+				byteBuffer.put(p + charIndex, (byte)c);
 			}
-			position = getBufferPosition(byteBuffer);
+			position = p + charIndex;
+			setBufferPosition(byteBuffer, position);
 		}
 		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
