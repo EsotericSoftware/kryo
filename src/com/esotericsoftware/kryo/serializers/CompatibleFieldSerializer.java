@@ -76,7 +76,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	GeneratedFields generateCode () {
 		// The super class config, because this is called by the super constructor.
 		CompatibleFieldSerializerConfig config = (CompatibleFieldSerializerConfig)super.config;
-		return CodeGeneration.generate(this, cachedFields.fields, config.readUnknownFieldData, null);
+		return GeneratedFields.generate(this, cachedFields.fields, config.readUnknownFieldData, null);
 	}
 
 	GeneratedFields generated () {

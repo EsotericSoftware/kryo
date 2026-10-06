@@ -151,9 +151,9 @@ class ReflectField extends CachedField {
 	 * @return null if the class was null. */
 	final Object readValueWithClass (Input input, Object object, boolean chunked) {
 		Kryo kryo = fieldSerializer.kryo;
-		Registration registration = CodeGeneration.readClass(fieldSerializer, input, this, chunked);
+		Registration registration = GeneratedFields.readClass(fieldSerializer, input, this, chunked);
 		if (registration == null) return null;
-		if (registration == CodeGeneration.skip) return CodeGeneration.currentValue(this, object);
+		if (registration == GeneratedFields.skip) return GeneratedFields.currentValue(this, object);
 		Class valueClass = registration.getType();
 		boolean pushed = false;
 		try {

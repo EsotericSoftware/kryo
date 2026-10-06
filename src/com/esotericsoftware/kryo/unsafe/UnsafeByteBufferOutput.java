@@ -29,8 +29,6 @@ import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
-import sun.nio.ch.DirectBuffer;
-
 /** A {@link ByteBufferOutput} that writes data to a direct ByteBuffer (off-heap memory) using sun.misc.Unsafe. Multi-byte
  * primitive types use native byte order, so the native byte order on different computers which read and write the data must be
  * the same.
@@ -86,14 +84,14 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	}
 
 	public void setBuffer (ByteBuffer buffer, int maxBufferSize) {
-		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
+		if (!buffer.isDirect()) throw new IllegalArgumentException("buffer must be direct.");
 		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
 		super.setBuffer(buffer, maxBufferSize);
 		updateBufferAddress();
 	}
 
 	private void updateBufferAddress () {
-		bufferAddress = ((DirectBuffer)byteBuffer).address();
+		bufferAddress = address(byteBuffer);
 	}
 
 	protected boolean require (int required) throws KryoException {

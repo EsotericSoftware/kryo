@@ -158,7 +158,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Returns the generated code for the fields, or null if it can't be generated. Subclasses pass their fields and options.
 	 * Called by the super constructor, so subclasses can only use {@link #config}. */
 	GeneratedFields generateCode () {
-		return CodeGeneration.generate(this, cachedFields.fields, false, null);
+		return GeneratedFields.generate(this, cachedFields.fields, false, null);
 	}
 
 	/** Returns the generated code for the current config settings, or null if it isn't used. Subclasses whose settings can be

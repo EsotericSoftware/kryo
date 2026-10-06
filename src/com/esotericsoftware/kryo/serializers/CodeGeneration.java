@@ -66,7 +66,6 @@ final class CodeGeneration {
 	static private final ClassDesc CD_ChunkedEncoding = ClassDesc.of(ChunkedEncoding.class.getName());
 	static private final ClassDesc CD_Kryo = ClassDesc.of(Kryo.class.getName());
 	static private final ClassDesc CD_Registration = ClassDesc.of(Registration.class.getName());
-	static private final ClassDesc CD_CodeGeneration = ClassDesc.of(CodeGeneration.class.getName());
 	static private final ClassDesc CD_Output = ClassDesc.of(Output.class.getName());
 	static private final ClassDesc CD_Input = ClassDesc.of(Input.class.getName());
 	static private final MethodTypeDesc MTD_classDataAt = MethodTypeDesc.of(CD_Object, CD_MethodHandles_Lookup, CD_String,
@@ -91,9 +90,6 @@ final class CodeGeneration {
 	static private final MethodTypeDesc MTD_readVarLong = MethodTypeDesc.of(CD_long, CD_boolean);
 	static private final MethodTypeDesc MTD_readTag = MethodTypeDesc.of(CD_void, CD_Input, CD_int, CD_Object, CD_boolean);
 
-	/** Returned by {@link #readClass(FieldSerializer, Input, CachedField, boolean)} when the value is skipped. */
-	static final Registration skip = new Registration(Void.class, new DefaultSerializers.VoidSerializer(), -1);
-
 	/** The constructors of the hidden classes, by type and field signature. */
 	static private final ClassValue<ConcurrentHashMap<String, MethodHandle>> constructors = new ClassValue<>() {
 		protected ConcurrentHashMap<String, MethodHandle> computeValue (Class type) {
@@ -109,7 +105,9 @@ final class CodeGeneration {
 		ACC_SUPER = 0x0020;
 	static private final String INIT_NAME = "<init>", CLASS_INIT_NAME = "<clinit>";
 
-	/** Returns the generated code for the fields, or null if code can't be generated for them.
+	/** Returns the generated code for the fields, or null if code can't be generated for them. Called by
+	 * {@link GeneratedFields#generate(FieldSerializer, CachedField[], boolean, int[])} by name, because this class is compiled
+	 * separately.
 	 * @param writeClasses If true, the class of each value is written before the value, which is written without null marker, like
 	 *           CompatibleFieldSerializer with unknown field data.
 	 * @param tags If not null, the tag of each field is written before the field, like TaggedFieldSerializer. When a read tag is
@@ -162,74 +160,6 @@ final class CodeGeneration {
 		if (field instanceof ReflectField) return Kind.object;
 		if (type == String.class) return Kind.string; // A String field written without references.
 		return null;
-	}
-
-	// Called by the generated code when the classes are written:
-
-	@SuppressWarnings("unused")
-	static void writeStringWithClass (Kryo kryo, Output output, String value) {
-		if (value == null) {
-			kryo.writeClass(output, null);
-			return;
-		}
-		kryo.writeClass(output, String.class);
-		output.writeString(value);
-	}
-
-	/** @param chunked If true, the value is skipped if its class can't be read, then the current value of the field is returned.
-	 * @return null if the class was null. */
-	@SuppressWarnings("unused")
-	static String readStringWithClass (FieldSerializer serializer, Input input, CachedField field, Object object,
-		boolean chunked) {
-		Registration registration = readClass(serializer, input, field, chunked);
-		if (registration == null) return null;
-		if (registration == skip) return (String)currentValue(field, object);
-		return input.readString();
-	}
-
-	/** Returns the value of the field, to set it again when its value in the data is skipped. */
-	static Object currentValue (CachedField field, Object object) {
-		try {
-			return field.get(object);
-		} catch (IllegalAccessException ex) {
-			throw ReflectField.accessError(field.field, ex);
-		}
-	}
-
-	/** Reads the class of a primitive field value.
-	 * @param chunked If true, the value is skipped if its class can't be read.
-	 * @return false if the class was null or the value is skipped, then the field keeps its value. */
-	@SuppressWarnings("unused")
-	static boolean readPrimitiveClass (FieldSerializer serializer, Input input, CachedField field, boolean chunked) {
-		Registration registration = readClass(serializer, input, field, chunked);
-		return registration != null && registration != skip;
-	}
-
-	/** Reads the class of a field value and ensures it is compatible with the field type, like CompatibleFieldSerializer with
-	 * unknown field data.
-	 * @param chunked If true, {@link #skip} is returned instead of throwing an exception, the caller's endField skips the data.
-	 * @return null if the class was null. */
-	static Registration readClass (FieldSerializer serializer, Input input, CachedField field, boolean chunked) {
-		Registration registration;
-		try {
-			registration = serializer.kryo.readClass(input);
-		} catch (KryoException ex) {
-			String message = "Unable to read unknown data (unknown type). (" + serializer.type.getName() + "#" + field + ")";
-			if (!chunked) throw new KryoException(message, ex);
-			if (DEBUG) debug("kryo", message, ex);
-			return skip;
-		}
-		if (registration == null) return null;
-		Class valueClass = registration.getType(), fieldType = field.field.getType();
-		if (!isAssignableTo(valueClass, fieldType)) {
-			String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
-				+ className(fieldType)
-				+ " (" + serializer.type.getName() + "#" + field + ")";
-			if (!chunked) throw new KryoException(message);
-			if (DEBUG) debug("kryo", message);
-			return skip;
-		}
-		return registration;
 	}
 
 	/** Defines the hidden class and returns its constructor. */
@@ -325,7 +255,7 @@ final class CodeGeneration {
 			} else if (writeClasses && kind == Kind.string) {
 				// CodeGeneration.writeStringWithClass(serializer.kryo, output, (String)fi.get(object));
 				kryo(code, thisClass).aload(1);
-				value(code, thisClass, i, CD_String).invokestatic(CD_CodeGeneration, "writeStringWithClass",
+				value(code, thisClass, i, CD_String).invokestatic(CD_GeneratedFields, "writeStringWithClass",
 					MTD_writeStringWithClass);
 			} else {
 				// serializer.kryo.writeClass(output, Integer.class);
@@ -384,7 +314,7 @@ final class CodeGeneration {
 			// if (CodeGeneration.readPrimitiveClass(serializer, input, fields[i], chunked)) fi.set(object, input.readX());
 			code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1);
 			field(code, thisClass, i).loadConstant(chunked ? 1 : 0) //
-				.invokestatic(CD_CodeGeneration, "readPrimitiveClass", MTD_readPrimitiveClass) //
+				.invokestatic(CD_GeneratedFields, "readPrimitiveClass", MTD_readPrimitiveClass) //
 				.ifThen(java.lang.classfile.Opcode.IFNE, block -> readField(block, thisClass, i, kind, setter, false, chunked));
 			return;
 		}
@@ -405,7 +335,7 @@ final class CodeGeneration {
 			// CodeGeneration.readStringWithClass(serializer, input, fields[i], object, chunked)
 			code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1);
 			field(code, thisClass, i).aload(2).loadConstant(chunked ? 1 : 0) //
-				.invokestatic(CD_CodeGeneration, "readStringWithClass", MTD_readStringWithClass);
+				.invokestatic(CD_GeneratedFields, "readStringWithClass", MTD_readStringWithClass);
 		} else if (kind.varEncodable) {
 			// fields[i].varEncoding ? input.readVarX(false) : input.readX()
 			field(code, thisClass, i).getfield(CD_CachedField, "varEncoding", CD_boolean).ifThenElse(java.lang.classfile.Opcode.IFNE, //

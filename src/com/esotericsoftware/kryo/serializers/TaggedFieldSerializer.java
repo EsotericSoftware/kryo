@@ -96,7 +96,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		int[] tags = new int[writeTags.length];
 		for (int i = 0; i < tags.length; i++)
 			tags[i] = writeTags[i].tag;
-		return CodeGeneration.generate(this, writeTags, config.readUnknownTagData, tags);
+		return GeneratedFields.generate(this, writeTags, config.readUnknownTagData, tags);
 	}
 
 	GeneratedFields generated () {
