@@ -560,12 +560,15 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return varEncoding;
 		}
 
-		/** When true, variable length int and long values are written with fewer bytes for positive values and more bytes for
-		 * negative values. Default is false. */
+		/** @deprecated Has no effect, variable length int and long values are always written optimized for both negative and
+		 *             positive values. Will be removed in Kryo 7. */
+		@Deprecated
 		public void setOptimizePositive (boolean optimizePositive) {
 			this.optimizePositive = optimizePositive;
 		}
 
+		/** @deprecated See {@link #setOptimizePositive(boolean)}. */
+		@Deprecated
 		public boolean getOptimizePositive () {
 			return optimizePositive;
 		}
@@ -649,7 +652,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		/** @see CachedField#setVariableLengthEncoding(boolean) */
 		boolean variableLengthEncoding() default true;
 
-		/** @see CachedField#setOptimizePositive(boolean) */
+		/** @deprecated Has no effect, see {@link CachedField#setOptimizePositive(boolean)}. */
+		@Deprecated
 		boolean optimizePositive() default false;
 	}
 
