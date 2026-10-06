@@ -124,6 +124,22 @@ public class UnsafeUtil {
 			}
 		}
 
+		/** The offset of the address field of direct buffers, or -1 if it isn't available. Here and not in UnsafeUtil, because Java
+		 * 24+ warns at the first Unsafe memory access, which is the first use of direct buffers rather than the first use of
+		 * Kryo. */
+		static final long addressOffset;
+		static {
+			long offset = -1;
+			if (unsafe != null) {
+				try {
+					offset = unsafe.objectFieldOffset(java.nio.Buffer.class.getDeclaredField("address"));
+				} catch (Exception ex) {
+					if (DEBUG) debug("kryo", "The address of direct ByteBuffers is not available.", ex);
+				}
+			}
+			addressOffset = offset;
+		}
+
 		static Method cleanerMethod, cleanMethod;
 		static {
 			try {
@@ -138,27 +154,13 @@ public class UnsafeUtil {
 		}
 	}
 
-	/** The offset of the address field of direct buffers, or -1 if it isn't available. */
-	private static final long bufferAddressOffset;
-	static {
-		long offset = -1;
-		if (unsafe != null) {
-			try {
-				offset = unsafe.objectFieldOffset(java.nio.Buffer.class.getDeclaredField("address"));
-			} catch (Exception ex) {
-				if (DEBUG) debug("kryo", "The address of direct ByteBuffers is not available.", ex);
-			}
-		}
-		bufferAddressOffset = offset;
-	}
-
 	/** Returns the off-heap address of a direct buffer.
 	 * @throws IllegalArgumentException if the buffer is not direct.
 	 * @throws KryoException if the address isn't available. */
 	public static long address (ByteBuffer buffer) {
 		if (!buffer.isDirect()) throw new IllegalArgumentException("buffer must be direct.");
-		if (bufferAddressOffset == -1) throw new KryoException("The address of direct ByteBuffers is not available.");
-		return unsafe.getLong(buffer, bufferAddressOffset);
+		if (DirectBuffers.addressOffset == -1) throw new KryoException("The address of direct ByteBuffers is not available.");
+		return unsafe.getLong(buffer, DirectBuffers.addressOffset);
 	}
 
 	/** Throws an exception if offset and count don't describe a range inside an array of the given length. Unsafe doesn't check
