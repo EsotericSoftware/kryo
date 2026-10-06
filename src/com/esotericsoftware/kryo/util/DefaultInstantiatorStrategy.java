@@ -101,18 +101,18 @@ public class DefaultInstantiatorStrategy implements org.objenesis.strategy.Insta
 
 		if (fallbackStrategy == null) {
 			if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers())) {
-				throw new KryoException("Class cannot be created (non-static member class): " + className(type));
+				throw new KryoException("Class cannot be created (non-static member class): " + className(type)
+					+ "\nNote: An inner class is serialized with its outer instance, but it has no no-arg constructor, so it needs an "
+					+ "instantiator strategy that can create it, eg new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()). "
+					+ "Making the class static is safer.");
 			} else {
 				StringBuilder message = new StringBuilder("Class cannot be created (missing no-arg constructor): " + className(type));
 				if (type.getSimpleName().equals("")) {
 					message
-						.append(
-							"\nNote: This is an anonymous class, which is not serializable by default in Kryo. Possible solutions:\n")
-						.append("1. Remove uses of anonymous classes, including double brace initialization, from the containing\n")
-						.append(
-							"class. This is the safest solution, as anonymous classes don't have predictable names for serialization.\n")
-						.append("2. Register a FieldSerializer for the containing class and call FieldSerializer\n")
-						.append("setIgnoreSyntheticFields(false) on it. This is not safe but may be sufficient temporarily.");
+						.append("\nNote: An anonymous class is serialized with its outer instance and captured variables, but it has "
+							+ "no no-arg constructor, so it needs an instantiator strategy that can create it, eg new "
+							+ "DefaultInstantiatorStrategy(new StdInstantiatorStrategy()). Anonymous classes have no predictable names, so "
+							+ "a named class is safer, eg instead of double brace initialization.");
 				}
 
 				if (type.isInterface()) {

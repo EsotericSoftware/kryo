@@ -603,7 +603,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		FieldAccessType fieldAccess = defaultFieldAccess;
 		boolean fieldsCanBeNull = true;
 		boolean setFieldsAsAccessible = true;
-		boolean ignoreSyntheticFields = true;
+		Boolean ignoreSyntheticFields;
 		boolean fixedFieldTypes;
 		boolean copyTransient = true;
 		boolean serializeTransient;
@@ -643,15 +643,26 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return setFieldsAsAccessible;
 		}
 
-		/** Controls if synthetic fields are serialized. Default is true.
-		 * @param ignoreSyntheticFields If true, only non-synthetic fields will be serialized. */
+		/** Controls if synthetic fields are serialized, which the compiler generates. By default, the synthetic fields of anonymous
+		 * classes, local classes and non-static member classes are serialized, because these classes need them: the outer instance
+		 * and the captured variables. An inner object that is serialized with its outer instance often needs references, because
+		 * the outer instance refers to the inner object. The synthetic fields of other classes are not serialized, eg fields added
+		 * by bytecode enhancement. Kryo 5 never serialized synthetic fields.
+		 * @param ignoreSyntheticFields True to never serialize synthetic fields, false to always serialize them. */
 		public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
 			this.ignoreSyntheticFields = ignoreSyntheticFields;
 			if (TRACE) trace("kryo", "FieldSerializerConfig ignoreSyntheticFields: " + ignoreSyntheticFields);
 		}
 
-		public boolean getIgnoreSyntheticFields () {
+		/** @return Null if {@link #setIgnoreSyntheticFields(boolean)} was not called, then it depends on the class. */
+		public Boolean getIgnoreSyntheticFields () {
 			return ignoreSyntheticFields;
+		}
+
+		/** Returns true if the synthetic fields declared by the class are ignored. */
+		public boolean getIgnoreSyntheticFields (Class declaringClass) {
+			if (ignoreSyntheticFields != null) return ignoreSyntheticFields;
+			return !isInnerClass(declaringClass);
 		}
 
 		/** Sets the default value for {@link FieldSerializer.CachedField#setValueClass(Class)} to the field's declared type. This

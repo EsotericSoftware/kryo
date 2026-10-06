@@ -175,7 +175,7 @@ class CachedFields implements Comparator<CachedField> {
 		int modifiers = field.getModifiers();
 		if (Modifier.isStatic(modifiers)) return;
 		FieldSerializerConfig config = serializer.config;
-		if (field.isSynthetic() && config.ignoreSyntheticFields) return;
+		if (field.isSynthetic() && config.getIgnoreSyntheticFields(field.getDeclaringClass())) return;
 
 		if (!config.setFieldsAsAccessible) {
 			if (!isPublicApi(field)) return;

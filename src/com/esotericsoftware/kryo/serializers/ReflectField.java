@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
@@ -101,11 +103,18 @@ class ReflectField extends CachedField {
 			ex.addTrace(name + " (" + object.getClass().getName() + ")");
 			throw ex;
 		} catch (StackOverflowError ex) {
-			throw new KryoException(
-				"A StackOverflow occurred. The most likely cause is that your data has a circular reference resulting in " +
-					"infinite recursion. Try enabling references with Kryo.setReferences(true). If your data structure " +
-					"is really more than " + kryo.getDepth() + " levels deep then try increasing your Java stack size.",
-				ex);
+			String message = "A StackOverflow occurred. The most likely cause is that your data has a circular reference resulting in "
+				+ "infinite recursion. Try enabling references with Kryo.setReferences(true). If your data structure "
+				+ "is really more than " + kryo.getDepth() + " levels deep then try increasing your Java stack size.";
+			// The overflow can happen at any field of the cycle, so the declaring class and the value are checked.
+			Class inner = isInnerClass(field.getDeclaringClass()) ? field.getDeclaringClass()
+				: value != null && isInnerClass(value.getClass()) ? value.getClass() : null;
+			if (inner != null) {
+				message += " The inner class " + className(inner) + " is serialized with its outer instance and captured variables, "
+					+ "which usually refer back to it. To omit them, set FieldSerializerConfig#setIgnoreSyntheticFields(true), or make "
+					+ "the class static.";
+			}
+			throw new KryoException(message, ex);
 		} catch (Throwable t) {
 			KryoException ex = new KryoException(t);
 			ex.addTrace(name + " (" + object.getClass().getName() + ")");

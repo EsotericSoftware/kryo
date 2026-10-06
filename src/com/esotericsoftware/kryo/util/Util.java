@@ -29,6 +29,7 @@ import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -165,6 +166,12 @@ public class Util {
 	public static boolean isWrapperClass (Class type) {
 		return type == Integer.class || type == Float.class || type == Boolean.class || type == Byte.class || type == Long.class
 			|| type == Character.class || type == Double.class || type == Short.class;
+	}
+
+	/** Returns true for an anonymous class, a local class, or a non-static member class. These classes have synthetic fields for
+	 * the outer instance and captured variables, which they need to work. */
+	public static boolean isInnerClass (Class type) {
+		return type.isAnonymousClass() || type.isLocalClass() || (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()));
 	}
 
 	public static boolean isEnum (Class type) {
