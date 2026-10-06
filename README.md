@@ -1548,6 +1548,7 @@ Kryo provides a number of [JMH](https://openjdk.org/projects/code-tools/jmh/)-ba
 
 ![FieldSerializerBenchmark](benchmarks/charts/fieldSerializer.svg)
 ![ObjectGraphBenchmark](benchmarks/charts/objectGraph.svg)
+![ObjectGraphBenchmark with code generation](benchmarks/charts/codeGeneration.svg)
 ![StringBenchmark](benchmarks/charts/string.svg)
 ![VariableEncodingBenchmark](benchmarks/charts/variableEncoding.svg)
 ![ArrayBenchmark](benchmarks/charts/array.svg)

@@ -21,7 +21,9 @@ package com.esotericsoftware.kryo.benchmarks;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.VersionFieldSerializerFactory;
 import com.esotericsoftware.kryo.benchmarks.data.graph.ObjectGraph;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -74,8 +76,12 @@ public class ObjectGraphBenchmark {
 		final Input input = new Input();
 		Object object;
 
+		/** If true, the field serializers use generated code, which needs Java 24+. */
+		@Param({"false"}) public boolean codeGeneration;
+
 		@Setup(Level.Trial)
 		public void setup () {
+			if (codeGeneration && Runtime.version().feature() < 24) throw new IllegalStateException("Code generation needs Java 24+.");
 			// Before registering, because FieldSerializer decides when it is created whether String fields use references.
 			kryo.setReferences(references);
 			kryo.register(ArrayList.class);
@@ -97,7 +103,9 @@ public class ObjectGraphBenchmark {
 
 	static public class FieldSerializerState extends BenchmarkState {
 		public void setup () {
-			kryo.setDefaultSerializer(FieldSerializer.class);
+			FieldSerializerFactory factory = new FieldSerializerFactory();
+			factory.getConfig().setCodeGeneration(codeGeneration);
+			kryo.setDefaultSerializer(factory);
 			super.setup();
 		}
 	}
@@ -107,6 +115,7 @@ public class ObjectGraphBenchmark {
 
 		public void setup () {
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
+			factory.getConfig().setCodeGeneration(codeGeneration);
 			factory.getConfig().setChunkedEncoding(chunked);
 			kryo.setDefaultSerializer(factory);
 			super.setup();
@@ -118,6 +127,7 @@ public class ObjectGraphBenchmark {
 
 		public void setup () {
 			TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
+			factory.getConfig().setCodeGeneration(codeGeneration);
 			factory.getConfig().setChunkedEncoding(chunked);
 			if (chunked) factory.getConfig().setReadUnknownTagData(true);
 			kryo.setDefaultSerializer(factory);
@@ -127,7 +137,9 @@ public class ObjectGraphBenchmark {
 
 	static public class VersionState extends BenchmarkState {
 		public void setup () {
-			kryo.setDefaultSerializer(VersionFieldSerializer.class);
+			VersionFieldSerializerFactory factory = new VersionFieldSerializerFactory();
+			factory.getConfig().setCodeGeneration(codeGeneration);
+			kryo.setDefaultSerializer(factory);
 			super.setup();
 		}
 	}

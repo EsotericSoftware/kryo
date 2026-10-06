@@ -14,7 +14,8 @@ jmh="java -cp target/classes:$(cat target/classpath.txt) org.openjdk.jmh.Main $a
 set -x
 mkdir -p charts/results
 $jmh charts/results/fieldSerializer.json FieldSerializerBenchmark -p legacyChunks=false
-$jmh charts/results/objectGraph.json ObjectGraphBenchmark -p scale=4,16 -p chunked=false,true
+# With and without code generation (Java 24+), for the objectGraph and codeGeneration charts.
+$jmh charts/results/objectGraph.json ObjectGraphBenchmark -p scale=4,16 -p chunked=false,true -p codeGeneration=false,true
 # The unsafe byte buffers need sun.nio.ch.DirectBuffer.
 exports="--add-exports=java.base/sun.nio.ch=ALL-UNNAMED"
 $jmh charts/results/string.json StringBenchmark -jvmArgsAppend $exports
