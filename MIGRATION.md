@@ -60,7 +60,7 @@ Kryo 6 also adds default serializers for the unmodifiable and synchronized colle
 
 ### Generic fields with CompatibleFieldSerializer and TaggedFieldSerializer
 
-CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` no longer use the generic type of a field to optimize its value. Kryo 5 omitted the class of collection elements and map keys and values if the field's type arguments were final, eg `List<String>`, so the value could not be read anymore once the field was removed ([#1098](https://github.com/EsotericSoftware/kryo/issues/1098)). To read such data written by Kryo 5, enable `optimizeGenerics`. This restores the Kryo 5 behavior, so data with such a field that has since been removed can only be read if it was written with chunked encoding:
+CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` no longer use the generic type of a field to optimize its value. Kryo 5 omitted the class of collection elements and map keys and values if the field's type arguments were final, eg `List<String>`, so the value could not be read anymore once the field was removed ([#1098](https://github.com/EsotericSoftware/kryo/issues/1098)). To read such data written by Kryo 5, enable `optimizeGenerics`, which `Kryo5Compatibility` does. This restores the Kryo 5 behavior, so data with such a field that has since been removed can only be read if it was written with chunked encoding. The setting is deprecated, because it is only needed for that: the collection and map serializers write the class of the elements once per collection anyway, so the optimization saves almost nothing.
 
 ```java
 CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
@@ -157,6 +157,7 @@ Like in Kryo 5, String fields of FieldSerializer and its subclasses decide when 
 * `FieldAccessType.ASM`, which uses ReflectASM like Kryo 5 did for public fields of public classes when Unsafe was not used. ReflectASM is only used if `ASM` is configured, Kryo 6 uses VarHandles instead, which are as fast. `ASM` and the ReflectASM dependency will be removed in Kryo 7. If VarHandles are slower for you than ReflectASM, please open an issue.
 * BlowfishSerializer. Blowfish is an outdated cipher, the key is shared by all instances, and an encrypted object can only be read as the last object of the input. Encrypt the serialized bytes instead, eg with AES-GCM. BlowfishSerializer will be removed in Kryo 7.
 * `Kryo#setEnumsFinal`, which is only needed to read data written by Kryo 5, see [Enums with constant bodies](#enums-with-constant-bodies).
+* `setOptimizeGenerics` of CompatibleFieldSerializerConfig and TaggedFieldSerializerConfig, which is only needed to read data written by Kryo 5, see [Generic fields](#generic-fields-with-compatiblefieldserializer-and-taggedfieldserializer).
 * `setLegacyChunks` and `setChunkSize` of CompatibleFieldSerializerConfig and TaggedFieldSerializerConfig, which are only needed to read data written by Kryo 5 with chunked encoding, see [Chunked encoding](#chunked-encoding).
 
 ## Removed APIs
