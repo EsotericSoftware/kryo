@@ -59,7 +59,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet */
 @SuppressWarnings("synthetic-access")

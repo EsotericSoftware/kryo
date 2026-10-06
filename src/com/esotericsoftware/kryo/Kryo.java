@@ -113,6 +113,10 @@ import com.esotericsoftware.kryo.serializers.UnmodifiableCollectionSerializers;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultGenerics;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.InstantiatorStrategy;
+import com.esotericsoftware.kryo.util.ObjectInstantiator;
+import com.esotericsoftware.kryo.util.SerializingInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.Generics;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
@@ -169,11 +173,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
-
-import org.objenesis.instantiator.ObjectInstantiator;
-import org.objenesis.strategy.InstantiatorStrategy;
-import org.objenesis.strategy.SerializingInstantiatorStrategy;
-import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /** Maps classes to serializers so object graphs can be serialized automatically. The README describes how to configure and use
  * Kryo.

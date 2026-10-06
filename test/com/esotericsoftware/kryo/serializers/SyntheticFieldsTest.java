@@ -34,7 +34,7 @@ import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 /** The synthetic fields of inner classes are serialized by default: the outer instance and captured variables. */
 class SyntheticFieldsTest {

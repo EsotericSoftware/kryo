@@ -20,6 +20,10 @@
 package com.esotericsoftware.kryo;
 
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.InstantiatorStrategy;
+import com.esotericsoftware.kryo.util.ObjenesisStrategy;
+import com.esotericsoftware.kryo.util.SerializingInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +45,7 @@ public class DefaultInstantiatorStrategyTest {
     @Test
     public void testInterfaceMemberClassCannotBeInstantiated() {
         KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(MemberInterface.class));
-        assertTrue(thrown.getMessage().contains("The type you are trying to serialize into is abstract (interface)."));
+        assertTrue(thrown.getMessage().contains("Kryo can't create an instance of an interface or abstract class."));
     }
 
     @Test
@@ -53,7 +57,7 @@ public class DefaultInstantiatorStrategyTest {
     @Test
     public void testInterfaceClassCannotBeInstantiated() {
         KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(InterfaceClass.class));
-        assertTrue(thrown.getMessage().contains("The type you are trying to serialize into is abstract (interface)."));
+        assertTrue(thrown.getMessage().contains("Kryo can't create an instance of an interface or abstract class."));
     }
 
     @Test
@@ -102,6 +106,95 @@ public class DefaultInstantiatorStrategyTest {
 
         public ErrorConstructor() {
             throw error;
+        }
+    }
+
+    static final String ADVICE = "\nKryo creates objects with their no-arg constructor, which can be private. To create objects "
+        + "without calling a constructor, like Java serialization does, configure Kryo with:"
+        + "\n    kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));"
+        + "\nAlternatively, add a no-arg constructor, or register a serializer that creates the object, eg a FieldSerializer "
+        + "that overrides create().";
+
+    @Test
+    public void testMissingNoArgConstructorMessage() {
+        // A normal class without a no-arg constructor gets the advice.
+        KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(NoArgless.class));
+        assertEquals("Class cannot be created (missing no-arg constructor): " + NoArgless.class.getName() + ADVICE,
+            thrown.getMessage());
+    }
+
+    @Test
+    public void testInnerClassMessage() {
+        // A non-static member class has no no-arg constructor, because it takes the outer instance.
+        KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(Inner.class));
+        assertEquals("Class cannot be created (missing no-arg constructor): " + Inner.class.getName()
+            + "\nNote: An inner class is serialized with its outer instance, but it has no no-arg constructor. Making the class "
+            + "static is safer." + ADVICE, thrown.getMessage());
+    }
+
+    @Test
+    public void testAnonymousClassMessage() {
+        Class anonymous = new Object() {
+        }.getClass();
+        KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(anonymous));
+        assertEquals("Class cannot be created (missing no-arg constructor): " + anonymous.getName()
+            + "\nNote: An anonymous class is serialized with its outer instance and captured variables, but it has no no-arg "
+            + "constructor. A named class is safer, eg instead of double brace initialization." + ADVICE, thrown.getMessage());
+    }
+
+    class Inner {
+    }
+
+    @Test
+    public void testObjenesisStrategies() {
+        // The Objenesis strategies create classes without a no-arg constructor, through Kryo's wrappers.
+        for (InstantiatorStrategy fallback : new InstantiatorStrategy[] {new StdInstantiatorStrategy(),
+            new ObjenesisStrategy(new org.objenesis.strategy.StdInstantiatorStrategy())}) {
+            InstantiatorStrategy strategy = new DefaultInstantiatorStrategy(fallback);
+            NoArgless object = strategy.newInstantiatorOf(NoArgless.class).newInstance();
+            assertEquals(0, object.value);
+        }
+        assertThrows(KryoException.class, () -> new DefaultInstantiatorStrategy().newInstantiatorOf(NoArgless.class));
+
+        // Like Java serialization: the no-arg constructor of the first non-serializable super class runs, the others don't.
+        SerializableNoArgless serializable = new SerializingInstantiatorStrategy().newInstantiatorOf(SerializableNoArgless.class)
+            .newInstance();
+        assertEquals(1, serializable.base);
+        assertEquals(0, serializable.value);
+        assertThrows(KryoException.class, () -> new SerializingInstantiatorStrategy().newInstantiatorOf(NoArgless.class));
+        // Interfaces and abstract classes, also serializable ones, can't be created.
+        for (Class type : new Class[] {SerializableInterface.class, AbstractSerializable.class})
+            assertTrue(assertThrows(KryoException.class, () -> new SerializingInstantiatorStrategy().newInstantiatorOf(type))
+                .getMessage().startsWith("Class cannot be created (abstract)"));
+    }
+
+    interface SerializableInterface extends java.io.Serializable {
+    }
+
+    static abstract class AbstractSerializable implements java.io.Serializable {
+    }
+
+    static class Base {
+        int base;
+
+        Base() {
+            base = 1;
+        }
+    }
+
+    static class SerializableNoArgless extends Base implements java.io.Serializable {
+        final int value;
+
+        SerializableNoArgless(int value) {
+            this.value = value;
+        }
+    }
+
+    static class NoArgless {
+        final int value;
+
+        NoArgless(int value) {
+            this.value = value;
         }
     }
 }
