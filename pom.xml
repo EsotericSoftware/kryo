@@ -110,10 +110,6 @@
 						<source>${javac.target}</source>
 						<target>${javac.target}</target>
 						<encoding>utf-8</encoding>
-						<compilerArgs>
-							<!-- Required for sun.nio.ch.DirectBuffer in the unsafe package -->
-							<arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
-						</compilerArgs>
 					</configuration>
 					<executions>
 						<execution>
@@ -122,7 +118,6 @@
 								<compilerArgs>
 									<arg>-parameters</arg>
 									<arg>--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED</arg>
-									<arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
 								</compilerArgs>
 							</configuration>
 						</execution>
@@ -193,10 +188,6 @@
 						<source>${javac.target}</source>
 						<!-- Document the sources on the class path, not as a module, like they are compiled. -->
 						<legacyMode>true</legacyMode>
-						<additionalOptions>
-							<!-- Required for sun.nio.ch.DirectBuffer in the unsafe package -->
-							<additionalOption>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</additionalOption>
-						</additionalOptions>
 					</configuration>
 				</plugin>
 
