@@ -42,7 +42,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 /** Test for serialization compatibility: data serialized with an older version (same major version) must be deserializable with
  * this newer (same major) version. Serialization compatibility is checked for each type that has a default serializer

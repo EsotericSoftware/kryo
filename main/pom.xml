@@ -23,6 +23,7 @@
 			<groupId>org.objenesis</groupId>
 			<artifactId>objenesis</artifactId>
 			<version>3.6</version>
+			<optional>true</optional>
 		</dependency>
 	</dependencies>
 
@@ -60,6 +61,7 @@
 						sun.reflect;resolution:=optional,
 						sun.misc;resolution:=optional,
 						sun.nio.ch;resolution:=optional,
+						org.objenesis.*;resolution:=optional,
 						*
 						]]>
 						</Import-Package>

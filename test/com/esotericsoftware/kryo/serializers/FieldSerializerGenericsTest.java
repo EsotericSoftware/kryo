@@ -38,7 +38,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.jupiter.api.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 class FieldSerializerGenericsTest extends KryoTestCase {
 	// https://github.com/EsotericSoftware/kryo/issues/860

@@ -56,7 +56,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 /** Reads data written by Kryo 5 with {@link Kryo5Compatibility}: the data of {@link SerializationCompatTest} in Kryo 5 and the
  * types that have new default serializers in Kryo 6. */

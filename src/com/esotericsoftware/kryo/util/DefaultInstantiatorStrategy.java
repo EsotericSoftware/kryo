@@ -30,10 +30,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 
-import org.objenesis.instantiator.ObjectInstantiator;
-import org.objenesis.strategy.InstantiatorStrategy;
-
-public class DefaultInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
+/** Creates objects with their no-arg constructor, using a method handle, or reflection on Android and in a native image. If a
+ * class has no no-arg constructor or it can't be accessed, the fallback strategy is used, if any, eg a
+ * {@link StdInstantiatorStrategy}. */
+public class DefaultInstantiatorStrategy implements InstantiatorStrategy {
 	private InstantiatorStrategy fallbackStrategy;
 
 	public DefaultInstantiatorStrategy () {

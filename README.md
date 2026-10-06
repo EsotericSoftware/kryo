@@ -117,9 +117,9 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
 
 Kryo 6 requires Java 17 or later. Kryo 5 requires Java 8 or later. See [MIGRATION.md](MIGRATION.md) for the changes when upgrading from Kryo 5.
 
-Kryo publishes two kinds of artifacts/jars:
-* the default jar (with the usual library dependencies) which is meant for direct usage in applications (not libraries)
-* a dependency-free, "versioned" jar which should be used by other libraries. Different libraries shall be able to use different major versions of Kryo.
+Kryo has no required dependencies. [Objenesis](http://objenesis.org/) is an optional dependency, needed only for the [instantiator strategies](#instantiatorstrategy) that create objects without calling a constructor. Kryo publishes two kinds of artifacts/jars:
+* the default jar, which is meant for direct usage in applications (not libraries). It declares Objenesis as an optional dependency, so add it if needed.
+* a "versioned" jar which includes Objenesis and should be used by other libraries. Different libraries shall be able to use different major versions of Kryo.
 
 The two jars differ as follows:
 
@@ -127,7 +127,7 @@ The two jars differ as follows:
 | --- | --- | --- |
 | Maven coordinates | `com.esotericsoftware:kryo` | `com.esotericsoftware.kryo:kryo6` |
 | Package | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo6` |
-| Dependencies | Objenesis | None (bundled and relocated into `com.esotericsoftware.kryo.kryo6`) |
+| Dependencies | Objenesis (optional) | None (Objenesis bundled and relocated into `com.esotericsoftware.kryo.kryo6`) |
 | Java module name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo6` |
 | OSGi bundle symbolic name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.6` |
 
@@ -184,7 +184,7 @@ To use the latest Kryo snapshot, use:
 
 ### Without Maven
 
-Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#installation) on your classpath along with the dependency JARs found in [lib](https://github.com/EsotericSoftware/kryo/tree/master/lib).
+Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#installation) on your classpath, along with the optional Objenesis JAR found in [lib](https://github.com/EsotericSoftware/kryo/tree/master/lib) if needed.
 
 ### Building from source
 
@@ -673,7 +673,7 @@ If the registration doesn't have an instantiator, one is provided by Kryo `newIn
 
 Kryo provides DefaultInstantiatorStrategy which creates objects by calling a zero argument constructor with a method handle, or with reflection on Android and in GraalVM native images. If the class has no zero argument constructor or it can't be accessed, then it either throws an exception or tries a fallback InstantiatorStrategy. The constructor is made accessible with `setAccessible`, so a private zero argument constructor can be a good way to allow Kryo to create instances of a class without affecting the public API.
 
-DefaultInstantiatorStrategy is the recommended way of creating objects with Kryo. It runs constructors just as Java code would. Alternative, extralinguistic mechanisms can also be used to create objects. The [Objenesis](http://objenesis.org/) StdInstantiatorStrategy uses JVM specific APIs to create an instance of a class without calling any constructor at all. Using this is dangerous because most classes expect their constructors to be called. Creating the object by bypassing its constructors may leave the object in an uninitialized or invalid state. Classes must be designed to be created in this way.
+DefaultInstantiatorStrategy is the recommended way of creating objects with Kryo. It runs constructors just as Java code would. Alternative, extralinguistic mechanisms can also be used to create objects. StdInstantiatorStrategy uses JVM specific APIs, through [Objenesis](http://objenesis.org/), to create an instance of a class without calling any constructor at all. Using this is dangerous because most classes expect their constructors to be called. Creating the object by bypassing its constructors may leave the object in an uninitialized or invalid state. Classes must be designed to be created in this way. Objenesis is an optional dependency of Kryo: the versioned jar includes it, with the default jar add `org.objenesis:objenesis` to use StdInstantiatorStrategy or SerializingInstantiatorStrategy. Other Objenesis strategies can be used with ObjenesisStrategy.
 
 Kryo can be configured to try DefaultInstantiatorStrategy first, then fallback to StdInstantiatorStrategy if necessary.
 

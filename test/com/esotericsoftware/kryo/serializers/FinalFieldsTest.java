@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 import org.junit.jupiter.api.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 /** Final fields of serializable classes are set with the method handles of the JDK if available, also if final field mutation
  * is denied, eg with {@code --illegal-final-field-mutation=deny}. */

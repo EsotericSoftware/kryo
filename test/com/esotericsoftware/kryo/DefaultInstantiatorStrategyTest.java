@@ -20,6 +20,10 @@
 package com.esotericsoftware.kryo;
 
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.InstantiatorStrategy;
+import com.esotericsoftware.kryo.util.ObjenesisStrategy;
+import com.esotericsoftware.kryo.util.SerializingInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -102,6 +106,28 @@ public class DefaultInstantiatorStrategyTest {
 
         public ErrorConstructor() {
             throw error;
+        }
+    }
+
+    @Test
+    public void testObjenesisStrategies() {
+        // The Objenesis strategies create classes without a no-arg constructor, through Kryo's wrappers.
+        for (InstantiatorStrategy fallback : new InstantiatorStrategy[] {new StdInstantiatorStrategy(),
+            new ObjenesisStrategy(new org.objenesis.strategy.StdInstantiatorStrategy())}) {
+            InstantiatorStrategy strategy = new DefaultInstantiatorStrategy(fallback);
+            NoArgless object = strategy.newInstantiatorOf(NoArgless.class).newInstance();
+            assertEquals(0, object.value);
+        }
+        assertSame(DefaultInstantiatorStrategy.class, new DefaultInstantiatorStrategy(new SerializingInstantiatorStrategy())
+            .getClass());
+        assertThrows(KryoException.class, () -> new DefaultInstantiatorStrategy().newInstantiatorOf(NoArgless.class));
+    }
+
+    static class NoArgless {
+        final int value;
+
+        NoArgless(int value) {
+            this.value = value;
         }
     }
 }
