@@ -65,6 +65,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		this.config = config;
 	}
 
+	boolean usesCodeGeneration () {
+		return false;
+	}
+
 	void cachedFieldsChanged () {
 		// Fields are sorted by name, so fields with the same name are adjacent. The exception is thrown when writing or reading,
 		// so the config can still be changed and updateFields called after the serializer is constructed.

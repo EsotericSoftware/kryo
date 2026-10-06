@@ -60,6 +60,10 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		setAcceptsNull(true);
 	}
 
+	boolean usesCodeGeneration () {
+		return false;
+	}
+
 	void cachedFieldsChanged () {
 		CachedField[] fields = cachedFields.fields;
 		fieldVersion = new int[fields.length];

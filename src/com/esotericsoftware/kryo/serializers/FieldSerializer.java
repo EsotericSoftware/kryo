@@ -71,6 +71,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	// For records.
 	final Constructor recordConstructor;
+
+	/** Generated code that writes and reads the fields, or null if code generation is disabled or not possible for the type. */
+	GeneratedFields generated;
 	private final Object[] recordDefaults;
 
 	public FieldSerializer (Kryo kryo, Class type) {
@@ -125,6 +128,26 @@ public class FieldSerializer<T> extends Serializer<T> {
 	void cachedFieldsChanged () {
 	}
 
+	/** Called by {@link CachedFields} after {@link #cachedFieldsChanged()}: generates the code for the fields if
+	 * {@link FieldSerializerConfig#setCodeGeneration(boolean)} is enabled and the serializer uses it. */
+	final void fieldsChanged () {
+		cachedFieldsChanged();
+		generated = null;
+		if (config.codeGeneration && CachedFields.codeGeneration && usesCodeGeneration()) {
+			try {
+				generated = CodeGeneration.generate(this, cachedFields.fields);
+			} catch (KryoException ex) {
+				if (DEBUG) debug("kryo", "Unable to generate code for the fields of: " + className(type), ex);
+			}
+		}
+	}
+
+	/** Returns true if this serializer uses {@link #generated} in {@link #write(Kryo, Output, Object)} and
+	 * {@link #read(Kryo, Input, Class)}. Subclasses with their own field loops return false. */
+	boolean usesCodeGeneration () {
+		return true;
+	}
+
 	/** Returns true if the generic type of a field is used to optimize the serialization of its value, eg to omit the class of
 	 * collection elements. Then the value can only be read with the same generic type. */
 	protected boolean optimizeGenerics () {
@@ -144,6 +167,19 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	public void write (Kryo kryo, Output output, T object) {
 		int pop = pushTypeVariables();
+
+		GeneratedFields generated = this.generated;
+		if (generated != null) {
+			try {
+				generated.write(output, object);
+			} catch (KryoException e) {
+				throw e;
+			} catch (Exception e) {
+				throw new KryoException("Error writing " + className(type) + " at position " + output.position(), e);
+			}
+			popTypeVariables(pop);
+			return;
+		}
 
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
@@ -170,6 +206,19 @@ public class FieldSerializer<T> extends Serializer<T> {
 			kryo.reference(object);
 		} else
 			values = newRecordValues();
+
+		GeneratedFields generated = this.generated;
+		if (generated != null) {
+			try {
+				generated.read(input, object);
+			} catch (KryoException e) {
+				throw e;
+			} catch (Exception e) {
+				throw new KryoException("Error reading " + className(type) + " at position " + input.position(), e);
+			}
+			popTypeVariables(pop);
+			return object;
+		}
 
 		CachedField[] fields = cachedFields.fields;
 		for (int i = 0, n = fields.length; i < n; i++) {
@@ -600,7 +649,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 			}
 		}
 
+		/** True if the system property "kryo.codeGeneration" is "true". */
+		static final boolean defaultCodeGeneration = "true".equals(System.getProperty("kryo.codeGeneration"));
+
 		FieldAccessType fieldAccess = defaultFieldAccess;
+		boolean codeGeneration = defaultCodeGeneration;
 		boolean fieldsCanBeNull = true;
 		boolean setFieldsAsAccessible = true;
 		Boolean ignoreSyntheticFields;
@@ -735,6 +788,20 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public FieldAccessType getFieldAccess () {
 			return fieldAccess;
+		}
+
+		/** If true, the code that writes and reads the fields of a class is generated as a hidden class, which the JIT can optimize
+		 * much better than the loop over the cached fields: there is no virtual call per field and the field accessors are
+		 * constants. The generated code writes the same bytes. Requires Java 24 or later (the Class-File API) and is not available
+		 * on Android or in a native image, where the cached fields are used. Also used for a class if code can't be generated for
+		 * it, eg a record. Default is false, or true if the system property "kryo.codeGeneration" is "true". */
+		public void setCodeGeneration (boolean codeGeneration) {
+			this.codeGeneration = codeGeneration;
+			if (TRACE) trace("kryo", "FieldSerializerConfig codeGeneration: " + codeGeneration);
+		}
+
+		public boolean getCodeGeneration () {
+			return codeGeneration;
 		}
 	}
 }

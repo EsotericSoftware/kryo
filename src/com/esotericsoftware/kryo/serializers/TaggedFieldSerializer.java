@@ -84,6 +84,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		}
 	}
 
+	boolean usesCodeGeneration () {
+		return false;
+	}
+
 	void cachedFieldsChanged () {
 		// Cache tag values.
 		CachedField[] fields = cachedFields.fields;

@@ -100,6 +100,10 @@ class CachedFields implements Comparator<CachedField> {
 	 * tests. */
 	static boolean hiddenFields = !isAndroid && !isNativeImage && !"false".equals(System.getProperty("kryo.hiddenFields"));
 
+	/** True if {@link CodeGeneration} can be used: Java 24+, not on Android or in a native image. Checked before the class is
+	 * used, which can't be loaded on older Java versions. */
+	static final boolean codeGeneration = !isAndroid && !isNativeImage && Runtime.version().feature() >= 24;
+
 	CachedField[] fields = new CachedField[0];
 	CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
@@ -160,7 +164,7 @@ class CachedFields implements Comparator<CachedField> {
 		} finally {
 			initializing = false;
 		}
-		serializer.cachedFieldsChanged();
+		serializer.fieldsChanged();
 	}
 
 	/** Called after a field was removed. A field removed by {@link FieldSerializer#initializeCachedFields()} is not remembered,
@@ -412,7 +416,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + serializer.type.getName());
-		if (!initializing) serializer.cachedFieldsChanged();
+		if (!initializing) serializer.fieldsChanged();
 	}
 
 	/** Removes a field so that it won't be serialized. */
@@ -444,7 +448,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
-		if (!initializing) serializer.cachedFieldsChanged();
+		if (!initializing) serializer.fieldsChanged();
 	}
 
 	/** Sets serializers using annotations.
