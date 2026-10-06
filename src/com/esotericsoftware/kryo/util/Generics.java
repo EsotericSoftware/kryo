@@ -58,7 +58,8 @@ public interface Generics {
 	 * is returned).
 	 * <p>
 	 * {@link #nextGenericClass()} is easier to use when a class has a single type parameter. When a class has multiple type
-	 * parameters, {@link #pushGenericType(GenericType)} must be used for all except the last parameter.
+	 * parameters, {@link #pushGenericType(GenericType)} must be used for all except the last parameter. The array must not be
+	 * modified, the generic types are shared by all serializers and Kryo instances.
 	 * @return May be null. */
 	GenericType[] nextGenericTypes ();
 
@@ -393,7 +394,8 @@ public interface Generics {
 			return typeVariables;
 		}
 
-		/** @return May be null. */
+		/** Returns the type arguments. The array must not be modified, the type is shared by all serializers and Kryo instances.
+		 * @return May be null. */
 		public GenericType[] getTypeParameters () {
 			return arguments;
 		}
