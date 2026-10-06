@@ -343,13 +343,18 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		/** When true, the generic type of a field is used to optimize its value, eg to omit the class of collection elements, even
 		 * if {@link #setReadUnknownTagData(boolean) readUnknownTagData} is true. Then the value can't be read anymore once the
-		 * field is removed: an exception is thrown or, if chunked encoding is enabled, the data is skipped. This is needed to read
-		 * data written by Kryo 5. Default is false. */
+		 * field is removed: an exception is thrown or, if chunked encoding is enabled, the data is skipped. Default is false.
+		 * @deprecated Only needed to read data written by Kryo 5, see {@link com.esotericsoftware.kryo.Kryo5Compatibility}. The
+		 *             collection and map serializers write the class of the elements once per collection anyway, so the
+		 *             optimization saves almost nothing. Will be removed in Kryo 7. */
+		@Deprecated
 		public void setOptimizeGenerics (boolean optimizeGenerics) {
 			this.optimizeGenerics = optimizeGenerics;
 			if (TRACE) trace("kryo", "TaggedFieldSerializerConfig setOptimizeGenerics: " + optimizeGenerics);
 		}
 
+		/** @deprecated See {@link #setOptimizeGenerics(boolean)}. */
+		@Deprecated
 		public boolean getOptimizeGenerics () {
 			return optimizeGenerics;
 		}
