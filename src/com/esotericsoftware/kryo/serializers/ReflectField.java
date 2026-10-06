@@ -102,20 +102,8 @@ class ReflectField extends CachedField {
 		} catch (KryoException ex) {
 			ex.addTrace(name + " (" + object.getClass().getName() + ")");
 			throw ex;
-		} catch (StackOverflowError ex) {
-			String message = "A StackOverflow occurred. The most likely cause is that your data has a circular reference resulting in "
-				+ "infinite recursion. Try enabling references with Kryo.setReferences(true). If your data structure "
-				+ "is really more than " + kryo.getDepth() + " levels deep then try increasing your Java stack size.";
-			// The overflow can happen at any field of the cycle, so the declaring class and the value are checked.
-			Class inner = isInnerClass(field.getDeclaringClass()) ? field.getDeclaringClass()
-				: value != null && isInnerClass(value.getClass()) ? value.getClass() : null;
-			if (inner != null) {
-				message += " The inner class " + className(inner) + " is serialized with its outer instance and captured variables, "
-					+ "which usually refer back to it. To omit them, set FieldSerializerConfig#setIgnoreSyntheticFields(true), or make "
-					+ "the class static.";
-			}
-			throw new KryoException(message, ex);
 		} catch (Throwable t) {
+			if (isStackOverflow(t)) throw stackOverflow(kryo, value, t);
 			KryoException ex = new KryoException(t);
 			ex.addTrace(name + " (" + object.getClass().getName() + ")");
 			throw ex;
@@ -123,6 +111,29 @@ class ReflectField extends CachedField {
 			// Pop in a finally so an exception thrown by the nested write does not leave the generics stack unbalanced.
 			kryo.getGenerics().popGenericType();
 		}
+	}
+
+	/** Returns true for a stack overflow, also if it happened while a call site was linked, eg for a string concatenation in a
+	 * catch block deeper in the stack, which throws a BootstrapMethodError instead. */
+	static private boolean isStackOverflow (Throwable t) {
+		return t instanceof StackOverflowError || (t instanceof BootstrapMethodError && t.getCause() instanceof StackOverflowError);
+	}
+
+	/** Returns the exception for a stack overflow, which is most likely a cycle in the data. */
+	private KryoException stackOverflow (Kryo kryo, Object value, Throwable cause) {
+		StringBuilder message = new StringBuilder(512);
+		message.append("A StackOverflow occurred. The most likely cause is that your data has a circular reference resulting in ")
+			.append("infinite recursion. Try enabling references with Kryo.setReferences(true). If your data structure ")
+			.append("is really more than ").append(kryo.getDepth()).append(" levels deep then try increasing your Java stack size.");
+		// The overflow can happen at any field of the cycle, so the declaring class and the value are checked.
+		Class inner = isInnerClass(field.getDeclaringClass()) ? field.getDeclaringClass()
+			: value != null && isInnerClass(value.getClass()) ? value.getClass() : null;
+		if (inner != null) {
+			message.append(" The inner class ").append(className(inner))
+				.append(" is serialized with its outer instance and captured variables, which usually refer back to it. To omit ")
+				.append("them, set FieldSerializerConfig#setIgnoreSyntheticFields(true), or make the class static.");
+		}
+		return new KryoException(message.toString(), cause);
 	}
 
 	public void read (Input input, Object object) {
