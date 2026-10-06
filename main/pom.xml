@@ -20,11 +20,6 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>com.esotericsoftware</groupId>
-			<artifactId>reflectasm</artifactId>
-			<version>1.11.9</version>
-		</dependency>
-		<dependency>
 			<groupId>org.objenesis</groupId>
 			<artifactId>objenesis</artifactId>
 			<version>3.6</version>

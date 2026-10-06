@@ -127,7 +127,7 @@ The two jars differ as follows:
 | --- | --- | --- |
 | Maven coordinates | `com.esotericsoftware:kryo` | `com.esotericsoftware.kryo:kryo6` |
 | Package | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo6` |
-| Dependencies | ReflectASM, Objenesis, MinLog | None (bundled and relocated into `com.esotericsoftware.kryo.kryo6`) |
+| Dependencies | Objenesis, MinLog | None (bundled and relocated into `com.esotericsoftware.kryo.kryo6`) |
 | Java module name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo6` |
 | OSGi bundle symbolic name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.6` |
 
@@ -1154,7 +1154,7 @@ Setting | Description | Default value
 `serializeTransient` | If true, transient fields will be serialized. | false
 `variableLengthEncoding` | If true, variable length values are used for int and long fields. | true
 `extendedFieldNames` | If true, field names are prefixed by their declaring class. This can avoid conflicts when a subclass has a field with the same name as a super class. | false
-`fieldAccess` | How fields are read and written: `UNSAFE` (fastest, but deprecated for removal by Java and warns on Java 24+), `VARHANDLE` (close to Unsafe, Kryo defines a small hidden class per field for it, except on Android and in a native image), `REFLECTION`, or the deprecated `ASM` (ReflectASM, for public fields of public classes). If a field can't be accessed this way, VarHandles are used, and reflection if they can't be used either, eg for final fields. | `UNSAFE` before Java 24 or with `--sun-misc-unsafe-memory-access=allow`, otherwise `VARHANDLE`. Also `VARHANDLE` if Unsafe is not available or disabled with `-Dkryo.unsafe=false`. `REFLECTION` on Android. The system property `kryo.fieldAccess` overrides the default, eg `-Dkryo.fieldAccess=UNSAFE`.
+`fieldAccess` | How fields are read and written: `UNSAFE` (fastest, but deprecated for removal by Java and warns on Java 24+), `VARHANDLE` (close to Unsafe, Kryo defines a small hidden class per field for it, except on Android and in a native image), `REFLECTION`. If a field can't be accessed this way, VarHandles are used, and reflection if they can't be used either, eg for final fields. | `UNSAFE` before Java 24 or with `--sun-misc-unsafe-memory-access=allow`, otherwise `VARHANDLE`. Also `VARHANDLE` if Unsafe is not available or disabled with `-Dkryo.unsafe=false`. `REFLECTION` on Android. The system property `kryo.fieldAccess` overrides the default, eg `-Dkryo.fieldAccess=UNSAFE`.
 
 With `VARHANDLE`, Kryo defines a small hidden class for each non-final field of the serialized classes, once per JVM, so the JIT compiler can treat the VarHandle as a constant. Each takes about 5 KB of metaspace, which only adds up for applications that serialize many thousands of fields. On Android and in a native image, where hidden classes can't be defined, the VarHandles are used directly, which is slower. This can also be chosen with `-Dkryo.hiddenFields=false`.
 
