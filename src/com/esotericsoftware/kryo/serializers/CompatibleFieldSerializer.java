@@ -65,8 +65,11 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		this.config = config;
 	}
 
+	/** Generated code is used without chunked encoding and without unknown field data, which write more than the field values. */
 	boolean usesCodeGeneration () {
-		return false;
+		// The super class config, because this is called by the super constructor.
+		CompatibleFieldSerializerConfig config = (CompatibleFieldSerializerConfig)super.config;
+		return !config.chunked && !config.readUnknownFieldData;
 	}
 
 	void cachedFieldsChanged () {
@@ -123,6 +126,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 		}
 
+		if (generated != null && !chunked && !readUnknownFieldData) {
+			writeGenerated(output, object);
+			popTypeVariables(pop);
+			return;
+		}
+
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
 			if (TRACE) log("Write", cachedField, fieldOutput.position());
@@ -177,6 +186,12 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 			CachedField[] fields = (CachedField[])kryo.getGraphContext().get(this);
 			if (fields == null) fields = readFields(kryo, input, chunks);
+
+			// The generated code reads the fields of this serializer in its order, which the data usually has.
+			if (generated != null && !chunked && !readUnknownFieldData && values == null && fields == cachedFields.fields) {
+				readGenerated(input, object);
+				return object;
+			}
 
 			for (int i = 0, n = fields.length; i < n; i++) {
 				CachedField cachedField = fields[i];

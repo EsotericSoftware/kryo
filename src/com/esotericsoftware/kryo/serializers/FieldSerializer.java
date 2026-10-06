@@ -168,15 +168,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public void write (Kryo kryo, Output output, T object) {
 		int pop = pushTypeVariables();
 
-		GeneratedFields generated = this.generated;
 		if (generated != null) {
-			try {
-				generated.write(output, object);
-			} catch (KryoException e) {
-				throw e;
-			} catch (Exception e) {
-				throw new KryoException("Error writing " + className(type) + " at position " + output.position(), e);
-			}
+			writeGenerated(output, object);
 			popTypeVariables(pop);
 			return;
 		}
@@ -207,15 +200,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		} else
 			values = newRecordValues();
 
-		GeneratedFields generated = this.generated;
 		if (generated != null) {
-			try {
-				generated.read(input, object);
-			} catch (KryoException e) {
-				throw e;
-			} catch (Exception e) {
-				throw new KryoException("Error reading " + className(type) + " at position " + input.position(), e);
-			}
+			readGenerated(input, object);
 			popTypeVariables(pop);
 			return object;
 		}
@@ -240,6 +226,28 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		popTypeVariables(pop);
 		return object;
+	}
+
+	/** Writes all fields with {@link #generated}. */
+	void writeGenerated (Output output, Object object) {
+		try {
+			generated.write(output, object);
+		} catch (KryoException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new KryoException("Error writing " + className(type) + " at position " + output.position(), e);
+		}
+	}
+
+	/** Reads all fields with {@link #generated}. */
+	void readGenerated (Input input, Object object) {
+		try {
+			generated.read(input, object);
+		} catch (KryoException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new KryoException("Error reading " + className(type) + " at position " + input.position(), e);
+		}
 	}
 
 	/** Reads the value of a field and sets it, with {@link FinalFieldSetter} for a final field if needed. */
