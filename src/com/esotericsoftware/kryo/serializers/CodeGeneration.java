@@ -115,7 +115,7 @@ final class CodeGeneration {
 	 * @param writeClasses If true, the class of each value is written before the value, which is written without null marker, like
 	 *           CompatibleFieldSerializer with unknown field data.
 	 * @param tags If not null, the tag of each field is written before the field, like TaggedFieldSerializer. When a read tag is
-	 *           not the expected one, the field is read with {@link TaggedFieldSerializer#readTag(Input, int, Object)}.
+	 *           not the expected one, the field is read with {@link TaggedFieldSerializer#readTag(Input, int, Object, boolean)}.
 	 * @throws KryoException if the hidden class can't be defined. */
 	static GeneratedFields generate (FieldSerializer serializer, CachedField[] fields, boolean writeClasses, int[] tags) {
 		Kind[] kinds = new Kind[fields.length];
