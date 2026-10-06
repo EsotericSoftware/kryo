@@ -110,10 +110,6 @@
 						<source>${javac.target}</source>
 						<target>${javac.target}</target>
 						<encoding>utf-8</encoding>
-						<compilerArgs>
-							<!-- Required for sun.nio.ch.DirectBuffer in the unsafe package -->
-							<arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
-						</compilerArgs>
 					</configuration>
 					<executions>
 						<execution>
@@ -193,10 +189,6 @@
 						<source>${javac.target}</source>
 						<!-- Document the sources on the class path, not as a module, like they are compiled. -->
 						<legacyMode>true</legacyMode>
-						<additionalOptions>
-							<!-- Required for sun.nio.ch.DirectBuffer in the unsafe package -->
-							<additionalOption>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</additionalOption>
-						</additionalOptions>
 					</configuration>
 				</plugin>
 
@@ -396,6 +388,37 @@
 						</executions>
 					</plugin>
 				</plugins>
+			</build>
+		</profile>
+		<!-- Include the tests that require JDK 24+ (code generation with the Class-File API) -->
+		<profile>
+			<id>jdk24ge</id>
+			<activation>
+				<jdk>[24,)</jdk>
+			</activation>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.codehaus.mojo</groupId>
+							<artifactId>build-helper-maven-plugin</artifactId>
+							<executions>
+								<execution>
+									<id>add-test-source-jdk24</id>
+									<phase>generate-test-sources</phase>
+									<goals>
+										<goal>add-test-source</goal>
+									</goals>
+									<configuration>
+										<sources>
+											<source>${kryo.root}/test-jdk24</source>
+										</sources>
+									</configuration>
+								</execution>
+							</executions>
+						</plugin>
+					</plugins>
+				</pluginManagement>
 			</build>
 		</profile>
 		<!-- Include any tests that require kotlin -->

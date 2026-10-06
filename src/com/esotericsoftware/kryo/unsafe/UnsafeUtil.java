@@ -30,7 +30,6 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
 import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
 
 /** Utility methods for using {@link sun.misc.Unsafe}.
  * <p>
@@ -128,7 +127,8 @@ public class UnsafeUtil {
 		static Method cleanerMethod, cleanMethod;
 		static {
 			try {
-				cleanerMethod = DirectBuffer.class.getMethod("cleaner");
+				// By name, so the class doesn't depend on the JDK internal package at compile time.
+				cleanerMethod = Class.forName("sun.nio.ch.DirectBuffer").getMethod("cleaner");
 				cleanerMethod.setAccessible(true);
 				cleanMethod = cleanerMethod.getReturnType().getMethod("clean");
 			} catch (Exception ex) {
@@ -136,6 +136,29 @@ public class UnsafeUtil {
 				cleanerMethod = null;
 			}
 		}
+	}
+
+	/** The offset of the address field of direct buffers, or -1 if it isn't available. */
+	private static final long bufferAddressOffset;
+	static {
+		long offset = -1;
+		if (unsafe != null) {
+			try {
+				offset = unsafe.objectFieldOffset(java.nio.Buffer.class.getDeclaredField("address"));
+			} catch (Exception ex) {
+				if (DEBUG) debug("kryo", "The address of direct ByteBuffers is not available.", ex);
+			}
+		}
+		bufferAddressOffset = offset;
+	}
+
+	/** Returns the off-heap address of a direct buffer.
+	 * @throws IllegalArgumentException if the buffer is not direct.
+	 * @throws KryoException if the address isn't available. */
+	public static long address (ByteBuffer buffer) {
+		if (!buffer.isDirect()) throw new IllegalArgumentException("buffer must be direct.");
+		if (bufferAddressOffset == -1) throw new KryoException("The address of direct ByteBuffers is not available.");
+		return unsafe.getLong(buffer, bufferAddressOffset);
 	}
 
 	/** Throws an exception if offset and count don't describe a range inside an array of the given length. Unsafe doesn't check
@@ -168,7 +191,7 @@ public class UnsafeUtil {
 
 	/** Release a direct buffer immediately rather than waiting for GC. */
 	public static void dispose (ByteBuffer buffer) {
-		if (!(buffer instanceof DirectBuffer)) return;
+		if (buffer == null || !buffer.isDirect()) return;
 		if (DirectBuffers.cleanerMethod != null) {
 			try {
 				DirectBuffers.cleanMethod.invoke(DirectBuffers.cleanerMethod.invoke(buffer));

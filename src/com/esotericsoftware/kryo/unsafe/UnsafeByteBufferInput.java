@@ -29,8 +29,6 @@ import java.io.InputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
-import sun.nio.ch.DirectBuffer;
-
 /** A {@link ByteBufferInput} that reads data from direct ByteBuffer (off-heap memory) using sun.misc.Unsafe. Multi-byte primitive
  * types use native byte order, so the native byte order on different computers which read and write the data must be the same.
  * <p>
@@ -94,14 +92,14 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 	}
 
 	public void setBuffer (ByteBuffer buffer) {
-		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
+		if (!buffer.isDirect()) throw new IllegalArgumentException("buffer must be direct.");
 		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
 		super.setBuffer(buffer);
 		updateBufferAddress();
 	}
 
 	private void updateBufferAddress () {
-		bufferAddress = ((DirectBuffer)byteBuffer).address();
+		bufferAddress = address(byteBuffer);
 	}
 
 	private void setBufferPosition (Buffer buffer, int position) {
