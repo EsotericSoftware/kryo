@@ -217,6 +217,9 @@ final class CodeGeneration {
 
 		try {
 			Lookup hidden = lookup.defineHiddenClassWithClassData(bytes, classData, true);
+			if (TRACE) trace("kryo", "Generated code for the fields of: " + className(type) + " (" + n + " fields"
+				+ (classes ? ", classes" : "") + (tags != null ? ", tags" : "")
+				+ (n > batchSize ? ", " + (n + batchSize - 1) / batchSize + " batches" : "") + ")");
 			return hidden.findConstructor(hidden.lookupClass(), constructorType)
 				.asType(constructorType.changeReturnType(GeneratedFields.class));
 		} catch (IllegalAccessException | NoSuchMethodException | RuntimeException ex) {
