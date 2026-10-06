@@ -188,11 +188,20 @@ Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo
 
 ### Building from source
 
-Building Kryo from source requires JDK 17+ and Maven. To build all artifacts, run:
+Building Kryo from source requires JDK 24+ and Maven. To build all artifacts, run:
 
 ```
 mvn clean && mvn install
 ```
+
+The sources are compiled for Java 17 with `-source 17`. JDK 24+ is needed only for `CodeGeneration`, which uses the Class-File API and is loaded only on Java 24+. Because of this, IntelliJ IDEA must not compile with `--release`: untick "Use '--release' option for cross-compilation" in Settings > Build, Execution, Deployment > Compiler > Java Compiler, otherwise it reports the Class-File API as unavailable.
+
+### Development
+
+* `mvn -pl main test` runs the tests. To run them on another Java version, pass its `java`, eg `mvn -pl main test -Djvm=/path/to/jdk17/bin/java`. The tests in `test-jdk24` need Java 24+.
+* The tests can be run with other settings than the defaults, eg `JAVA_TOOL_OPTIONS=-Dkryo.fieldAccess=REFLECTION mvn -pl main test` or `JAVA_TOOL_OPTIONS=-Dkryo.codeGeneration=true mvn -pl main test`.
+* The source code is formatted with the Eclipse formatter settings in `eclipse/code-format.xml`, which pull request builds check: `mvn -pl main formatter:format`.
+* The [benchmarks](benchmarks) have their own README.
 
 ## Quickstart
 

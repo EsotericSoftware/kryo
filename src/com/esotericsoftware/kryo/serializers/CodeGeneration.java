@@ -21,7 +21,6 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.minlog.Log.*;
-import static java.lang.classfile.ClassFile.*;
 import static java.lang.constant.ConstantDescs.*;
 
 import com.esotericsoftware.kryo.KryoException;
@@ -29,8 +28,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
-import java.lang.classfile.ClassFile;
-import java.lang.classfile.CodeBuilder;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodHandle;
@@ -41,7 +38,6 @@ import java.lang.invoke.VarHandle;
 import java.lang.invoke.VarHandle.AccessMode;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Generates a hidden class per serialized class that writes and reads its fields with straight line code, using the Class-File
@@ -52,7 +48,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * for a class.
  * <p>
  * Not supported, so the cached fields are used: records, fields set with a {@link FinalFieldSetter} and custom
- * {@link CachedField} implementations. */
+ * {@link CachedField} implementations.
+ * <p>
+ * This is the only class that uses an API newer than Java 17: it is compiled with -source 17 on JDK 24+ and only loaded on Java
+ * 24+. The Class-File API is referenced with qualified names and the IDE inspection for the language level is suppressed, see
+ * "Building from source" in README.md. */
+@SuppressWarnings("Since15")
 final class CodeGeneration {
 	static private final ClassDesc CD_GeneratedFields = ClassDesc.of(GeneratedFields.class.getName());
 	static private final ClassDesc CD_ReflectField = ClassDesc.of(ReflectField.class.getName());
@@ -73,6 +74,11 @@ final class CodeGeneration {
 	};
 
 	static private final MethodType constructorType = MethodType.methodType(void.class, ReflectField[].class);
+
+	// From java.lang.classfile.ClassFile.
+	static private final int ACC_PUBLIC = 0x0001, ACC_PRIVATE = 0x0002, ACC_STATIC = 0x0008, ACC_FINAL = 0x0010,
+		ACC_SUPER = 0x0020;
+	static private final String INIT_NAME = "<init>", CLASS_INIT_NAME = "<clinit>";
 
 	/** Returns the generated code for the fields, or null if code can't be generated for them.
 	 * @throws KryoException if the hidden class can't be defined. */
@@ -150,7 +156,7 @@ final class CodeGeneration {
 
 		Lookup lookup = MethodHandles.lookup();
 		ClassDesc thisClass = ClassDesc.of(CodeGeneration.class.getPackageName(), "Generated$" + type.getSimpleName());
-		byte[] bytes = ClassFile.of().build(thisClass, cb -> {
+		byte[] bytes = java.lang.classfile.ClassFile.of().build(thisClass, cb -> {
 			cb.withFlags(ACC_FINAL | ACC_SUPER).withSuperclass(CD_GeneratedFields);
 			for (int i = 0; i < n; i++) {
 				cb.withField("f" + i, CD_VarHandle, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
