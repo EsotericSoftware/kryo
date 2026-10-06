@@ -827,10 +827,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		/** If true, the code that writes and reads the fields of a class is generated as a hidden class, which the JIT can optimize
 		 * much better than the loop over the cached fields: there is no virtual call per field and the field accessors are
-		 * constants. The generated code writes the same bytes. Used by FieldSerializer, CompatibleFieldSerializer and
-		 * TaggedFieldSerializer, except with the chunked encoding of Kryo 5. Requires Java 24 or later (the Class-File API) and is
-		 * not available on Android or in a native image. The cached fields are used where code can't be generated, eg for records.
-		 * Default is false, or true if the system property "kryo.codeGeneration" is "true". */
+		 * constants. The generated code writes the same bytes. Used by FieldSerializer and its subclasses, except with the chunked
+		 * encoding of Kryo 5. Requires Java 24 or later (the Class-File API) and is not available on Android or in a native image.
+		 * The cached fields are used where code can't be generated, eg for records. Default is false, or true if the system
+		 * property "kryo.codeGeneration" is "true". */
 		public void setCodeGeneration (boolean codeGeneration) {
 			this.codeGeneration = codeGeneration;
 			if (TRACE) trace("kryo", "FieldSerializerConfig codeGeneration: " + codeGeneration);
