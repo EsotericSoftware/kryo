@@ -1341,6 +1341,7 @@ public class Kryo {
 	 *            {@link #setReferences(boolean)}. */
 	public void setReferenceResolver (ReferenceResolver referenceResolver) {
 		if (referenceResolver == null) throw new IllegalArgumentException("referenceResolver cannot be null.");
+		referenceResolver.setKryo(this); // Before the check, useReferences may need the Kryo instance.
 		checkStringReferences(true, referenceResolver);
 		this.references = true;
 		this.referenceResolver = referenceResolver;

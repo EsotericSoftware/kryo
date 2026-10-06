@@ -242,6 +242,16 @@ class Kryo5CompatibilityTest {
 		kryo6.register(WithString.class);
 		Kryo5Compatibility.configure(kryo6);
 		assertThrows(KryoException.class, () -> kryo6.setReferences(true));
+
+		// The resolver has its Kryo instance when useReferences is called for the check.
+		Kryo kryo7 = new Kryo();
+		kryo7.register(WithString.class);
+		kryo7.setReferenceResolver(new MapReferenceResolver() {
+			public boolean useReferences (Class type) {
+				return !kryo.isFinal(type); // Needs the Kryo instance.
+			}
+		});
+		assertTrue(kryo7.getReferences());
 	}
 
 	static public class WithString {

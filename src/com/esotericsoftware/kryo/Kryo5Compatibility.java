@@ -126,8 +126,8 @@ public final class Kryo5Compatibility {
 			};
 		}
 		if (kryo5Resolver != null) {
-			kryo.checkStringReferences(kryo.getReferences(), kryo5Resolver);
 			kryo5Resolver.setKryo(kryo);
+			kryo.checkStringReferences(kryo.getReferences(), kryo5Resolver);
 			kryo.referenceResolver = kryo5Resolver;
 		}
 	}
