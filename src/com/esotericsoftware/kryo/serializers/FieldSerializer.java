@@ -159,28 +159,41 @@ public class FieldSerializer<T> extends Serializer<T> {
 	private boolean codeGenerationFailed;
 
 	/** Returns true if code is generated for the fields: {@link FieldSerializerConfig#setCodeGeneration(boolean)} is enabled, the
-	 * platform supports it, the class is not a record and {@link #usesCodeGeneration()}. */
+	 * platform supports it, the class is not a record and {@link #usesGeneratedCode()}. */
 	final boolean codeGenerated () {
 		return config.codeGeneration && CachedFields.codeGeneration && recordConstructor == null && !codeGenerationFailed
-			&& usesCodeGeneration();
+			&& usesGeneratedCode();
 	}
 
-	/** Returns true if this serializer uses generated code in {@link #write(Kryo, Output, Object)} and
-	 * {@link #read(Kryo, Input, Class)}. Subclasses with their own field loops return false. Called by the super constructor, so
-	 * subclasses can only use {@link #config}. */
-	boolean usesCodeGeneration () {
+	/** Returns true if the generated code can be used with the current config settings, which can be changed without
+	 * {@link #updateFields()}. Subclasses with settings their generated code doesn't support return false. Called by the super
+	 * constructor, so subclasses can only use {@link #config}. */
+	boolean usesGeneratedCode () {
 		return true;
+	}
+
+	/** Returns true if the class of each value is written before the value, like CompatibleFieldSerializer with unknown field
+	 * data. Called by the super constructor, so subclasses can only use {@link #config}. */
+	boolean writesClasses () {
+		return false;
 	}
 
 	/** Returns the generated code for the fields, or null if it can't be generated. Subclasses pass their fields and options.
 	 * Called by the super constructor, so subclasses can only use {@link #config}. */
 	GeneratedFields generateCode () {
-		return GeneratedFields.generate(this, cachedFields.fields, false, null);
+		return GeneratedFields.generate(this, cachedFields.fields, writesClasses(), null);
 	}
 
-	/** Returns the generated code for the current config settings, or null if it isn't used. Subclasses whose settings can be
-	 * changed without {@link #updateFields()} regenerate the code if the settings it was generated for changed. */
-	GeneratedFields generated () {
+	/** Returns the generated code for the current config settings, or null if it isn't used. {@link #usesGeneratedCode()} and
+	 * {@link #writesClasses()} can be changed without {@link #updateFields()}, so the code is regenerated if the setting it was
+	 * generated for changed. */
+	final GeneratedFields generated () {
+		GeneratedFields generated = this.generated;
+		if (generated == null || !usesGeneratedCode()) return null;
+		if (generated.writesClasses != writesClasses()) {
+			regenerate(false);
+			return this.generated;
+		}
 		return generated;
 	}
 

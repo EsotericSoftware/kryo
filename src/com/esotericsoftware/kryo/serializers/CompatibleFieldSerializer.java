@@ -67,29 +67,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		this.config = config;
 	}
 
-	/** Generated code is used except with the chunked encoding of Kryo 5. */
-	boolean usesCodeGeneration () {
-		// The super class config, because this is called by the super constructor.
-		return !((CompatibleFieldSerializerConfig)super.config).legacyChunks;
-	}
-
-	GeneratedFields generateCode () {
-		// The super class config, because this is called by the super constructor.
-		CompatibleFieldSerializerConfig config = (CompatibleFieldSerializerConfig)super.config;
-		return GeneratedFields.generate(this, cachedFields.fields, config.readUnknownFieldData, null);
-	}
-
-	GeneratedFields generated () {
-		GeneratedFields generated = this.generated;
-		if (generated == null || config.legacyChunks) return null;
-		// readUnknownFieldData can be changed without updateFields.
-		if (generated.writesClasses != config.readUnknownFieldData) {
-			regenerate(false);
-			return this.generated;
-		}
-		return generated;
-	}
-
 	void cachedFieldsChanged () {
 		// Fields are sorted by name, so fields with the same name are adjacent. The exception is thrown when writing or reading,
 		// so the config can still be changed and updateFields called after the serializer is constructed.
@@ -106,6 +83,16 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				return;
 			}
 		}
+	}
+
+	/** The chunked encoding of Kryo 5 doesn't use generated code. */
+	boolean usesGeneratedCode () {
+		// The super class config, because this is called by the super constructor.
+		return !((CompatibleFieldSerializerConfig)super.config).legacyChunks;
+	}
+
+	boolean writesClasses () {
+		return ((CompatibleFieldSerializerConfig)super.config).readUnknownFieldData;
 	}
 
 	/** Field values must be readable without the field, so they don't depend on the field's generic type when

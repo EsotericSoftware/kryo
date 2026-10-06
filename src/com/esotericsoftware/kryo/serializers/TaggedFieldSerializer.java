@@ -85,32 +85,6 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		}
 	}
 
-	/** Generated code is used except with the chunked encoding of Kryo 5, which writes the tags outside the chunks. */
-	boolean usesCodeGeneration () {
-		// The super class config, because this is called by the super constructor.
-		return !((TaggedFieldSerializerConfig)super.config).legacyChunks;
-	}
-
-	GeneratedFields generateCode () {
-		// The super class config, because this is called by the super constructor.
-		TaggedFieldSerializerConfig config = (TaggedFieldSerializerConfig)super.config;
-		int[] tags = new int[writeTags.length];
-		for (int i = 0; i < tags.length; i++)
-			tags[i] = writeTags[i].tag;
-		return GeneratedFields.generate(this, writeTags, config.readUnknownTagData, tags);
-	}
-
-	GeneratedFields generated () {
-		GeneratedFields generated = this.generated;
-		if (generated == null || config.legacyChunks) return null;
-		// readUnknownTagData can be changed without updateFields.
-		if (generated.writesClasses != config.readUnknownTagData) {
-			regenerate(false);
-			return this.generated;
-		}
-		return generated;
-	}
-
 	void cachedFieldsChanged () {
 		// Cache tag values.
 		CachedField[] fields = cachedFields.fields;
@@ -126,6 +100,24 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			cachedField.tag = tag;
 		}
 		this.writeTags = (CachedField[])writeTags.toArray(new CachedField[writeTags.size()]);
+	}
+
+	/** The chunked encoding of Kryo 5 writes the tags outside the chunks, so it doesn't use generated code. */
+	boolean usesGeneratedCode () {
+		// The super class config, because this is called by the super constructor.
+		return !((TaggedFieldSerializerConfig)super.config).legacyChunks;
+	}
+
+	boolean writesClasses () {
+		return ((TaggedFieldSerializerConfig)super.config).readUnknownTagData;
+	}
+
+	/** Generates the code for the tagged fields, with their tags. */
+	GeneratedFields generateCode () {
+		int[] tags = new int[writeTags.length];
+		for (int i = 0; i < tags.length; i++)
+			tags[i] = writeTags[i].tag;
+		return GeneratedFields.generate(this, writeTags, writesClasses(), tags);
 	}
 
 	/** Field values must be readable without the field, so they don't depend on the field's generic type when
