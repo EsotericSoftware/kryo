@@ -49,6 +49,57 @@ import java.util.concurrent.ConcurrentHashMap;
  * The hidden class depends only on the field names, kinds and encodings, so it is shared by all serializers and Kryo instances
  * for a class.
  * <p>
+ * For example, for {@code class Nested { String name; Nested next; final int value; }} with FieldSerializer, the hidden class is
+ * equivalent to:
+ *
+ * <pre>
+ * final class Generated$Nested extends GeneratedFields {
+ *    // The class data: the VarHandle of each field, then the setter of each final field.
+ *    static final VarHandle f0, f1, f2;
+ *    static final MethodHandle s2;
+ *    static {
+ *       f0 = (VarHandle)MethodHandles.classDataAt(MethodHandles.lookup(), "_", VarHandle.class, 0);
+ *       ...
+ *    }
+ *    // Per serializer: the object fields are delegated to their ReflectField.
+ *    final FieldSerializer serializer;
+ *    final CachedField[] fields;
+ *
+ *    public void write (Output output, Object object) {
+ *       int index = 0;
+ *       try {
+ *          output.writeString((String)f0.get(object));
+ *          index = 1;
+ *          ((ReflectField)fields[1]).writeValue(output, object, f1.get(object));
+ *          index = 2;
+ *          if (fields[2].varEncoding) output.writeVarInt((int)f2.get(object), false); else output.writeInt((int)f2.get(object));
+ *       } catch (Throwable t) {
+ *          throw GeneratedFields.writeError(t, fields[index], output);
+ *       }
+ *    }
+ *
+ *    public void read (Input input, Object object) {
+ *       int index = 0;
+ *       try {
+ *          f0.set(object, input.readString());
+ *          index = 1;
+ *          f1.set(object, ((ReflectField)fields[1]).readValue(input));
+ *          index = 2;
+ *          s2.invokeExact(object, fields[2].varEncoding ? input.readVarInt(false) : input.readInt());
+ *       } catch (Throwable t) {
+ *          throw GeneratedFields.readError(t, fields[index], input);
+ *       }
+ *    }
+ *
+ *    // write and read with a ChunkedEncoding parameter wrap each field in beginField and endField.
+ * }
+ * </pre>
+ *
+ * With the classes written, like CompatibleFieldSerializer with unknown field data, the class is written before each value and
+ * read with the helpers of {@link GeneratedFields}. With tags, like TaggedFieldSerializer, the tag is written before each field,
+ * and read falls back to {@link TaggedFieldSerializer#readTag(Input, int, Object, boolean)} when the tag isn't the expected one.
+ * Classes with more than {@link #batchSize} fields get a private method per batch.
+ * <p>
  * Not supported, so the cached fields are used: records, fields set with a {@link FinalFieldSetter} and custom
  * {@link CachedField} implementations.
  * <p>
