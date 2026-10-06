@@ -239,6 +239,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(10, new Date(-1234567));
 
 		kryo.register(java.sql.Date.class);
+		assertEquals(DefaultSerializers.SqlDateSerializer.class, kryo.getSerializer(java.sql.Date.class).getClass());
 		roundTrip(10, new java.sql.Date(Long.MIN_VALUE));
 		roundTrip(2, new java.sql.Date(0));
 		roundTrip(4, new java.sql.Date(1234567));
@@ -246,6 +247,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(10, new java.sql.Date(-1234567));
 
 		kryo.register(java.sql.Time.class);
+		assertEquals(DefaultSerializers.SqlTimeSerializer.class, kryo.getSerializer(java.sql.Time.class).getClass());
 		roundTrip(10, new java.sql.Time(Long.MIN_VALUE));
 		roundTrip(2, new java.sql.Time(0));
 		roundTrip(4, new java.sql.Time(1234567));

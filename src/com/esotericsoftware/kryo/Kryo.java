@@ -89,6 +89,8 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.ReverseOrderComp
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ReverseOrderSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.SqlDateSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.SqlTimeSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimeZoneSerializer;
@@ -300,6 +302,8 @@ public class Kryo {
 		addDefaultSerializer(ByteBuffer.class, new ByteBufferSerializer());
 		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer::new);
 		try {
+			addDefaultSerializer(java.sql.Date.class, SqlDateSerializer::new);
+			addDefaultSerializer(java.sql.Time.class, SqlTimeSerializer::new);
 			addDefaultSerializer(Timestamp.class, TimestampSerializer::new);
 		} catch (NoClassDefFoundError ignored) { // java.sql is not available in a named module that doesn't require it.
 		}

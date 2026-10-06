@@ -88,6 +88,8 @@ public class NativeImageTest {
 		test(kryo, "List.of", () -> List.of(1, 2, 3));
 		test(kryo, "Optional", () -> Optional.of("o"));
 		test(kryo, "LocalDate", () -> LocalDate.of(2026, 10, 3));
+		test(kryo, "java.sql.Date", () -> new java.sql.Date(1000));
+		test(kryo, "java.sql.Time", () -> new java.sql.Time(1000));
 		test(kryo, "UUID", () -> new UUID(1, 2));
 		test(kryo, "enum", () -> Color.GREEN);
 		test(kryo, "POJO", () -> pojo);
