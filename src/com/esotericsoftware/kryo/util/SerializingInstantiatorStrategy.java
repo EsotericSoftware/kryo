@@ -19,25 +19,40 @@
 
 package com.esotericsoftware.kryo.util;
 
+import static com.esotericsoftware.kryo.util.Util.*;
+
 import com.esotericsoftware.kryo.KryoException;
 
-/** Creates objects like Java serialization does, through Objenesis: the class must implement {@link java.io.Serializable} and the
- * no-arg constructor of its first non-serializable super class is called. Objenesis is an optional dependency of Kryo, which the
- * versioned jar includes: add {@code org.objenesis:objenesis} to use this class with the default jar. */
-public class SerializingInstantiatorStrategy implements InstantiatorStrategy {
-	private final InstantiatorStrategy objenesis;
+import java.io.Serializable;
+import java.lang.reflect.Constructor;
 
-	public SerializingInstantiatorStrategy () {
-		try {
-			objenesis = ObjenesisStrategy.serializing();
-		} catch (NoClassDefFoundError ex) {
-			throw new KryoException(
-				"SerializingInstantiatorStrategy needs Objenesis, which is an optional dependency of Kryo: add org.objenesis:objenesis to the classpath.",
-				ex);
-		}
-	}
+/** Creates objects like Java serialization does: the class must implement {@link Serializable} and the no-arg constructor of its
+ * first non-serializable super class is called, the other constructors are not. On the JDK, the serialization constructor of
+ * {@code sun.reflect.ReflectionFactory} is used. Otherwise, eg on Android, <a href="http://objenesis.org/">Objenesis</a> is used,
+ * which is an optional dependency of Kryo that the versioned jar includes: add {@code org.objenesis:objenesis} with the default
+ * jar. */
+public class SerializingInstantiatorStrategy implements InstantiatorStrategy {
+	private InstantiatorStrategy objenesis;
 
 	public <T> ObjectInstantiator<T> newInstantiatorOf (Class<T> type) {
+		if (!Serializable.class.isAssignableFrom(type))
+			throw new KryoException(
+				"Class is not Serializable, SerializingInstantiatorStrategy can't create it: " + className(type));
+		if (Instantiators.reflectionFactory()) {
+			Class superclass = type;
+			while (Serializable.class.isAssignableFrom(superclass))
+				superclass = superclass.getSuperclass();
+			Constructor superConstructor;
+			try {
+				superConstructor = superclass.getDeclaredConstructor();
+			} catch (NoSuchMethodException ex) {
+				throw new KryoException("The first non-serializable super class has no no-arg constructor: " + className(superclass)
+					+ " (" + className(type) + ")", ex);
+			}
+			ObjectInstantiator<T> instantiator = Instantiators.serializationConstructor(type, superConstructor);
+			if (instantiator != null) return instantiator;
+		}
+		if (objenesis == null) objenesis = Instantiators.objenesis("SerializingInstantiatorStrategy", true);
 		return objenesis.newInstantiatorOf(type);
 	}
 }

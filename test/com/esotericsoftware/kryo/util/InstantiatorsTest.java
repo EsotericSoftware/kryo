@@ -19,34 +19,27 @@
 
 package com.esotericsoftware.kryo.util;
 
-/** Creates objects with an <a href="http://objenesis.org/">Objenesis</a> strategy. Objenesis is an optional dependency of Kryo,
- * which the versioned jar includes: add {@code org.objenesis:objenesis} to use this class with the default jar.
- * {@link StdInstantiatorStrategy} and {@link SerializingInstantiatorStrategy} only use it where the JDK's serialization
- * constructors are not available, eg on Android. */
-public class ObjenesisStrategy implements InstantiatorStrategy {
-	private final org.objenesis.strategy.InstantiatorStrategy strategy;
+import static org.junit.jupiter.api.Assertions.*;
 
-	public ObjenesisStrategy (org.objenesis.strategy.InstantiatorStrategy strategy) {
-		if (strategy == null) throw new IllegalArgumentException("strategy cannot be null.");
-		this.strategy = strategy;
+import org.junit.jupiter.api.Test;
+
+class InstantiatorsTest {
+	@Test
+	void testSerializationConstructors () {
+		// On the JDK, the serialization constructors of ReflectionFactory are used, so Objenesis isn't needed.
+		assertEquals(!Util.isAndroid, Instantiators.reflectionFactory());
+		NoArgless object = new StdInstantiatorStrategy().newInstantiatorOf(NoArgless.class).newInstance();
+		assertEquals(0, object.value);
+		assertNull(object.name);
 	}
 
-	public <T> ObjectInstantiator<T> newInstantiatorOf (Class<T> type) {
-		org.objenesis.instantiator.ObjectInstantiator<T> instantiator = strategy.newInstantiatorOf(type);
-		return instantiator::newInstance;
-	}
+	static class NoArgless {
+		final int value;
+		final String name;
 
-	public org.objenesis.strategy.InstantiatorStrategy getStrategy () {
-		return strategy;
-	}
-
-	// Called by Instantiators, which doesn't reference Objenesis types, so it is loaded without Objenesis.
-
-	static InstantiatorStrategy std () {
-		return new ObjenesisStrategy(new org.objenesis.strategy.StdInstantiatorStrategy());
-	}
-
-	static InstantiatorStrategy serializing () {
-		return new ObjenesisStrategy(new org.objenesis.strategy.SerializingInstantiatorStrategy());
+		NoArgless (int value) {
+			this.value = value;
+			name = "constructed";
+		}
 	}
 }

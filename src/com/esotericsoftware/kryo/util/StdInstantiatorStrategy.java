@@ -19,27 +19,37 @@
 
 package com.esotericsoftware.kryo.util;
 
-import com.esotericsoftware.kryo.KryoException;
+import static com.esotericsoftware.kryo.util.Util.*;
 
-/** Creates objects without calling a constructor, using JVM specific APIs through Objenesis. Objenesis is an optional dependency
- * of Kryo, which the versioned jar includes: add {@code org.objenesis:objenesis} to use this class with the default jar.
+import java.lang.reflect.Constructor;
+
+/** Creates objects without calling a constructor, so the fields have their default values. On the JDK, the serialization
+ * constructor of {@code sun.reflect.ReflectionFactory} is used, which calls only {@link Object}'s constructor, like Java
+ * serialization does for the non-serializable part of an object and like Objenesis does on HotSpot. Where it is not available,
+ * the instance is allocated with Unsafe. Otherwise, eg on Android, <a href="http://objenesis.org/">Objenesis</a> is used, which
+ * is an optional dependency of Kryo that the versioned jar includes: add {@code org.objenesis:objenesis} with the default jar.
  * <p>
  * Most classes expect their constructors to be called, so creating objects this way may leave them in an invalid state. Usually
  * it is used as the fallback of a {@link DefaultInstantiatorStrategy}, for classes without a no-arg constructor. */
 public class StdInstantiatorStrategy implements InstantiatorStrategy {
-	private final InstantiatorStrategy objenesis;
-
-	public StdInstantiatorStrategy () {
+	static private final Constructor objectConstructor;
+	static {
 		try {
-			objenesis = ObjenesisStrategy.std();
-		} catch (NoClassDefFoundError ex) {
-			throw new KryoException(
-				"StdInstantiatorStrategy needs Objenesis, which is an optional dependency of Kryo: add org.objenesis:objenesis to the classpath.",
-				ex);
+			objectConstructor = Object.class.getDeclaredConstructor();
+		} catch (NoSuchMethodException ex) {
+			throw new ExceptionInInitializerError(ex);
 		}
 	}
 
+	private InstantiatorStrategy objenesis;
+
 	public <T> ObjectInstantiator<T> newInstantiatorOf (Class<T> type) {
+		if (Instantiators.reflectionFactory()) {
+			ObjectInstantiator<T> instantiator = Instantiators.serializationConstructor(type, objectConstructor);
+			if (instantiator != null) return instantiator;
+		}
+		if (unsafe) return Instantiators.unsafeAllocation(type);
+		if (objenesis == null) objenesis = Instantiators.objenesis("StdInstantiatorStrategy", false);
 		return objenesis.newInstantiatorOf(type);
 	}
 }

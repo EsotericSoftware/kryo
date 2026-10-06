@@ -118,9 +118,30 @@ public class DefaultInstantiatorStrategyTest {
             NoArgless object = strategy.newInstantiatorOf(NoArgless.class).newInstance();
             assertEquals(0, object.value);
         }
-        assertSame(DefaultInstantiatorStrategy.class, new DefaultInstantiatorStrategy(new SerializingInstantiatorStrategy())
-            .getClass());
         assertThrows(KryoException.class, () -> new DefaultInstantiatorStrategy().newInstantiatorOf(NoArgless.class));
+
+        // Like Java serialization: the no-arg constructor of the first non-serializable super class runs, the others don't.
+        SerializableNoArgless serializable = new SerializingInstantiatorStrategy().newInstantiatorOf(SerializableNoArgless.class)
+            .newInstance();
+        assertEquals(1, serializable.base);
+        assertEquals(0, serializable.value);
+        assertThrows(KryoException.class, () -> new SerializingInstantiatorStrategy().newInstantiatorOf(NoArgless.class));
+    }
+
+    static class Base {
+        int base;
+
+        Base() {
+            base = 1;
+        }
+    }
+
+    static class SerializableNoArgless extends Base implements java.io.Serializable {
+        final int value;
+
+        SerializableNoArgless(int value) {
+            this.value = value;
+        }
     }
 
     static class NoArgless {
