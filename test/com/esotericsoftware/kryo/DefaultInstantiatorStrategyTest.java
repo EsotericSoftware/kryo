@@ -109,6 +109,42 @@ public class DefaultInstantiatorStrategyTest {
         }
     }
 
+    static final String ADVICE = "\nKryo creates objects with their no-arg constructor, which can be private. To create objects "
+        + "without calling a constructor, like Java serialization does, configure Kryo with:"
+        + "\n    kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));"
+        + "\nAlternatively, add a no-arg constructor, or register a serializer that creates the object, eg a FieldSerializer "
+        + "that overrides create().";
+
+    @Test
+    public void testMissingNoArgConstructorMessage() {
+        // A normal class without a no-arg constructor gets the advice.
+        KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(NoArgless.class));
+        assertEquals("Class cannot be created (missing no-arg constructor): " + NoArgless.class.getName() + ADVICE,
+            thrown.getMessage());
+    }
+
+    @Test
+    public void testInnerClassMessage() {
+        // A non-static member class has no no-arg constructor, because it takes the outer instance.
+        KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(Inner.class));
+        assertEquals("Class cannot be created (missing no-arg constructor): " + Inner.class.getName()
+            + "\nNote: An inner class is serialized with its outer instance, but it has no no-arg constructor. Making the class "
+            + "static is safer." + ADVICE, thrown.getMessage());
+    }
+
+    @Test
+    public void testAnonymousClassMessage() {
+        Class anonymous = new Object() {
+        }.getClass();
+        KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(anonymous));
+        assertEquals("Class cannot be created (missing no-arg constructor): " + anonymous.getName()
+            + "\nNote: An anonymous class is serialized with its outer instance and captured variables, but it has no no-arg "
+            + "constructor. A named class is safer, eg instead of double brace initialization." + ADVICE, thrown.getMessage());
+    }
+
+    class Inner {
+    }
+
     @Test
     public void testObjenesisStrategies() {
         // The Objenesis strategies create classes without a no-arg constructor, through Kryo's wrappers.
