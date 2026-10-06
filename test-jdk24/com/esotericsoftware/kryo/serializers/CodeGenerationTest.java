@@ -28,12 +28,14 @@ import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.VersionFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldAccessType;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
+import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
 import java.util.ArrayList;
@@ -225,9 +227,32 @@ class CodeGenerationTest extends KryoTestCase {
 		assertNull(((FieldSerializer)kryo.getSerializer(Point.class)).generated);
 		roundTrip(3, new Point(1, 2));
 
-		// VersionFieldSerializer doesn't use generated code.
-		kryo.register(Nested.class, new VersionFieldSerializer(kryo, Nested.class));
-		assertNull(((FieldSerializer)kryo.getSerializer(Nested.class)).generated);
+	}
+
+	@Test
+	void testVersionFieldSerializer () {
+		VersionFieldSerializerFactory factory = new VersionFieldSerializerFactory();
+		factory.getConfig().setCodeGeneration(true);
+		kryo.setDefaultSerializer(factory);
+		kryo.register(Versioned.class);
+		kryo.register(Nested.class);
+		assertGenerated(Versioned.class);
+		Versioned object = new Versioned();
+		object.value = 5;
+		object.name = "name";
+		object.nested = new Nested();
+		object.nested.value = 7;
+		roundTrip(11, object);
+
+		// Data of version 0, without the field added since version 1, is read with the cached fields.
+		Output output = new Output(64);
+		output.writeVarInt(0 + 1, true);
+		output.writeString("name");
+		output.writeVarInt(5, false);
+		Versioned read = read(kryo, output.toBytes(), Versioned.class);
+		assertEquals(5, read.value);
+		assertEquals("name", read.name);
+		assertNull(read.nested);
 	}
 
 	@Test
@@ -617,6 +642,17 @@ class CodeGenerationTest extends KryoTestCase {
 		@Tag(3) String name;
 		@Tag(1) int value;
 		@Tag(99) int unknown;
+	}
+
+	static public class Versioned {
+		String name;
+		@Since(1) Nested nested;
+		int value;
+
+		public boolean equals (Object obj) {
+			Versioned other = (Versioned)obj;
+			return value == other.value && Objects.equals(name, other.name) && Objects.equals(nested, other.nested);
+		}
 	}
 
 	public record Point (int x, int y) {
