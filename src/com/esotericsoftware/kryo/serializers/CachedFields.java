@@ -443,7 +443,6 @@ class CachedFields implements Comparator<CachedField> {
 
 			cachedField.setCanBeNull(annotation.canBeNull() && !field.isAnnotationPresent(NotNull.class));
 			cachedField.setVariableLengthEncoding(annotation.variableLengthEncoding());
-			cachedField.setOptimizePositive(annotation.optimizePositive());
 		}
 
 		// Set CollectionSerializer settings for a collection field.
