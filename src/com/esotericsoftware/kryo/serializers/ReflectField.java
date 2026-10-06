@@ -147,11 +147,19 @@ class ReflectField extends CachedField {
 
 	/** Reads the class, then the value without null marker, like CompatibleFieldSerializer with unknown field data. For generated
 	 * code.
+	 * @param chunked If true, the value is skipped if its class can't be read, then the current value of the field is returned.
 	 * @return null if the class was null. */
-	final Object readValueWithClass (Input input) {
+	final Object readValueWithClass (Input input, Object object, boolean chunked) {
 		Kryo kryo = fieldSerializer.kryo;
-		Registration registration = CodeGeneration.readClass(fieldSerializer, input, this);
+		Registration registration = CodeGeneration.readClass(fieldSerializer, input, this, chunked);
 		if (registration == null) return null;
+		if (registration == CodeGeneration.skip) {
+			try {
+				return get(object);
+			} catch (IllegalAccessException ex) {
+				throw accessError(field, ex);
+			}
+		}
 		Class valueClass = registration.getType();
 		boolean pushed = false;
 		try {

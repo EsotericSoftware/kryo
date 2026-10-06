@@ -129,11 +129,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Called by {@link CachedFields} after {@link #cachedFieldsChanged()}: generates the code for the fields if
-	 * {@link FieldSerializerConfig#setCodeGeneration(boolean)} is enabled and the serializer uses it. */
+	 * {@link #codeGenerated()}. */
 	final void fieldsChanged () {
 		cachedFieldsChanged();
 		generated = null;
-		if (config.codeGeneration && CachedFields.codeGeneration && usesCodeGeneration()) {
+		if (codeGenerated()) {
 			try {
 				generated = generateCode();
 			} catch (KryoException ex) {
@@ -142,15 +142,29 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 	}
 
-	/** Returns true if this serializer uses {@link #generated} in {@link #write(Kryo, Output, Object)} and
-	 * {@link #read(Kryo, Input, Class)}. Subclasses with their own field loops return false. */
+	/** Returns true if code is generated for the fields: {@link FieldSerializerConfig#setCodeGeneration(boolean)} is enabled, the
+	 * platform supports it, the class is not a record and {@link #usesCodeGeneration()}. */
+	final boolean codeGenerated () {
+		return config.codeGeneration && CachedFields.codeGeneration && recordConstructor == null && usesCodeGeneration();
+	}
+
+	/** Returns true if this serializer uses generated code in {@link #write(Kryo, Output, Object)} and
+	 * {@link #read(Kryo, Input, Class)}. Subclasses with their own field loops return false. Called by the super constructor, so
+	 * subclasses can only use {@link #config}. */
 	boolean usesCodeGeneration () {
 		return true;
 	}
 
-	/** Returns the generated code for the fields, or null if it can't be generated. Subclasses pass their fields and options. */
+	/** Returns the generated code for the fields, or null if it can't be generated. Subclasses pass their fields and options.
+	 * Called by the super constructor, so subclasses can only use {@link #config}. */
 	GeneratedFields generateCode () {
 		return CodeGeneration.generate(this, cachedFields.fields, false, null);
+	}
+
+	/** Returns the generated code for the current config settings, or null if it isn't used. Subclasses whose settings can be
+	 * changed without {@link #updateFields()} regenerate the code if the settings it was generated for changed. */
+	GeneratedFields generated () {
+		return generated;
 	}
 
 	/** Returns true if the generic type of a field is used to optimize the serialization of its value, eg to omit the class of
@@ -173,8 +187,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public void write (Kryo kryo, Output output, T object) {
 		int pop = pushTypeVariables();
 
-		if (generated != null) {
-			writeGenerated(output, object);
+		if (generated() != null) {
+			writeGenerated(output, object, null);
 			popTypeVariables(pop);
 			return;
 		}
@@ -205,8 +219,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		} else
 			values = newRecordValues();
 
-		if (generated != null) {
-			readGenerated(input, object);
+		if (generated() != null) {
+			readGenerated(input, object, null);
 			popTypeVariables(pop);
 			return object;
 		}
@@ -233,10 +247,14 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return object;
 	}
 
-	/** Writes all fields with {@link #generated}. */
-	void writeGenerated (Output output, Object object) {
+	/** Writes all fields with {@link #generated}.
+	 * @param chunks May be null. */
+	void writeGenerated (Output output, Object object, ChunkedEncoding chunks) {
 		try {
-			generated.write(output, object);
+			if (chunks == null)
+				generated.write(output, object);
+			else
+				generated.write(output, object, chunks);
 		} catch (KryoException e) {
 			throw e;
 		} catch (Exception e) {
@@ -244,10 +262,14 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 	}
 
-	/** Reads all fields with {@link #generated}. */
-	void readGenerated (Input input, Object object) {
+	/** Reads all fields with {@link #generated}.
+	 * @param chunks May be null. */
+	void readGenerated (Input input, Object object, ChunkedEncoding chunks) {
 		try {
-			generated.read(input, object);
+			if (chunks == null)
+				generated.read(input, object);
+			else
+				generated.read(input, object, chunks);
 		} catch (KryoException e) {
 			throw e;
 		} catch (Exception e) {

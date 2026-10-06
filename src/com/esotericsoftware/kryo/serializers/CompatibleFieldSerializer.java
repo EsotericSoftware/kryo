@@ -65,16 +65,24 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		this.config = config;
 	}
 
-	/** Generated code is used without chunked encoding. */
+	/** Generated code is used except with the chunked encoding of Kryo 5. */
 	boolean usesCodeGeneration () {
 		// The super class config, because this is called by the super constructor.
-		return !((CompatibleFieldSerializerConfig)super.config).chunked;
+		return !((CompatibleFieldSerializerConfig)super.config).legacyChunks;
 	}
 
 	GeneratedFields generateCode () {
 		// The super class config, because this is called by the super constructor.
 		CompatibleFieldSerializerConfig config = (CompatibleFieldSerializerConfig)super.config;
 		return CodeGeneration.generate(this, cachedFields.fields, config.readUnknownFieldData, null);
+	}
+
+	GeneratedFields generated () {
+		GeneratedFields generated = this.generated;
+		if (generated == null || config.legacyChunks) return null;
+		// readUnknownFieldData can be changed without updateFields.
+		if (generated.writesClasses != config.readUnknownFieldData) this.generated = generated = generateCode();
+		return generated;
 	}
 
 	void cachedFieldsChanged () {
@@ -131,9 +139,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			}
 		}
 
-		if (generated != null && !chunked) {
-			writeGenerated(output, object);
+		if (generated() != null) {
+			writeGenerated(fieldOutput, object, chunks);
 			popTypeVariables(pop);
+			if (chunked) chunks.endWrite();
 			return;
 		}
 
@@ -193,8 +202,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			if (fields == null) fields = readFields(kryo, input, chunks);
 
 			// The generated code reads the fields of this serializer in its order, which the data usually has.
-			if (generated != null && !chunked && values == null && fields == cachedFields.fields) {
-				readGenerated(input, object);
+			if (values == null && fields == cachedFields.fields && generated() != null) {
+				readGenerated(fieldInput, object, chunks);
 				return object;
 			}
 

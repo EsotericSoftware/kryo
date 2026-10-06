@@ -26,9 +26,18 @@ import com.esotericsoftware.kryo.io.Output;
  * straight line code: the VarHandles of the fields are constants and the object fields are delegated to their
  * {@link ReflectField}. */
 abstract class GeneratedFields {
+	/** True if the class of each value is written before the value, see {@link CodeGeneration#generate}. */
+	boolean writesClasses;
+
 	/** Writes all fields of the object. */
 	abstract public void write (Output output, Object object);
 
+	/** Writes all fields of the object, each in a chunk. */
+	abstract public void write (Output output, Object object, ChunkedEncoding chunks);
+
 	/** Reads all fields into the object. */
 	abstract public void read (Input input, Object object);
+
+	/** Reads all fields into the object, each from a chunk. */
+	abstract public void read (Input input, Object object, ChunkedEncoding chunks);
 }
