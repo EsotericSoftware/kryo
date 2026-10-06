@@ -612,7 +612,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public FieldSerializerConfig clone () {
 			try {
-				return (FieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
+				return (FieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive and immutable fields.
 			} catch (CloneNotSupportedException ex) {
 				throw new KryoException(ex);
 			}
@@ -647,7 +647,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		 * classes, local classes and non-static member classes are serialized, because these classes need them: the outer instance
 		 * and the captured variables. An inner object that is serialized with its outer instance often needs references, because
 		 * the outer instance refers to the inner object. The synthetic fields of other classes are not serialized, eg fields added
-		 * by bytecode enhancement. Kryo 5 never serialized synthetic fields.
+		 * by bytecode enhancement. Kryo 5 ignored all synthetic fields by default.
 		 * @param ignoreSyntheticFields True to never serialize synthetic fields, false to always serialize them. */
 		public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
 			this.ignoreSyntheticFields = ignoreSyntheticFields;
