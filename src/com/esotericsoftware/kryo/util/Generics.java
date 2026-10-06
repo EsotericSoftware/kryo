@@ -345,7 +345,9 @@ public interface Generics {
 		 * @return May be null. */
 		GenericType[] superTypeArguments (Class superType) {
 			// One immutable object for both values, so a thread never sees the arguments of another super type. The field is not
-			// volatile: a thread that sees an older value only computes the arguments again.
+			// volatile: a thread that sees an older value only computes the arguments again. The type is shared by all Kryo
+			// instances, so if they use serializers that ask for different super types of the same class, which is unlikely, the
+			// arguments are computed for every call.
 			SuperTypeArguments last = lastSuperType;
 			if (last == null || last.superType != superType)
 				lastSuperType = last = new SuperTypeArguments(superType, computeSuperTypeArguments(superType));
