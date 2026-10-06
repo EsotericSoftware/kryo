@@ -711,12 +711,18 @@ public class FieldSerializer<T> extends Serializer<T> {
 			if (DEBUG) {
 				debug("kryo", "Default field access: " + defaultFieldAccess + (isAndroid ? " (Android)"
 					: " (Java " + Runtime.version().feature() + ", Unsafe available: " + unsafe + ", Unsafe memory access: "
-						+ (memoryAccess == null ? "default" : memoryAccess) + ")"));
+						+ (memoryAccess == null ? "default" : memoryAccess) + ")")
+					+ ", hidden classes: " + CachedFields.hiddenFields + ", code generation available: "
+					+ CachedFields.codeGeneration);
 			}
 		}
 
 		/** True if the system property "kryo.codeGeneration" is "true". */
 		static final boolean defaultCodeGeneration = "true".equals(System.getProperty("kryo.codeGeneration"));
+		static {
+			if (defaultCodeGeneration && !CachedFields.codeGeneration && DEBUG)
+				debug("kryo", "The system property kryo.codeGeneration is true. " + CachedFields.codeGenerationUnavailable());
+		}
 
 		FieldAccessType fieldAccess = defaultFieldAccess;
 		boolean codeGeneration = defaultCodeGeneration;
@@ -865,6 +871,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		public void setCodeGeneration (boolean codeGeneration) {
 			this.codeGeneration = codeGeneration;
 			if (TRACE) trace("kryo", "FieldSerializerConfig codeGeneration: " + codeGeneration);
+			if (codeGeneration && !CachedFields.codeGeneration && DEBUG) debug("kryo", CachedFields.codeGenerationUnavailable());
 		}
 
 		public boolean getCodeGeneration () {

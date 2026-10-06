@@ -1700,11 +1700,8 @@ class FieldSerializerTest extends KryoTestCase {
 		assertEquals(1, copy.value);
 	}
 
-	/** The name of a hidden class ends with a slash and a suffix. */
 	static private String fieldClassName (CachedField field) {
-		String name = field.getClass().getSimpleName();
-		int slash = name.indexOf('/');
-		return slash == -1 ? name : name.substring(0, slash);
+		return CachedFields.implementationName(field);
 	}
 
 	@Test
