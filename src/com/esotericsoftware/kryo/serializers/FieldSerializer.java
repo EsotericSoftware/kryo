@@ -660,7 +660,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 
 		/** Returns true if the synthetic fields declared by the class are ignored. */
-		public boolean getIgnoreSyntheticFields (Class declaringClass) {
+		public boolean ignoresSyntheticFields (Class declaringClass) {
 			if (ignoreSyntheticFields != null) return ignoreSyntheticFields;
 			return !isInnerClass(declaringClass);
 		}

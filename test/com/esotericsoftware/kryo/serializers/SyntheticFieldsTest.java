@@ -115,11 +115,11 @@ class SyntheticFieldsTest {
 		// The default depends on the class.
 		FieldSerializerConfig config = new FieldSerializerConfig();
 		assertNull(config.getIgnoreSyntheticFields());
-		assertFalse(config.getIgnoreSyntheticFields(Outer.Member.class));
-		assertTrue(config.getIgnoreSyntheticFields(Outer.class));
-		assertTrue(config.getIgnoreSyntheticFields(Outer.Nested.class));
+		assertFalse(config.ignoresSyntheticFields(Outer.Member.class));
+		assertTrue(config.ignoresSyntheticFields(Outer.class));
+		assertTrue(config.ignoresSyntheticFields(Outer.Nested.class));
 		config.setIgnoreSyntheticFields(false);
-		assertFalse(config.getIgnoreSyntheticFields(Outer.Nested.class));
+		assertFalse(config.ignoresSyntheticFields(Outer.Nested.class));
 	}
 
 	static public class Outer {
