@@ -439,13 +439,9 @@ public class Input extends InputStream implements Poolable {
 	/** Reads a 4 byte int. */
 	public int readInt () throws KryoException {
 		require(4);
-		byte[] buffer = this.buffer;
-		int p = this.position;
-		this.position = p + 4;
-		return buffer[p] & 0xFF //
-			| (buffer[p + 1] & 0xFF) << 8 //
-			| (buffer[p + 2] & 0xFF) << 16 //
-			| (buffer[p + 3] & 0xFF) << 24;
+		int p = position;
+		position = p + 4;
+		return Bytes.getInt(buffer, p);
 	}
 
 	/** Reads an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
@@ -605,17 +601,9 @@ public class Input extends InputStream implements Poolable {
 	/** Reads an 8 byte long. */
 	public long readLong () throws KryoException {
 		require(8);
-		byte[] buffer = this.buffer;
 		int p = position;
 		position = p + 8;
-		return buffer[p] & 0xFF //
-			| (buffer[p + 1] & 0xFF) << 8 //
-			| (buffer[p + 2] & 0xFF) << 16 //
-			| (long)(buffer[p + 3] & 0xFF) << 24 //
-			| (long)(buffer[p + 4] & 0xFF) << 32 //
-			| (long)(buffer[p + 5] & 0xFF) << 40 //
-			| (long)(buffer[p + 6] & 0xFF) << 48 //
-			| (long)buffer[p + 7] << 56;
+		return Bytes.getLong(buffer, p);
 	}
 
 	/** Reads a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
@@ -756,13 +744,9 @@ public class Input extends InputStream implements Poolable {
 	/** Reads a 4 byte float. */
 	public float readFloat () throws KryoException {
 		require(4);
-		byte[] buffer = this.buffer;
-		int p = this.position;
-		this.position = p + 4;
-		return Float.intBitsToFloat(buffer[p] & 0xFF //
-			| (buffer[p + 1] & 0xFF) << 8 //
-			| (buffer[p + 2] & 0xFF) << 16 //
-			| (buffer[p + 3] & 0xFF) << 24);
+		int p = position;
+		position = p + 4;
+		return Float.intBitsToFloat(Bytes.getInt(buffer, p));
 	}
 
 	/** Reads a 1-5 byte float with reduced precision. */
@@ -775,17 +759,9 @@ public class Input extends InputStream implements Poolable {
 	/** Reads an 8 byte double. */
 	public double readDouble () throws KryoException {
 		require(8);
-		byte[] buffer = this.buffer;
 		int p = position;
 		position = p + 8;
-		return Double.longBitsToDouble(buffer[p] & 0xFF //
-			| (buffer[p + 1] & 0xFF) << 8 //
-			| (buffer[p + 2] & 0xFF) << 16 //
-			| (long)(buffer[p + 3] & 0xFF) << 24 //
-			| (long)(buffer[p + 4] & 0xFF) << 32 //
-			| (long)(buffer[p + 5] & 0xFF) << 40 //
-			| (long)(buffer[p + 6] & 0xFF) << 48 //
-			| (long)buffer[p + 7] << 56);
+		return Double.longBitsToDouble(Bytes.getLong(buffer, p));
 	}
 
 	/** Reads a 1-9 byte double with reduced precision. */
@@ -1010,12 +986,8 @@ public class Input extends InputStream implements Poolable {
 		if (optional(length * Integer.BYTES) == length * Integer.BYTES) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
-			for (int i = 0; i < length; i++, p += 4) {
-				array[i] = buffer[p] & 0xFF //
-					| (buffer[p + 1] & 0xFF) << 8 //
-					| (buffer[p + 2] & 0xFF) << 16 //
-					| (buffer[p + 3] & 0xFF) << 24;
-			}
+			for (int i = 0; i < length; i++, p += 4)
+				array[i] = Bytes.getInt(buffer, p);
 			position = p;
 		} else {
 			for (int i = 0; i < length; i++)
@@ -1042,16 +1014,8 @@ public class Input extends InputStream implements Poolable {
 		if (optional(length * Long.BYTES) == length * Long.BYTES) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
-			for (int i = 0; i < length; i++, p += 8) {
-				array[i] = buffer[p] & 0xFF //
-					| (buffer[p + 1] & 0xFF) << 8 //
-					| (buffer[p + 2] & 0xFF) << 16 //
-					| (long)(buffer[p + 3] & 0xFF) << 24 //
-					| (long)(buffer[p + 4] & 0xFF) << 32 //
-					| (long)(buffer[p + 5] & 0xFF) << 40 //
-					| (long)(buffer[p + 6] & 0xFF) << 48 //
-					| (long)buffer[p + 7] << 56;
-			}
+			for (int i = 0; i < length; i++, p += 8)
+				array[i] = Bytes.getLong(buffer, p);
 			position = p;
 		} else {
 			for (int i = 0; i < length; i++)
@@ -1078,12 +1042,8 @@ public class Input extends InputStream implements Poolable {
 		if (optional(length * Float.BYTES) == length * Float.BYTES) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
-			for (int i = 0; i < length; i++, p += 4) {
-				array[i] = Float.intBitsToFloat(buffer[p] & 0xFF //
-					| (buffer[p + 1] & 0xFF) << 8 //
-					| (buffer[p + 2] & 0xFF) << 16 //
-					| (buffer[p + 3] & 0xFF) << 24);
-			}
+			for (int i = 0; i < length; i++, p += 4)
+				array[i] = Float.intBitsToFloat(Bytes.getInt(buffer, p));
 			position = p;
 		} else {
 			for (int i = 0; i < length; i++)
@@ -1098,16 +1058,8 @@ public class Input extends InputStream implements Poolable {
 		if (optional(length * Double.BYTES) == length * Double.BYTES) {
 			byte[] buffer = this.buffer;
 			int p = this.position;
-			for (int i = 0; i < length; i++, p += 8) {
-				array[i] = Double.longBitsToDouble(buffer[p] & 0xFF //
-					| (buffer[p + 1] & 0xFF) << 8 //
-					| (buffer[p + 2] & 0xFF) << 16 //
-					| (long)(buffer[p + 3] & 0xFF) << 24 //
-					| (long)(buffer[p + 4] & 0xFF) << 32 //
-					| (long)(buffer[p + 5] & 0xFF) << 40 //
-					| (long)(buffer[p + 6] & 0xFF) << 48 //
-					| (long)buffer[p + 7] << 56);
-			}
+			for (int i = 0; i < length; i++, p += 8)
+				array[i] = Double.longBitsToDouble(Bytes.getLong(buffer, p));
 			position = p;
 		} else {
 			for (int i = 0; i < length; i++)
