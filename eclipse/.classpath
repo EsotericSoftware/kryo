@@ -12,7 +12,6 @@
 	<classpathentry kind="lib" path="benchmarks/lib/jmh-core-1.21.jar"/>
 	<classpathentry kind="lib" path="benchmarks/lib/jmh-generator-annprocess-1.21.jar"/>
 	<classpathentry kind="lib" path="benchmarks/lib/byte-buddy-1.12.7.jar"/>
-	<classpathentry exported="true" kind="var" path="M2_REPO/com/esotericsoftware/reflectasm/1.11.9/reflectasm-1.11.9.jar"/>
 	<classpathentry exported="true" kind="var" path="M2_REPO/org/objenesis/objenesis/3.6/objenesis-3.6.jar"/>
 	<classpathentry exported="true" kind="var" path="M2_REPO/com/esotericsoftware/minlog/1.3.1/minlog-1.3.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/junit/jupiter/junit-jupiter-api/5.13.4/junit-jupiter-api-5.13.4.jar"/>
