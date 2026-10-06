@@ -94,6 +94,20 @@ class CachedFields implements Comparator<CachedField> {
 	 * used, which can't be loaded on older Java versions. */
 	static final boolean codeGeneration = !isAndroid && !isNativeImage && Runtime.version().feature() >= 24;
 
+	/** Returns why {@link #codeGeneration} is false, for logging. */
+	static String codeGenerationUnavailable () {
+		if (isAndroid) return "Code generation is not available on Android.";
+		if (isNativeImage) return "Code generation is not available in a native image.";
+		return "Code generation needs Java 24 or later, this is Java " + Runtime.version().feature() + ".";
+	}
+
+	/** The simple name of the field implementation, without the suffix of a hidden class, for logging. */
+	static String implementationName (CachedField field) {
+		String name = field.getClass().getSimpleName();
+		int slash = name.indexOf('/');
+		return slash == -1 ? name : name.substring(0, slash);
+	}
+
 	CachedField[] fields = new CachedField[0];
 	CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
@@ -219,16 +233,13 @@ class CachedFields implements Comparator<CachedField> {
 			cachedField.canBeNull = config.fieldsCanBeNull && !field.isAnnotationPresent(NotNull.class);
 			if (serializer.kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
 
-			if (TRACE) {
-				trace("kryo",
-					"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
-			}
 		} else { // Must be a primitive or String.
 			cachedField.canBeNull = fieldClass == String.class && config.fieldsCanBeNull;
 			cachedField.valueClass = fieldClass;
-
-			if (TRACE) trace("kryo",
-				"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
+		}
+		if (TRACE) {
+			trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass)
+				+ ") with " + implementationName(cachedField));
 		}
 
 		if (recordComponents != null) {
