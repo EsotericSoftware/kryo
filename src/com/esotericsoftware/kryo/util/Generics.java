@@ -58,7 +58,8 @@ public interface Generics {
 	 * is returned).
 	 * <p>
 	 * {@link #nextGenericClass()} is easier to use when a class has a single type parameter. When a class has multiple type
-	 * parameters, {@link #pushGenericType(GenericType)} must be used for all except the last parameter.
+	 * parameters, {@link #pushGenericType(GenericType)} must be used for all except the last parameter. The array must not be
+	 * modified, the generic types are shared by all serializers and Kryo instances.
 	 * @return May be null. */
 	GenericType[] nextGenericTypes ();
 
@@ -277,11 +278,18 @@ public interface Generics {
 		Type type; // Either a Class or TypeVariable.
 		GenericType[] arguments;
 		private TypeVariable[] typeVariables;
-		private Class superType;
-		private GenericType[] superTypeArguments;
+		private SuperTypeArguments lastSuperType;
 
+		/** A GenericType can be used by multiple Kryo instances and threads after it was created. */
 		public GenericType (Class fromClass, Class toClass, Type context) {
 			initialize(fromClass, toClass, context);
+			cacheTypeVariables();
+		}
+
+		/** Caches the type parameters of a class with type arguments before this type is shared, so {@link #typeVariables()}
+		 * doesn't have to write them. */
+		private void cacheTypeVariables () {
+			if (arguments != null && type instanceof Class) typeVariables = ((Class)type).getTypeParameters();
 		}
 
 		private void initialize (Class fromClass, Class toClass, Type context) {
@@ -336,11 +344,14 @@ public interface Generics {
 		 * subtype, its own type arguments are returned.
 		 * @return May be null. */
 		GenericType[] superTypeArguments (Class superType) {
-			if (superType != this.superType) {
-				superTypeArguments = computeSuperTypeArguments(superType);
-				this.superType = superType;
-			}
-			return superTypeArguments;
+			// One immutable object for both values, so a thread never sees the arguments of another super type. The field is not
+			// volatile: a thread that sees an older value only computes the arguments again. The type is shared by all Kryo
+			// instances, so if they use serializers that ask for different super types of the same class, which is unlikely, the
+			// arguments are computed for every call.
+			SuperTypeArguments last = lastSuperType;
+			if (last == null || last.superType != superType)
+				lastSuperType = last = new SuperTypeArguments(superType, computeSuperTypeArguments(superType));
+			return last.arguments;
 		}
 
 		private GenericType[] computeSuperTypeArguments (Class superType) {
@@ -374,18 +385,32 @@ public interface Generics {
 			result.arguments = new GenericType[actual.length];
 			for (int i = 0; i < actual.length; i++)
 				result.arguments[i] = substitute(actual[i], parameterList);
+			result.cacheTypeVariables();
 			return result;
 		}
 
 		/** Returns the type parameters of the class, cached because {@link Class#getTypeParameters()} returns a copy. */
 		TypeVariable[] typeVariables () {
-			if (typeVariables == null) typeVariables = ((Class)type).getTypeParameters();
+			TypeVariable[] typeVariables = this.typeVariables;
+			if (typeVariables == null) this.typeVariables = typeVariables = ((Class)type).getTypeParameters();
 			return typeVariables;
 		}
 
-		/** @return May be null. */
+		/** Returns the type arguments. The array must not be modified, the type is shared by all serializers and Kryo instances.
+		 * @return May be null. */
 		public GenericType[] getTypeParameters () {
 			return arguments;
+		}
+
+		/** The type arguments for a super type. */
+		static private final class SuperTypeArguments {
+			final Class superType;
+			final GenericType[] arguments;
+
+			SuperTypeArguments (Class superType, GenericType[] arguments) {
+				this.superType = superType;
+				this.arguments = arguments;
+			}
 		}
 
 		public String toString () {

@@ -19,12 +19,15 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 
@@ -287,6 +290,76 @@ class GenericsTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 
 		roundTrip(168, o);
+	}
+
+	@Test
+	void testSharedGenericTypes () throws Exception {
+		// The generic types of fields are shared by all Kryo instances. Many instances in many threads resolve the same generic
+		// types at the same time, including the type arguments of a super type (IntMap<String> as a Map).
+		int threadCount = 8;
+		Thread[] threads = new Thread[threadCount];
+		Throwable[] failures = new Throwable[threadCount];
+		for (int i = 0; i < threadCount; i++) {
+			int index = i;
+			threads[i] = new Thread(() -> {
+				try {
+					for (int ii = 0; ii < 100; ii++) {
+						Kryo kryo = new Kryo();
+						kryo.setReferences(true);
+						kryo.register(SharedGenerics.class);
+						kryo.register(SharedGenerics.IntMap.class);
+						kryo.register(ArrayList.class);
+						kryo.register(HashMap.class);
+						SharedGenerics object = new SharedGenerics(index * 1000 + ii);
+						Output output = new Output(1024, -1);
+						kryo.writeObject(output, object);
+						SharedGenerics read = kryo.readObject(new Input(output.toBytes()), SharedGenerics.class);
+						assertEquals(object, read);
+						assertEquals("" + (index * 1000 + ii), read.map.get(1));
+					}
+				} catch (Throwable ex) {
+					failures[index] = ex;
+				}
+			});
+			threads[i].start();
+		}
+		for (Thread thread : threads)
+			thread.join();
+		for (Throwable failure : failures)
+			if (failure != null) throw new AssertionError(failure);
+
+		// Unless on Android, where ClassValue is not available, two Kryo instances use the same generic type for a field.
+		if (!isAndroid) {
+			CachedField field1 = new FieldSerializer(new Kryo(), SharedGenerics.class).getField("map");
+			CachedField field2 = new FieldSerializer(new Kryo(), SharedGenerics.class).getField("map");
+			assertSame(((ReflectField)field1).genericType, ((ReflectField)field2).genericType);
+		}
+	}
+
+	static public class SharedGenerics {
+		static public class IntMap<V> extends HashMap<Integer, V> {
+		}
+
+		IntMap<String> map = new IntMap<>();
+		List<String> list = new ArrayList<>();
+		Map<String, List<Integer>> nested = new HashMap<>();
+
+		public SharedGenerics () {
+		}
+
+		SharedGenerics (int value) {
+			map.put(1, "" + value);
+			list.add("" + value);
+			nested.put("" + value, new ArrayList<>(List.of(value)));
+		}
+
+		public boolean equals (Object other) {
+			return other instanceof SharedGenerics o && map.equals(o.map) && list.equals(o.list) && nested.equals(o.nested);
+		}
+
+		public int hashCode () {
+			return map.hashCode();
+		}
 	}
 
 	interface Holder<V> {

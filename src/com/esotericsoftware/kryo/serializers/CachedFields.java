@@ -70,10 +70,29 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** @author Nathan Sweet */
 class CachedFields implements Comparator<CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
+
+	/** Caches shared by all serializers and Kryo instances. Not used on Android, which has ClassValue only since API level 34. */
+	static private final class SharedCaches {
+		/** The declared fields of a class. Class#getDeclaredFields() returns new Field objects for each call, which take as much
+		 * memory as the cached fields. */
+		static final ClassValue<Field[]> declaredFields = new ClassValue<>() {
+			protected Field[] computeValue (Class type) {
+				return type.getDeclaredFields();
+			}
+		};
+
+		/** The generic types of the fields of a serialized class, including the fields of its super classes. */
+		static final ClassValue<ConcurrentHashMap<Field, GenericType>> genericTypes = new ClassValue<>() {
+			protected ConcurrentHashMap<Field, GenericType> computeValue (Class type) {
+				return new ConcurrentHashMap<>();
+			}
+		};
+	}
 
 	private final FieldSerializer serializer;
 	/** Hidden classes can't be defined on Android or in a native image, and can be disabled by setting the system property
@@ -103,16 +122,6 @@ class CachedFields implements Comparator<CachedField> {
 		return android ? FieldAccessType.REFLECTION : FieldAccessType.VARHANDLE;
 	}
 
-	/** Class#getDeclaredFields() returns new Field objects for each call, which take as much memory as the cached fields. So all
-	 * serializers and Kryo instances use the same Field objects. Not on Android, which has ClassValue only since API level 34. */
-	static private final class DeclaredFields {
-		static final ClassValue<Field[]> cache = new ClassValue<>() {
-			protected Field[] computeValue (Class type) {
-				return type.getDeclaredFields();
-			}
-		};
-	}
-
 	@SuppressWarnings("deprecation") // FieldAccessType.ASM
 	public void rebuild () {
 		if (serializer.type.isInterface()) { // No fields to serialize.
@@ -128,7 +137,7 @@ class CachedFields implements Comparator<CachedField> {
 		RecordComponent[] recordComponents = isRecord(serializer.type) ? serializer.type.getRecordComponents() : null;
 		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
-			for (Field field : isAndroid ? nextClass.getDeclaredFields() : DeclaredFields.cache.get(nextClass))
+			for (Field field : isAndroid ? nextClass.getDeclaredFields() : SharedCaches.declaredFields.get(nextClass))
 				addField(field, asm, recordComponents, newFields, newCopyFields);
 			nextClass = nextClass.getSuperclass();
 		}
@@ -192,7 +201,7 @@ class CachedFields implements Comparator<CachedField> {
 
 		Class type = serializer.type;
 		Class declaringClass = field.getDeclaringClass();
-		GenericType genericType = new GenericType(declaringClass, type, field.getGenericType());
+		GenericType genericType = genericType(declaringClass, type, field);
 		Class fieldClass = genericType.getType() instanceof Class ? (Class)genericType.getType() : field.getType();
 		int accessIndex = -1;
 		if (asm //
@@ -267,6 +276,14 @@ class CachedFields implements Comparator<CachedField> {
 			fields.add(cachedField);
 			copyFields.add(cachedField);
 		}
+	}
+
+	/** Returns the generic type of a field, which all serializers and Kryo instances share, like the Field objects. The generic
+	 * type of a primitive field is only needed while the field is added. */
+	static private GenericType genericType (Class declaringClass, Class type, Field field) {
+		if (isAndroid || field.getType().isPrimitive()) return new GenericType(declaringClass, type, field.getGenericType());
+		return SharedCaches.genericTypes.get(type).computeIfAbsent(field,
+			key -> new GenericType(declaringClass, type, key.getGenericType()));
 	}
 
 	/** Returns true if the field can be read and written without {@link Field#setAccessible(boolean)}: a public, non-final field
