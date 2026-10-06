@@ -19,9 +19,7 @@
 
 package com.esotericsoftware.kryo.util;
 
-import static com.esotericsoftware.minlog.Log.*;
-
-import com.esotericsoftware.minlog.Log;
+import static com.esotericsoftware.kryo.util.Log.*;
 
 import java.lang.System.Logger.Level;
 
@@ -35,17 +33,16 @@ public class SystemLogger extends Log.Logger {
 		this.logger = logger;
 	}
 
-	/** Routes the logging of MinLog, which Kryo uses, to the System.Logger named "com.esotericsoftware.kryo" and sets MinLog's
-	 * level to the most detailed level that is enabled for that logger. Kryo only creates log messages for MinLog's level, so call
-	 * this again after changing the level of the logger. MinLog's logger and level are global, so this also affects other
-	 * libraries that use MinLog. */
+	/** Routes Kryo's logging to the System.Logger named "com.esotericsoftware.kryo" and sets Kryo's {@link Log} level to the most
+	 * detailed level that is enabled for that logger. Kryo only creates log messages for that level, so call this again after
+	 * changing the level of the logger. */
 	public static void install () {
 		SystemLogger logger = new SystemLogger(System.getLogger("com.esotericsoftware.kryo"));
 		Log.setLogger(logger);
 		Log.set(logger.level());
 	}
 
-	/** Returns the most detailed MinLog level that is enabled for the System.Logger. */
+	/** Returns the most detailed {@link Log} level that is enabled for the System.Logger. */
 	int level () {
 		if (logger.isLoggable(Level.TRACE)) return LEVEL_TRACE;
 		if (logger.isLoggable(Level.DEBUG)) return LEVEL_DEBUG;

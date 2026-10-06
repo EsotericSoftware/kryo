@@ -127,7 +127,7 @@ The two jars differ as follows:
 | --- | --- | --- |
 | Maven coordinates | `com.esotericsoftware:kryo` | `com.esotericsoftware.kryo:kryo6` |
 | Package | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo6` |
-| Dependencies | Objenesis, MinLog | None (bundled and relocated into `com.esotericsoftware.kryo.kryo6`) |
+| Dependencies | Objenesis | None (bundled and relocated into `com.esotericsoftware.kryo.kryo6`) |
 | Java module name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo6` |
 | OSGi bundle symbolic name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.6` |
 
