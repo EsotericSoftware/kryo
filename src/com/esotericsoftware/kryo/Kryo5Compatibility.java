@@ -78,14 +78,25 @@ public final class Kryo5Compatibility {
 	private Kryo5Compatibility () {
 	}
 
-	@SuppressWarnings("deprecation")
+	/** Configures a Kryo instance to read and write the format of Kryo 5, see the class documentation. */
 	public static void configure (Kryo kryo) {
-		// Kryo 5 wrote the class of enums with constant bodies.
-		kryo.setEnumsFinal(false);
+		restoreEnumClasses(kryo);
+		restoreStringReferences(kryo);
+		restoreDefaultSerializers(kryo);
+		restoreCollectionFormats(kryo);
+		restoreFieldSerializerSettings(kryo);
+	}
 
-		// Kryo 5 used references for strings. Kryo's reference resolvers are replaced by ones that do, without changing whether
-		// references are enabled. Without a reference resolver, setReferences uses the one set here. Subclasses and custom
-		// reference resolvers decide themselves.
+	/** Kryo 5 wrote the class of enums with constant bodies, because they are not final. */
+	@SuppressWarnings("deprecation")
+	private static void restoreEnumClasses (Kryo kryo) {
+		kryo.setEnumsFinal(false);
+	}
+
+	/** Kryo 5 used references for strings. Kryo's reference resolvers are replaced by ones that do, without changing whether
+	 * references are enabled. Without a reference resolver, {@link Kryo#setReferences(boolean)} uses the one set here. Subclasses
+	 * and custom reference resolvers decide themselves. */
+	private static void restoreStringReferences (Kryo kryo) {
 		ReferenceResolver referenceResolver = kryo.referenceResolver, kryo5Resolver = null;
 		Class resolverClass = referenceResolver == null ? null : referenceResolver.getClass();
 		if (referenceResolver == null) {
@@ -117,8 +128,13 @@ public final class Kryo5Compatibility {
 			kryo5Resolver.setKryo(kryo);
 			kryo.referenceResolver = kryo5Resolver;
 		}
+	}
 
-		// Kryo 5 serialized records with RecordSerializer. Android has records only since API level 34.
+	/** The types that have new default serializers in Kryo 6 get the serializers that Kryo 5 used by default: records are
+	 * serialized with RecordSerializer, the types that had no default serializer in Kryo 5 with FieldSerializer, and the queues
+	 * and sets with a comparator or capacity with CollectionSerializer, which loses them. */
+	private static void restoreDefaultSerializers (Kryo kryo) {
+		// Android has records only since API level 34.
 		if (!isAndroid || isClassAvailable("java.lang.Record")) {
 			kryo.addDefaultSerializer(Record.class, new BaseSerializerFactory() {
 				public Serializer newSerializer (Kryo kryo, Class type) {
@@ -147,9 +163,12 @@ public final class Kryo5Compatibility {
 		// Kryo 5 wrote these with CollectionSerializer, without the capacity. It couldn't read ArrayBlockingQueue.
 		kryo.addDefaultSerializer(LinkedBlockingQueue.class, CollectionSerializer::new);
 		kryo.addDefaultSerializer(LinkedBlockingDeque.class, CollectionSerializer::new);
+	}
 
-		// Kryo 5 wrote the class of each map key and value. The factories of the default serializers are wrapped, so the more
-		// specific default serializers keep their priority.
+	/** Kryo 5 wrote the class of each map key and value, and didn't support null elements in immutable lists. The default
+	 * serializers and the registered serializers of the immutable collections are configured for that. */
+	private static void restoreCollectionFormats (Kryo kryo) {
+		// The factories of the default serializers are wrapped, so the more specific default serializers keep their priority.
 		ArrayList<DefaultSerializerEntry> defaultSerializers = kryo.defaultSerializers;
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
@@ -178,9 +197,14 @@ public final class Kryo5Compatibility {
 				: kryo.getDefaultSerializer(List.of().getClass());
 			((CollectionSerializer)listSerializer).setElementsCanBeNull(false);
 		}
+	}
 
-		// Kryo 5 used the generic types of fields with CompatibleFieldSerializer and TaggedFieldSerializer, and never serialized
-		// synthetic fields. A default serializer set as a class is replaced by the equivalent factory, which has the settings.
+	/** Kryo 5 used the generic types of fields with CompatibleFieldSerializer and TaggedFieldSerializer, wrote fields with chunked
+	 * encoding in chunks, and ignored synthetic fields. The default serializer is configured for that; a default serializer set as
+	 * a class is replaced by the equivalent factory, which has the settings. Serializers that are registered explicitly need these
+	 * settings themselves. */
+	@SuppressWarnings("deprecation")
+	private static void restoreFieldSerializerSettings (Kryo kryo) {
 		if (kryo.defaultSerializer instanceof ReflectionSerializerFactory factory) {
 			if (factory.serializerClass == FieldSerializer.class)
 				kryo.defaultSerializer = new FieldSerializerFactory();
