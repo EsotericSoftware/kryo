@@ -192,7 +192,6 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		if (fieldCount == NULL) return null;
 		fieldCount--;
 
-		boolean readUnknownTagData = config.readUnknownTagData;
 		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
 		boolean chunked = chunks != null;
 		int pop = pushTypeVariables();
@@ -213,78 +212,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				return object;
 			}
 
-			IntMap<CachedField> readTags = this.readTags;
 			for (int i = 0; i < fieldCount; i++) {
-				int tag = input.readVarInt(true);
-				CachedField cachedField = readTags.get(tag);
+				int tag = input.readVarInt(true); // With legacy chunks, the tags are outside the chunks.
 				long end = chunked ? chunks.beginField(fieldInput) : 0;
-
-				if (readUnknownTagData) {
-					Registration registration;
-					try {
-						registration = kryo.readClass(fieldInput);
-					} catch (KryoException ex) {
-						String message = "Unable to read unknown tag " + tag + " data (unknown type). (" + getType().getName() + "#"
-							+ cachedField + ")";
-						if (!chunked) throw new KryoException(message, ex);
-						if (DEBUG) debug("kryo", message, ex);
-						chunks.endField(fieldInput, end);
-						continue;
-					}
-					if (registration == null) {
-						// The value is null, overwrite the value set by the constructor. Record values are already null.
-						if (cachedField != null && object != null) setNull(cachedField, object);
-						if (chunked) chunks.endField(fieldInput, end);
-						continue;
-					}
-					Class valueClass = registration.getType();
-					if (cachedField == null) {
-						if (chunked && config.optimizeGenerics && !config.legacyChunks) {
-							// Without the generic type of the removed field, its data can't be read.
-							if (TRACE) trace("kryo", "Skip unknown tag " + tag + " data, type: " + className(valueClass));
-							chunks.endField(fieldInput, end);
-							continue;
-						}
-						// Read unknown tag data in case it is a reference.
-						if (TRACE) trace("kryo", "Read unknown tag " + tag + " data, type: " + className(valueClass));
-						try {
-							kryo.readObject(fieldInput, valueClass);
-						} catch (KryoException ex) {
-							String message = "Unable to read unknown tag " + tag + " data, type: " + className(valueClass) + " ("
-								+ getType().getName() + "#" + cachedField + ")";
-							if (!chunked) throw new KryoException(message, ex);
-							if (DEBUG) debug("kryo", message, ex);
-						}
-						if (chunked) chunks.endField(fieldInput, end);
-						continue;
-					}
-
-					// Ensure the type in the data is compatible with the field type.
-					Class fieldType = GeneratedFields.readType(cachedField);
-					if (!Util.isAssignableTo(valueClass, fieldType)) {
-						String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
-							+ className(fieldType) + " (" + getType().getName() + "#" + cachedField + ")";
-						if (!chunked) throw new KryoException(message);
-						if (DEBUG) debug("kryo", message);
-						chunks.endField(fieldInput, end);
-						continue;
-					}
-
-					cachedField.setCanBeNull(false);
-					cachedField.setValueClass(valueClass);
-					cachedField.setReuseSerializer(false);
-				} else if (cachedField == null) {
-					if (!chunked) throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
-					if (TRACE) trace("kryo", "Skip unknown field tag: " + tag);
-					chunks.endField(fieldInput, end);
-					continue;
-				}
-
-				if (TRACE) log("Read", cachedField, input.position());
-				if (values == null)
-					readField(cachedField, fieldInput, object);
-				else
-					values[cachedField.index] = cachedField.read(fieldInput);
+				readTag(fieldInput, tag, object, values, chunked);
 				if (chunked) chunks.endField(fieldInput, end);
 			}
 
@@ -301,6 +232,11 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	 * by the generated code when the tag is not the expected one.
 	 * @param chunked If true, the data is skipped instead of throwing an exception, by the caller's endField. */
 	void readTag (Input input, int tag, Object object, boolean chunked) {
+		readTag(input, tag, object, null, chunked);
+	}
+
+	/** @param values The record values, or null to set the fields of the object. */
+	private void readTag (Input input, int tag, Object object, Object[] values, boolean chunked) {
 		CachedField cachedField = readTags.get(tag);
 		if (config.readUnknownTagData) {
 			Registration registration;
@@ -308,19 +244,19 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				registration = kryo.readClass(input);
 			} catch (KryoException ex) {
 				String message = "Unable to read unknown tag " + tag + " data (unknown type). (" + getType().getName() + "#"
-					+ cachedField
-					+ ")";
+					+ cachedField + ")";
 				if (!chunked) throw new KryoException(message, ex);
 				if (DEBUG) debug("kryo", message, ex);
 				return;
 			}
 			if (registration == null) {
-				if (cachedField != null) setNull(cachedField, object);
+				// The value is null, overwrite the value set by the constructor. Record values are already null.
+				if (cachedField != null && values == null) setNull(cachedField, object);
 				return;
 			}
 			Class valueClass = registration.getType();
 			if (cachedField == null) {
-				if (chunked && config.optimizeGenerics) {
+				if (chunked && config.optimizeGenerics && !config.legacyChunks) {
 					// Without the generic type of the removed field, its data can't be read.
 					if (TRACE) trace("kryo", "Skip unknown tag " + tag + " data, type: " + className(valueClass));
 					return;
@@ -358,7 +294,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		if (TRACE) log("Read", cachedField, input.position());
-		readField(cachedField, input, object);
+		if (values == null)
+			readField(cachedField, input, object);
+		else
+			values[cachedField.index] = cachedField.read(input);
 	}
 
 	public TaggedFieldSerializerConfig getTaggedFieldSerializerConfig () {
