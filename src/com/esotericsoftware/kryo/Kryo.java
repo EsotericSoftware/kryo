@@ -442,8 +442,8 @@ public class Kryo {
 	 * cause the old entry to be overwritten. Registering a primitive also affects the corresponding primitive wrapper.
 	 * <p>
 	 * IDs must be the same at deserialization as they were for serialization.
-	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-9 are used by default for primitive types
-	 *           and their wrappers, String, and void, but these IDs can be repurposed. */
+	 * @param id Must be >= 0. Smaller IDs are serialized more efficiently. IDs 0-9 are used by default for primitive types and
+	 *           their wrappers, String, and void, but these IDs can be repurposed. */
 	public Registration register (Class type, Serializer serializer, int id) {
 		if (id < 0) throw new IllegalArgumentException("id must be >= 0: " + id);
 		return register(new Registration(type, serializer, id));
@@ -854,7 +854,13 @@ public class Kryo {
 		}
 		// The id is an object reference.
 		id -= 2; // - 2 because 0 and 1 are used for NULL and NOT_NULL.
-		readObject = referenceResolver.getReadObject(type, id);
+		try {
+			readObject = referenceResolver.getReadObject(type, id);
+		} catch (KryoException ex) {
+			throw ex;
+		} catch (Exception ex) {
+			throw new KryoException("Unable to resolve reference ID " + id + " for class: " + type.getName(), ex);
+		}
 		if (DEBUG) debug("kryo", "Read object reference " + id + ": " + string(readObject));
 		return REF;
 	}
@@ -1054,7 +1060,7 @@ public class Kryo {
 	 * <p>
 	 * If false, no log are written when unregistered classes are encountered.
 	 * </p>
-	*/
+	 */
 	public void setWarnUnregisteredClasses (boolean warnUnregisteredClasses) {
 		this.warnUnregisteredClasses = warnUnregisteredClasses;
 		if (TRACE) trace("kryo", "Warn unregistered classes: " + warnUnregisteredClasses);
@@ -1307,13 +1313,17 @@ public class Kryo {
 				if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()))
 					throw new KryoException("Class cannot be created (non-static member class): " + className(type));
 				else {
-					StringBuilder errorMessageSb = new StringBuilder("Class cannot be created (missing no-arg constructor): " + className(type));
+					StringBuilder errorMessageSb = new StringBuilder(
+						"Class cannot be created (missing no-arg constructor): " + className(type));
 					if (type.getSimpleName().equals("")) {
-						errorMessageSb.append("\n\tThis is an anonymous class, which is not serializable by default in Kryo. Possible solutions: ")
+						errorMessageSb
+							.append("\n\tThis is an anonymous class, which is not serializable by default in Kryo. Possible solutions: ")
 							.append("1. Remove uses of anonymous classes, including double brace initialization, from the containing ")
-							.append("class. This is the safest solution, as anonymous classes don't have predictable names for serialization.")
+							.append(
+								"class. This is the safest solution, as anonymous classes don't have predictable names for serialization.")
 							.append("\n\t2. Register a FieldSerializer for the containing class and call ")
-							.append( "FieldSerializer#setIgnoreSyntheticFields(false) on it. This is not safe but may be sufficient temporarily. ")
+							.append(
+								"FieldSerializer#setIgnoreSyntheticFields(false) on it. This is not safe but may be sufficient temporarily. ")
 							.append("Use at your own risk.");
 					}
 					throw new KryoException(errorMessageSb.toString());

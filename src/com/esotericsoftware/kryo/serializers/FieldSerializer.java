@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.NotNull;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
@@ -96,7 +97,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 	 * FIXME: Not all versions of Sun/Oracle JDK properly work with this option. Disable it for now. Later add dynamic checks to
 	 * see if this feature is supported by a current JDK version.
 	 * </p>
-	*/
+	 */
 	private boolean useMemRegions = false;
 
 	private boolean hasObjectFields = false;
@@ -294,7 +295,8 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 			// BOZO - Must be public?
 			useAsm
 				.add(!Modifier.isFinal(modifiers) && Modifier.isPublic(modifiers) && Modifier.isPublic(field.getType().getModifiers())
-					? 1 : 0);
+					? 1
+					: 0);
 		}
 		return result;
 	}
@@ -505,12 +507,12 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 		CachedField[] fields = this.fields;
 		for (int i = 0, n = fields.length; i < n; i++)
-			fields[i].write(output, object);
+			writeField(output, object, fields[i]);
 
 		// Serialize transient fields
 		if (config.isSerializeTransient()) {
 			for (int i = 0, n = transientFields.length; i < n; i++)
-				transientFields[i].write(output, object);
+				writeField(output, object, transientFields[i]);
 		}
 
 		if (config.isOptimizedGenerics() && genericsScope != null) {
@@ -540,12 +542,12 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 
 			CachedField[] fields = this.fields;
 			for (int i = 0, n = fields.length; i < n; i++)
-				fields[i].read(input, object);
+				readField(input, object, fields[i]);
 
 			// De-serialize transient fields
 			if (config.isSerializeTransient()) {
 				for (int i = 0, n = transientFields.length; i < n; i++)
-					transientFields[i].read(input, object);
+					readField(input, object, transientFields[i]);
 			}
 			return object;
 		} finally {
@@ -553,6 +555,28 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 				// Pop the scope for generics
 				kryo.getGenericsResolver().popScope();
 			}
+		}
+	}
+
+	private void writeField (Output output, T object, CachedField field) {
+		try {
+			field.write(output, object);
+		} catch (KryoException ex) {
+			throw ex;
+		} catch (Exception | OutOfMemoryError ex) {
+			throw new KryoException("Error writing field: " + field.getField().getName() + " (" + type.getName()
+				+ ") at output position " + output.position(), ex);
+		}
+	}
+
+	private void readField (Input input, T object, CachedField field) {
+		try {
+			field.read(input, object);
+		} catch (KryoException ex) {
+			throw ex;
+		} catch (Exception | OutOfMemoryError ex) {
+			throw new KryoException("Error reading field: " + field.getField().getName() + " (" + type.getName()
+				+ ") at input position " + input.position(), ex);
 		}
 	}
 
