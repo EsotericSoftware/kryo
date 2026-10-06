@@ -25,6 +25,12 @@
 			<artifactId>kryo</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<!-- Optional for the default jar, but included in the versioned jar. -->
+			<groupId>org.objenesis</groupId>
+			<artifactId>objenesis</artifactId>
+			<version>3.6</version>
+		</dependency>
 	</dependencies>
 
 	<build>
