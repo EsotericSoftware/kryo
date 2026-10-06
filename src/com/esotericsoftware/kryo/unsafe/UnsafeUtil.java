@@ -124,8 +124,8 @@ public class UnsafeUtil {
 			}
 		}
 
-		/** The offset of the address field of direct buffers, or -1 if it isn't available. Here and not in UnsafeUtil, because
-		 * Java 24+ warns at the first Unsafe memory access, which is the first use of direct buffers rather than the first use of
+		/** The offset of the address field of direct buffers, or -1 if it isn't available. Here and not in UnsafeUtil, because Java
+		 * 24+ warns at the first Unsafe memory access, which is the first use of direct buffers rather than the first use of
 		 * Kryo. */
 		static final long addressOffset;
 		static {
