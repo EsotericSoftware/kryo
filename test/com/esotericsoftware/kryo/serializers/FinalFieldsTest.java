@@ -132,9 +132,7 @@ class FinalFieldsTest {
 				serializer.updateFields();
 				assertFalse(hasFinalSetter(serializer), type.getSimpleName());
 			}
-			// The method handles are available since Java 24.
-			if (Runtime.version().feature() >= 24 && !isAndroid)
-				assertTrue(hasFinalSetter(new FieldSerializer(kryo, Defaults.class)));
+			if (finalFieldSetters()) assertTrue(hasFinalSetter(new FieldSerializer(kryo, Defaults.class)));
 		} finally {
 			FinalFieldSetter.force = false;
 		}
@@ -143,7 +141,7 @@ class FinalFieldsTest {
 	@Test
 	void testOtherFinalFields () {
 		// A final field that can't be set, eg a transient final field that is only copied, doesn't affect the other final fields.
-		assumeTrue(Runtime.version().feature() >= 24 && !isAndroid);
+		assumeTrue(finalFieldSetters());
 		try {
 			FinalFieldSetter.force = true;
 			Kryo kryo = new Kryo();
@@ -164,6 +162,13 @@ class FinalFieldsTest {
 		}
 	}
 
+	/** Returns true if final fields are set with a {@link FinalFieldSetter} when reflection is denied: the method handles are
+	 * available since Java 24 and not on Android, and Unsafe field access sets final fields with Unsafe instead. */
+	static private boolean finalFieldSetters () {
+		return Runtime.version().feature() >= 24 && !isAndroid
+			&& FieldSerializer.FieldSerializerConfig.defaultFieldAccess != FieldAccessType.UNSAFE;
+	}
+
 	/** Returns true if a final field of the serializer is set with a {@link FinalFieldSetter}. */
 	static private boolean hasFinalSetter (FieldSerializer serializer) {
 		for (FieldSerializer.CachedField field : serializer.getFields())
@@ -176,7 +181,7 @@ class FinalFieldsTest {
 	@Test
 	void testRemovedFields () {
 		// Only the fields that remain after fields were removed have a setter, eg not the untagged fields of TaggedFieldSerializer.
-		assumeTrue(Runtime.version().feature() >= 24 && !isAndroid);
+		assumeTrue(finalFieldSetters());
 		try {
 			FinalFieldSetter.force = true;
 			Kryo kryo = new Kryo();
