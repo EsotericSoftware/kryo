@@ -424,6 +424,34 @@ public class DefaultSerializers {
 		}
 	}
 
+	/** Serializer for {@link java.sql.Date}, which creates it without reflection, so it needs no metadata in a GraalVM native
+	 * image. Subclasses are created like by {@link DateSerializer}. */
+	public static class SqlDateSerializer extends DateSerializer {
+		public Date read (Kryo kryo, Input input, Class<? extends Date> type) {
+			if (type == java.sql.Date.class) return new java.sql.Date(input.readVarLong(true));
+			return super.read(kryo, input, type);
+		}
+
+		public Date copy (Kryo kryo, Date original) {
+			if (original.getClass() == java.sql.Date.class) return new java.sql.Date(original.getTime());
+			return super.copy(kryo, original);
+		}
+	}
+
+	/** Serializer for {@link java.sql.Time}, which creates it without reflection, so it needs no metadata in a GraalVM native
+	 * image. Subclasses are created like by {@link DateSerializer}. */
+	public static class SqlTimeSerializer extends DateSerializer {
+		public Date read (Kryo kryo, Input input, Class<? extends Date> type) {
+			if (type == java.sql.Time.class) return new java.sql.Time(input.readVarLong(true));
+			return super.read(kryo, input, type);
+		}
+
+		public Date copy (Kryo kryo, Date original) {
+			if (original.getClass() == java.sql.Time.class) return new java.sql.Time(original.getTime());
+			return super.copy(kryo, original);
+		}
+	}
+
 	/** Serializer for {@link Timestamp} which preserves the nanoseconds field. */
 	public static class TimestampSerializer extends Serializer<Timestamp> {
 		public void write (Kryo kryo, Output output, Timestamp object) {
