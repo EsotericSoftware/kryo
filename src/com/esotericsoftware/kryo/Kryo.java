@@ -89,6 +89,8 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.ReverseOrderComp
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ReverseOrderSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.ShortSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBufferSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.SqlDateSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.SqlTimeSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringBuilderSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimeZoneSerializer;
@@ -205,6 +207,9 @@ public class Kryo {
 	ReferenceResolver referenceResolver;
 	private final IntArray readReferenceIds = new IntArray(0);
 	private boolean references, copyReferences = true;
+	/** Whether String fields of FieldSerializer use references: -1 until the first String field is created, then 0 or 1. The field
+	 * decides when it is created, so the decision can't change afterward. */
+	private int stringFieldReferences = -1;
 	private Object readObject;
 
 	private int copyDepth;
@@ -300,6 +305,8 @@ public class Kryo {
 		addDefaultSerializer(ByteBuffer.class, new ByteBufferSerializer());
 		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer::new);
 		try {
+			addDefaultSerializer(java.sql.Date.class, SqlDateSerializer::new);
+			addDefaultSerializer(java.sql.Time.class, SqlTimeSerializer::new);
 			addDefaultSerializer(Timestamp.class, TimestampSerializer::new);
 		} catch (NoClassDefFoundError ignored) { // java.sql is not available in a named module that doesn't require it.
 		}
@@ -1308,11 +1315,13 @@ public class Kryo {
 	 * used. Default is false.
 	 * <p>
 	 * String fields of {@link FieldSerializer} and its subclasses decide when the serializer is created whether they use
-	 * references, so if the reference resolver uses references for strings, this should be called before registering classes.
-	 * @return The previous value. */
+	 * references, so if the reference resolver uses references for strings, this must be called before registering classes.
+	 * @return The previous value.
+	 * @throws KryoException if this changes whether strings use references after a String field was created. */
 	public boolean setReferences (boolean references) {
 		boolean old = this.references;
 		if (references == old) return references;
+		checkStringReferences(references, referenceResolver);
 		if (old) {
 			referenceResolver.reset();
 			readObject = null;
@@ -1331,9 +1340,13 @@ public class Kryo {
 		this.copyReferences = copyReferences;
 	}
 
-	/** Sets the reference resolver and enables references. */
+	/** Sets the reference resolver and enables references.
+	 * @throws KryoException if this changes whether strings use references after a String field was created, see
+	 *            {@link #setReferences(boolean)}. */
 	public void setReferenceResolver (ReferenceResolver referenceResolver) {
 		if (referenceResolver == null) throw new IllegalArgumentException("referenceResolver cannot be null.");
+		referenceResolver.setKryo(this); // Before the check, useReferences may need the Kryo instance.
+		checkStringReferences(true, referenceResolver);
 		this.references = true;
 		this.referenceResolver = referenceResolver;
 		if (TRACE) trace("kryo", "Reference resolver: " + referenceResolver.getClass().getName());
@@ -1341,6 +1354,28 @@ public class Kryo {
 
 	public boolean getReferences () {
 		return references;
+	}
+
+	/** Returns true if strings are written with references: references are enabled and the reference resolver uses references for
+	 * strings. {@link FieldSerializer} calls this when it creates a String field, after which the result can't change, see
+	 * {@link #setReferences(boolean)}. */
+	public boolean usesStringReferences () {
+		if (stringFieldReferences == -1) stringFieldReferences = stringReferences(references, referenceResolver) ? 1 : 0;
+		return stringFieldReferences == 1;
+	}
+
+	/** Throws if a String field was created and the specified settings change whether strings use references. */
+	void checkStringReferences (boolean references, ReferenceResolver referenceResolver) {
+		if (stringFieldReferences != -1 && stringReferences(references, referenceResolver) != (stringFieldReferences == 1)) {
+			throw new KryoException(
+				"Whether strings use references can't be changed after a FieldSerializer was created for a class "
+					+ "with a String field, because the field decides when it is created whether it is written with references. Set "
+					+ "references and the reference resolver before registering classes.");
+		}
+	}
+
+	private static boolean stringReferences (boolean references, ReferenceResolver referenceResolver) {
+		return references && referenceResolver != null && referenceResolver.useReferences(String.class);
 	}
 
 	/** Sets the strategy used by {@link #newInstantiator(Class)} for creating objects. See {@link StdInstantiatorStrategy} to

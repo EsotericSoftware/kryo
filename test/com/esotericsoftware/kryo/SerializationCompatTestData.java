@@ -168,6 +168,8 @@ class SerializationCompatTestData {
 		private Class _class;
 		private Integer[] _integerArray;
 		private Date _date;
+		private java.sql.Date _sqlDate;
+		private java.sql.Time _sqlTime;
 		private Timestamp _timestamp;
 		private TimeZone _timeZone;
 		private Calendar _calendar;
@@ -271,6 +273,8 @@ class SerializationCompatTestData {
 			_integerArray = new Integer[] {13};
 
 			_date = new Date(42);
+			_sqlDate = new java.sql.Date(42);
+			_sqlTime = new java.sql.Time(42);
 			_timestamp = new Timestamp(42);
 			_timestamp.setNanos(42_000_043);
 			_calendar = Calendar.getInstance(Locale.ENGLISH);

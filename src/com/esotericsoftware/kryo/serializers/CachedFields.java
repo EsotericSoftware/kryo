@@ -302,10 +302,11 @@ class CachedFields implements Comparator<CachedField> {
 
 	/** Returns true if a String field is written directly as a string, which all field access types decide the same way, so they
 	 * write the same data, eg for a final field that VarHandles can't set. Not with references for strings, and not with
-	 * {@link Bind} or {@link NotNull}, which only the fields for objects apply. */
+	 * {@link Bind} or {@link NotNull}, which only the fields for objects apply. Kryo remembers the decision for strings, so it
+	 * can't change afterward. */
 	private boolean isStringField (Field field, Class fieldClass) {
 		return fieldClass == String.class && !field.isAnnotationPresent(Bind.class) && !field.isAnnotationPresent(NotNull.class)
-			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class));
+			&& !serializer.kryo.usesStringReferences();
 	}
 
 	private CachedField newUnsafeField (Field field, Class fieldClass, GenericType genericType) {
