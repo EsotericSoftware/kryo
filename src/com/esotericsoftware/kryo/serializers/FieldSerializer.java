@@ -31,7 +31,6 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.Generics;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
-import com.esotericsoftware.reflectasm.FieldAccess;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
@@ -375,10 +374,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 		Serializer serializer;
 		boolean canBeNull, varEncoding = true, optimizePositive, reuseSerializer = true;
 
-		// For AsmField.
-		FieldAccess access;
-		int accessIndex = -1;
-
 		// For Records
 		int index;
 
@@ -557,11 +552,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public enum FieldAccessType {
 		/** {@code sun.misc.Unsafe}, if available. Fastest, but deprecated for removal by Java. */
 		UNSAFE,
-		/** ReflectASM for public, non-final fields of public classes. It is only used if it is configured.
-		 * @deprecated VarHandles are as fast as ReflectASM. ASM will be removed in Kryo 7, together with the ReflectASM dependency.
-		 *             If VarHandles are slower for you than ReflectASM, please open an issue. */
-		@Deprecated
-		ASM,
 		/** {@link java.lang.invoke.VarHandle} for non-final fields. Where hidden classes can be defined, which is not on Android or
 		 * in a native image, each field is accessed by a hidden class that has the VarHandle as a constant, which is much faster
 		 * and close to Unsafe. */
