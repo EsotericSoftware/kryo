@@ -62,6 +62,7 @@ final class CodeGeneration {
 	static private final ClassDesc CD_CachedField = ClassDesc.of(CachedField.class.getName());
 	static private final ClassDesc CD_CachedFieldArray = CD_CachedField.arrayType();
 	static private final ClassDesc CD_FieldSerializer = ClassDesc.of(FieldSerializer.class.getName());
+	static private final ClassDesc CD_TaggedFieldSerializer = ClassDesc.of(TaggedFieldSerializer.class.getName());
 	static private final ClassDesc CD_Kryo = ClassDesc.of(Kryo.class.getName());
 	static private final ClassDesc CD_Registration = ClassDesc.of(Registration.class.getName());
 	static private final ClassDesc CD_CodeGeneration = ClassDesc.of(CodeGeneration.class.getName());
@@ -78,6 +79,9 @@ final class CodeGeneration {
 		CD_CachedField);
 	static private final MethodTypeDesc MTD_readPrimitiveClass = MethodTypeDesc.of(CD_boolean, CD_FieldSerializer, CD_Input,
 		CD_CachedField);
+	static private final MethodTypeDesc MTD_writeVarInt = MethodTypeDesc.of(CD_int, CD_int, CD_boolean);
+	static private final MethodTypeDesc MTD_readVarInt = MethodTypeDesc.of(CD_int, CD_boolean);
+	static private final MethodTypeDesc MTD_readTag = MethodTypeDesc.of(CD_void, CD_Input, CD_int, CD_Object);
 
 	/** The constructors of the hidden classes, by type and field signature. */
 	static private final ClassValue<ConcurrentHashMap<String, MethodHandle>> constructors = new ClassValue<>() {
@@ -97,8 +101,10 @@ final class CodeGeneration {
 	/** Returns the generated code for the fields, or null if code can't be generated for them.
 	 * @param writeClasses If true, the class of each value is written before the value, which is written without null marker, like
 	 *           CompatibleFieldSerializer with unknown field data.
+	 * @param tags If not null, the tag of each field is written before the field, like TaggedFieldSerializer. When a read tag is
+	 *           not the expected one, the field is read with {@link TaggedFieldSerializer#readTag(Input, int, Object)}.
 	 * @throws KryoException if the hidden class can't be defined. */
-	static GeneratedFields generate (FieldSerializer serializer, CachedField[] fields, boolean writeClasses) {
+	static GeneratedFields generate (FieldSerializer serializer, CachedField[] fields, boolean writeClasses, int[] tags) {
 		if (serializer.recordConstructor != null) return null;
 		Kind[] kinds = new Kind[fields.length];
 		StringBuilder signature = new StringBuilder(writeClasses ? "classes;" : "");
@@ -112,11 +118,13 @@ final class CodeGeneration {
 			}
 			kinds[i] = kind;
 			signature.append(field.field.getDeclaringClass().getName()).append('.').append(field.field.getName()).append(':')
-				.append(kind).append(';');
+				.append(kind);
+			if (tags != null) signature.append(':').append(tags[i]);
+			signature.append(';');
 		}
 
 		MethodHandle constructor = constructors.get(serializer.type).computeIfAbsent(signature.toString(),
-			key -> define(serializer.type, fields, kinds, writeClasses));
+			key -> define(serializer.type, fields, kinds, writeClasses, tags));
 		try {
 			return (GeneratedFields)constructor.invokeExact(serializer, fields);
 		} catch (Throwable t) {
@@ -146,6 +154,7 @@ final class CodeGeneration {
 
 	// Called by the generated code when the classes are written:
 
+	@SuppressWarnings("unused")
 	static void writeStringWithClass (Kryo kryo, Output output, String value) {
 		if (value == null) {
 			kryo.writeClass(output, null);
@@ -156,6 +165,7 @@ final class CodeGeneration {
 	}
 
 	/** @return null if the class was null. */
+	@SuppressWarnings("unused")
 	static String readStringWithClass (FieldSerializer serializer, Input input, CachedField field) {
 		if (readClass(serializer, input, field) == null) return null;
 		return input.readString();
@@ -163,6 +173,7 @@ final class CodeGeneration {
 
 	/** Reads the class of a primitive field value.
 	 * @return false if the class was null, then the field keeps its value. */
+	@SuppressWarnings("unused")
 	static boolean readPrimitiveClass (FieldSerializer serializer, Input input, CachedField field) {
 		return readClass(serializer, input, field) != null;
 	}
@@ -188,7 +199,7 @@ final class CodeGeneration {
 	}
 
 	/** Defines the hidden class and returns its constructor. */
-	static private MethodHandle define (Class type, CachedField[] fields, Kind[] kinds, boolean writeClasses) {
+	static private MethodHandle define (Class type, CachedField[] fields, Kind[] kinds, boolean writeClasses, int[] tags) {
 		// The class data: the VarHandle of each field, then the setter MethodHandle of each final field.
 		int n = fields.length;
 		ArrayList<Object> classData = new ArrayList<>(n);
@@ -250,6 +261,9 @@ final class CodeGeneration {
 			cb.withMethodBody("write", MethodTypeDesc.of(CD_void, CD_Output, CD_Object), ACC_PUBLIC, code -> {
 				for (int i = 0; i < n; i++) {
 					Kind kind = kinds[i];
+					// output.writeVarInt(tag, true);
+					if (tags != null)
+						code.aload(1).loadConstant(tags[i]).iconst_1().invokevirtual(CD_Output, "writeVarInt", MTD_writeVarInt).pop();
 					if (kind == Kind.object) {
 						// ((ReflectField)fields[i]).writeValue(output, object, (Object)fi.get(object));
 						code.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload()
@@ -288,18 +302,21 @@ final class CodeGeneration {
 			// public void read (Input input, Object object)
 			cb.withMethodBody("read", MethodTypeDesc.of(CD_void, CD_Input, CD_Object), ACC_PUBLIC, code -> {
 				for (int i = 0; i < n; i++) {
-					Kind kind = kinds[i];
-					if (writeClasses && kind != Kind.object && kind != Kind.string) {
-						// if (CodeGeneration.readPrimitiveClass(serializer, input, fields[i])) fi.set(object, input.readX());
-						int index = i;
-						code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1) //
-							.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload() //
-							.invokestatic(CD_CodeGeneration, "readPrimitiveClass", MTD_readPrimitiveClass) //
-							.ifThen(java.lang.classfile.Opcode.IFNE,
-								block -> readField(block, thisClass, index, kinds[index], setters[index], false));
+					int index = i;
+					if (tags == null) {
+						readField(code, thisClass, index, kinds[index], setters[index], writeClasses);
 						continue;
 					}
-					readField(code, thisClass, i, kind, setters[i], writeClasses);
+					// int tag = input.readVarInt(true);
+					// if (tag == TAG) read the field, else ((TaggedFieldSerializer)serializer).readTag(input, tag, object);
+					int tag = code.allocateLocal(java.lang.classfile.TypeKind.INT);
+					code.aload(1).iconst_1().invokevirtual(CD_Input, "readVarInt", MTD_readVarInt).istore(tag) //
+						.iload(tag).loadConstant(tags[i]) //
+						.ifThenElse(java.lang.classfile.Opcode.IF_ICMPEQ, //
+							block -> readField(block, thisClass, index, kinds[index], setters[index], writeClasses), //
+							block -> block.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer)
+								.checkcast(CD_TaggedFieldSerializer) //
+								.aload(1).iload(tag).aload(2).invokevirtual(CD_TaggedFieldSerializer, "readTag", MTD_readTag));
 				}
 				code.return_();
 			});
@@ -317,6 +334,14 @@ final class CodeGeneration {
 	/** Emits: fi.set(object, value) or, for a final field, si.invokeExact(object, value). */
 	static private void readField (java.lang.classfile.CodeBuilder code, ClassDesc thisClass, int i, Kind kind, int setter,
 		boolean readClass) {
+		if (readClass && kind != Kind.object && kind != Kind.string) {
+			// if (CodeGeneration.readPrimitiveClass(serializer, input, fields[i])) fi.set(object, input.readX());
+			code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).aload(1) //
+				.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload() //
+				.invokestatic(CD_CodeGeneration, "readPrimitiveClass", MTD_readPrimitiveClass) //
+				.ifThen(java.lang.classfile.Opcode.IFNE, block -> readField(block, thisClass, i, kind, setter, false));
+			return;
+		}
 		if (setter == -1)
 			code.getstatic(thisClass, "f" + i, CD_VarHandle);
 		else

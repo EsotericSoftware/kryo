@@ -84,8 +84,19 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		}
 	}
 
+	/** Generated code is used without chunked encoding. */
 	boolean usesCodeGeneration () {
-		return false;
+		// The super class config, because this is called by the super constructor.
+		return !((TaggedFieldSerializerConfig)super.config).chunked;
+	}
+
+	GeneratedFields generateCode () {
+		// The super class config, because this is called by the super constructor.
+		TaggedFieldSerializerConfig config = (TaggedFieldSerializerConfig)super.config;
+		int[] tags = new int[writeTags.length];
+		for (int i = 0; i < tags.length; i++)
+			tags[i] = writeTags[i].tag;
+		return CodeGeneration.generate(this, writeTags, config.readUnknownTagData, tags);
 	}
 
 	void cachedFieldsChanged () {
@@ -128,6 +139,12 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		Output objectOutput = config.legacyChunks ? output : fieldOutput;
 		int pop = pushTypeVariables();
 		writeHeader(kryo, objectOutput, object);
+
+		if (generated != null && !chunked) {
+			writeGenerated(output, object);
+			popTypeVariables(pop);
+			return;
+		}
 
 		for (int i = 0, n = writeTags.length; i < n; i++) {
 			CachedField cachedField = writeTags[i];
@@ -184,6 +201,12 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				kryo.reference(object);
 			} else
 				values = newRecordValues();
+
+			// The generated code reads the tags this serializer writes, in its order, and falls back to readTag for other tags.
+			if (generated != null && !chunked && values == null && fieldCount == writeTags.length) {
+				readGenerated(input, object);
+				return object;
+			}
 
 			IntMap<CachedField> readTags = this.readTags;
 			for (int i = 0; i < fieldCount; i++) {
@@ -255,6 +278,45 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			if (chunked) chunks.endRead();
 		}
 		return object;
+	}
+
+	/** Reads the field for a tag, like {@link #read(Kryo, Input, Class)} does without chunked encoding. Called by the generated
+	 * code when the tag is not the expected one. */
+	void readTag (Input input, int tag, Object object) {
+		CachedField cachedField = readTags.get(tag);
+		if (config.readUnknownTagData) {
+			Registration registration;
+			try {
+				registration = kryo.readClass(input);
+			} catch (KryoException ex) {
+				throw new KryoException(
+					"Unable to read unknown tag " + tag + " data (unknown type). (" + getType().getName() + "#" + cachedField + ")",
+					ex);
+			}
+			if (registration == null) {
+				if (cachedField != null) setNull(cachedField, object);
+				return;
+			}
+			Class valueClass = registration.getType();
+			if (cachedField == null) {
+				// Read unknown tag data in case it is a reference.
+				if (TRACE) trace("kryo", "Read unknown tag " + tag + " data, type: " + className(valueClass));
+				try {
+					kryo.readObject(input, valueClass);
+				} catch (KryoException ex) {
+					throw new KryoException("Unable to read unknown tag " + tag + " data, type: " + className(valueClass) + " ("
+						+ getType().getName() + "#" + cachedField + ")", ex);
+				}
+				return;
+			}
+			cachedField.setCanBeNull(false);
+			cachedField.setValueClass(valueClass);
+			cachedField.setReuseSerializer(false);
+		} else if (cachedField == null)
+			throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
+
+		if (TRACE) log("Read", cachedField, input.position());
+		readField(cachedField, input, object);
 	}
 
 	public TaggedFieldSerializerConfig getTaggedFieldSerializerConfig () {

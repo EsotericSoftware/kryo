@@ -71,8 +71,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		return !((CompatibleFieldSerializerConfig)super.config).chunked;
 	}
 
-	boolean generatedWritesClasses () {
-		return ((CompatibleFieldSerializerConfig)super.config).readUnknownFieldData;
+	GeneratedFields generateCode () {
+		// The super class config, because this is called by the super constructor.
+		CompatibleFieldSerializerConfig config = (CompatibleFieldSerializerConfig)super.config;
+		return CodeGeneration.generate(this, cachedFields.fields, config.readUnknownFieldData, null);
 	}
 
 	void cachedFieldsChanged () {
