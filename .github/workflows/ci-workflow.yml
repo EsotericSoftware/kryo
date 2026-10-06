@@ -15,35 +15,39 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+      # The build needs JDK 25, the tests run on each supported JDK with the classes built by JDK 25.
       - uses: actions/setup-java@v5
+        id: jdk17
         with:
           distribution: 'temurin'
           java-version: 17
-          cache: 'maven'
-
-      - name: Build with JDK 17
-        run: mvn -B install --no-transfer-progress -DskipTests
-
       - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: 17
-      - name: Test with JDK 17         
-        run: mvn -v && mvn -B test
-        
-      - uses: actions/setup-java@v5
+        id: jdk21
         with:
           distribution: 'temurin'
           java-version: 21
-      - name: Test with JDK 21
-        run: mvn -v && mvn -B test
-        
+      - uses: actions/setup-java@v5
+        id: jdk27
+        with:
+          distribution: 'temurin'
+          java-version: 27
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: 25
+          cache: 'maven'
+
+      - name: Build with JDK 25
+        run: mvn -v && mvn -B install --no-transfer-progress -DskipTests
+
+      - name: Test with JDK 17
+        run: mvn -B test -Djvm=${{ steps.jdk17.outputs.path }}/bin/java
+
+      - name: Test with JDK 21
+        run: mvn -B test -Djvm=${{ steps.jdk21.outputs.path }}/bin/java
+
       - name: Test with JDK 25
-        run: mvn -v && mvn -B test
+        run: mvn -B test
       - name: Test with JDK 25 and reflection field access
         run: mvn -B test -pl main
         env:
@@ -52,19 +56,23 @@ jobs:
         run: mvn -B test -pl main
         env:
           JAVA_TOOL_OPTIONS: -Dkryo.hiddenFields=false
+      - name: Test with JDK 25 and code generation
+        run: mvn -B test -pl main
+        env:
+          JAVA_TOOL_OPTIONS: -Dkryo.codeGeneration=true
 
-      - uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: 27
       - name: Test with JDK 27
-        run: mvn -v && mvn -B test
+        run: mvn -B test -Djvm=${{ steps.jdk27.outputs.path }}/bin/java
+      - name: Test with JDK 27 and code generation
+        run: mvn -B test -pl main -Djvm=${{ steps.jdk27.outputs.path }}/bin/java
+        env:
+          JAVA_TOOL_OPTIONS: -Dkryo.codeGeneration=true
       
       - name: Set up settings.xml for Sonatype
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: 17
+          java-version: 25
 
       - name: Publish SNAPSHOT version to Sonatype (we can skip tests, since we only deploy, if the build workflow succeeded)
         run: mvn -v && mvn -B -P requireSnapshot --no-transfer-progress -DskipTests deploy --settings build/settings-sonatype.xml
