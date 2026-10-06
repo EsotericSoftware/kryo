@@ -25,6 +25,7 @@ import com.esotericsoftware.kryo.KryoException;
 
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 
 /** Creates objects like Java serialization does: the class must implement {@link Serializable} and the no-arg constructor of its
  * first non-serializable super class is called, the other constructors are not. On the JDK, the serialization constructor of
@@ -35,6 +36,8 @@ public class SerializingInstantiatorStrategy implements InstantiatorStrategy {
 	private InstantiatorStrategy objenesis;
 
 	public <T> ObjectInstantiator<T> newInstantiatorOf (Class<T> type) {
+		if (type.isInterface() || Modifier.isAbstract(type.getModifiers()))
+			throw new KryoException("Class cannot be created (abstract): " + className(type));
 		if (!Serializable.class.isAssignableFrom(type))
 			throw new KryoException(
 				"Class is not Serializable, SerializingInstantiatorStrategy can't create it: " + className(type));

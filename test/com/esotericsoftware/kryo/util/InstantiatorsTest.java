@@ -27,7 +27,7 @@ class InstantiatorsTest {
 	@Test
 	void testSerializationConstructors () {
 		// On the JDK, the serialization constructors of ReflectionFactory are used, so Objenesis isn't needed.
-		assertEquals(!Util.isAndroid, Instantiators.reflectionFactory());
+		if (!Util.isAndroid && !Util.isNativeImage) assertTrue(Instantiators.reflectionFactory());
 		NoArgless object = new StdInstantiatorStrategy().newInstantiatorOf(NoArgless.class).newInstance();
 		assertEquals(0, object.value);
 		assertNull(object.name);

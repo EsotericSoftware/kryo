@@ -162,6 +162,16 @@ public class DefaultInstantiatorStrategyTest {
         assertEquals(1, serializable.base);
         assertEquals(0, serializable.value);
         assertThrows(KryoException.class, () -> new SerializingInstantiatorStrategy().newInstantiatorOf(NoArgless.class));
+        // Interfaces and abstract classes, also serializable ones, can't be created.
+        for (Class type : new Class[] {SerializableInterface.class, AbstractSerializable.class})
+            assertTrue(assertThrows(KryoException.class, () -> new SerializingInstantiatorStrategy().newInstantiatorOf(type))
+                .getMessage().startsWith("Class cannot be created (abstract)"));
+    }
+
+    interface SerializableInterface extends java.io.Serializable {
+    }
+
+    static abstract class AbstractSerializable implements java.io.Serializable {
     }
 
     static class Base {
