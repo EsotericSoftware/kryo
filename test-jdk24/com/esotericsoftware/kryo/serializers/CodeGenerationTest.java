@@ -149,13 +149,16 @@ class CodeGenerationTest extends KryoTestCase {
 		object.c = "other";
 		roundTrip(14, object);
 
-		// With references for strings, a String field is an object field: written with the StringSerializer and references.
+		// With references for strings, a String field is an object field: written with the StringSerializer and references. The
+		// resolver must be set before registering classes with String fields, so a new Kryo instance is used.
+		kryo = new Kryo();
+		kryo.setDefaultSerializer(codeGeneration());
 		kryo.setReferenceResolver(new MapReferenceResolver() {
 			public boolean useReferences (Class type) {
 				return type == String.class || super.useReferences(type);
 			}
 		});
-		kryo.register(Strings.class, new FieldSerializer(kryo, Strings.class, codeGeneration().getConfig()));
+		kryo.register(Strings.class);
 		assertGenerated(Strings.class);
 		assertTrue(((FieldSerializer)kryo.getSerializer(Strings.class)).getField("a") instanceof ReflectField);
 		roundTrip(14, object); // 1 class, 1 not null, 5 + 1 (reference) + 6 strings.
