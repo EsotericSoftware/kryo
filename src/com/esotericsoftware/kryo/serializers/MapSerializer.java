@@ -123,6 +123,7 @@ public class MapSerializer extends Serializer<Map> {
 	public Map read (Kryo kryo, Input input, Class<Map> type) {
 		Map map = create(kryo, input, type);
 		int length = input.readInt(true);
+		input.clampSize(length);
 
 		Class keyClass = this.keyClass;
 		Class valueClass = this.valueClass;

@@ -153,7 +153,7 @@ public final class UnsafeInput extends Input {
 	/** {@inheritDoc} */
 	final public int[] readInts (int length, boolean optimizePositive) throws KryoException {
 		if (!varIntsEnabled) {
-			int bytesToCopy = length << 2;
+			int bytesToCopy = validateArrayLength(length, 4) * 4;
 			int[] array = new int[length];
 			readBytes(array, intArrayBaseOffset, 0, bytesToCopy);
 			return array;
@@ -164,7 +164,7 @@ public final class UnsafeInput extends Input {
 	/** {@inheritDoc} */
 	final public long[] readLongs (int length, boolean optimizePositive) throws KryoException {
 		if (!varIntsEnabled) {
-			int bytesToCopy = length << 3;
+			int bytesToCopy = validateArrayLength(length, 8) * 8;
 			long[] array = new long[length];
 			readBytes(array, longArrayBaseOffset, 0, bytesToCopy);
 			return array;
@@ -174,7 +174,7 @@ public final class UnsafeInput extends Input {
 
 	/** {@inheritDoc} */
 	final public int[] readInts (int length) throws KryoException {
-		int bytesToCopy = length << 2;
+		int bytesToCopy = validateArrayLength(length, 4) * 4;
 		int[] array = new int[length];
 		readBytes(array, intArrayBaseOffset, 0, bytesToCopy);
 		return array;
@@ -182,7 +182,7 @@ public final class UnsafeInput extends Input {
 
 	/** {@inheritDoc} */
 	final public long[] readLongs (int length) throws KryoException {
-		int bytesToCopy = length << 3;
+		int bytesToCopy = validateArrayLength(length, 8) * 8;
 		long[] array = new long[length];
 		readBytes(array, longArrayBaseOffset, 0, bytesToCopy);
 		return array;
@@ -190,7 +190,7 @@ public final class UnsafeInput extends Input {
 
 	/** {@inheritDoc} */
 	final public float[] readFloats (int length) throws KryoException {
-		int bytesToCopy = length << 2;
+		int bytesToCopy = validateArrayLength(length, 4) * 4;
 		float[] array = new float[length];
 		readBytes(array, floatArrayBaseOffset, 0, bytesToCopy);
 		return array;
@@ -198,7 +198,7 @@ public final class UnsafeInput extends Input {
 
 	/** {@inheritDoc} */
 	final public short[] readShorts (int length) throws KryoException {
-		int bytesToCopy = length << 1;
+		int bytesToCopy = validateArrayLength(length, 2) * 2;
 		short[] array = new short[length];
 		readBytes(array, shortArrayBaseOffset, 0, bytesToCopy);
 		return array;
@@ -206,7 +206,7 @@ public final class UnsafeInput extends Input {
 
 	/** {@inheritDoc} */
 	final public char[] readChars (int length) throws KryoException {
-		int bytesToCopy = length << 1;
+		int bytesToCopy = validateArrayLength(length, 2) * 2;
 		char[] array = new char[length];
 		readBytes(array, charArrayBaseOffset, 0, bytesToCopy);
 		return array;
@@ -214,7 +214,7 @@ public final class UnsafeInput extends Input {
 
 	/** {@inheritDoc} */
 	final public double[] readDoubles (int length) throws KryoException {
-		int bytesToCopy = length << 3;
+		int bytesToCopy = validateArrayLength(length, 8) * 8;
 		double[] array = new double[length];
 		readBytes(array, doubleArrayBaseOffset, 0, bytesToCopy);
 		return array;

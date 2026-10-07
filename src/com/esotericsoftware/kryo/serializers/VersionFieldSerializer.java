@@ -94,7 +94,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		output.writeVarInt(typeVersion, true);
 		// Write fields.
 		for (int i = 0, n = fields.length; i < n; i++) {
-			fields[i].write(output, object);
+			writeField(output, object, fields[i]);
 		}
 	}
 
@@ -116,7 +116,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 				if (DEBUG) debug("Skip field " + fields[i].getField().getName());
 				continue;
 			}
-			fields[i].read(input, object);
+			readField(input, object, fields[i]);
 		}
 		return object;
 	}

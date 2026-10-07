@@ -111,7 +111,8 @@ public class CollectionSerializer extends Serializer<Collection> {
 		Collection collection = create(kryo, input, type);
 		kryo.reference(collection);
 		int length = input.readVarInt(true);
-		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(length);
+		int capacity = input.clampSize(length);
+		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(capacity);
 		Class elementClass = this.elementClass;
 		Serializer serializer = this.serializer;
 		if (genericType != null) {

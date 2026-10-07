@@ -26,6 +26,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
@@ -242,7 +243,7 @@ public class DefaultArraySerializers {
 		public boolean[] read (Kryo kryo, Input input, Class<boolean[]> type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			boolean[] array = new boolean[--length];
+			boolean[] array = new boolean[input.validateArrayLength(--length)];
 			for (int i = 0; i < length; i++)
 				array[i] = input.readBoolean();
 			return array;
@@ -279,7 +280,7 @@ public class DefaultArraySerializers {
 		public String[] read (Kryo kryo, Input input, Class<String[]> type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			String[] array = new String[--length];
+			String[] array = new String[input.validateArrayLength(--length)];
 			if (kryo.getReferences() && kryo.getReferenceResolver().useReferences(String.class)) {
 				Serializer serializer = kryo.getSerializer(String.class);
 				for (int i = 0; i < length; i++) {
@@ -369,7 +370,11 @@ public class DefaultArraySerializers {
 		public Object[] read (Kryo kryo, Input input, Class<Object[]> type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			Object[] object = (Object[])Array.newInstance(type.getComponentType(), length - 1);
+			// Elements may consume zero bytes, so only the configured limit can bound this allocation.
+			int size = length - 1;
+			if (size < 0 || size > input.getMaxArraySize())
+				throw new KryoException("Invalid declared array size: " + size);
+			Object[] object = (Object[])Array.newInstance(type.getComponentType(), size);
 			kryo.reference(object);
 			Class elementClass = object.getClass().getComponentType();
 			if (elementsAreSameType || Modifier.isFinal(elementClass.getModifiers())) {

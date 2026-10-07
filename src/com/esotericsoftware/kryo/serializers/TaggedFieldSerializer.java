@@ -144,10 +144,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			if (annexed[i]){
 				if (outputChunked == null)
 					outputChunked = new OutputChunked(output, 1024);
-				fields[i].write(outputChunked, object);
+				writeField(outputChunked, object, fields[i]);
 				outputChunked.endChunks();
 			} else {
-				fields[i].write(output, object);
+				writeField(output, object, fields[i]);
 			}
 		}
 	}
@@ -181,10 +181,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 					throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
 			} else if (isAnnexed){
 				if (inputChunked == null) inputChunked = new InputChunked(input, 1024);
-				cachedField.read(inputChunked, object);
+				readField(inputChunked, object, cachedField);
 				inputChunked.nextChunks();
 			} else {
-				cachedField.read(input, object);
+				readField(input, object, cachedField);
 			}
 		}
 		return object;

@@ -38,6 +38,7 @@ public class Input extends InputStream {
 	protected long total;
 	protected char[] chars = new char[32];
 	protected InputStream inputStream;
+	private int maxArraySize = Integer.MAX_VALUE;
 
 	/** Creates an uninitialized Input. {@link #setBuffer(byte[])} must be called before the Input is used. */
 	public Input () {
@@ -106,6 +107,44 @@ public class Input extends InputStream {
 		this.inputStream = inputStream;
 		limit = 0;
 		rewind();
+	}
+
+	/** Returns the maximum declared size accepted when reading arrays, strings, collections, and maps. */
+	public int getMaxArraySize () {
+		return maxArraySize;
+	}
+
+	/** Sets the maximum declared size. The default is {@link Integer#MAX_VALUE}. Set a finite limit when reading from an
+	 * InputStream, whose total remaining size is unknown. */
+	public void setMaxArraySize (int maxArraySize) {
+		if (maxArraySize < 0) throw new IllegalArgumentException("maxArraySize must be >= 0: " + maxArraySize);
+		this.maxArraySize = maxArraySize;
+	}
+
+	/** Checks a declared size before allocating an array whose elements consume at least one byte each. */
+	public int validateArrayLength (int length) {
+		return validateArrayLength(length, 1);
+	}
+
+	/** Checks a declared size before allocating an array whose elements consume at least {@code bytesPerElement} bytes. */
+	public int validateArrayLength (int length, int bytesPerElement) {
+		if (bytesPerElement <= 0) throw new IllegalArgumentException("bytesPerElement must be > 0: " + bytesPerElement);
+		if (length < 0 || length > maxArraySize)
+			throw new KryoException("Invalid declared size: " + length + " (maxArraySize: " + maxArraySize + ")");
+		long bytes = (long)length * bytesPerElement;
+		if (inputStream == null) {
+			if (bytes > limit - position) throw new KryoException("Buffer underflow.");
+		} else if (bytes > Integer.MAX_VALUE) {
+			throw new KryoException("Declared size is too large to read: " + length);
+		}
+		return length;
+	}
+
+	/** Caps a collection or map's initial capacity without rejecting valid zero-byte elements. */
+	public int clampSize (int size) {
+		if (size < 0 || size > maxArraySize)
+			throw new KryoException("Invalid declared size: " + size + " (maxArraySize: " + maxArraySize + ")");
+		return inputStream == null ? Math.min(size, limit - position) : size;
 	}
 
 	/** Returns the number of bytes read. */
@@ -322,7 +361,7 @@ public class Input extends InputStream {
 
 	/** Reads the specified number of bytes into a new byte[]. */
 	public byte[] readBytes (int length) throws KryoException {
-		byte[] bytes = new byte[length];
+		byte[] bytes = new byte[validateArrayLength(length)];
 		readBytes(bytes, 0, length);
 		return bytes;
 	}
@@ -479,6 +518,7 @@ public class Input extends InputStream {
 			return "";
 		}
 		charCount--;
+		validateArrayLength(charCount);
 		if (chars.length < charCount) chars = new char[charCount];
 		readUtf8(charCount);
 		return new String(chars, 0, charCount);
@@ -646,6 +686,7 @@ public class Input extends InputStream {
 			return new StringBuilder("");
 		}
 		charCount--;
+		validateArrayLength(charCount);
 		if (chars.length < charCount) chars = new char[charCount];
 		readUtf8(charCount);
 		StringBuilder builder = new StringBuilder(charCount);
@@ -826,7 +867,7 @@ public class Input extends InputStream {
 
 	/** Bulk input of an int array. */
 	public int[] readInts (int length, boolean optimizePositive) throws KryoException {
-		int[] array = new int[length];
+		int[] array = new int[validateArrayLength(length)];
 		for (int i = 0; i < length; i++)
 			array[i] = readInt(optimizePositive);
 		return array;
@@ -834,7 +875,7 @@ public class Input extends InputStream {
 
 	/** Bulk input of a long array. */
 	public long[] readLongs (int length, boolean optimizePositive) throws KryoException {
-		long[] array = new long[length];
+		long[] array = new long[validateArrayLength(length)];
 		for (int i = 0; i < length; i++)
 			array[i] = readLong(optimizePositive);
 		return array;
@@ -842,7 +883,7 @@ public class Input extends InputStream {
 
 	/** Bulk input of an int array. */
 	public int[] readInts (int length) throws KryoException {
-		int[] array = new int[length];
+		int[] array = new int[validateArrayLength(length, 4)];
 		for (int i = 0; i < length; i++)
 			array[i] = readInt();
 		return array;
@@ -850,7 +891,7 @@ public class Input extends InputStream {
 
 	/** Bulk input of a long array. */
 	public long[] readLongs (int length) throws KryoException {
-		long[] array = new long[length];
+		long[] array = new long[validateArrayLength(length, 8)];
 		for (int i = 0; i < length; i++)
 			array[i] = readLong();
 		return array;
@@ -858,7 +899,7 @@ public class Input extends InputStream {
 
 	/** Bulk input of a float array. */
 	public float[] readFloats (int length) throws KryoException {
-		float[] array = new float[length];
+		float[] array = new float[validateArrayLength(length, 4)];
 		for (int i = 0; i < length; i++)
 			array[i] = readFloat();
 		return array;
@@ -866,7 +907,7 @@ public class Input extends InputStream {
 
 	/** Bulk input of a short array. */
 	public short[] readShorts (int length) throws KryoException {
-		short[] array = new short[length];
+		short[] array = new short[validateArrayLength(length, 2)];
 		for (int i = 0; i < length; i++)
 			array[i] = readShort();
 		return array;
@@ -874,7 +915,7 @@ public class Input extends InputStream {
 
 	/** Bulk input of a char array. */
 	public char[] readChars (int length) throws KryoException {
-		char[] array = new char[length];
+		char[] array = new char[validateArrayLength(length, 2)];
 		for (int i = 0; i < length; i++)
 			array[i] = readChar();
 		return array;
@@ -882,7 +923,7 @@ public class Input extends InputStream {
 
 	/** Bulk input of a double array. */
 	public double[] readDoubles (int length) throws KryoException {
-		double[] array = new double[length];
+		double[] array = new double[validateArrayLength(length, 8)];
 		for (int i = 0; i < length; i++)
 			array[i] = readDouble();
 		return array;

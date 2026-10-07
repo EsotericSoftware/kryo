@@ -353,7 +353,7 @@ public class ByteBufferInput extends Input {
 
 	/** Reads the specified number of bytes into a new byte[]. */
 	public byte[] readBytes (int length) throws KryoException {
-		byte[] bytes = new byte[length];
+		byte[] bytes = new byte[validateArrayLength(length)];
 		readBytes(bytes, 0, length);
 		return bytes;
 	}
@@ -510,6 +510,7 @@ public class ByteBufferInput extends Input {
 			return "";
 		}
 		charCount--;
+		validateArrayLength(charCount);
 		if (chars.length < charCount) chars = new char[charCount];
 		readUtf8(charCount);
 		return new String(chars, 0, charCount);
@@ -696,6 +697,7 @@ public class ByteBufferInput extends Input {
 			return new StringBuilder("");
 		}
 		charCount--;
+		validateArrayLength(charCount);
 		if (chars.length < charCount) chars = new char[charCount];
 		readUtf8(charCount);
 		StringBuilder builder = new StringBuilder(charCount);
@@ -883,7 +885,7 @@ public class ByteBufferInput extends Input {
 	/** Bulk input of an int array. */
 	public int[] readInts (int length) throws KryoException {
 		if (capacity - position >= length * 4 && isNativeOrder()) {
-			int[] array = new int[length];
+			int[] array = new int[validateArrayLength(length, 4)];
 			IntBuffer buf = niobuffer.asIntBuffer();
 			buf.get(array);
 			position += length * 4;
@@ -896,7 +898,7 @@ public class ByteBufferInput extends Input {
 	/** Bulk input of a long array. */
 	public long[] readLongs (int length) throws KryoException {
 		if (capacity - position >= length * 8 && isNativeOrder()) {
-			long[] array = new long[length];
+			long[] array = new long[validateArrayLength(length, 8)];
 			LongBuffer buf = niobuffer.asLongBuffer();
 			buf.get(array);
 			position += length * 8;
@@ -909,7 +911,7 @@ public class ByteBufferInput extends Input {
 	/** Bulk input of a float array. */
 	public float[] readFloats (int length) throws KryoException {
 		if (capacity - position >= length * 4 && isNativeOrder()) {
-			float[] array = new float[length];
+			float[] array = new float[validateArrayLength(length, 4)];
 			FloatBuffer buf = niobuffer.asFloatBuffer();
 			buf.get(array);
 			position += length * 4;
@@ -922,7 +924,7 @@ public class ByteBufferInput extends Input {
 	/** Bulk input of a short array. */
 	public short[] readShorts (int length) throws KryoException {
 		if (capacity - position >= length * 2 && isNativeOrder()) {
-			short[] array = new short[length];
+			short[] array = new short[validateArrayLength(length, 2)];
 			ShortBuffer buf = niobuffer.asShortBuffer();
 			buf.get(array);
 			position += length * 2;
@@ -935,7 +937,7 @@ public class ByteBufferInput extends Input {
 	/** Bulk input of a char array. */
 	public char[] readChars (int length) throws KryoException {
 		if (capacity - position >= length * 2 && isNativeOrder()) {
-			char[] array = new char[length];
+			char[] array = new char[validateArrayLength(length, 2)];
 			CharBuffer buf = niobuffer.asCharBuffer();
 			buf.get(array);
 			position += length * 2;
@@ -948,7 +950,7 @@ public class ByteBufferInput extends Input {
 	/** Bulk input of a double array. */
 	public double[] readDoubles (int length) throws KryoException {
 		if (capacity - position >= length * 8 && isNativeOrder()) {
-			double[] array = new double[length];
+			double[] array = new double[validateArrayLength(length, 8)];
 			DoubleBuffer buf = niobuffer.asDoubleBuffer();
 			buf.get(array);
 			position += length * 8;
