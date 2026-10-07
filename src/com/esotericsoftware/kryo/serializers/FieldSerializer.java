@@ -41,7 +41,9 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
  * configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be
@@ -74,6 +76,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Generated code that writes and reads the fields, or null if code generation is disabled or not possible for the type. */
 	GeneratedFields generated;
 	private final Object[] recordDefaults;
+
+	/** True after the first serializer of an inner class without its synthetic fields was logged, so the warning is shown once per
+	 * JVM, also if Kryo instances on different threads create serializers. Can be reset by tests. */
+	static final AtomicBoolean syntheticFieldsWarned = new AtomicBoolean();
 
 	public FieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new FieldSerializerConfig());
@@ -115,6 +121,24 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
+
+		// TaggedFieldSerializer serializes only fields with @Tag, so the setting can't change anything for it.
+		if (WARN && config.ignoreSyntheticFields && !config.ignoreSyntheticFieldsSet && !(this instanceof TaggedFieldSerializer)
+			&& !syntheticFieldsWarned.get() && hasSyntheticFields(type) && syntheticFieldsWarned.compareAndSet(false, true)) {
+			warn("kryo", "The inner class " + className(type) + " is serialized without its outer instance and captured variables, "
+				+ "which are null after reading. Call FieldSerializerConfig#setIgnoreSyntheticFields(false) to serialize them, or "
+				+ "setIgnoreSyntheticFields(true) to ignore them without this warning, which is shown once.");
+		}
+	}
+
+	/** Returns true if the type or a super class is an inner class with synthetic fields, eg the outer instance. */
+	static private boolean hasSyntheticFields (Class type) {
+		for (Class nextClass = type; nextClass != null && nextClass != Object.class; nextClass = nextClass.getSuperclass()) {
+			if (!isInnerClass(nextClass)) continue;
+			for (Field field : nextClass.getDeclaredFields())
+				if (field.isSynthetic() && !Modifier.isStatic(field.getModifiers())) return true;
+		}
+		return false;
 	}
 
 	/** Called when {@link #getFields()} and {@link #getCopyFields()} have been repopulated. Subclasses can override this method to

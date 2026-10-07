@@ -65,13 +65,13 @@ class SyntheticFieldsTest {
 	static List<String> warnings (Kryo kryo, Object... objects) {
 		LoggerStub logger = new LoggerStub();
 		Log.setLogger(logger);
-		CachedFields.syntheticFieldsWarned = false;
+		FieldSerializer.syntheticFieldsWarned.set(false);
 		try {
 			for (Object object : objects)
 				kryo.getSerializer(object.getClass());
 		} finally {
 			Log.setLogger(new Logger());
-			CachedFields.syntheticFieldsWarned = true; // Keeps the test output quiet.
+			FieldSerializer.syntheticFieldsWarned.set(true); // Keeps the test output quiet.
 		}
 		return logger.messages;
 	}
@@ -97,6 +97,11 @@ class SyntheticFieldsTest {
 
 		// Not logged if the setting was set.
 		assertEquals(0, warnings(newKryo(true), member, anonymous).size());
+
+		// Not logged for TaggedFieldSerializer, which serializes only fields with @Tag.
+		kryo = newKryo(null);
+		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
+		assertEquals(0, warnings(kryo, member, anonymous).size());
 
 		// Like Kryo 5, so Kryo5Compatibility doesn't need to change it.
 		kryo = newKryo(null);
