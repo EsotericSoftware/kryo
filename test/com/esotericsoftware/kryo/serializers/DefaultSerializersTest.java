@@ -27,6 +27,7 @@ import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicIntegerSerializer;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.Util;
@@ -54,6 +55,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.TimeZone;
 import java.util.TreeSet;
@@ -1117,6 +1119,24 @@ class DefaultSerializersTest extends KryoTestCase {
 		assertSame(AtomicReferenceSubclass.class, kryo.copy(atomicReference).getClass());
 	}
 
+	@Test
+	void testAtomicSubclassWithFields () {
+		// The atomic serializers would lose the field, so the subclass uses the default serializer. It accesses the value field,
+		// which needs --add-opens java.base/java.util.concurrent.atomic.
+		kryo.register(Counter.class);
+		assertSame(FieldSerializer.class, kryo.getSerializer(Counter.class).getClass());
+		assertSame(AtomicIntegerSerializer.class, kryo.getDefaultSerializer(AtomicIntegerSubclass.class).getClass());
+		Counter counter = new Counter();
+		counter.name = "name";
+		counter.set(1);
+		Counter read = roundTrip(6, counter);
+		assertEquals("name", read.name);
+		assertEquals(1, read.get());
+		Counter copy = kryo.copy(counter);
+		assertEquals("name", copy.name);
+		assertEquals(1, copy.get());
+	}
+
 	protected void doAssertEquals(Object object1, Object object2) {
 		if (object1 instanceof PriorityQueue && object2 instanceof PriorityQueue) {
 			final PriorityQueue q1 = (PriorityQueue) object1;
@@ -1196,6 +1216,14 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	static class AtomicLongSubclass extends AtomicLong {
+	}
+
+	static class Counter extends AtomicInteger {
+		String name;
+
+		public boolean equals (Object obj) {
+			return obj instanceof Counter other && get() == other.get() && Objects.equals(name, other.name);
+		}
 	}
 
 	static class AtomicReferenceSubclass extends AtomicReference<Object> {

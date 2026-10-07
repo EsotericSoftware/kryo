@@ -646,6 +646,7 @@ Some JDK classes have no built-in default serializer, because they can't be seri
 * Exceptions: FieldSerializer needs `--add-opens java.base/java.lang=ALL-UNNAMED`. See [JavaSerializer](#javaserializer-and-externalizableserializer) for an alternative.
 * `java.nio.file.Path`: a `Path` of the default file system can be written with `toString()` and read with `Path.of(String)` in a custom serializer.
 * Subclasses of collections and maps: CollectionSerializer and MapSerializer don't write the fields of a subclass. Use FieldSerializer or a custom serializer for them.
+* Subclasses of `AtomicBoolean`, `AtomicInteger`, `AtomicLong` and `AtomicReference` that declare non-transient fields: they use the default serializer, because the atomic serializers would lose the fields. FieldSerializer needs `--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED` for the private value field.
 * Classes that rely on Java serialization hooks, eg `readResolve` for a singleton: FieldSerializer doesn't call them. Register a custom serializer or [JavaSerializer](#javaserializer-and-externalizableserializer) for them.
 
 #### Serializer factories
