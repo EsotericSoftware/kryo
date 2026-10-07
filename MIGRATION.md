@@ -11,7 +11,7 @@ Kryo 6 has not been released yet. This document collects the changes that affect
 * On Java 24+, fields are accessed with VarHandles instead of `sun.misc.Unsafe`, so Java doesn't warn about Kryo, and the code that reads and writes the fields of a class can be generated, which is 45% to 120% faster, see [Field access](#field-access).
 * Default serializers for about 20 more JDK types, eg `UUID`, `Pattern`, the atomic types, `ByteBuffer`, `EnumMap`, the blocking queues and the unmodifiable and synchronized collections, see [New default serializers](#new-default-serializers).
 * The synthetic fields of anonymous, local and inner classes are serialized, so these objects work after reading, see [FieldSerializer and its subclasses](#fieldserializer-and-its-subclasses).
-* Data that Kryo 5 wrote or read wrongly without an exception now throws one: null values and duplicate field names in CompatibleFieldSerializer, data from a newer class version in VersionFieldSerializer, collections modified while they are written, closures without ClosureSerializer, see [Behavior changes](#behavior-changes).
+* Data that Kryo 5 wrote or read wrongly without an exception now throws one: duplicate field names in CompatibleFieldSerializer, data from a newer class version in VersionFieldSerializer, collections modified while they are written, closures without ClosureSerializer. CompatibleFieldSerializer reads a serialized null as null instead of keeping the constructor's value. See [Behavior changes](#behavior-changes).
 
 ## Requirements
 
@@ -154,7 +154,7 @@ LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language ta
 
 ## Behavior changes
 
-These changes don't affect the serialized format of the default configuration. They are grouped by the part of Kryo they concern, the most common first.
+These changes don't affect the serialized format of the default configuration, except where a change says so, eg the generic types that Kryo 6 resolves but Kryo 5 ignored. They are grouped by the part of Kryo they concern, the most common first.
 
 ### Field access
 
