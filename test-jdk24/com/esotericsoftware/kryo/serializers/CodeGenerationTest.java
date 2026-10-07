@@ -365,6 +365,7 @@ class CodeGenerationTest extends KryoTestCase {
 		testCompatibleFieldSerializer(true, true, 0);
 	}
 
+	@SuppressWarnings("deprecation") // Kryo 5 chunks.
 	private void testCompatibleFieldSerializer (boolean readUnknownFieldData, boolean chunked, int length) {
 		CompatibleFieldSerializerFactory factory = compatible(readUnknownFieldData, chunked);
 		factory.getConfig().setCodeGeneration(true);
@@ -500,6 +501,7 @@ class CodeGenerationTest extends KryoTestCase {
 		testTaggedFieldSerializer(true, true, 0);
 	}
 
+	@SuppressWarnings("deprecation") // Kryo 5 chunks.
 	private void testTaggedFieldSerializer (boolean readUnknownTagData, boolean chunked, int length) {
 		TaggedFieldSerializerFactory factory = tagged(readUnknownTagData, chunked);
 		factory.getConfig().setCodeGeneration(true);

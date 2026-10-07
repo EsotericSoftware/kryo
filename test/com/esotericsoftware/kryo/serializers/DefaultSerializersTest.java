@@ -933,6 +933,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(Enum.class, kryo.readObject(in, Class.class));
 	}
 
+	@SuppressWarnings("deprecation") // Locale.of needs Java 19.
 	@Test
 	void testLocaleSerializer () {
 		kryo.register(Locale.class);
@@ -944,6 +945,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(16, new Locale("es", "ES", "\u00E1\u00E9\u00ED\u00F3\u00FA"));
 	}
 
+	@SuppressWarnings("deprecation") // Locale.of needs Java 19.
 	@Test
 	void testLocaleWithScript () {
 		kryo.register(Locale.class);
@@ -1002,8 +1004,8 @@ class DefaultSerializersTest extends KryoTestCase {
 	void testURLSerializer () throws Exception {
 		kryo.register(URL.class);
 
-		roundTrip(42, new URL("https://github.com/EsotericSoftware/kryo"));
-		roundTrip(78, new URL("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
+		roundTrip(42, URI.create("https://github.com/EsotericSoftware/kryo").toURL());
+		roundTrip(78, URI.create("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr").toURL());
 	}
 
 	@Test

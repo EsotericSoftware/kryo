@@ -135,6 +135,7 @@ public final class Kryo5Compatibility {
 	/** The types that have new default serializers in Kryo 6 get the serializers that Kryo 5 used by default: records are
 	 * serialized with RecordSerializer, the types that had no default serializer in Kryo 5 with FieldSerializer, and the queues
 	 * and sets with a comparator or capacity with CollectionSerializer, which loses them. */
+	@SuppressWarnings("deprecation")
 	private static void restoreDefaultSerializers (Kryo kryo) {
 		// Android has records only since API level 34.
 		if (!isAndroid || isClassAvailable("java.lang.Record")) {

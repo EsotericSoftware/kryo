@@ -239,11 +239,9 @@ public class DefaultSerializers {
 		private static BigInteger newBigIntegerSubclass (Class<? extends BigInteger> type, byte[] bytes) {
 			try {
 				Constructor<? extends BigInteger> constructor = type.getConstructor(byte[].class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
+				try {
+					constructor.setAccessible(true);
+				} catch (SecurityException ignored) {
 				}
 				return constructor.newInstance(bytes);
 			} catch (Exception ex) {
@@ -345,11 +343,9 @@ public class DefaultSerializers {
 		private static BigDecimal newBigDecimalSubclass (Class<? extends BigDecimal> type, BigInteger unscaledValue, int scale) {
 			try {
 				Constructor<? extends BigDecimal> constructor = type.getConstructor(BigInteger.class, int.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
+				try {
+					constructor.setAccessible(true);
+				} catch (SecurityException ignored) {
 				}
 				return constructor.newInstance(unscaledValue, scale);
 			} catch (Exception ex) {
@@ -394,11 +390,9 @@ public class DefaultSerializers {
 				// (which is expected to initialize the instance with the current time)
 				if (type != constructorType) {
 					constructor = type.getConstructor(long.class);
-					if (!constructor.isAccessible()) {
-						try {
-							constructor.setAccessible(true);
-						} catch (SecurityException ignored) {
-						}
+					try {
+						constructor.setAccessible(true);
+					} catch (SecurityException ignored) {
 					}
 					constructorType = type;
 				}
@@ -482,11 +476,9 @@ public class DefaultSerializers {
 			// Use reflection for subclasses.
 			try {
 				Constructor<? extends Timestamp> constructor = type.getConstructor(long.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
+				try {
+					constructor.setAccessible(true);
+				} catch (SecurityException ignored) {
 				}
 				return constructor.newInstance(time);
 			} catch (Exception ex) {
@@ -792,11 +784,9 @@ public class DefaultSerializers {
 			// Use reflection for subclasses.
 			try {
 				Constructor constructor = type.getConstructor(Comparator.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
+				try {
+					constructor.setAccessible(true);
+				} catch (SecurityException ignored) {
 				}
 				return (TreeMap)constructor.newInstance(comparator);
 			} catch (Exception ex) {
@@ -832,11 +822,9 @@ public class DefaultSerializers {
 			// Use reflection for subclasses.
 			try {
 				Constructor constructor = type.getConstructor(Comparator.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
+				try {
+					constructor.setAccessible(true);
+				} catch (SecurityException ignored) {
 				}
 				return (ConcurrentSkipListMap)constructor.newInstance(comparator);
 			} catch (Exception ex) {
@@ -865,11 +853,9 @@ public class DefaultSerializers {
 			// Use reflection for subclasses.
 			try {
 				Constructor constructor = type.getConstructor(Comparator.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
+				try {
+					constructor.setAccessible(true);
+				} catch (SecurityException ignored) {
 				}
 				return (TreeSet)constructor.newInstance(comparator);
 			} catch (Exception ex) {
@@ -899,11 +885,9 @@ public class DefaultSerializers {
 			// Use reflection for subclasses.
 			try {
 				Constructor constructor = type.getConstructor(int.class, Comparator.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
+				try {
+					constructor.setAccessible(true);
+				} catch (SecurityException ignored) {
 				}
 				return (PriorityQueue)constructor.newInstance(initialCapacity, comparator);
 			} catch (Exception ex) {

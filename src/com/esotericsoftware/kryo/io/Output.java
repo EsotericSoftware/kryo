@@ -675,6 +675,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	 * are written as UTF8. If a string is known to be ASCII, {@link #writeAscii(String)} may be used. The string can be read using
 	 * {@link Input#readString()} or {@link Input#readStringBuilder()}.
 	 * @param value May be null. */
+	@SuppressWarnings("deprecation") // The fastest copy of ASCII chars.
 	public void writeString (String value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
@@ -718,6 +719,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	 * efficient than {@link #writeString(String)}. The string can be read using {@link Input#readString()} or
 	 * {@link Input#readStringBuilder()}.
 	 * @param value May be null. */
+	@SuppressWarnings("deprecation") // The fastest copy of ASCII chars.
 	public void writeAscii (String value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
@@ -762,6 +764,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		}
 	}
 
+	@SuppressWarnings("deprecation") // The fastest copy of ASCII chars.
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
 		if (charCount == 0) return;
 		if (position == capacity) require(1); // Must be able to write at least one character.

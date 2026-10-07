@@ -674,6 +674,7 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
+	@SuppressWarnings("deprecation") // The fastest copy of ASCII chars.
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
 		ByteBuffer buffer = this.byteBuffer;
 		int charIndex = 0;
