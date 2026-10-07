@@ -42,12 +42,13 @@
 
 	<properties>
 		<kryo.root>${basedir}</kryo.root>
+		<!-- Also the artifactId in main-versioned/pom.xml, which the build checks. -->
 		<kryo.major.version>6</kryo.major.version>
 		<javac.target>17</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>6.1.3</junit.version>
 		<kotlin.version>2.4.20</kotlin.version>
-		<kotlin.compiler.incremental>true</kotlin.compiler.incremental>
+		<kotlin.compiler.incremental>false</kotlin.compiler.incremental>
 	</properties>
 
 	<modules>
