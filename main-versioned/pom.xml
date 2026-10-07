@@ -17,6 +17,8 @@
 
 	<properties>
 		<kryo.root>../</kryo.root>
+		<!-- The classes compiled by the main module with release 17 are shaded, so they are not compiled again. -->
+		<maven.main.skip>true</maven.main.skip>
 	</properties>
 
 	<dependencies>
@@ -103,6 +105,21 @@
 							<createDependencyReducedPom>true</createDependencyReducedPom>
 							<dependencyReducedPomLocation>${project.build.directory}/kryo${kryo.major.version}-${project.version}.pom</dependencyReducedPomLocation>
 							<filters>
+								<!-- The classes come from the kryo jar, the manifest with the versioned packages from this module's
+									jar, which contains the same classes. -->
+								<filter>
+									<artifact>com.esotericsoftware.kryo:kryo${kryo.major.version}</artifact>
+									<includes>
+										<include>META-INF/MANIFEST.MF</include>
+										<include>META-INF/maven/**</include>
+									</includes>
+								</filter>
+								<filter>
+									<artifact>com.esotericsoftware:kryo</artifact>
+									<excludes>
+										<exclude>META-INF/MANIFEST.MF</exclude>
+									</excludes>
+								</filter>
 								<filter>
 									<artifact>org.objenesis:objenesis</artifact>
 									<excludes>
