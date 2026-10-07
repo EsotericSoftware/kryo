@@ -123,7 +123,6 @@
 							<configuration>
 								<compilerArgs combine.children="append">
 									<arg>-parameters</arg>
-									<arg>--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED</arg>
 								</compilerArgs>
 							</configuration>
 						</execution>
