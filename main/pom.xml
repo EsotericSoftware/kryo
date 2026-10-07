@@ -16,9 +16,9 @@
 
 	<properties>
 		<kryo.root>../</kryo.root>
-		<!-- The API is compared with this release, see target/japicmp. From Kryo 6.0.0 on, it is the last release of the same major
-			version, and incompatible changes fail the build. -->
-		<kryo.api.baseline>5.7.0</kryo.api.baseline>
+		<!-- The API is compared with the newest release, see target/japicmp. From Kryo 6.0.0 on, incompatible changes fail the
+			build. -->
+		<kryo.api.baseline>${releasedVersion.version}</kryo.api.baseline>
 		<kryo.api.check.breakBuild>false</kryo.api.check.breakBuild>
 		<kryo.api.check.skip>false</kryo.api.check.skip>
 	</properties>
@@ -41,6 +41,15 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<!-- Sets releasedVersion.version to the newest released version of Kryo, the baseline of the API check. -->
+					<execution>
+						<id>released-version</id>
+						<goals>
+							<goal>released-version</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<!-- The build needs JDK 24+, but the classes must only use the Java 17 API, which javac checks with release 17. The
 				classes that are only loaded on newer Java versions are compiled separately, against the API of the JDK. -->
