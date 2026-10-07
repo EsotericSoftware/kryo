@@ -110,12 +110,17 @@
 						<source>${javac.target}</source>
 						<target>${javac.target}</target>
 						<encoding>utf-8</encoding>
+						<compilerArgs>
+							<!-- The code that needs a newer JDK and the tests, which use JDK internals, are compiled with source and
+								target instead of release, which javac warns about. -->
+							<arg>-Xlint:-options</arg>
+						</compilerArgs>
 					</configuration>
 					<executions>
 						<execution>
 							<id>default-testCompile</id>
 							<configuration>
-								<compilerArgs>
+								<compilerArgs combine.children="append">
 									<arg>-parameters</arg>
 									<arg>--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED</arg>
 								</compilerArgs>

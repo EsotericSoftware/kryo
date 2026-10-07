@@ -94,6 +94,7 @@ public class ByteBufferOutput extends Output {
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
+	@Deprecated
 	public byte[] getBuffer () {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #getByteBuffer().");
 	}
@@ -101,6 +102,7 @@ public class ByteBufferOutput extends Output {
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
+	@Deprecated
 	public void setBuffer (byte[] buffer) {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}
@@ -108,6 +110,7 @@ public class ByteBufferOutput extends Output {
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
+	@Deprecated
 	public void setBuffer (byte[] buffer, int maxBufferSize) {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}

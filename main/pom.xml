@@ -84,9 +84,6 @@
 				<configuration>
 					<instructions>
 						<Import-Package><![CDATA[
-						COM.jrockit*;resolution:=optional,
-						COM.newmonics*;resolution:=optional,
-						jrockit*;resolution:=optional,
 						sun.reflect;resolution:=optional,
 						sun.misc;resolution:=optional,
 						sun.nio.ch;resolution:=optional,

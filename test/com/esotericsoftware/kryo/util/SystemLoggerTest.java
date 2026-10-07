@@ -49,6 +49,7 @@ class SystemLoggerTest {
 			}
 		};
 		logger.addHandler(handler);
+		logger.setUseParentHandlers(false); // The console handler would print the warning and its stack trace.
 		logger.setLevel(Level.FINE); // DEBUG for System.Logger.
 		try {
 			SystemLogger.install();
@@ -65,6 +66,7 @@ class SystemLoggerTest {
 			assertSame(ex, records.get(1).getThrown());
 		} finally {
 			logger.removeHandler(handler);
+			logger.setUseParentHandlers(true);
 			logger.setLevel(null);
 			Log.setLogger(new Log.Logger());
 			Log.set(Log.LEVEL_INFO);

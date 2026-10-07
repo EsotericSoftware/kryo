@@ -101,9 +101,6 @@ class GenericsUtilTest {
 			value2 += fieldClassName.replaceAll("[^\\[\\]]", "");
 			value2 += " " + name;
 
-			System.out.println(value1);
-			System.out.println(value2);
-			System.out.println();
 			assertTrue(value1.equalsIgnoreCase(value2), value1 + " != " + value2);
 		}
 	}
