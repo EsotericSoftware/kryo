@@ -46,16 +46,22 @@ import org.junit.jupiter.api.Test;
 /** All ways to access fields write the same bytes: Unsafe, VarHandles with and without hidden classes, reflection and generated
  * code, for each FieldSerializer subclass and with the settings that change how fields are written. */
 class FieldAccessEquivalenceTest {
-	record Mode (String name, FieldAccessType fieldAccess, boolean hiddenFields, boolean codeGeneration) {
+	/** @param intField The implementation of an int field, null with generated code.
+	 * @param objectField The implementation of an Object field, null with generated code. */
+	record Mode (String name, FieldAccessType fieldAccess, boolean hiddenFields, boolean codeGeneration, String intField,
+		String objectField) {
 	}
 
 	static List<Mode> modes () {
 		List<Mode> modes = new ArrayList<>();
-		if (Util.unsafe) modes.add(new Mode("Unsafe", FieldAccessType.UNSAFE, false, false));
-		if (CachedFields.hiddenFields) modes.add(new Mode("VarHandle hidden classes", FieldAccessType.VARHANDLE, true, false));
-		modes.add(new Mode("VarHandle", FieldAccessType.VARHANDLE, false, false));
-		modes.add(new Mode("reflection", FieldAccessType.REFLECTION, false, false));
-		if (CachedFields.codeGeneration) modes.add(new Mode("code generation", FieldAccessType.VARHANDLE, true, true));
+		if (Util.unsafe) modes.add(new Mode("Unsafe", FieldAccessType.UNSAFE, false, false, "IntUnsafeField", "UnsafeField"));
+		if (CachedFields.hiddenFields) {
+			modes.add(new Mode("VarHandle hidden classes", FieldAccessType.VARHANDLE, true, false, "IntHiddenField",
+				"ObjectHiddenField"));
+		}
+		modes.add(new Mode("VarHandle", FieldAccessType.VARHANDLE, false, false, "IntVarHandleField", "VarHandleField"));
+		modes.add(new Mode("reflection", FieldAccessType.REFLECTION, false, false, "IntReflectField", "ReflectField"));
+		if (CachedFields.codeGeneration) modes.add(new Mode("code generation", FieldAccessType.VARHANDLE, true, true, null, null));
 		return modes;
 	}
 
@@ -132,12 +138,24 @@ class FieldAccessEquivalenceTest {
 		c.setFieldAccess(mode.fieldAccess);
 		c.setCodeGeneration(mode.codeGeneration);
 		c.setVariableLengthEncoding(varEncoding);
-		return switch (serializer) {
+		FieldSerializer fieldSerializer = switch (serializer) {
 		case "compatible", "compatible chunked" -> new CompatibleFieldSerializer(kryo, type, (CompatibleFieldSerializerConfig)c);
 		case "tagged", "tagged chunked" -> new TaggedFieldSerializer(kryo, type, (TaggedFieldSerializerConfig)c);
 		case "version" -> new VersionFieldSerializer(kryo, type, (VersionFieldSerializerConfig)c);
 		default -> new FieldSerializer(kryo, type, c);
 		};
+		// The mode is used, it didn't fall back to another one.
+		String setup = mode.name + ", " + serializer;
+		if (mode.codeGeneration)
+			assertNotNull(fieldSerializer.generated(), setup);
+		else {
+			assertNull(fieldSerializer.generated(), setup);
+			if (type == Data.class) {
+				assertEquals(mode.intField, CachedFields.implementationName(fieldSerializer.getField("intValue")), setup);
+				assertEquals(mode.objectField, CachedFields.implementationName(fieldSerializer.getField("object")), setup);
+			}
+		}
+		return fieldSerializer;
 	}
 
 	enum Kind {
