@@ -5,13 +5,41 @@ Kryo 6 has not been released yet. This document collects the changes that affect
 ## Key changes
 
 * Kryo 6 requires Java 17 and Android 8.0 (API level 26), see [Requirements](#requirements).
-* Kryo has no required dependencies anymore: Objenesis is optional, ReflectASM and MinLog are gone, see [Removed APIs](#removed-apis).
+* Kryo has no required dependencies anymore: Objenesis is optional, ReflectASM and MinLog are gone. The imports of `Log` and of the instantiator strategies change, see [Import changes](#import-changes).
 * Data written by Kryo 5 can be read with `Kryo5Compatibility.configure(kryo)`, as far as Kryo's default serializers are concerned, see [Reading data written by Kryo 5](#reading-data-written-by-kryo-5). The Kryo 6 format is smaller and faster, so write data again with it where you can.
 * The default format changed in a few places: strings are written without references, records are serialized by FieldSerializer, maps and chunked encoding write less, enums with constant bodies are treated as final, see [Serialization format](#serialization-format).
 * On Java 24+, fields are accessed with VarHandles instead of `sun.misc.Unsafe`, so Java doesn't warn about Kryo, and the code that reads and writes the fields of a class can be generated, which is 45% to 120% faster, see [Field access](#field-access).
 * Default serializers for about 20 more JDK types, eg `UUID`, `Pattern`, the atomic types, `ByteBuffer`, `EnumMap`, the blocking queues and the unmodifiable and synchronized collections, see [New default serializers](#new-default-serializers).
 * The synthetic fields of anonymous, local and inner classes are serialized, so these objects work after reading, see [FieldSerializer and its subclasses](#fieldserializer-and-its-subclasses).
 * Data that Kryo 5 wrote or read wrongly without an exception now throws one: duplicate field names in CompatibleFieldSerializer, data from a newer class version in VersionFieldSerializer, collections modified while they are written, closures without ClosureSerializer. CompatibleFieldSerializer reads a serialized null as null instead of keeping the constructor's value. See [Behavior changes](#behavior-changes).
+
+## Import changes
+
+Most code that compiles with Kryo 5 compiles with Kryo 6 unchanged. Two imports change, because Kryo no longer depends on MinLog and Objenesis.
+
+Kryo's logging uses its own `Log` class, a copy of MinLog with the same API:
+
+```java
+// Kryo 5
+import com.esotericsoftware.minlog.Log;
+// Kryo 6
+import com.esotericsoftware.kryo.util.Log;
+
+Log.set(Log.LEVEL_WARN);
+```
+
+The instantiator strategies are Kryo's own classes with the same names:
+
+```java
+// Kryo 5
+import org.objenesis.strategy.StdInstantiatorStrategy;
+// Kryo 6
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
+
+kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+```
+
+The same applies to `SerializingInstantiatorStrategy`, and to `InstantiatorStrategy` and `ObjectInstantiator` for custom strategies, which are all in `com.esotericsoftware.kryo.util` now. Other Objenesis strategies are wrapped in `ObjenesisStrategy`, see [Changed APIs](#changed-apis). With the versioned jar, the packages change from `com.esotericsoftware.kryo.kryo5` to `com.esotericsoftware.kryo.kryo6`, eg `com.esotericsoftware.kryo.kryo6.util.Log` instead of `com.esotericsoftware.kryo.kryo5.minlog.Log`.
 
 ## Requirements
 
