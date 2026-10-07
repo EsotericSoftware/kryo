@@ -26,6 +26,10 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
+import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
+import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
 import com.esotericsoftware.kryo.util.ListReferenceResolver;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
@@ -179,6 +183,72 @@ public class FailureContainmentTest extends KryoTestCase {
 		}
 	}
 
+	public void testSubclassFieldFailures () throws Exception {
+		for (boolean read : new boolean[] {false, true}) {
+			for (Throwable failure : new Throwable[] {new IllegalStateException("synthetic field failure"),
+				new OutOfMemoryError("synthetic allocation failure"), new KryoException("existing field failure")}) {
+				assertSubclassFieldFailure(new VersionFieldSerializer<FieldData>(kryo, FieldData.class), FieldData.class, failure, read);
+				assertSubclassFieldFailure(new CompatibleFieldSerializer<FieldData>(kryo, FieldData.class), FieldData.class,
+					failure, read);
+				assertSubclassFieldFailure(new TaggedFieldSerializer<TaggedData>(kryo, TaggedData.class), TaggedData.class,
+					failure, read);
+				assertSubclassFieldFailure(new TaggedFieldSerializer<AnnexedData>(kryo, AnnexedData.class), AnnexedData.class,
+					failure, read);
+			}
+		}
+	}
+
+	private <T> void assertSubclassFieldFailure (FieldSerializer<T> serializer, Class<T> type, final Throwable failure,
+		boolean read) throws Exception {
+		kryo.register(type, serializer);
+		final Field field = type.getField("value");
+		Output data = new Output(32);
+		if (read) {
+			serializer.write(kryo, data, type.newInstance());
+			kryo.reset();
+		}
+		CachedField[] fields = serializer.getFields();
+		CachedField failingField = new CachedField() {
+			public Field getField () {
+				return field;
+			}
+
+			public void read (Input input, Object object) {
+				input.readByte();
+				throwFailure(failure);
+			}
+
+			public void write (Output output, Object object) {
+				output.writeByte(0);
+				throwFailure(failure);
+			}
+
+			public void copy (Object original, Object copy) {
+				throw new AssertionError("Copy should not be called.");
+			}
+		};
+		Field cachedFieldField = CachedField.class.getDeclaredField("field");
+		cachedFieldField.setAccessible(true);
+		cachedFieldField.set(failingField, field);
+		fields[0] = failingField;
+		try {
+			if (read)
+				serializer.read(kryo, new Input(data.toBytes()), type);
+			else
+				serializer.write(kryo, new Output(32), type.newInstance());
+			fail("Expected a field failure.");
+		} catch (KryoException ex) {
+			if (failure instanceof KryoException) {
+				assertSame(failure, ex);
+			} else {
+				assertSame(ex.getMessage(), failure, ex.getCause());
+				assertTrue(ex.getMessage().contains(field.getName()));
+				assertTrue(ex.getMessage().contains(type.getName()));
+				assertTrue(ex.getMessage().contains(read ? "input position" : "output position"));
+			}
+		}
+	}
+
 	public void testNestedSerializerReadAllocationFailures () {
 		assertNestedAllocationFailures(true);
 	}
@@ -255,5 +325,15 @@ public class FailureContainmentTest extends KryoTestCase {
 	static public class FieldData {
 		public int value;
 		public transient int transientValue;
+	}
+
+	static public class TaggedData {
+		@Tag(1)
+		public int value;
+	}
+
+	static public class AnnexedData {
+		@Tag(value = 1, annexed = true)
+		public int value;
 	}
 }

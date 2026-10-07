@@ -558,7 +558,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		}
 	}
 
-	private void writeField (Output output, T object, CachedField field) {
+	protected void writeField (Output output, T object, CachedField field) {
 		try {
 			field.write(output, object);
 		} catch (KryoException ex) {
@@ -569,7 +569,7 @@ public class FieldSerializer<T> extends Serializer<T> implements Comparator<Fiel
 		}
 	}
 
-	private void readField (Input input, T object, CachedField field) {
+	protected void readField (Input input, T object, CachedField field) {
 		try {
 			field.read(input, object);
 		} catch (KryoException ex) {

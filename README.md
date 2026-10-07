@@ -156,6 +156,8 @@ Because Output buffers when writing to an OutputStream, be sure to call `flush()
 
 The Input class is an InputStream that reads data from a byte array buffer. This buffer can be set directly, if reading from a byte array is desired. If the Input is given an InputStream, it will fill the buffer from the stream when the buffer is exhausted. Input has many methods for efficiently reading primitives and strings from bytes. It provides functionality similar to DataInputStream, BufferedInputStream, FilterInputStream, and ByteArrayInputStream.
 
+When reading from a fixed buffer, Kryo rejects declared array and string sizes that exceed the bytes remaining. It caps collection and map initial capacity instead, because their elements may use zero bytes. For stream-backed input, the total size is unknown. Set `input.setMaxArraySize(limit)` before reading to reject declared sizes above an application-specific limit. The default is unlimited. Generic object arrays can contain zero-byte elements, so only the configured limit bounds their initial allocation. These checks do not make untrusted deserialization safe or prevent all memory exhaustion.
+
 To read from a source or write to a target other than a byte array, simply provide the appropriate InputStream or OutputStream.
 
 ## Unsafe-based IO

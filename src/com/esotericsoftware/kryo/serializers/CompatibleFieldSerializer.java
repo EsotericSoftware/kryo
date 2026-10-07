@@ -62,7 +62,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 		OutputChunked outputChunked = new OutputChunked(output, 1024);
 		for (int i = 0, n = fields.length; i < n; i++) {
-			fields[i].write(outputChunked, object);
+			writeField(outputChunked, object, fields[i]);
 			outputChunked.endChunks();
 		}
 	}
@@ -73,7 +73,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		ObjectMap context = kryo.getGraphContext();
 		CachedField[] fields = (CachedField[])context.get(this);
 		if (fields == null) {
-			int length = input.readVarInt(true);
+			int length = input.validateArrayLength(input.readVarInt(true));
 			if (TRACE) trace("kryo", "Read " + length + " field names.");
 			String[] names = new String[length];
 			for (int i = 0; i < length; i++)
@@ -142,7 +142,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				inputChunked.nextChunks();
 				continue;
 			}
-			cachedField.read(inputChunked, object);
+			readField(inputChunked, object, cachedField);
 			inputChunked.nextChunks();
 		}
 		return object;
