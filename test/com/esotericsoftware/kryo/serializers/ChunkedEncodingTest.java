@@ -37,6 +37,7 @@ import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -408,6 +409,45 @@ class ChunkedEncodingTest {
 				assertThrows(KryoException.class, () -> encoding.beginField(input));
 		}
 		assertEquals(1000, kryo.getReferenceResolver().getObjectCount());
+	}
+
+	@Test
+	void testFieldLongerThanInt () {
+		// Field lengths are read as varlongs, so a field longer than 2 GiB is skipped. The field bytes are not materialized.
+		Kryo kryo = new Kryo();
+		DefaultChunkedEncoding encoding = DefaultChunkedEncoding.get(kryo);
+		long length = (1L << 32) + 5;
+		Output header = new Output(16);
+		header.writeVarLong(length, true);
+		byte[] headerBytes = header.toBytes();
+		InputStream stream = new InputStream() {
+			long position, end = headerBytes.length + length + 1;
+
+			public int read () {
+				byte[] b = new byte[1];
+				return read(b, 0, 1) == -1 ? -1 : b[0] & 0xFF;
+			}
+
+			public int read (byte[] b, int offset, int count) {
+				if (position == end) return -1;
+				if (position < headerBytes.length) {
+					b[offset] = headerBytes[(int)position++];
+					return 1;
+				}
+				if (position == end - 1) {
+					b[offset] = 42; // After the field.
+					position++;
+					return 1;
+				}
+				int n = (int)Math.min(count, end - 1 - position); // Field bytes, left as they are.
+				position += n;
+				return n;
+			}
+		};
+		Input input = new Input(stream, 1 << 16);
+		encoding.endField(input, encoding.beginField(input));
+		assertEquals(headerBytes.length + length, input.total());
+		assertEquals(42, input.readByte());
 	}
 
 	@Test

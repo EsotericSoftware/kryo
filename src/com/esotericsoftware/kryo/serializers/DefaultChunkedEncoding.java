@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /** Chunked encoding of {@link CompatibleFieldSerializer} and {@link TaggedFieldSerializer}: each field is written with its
  * length, so it can be skipped, eg when the class of a removed field no longer exists.
@@ -43,8 +44,11 @@ import java.util.ArrayList;
  * <p>
  * Format of a scope: varint number of class names, each with varint name ID and name; varint number of field names shifted left
  * by 1, bit 1 if the first are those of the outermost object, each with the class and the field names; then the object data. A
- * class is written as varint registration ID + 1, or 0 and the class written by Kryo. Format of a field: varint length, with
- * references varint number of objects, then the field data. */
+ * class is written as varint registration ID + 1, or 0 and the class written by Kryo. Format of a field: varlong length, with
+ * references varint number of objects, then the field data. The length is written as a varint, which has the same bytes as a
+ * varlong for lengths that fit in an int, and read as a varlong, so data with longer fields stays readable.
+ * <p>
+ * The outermost object is buffered in memory until it is written completely, so it must be smaller than 2 GiB. */
 final class DefaultChunkedEncoding implements ChunkedEncoding {
 	private static final Object contextKey = new Object();
 	/** The graph context keys for writing and reading, separate so reading doesn't hide stale write scopes and vice versa. */
@@ -60,6 +64,11 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 	 * a map, which would be cleared for each object graph. */
 	private final ArrayList<Class> fieldNameTypes = new ArrayList();
 	private final ArrayList<String[]> fieldNames = new ArrayList();
+	/** The end and the number of objects after each field being read, by depth. Nested fields are started before the outer field
+	 * ends. */
+	private long[] fieldEnds = new long[8];
+	private int[] fieldObjects = new int[8];
+	private int fieldDepth;
 
 	private DefaultChunkedEncoding (Kryo kryo) {
 		this.kryo = kryo;
@@ -225,6 +234,7 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		}
 		if (newGraph(readGraphKey)) {
 			readDepth = 0;
+			fieldDepth = 0;
 			fieldNameTypes.clear();
 			fieldNames.clear();
 		}
@@ -286,11 +296,11 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		}
 	}
 
-	/** Starts a field, reading its length and the number of objects in it. Returns the number of objects read after the field and
-	 * the lower 32 bits of the {@link Input#total()} where the field ends. Nested fields can be started before the field ends, so
-	 * the caller keeps both. */
+	/** Starts a field, reading its length and the number of objects in it. Returns the depth of the field, where its end and the
+	 * number of objects read after it are kept until {@link #endField(Input, long)}. */
 	public long beginField (Input input) {
-		int length = input.readVarInt(true);
+		long length = input.readVarLong(true);
+		if (length < 0) throw new KryoException("Invalid field length: " + length);
 		int objects = 0;
 		if (kryo.getReferences()) {
 			// The IDs of the objects that are not read are reserved, so the number of objects is limited like an array length. It
@@ -303,13 +313,22 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 			if (read >= 0) objects = read + count; // Else the number of objects is unknown and no IDs are reserved.
 		}
 		if (TRACE) trace("kryo", "Read field: " + length + " bytes" + pos(input.position()));
-		return (long)objects << 32 | (input.total() + length & 0xFFFFFFFFL);
+		int depth = fieldDepth++;
+		if (depth == fieldEnds.length) {
+			fieldEnds = Arrays.copyOf(fieldEnds, depth << 1);
+			fieldObjects = Arrays.copyOf(fieldObjects, depth << 1);
+		}
+		fieldEnds[depth] = input.total() + length;
+		fieldObjects[depth] = objects;
+		return depth;
 	}
 
 	/** Ends a field: skips the rest of it and reserves the IDs of the objects in it that were not read. */
 	public void endField (Input input, long mark) {
-		// A field is shorter than 2 GiB, so the lower 32 bits of the end and of the total are enough for their difference.
-		int remaining = (int)mark - (int)input.total(), objects = (int)(mark >>> 32);
+		int depth = (int)mark;
+		fieldDepth = depth; // Also discards nested fields that weren't ended, eg after an exception that was caught.
+		long remaining = fieldEnds[depth] - input.total();
+		int objects = fieldObjects[depth];
 		if (remaining < 0) throw new KryoException("More data was read than the field contains: " + -remaining + " bytes");
 		if (remaining > 0) {
 			if (TRACE) trace("kryo", "Skip field: " + remaining + " bytes");
