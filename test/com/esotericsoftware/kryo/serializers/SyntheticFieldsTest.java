@@ -40,7 +40,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
-/** Synthetic fields are ignored by default like in Kryo 5, with a warning for inner classes. They can be serialized: the outer
+/** Synthetic fields are ignored by default like in Kryo 5, with a warning. They can be serialized: the outer
  * instance and captured variables of inner classes. */
 class SyntheticFieldsTest {
 	static Kryo newKryo (Boolean ignoreSyntheticFields) {
@@ -88,7 +88,7 @@ class SyntheticFieldsTest {
 			}
 		};
 
-		// The first ignored synthetic field of an inner class is logged once.
+		// The first ignored synthetic field is logged once.
 		List<String> warnings = warnings(kryo, member, anonymous);
 		assertEquals(1, warnings.size(), warnings.toString());
 		assertTrue(warnings.get(0).contains(Outer.Member.class.getName()), warnings.get(0));

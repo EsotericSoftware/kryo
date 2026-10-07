@@ -109,6 +109,8 @@ class CachedFields implements Comparator<CachedField> {
 	}
 
 	CachedField[] fields = new CachedField[0];
+	/** True if a synthetic field was not added because synthetic fields are ignored. */
+	boolean syntheticFieldIgnored;
 	CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
 	/** True while {@link FieldSerializer#initializeCachedFields()} is called. */
@@ -179,7 +181,10 @@ class CachedFields implements Comparator<CachedField> {
 		int modifiers = field.getModifiers();
 		if (Modifier.isStatic(modifiers)) return;
 		FieldSerializerConfig config = serializer.config;
-		if (field.isSynthetic() && config.ignoreSyntheticFields) return;
+		if (field.isSynthetic() && config.ignoreSyntheticFields) {
+			syntheticFieldIgnored = true;
+			return;
+		}
 
 		if (!config.setFieldsAsAccessible) {
 			if (!isPublicApi(field)) return;
