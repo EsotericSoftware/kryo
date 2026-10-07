@@ -29,6 +29,9 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Method;
 
@@ -67,10 +70,10 @@ public class ClosureSerializer extends Serializer {
 
 	/** What is needed to write a closure, cached by the closure's class. */
 	static private final class ClosureClass {
-		final Method writeReplace; // Null if the closure isn't serializable.
+		final MethodHandle writeReplace; // (Object)Object, null if the closure isn't serializable.
 		Class capturingClass; // Resolved at the first write.
 
-		ClosureClass (Method writeReplace) {
+		ClosureClass (MethodHandle writeReplace) {
 			this.writeReplace = writeReplace;
 		}
 	}
@@ -80,7 +83,9 @@ public class ClosureSerializer extends Serializer {
 			try {
 				Method writeReplace = type.getDeclaredMethod("writeReplace");
 				writeReplace.setAccessible(true);
-				return new ClosureClass(writeReplace);
+				// A method handle, because on Java 17 Method.invoke is slow for the methods of a hidden class like a closure's.
+				return new ClosureClass(
+					MethodHandles.lookup().unreflect(writeReplace).asType(MethodType.methodType(Object.class, Object.class)));
 			} catch (Exception ex) {
 				return new ClosureClass(null);
 			}
@@ -143,8 +148,8 @@ public class ClosureSerializer extends Serializer {
 		}
 		Object replacement;
 		try {
-			replacement = closureClass.writeReplace.invoke(object);
-		} catch (Exception ex) {
+			replacement = (Object)closureClass.writeReplace.invokeExact(object);
+		} catch (Throwable ex) {
 			throw new KryoException("Error serializing closure.", ex);
 		}
 		try {
