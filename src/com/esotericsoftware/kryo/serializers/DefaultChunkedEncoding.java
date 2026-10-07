@@ -64,11 +64,11 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 	 * a map, which would be cleared for each object graph. */
 	private final ArrayList<Class> fieldNameTypes = new ArrayList();
 	private final ArrayList<String[]> fieldNames = new ArrayList();
-	/** The end and the number of objects after each field being read, by depth. Nested fields are started before the outer field
-	 * ends. */
-	private long[] fieldEnds = new long[8];
-	private int[] fieldObjects = new int[8];
-	private int fieldDepth;
+	/** The end and the number of objects after each field being read that is 2 GiB or longer, by depth. Shorter fields keep them
+	 * in the mark. Nested fields are started before the outer field ends. */
+	private long[] longFieldEnds = new long[2];
+	private int[] longFieldObjects = new int[2];
+	private int longFieldDepth;
 
 	private DefaultChunkedEncoding (Kryo kryo) {
 		this.kryo = kryo;
@@ -234,7 +234,7 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		}
 		if (newGraph(readGraphKey)) {
 			readDepth = 0;
-			fieldDepth = 0;
+			longFieldDepth = 0;
 			fieldNameTypes.clear();
 			fieldNames.clear();
 		}
@@ -296,8 +296,10 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		}
 	}
 
-	/** Starts a field, reading its length and the number of objects in it. Returns the depth of the field, where its end and the
-	 * number of objects read after it are kept until {@link #endField(Input, long)}. */
+	/** Starts a field, reading its length and the number of objects in it. Returns the number of objects read after the field and
+	 * the lower 32 bits of the {@link Input#total()} where the field ends. For a field of 2 GiB or longer, it returns the depth
+	 * with the sign bit set instead, and they are kept until {@link #endField(Input, long)}. Nested fields can be started before
+	 * the field ends, so the caller keeps the mark. */
 	public long beginField (Input input) {
 		long length = input.readVarLong(true);
 		if (length < 0) throw new KryoException("Invalid field length: " + length);
@@ -313,22 +315,32 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 			if (read >= 0) objects = read + count; // Else the number of objects is unknown and no IDs are reserved.
 		}
 		if (TRACE) trace("kryo", "Read field: " + length + " bytes" + pos(input.position()));
-		int depth = fieldDepth++;
-		if (depth == fieldEnds.length) {
-			fieldEnds = Arrays.copyOf(fieldEnds, depth << 1);
-			fieldObjects = Arrays.copyOf(fieldObjects, depth << 1);
+		// The number of objects is not negative, so the sign bit of the mark is free.
+		if (length <= Integer.MAX_VALUE) return (long)objects << 32 | (input.total() + length & 0xFFFFFFFFL);
+		int depth = longFieldDepth++;
+		if (depth == longFieldEnds.length) {
+			longFieldEnds = Arrays.copyOf(longFieldEnds, depth << 1);
+			longFieldObjects = Arrays.copyOf(longFieldObjects, depth << 1);
 		}
-		fieldEnds[depth] = input.total() + length;
-		fieldObjects[depth] = objects;
-		return depth;
+		longFieldEnds[depth] = input.total() + length;
+		longFieldObjects[depth] = objects;
+		return Long.MIN_VALUE | depth;
 	}
 
 	/** Ends a field: skips the rest of it and reserves the IDs of the objects in it that were not read. */
 	public void endField (Input input, long mark) {
-		int depth = (int)mark;
-		fieldDepth = depth; // Also discards nested fields that weren't ended, eg after an exception that was caught.
-		long remaining = fieldEnds[depth] - input.total();
-		int objects = fieldObjects[depth];
+		long remaining;
+		int objects;
+		if (mark >= 0) {
+			// The field is shorter than 2 GiB, so the lower 32 bits of the end and of the total are enough for their difference.
+			remaining = (int)mark - (int)input.total();
+			objects = (int)(mark >>> 32);
+		} else {
+			int depth = (int)mark;
+			longFieldDepth = depth; // Also discards nested long fields that weren't ended, eg after an exception that was caught.
+			remaining = longFieldEnds[depth] - input.total();
+			objects = longFieldObjects[depth];
+		}
 		if (remaining < 0) throw new KryoException("More data was read than the field contains: " + -remaining + " bytes");
 		if (remaining > 0) {
 			if (TRACE) trace("kryo", "Skip field: " + remaining + " bytes");
