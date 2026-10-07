@@ -26,6 +26,8 @@ import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
@@ -116,6 +118,58 @@ class ClosureSerializerTest extends KryoTestCase {
 		doAssertEquals(closure1, closure2);
 	}
 
+	@Test
+	void testNestedClassClosure () {
+		// The capturing class is the nested class, not the nest host.
+		kryo.register(Nested.class);
+		Supplier<Integer> closure1 = Nested.closure(72363);
+		Supplier<Integer> closure2 = roundTrip(Integer.MIN_VALUE, closure1);
+		doAssertEquals(closure1, closure2);
+		doAssertEquals(closure1, kryo.copy(closure1));
+
+		// The capturing class of a closure created by another closure is the enclosing class.
+		Supplier<Supplier<Integer>> outer = () -> (Supplier<Integer> & java.io.Serializable) () -> 72363;
+		closure1 = outer.get();
+		closure2 = roundTrip(Integer.MIN_VALUE, closure1);
+		doAssertEquals(closure1, closure2);
+	}
+
+	@Test
+	void testClosureFromOtherClassLoader () throws Exception {
+		// The capturing class is resolved with the closure's class loader, which can differ from Kryo's.
+		String name = OtherLoaderClosure.class.getName();
+		ClassLoader loader = new ClassLoader(getClass().getClassLoader()) {
+			protected Class<?> loadClass (String className, boolean resolve) throws ClassNotFoundException {
+				if (!className.equals(name)) return super.loadClass(className, resolve);
+				synchronized (getClassLoadingLock(className)) {
+					Class<?> type = findLoadedClass(className);
+					if (type == null) {
+						try (InputStream input = ClosureSerializerTest.class.getResourceAsStream("ClosureSerializerTest$OtherLoaderClosure.class")) {
+							byte[] bytes = input.readAllBytes();
+							type = defineClass(className, bytes, 0, bytes.length);
+						} catch (IOException ex) {
+							throw new ClassNotFoundException(className, ex);
+						}
+					}
+					return type;
+				}
+			}
+		};
+		Class<?> type = loader.loadClass(name);
+		assertNotSame(OtherLoaderClosure.class, type);
+		kryo.register(type);
+		Supplier<Integer> closure1 = (Supplier<Integer>)type.getMethod("closure").invoke(null);
+		assertSame(loader, closure1.getClass().getClassLoader());
+
+		Supplier<Integer> closure2 = roundTrip(Integer.MIN_VALUE, closure1);
+		assertSame(loader, closure2.getClass().getClassLoader());
+		doAssertEquals(closure1, closure2);
+
+		closure2 = kryo.copy(closure1);
+		assertSame(loader, closure2.getClass().getClassLoader());
+		doAssertEquals(closure1, closure2);
+	}
+
 	protected void doAssertEquals (Object object1, Object object2) {
 		try {
 			if (object1 instanceof Callable) {
@@ -132,6 +186,20 @@ class ClosureSerializerTest extends KryoTestCase {
 	static class NumberFactory {
 		static int getNumber () {
 			return 72363;
+		}
+	}
+
+	static class Nested {
+		static Supplier<Integer> closure (int number) {
+			return (Supplier<Integer> & java.io.Serializable) () -> number;
+		}
+	}
+
+	/** Loaded a second time by another class loader in {@link #testClosureFromOtherClassLoader()}, so it must not reference the
+	 * test class. */
+	public static class OtherLoaderClosure {
+		public static Supplier<Integer> closure () {
+			return (Supplier<Integer> & java.io.Serializable) () -> 72363;
 		}
 	}
 }
