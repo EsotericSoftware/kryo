@@ -103,6 +103,13 @@ class SyntheticFieldsTest {
 		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
 		assertEquals(0, warnings(kryo, member, anonymous).size());
 
+		// Not logged without setFieldsAsAccessible, which serializes only public fields.
+		kryo = newKryo(null);
+		FieldSerializerFactory factory = new FieldSerializerFactory();
+		factory.getConfig().setFieldsAsAccessible(false);
+		kryo.setDefaultSerializer(factory);
+		assertEquals(0, warnings(kryo, member, anonymous).size());
+
 		// Like Kryo 5, so Kryo5Compatibility doesn't need to change it.
 		kryo = newKryo(null);
 		Kryo5Compatibility.configure(kryo);

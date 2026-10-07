@@ -122,9 +122,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
 
-		// TaggedFieldSerializer serializes only fields with @Tag, so the setting can't change anything for it.
-		if (WARN && config.ignoreSyntheticFields && !config.ignoreSyntheticFieldsSet && !(this instanceof TaggedFieldSerializer)
-			&& !syntheticFieldsWarned.get() && hasSyntheticFields(type) && syntheticFieldsWarned.compareAndSet(false, true)) {
+		// The setting can't change anything for TaggedFieldSerializer, which serializes only fields with @Tag, or without
+		// setFieldsAsAccessible, because synthetic fields are not public.
+		if (WARN && config.ignoreSyntheticFields && !config.ignoreSyntheticFieldsSet && config.setFieldsAsAccessible
+			&& !(this instanceof TaggedFieldSerializer) && !syntheticFieldsWarned.get() && hasSyntheticFields(type)
+			&& syntheticFieldsWarned.compareAndSet(false, true)) {
 			warn("kryo", "The inner class " + className(type) + " is serialized without its outer instance and captured variables, "
 				+ "which are null after reading. Call FieldSerializerConfig#setIgnoreSyntheticFields(false) to serialize them, or "
 				+ "setIgnoreSyntheticFields(true) to ignore them without this warning, which is shown once.");
