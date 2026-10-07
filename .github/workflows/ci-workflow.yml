@@ -72,7 +72,7 @@ jobs:
           java-version: 11
 
       - name: Publish SNAPSHOT version to Sonatype (we can skip tests, since we only deploy, if the build workflow succeeded)
-        run: mvn -v && mvn -B -P requireSnapshot --no-transfer-progress -DskipTests deploy --settings build/settings-sonatype.xml
+        run: mvn -v && mvn -B -P requireSnapshot --no-transfer-progress -DskipTests deploy --settings build/settings-sonatype.xml -Dmaven.repository.credentialScope=id
         if: env.PUBLISH_ARTIFACTS == 'true'
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
