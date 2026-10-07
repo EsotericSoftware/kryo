@@ -1422,7 +1422,7 @@ kryo.addDefaultSerializer(Throwable.class, JavaSerializer.class);
 
 ## Logging
 
-Kryo makes use of the low overhead, lightweight [MinLog logging library](https://github.com/EsotericSoftware/minlog). The logging level can be set by one of the following methods:
+Kryo logs with `com.esotericsoftware.kryo.util.Log`, a low overhead, lightweight copy of [MinLog](https://github.com/EsotericSoftware/minlog) with the same API. Its level and logger are Kryo's own, they are not shared with MinLog. The logging level can be set by one of the following methods:
 
 ```java
 Log.ERROR();
@@ -1440,9 +1440,9 @@ To route Kryo's logging to SLF4J, Log4j, or another logging framework, install `
 SystemLogger.install();
 ```
 
-SLF4J needs the `slf4j-jdk-platform-logging` adapter and Log4j `log4j-jpl`, otherwise the logging goes to `java.util.logging`. `install` sets MinLog's level to the most detailed level that is enabled for the `com.esotericsoftware.kryo` logger, so call it again after changing that level.
+SLF4J needs the `slf4j-jdk-platform-logging` adapter and Log4j `log4j-jpl`, otherwise the logging goes to `java.util.logging`. `install` sets Kryo's logging level to the most detailed level that is enabled for the `com.esotericsoftware.kryo` logger, so call it again after changing that level.
 
-MinLog supports a fixed logging level, which causes the Java compiler to remove logging statements below that level at compile time. Kryo must be compiled with a fixed logging level MinLog JAR.
+Without `SystemLogger`, messages are written to `System.out`. Another destination can be set with `Log.setLogger`, with a subclass of `Log.Logger` that overrides `print` or `log`.
 
 ## GraalVM native image
 
