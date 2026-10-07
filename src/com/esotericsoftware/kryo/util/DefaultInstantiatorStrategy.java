@@ -107,11 +107,11 @@ public class DefaultInstantiatorStrategy implements InstantiatorStrategy {
 			}
 			StringBuilder message = new StringBuilder("Class cannot be created (missing no-arg constructor): " + className(type));
 			if (type.isMemberClass() && !Modifier.isStatic(type.getModifiers())) {
-				message.append("\nNote: An inner class is serialized with its outer instance, but it has no no-arg constructor. "
-					+ "Making the class static is safer.");
+				message.append("\nNote: An inner class needs its outer instance, so it has no no-arg constructor. Making the class "
+					+ "static is safer.");
 			} else if (type.getSimpleName().isEmpty()) {
-				message.append("\nNote: An anonymous class is serialized with its outer instance and captured variables, but it "
-					+ "has no no-arg constructor. A named class is safer, eg instead of double brace initialization.");
+				message.append("\nNote: An anonymous class needs its outer instance and captured variables, so it has no no-arg "
+					+ "constructor. A named class is safer, eg instead of double brace initialization.");
 			}
 			message.append("\nKryo creates objects with their no-arg constructor, which can be private. To create objects without "
 				+ "calling a constructor, like Java serialization does, configure Kryo with:"

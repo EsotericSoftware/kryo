@@ -24,19 +24,14 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import com.esotericsoftware.kryo.Kryo.DefaultSerializerEntry;
 import com.esotericsoftware.kryo.SerializerFactory.BaseSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
-import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
-import com.esotericsoftware.kryo.SerializerFactory.VersionFieldSerializerFactory;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DateSerializer;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.serializers.RecordSerializer;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
-import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
 import com.esotericsoftware.kryo.util.HashMapReferenceResolver;
 import com.esotericsoftware.kryo.util.ListReferenceResolver;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
@@ -202,38 +197,25 @@ public final class Kryo5Compatibility {
 		}
 	}
 
-	/** Kryo 5 used the generic types of fields with CompatibleFieldSerializer and TaggedFieldSerializer, wrote fields with chunked
-	 * encoding in chunks, and ignored synthetic fields. The default serializer is configured for that; a default serializer set as
-	 * a class is replaced by the equivalent factory, which has the settings. Serializers that are registered explicitly need these
-	 * settings themselves. */
+	/** Kryo 5 used the generic types of fields with CompatibleFieldSerializer and TaggedFieldSerializer, and wrote fields with
+	 * chunked encoding in chunks. The default serializer is configured for that; a default serializer set as a class is replaced
+	 * by the equivalent factory, which has the settings. Serializers that are registered explicitly need these settings
+	 * themselves. */
 	@SuppressWarnings("deprecation")
 	private static void restoreFieldSerializerSettings (Kryo kryo) {
 		if (kryo.defaultSerializer instanceof ReflectionSerializerFactory factory) {
-			if (factory.serializerClass == FieldSerializer.class)
-				kryo.defaultSerializer = new FieldSerializerFactory();
-			else if (factory.serializerClass == CompatibleFieldSerializer.class)
+			if (factory.serializerClass == CompatibleFieldSerializer.class)
 				kryo.defaultSerializer = new CompatibleFieldSerializerFactory();
 			else if (factory.serializerClass == TaggedFieldSerializer.class)
 				kryo.defaultSerializer = new TaggedFieldSerializerFactory();
-			else if (factory.serializerClass == VersionFieldSerializer.class) //
-				kryo.defaultSerializer = new VersionFieldSerializerFactory();
 		}
-		FieldSerializerConfig config = null;
-		if (kryo.defaultSerializer instanceof FieldSerializerFactory factory)
-			config = factory.getConfig();
-		else if (kryo.defaultSerializer instanceof VersionFieldSerializerFactory factory)
-			config = factory.getConfig();
-		else if (kryo.defaultSerializer instanceof CompatibleFieldSerializerFactory factory) {
-			config = factory.getConfig();
-			// Kryo 5 wrote fields with chunked encoding in chunks.
+		if (kryo.defaultSerializer instanceof CompatibleFieldSerializerFactory factory) {
 			factory.getConfig().setOptimizeGenerics(true);
 			factory.getConfig().setLegacyChunks(true);
 		} else if (kryo.defaultSerializer instanceof TaggedFieldSerializerFactory factory) {
-			config = factory.getConfig();
 			factory.getConfig().setOptimizeGenerics(true);
 			factory.getConfig().setLegacyChunks(true);
 		}
-		if (config != null) config.setIgnoreSyntheticFields(true);
 	}
 
 	/** Kryo 5 used references for all types except primitive wrappers and enums, also for strings. */

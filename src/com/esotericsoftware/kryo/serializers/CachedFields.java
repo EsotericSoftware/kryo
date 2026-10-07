@@ -94,6 +94,10 @@ class CachedFields implements Comparator<CachedField> {
 	 * used, which can't be loaded on older Java versions. */
 	static final boolean codeGeneration = !isAndroid && !isNativeImage && Runtime.version().feature() >= 24;
 
+	/** True after the first ignored synthetic field of an inner class was logged, so the warning is shown once. Can be reset by
+	 * tests. */
+	static boolean syntheticFieldsWarned;
+
 	/** Returns why {@link #codeGeneration} is false, for logging. */
 	static String codeGenerationUnavailable () {
 		if (isAndroid) return "Code generation is not available on Android.";
@@ -179,7 +183,16 @@ class CachedFields implements Comparator<CachedField> {
 		int modifiers = field.getModifiers();
 		if (Modifier.isStatic(modifiers)) return;
 		FieldSerializerConfig config = serializer.config;
-		if (field.isSynthetic() && config.ignoresSyntheticFields(field.getDeclaringClass())) return;
+		if (field.isSynthetic() && config.ignoreSyntheticFields) {
+			if (!config.ignoreSyntheticFieldsSet && !syntheticFieldsWarned && isInnerClass(field.getDeclaringClass())) {
+				syntheticFieldsWarned = true;
+				if (WARN) warn("kryo", "The synthetic field " + field.getName() + " of the inner class "
+					+ className(field.getDeclaringClass()) + " is not serialized, so the outer instance or a captured variable is "
+					+ "null after reading. Call FieldSerializerConfig#setIgnoreSyntheticFields(false) to serialize synthetic fields, "
+					+ "or setIgnoreSyntheticFields(true) to ignore them without this warning, which is shown once.");
+			}
+			return;
+		}
 
 		if (!config.setFieldsAsAccessible) {
 			if (!isPublicApi(field)) return;

@@ -722,7 +722,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		boolean codeGeneration = defaultCodeGeneration;
 		boolean fieldsCanBeNull = true;
 		boolean setFieldsAsAccessible = true;
-		Boolean ignoreSyntheticFields;
+		boolean ignoreSyntheticFields = true;
+		/** True if {@link #setIgnoreSyntheticFields(boolean)} was called, then ignored synthetic fields are not logged. */
+		boolean ignoreSyntheticFieldsSet;
 		boolean fixedFieldTypes;
 		boolean copyTransient = true;
 		boolean serializeTransient;
@@ -762,26 +764,20 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return setFieldsAsAccessible;
 		}
 
-		/** Controls if synthetic fields are serialized, which the compiler generates. By default, the synthetic fields of anonymous
-		 * classes, local classes and non-static member classes are serialized, because these classes need them: the outer instance
-		 * and the captured variables. An inner object that is serialized with its outer instance often needs references, because
-		 * the outer instance refers to the inner object. The synthetic fields of other classes are not serialized, eg fields added
-		 * by bytecode enhancement. Kryo 5 ignored all synthetic fields by default.
-		 * @param ignoreSyntheticFields True to never serialize synthetic fields, false to always serialize them. */
+		/** Controls if synthetic fields are serialized, which the compiler generates, eg the outer instance and the captured
+		 * variables of anonymous classes, local classes and non-static member classes. Without them, these objects have a null
+		 * outer instance after reading. The synthetic fields can refer to large or sensitive object graphs, and an inner object
+		 * that is serialized with its outer instance often needs references, because the outer instance refers to the inner object.
+		 * If this is not set, the first ignored synthetic field of an inner class is logged as a warning.
+		 * @param ignoreSyntheticFields True to never serialize synthetic fields (default), false to always serialize them. */
 		public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
 			this.ignoreSyntheticFields = ignoreSyntheticFields;
+			ignoreSyntheticFieldsSet = true;
 			if (TRACE) trace("kryo", "FieldSerializerConfig ignoreSyntheticFields: " + ignoreSyntheticFields);
 		}
 
-		/** @return Null if {@link #setIgnoreSyntheticFields(boolean)} was not called, then it depends on the class. */
-		public Boolean getIgnoreSyntheticFields () {
+		public boolean getIgnoreSyntheticFields () {
 			return ignoreSyntheticFields;
-		}
-
-		/** Returns true if the synthetic fields declared by the class are ignored. */
-		public boolean ignoresSyntheticFields (Class declaringClass) {
-			if (ignoreSyntheticFields != null) return ignoreSyntheticFields;
-			return !isInnerClass(declaringClass);
 		}
 
 		/** Sets the default value for {@link FieldSerializer.CachedField#setValueClass(Class)} to the field's declared type. This

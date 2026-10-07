@@ -29,19 +29,29 @@ import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
+import com.esotericsoftware.kryo.serializers.FieldSerializerTest.LoggerStub;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.Log;
+import com.esotericsoftware.kryo.util.Log.Logger;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
-/** The synthetic fields of inner classes are serialized by default: the outer instance and captured variables. */
+/** Synthetic fields are ignored by default like in Kryo 5, with a warning for inner classes. They can be serialized: the outer
+ * instance and captured variables of inner classes. */
 class SyntheticFieldsTest {
-	static Kryo newKryo () {
+	static Kryo newKryo (Boolean ignoreSyntheticFields) {
 		Kryo kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+		if (ignoreSyntheticFields != null) {
+			FieldSerializerFactory factory = new FieldSerializerFactory();
+			factory.getConfig().setIgnoreSyntheticFields(ignoreSyntheticFields);
+			kryo.setDefaultSerializer(factory);
+		}
 		return kryo;
 	}
 
@@ -51,9 +61,52 @@ class SyntheticFieldsTest {
 		return (T)kryo.readObject(new Input(output.toBytes()), object.getClass());
 	}
 
+	/** Returns the warnings logged while the serializers for the objects are created. */
+	static List<String> warnings (Kryo kryo, Object... objects) {
+		LoggerStub logger = new LoggerStub();
+		Log.setLogger(logger);
+		CachedFields.syntheticFieldsWarned = false;
+		try {
+			for (Object object : objects)
+				kryo.getSerializer(object.getClass());
+		} finally {
+			Log.setLogger(new Logger());
+			CachedFields.syntheticFieldsWarned = true; // Keeps the test output quiet.
+		}
+		return logger.messages;
+	}
+
+	@Test
+	void testIgnoredByDefault () {
+		Kryo kryo = newKryo(null);
+		assertTrue(new FieldSerializerConfig().getIgnoreSyntheticFields());
+		Outer outer = new Outer("outer");
+		Outer.Member member = outer.new Member();
+		Supplier<String> anonymous = new Supplier<String>() {
+			public String get () {
+				return outer.name;
+			}
+		};
+
+		// The first ignored synthetic field of an inner class is logged once.
+		List<String> warnings = warnings(kryo, member, anonymous);
+		assertEquals(1, warnings.size(), warnings.toString());
+		assertTrue(warnings.get(0).contains(Outer.Member.class.getName()), warnings.get(0));
+		assertTrue(warnings.get(0).contains("setIgnoreSyntheticFields(false)"), warnings.get(0));
+		assertNull(roundTrip(kryo, member).outer());
+
+		// Not logged if the setting was set.
+		assertEquals(0, warnings(newKryo(true), member, anonymous).size());
+
+		// Like Kryo 5, so Kryo5Compatibility doesn't need to change it.
+		kryo = newKryo(null);
+		Kryo5Compatibility.configure(kryo);
+		assertNull(roundTrip(kryo, member).outer());
+	}
+
 	@Test
 	void testInnerClasses () {
-		Kryo kryo = newKryo();
+		Kryo kryo = newKryo(false);
 		Outer outer = new Outer("outer");
 
 		// A non-static member class refers to its outer instance.
@@ -81,7 +134,7 @@ class SyntheticFieldsTest {
 	@Test
 	void testCycleThroughOuterInstance () {
 		// The outer instance refers back to the inner object, which needs references. Without them, the error explains the setting.
-		Kryo kryo = newKryo();
+		Kryo kryo = newKryo(false);
 		Outer outer = new Outer("outer");
 		outer.member = outer.new Member();
 		KryoException ex = assertThrows(KryoException.class, () -> roundTrip(kryo, outer.member));
@@ -91,35 +144,6 @@ class SyntheticFieldsTest {
 		Outer.Member member = roundTrip(kryo, outer.member);
 		assertEquals("outer", member.outerName());
 		assertSame(member, member.outer().member);
-	}
-
-	@Test
-	void testIgnoreSyntheticFields () {
-		// Like Kryo 5: the outer instance is not serialized, it is null after reading.
-		Kryo kryo = newKryo();
-		FieldSerializerFactory factory = new FieldSerializerFactory();
-		factory.getConfig().setIgnoreSyntheticFields(true);
-		kryo.setDefaultSerializer(factory);
-		Outer outer = new Outer("outer");
-		outer.member = outer.new Member();
-		Outer.Member member = roundTrip(kryo, outer.member);
-		assertNull(member.outer());
-
-		kryo = newKryo();
-		Kryo5Compatibility.configure(kryo);
-		assertEquals(Boolean.TRUE, ((FieldSerializer)kryo.getDefaultSerializer(Outer.Member.class)).getFieldSerializerConfig()
-			.getIgnoreSyntheticFields());
-		member = roundTrip(kryo, outer.member);
-		assertNull(member.outer());
-
-		// The default depends on the class.
-		FieldSerializerConfig config = new FieldSerializerConfig();
-		assertNull(config.getIgnoreSyntheticFields());
-		assertFalse(config.ignoresSyntheticFields(Outer.Member.class));
-		assertTrue(config.ignoresSyntheticFields(Outer.class));
-		assertTrue(config.ignoresSyntheticFields(Outer.Nested.class));
-		config.setIgnoreSyntheticFields(false);
-		assertFalse(config.ignoresSyntheticFields(Outer.Nested.class));
 	}
 
 	static public class Outer {
@@ -143,7 +167,5 @@ class SyntheticFieldsTest {
 			}
 		}
 
-		static public class Nested {
-		}
 	}
 }
