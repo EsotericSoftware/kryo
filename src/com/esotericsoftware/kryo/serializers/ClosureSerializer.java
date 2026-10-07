@@ -54,20 +54,6 @@ public class ClosureSerializer extends Serializer {
 	public static class Closure {
 	}
 
-	/** The method the compiler generates in each class that contains a serializable lambda, see SerializedLambda#readResolve. */
-	static private final ClassValue<Method> deserializeMethods = new ClassValue<>() {
-		protected Method computeValue (Class<?> capturingClass) {
-			try {
-				Method method = capturingClass.getDeclaredMethod("$deserializeLambda$", SerializedLambda.class);
-				method.setAccessible(true);
-				return method;
-			} catch (Exception ex) {
-				throw new KryoException("Unable to access $deserializeLambda$ of the capturing class: " + className(capturingClass),
-					ex);
-			}
-		}
-	};
-
 	/** What is needed to write a closure, cached by the closure's class. */
 	static private final class ClosureClass {
 		final MethodHandle writeReplace; // (Object)Object, null if the closure isn't serializable.
@@ -78,22 +64,46 @@ public class ClosureSerializer extends Serializer {
 		}
 	}
 
-	static private final ClassValue<ClosureClass> closureClasses = new ClassValue<>() {
-		protected ClosureClass computeValue (Class<?> type) {
-			try {
-				Method writeReplace = type.getDeclaredMethod("writeReplace");
-				writeReplace.setAccessible(true);
-				// A method handle, because on Java 17 Method.invoke is slow for the methods of a hidden class like a closure's.
-				return new ClosureClass(
-					MethodHandles.lookup().unreflect(writeReplace).asType(MethodType.methodType(Object.class, Object.class)));
-			} catch (Exception ex) {
-				return new ClosureClass(null);
+	/** The caches are in a holder class, so ClassValue is only loaded when a closure is serialized. Android has ClassValue only
+	 * since API level 34, but no serializable lambdas at all, so the serializer can be registered there like before. */
+	static private final class Caches {
+		/** The method the compiler generates in each class that contains a serializable lambda, see
+		 * SerializedLambda#readResolve. */
+		static final ClassValue<Method> deserializeMethods = new ClassValue<>() {
+			protected Method computeValue (Class<?> capturingClass) {
+				try {
+					Method method = capturingClass.getDeclaredMethod("$deserializeLambda$", SerializedLambda.class);
+					method.setAccessible(true);
+					return method;
+				} catch (Exception ex) {
+					throw new KryoException(
+						"Unable to access $deserializeLambda$ of the capturing class: " + className(capturingClass), ex);
+				}
 			}
-		}
-	};
+		};
+
+		static final ClassValue<ClosureClass> closureClasses = new ClassValue<>() {
+			protected ClosureClass computeValue (Class<?> type) {
+				Method writeReplace;
+				try {
+					writeReplace = type.getDeclaredMethod("writeReplace");
+				} catch (NoSuchMethodException ex) {
+					return new ClosureClass(null);
+				}
+				try {
+					writeReplace.setAccessible(true);
+					// A method handle, because on Java 17 Method.invoke is slow for the methods of a hidden class like a closure's.
+					return new ClosureClass(
+						MethodHandles.lookup().unreflect(writeReplace).asType(MethodType.methodType(Object.class, Object.class)));
+				} catch (Exception ex) {
+					throw new KryoException("Unable to access the writeReplace method of the closure: " + className(type), ex);
+				}
+			}
+		};
+	}
 
 	public void write (Kryo kryo, Output output, Object object) {
-		ClosureClass closureClass = closureClasses.get(object.getClass());
+		ClosureClass closureClass = Caches.closureClasses.get(object.getClass());
 		SerializedLambda serializedLambda = toSerializedLambda(closureClass, object);
 		int count = serializedLambda.getCapturedArgCount();
 		output.writeVarInt(count, true);
@@ -127,7 +137,7 @@ public class ClosureSerializer extends Serializer {
 	}
 
 	public Object copy (Kryo kryo, Object original) {
-		ClosureClass closureClass = closureClasses.get(original.getClass());
+		ClosureClass closureClass = Caches.closureClasses.get(original.getClass());
 		SerializedLambda lambda = toSerializedLambda(closureClass, original);
 		try {
 			return readResolve(getCapturingClass(closureClass, original, lambda), lambda);
@@ -138,7 +148,7 @@ public class ClosureSerializer extends Serializer {
 
 	/** Creates the closure like Java serialization does. */
 	private Object readResolve (Class<?> capturingClass, SerializedLambda lambda) throws Exception {
-		return deserializeMethods.get(capturingClass).invoke(null, lambda);
+		return Caches.deserializeMethods.get(capturingClass).invoke(null, lambda);
 	}
 
 	private SerializedLambda toSerializedLambda (ClosureClass closureClass, Object object) {
