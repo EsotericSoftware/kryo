@@ -287,7 +287,7 @@ class SerializationCompatTestData {
 			_charsets = new ArrayList(Arrays.asList(Charset.forName("ISO-8859-1"), Charset.forName("US-ASCII"),
 				Charset.forName("UTF-8"), Charset.forName("UTF-16"), Charset.forName("UTF-16BE"), Charset.forName("UTF-16LE")));
 			try {
-				_url = new java.net.URL("https://github.com/EsotericSoftware/kryo");
+				_url = java.net.URI.create("https://github.com/EsotericSoftware/kryo").toURL();
 			} catch (MalformedURLException e) {
 				throw new RuntimeException(e);
 			}

@@ -149,6 +149,7 @@ class Kryo5CompatibilityTest {
 		assertEquals(timestamp, kryo.readObject(new Input(output.toBytes()), Timestamp.class)); // The nanoseconds are kept.
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	void testOptimizeGenerics () {
 		Kryo kryo = new Kryo();

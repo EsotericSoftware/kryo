@@ -47,6 +47,7 @@ class UnsafeByteBufferInputOutputTest {
 		ByteBufferInputOutputTest.assertReadOnlyOptionalReads(new UnsafeByteBufferInput(ByteBuffer.allocateDirect(3).asReadOnlyBuffer()));
 	}
 
+	@SuppressWarnings("removal") // Off-heap memory for UnsafeByteBufferOutput.
 	@Test
 	void testByteBufferOutputWithPreallocatedMemory () {
 		assumeTrue(UnsafeUtil.isNewDirectBufferAvailable(), "Streams with preallocated direct memory are not supported on this JVM");
