@@ -1200,7 +1200,6 @@ class InputOutputTest extends KryoTestCase {
 // objOutput.flush(); // this layer wasn't flushed prior to this bugfix, add it for a workaround
 
 		byte[] b = os.toByteArray();
-		System.out.println("size: " + b.length);
 
 		ByteArrayInputStream in = new ByteArrayInputStream(b);
 		ObjectInputStream objIn = new ObjectInputStream(in);
