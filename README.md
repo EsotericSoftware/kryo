@@ -99,6 +99,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
 - [Android](#android)
 - [Thread safety](#thread-safety)
    * [Pooling](#pooling)
+- [Typical usage](#typical-usage)
 - [Benchmarks](#benchmarks)
 - [Links](#links)
    * [Projects using Kryo](#projects-using-kryo)
@@ -239,7 +240,7 @@ public class HelloKryo {
 
 The Kryo class performs the serialization automatically. The Output and Input classes handle buffering bytes and optionally flushing to a stream.
 
-The rest of this document details how this works and advanced usage of the library.
+The rest of this document details how this works and advanced usage of the library. [Typical usage](#typical-usage) at the end shows how an application typically configures and uses Kryo.
 
 ## IO
 
@@ -1542,6 +1543,65 @@ Kryo does not implement Poolable because its object graph state is typically res
 Pool `getFree` returns the number of objects available to be obtained. If using soft references, this number may include objects that have been garbage collected. `clean` may be used first to remove empty soft references.
 
 Pool `getPeak` returns the all-time highest number of free objects. This can help determine if a pool's maximum capacity is set appropriately. It can be reset any time with `resetPeak`.
+
+## Typical usage
+
+An application usually wraps Kryo in a small class: a pool of configured Kryo instances, a pool of output buffers, and `serialize` and `deserialize` methods. The settings in `create` are choices, not defaults everybody needs; the linked sections explain them.
+
+```java
+public class KryoSerializer {
+   private final Pool<Kryo> kryoPool = new Pool<Kryo>(true, false, 16) {
+      protected Kryo create () {
+         Kryo kryo = new Kryo();
+         // The default serializer, FieldSerializer, writes the fields of a class as they are. If classes can change
+         // between writing and reading, eg for long term storage, choose a serializer for that, see Compatibility.
+         // kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+         // If the object graphs contain cycles or the same object more than once, see References.
+         kryo.setReferences(true);
+         // If classes have no no-arg constructor, see Object creation.
+         kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+         // Register the classes that are serialized, see Registration. Registered classes are written as small IDs.
+         // Unregistered classes can be written by name with kryo.setRegistrationRequired(false), eg if the classes
+         // aren't known in advance, at the cost of larger data and the security concerns described in that section.
+         kryo.register(SomeClass.class);
+         kryo.register(OtherClass.class);
+         // Serializers for classes the default serializers don't handle, see Default serializers.
+         kryo.register(MyCustomClass.class, new MyCustomSerializer());
+         return kryo;
+      }
+   };
+
+   private final Pool<Output> outputPool = new Pool<Output>(true, false, 16) {
+      protected Output create () {
+         // A buffer that grows as needed. A fixed size, new Output(bufferSize), throws when an object is larger.
+         return new Output(4096, -1);
+      }
+   };
+
+   public byte[] serialize (Object object) {
+      Kryo kryo = kryoPool.obtain();
+      Output output = outputPool.obtain();
+      try {
+         kryo.writeClassAndObject(output, object);
+         return output.toBytes();
+      } finally {
+         outputPool.free(output);
+         kryoPool.free(kryo);
+      }
+   }
+
+   public Object deserialize (byte[] bytes) {
+      Kryo kryo = kryoPool.obtain();
+      try {
+         return kryo.readClassAndObject(new Input(bytes));
+      } finally {
+         kryoPool.free(kryo);
+      }
+   }
+}
+```
+
+The same Kryo instances serve both directions, see [Pooling](#pooling) above. A single Kryo instance without pools is enough for a single-threaded application. The decisions in `create` are described in [Compatibility](#compatibility), [References](#references), [Object creation](#object-creation), [Registration](#registration) and [Default serializers](#default-serializers).
 
 ## Benchmarks
 
