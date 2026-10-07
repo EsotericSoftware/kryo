@@ -9,7 +9,7 @@
 	</parent>
 
 	<groupId>com.esotericsoftware.kryo</groupId>
-	<artifactId>kryo${kryo.major.version}</artifactId>
+	<artifactId>kryo6</artifactId>
 	<packaging>jar</packaging>
 
 	<name>Kryo ${kryo.major.version}</name>
@@ -39,6 +39,28 @@
 		<testSourceDirectory>${kryo.root}/test</testSourceDirectory>
 		
 		<plugins>
+			<!-- Maven requires a constant artifactId, so it repeats the major version. This checks that both match. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>enforce-artifact-id</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireProperty>
+									<property>project.artifactId</property>
+									<regex>kryo${kryo.major.version}</regex>
+									<regexMessage>The artifactId must be kryo${kryo.major.version}, change it with kryo.major.version.</regexMessage>
+								</requireProperty>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<artifactId>maven-clean-plugin</artifactId>
 				<configuration>
@@ -118,9 +140,6 @@
 				<configuration>
 					<instructions>
 						<Import-Package><![CDATA[
-						COM.jrockit*;resolution:=optional,
-						COM.newmonics*;resolution:=optional,
-						jrockit*;resolution:=optional,
 						sun.reflect;resolution:=optional,
 						sun.misc;resolution:=optional,
 						sun.nio.ch;resolution:=optional
