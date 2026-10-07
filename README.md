@@ -1555,6 +1555,7 @@ public class KryoSerializer {
          Kryo kryo = new Kryo();
          // The default serializer, FieldSerializer, writes the fields of a class as they are. If classes can change
          // between writing and reading, eg for long term storage, choose a serializer for that, see Compatibility.
+         // kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
          // If the object graphs contain cycles or the same object more than once, see References.
          kryo.setReferences(true);
          // If classes have no no-arg constructor, see Object creation.
