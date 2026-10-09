@@ -123,6 +123,10 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		this.writeSameClassOnce = writeSameClassOnce;
 	}
 
+	public boolean getWriteSameClassOnce () {
+		return writeSameClassOnce;
+	}
+
 	public void write (Kryo kryo, Output output, T map) {
 		if (map == null) {
 			output.writeByte(0);

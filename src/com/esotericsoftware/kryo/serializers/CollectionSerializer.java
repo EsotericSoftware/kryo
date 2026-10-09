@@ -66,6 +66,10 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		this.writeSameClassOnce = writeSameClassOnce;
 	}
 
+	public boolean getWriteSameClassOnce () {
+		return writeSameClassOnce;
+	}
+
 	/** The concrete class of the collection elements, or null if it is not known. This saves 1-2 bytes per element. Only set to a
 	 * non-null value if the elements in the collection are known to all be instances of this class (or null). */
 	public void setElementClass (Class elementClass) {

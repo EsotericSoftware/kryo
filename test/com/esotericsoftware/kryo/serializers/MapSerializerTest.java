@@ -216,7 +216,9 @@ class MapSerializerTest extends KryoTestCase {
 	@Test
 	void testWriteSameClassOnceDisabled () {
 		MapSerializer serializer = new MapSerializer();
+		assertTrue(serializer.getWriteSameClassOnce());
 		serializer.setWriteSameClassOnce(false);
+		assertFalse(serializer.getWriteSameClassOnce());
 		kryo.register(LinkedHashMap.class, serializer);
 		LinkedHashMap map = new LinkedHashMap();
 		map.put("a", 1);

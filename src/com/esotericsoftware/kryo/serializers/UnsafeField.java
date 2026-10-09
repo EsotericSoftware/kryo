@@ -46,12 +46,17 @@ class UnsafeField extends ReflectField {
 	}
 
 	public void set (Object object, Object value) throws IllegalAccessException {
-		// Unsafe doesn't check the type like reflection and VarHandles do, eg if the class in the data changed.
+		checkType(type, field, value);
+		unsafe.putObject(object, offset, value);
+	}
+
+	/** Throws if the value is not an instance of the field type: Unsafe doesn't check the type like reflection and VarHandles do,
+	 * eg if the class in the data changed. */
+	static private void checkType (Class type, Field field, Object value) {
 		if (value != null && !type.isInstance(value)) {
 			throw new IllegalArgumentException(
 				"Can not set " + type.getName() + " field " + field.getName() + " to " + value.getClass().getName());
 		}
-		unsafe.putObject(object, offset, value);
 	}
 
 	public void copy (Object original, Object copy) {
@@ -65,6 +70,33 @@ class UnsafeField extends ReflectField {
 			ex.addTrace(this + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
 		}
+	}
+
+	/** Sets an Unsafe field to a boxed value, also a final field. Called by
+	 * {@link FieldSerializer#setFinal(CachedField, Object, Object)} for the generated code, which otherwise sets final fields with
+	 * method handles, if setting them with reflection is denied. */
+	static void put (CachedField field, Object object, Object value) {
+		long offset = field.offset;
+		Class type = field.field.getType();
+		if (!type.isPrimitive()) {
+			checkType(type, field.field, value);
+			unsafe.putObject(object, offset, value);
+		} else if (type == int.class)
+			unsafe.putInt(object, offset, (Integer)value);
+		else if (type == long.class)
+			unsafe.putLong(object, offset, (Long)value);
+		else if (type == double.class)
+			unsafe.putDouble(object, offset, (Double)value);
+		else if (type == float.class)
+			unsafe.putFloat(object, offset, (Float)value);
+		else if (type == boolean.class)
+			unsafe.putBoolean(object, offset, (Boolean)value);
+		else if (type == short.class)
+			unsafe.putShort(object, offset, (Short)value);
+		else if (type == char.class)
+			unsafe.putChar(object, offset, (Character)value);
+		else
+			unsafe.putByte(object, offset, (Byte)value);
 	}
 
 	static final class IntUnsafeField extends CachedField {

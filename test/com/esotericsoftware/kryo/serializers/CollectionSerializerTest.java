@@ -94,7 +94,9 @@ class CollectionSerializerTest extends KryoTestCase {
 		roundTrip(10, list); // The class of the elements is written once.
 
 		CollectionSerializer serializer = new CollectionSerializer();
+		assertTrue(serializer.getWriteSameClassOnce());
 		serializer.setWriteSameClassOnce(false);
+		assertFalse(serializer.getWriteSameClassOnce());
 		kryo.register(ArrayList.class, serializer);
 		Output output = new Output(64);
 		kryo.writeClassAndObject(output, list);

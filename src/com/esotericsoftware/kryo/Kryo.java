@@ -128,6 +128,7 @@ import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
@@ -317,10 +318,10 @@ public class Kryo {
 		addDefaultSerializer(URI.class, URISerializer::new);
 		addDefaultSerializer(UUID.class, UUIDSerializer::new);
 		addDefaultSerializer(Pattern.class, PatternSerializer::new);
-		addDefaultSerializer(AtomicBoolean.class, AtomicBooleanSerializer::new);
-		addDefaultSerializer(AtomicInteger.class, AtomicIntegerSerializer::new);
-		addDefaultSerializer(AtomicLong.class, AtomicLongSerializer::new);
-		addDefaultSerializer(AtomicReference.class, AtomicReferenceSerializer::new);
+		addDefaultSerializer(AtomicBoolean.class, withoutSubclassFields(AtomicBoolean.class, new AtomicBooleanSerializer()));
+		addDefaultSerializer(AtomicInteger.class, withoutSubclassFields(AtomicInteger.class, new AtomicIntegerSerializer()));
+		addDefaultSerializer(AtomicLong.class, withoutSubclassFields(AtomicLong.class, new AtomicLongSerializer()));
+		addDefaultSerializer(AtomicReference.class, withoutSubclassFields(AtomicReference.class, new AtomicReferenceSerializer()));
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		ImmutableCollectionsSerializers.addDefaultSerializers(this);
@@ -421,6 +422,19 @@ public class Kryo {
 		return new SingletonSerializerFactory(serializer) {
 			public boolean isSupported (Class subtype) {
 				return subtype == type;
+			}
+		};
+	}
+
+	/** Returns a factory for the serializer that is used for the type and its subclasses that declare no fields the serializer
+	 * would lose. Subclasses with fields get the default serializer. */
+	private static SerializerFactory withoutSubclassFields (Class type, Serializer serializer) {
+		return new SingletonSerializerFactory(serializer) {
+			public boolean isSupported (Class subtype) {
+				for (Class c = subtype; c != type; c = c.getSuperclass())
+					for (Field field : c.getDeclaredFields())
+						if (!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())) return false;
+				return true;
 			}
 		};
 	}

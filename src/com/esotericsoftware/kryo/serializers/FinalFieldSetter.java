@@ -52,6 +52,10 @@ import java.lang.reflect.Method;
  * copying the value of a final field. So the fields are set in the same order as with reflection, which matters eg if the object
  * is added to a HashSet while its other fields are read.
  * <p>
+ * {@link #create(Field)} is called when the field is first set, see {@link CachedField#finalUnresolved}, because it obtains a
+ * method handle for setting the field to find out whether that is denied, which Java 26+ warns about like setting the field with
+ * reflection. So the warning is only shown when Kryo sets a final field, not when a serializer is created, eg to write objects.
+ * <p>
  * Only final fields of serializable classes that are not transient can be set this way. Other final fields, eg in a superclass
  * that isn't serializable or a transient final field that is copied, are set with reflection, which fails as before.
  * <p>
@@ -96,7 +100,7 @@ final class FinalFieldSetter extends ObjectInputStream {
 
 	/** Returns null if the final field is set with reflection: that is allowed, the method handles are not available (before Java
 	 * 24), or the field is not a serializable field of a serializable class, eg it is transient. Setting it with reflection fails
-	 * in the last case. */
+	 * in the last case. Called when the field is first set, see {@link CachedField#finalUnresolved}. */
 	static FinalFieldSetter create (Field field) {
 		if (defaultReadObject == null) return null;
 		if (!force) {
