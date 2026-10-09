@@ -379,23 +379,27 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Returns the {@link CachedField#finalSetter} of a final field, resolved when the field is first set, see
-	 * {@link FinalFieldSetter#unresolved}. Null if the field is set with reflection. */
+	 * {@link CachedField#finalUnresolved}. Null if the field is set with reflection. */
 	static FinalFieldSetter finalSetter (CachedField field) {
-		FinalFieldSetter setter = field.finalSetter;
-		if (setter == FinalFieldSetter.unresolved) field.finalSetter = setter = FinalFieldSetter.create(field.field);
-		return setter;
+		if (field.finalUnresolved) {
+			field.finalUnresolved = false;
+			field.finalSetter = FinalFieldSetter.create(field.field);
+		}
+		return field.finalSetter;
 	}
 
-	/** Sets a final field with its {@link FinalFieldSetter}. Called by the generated code if setting the field with reflection is
-	 * denied, also for a field that is read with Unsafe, which has no setter otherwise. */
+	/** Sets a final field with its {@link FinalFieldSetter}, or with Unsafe for an Unsafe field. Called by the generated code if
+	 * setting the field with reflection is denied. */
 	static void setFinal (CachedField field, Object object, Object value) {
 		FinalFieldSetter setter = finalSetter(field);
-		if (setter == null) setter = field.finalSetter = FinalFieldSetter.create(field.field); // Unsafe field.
-		if (setter == null) {
+		if (setter != null)
+			setter.set(object, value);
+		else if (field.offset != 0)
+			UnsafeField.put(field, object, value);
+		else {
 			throw ReflectField.accessError(field.field,
 				new IllegalAccessException("Setting final fields with reflection is denied."));
 		}
-		setter.set(object, value);
 	}
 
 	/** Sets a non-primitive field to null. */
@@ -515,9 +519,12 @@ public class FieldSerializer<T> extends Serializer<T> {
 		// For Records
 		int index;
 
-		/** Sets the field if it is final and setting it with reflection is denied, else null. {@link FinalFieldSetter#unresolved}
-		 * for a final field until it is first set. */
+		/** Sets the field if it is final and setting it with reflection is denied, else null. */
 		FinalFieldSetter finalSetter;
+		/** True for a final field until it is first set, then {@link #finalSetter} is resolved. Java 26+ warns when a final field
+		 * is set with reflection or a method handle for setting it is obtained, so this is only done when Kryo sets a final field,
+		 * not when a serializer is created, eg to write objects. */
+		boolean finalUnresolved;
 
 		// For UnsafeField.
 		long offset;

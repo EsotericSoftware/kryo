@@ -50,9 +50,9 @@ import java.lang.reflect.Method;
  * <p>
  * FieldSerializer and its subclasses call {@link #set(Object, Object)} of {@link CachedField#finalSetter} right after reading or
  * copying the value of a final field. So the fields are set in the same order as with reflection, which matters eg if the object
- * is added to a HashSet while its other fields are read. The setter is {@link #unresolved} until the field is first set: Java 26+
- * warns when a final field is set with reflection or a method handle for setting it is obtained, so this is only done when Kryo
- * sets a final field, not when a serializer is created, eg to write objects.
+ * is added to a HashSet while its other fields are read. The setter is resolved when the field is first set, see
+ * {@link CachedField#finalUnresolved}: Java 26+ warns when a final field is set with reflection or a method handle for setting it
+ * is obtained, so this is only done when Kryo sets a final field, not when a serializer is created, eg to write objects.
  * <p>
  * Only final fields of serializable classes that are not transient can be set this way. Other final fields, eg in a superclass
  * that isn't serializable or a transient final field that is copied, are set with reflection, which fails as before.
@@ -63,8 +63,6 @@ final class FinalFieldSetter extends ObjectInputStream {
 	static private final Method defaultReadObject;
 	/** Tests set this to use this class also if final fields can be set with reflection. */
 	static boolean force;
-	/** The {@link CachedField#finalSetter} of a final field until it is first set, see {@link #create(Field)}. */
-	static final FinalFieldSetter unresolved;
 
 	static {
 		Object factory = null;
@@ -78,11 +76,6 @@ final class FinalFieldSetter extends ObjectInputStream {
 		}
 		reflectionFactory = factory;
 		defaultReadObject = method;
-		try {
-			unresolved = new FinalFieldSetter(null, -1);
-		} catch (IOException ex) {
-			throw new KryoException(ex);
-		}
 	}
 
 	/** The serializable fields of a class do not change, so they are shared by all serializers. */
@@ -105,7 +98,7 @@ final class FinalFieldSetter extends ObjectInputStream {
 
 	/** Returns null if the final field is set with reflection: that is allowed, the method handles are not available (before Java
 	 * 24), or the field is not a serializable field of a serializable class, eg it is transient. Setting it with reflection fails
-	 * in the last case. Called when the field is first set, see {@link #unresolved}. */
+	 * in the last case. Called when the field is first set, see {@link CachedField#finalUnresolved}. */
 	static FinalFieldSetter create (Field field) {
 		if (defaultReadObject == null) return null;
 		if (!force) {

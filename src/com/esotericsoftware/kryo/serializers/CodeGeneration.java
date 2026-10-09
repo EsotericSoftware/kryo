@@ -46,16 +46,16 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Generates a hidden class per serialized class that writes and reads its fields with straight line code, using the Class-File
  * API (Java 24+). Primitive and String fields are accessed with VarHandles that are constants of the hidden class (its class
  * data) and written directly to the {@link Output}, object fields are delegated to their {@link ReflectField}, which holds the
- * serializer, value class and generic type. Final fields are set with a constant MethodHandle, because VarHandles can't set them.
- * The hidden class depends only on the field names, kinds and encodings, so it is shared by all serializers and Kryo instances
- * for a class.
+ * serializer, value class and generic type. Final fields are set with a MethodHandle that is obtained when the field is first
+ * set, because VarHandles can't set them and Java 26+ warns when it is obtained. The hidden class depends only on the field
+ * names, kinds and encodings, so it is shared by all serializers and Kryo instances for a class.
  * <p>
  * For example, for {@code class Nested { String name; Nested next; final int value; }} with FieldSerializer, the hidden class is
  * equivalent to:
  *
  * <pre>
  * final class Generated$Nested extends GeneratedFields {
- *    // The class data: the VarHandle of each field, then the setter of each final field.
+ *    // The class data: the VarHandle of each field, then the call site invoker of each final field.
  *    static final VarHandle f0, f1, f2;
  *    static final MethodHandle s2;
  *    static {
@@ -86,7 +86,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *          index = 1;
  *          f1.set(object, ((ReflectField)fields[1]).readValue(input));
  *          index = 2;
- *          s2.invokeExact(object, fields[2].varEncoding ? input.readVarInt(false) : input.readInt());
+ *          s2.invokeExact(fields[2], object, fields[2].varEncoding ? input.readVarInt(false) : input.readInt());
  *       } catch (Throwable t) {
  *          throw GeneratedFields.readError(t, fields[index], input);
  *       }
@@ -278,6 +278,7 @@ final class CodeGeneration {
 		if (!FinalFieldSetter.force) {
 			try {
 				setter = MethodHandles.dropArguments(MethodHandles.lookup().unreflectSetter(field.field), 0, CachedField.class);
+				field.finalUnresolved = false; // Setting the field with reflection is allowed, so the cached field needs no setter.
 			} catch (IllegalAccessException denied) {
 			}
 		}

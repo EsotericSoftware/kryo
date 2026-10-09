@@ -67,6 +67,31 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
+	/** Sets the value of an Unsafe field, also if it is final. Used by the generated code, which sets final fields with method
+	 * handles, if setting the field with reflection is denied. */
+	static void put (CachedField field, Object object, Object value) {
+		long offset = field.offset;
+		Class type = field.field.getType();
+		if (!type.isPrimitive())
+			unsafe.putObject(object, offset, value);
+		else if (type == int.class)
+			unsafe.putInt(object, offset, (Integer)value);
+		else if (type == long.class)
+			unsafe.putLong(object, offset, (Long)value);
+		else if (type == double.class)
+			unsafe.putDouble(object, offset, (Double)value);
+		else if (type == float.class)
+			unsafe.putFloat(object, offset, (Float)value);
+		else if (type == boolean.class)
+			unsafe.putBoolean(object, offset, (Boolean)value);
+		else if (type == short.class)
+			unsafe.putShort(object, offset, (Short)value);
+		else if (type == char.class)
+			unsafe.putChar(object, offset, (Character)value);
+		else
+			unsafe.putByte(object, offset, (Byte)value);
+	}
+
 	static final class IntUnsafeField extends CachedField {
 		public IntUnsafeField (Field field) {
 			super(field);

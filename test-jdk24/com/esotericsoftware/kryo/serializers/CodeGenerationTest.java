@@ -245,8 +245,27 @@ class CodeGenerationTest extends KryoTestCase {
 			roundTrip(6, new DeniedFinalField(7, "name"));
 			FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(DeniedFinalField.class);
 			assertNotNull(serializer.getField("value").finalSetter);
-			assertNotSame(FinalFieldSetter.unresolved, serializer.getField("value").finalSetter);
-			assertNotSame(FinalFieldSetter.unresolved, serializer.getField("name").finalSetter);
+			assertFalse(serializer.getField("name").finalUnresolved);
+		} finally {
+			FinalFieldSetter.force = false;
+		}
+	}
+
+	@Test
+	void testFinalFieldDeniedUnsafe () {
+		// With Unsafe field access, the generated code sets a final field with Unsafe if setting it with reflection is denied.
+		assumeTrue(com.esotericsoftware.kryo.util.Util.unsafe);
+		try {
+			FinalFieldSetter.force = true;
+			FieldSerializer serializer = new FieldSerializer(kryo, DeniedFinalField.class);
+			serializer.getFieldSerializerConfig().setCodeGeneration(true);
+			serializer.getFieldSerializerConfig().setFieldAccess(FieldAccessType.UNSAFE);
+			serializer.updateFields();
+			kryo.register(DeniedFinalField.class, serializer);
+			assertGenerated(DeniedFinalField.class);
+			roundTrip(6, new DeniedFinalField(7, "name"));
+			assertNull(serializer.getField("value").finalSetter);
+			assertNull(serializer.getField("name").finalSetter);
 		} finally {
 			FinalFieldSetter.force = false;
 		}
