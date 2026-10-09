@@ -525,6 +525,19 @@ class ChunkedEncodingTest {
 		assertTrue(ex.getMessage().contains("More data was read than the field contains: 1 bytes"), ex.getMessage());
 	}
 
+	@Test
+	void testInvalidFieldLength () {
+		// A negative length and a length that would overflow the end of the field are invalid.
+		DefaultChunkedEncoding encoding = DefaultChunkedEncoding.get(new Kryo());
+		for (long length : new long[] {-1, Long.MAX_VALUE}) {
+			Output header = new Output(16);
+			header.writeVarLong(length, true);
+			Input input = new Input(header.toBytes());
+			KryoException ex = assertThrows(KryoException.class, () -> encoding.beginField(input));
+			assertTrue(ex.getMessage().startsWith("Invalid field length: " + length), ex.getMessage());
+		}
+	}
+
 	/** Returns an input of the specified length that has the bytes at the positions, given as pairs of a long position and a byte
 	 * array, and arbitrary bytes elsewhere. The other bytes are not materialized, so the input can be longer than 2 GiB. */
 	static private Input sparseInput (long length, Object... segments) {
