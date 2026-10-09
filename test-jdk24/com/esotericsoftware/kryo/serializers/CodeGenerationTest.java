@@ -240,10 +240,13 @@ class CodeGenerationTest extends KryoTestCase {
 		// field. The class is only used here, because the setter of a field is resolved once per JVM.
 		try {
 			FinalFieldSetter.force = true;
-			kryo.register(DeniedFinalField.class);
+			FieldSerializer serializer = new FieldSerializer(kryo, DeniedFinalField.class);
+			serializer.getFieldSerializerConfig().setCodeGeneration(true);
+			serializer.getFieldSerializerConfig().setFieldAccess(FieldAccessType.VARHANDLE); // Unsafe sets final fields itself.
+			serializer.updateFields();
+			kryo.register(DeniedFinalField.class, serializer);
 			assertGenerated(DeniedFinalField.class);
 			roundTrip(6, new DeniedFinalField(7, "name"));
-			FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(DeniedFinalField.class);
 			assertNotNull(serializer.getField("value").finalSetter);
 			assertFalse(serializer.getField("name").finalUnresolved);
 		} finally {
