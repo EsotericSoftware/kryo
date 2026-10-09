@@ -21,17 +21,15 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.kryo.util.Log.*;
-import static java.lang.constant.ConstantDescs.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.Bytecode.Code;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
-import java.lang.constant.ClassDesc;
-import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -108,10 +106,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * Not supported, so the cached fields are used: records and custom {@link CachedField} implementations.
  * <p>
- * This is the only class that uses an API newer than Java 17: it is compiled with -source 17 on JDK 24+ and only loaded on Java
- * 24+. The Class-File API is referenced with qualified names and the IDE inspection for the language level is suppressed, see
- * "Building from source" in README.md. */
-@SuppressWarnings("Since15")
+ * The class file is written with {@link Bytecode}: with the Class-File API on Java 24+, or with ASM, which is an optional
+ * dependency, on older Java versions. */
 final class CodeGeneration {
 	/** The constructors of the hidden classes, by type and field signature. If defining a class failed, its KryoException, so it
 	 * isn't tried again for each serializer. */
@@ -199,28 +195,26 @@ final class CodeGeneration {
 		ArrayList<Object> classData = new ArrayList<>(n);
 		int[] setters = classData(fields, kinds, classData);
 
-		Lookup lookup = MethodHandles.lookup();
-		ClassDesc thisClass = ClassDesc.of(CodeGeneration.class.getPackageName(), "Generated$" + type.getSimpleName());
-		byte[] bytes = java.lang.classfile.ClassFile.of().build(thisClass, cb -> {
-			cb.withFlags(ACC_FINAL | ACC_SUPER).withSuperclass(CD_GeneratedFields);
-			members(cb, thisClass, n, setters);
-			constructor(cb, thisClass);
-			// public void write (Output output, Object object) and write (Output output, Object object, ChunkedEncoding chunks)
-			// public void read (Input input, Object object) and read (Input input, Object object, ChunkedEncoding chunks)
-			for (boolean chunked : new boolean[] {false, true}) {
-				MethodTypeDesc writeType = chunked ? MethodTypeDesc.of(CD_void, CD_Output, CD_Object, CD_ChunkedEncoding)
-					: MethodTypeDesc.of(CD_void, CD_Output, CD_Object);
-				MethodTypeDesc readType = chunked ? MethodTypeDesc.of(CD_void, CD_Input, CD_Object, CD_ChunkedEncoding)
-					: MethodTypeDesc.of(CD_void, CD_Input, CD_Object);
-				batches(cb, thisClass, "write", writeType, n, chunked,
-					(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).write(from, to));
-				batches(cb, thisClass, "read", readType, n, chunked,
-					(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).read(from, to));
-			}
-		});
+		String thisClass = CodeGeneration.class.getPackageName().replace('.', '/') + "/Generated$" + type.getSimpleName();
+		Bytecode cb = Bytecode.create(thisClass, GeneratedFieldsName);
+		members(cb, thisClass, n, setters);
+		constructor(cb, thisClass);
+		// public void write (OutputDesc output, Object object) and write (OutputDesc output, Object object, ChunkedEncoding chunks)
+		// public void read (InputDesc input, Object object) and read (InputDesc input, Object object, ChunkedEncoding chunks)
+		for (boolean chunked : new boolean[] {false, true}) {
+			String writeType = chunked ? descriptor(void.class, Output.class, Object.class, ChunkedEncoding.class)
+				: descriptor(void.class, Output.class, Object.class);
+			String readType = chunked ? descriptor(void.class, Input.class, Object.class, ChunkedEncoding.class)
+				: descriptor(void.class, Input.class, Object.class);
+			batches(cb, thisClass, "write", writeType, n, chunked,
+				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).write(from, to));
+			batches(cb, thisClass, "read", readType, n, chunked,
+				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).read(from, to));
+		}
+		byte[] bytes = cb.bytes();
 
 		try {
-			Lookup hidden = lookup.defineHiddenClassWithClassData(bytes, classData, true);
+			Lookup hidden = MethodHandles.lookup().defineHiddenClassWithClassData(bytes, classData, true);
 			if (TRACE) trace("kryo", "Generated code for the fields of: " + className(type) + " (" + n + " fields"
 				+ (classes ? ", classes" : "") + (tags != null ? ", tags" : "")
 				+ (n > batchSize ? ", " + (n + batchSize - 1) / batchSize + " batches" : "") + ")");
@@ -286,75 +280,90 @@ final class CodeGeneration {
 		callSite.getTarget().invoke(field, object, value);
 	}
 
-	/** Emits the fields: the VarHandle fi and setter si of each field, initialized from the class data, and the serializer and
+	/** Emits the fields: the VarHandleDesc fi and setter si of each field, initialized from the class data, and the serializer and
 	 * fields of the serializer instance. */
-	static private void members (java.lang.classfile.ClassBuilder cb, ClassDesc thisClass, int n, int[] setters) {
-		// static final VarHandle f0; static final MethodHandle s0; ...
+	static private void members (Bytecode cb, String thisClass, int n, int[] setters) {
+		// static final VarHandleDesc f0; static final MethodHandleDesc s0; ...
 		for (int i = 0; i < n; i++) {
-			cb.withField("f" + i, CD_VarHandle, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
-			if (setters[i] != -1) cb.withField("s" + i, CD_MethodHandle, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
+			cb.field("f" + i, VarHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
+			if (setters[i] != -1) cb.field("s" + i, MethodHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
 		}
-		// final FieldSerializer serializer; final CachedField[] fields;
-		cb.withField("serializer", CD_FieldSerializer, ACC_PRIVATE | ACC_FINAL);
-		cb.withField("fields", CD_CachedFieldArray, ACC_PRIVATE | ACC_FINAL);
-		// static { f0 = (VarHandle)MethodHandles.classDataAt(MethodHandles.lookup(), "_", VarHandle.class, 0); ... }
-		cb.withMethodBody(CLASS_INIT_NAME, MTD_void, ACC_STATIC, code -> {
+		// final FieldSerializerDesc serializer; final CachedField[] fields;
+		cb.field("serializer", FieldSerializerDesc, ACC_PRIVATE | ACC_FINAL);
+		cb.field("fields", CachedFieldArrayDesc, ACC_PRIVATE | ACC_FINAL);
+		// static { f0 = (VarHandleDesc)MethodHandlesName.classDataAt(MethodHandlesName.lookup(), "_", VarHandleDesc.class, 0); ...
+		// }
+		cb.method("<clinit>", "()V", ACC_STATIC, code -> {
 			for (int i = 0; i < n; i++) {
-				loadClassData(code, i, CD_VarHandle).putstatic(thisClass, "f" + i, CD_VarHandle);
-				if (setters[i] != -1) loadClassData(code, setters[i], CD_MethodHandle).putstatic(thisClass, "s" + i, CD_MethodHandle);
+				loadClassData(code, i, VarHandleDesc, VarHandleName);
+				code.putstatic(thisClass, "f" + i, VarHandleDesc);
+				if (setters[i] != -1) {
+					loadClassData(code, setters[i], MethodHandleDesc, MethodHandleName);
+					code.putstatic(thisClass, "s" + i, MethodHandleDesc);
+				}
 			}
-			code.return_();
+			code.vreturn();
 		});
 	}
 
-	/** Emits: (T)MethodHandles.classDataAt(MethodHandles.lookup(), "_", T.class, index) */
-	static private java.lang.classfile.CodeBuilder loadClassData (java.lang.classfile.CodeBuilder code, int index,
-		ClassDesc type) {
-		return code.invokestatic(CD_MethodHandles, "lookup", MethodTypeDesc.of(CD_MethodHandles_Lookup)) //
-			.ldc("_").ldc(type).loadConstant(index) //
-			.invokestatic(CD_MethodHandles, "classDataAt", MTD_classDataAt).checkcast(type);
+	/** Emits: (T)MethodHandlesName.classDataAt(MethodHandlesName.lookup(), "_", T.class, index) */
+	static private void loadClassData (Code code, int index, String descriptor, String name) {
+		code.invokestatic(MethodHandlesName, "lookup", "()" + LookupDesc);
+		code.ldc("_");
+		code.ldcClass(name);
+		code.iconst(index);
+		code.invokestatic(MethodHandlesName, "classDataAt",
+			"(" + LookupDesc + "Ljava/lang/String;Ljava/lang/Class;I)Ljava/lang/Object;");
+		code.checkcast(name);
 	}
 
-	/** Emits: public Generated$Type (FieldSerializer serializer, CachedField[] fields) */
-	static private void constructor (java.lang.classfile.ClassBuilder cb, ClassDesc thisClass) {
-		cb.withMethodBody(INIT_NAME, MethodTypeDesc.of(CD_void, CD_FieldSerializer, CD_CachedFieldArray), ACC_PUBLIC, code -> {
-			code.aload(0).invokespecial(CD_GeneratedFields, INIT_NAME, MTD_void) //
-				.aload(0).aload(1).putfield(thisClass, "serializer", CD_FieldSerializer) //
-				.aload(0).aload(2).putfield(thisClass, "fields", CD_CachedFieldArray).return_();
+	/** Emits: public Generated$Type (FieldSerializerDesc serializer, CachedField[] fields) */
+	static private void constructor (Bytecode cb, String thisClass) {
+		cb.method("<init>", "(" + FieldSerializerDesc + CachedFieldArrayDesc + ")V", ACC_PUBLIC, code -> {
+			code.aload(0);
+			code.invokespecial(GeneratedFieldsName, "<init>", "()V");
+			code.aload(0);
+			code.aload(1);
+			code.putfield(thisClass, "serializer", FieldSerializerDesc);
+			code.aload(0);
+			code.aload(2);
+			code.putfield(thisClass, "fields", CachedFieldArrayDesc);
+			code.vreturn();
 		});
 	}
 
 	/** Emits the fields of a method in batches. The JIT doesn't compile methods above 8000 bytes, so a class with many fields gets
 	 * a private method per batch of fields, which the public method calls. */
-	static private void batches (java.lang.classfile.ClassBuilder cb, ClassDesc thisClass, String name, MethodTypeDesc type, int n,
-		boolean chunked, Batch batch) {
+	static private void batches (Bytecode cb, String thisClass, String name, String type, int n, boolean chunked, Batch batch) {
 		if (n <= batchSize) {
-			cb.withMethodBody(name, type, ACC_PUBLIC, code -> batch.emit(code, 0, n));
+			cb.method(name, type, ACC_PUBLIC, code -> batch.emit(code, 0, n));
 			return;
 		}
-		cb.withMethodBody(name, type, ACC_PUBLIC, code -> {
+		cb.method(name, type, ACC_PUBLIC, code -> {
 			for (int from = 0; from < n; from += batchSize) {
-				code.aload(0).aload(1).aload(2);
+				code.aload(0);
+				code.aload(1);
+				code.aload(2);
 				if (chunked) code.aload(3);
 				code.invokevirtual(thisClass, name + from, type);
 			}
-			code.return_();
+			code.vreturn();
 		});
 		for (int from = 0; from < n; from += batchSize) {
 			int start = from, end = Math.min(from + batchSize, n);
-			cb.withMethodBody(name + from, type, ACC_PRIVATE, code -> batch.emit(code, start, end));
+			cb.method(name + from, type, ACC_PRIVATE, code -> batch.emit(code, start, end));
 		}
 	}
 
 	private interface Batch {
-		void emit (java.lang.classfile.CodeBuilder code, int from, int to);
+		void emit (Code code, int from, int to);
 	}
 
 	/** Emits the body of a write or read method of the hidden class, see the class javadoc. The locals are 0 this, 1 the output or
 	 * input, 2 the object and 3 the chunks if chunked. Each method emits the statement or expression in its comment. */
 	static private final class Emitter {
-		final java.lang.classfile.CodeBuilder code;
-		final ClassDesc thisClass;
+		final Code code;
+		final String thisClass;
 		final Kind[] kinds;
 		/** The class data index of the setter of each final field, else -1. */
 		final int[] setters;
@@ -367,8 +376,7 @@ final class CodeGeneration {
 		/** Locals: the index of the current field for the error, the tag read, the chunk mark when writing or end when reading. */
 		int index, tag, chunk;
 
-		Emitter (java.lang.classfile.CodeBuilder code, ClassDesc thisClass, Kind[] kinds, int[] setters, int[] tags,
-			boolean classes, boolean chunked) {
+		Emitter (Code code, String thisClass, Kind[] kinds, int[] setters, int[] tags, boolean classes, boolean chunked) {
 			this.code = code;
 			this.thisClass = thisClass;
 			this.kinds = kinds;
@@ -378,58 +386,78 @@ final class CodeGeneration {
 			this.chunked = chunked;
 		}
 
-		/** Returns an emitter for a nested block, eg of an if. */
-		Emitter with (java.lang.classfile.CodeBuilder block) {
-			Emitter emitter = new Emitter(block, thisClass, kinds, setters, tags, classes, chunked);
-			emitter.index = index;
-			emitter.tag = tag;
-			emitter.chunk = chunk;
-			return emitter;
-		}
-
 		/** The body of write for the fields from (inclusive) to (exclusive). */
 		void write (int from, int to) {
-			if (chunked) chunk = code.allocateLocal(LONG);
-			index = code.allocateLocal(INT);
+			int local = chunked ? 4 : 3; // After the parameters.
+			if (chunked) {
+				chunk = local;
+				local += 2;
+			}
+			index = local;
 			// int index = from; try { index = i; <write field i> ... } catch (Throwable t) { throw writeError(t, fields[index],
 			// output); }
-			code.loadConstant(from).istore(index);
-			code.trying(block -> {
-				Emitter emitter = with(block);
+			code.iconst(from);
+			code.istore(index);
+			code.trying( () -> {
 				for (int i = from; i < to; i++) {
-					if (i != from) block.loadConstant(i).istore(index);
-					emitter.writeField(i);
+					if (i != from) {
+						code.iconst(i);
+						code.istore(index);
+					}
+					writeField(i);
 				}
-			}, catches -> catches.catchingAll(handler -> with(handler).throwError("writeError", MTD_writeError)));
-			code.return_();
+			}, () -> throwError("writeError", "(Ljava/lang/Throwable;" + CachedFieldDesc + OutputDesc + ")" + KryoExceptionDesc));
+			code.vreturn();
 		}
 
 		/** The body of read for the fields from (inclusive) to (exclusive). */
 		void read (int from, int to) {
-			if (tags != null) tag = code.allocateLocal(INT);
-			if (chunked) chunk = code.allocateLocal(LONG);
-			index = code.allocateLocal(INT);
+			int local = chunked ? 4 : 3; // After the parameters.
+			if (tags != null) tag = local++;
+			if (chunked) {
+				chunk = local;
+				local += 2;
+			}
+			index = local;
 			// int index = from; try { index = i; <read field i> ... } catch (Throwable t) { throw readError(t, fields[index],
 			// input); }
-			code.loadConstant(from).istore(index);
-			code.trying(block -> {
-				Emitter emitter = with(block);
+			code.iconst(from);
+			code.istore(index);
+			code.trying( () -> {
 				for (int i = from; i < to; i++) {
-					if (i != from) block.loadConstant(i).istore(index);
-					emitter.readField(i);
+					if (i != from) {
+						code.iconst(i);
+						code.istore(index);
+					}
+					readField(i);
 				}
-			}, catches -> catches.catchingAll(handler -> with(handler).throwError("readError", MTD_readError)));
-			code.return_();
+			}, () -> throwError("readError", "(Ljava/lang/Throwable;" + CachedFieldDesc + InputDesc + ")" + KryoExceptionDesc));
+			code.vreturn();
 		}
 
 		/** output.writeVarInt(TAG, true); long mark = chunks.beginField(output); <write the value>; chunks.endField(output,
 		 * mark); */
 		void writeField (int i) {
-			if (tags != null)
-				code.aload(1).loadConstant(tags[i]).iconst_1().invokevirtual(CD_Output, "writeVarInt", MTD_writeVarInt).pop();
-			if (chunked) code.aload(3).aload(1).invokeinterface(CD_ChunkedEncoding, "beginField", MTD_beginFieldWrite).lstore(chunk);
+			if (tags != null) {
+				code.aload(1);
+				code.iconst(tags[i]);
+				code.iconst(1);
+				code.invokevirtual(OutputName, "writeVarInt", "(IZ)I");
+				code.pop();
+			}
+			if (chunked) {
+				code.aload(3);
+				code.aload(1);
+				code.invokeinterface(ChunkedEncodingName, "beginField", "(" + OutputDesc + ")J");
+				code.lstore(chunk);
+			}
 			writeValue(i);
-			if (chunked) code.aload(3).aload(1).lload(chunk).invokeinterface(CD_ChunkedEncoding, "endField", MTD_endFieldWrite);
+			if (chunked) {
+				code.aload(3);
+				code.aload(1);
+				code.lload(chunk);
+				code.invokeinterface(ChunkedEncodingName, "endField", "(" + OutputDesc + "J)V");
+			}
 		}
 
 		/** Writes the value of field i, with its class first if classes are written. */
@@ -437,52 +465,94 @@ final class CodeGeneration {
 			Kind kind = kinds[i];
 			if (kind == Kind.object) {
 				// ((ReflectField)fields[i]).writeValue(output, object, (Object)fi.get(object)), or writeValueWithClass
-				field(i).checkcast(CD_ReflectField).aload(1).aload(2);
-				value(i, CD_Object).invokevirtual(CD_ReflectField, classes ? "writeValueWithClass" : "writeValue", MTD_writeValue);
+				field(i);
+				code.checkcast(ReflectFieldName);
+				code.aload(1);
+				code.aload(2);
+				value(i, "Ljava/lang/Object;");
+				code.invokevirtual(ReflectFieldName, classes ? "writeValueWithClass" : "writeValue",
+					"(" + OutputDesc + "Ljava/lang/Object;Ljava/lang/Object;)V");
 			} else if (classes && kind == Kind.string) {
-				// GeneratedFields.writeStringWithClass(serializer.kryo, output, (String)fi.get(object))
-				kryo().aload(1);
-				value(i, CD_String).invokestatic(CD_GeneratedFields, "writeStringWithClass", MTD_writeStringWithClass);
+				// GeneratedFieldsName.writeStringWithClass(serializer.kryo, output, (String)fi.get(object))
+				kryo();
+				code.aload(1);
+				value(i, "Ljava/lang/String;");
+				code.invokestatic(GeneratedFieldsName, "writeStringWithClass", "(" + KryoDesc + OutputDesc + "Ljava/lang/String;)V");
 			} else {
 				// serializer.kryo.writeClass(output, Integer.class);
-				if (classes) kryo().aload(1).ldc(kind.wrapper).invokevirtual(CD_Kryo, "writeClass", MTD_writeClass).pop();
+				if (classes) {
+					kryo();
+					code.aload(1);
+					code.ldcClass(kind.wrapper);
+					code.invokevirtual(KryoName, "writeClass", "(" + OutputDesc + "Ljava/lang/Class;)" + RegistrationDesc);
+					code.pop();
+				}
 				// output.writeX((X)fi.get(object)), or output.writeVarX((X)fi.get(object), false) if fields[i].varEncoding
 				code.aload(1);
 				value(i, kind.type);
 				if (kind.varEncodable) {
-					varEncoding(i).ifThenElse(IFNE, //
-						block -> block.iconst_0().invokevirtual(CD_Output, kind.writeVar, kind.writeVarType).pop(), //
-						block -> block.invokevirtual(CD_Output, kind.write, kind.writeType));
+					varEncoding(i);
+					code.ifThenElse(IFNE, () -> {
+						code.iconst(0);
+						code.invokevirtual(OutputName, kind.writeVar, kind.writeVarType);
+						code.pop();
+					}, () -> code.invokevirtual(OutputName, kind.write, kind.writeType));
 				} else
-					code.invokevirtual(CD_Output, kind.write, kind.writeType);
+					code.invokevirtual(OutputName, kind.write, kind.writeType);
 			}
 		}
 
 		/** int tag = input.readVarInt(true); long end = chunks.beginField(input); if (tag == TAG) <read the value> else
 		 * ((TaggedFieldSerializer)serializer).readTag(input, tag, object, chunked); chunks.endField(input, end); */
 		void readField (int i) {
-			if (tags != null) code.aload(1).iconst_1().invokevirtual(CD_Input, "readVarInt", MTD_readVarInt).istore(tag);
-			if (chunked) code.aload(3).aload(1).invokeinterface(CD_ChunkedEncoding, "beginField", MTD_beginFieldRead).lstore(chunk);
+			if (tags != null) {
+				code.aload(1);
+				code.iconst(1);
+				code.invokevirtual(InputName, "readVarInt", "(Z)I");
+				code.istore(tag);
+			}
+			if (chunked) {
+				code.aload(3);
+				code.aload(1);
+				code.invokeinterface(ChunkedEncodingName, "beginField", "(" + InputDesc + ")J");
+				code.lstore(chunk);
+			}
 			if (tags == null)
 				readValue(i);
 			else {
-				code.iload(tag).loadConstant(tags[i]).ifThenElse(IF_ICMPEQ, //
-					block -> with(block).readValue(i), //
-					block -> block.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer).checkcast(CD_TaggedFieldSerializer) //
-						.aload(1).iload(tag).aload(2).loadConstant(chunked ? 1 : 0)
-						.invokevirtual(CD_TaggedFieldSerializer, "readTag", MTD_readTag));
+				code.iload(tag);
+				code.iconst(tags[i]);
+				code.ifThenElse(IF_ICMPEQ, () -> readValue(i), () -> {
+					code.aload(0);
+					code.getfield(thisClass, "serializer", FieldSerializerDesc);
+					code.checkcast(TaggedFieldSerializerName);
+					code.aload(1);
+					code.iload(tag);
+					code.aload(2);
+					code.iconst(chunked ? 1 : 0);
+					code.invokevirtual(TaggedFieldSerializerName, "readTag", "(" + InputDesc + "ILjava/lang/Object;Z)V");
+				});
 			}
-			if (chunked) code.aload(3).aload(1).lload(chunk).invokeinterface(CD_ChunkedEncoding, "endField", MTD_endFieldRead);
+			if (chunked) {
+				code.aload(3);
+				code.aload(1);
+				code.lload(chunk);
+				code.invokeinterface(ChunkedEncodingName, "endField", "(" + InputDesc + "J)V");
+			}
 		}
 
 		/** Reads the value of field i and sets it. With classes, the class of a primitive value is read first: if it is null or the
 		 * value is skipped, the field keeps its value. */
 		void readValue (int i) {
 			if (classes && kinds[i].primitive) {
-				// if (GeneratedFields.readPrimitiveClass(serializer, input, fields[i], chunked)) <set>
-				serializer().aload(1);
-				field(i).loadConstant(chunked ? 1 : 0).invokestatic(CD_GeneratedFields, "readPrimitiveClass", MTD_readPrimitiveClass) //
-					.ifThen(IFNE, block -> with(block).set(i));
+				// if (GeneratedFieldsName.readPrimitiveClass(serializer, input, fields[i], chunked)) <set>
+				serializer();
+				code.aload(1);
+				field(i);
+				code.iconst(chunked ? 1 : 0);
+				code.invokestatic(GeneratedFieldsName, "readPrimitiveClass",
+					"(" + FieldSerializerDesc + InputDesc + CachedFieldDesc + "Z)Z");
+				code.ifThen(IFNE, () -> set(i));
 				return;
 			}
 			set(i);
@@ -492,14 +562,16 @@ final class CodeGeneration {
 		void set (int i) {
 			Kind kind = kinds[i];
 			if (setters[i] == -1) {
-				code.getstatic(thisClass, "f" + i, CD_VarHandle).aload(2);
+				code.getstatic(thisClass, "f" + i, VarHandleDesc);
+				code.aload(2);
 				read(i);
-				code.invokevirtual(CD_VarHandle, "set", MethodTypeDesc.of(CD_void, CD_Object, kind.type));
+				code.invokevirtual(VarHandleName, "set", "(Ljava/lang/Object;" + kind.type + ")V");
 			} else {
-				code.getstatic(thisClass, "s" + i, CD_MethodHandle);
-				field(i).aload(2);
+				code.getstatic(thisClass, "s" + i, MethodHandleDesc);
+				field(i);
+				code.aload(2);
 				read(i);
-				code.invokevirtual(CD_MethodHandle, "invokeExact", MethodTypeDesc.of(CD_void, CD_CachedField, CD_Object, kind.type));
+				code.invokevirtual(MethodHandleName, "invokeExact", "(" + CachedFieldDesc + "Ljava/lang/Object;" + kind.type + ")V");
 			}
 		}
 
@@ -508,137 +580,155 @@ final class CodeGeneration {
 			Kind kind = kinds[i];
 			if (kind == Kind.object) {
 				// ((ReflectField)fields[i]).readValue(input), or readValueWithClass(input, object, chunked)
-				field(i).checkcast(CD_ReflectField).aload(1);
-				if (classes)
-					code.aload(2).loadConstant(chunked ? 1 : 0).invokevirtual(CD_ReflectField, "readValueWithClass",
-						MTD_readValueWithClass);
-				else
-					code.invokevirtual(CD_ReflectField, "readValue", MTD_readValue);
+				field(i);
+				code.checkcast(ReflectFieldName);
+				code.aload(1);
+				if (classes) {
+					code.aload(2);
+					code.iconst(chunked ? 1 : 0);
+					code.invokevirtual(ReflectFieldName, "readValueWithClass",
+						"(" + InputDesc + "Ljava/lang/Object;Z)Ljava/lang/Object;");
+				} else
+					code.invokevirtual(ReflectFieldName, "readValue", "(" + InputDesc + ")Ljava/lang/Object;");
 			} else if (classes && kind == Kind.string) {
-				// GeneratedFields.readStringWithClass(serializer, input, fields[i], object, chunked)
-				serializer().aload(1);
-				field(i).aload(2).loadConstant(chunked ? 1 : 0) //
-					.invokestatic(CD_GeneratedFields, "readStringWithClass", MTD_readStringWithClass);
+				// GeneratedFieldsName.readStringWithClass(serializer, input, fields[i], object, chunked)
+				serializer();
+				code.aload(1);
+				field(i);
+				code.aload(2);
+				code.iconst(chunked ? 1 : 0);
+				code.invokestatic(GeneratedFieldsName, "readStringWithClass",
+					"(" + FieldSerializerDesc + InputDesc + CachedFieldDesc + "Ljava/lang/Object;Z)Ljava/lang/String;");
 			} else if (kind.varEncodable) {
 				// fields[i].varEncoding ? input.readVarX(false) : input.readX()
-				varEncoding(i).ifThenElse(IFNE, //
-					block -> block.aload(1).iconst_0().invokevirtual(CD_Input, kind.readVar, kind.readVarType), //
-					block -> block.aload(1).invokevirtual(CD_Input, kind.read, kind.readType));
-			} else
-				code.aload(1).invokevirtual(CD_Input, kind.read, kind.readType); // input.readX()
+				varEncoding(i);
+				code.ifThenElse(IFNE, () -> {
+					code.aload(1);
+					code.iconst(0);
+					code.invokevirtual(InputName, kind.readVar, kind.readVarType);
+				}, () -> {
+					code.aload(1);
+					code.invokevirtual(InputName, kind.read, kind.readType);
+				});
+			} else {
+				code.aload(1);
+				code.invokevirtual(InputName, kind.read, kind.readType); // input.readX()
+			}
 		}
 
-		/** throw GeneratedFields.<error>(t, fields[index], output or input), with the Throwable t on the stack. */
-		void throwError (String error, MethodTypeDesc type) {
-			code.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).iload(index).aaload().aload(1)
-				.invokestatic(CD_GeneratedFields, error, type).athrow();
+		/** throw GeneratedFieldsName.<error>(t, fields[index], output or input), with the Throwable t on the stack. */
+		void throwError (String error, String type) {
+			code.aload(0);
+			code.getfield(thisClass, "fields", CachedFieldArrayDesc);
+			code.iload(index);
+			code.aaload();
+			code.aload(1);
+			code.invokestatic(GeneratedFieldsName, error, type);
+			code.athrow();
 		}
 
 		/** fields[i] */
-		java.lang.classfile.CodeBuilder field (int i) {
-			return code.aload(0).getfield(thisClass, "fields", CD_CachedFieldArray).loadConstant(i).aaload();
+		void field (int i) {
+			code.aload(0);
+			code.getfield(thisClass, "fields", CachedFieldArrayDesc);
+			code.iconst(i);
+			code.aaload();
 		}
 
 		/** fields[i].varEncoding */
-		java.lang.classfile.CodeBuilder varEncoding (int i) {
-			return field(i).getfield(CD_CachedField, "varEncoding", CD_boolean);
+		void varEncoding (int i) {
+			field(i);
+			code.getfield(CachedFieldName, "varEncoding", "Z");
 		}
 
 		/** serializer */
-		java.lang.classfile.CodeBuilder serializer () {
-			return code.aload(0).getfield(thisClass, "serializer", CD_FieldSerializer);
+		void serializer () {
+			code.aload(0);
+			code.getfield(thisClass, "serializer", FieldSerializerDesc);
 		}
 
 		/** serializer.kryo */
-		java.lang.classfile.CodeBuilder kryo () {
-			return serializer().getfield(CD_FieldSerializer, "kryo", CD_Kryo);
+		void kryo () {
+			serializer();
+			code.getfield(FieldSerializerName, "kryo", KryoDesc);
 		}
 
 		/** (T)fi.get(object) */
-		java.lang.classfile.CodeBuilder value (int i, ClassDesc type) {
-			return code.getstatic(thisClass, "f" + i, CD_VarHandle).aload(2).invokevirtual(CD_VarHandle, "get",
-				MethodTypeDesc.of(type, CD_Object));
+		void value (int i, String type) {
+			code.getstatic(thisClass, "f" + i, VarHandleDesc);
+			code.aload(2);
+			code.invokevirtual(VarHandleName, "get", "(Ljava/lang/Object;)" + type);
 		}
 	}
 
 	/** How a field is written and read. */
 	private enum Kind {
-		int_(CD_int, CD_Integer, "writeInt", "readInt"), long_(CD_long, CD_Long, "writeLong", "readLong"), //
-		double_(CD_double, CD_Double, "writeDouble", "readDouble"), float_(CD_float, CD_Float, "writeFloat", "readFloat"), //
-		boolean_(CD_boolean, CD_Boolean, "writeBoolean", "readBoolean"), short_(CD_short, CD_Short, "writeShort", "readShort"), //
-		char_(CD_char, CD_Character, "writeChar", "readChar"), byte_(CD_byte, CD_Byte, "writeByte", "readByte"), //
-		string(CD_String, CD_String, "writeString", "readString"), object(CD_Object, null, null, null);
+		int_("I", "java/lang/Integer", "writeInt", "readInt"), long_("J", "java/lang/Long", "writeLong", "readLong"), //
+		double_("D", "java/lang/Double", "writeDouble", "readDouble"), float_("F", "java/lang/Float", "writeFloat", "readFloat"), //
+		boolean_("Z", "java/lang/Boolean", "writeBoolean", "readBoolean"), //
+		short_("S", "java/lang/Short", "writeShort", "readShort"), char_("C", "java/lang/Character", "writeChar", "readChar"), //
+		byte_("B", "java/lang/Byte", "writeByte", "readByte"), //
+		string("Ljava/lang/String;", "java/lang/String", "writeString", "readString"), object("Ljava/lang/Object;", null, null,
+			null);
 
-		final ClassDesc type, wrapper;
+		/** The descriptor of the type and the internal name of its wrapper class. */
+		final String type, wrapper;
 		final boolean primitive;
-		/** The Output and Input methods and their descriptors. */
-		final String write, read;
-		final MethodTypeDesc writeType, readType;
-		/** True for int and long, which are written with variable length if {@link CachedField#varEncoding}, with these methods. */
+		/** The OutputDesc and InputDesc methods and their descriptors. */
+		final String write, read, writeType, readType;
+		/** True for int and long, which are written with variable length if {@link CachedFieldDesc#varEncoding}, with these
+		 * methods. */
 		final boolean varEncodable;
-		final String writeVar, readVar;
-		final MethodTypeDesc writeVarType, readVarType;
+		final String writeVar, readVar, writeVarType, readVarType;
 
-		Kind (ClassDesc type, ClassDesc wrapper, String write, String read) {
+		Kind (String type, String wrapper, String write, String read) {
 			this.type = type;
 			this.wrapper = wrapper;
-			primitive = type.isPrimitive();
+			primitive = type.length() == 1;
 			this.write = write;
 			this.read = read;
 			// writeShort(int) takes its value as int.
-			writeType = MethodTypeDesc.of(CD_void, type == CD_short ? CD_int : type);
-			readType = MethodTypeDesc.of(type);
-			varEncodable = type == CD_int || type == CD_long;
-			writeVar = type == CD_int ? "writeVarInt" : "writeVarLong";
-			readVar = type == CD_int ? "readVarInt" : "readVarLong";
-			writeVarType = MethodTypeDesc.of(CD_int, type, CD_boolean);
-			readVarType = MethodTypeDesc.of(type, CD_boolean);
+			writeType = "(" + (type.equals("S") ? "I" : type) + ")V";
+			readType = "()" + type;
+			varEncodable = type.equals("I") || type.equals("J");
+			writeVar = type.equals("I") ? "writeVarInt" : "writeVarLong";
+			readVar = type.equals("I") ? "readVarInt" : "readVarLong";
+			writeVarType = "(" + type + "Z)I";
+			readVarType = "(Z)" + type;
 		}
 	}
 
-	// The classes and methods the generated code uses.
+	// The classes the generated code uses: internal names (Name) and descriptors.
 
-	static private final ClassDesc CD_GeneratedFields = ClassDesc.of(GeneratedFields.class.getName());
-	static private final ClassDesc CD_ReflectField = ClassDesc.of(ReflectField.class.getName());
-	static private final ClassDesc CD_CachedField = ClassDesc.of(CachedField.class.getName());
-	static private final ClassDesc CD_CachedFieldArray = CD_CachedField.arrayType();
-	static private final ClassDesc CD_FieldSerializer = ClassDesc.of(FieldSerializer.class.getName());
-	static private final ClassDesc CD_TaggedFieldSerializer = ClassDesc.of(TaggedFieldSerializer.class.getName());
-	static private final ClassDesc CD_ChunkedEncoding = ClassDesc.of(ChunkedEncoding.class.getName());
-	static private final ClassDesc CD_Kryo = ClassDesc.of(Kryo.class.getName());
-	static private final ClassDesc CD_Registration = ClassDesc.of(Registration.class.getName());
-	static private final ClassDesc CD_KryoException = ClassDesc.of(KryoException.class.getName());
-	static private final ClassDesc CD_Output = ClassDesc.of(Output.class.getName());
-	static private final ClassDesc CD_Input = ClassDesc.of(Input.class.getName());
-	static private final MethodTypeDesc MTD_classDataAt = MethodTypeDesc.of(CD_Object, CD_MethodHandles_Lookup, CD_String,
-		CD_Class, CD_int);
-	static private final MethodTypeDesc MTD_writeValue = MethodTypeDesc.of(CD_void, CD_Output, CD_Object, CD_Object);
-	static private final MethodTypeDesc MTD_readValue = MethodTypeDesc.of(CD_Object, CD_Input);
-	static private final MethodTypeDesc MTD_readValueWithClass = MethodTypeDesc.of(CD_Object, CD_Input, CD_Object, CD_boolean);
-	static private final MethodTypeDesc MTD_writeClass = MethodTypeDesc.of(CD_Registration, CD_Output, CD_Class);
-	static private final MethodTypeDesc MTD_writeStringWithClass = MethodTypeDesc.of(CD_void, CD_Kryo, CD_Output, CD_String);
-	static private final MethodTypeDesc MTD_readStringWithClass = MethodTypeDesc.of(CD_String, CD_FieldSerializer, CD_Input,
-		CD_CachedField, CD_Object, CD_boolean);
-	static private final MethodTypeDesc MTD_readPrimitiveClass = MethodTypeDesc.of(CD_boolean, CD_FieldSerializer, CD_Input,
-		CD_CachedField, CD_boolean);
-	static private final MethodTypeDesc MTD_beginFieldWrite = MethodTypeDesc.of(CD_long, CD_Output);
-	static private final MethodTypeDesc MTD_endFieldWrite = MethodTypeDesc.of(CD_void, CD_Output, CD_long);
-	static private final MethodTypeDesc MTD_beginFieldRead = MethodTypeDesc.of(CD_long, CD_Input);
-	static private final MethodTypeDesc MTD_endFieldRead = MethodTypeDesc.of(CD_void, CD_Input, CD_long);
-	static private final MethodTypeDesc MTD_writeVarInt = MethodTypeDesc.of(CD_int, CD_int, CD_boolean);
-	static private final MethodTypeDesc MTD_readVarInt = MethodTypeDesc.of(CD_int, CD_boolean);
-	static private final MethodTypeDesc MTD_readTag = MethodTypeDesc.of(CD_void, CD_Input, CD_int, CD_Object, CD_boolean);
-	static private final MethodTypeDesc MTD_writeError = MethodTypeDesc.of(CD_KryoException, CD_Throwable, CD_CachedField,
-		CD_Output);
-	static private final MethodTypeDesc MTD_readError = MethodTypeDesc.of(CD_KryoException, CD_Throwable, CD_CachedField,
-		CD_Input);
+	static private final String GeneratedFieldsName = Bytecode.name(GeneratedFields.class);
+	static private final String ReflectFieldName = Bytecode.name(ReflectField.class);
+	static private final String CachedFieldName = Bytecode.name(CachedField.class);
+	static private final String CachedFieldDesc = Bytecode.descriptor(CachedField.class);
+	static private final String CachedFieldArrayDesc = Bytecode.descriptor(CachedField[].class);
+	static private final String FieldSerializerName = Bytecode.name(FieldSerializer.class);
+	static private final String FieldSerializerDesc = Bytecode.descriptor(FieldSerializer.class);
+	static private final String TaggedFieldSerializerName = Bytecode.name(TaggedFieldSerializer.class);
+	static private final String ChunkedEncodingName = Bytecode.name(ChunkedEncoding.class);
+	static private final String KryoName = Bytecode.name(Kryo.class);
+	static private final String KryoDesc = Bytecode.descriptor(Kryo.class);
+	static private final String RegistrationDesc = Bytecode.descriptor(Registration.class);
+	static private final String KryoExceptionDesc = Bytecode.descriptor(KryoException.class);
+	static private final String OutputName = Bytecode.name(Output.class);
+	static private final String OutputDesc = Bytecode.descriptor(Output.class);
+	static private final String InputName = Bytecode.name(Input.class);
+	static private final String InputDesc = Bytecode.descriptor(Input.class);
+	static private final String VarHandleName = Bytecode.name(VarHandle.class);
+	static private final String VarHandleDesc = Bytecode.descriptor(VarHandle.class);
+	static private final String MethodHandleName = Bytecode.name(MethodHandle.class);
+	static private final String MethodHandleDesc = Bytecode.descriptor(MethodHandle.class);
+	static private final String MethodHandlesName = Bytecode.name(MethodHandles.class);
+	static private final String LookupDesc = Bytecode.descriptor(Lookup.class);
 
-	// From java.lang.classfile.
-	static private final int ACC_PUBLIC = 0x0001, ACC_PRIVATE = 0x0002, ACC_STATIC = 0x0008, ACC_FINAL = 0x0010,
-		ACC_SUPER = 0x0020;
-	static private final String INIT_NAME = "<init>", CLASS_INIT_NAME = "<clinit>";
-	static private final java.lang.classfile.Opcode IFNE = java.lang.classfile.Opcode.IFNE,
-		IF_ICMPEQ = java.lang.classfile.Opcode.IF_ICMPEQ;
-	static private final java.lang.classfile.TypeKind INT = java.lang.classfile.TypeKind.INT,
-		LONG = java.lang.classfile.TypeKind.LONG;
+	static private final int ACC_PUBLIC = Bytecode.ACC_PUBLIC, ACC_PRIVATE = Bytecode.ACC_PRIVATE,
+		ACC_STATIC = Bytecode.ACC_STATIC, ACC_FINAL = Bytecode.ACC_FINAL;
+	static private final int IFNE = Bytecode.IFNE, IF_ICMPEQ = Bytecode.IF_ICMPEQ;
+
+	static private String descriptor (Class returnType, Class... parameterTypes) {
+		return Bytecode.descriptor(returnType, parameterTypes);
+	}
 }

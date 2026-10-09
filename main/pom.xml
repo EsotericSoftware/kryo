@@ -31,6 +31,13 @@
 			<version>3.6</version>
 			<optional>true</optional>
 		</dependency>
+		<!-- Code generation on Java versions before 24, which have no Class-File API. -->
+		<dependency>
+			<groupId>org.ow2.asm</groupId>
+			<artifactId>asm</artifactId>
+			<version>9.8</version>
+			<optional>true</optional>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -54,7 +61,7 @@
 						<configuration>
 							<release>${javac.target}</release>
 							<excludes>
-								<exclude>**/serializers/CodeGeneration.java</exclude>
+								<exclude>**/serializers/ClassFileWriter.java</exclude>
 							</excludes>
 						</configuration>
 					</execution>
@@ -66,7 +73,7 @@
 						</goals>
 						<configuration>
 							<includes>
-								<include>**/serializers/CodeGeneration.java</include>
+								<include>**/serializers/ClassFileWriter.java</include>
 							</includes>
 						</configuration>
 					</execution>
@@ -94,6 +101,7 @@
 						sun.misc;resolution:=optional,
 						sun.nio.ch;resolution:=optional,
 						org.objenesis.*;resolution:=optional,
+						org.objectweb.asm.*;resolution:=optional,
 						*
 						]]>
 						</Import-Package>
