@@ -275,6 +275,56 @@ class CodeGenerationTest extends KryoTestCase {
 	}
 
 	@Test
+	void testFinalFieldDeniedUnsafeIncompatibleClass () {
+		// The Unsafe fallback checks the type like UnsafeField, so a class in the data that isn't assignable to the field type throws
+		// instead of setting the field to a value of the wrong type.
+		assumeTrue(com.esotericsoftware.kryo.util.Util.unsafe);
+		Kryo writer = new Kryo();
+		writer.register(ObjectValue.class, 100);
+		Output output = new Output(64);
+		writer.writeObject(output, new ObjectValue());
+		try {
+			FinalFieldSetter.force = true;
+			FieldSerializer serializer = new FieldSerializer(kryo, FinalNumberValue.class);
+			serializer.getFieldSerializerConfig().setCodeGeneration(true);
+			serializer.getFieldSerializerConfig().setFieldAccess(FieldAccessType.UNSAFE);
+			serializer.updateFields();
+			kryo.register(FinalNumberValue.class, serializer, 100);
+			assertGenerated(FinalNumberValue.class);
+			KryoException ex = assertThrows(KryoException.class,
+				() -> kryo.readObject(new Input(output.toBytes()), FinalNumberValue.class));
+			Throwable cause = ex;
+			while (cause.getCause() != null)
+				cause = cause.getCause();
+			assertTrue(cause.getMessage().startsWith("Can not set java.lang.Number field value to java.lang.String"), cause.getMessage());
+		} finally {
+			FinalFieldSetter.force = false;
+		}
+	}
+
+	@Test
+	void testFinalFieldSecondSerializer () {
+		// The call site of a final field is shared by all serializers of the class, it is resolved by the first that sets the field.
+		// The cached field of another serializer resolves its own setter when it is first set outside the generated code, eg by
+		// copy, so the generated code doesn't change the cached fields of other serializers.
+		kryo.register(FinalField.class);
+		roundTrip(6, new FinalField(7, "name"));
+		Kryo other = new Kryo();
+		FieldSerializer serializer = new FieldSerializer(other, FinalField.class);
+		serializer.getFieldSerializerConfig().setCodeGeneration(true);
+		serializer.getFieldSerializerConfig().setFieldAccess(FieldAccessType.VARHANDLE); // Unsafe fields have no setter.
+		serializer.updateFields();
+		other.register(FinalField.class, serializer);
+		assertNotNull(serializer.generated);
+		assertTrue(serializer.getField("value").finalUnresolved);
+		FinalField copy = other.copy(new FinalField(8, "copy"));
+		assertEquals(8, copy.value);
+		assertEquals("copy", copy.name);
+		assertFalse(serializer.getField("value").finalUnresolved);
+		assertFalse(serializer.getField("name").finalUnresolved);
+	}
+
+	@Test
 	void testNotSupported () {
 		// Records use the cached fields.
 		kryo.register(Point.class);
@@ -820,6 +870,14 @@ class CodeGenerationTest extends KryoTestCase {
 		public boolean equals (Object obj) {
 			return value == ((FinalField)obj).value && Objects.equals(name, ((FinalField)obj).name);
 		}
+	}
+
+	static public class ObjectValue {
+		public Object value = "string";
+	}
+
+	static public class FinalNumberValue {
+		public final Number value = null;
 	}
 
 	static public class DeniedFinalField implements java.io.Serializable {
