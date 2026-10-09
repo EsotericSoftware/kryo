@@ -124,25 +124,19 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Called after the cached fields changed: after {@link #initializeCachedFields()}, which can remove fields, and after a field
 	 * was removed. Subclasses in this package update what they derive from the fields here.
-	 * @param fields The fields, before their hidden classes are defined on the first use, so this must not keep them. */
+	 * @param fields The fields. The array is replaced when a field is removed, so this must not keep it. */
 	void cachedFieldsChanged (CachedField[] fields) {
 	}
 
-	/** Called by {@link CachedFields} when the fields were built or a field was removed.
-	 * @param fields The fields, before their hidden classes are defined on the first use. */
+	/** Called by {@link CachedFields} when the fields were built or a field was removed, see
+	 * {@link #cachedFieldsChanged(CachedField[])}. */
 	final void fieldsChanged (CachedField[] fields) {
 		cachedFieldsChanged(fields);
 		regenerate();
 	}
 
-	/** Generates the code for the fields if {@link #codeGenerated()}. If that fails, the cached fields are used and rebuilt with
-	 * their hidden classes, which {@link CachedFields} doesn't create when code is generated. */
+	/** Generates the code for the fields if {@link #codeGenerated()}. If that fails, the cached fields are used. */
 	final void regenerate () {
-		regenerate(true);
-	}
-
-	/** @param rebuild If false and no code could be generated, the cached fields are used as they are, eg while serializing. */
-	final void regenerate (boolean rebuild) {
 		generated = null;
 		if (!codeGenerated()) return;
 		try {
@@ -150,20 +144,12 @@ public class FieldSerializer<T> extends Serializer<T> {
 		} catch (KryoException ex) {
 			if (DEBUG) debug("kryo", "Unable to generate code for the fields of: " + className(type), ex);
 		}
-		if (generated == null && rebuild && !codeGenerationFailed) {
-			codeGenerationFailed = true;
-			cachedFields.rebuild();
-		}
 	}
-
-	/** True if code could not be generated for the fields, then the cached fields are used. Reset by {@link #updateFields()}. */
-	private boolean codeGenerationFailed;
 
 	/** Returns true if code is generated for the fields: {@link FieldSerializerConfig#setCodeGeneration(boolean)} is enabled, the
 	 * platform supports it, the class is not a record and {@link #usesGeneratedCode()}. */
 	final boolean codeGenerated () {
-		return config.codeGeneration && CachedFields.codeGeneration && recordConstructor == null && !codeGenerationFailed
-			&& usesGeneratedCode();
+		return config.codeGeneration && CachedFields.codeGeneration && recordConstructor == null && usesGeneratedCode();
 	}
 
 	/** Returns true if the generated code can be used with the current config settings, which can be changed without
@@ -192,7 +178,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		GeneratedFields generated = this.generated;
 		if (generated == null || !usesGeneratedCode()) return null;
 		if (generated.writesClasses != writesClasses()) {
-			regenerate(false);
+			regenerate();
 			return this.generated;
 		}
 		return generated;
@@ -212,7 +198,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Must be called after {@link #getFieldSerializerConfig()} settings are changed to repopulate the cached fields. */
 	public void updateFields () {
 		if (TRACE) trace("kryo", "Update fields: " + className(type));
-		codeGenerationFailed = false;
 		cachedFields.rebuild();
 	}
 
@@ -538,19 +523,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 			this.field = field;
 		}
 
-		/** Copies the settings of another cached field for the same field, which this field replaces. */
-		void copySettings (CachedField from) {
-			name = from.name;
-			valueClass = from.valueClass;
-			serializer = from.serializer;
-			canBeNull = from.canBeNull;
-			varEncoding = from.varEncoding;
-			optimizePositive = from.optimizePositive;
-			reuseSerializer = from.reuseSerializer;
-			index = from.index;
-			tag = from.tag;
-		}
-
 		/** The concrete class of the values for this field, or null if it is not known. This saves 1-2 bytes. Only set to a
 		 * non-null value if the values for this field are known to be of the specified type (or null). Default is the field type if
 		 * it is a primitive, primitive wrapper, or final or if {@link FieldSerializerConfig#setFixedFieldTypes(boolean)} is
@@ -717,9 +689,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public enum FieldAccessType {
 		/** {@code sun.misc.Unsafe}, if available. Fastest, but deprecated for removal by Java. */
 		UNSAFE,
-		/** {@link java.lang.invoke.VarHandle} for non-final fields. Where hidden classes can be defined, which is not on Android or
-		 * in a native image, each field is accessed by a hidden class that has the VarHandle as a constant, which is much faster
-		 * and close to Unsafe. */
+		/** {@link java.lang.invoke.VarHandle} for non-final fields. */
 		VARHANDLE,
 		/** {@link Field} reflection. */
 		REFLECTION
@@ -752,8 +722,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 				debug("kryo", "Default field access: " + defaultFieldAccess + (isAndroid ? " (Android)"
 					: " (Java " + Runtime.version().feature() + ", Unsafe available: " + unsafe + ", Unsafe memory access: "
 						+ (memoryAccess == null ? "default" : memoryAccess) + ")")
-					+ ", hidden classes: " + CachedFields.hiddenFields + ", code generation available: "
-					+ CachedFields.codeGeneration);
+					+ ", code generation available: " + CachedFields.codeGeneration);
 			}
 		}
 

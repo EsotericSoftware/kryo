@@ -165,18 +165,6 @@ class CodeGenerationTest extends KryoTestCase {
 	}
 
 	@Test
-	void testNoHiddenFieldClasses () {
-		// The generated code doesn't use the fields to write and read, so they don't get a hidden class each.
-		kryo.register(AllKinds.class);
-		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(AllKinds.class);
-		assertNotNull(serializer.generated);
-		if (CachedFields.hiddenFields && serializer.getFieldSerializerConfig().getFieldAccess() == FieldAccessType.VARHANDLE) {
-			assertEquals("IntVarHandleField", serializer.getField("i").getClass().getSimpleName());
-			assertEquals("VarHandleField", serializer.getField("nested").getClass().getSimpleName());
-		}
-	}
-
-	@Test
 	void testSharedByKryoInstances () {
 		Kryo kryo2 = new Kryo();
 		kryo2.setDefaultSerializer(codeGeneration());

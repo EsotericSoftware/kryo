@@ -60,10 +60,6 @@ jobs:
         run: mvn -B test -pl main
         env:
           JAVA_TOOL_OPTIONS: -Dkryo.fieldAccess=UNSAFE --sun-misc-unsafe-memory-access=allow
-      - name: Test with JDK 25 and VarHandle field access without hidden classes
-        run: mvn -B test -pl main
-        env:
-          JAVA_TOOL_OPTIONS: -Dkryo.hiddenFields=false
       - name: Test with JDK 25 and code generation
         run: mvn -B test -pl main
         env:
