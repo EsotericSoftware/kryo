@@ -760,8 +760,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		/** True if the system property "kryo.codeGeneration" is "true". */
 		static final boolean defaultCodeGeneration = "true".equals(System.getProperty("kryo.codeGeneration"));
 		static {
-			if (defaultCodeGeneration && !CachedFields.codeGeneration && DEBUG)
-				debug("kryo", "The system property kryo.codeGeneration is true. " + CachedFields.codeGenerationUnavailable());
+			if (defaultCodeGeneration && !CachedFields.codeGeneration && WARN)
+				warn("kryo", "The system property kryo.codeGeneration is true. " + CachedFields.codeGenerationUnavailable());
 		}
 
 		FieldAccessType fieldAccess = defaultFieldAccess;
@@ -911,7 +911,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		public void setCodeGeneration (boolean codeGeneration) {
 			this.codeGeneration = codeGeneration;
 			if (TRACE) trace("kryo", "FieldSerializerConfig codeGeneration: " + codeGeneration);
-			if (codeGeneration && !CachedFields.codeGeneration && DEBUG) debug("kryo", CachedFields.codeGenerationUnavailable());
+			if (codeGeneration && !CachedFields.codeGeneration && WARN) warn("kryo", CachedFields.codeGenerationUnavailable());
 		}
 
 		public boolean getCodeGeneration () {
