@@ -326,6 +326,27 @@ class CodeGenerationTest extends KryoTestCase {
 	}
 
 	@Test
+	void testNoFields () {
+		// The generated methods of a class without fields have no try block, which the JVM rejects when it is empty.
+		kryo.register(NoFields.class);
+		assertGenerated(NoFields.class);
+		roundTrip(1, new NoFields());
+		for (boolean chunked : new boolean[] {false, true}) {
+			CompatibleFieldSerializerFactory compatible = compatible(false, chunked);
+			compatible.getConfig().setCodeGeneration(true);
+			kryo.register(NoFields.class, compatible.newSerializer(kryo, NoFields.class));
+			assertGenerated(NoFields.class);
+			roundTrip(chunked ? 5 : 2, new NoFields()); // Class, deferred class names, field name entries, field count.
+
+			TaggedFieldSerializerFactory tagged = tagged(false, chunked);
+			tagged.getConfig().setCodeGeneration(true);
+			kryo.register(NoFields.class, tagged.newSerializer(kryo, NoFields.class));
+			assertGenerated(NoFields.class);
+			roundTrip(chunked ? 4 : 2, new NoFields());
+		}
+	}
+
+	@Test
 	void testNotSupported () {
 		// Records use the cached fields.
 		kryo.register(Point.class);
@@ -981,6 +1002,12 @@ class CodeGenerationTest extends KryoTestCase {
 
 		public boolean equals (Object obj) {
 			return Objects.equals(value, ((FinalStringBox)obj).value);
+		}
+	}
+
+	static public class NoFields {
+		public boolean equals (Object obj) {
+			return obj instanceof NoFields;
 		}
 	}
 
