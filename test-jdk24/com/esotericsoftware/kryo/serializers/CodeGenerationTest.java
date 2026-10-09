@@ -235,6 +235,24 @@ class CodeGenerationTest extends KryoTestCase {
 	}
 
 	@Test
+	void testFinalFieldDenied () {
+		// If setting final fields with reflection is denied, the generated code sets them with the FinalFieldSetter of the cached
+		// field. The class is only used here, because the setter of a field is resolved once per JVM.
+		try {
+			FinalFieldSetter.force = true;
+			kryo.register(DeniedFinalField.class);
+			assertGenerated(DeniedFinalField.class);
+			roundTrip(6, new DeniedFinalField(7, "name"));
+			FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(DeniedFinalField.class);
+			assertNotNull(serializer.getField("value").finalSetter);
+			assertNotSame(FinalFieldSetter.unresolved, serializer.getField("value").finalSetter);
+			assertNotSame(FinalFieldSetter.unresolved, serializer.getField("name").finalSetter);
+		} finally {
+			FinalFieldSetter.force = false;
+		}
+	}
+
+	@Test
 	void testNotSupported () {
 		// Records use the cached fields.
 		kryo.register(Point.class);
@@ -779,6 +797,24 @@ class CodeGenerationTest extends KryoTestCase {
 
 		public boolean equals (Object obj) {
 			return value == ((FinalField)obj).value && Objects.equals(name, ((FinalField)obj).name);
+		}
+	}
+
+	static public class DeniedFinalField implements java.io.Serializable {
+		final int value;
+		final String name;
+
+		public DeniedFinalField () {
+			this(0, null);
+		}
+
+		public DeniedFinalField (int value, String name) {
+			this.value = value;
+			this.name = name;
+		}
+
+		public boolean equals (Object obj) {
+			return obj instanceof DeniedFinalField other && other.value == value && Objects.equals(other.name, name);
 		}
 	}
 

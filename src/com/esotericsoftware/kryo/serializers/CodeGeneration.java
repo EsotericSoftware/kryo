@@ -36,6 +36,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodType;
+import java.lang.invoke.MutableCallSite;
 import java.lang.invoke.VarHandle;
 import java.lang.invoke.VarHandle.AccessMode;
 import java.lang.reflect.Field;
@@ -100,8 +101,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * and read falls back to {@link TaggedFieldSerializer#readTag(Input, int, Object, boolean)} when the tag isn't the expected one.
  * Classes with more than {@link #batchSize} fields get a private method per batch.
  * <p>
- * Not supported, so the cached fields are used: records, fields set with a {@link FinalFieldSetter} and custom
- * {@link CachedField} implementations.
+ * A final field is set with a method handle, which is obtained when the field is first set, because Java 26+ warns when it is
+ * obtained. If setting the field with reflection is denied, it is set with
+ * {@link FieldSerializer#setFinal(CachedField, Object, Object)} instead, with the {@link FinalFieldSetter} of the cached field.
+ * <p>
+ * Not supported, so the cached fields are used: records and custom {@link CachedField} implementations.
  * <p>
  * This is the only class that uses an API newer than Java 17: it is compiled with -source 17 on JDK 24+ and only loaded on Java
  * 24+. The Class-File API is referenced with qualified names and the IDE inspection for the language level is suppressed, see
@@ -168,7 +172,6 @@ final class CodeGeneration {
 
 	/** The kind of a field for the generated code, or null if the field is not supported. */
 	static private Kind kind (CachedField field) {
-		if (field.finalSetter != null) return null;
 		Class type = field.field.getType();
 		if (type.isPrimitive()) {
 			if (type == int.class) return Kind.int_;
@@ -236,22 +239,50 @@ final class CodeGeneration {
 			classData.add(VarHandleField.varHandle(fields[i].field));
 		int[] setters = new int[n];
 		for (int i = 0; i < n; i++) {
-			Field field = fields[i].field;
 			setters[i] = -1;
 			if (!((VarHandle)classData.get(i)).isAccessModeSupported(AccessMode.SET)) {
-				try {
-					MethodHandle setter = MethodHandles.lookup().unreflectSetter(field); // The field is accessible.
-					// The type the generated code passes: String for a type variable resolved to String, else the field type.
-					Class valueType = kinds[i] == Kind.object ? Object.class
-						: kinds[i] == Kind.string ? String.class : field.getType();
-					setters[i] = classData.size();
-					classData.add(setter.asType(MethodType.methodType(void.class, Object.class, valueType)));
-				} catch (IllegalAccessException ex) {
-					throw new KryoException("Unable to set field: " + field, ex);
-				}
+				// The type the generated code passes: String for a type variable resolved to String, else the field type.
+				Class valueType = kinds[i] == Kind.object ? Object.class
+					: kinds[i] == Kind.string ? String.class : fields[i].field.getType();
+				// The setter is obtained when the field is first set, the call site has the resolver until then.
+				MutableCallSite callSite = new MutableCallSite(
+					MethodType.methodType(void.class, CachedField.class, Object.class, valueType));
+				callSite.setTarget(MethodHandles.insertArguments(resolveSetter, 0, callSite).asType(callSite.type()));
+				setters[i] = classData.size();
+				classData.add(callSite.dynamicInvoker());
 			}
 		}
 		return setters;
+	}
+
+	static private final MethodHandle resolveSetter, setFinal;
+	static {
+		try {
+			Lookup lookup = MethodHandles.lookup();
+			resolveSetter = lookup.findStatic(CodeGeneration.class, "resolveSetter",
+				MethodType.methodType(void.class, MutableCallSite.class, CachedField.class, Object.class, Object.class));
+			setFinal = lookup.findStatic(FieldSerializer.class, "setFinal",
+				MethodType.methodType(void.class, CachedField.class, Object.class, Object.class));
+		} catch (IllegalAccessException | NoSuchMethodException ex) {
+			throw new KryoException(ex);
+		}
+	}
+
+	/** The first set of a final field: makes the setter of the field the target of its call site, or
+	 * {@link FieldSerializer#setFinal(CachedField, Object, Object)} if setting it with reflection is denied, then sets the field.
+	 * The method handle for setting the field is obtained here, when a final field is set for the first time, because Java 26+
+	 * warns when it is obtained. */
+	static private void resolveSetter (MutableCallSite callSite, CachedField field, Object object, Object value)
+		throws Throwable {
+		MethodHandle setter = setFinal;
+		if (!FinalFieldSetter.force) {
+			try {
+				setter = MethodHandles.dropArguments(MethodHandles.lookup().unreflectSetter(field.field), 0, CachedField.class);
+			} catch (IllegalAccessException denied) {
+			}
+		}
+		callSite.setTarget(setter.asType(callSite.type()));
+		callSite.getTarget().invoke(field, object, value);
 	}
 
 	/** Emits the fields: the VarHandle fi and setter si of each field, initialized from the class data, and the serializer and
@@ -456,19 +487,19 @@ final class CodeGeneration {
 			set(i);
 		}
 
-		/** fi.set(object, <read>), or si.invokeExact(object, <read>) for a final field. */
+		/** fi.set(object, <read>), or si.invokeExact(fields[i], object, <read>) for a final field. */
 		void set (int i) {
 			Kind kind = kinds[i];
-			if (setters[i] == -1)
-				code.getstatic(thisClass, "f" + i, CD_VarHandle);
-			else
-				code.getstatic(thisClass, "s" + i, CD_MethodHandle);
-			code.aload(2);
-			read(i);
-			if (setters[i] == -1)
+			if (setters[i] == -1) {
+				code.getstatic(thisClass, "f" + i, CD_VarHandle).aload(2);
+				read(i);
 				code.invokevirtual(CD_VarHandle, "set", MethodTypeDesc.of(CD_void, CD_Object, kind.type));
-			else
-				code.invokevirtual(CD_MethodHandle, "invokeExact", MethodTypeDesc.of(CD_void, CD_Object, kind.type));
+			} else {
+				code.getstatic(thisClass, "s" + i, CD_MethodHandle);
+				field(i).aload(2);
+				read(i);
+				code.invokevirtual(CD_MethodHandle, "invokeExact", MethodTypeDesc.of(CD_void, CD_CachedField, CD_Object, kind.type));
+			}
 		}
 
 		/** The value of field i from the input, with its class first if classes are written. */

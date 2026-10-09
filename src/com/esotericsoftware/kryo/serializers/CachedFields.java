@@ -217,10 +217,10 @@ class CachedFields implements Comparator<CachedField> {
 			cachedField = newVarHandleField(field, fieldClass, genericType);
 		else {
 			cachedField = newReflectField(field, fieldClass, genericType);
-			// A final field is set with reflection, which may be denied. Records set them with their constructor.
-			// FinalFieldSetter is not loaded on Android, which has ClassValue only since API level 34.
+			// A final field is set with reflection, which may be denied, which is resolved when it is first set. Records set them
+			// with their constructor. FinalFieldSetter is not loaded on Android, which has ClassValue only since API level 34.
 			if (Modifier.isFinal(modifiers) && recordComponents == null && !isAndroid)
-				cachedField.finalSetter = FinalFieldSetter.create(field);
+				cachedField.finalSetter = FinalFieldSetter.unresolved;
 		}
 
 		cachedField.varEncoding = config.varEncoding;

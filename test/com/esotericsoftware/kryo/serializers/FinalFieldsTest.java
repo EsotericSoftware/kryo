@@ -150,11 +150,13 @@ class FinalFieldsTest {
 			assertTrue(hasFinalSetter(serializer));
 			for (FieldSerializer.CachedField field : serializer.getCopyFields())
 				assertEquals(field.getName().equals("a"), field.finalSetter != null, field.getName());
+			assertNull(serializer.getCopyFields()[1].finalSetter); // The transient lock field is only copied.
 			Output output = new Output(64, -1);
 			kryo.writeObject(output, new TransientLock(5));
 			assertEquals(5, kryo.readObject(new Input(output.toBytes()), TransientLock.class).a);
 
 			serializer = new FieldSerializer(kryo, NotSerializableSuperclass.class);
+			resolve(serializer);
 			assertNull(serializer.getField("a").finalSetter);
 			assertNotNull(serializer.getField("b").finalSetter);
 		} finally {
@@ -171,11 +173,47 @@ class FinalFieldsTest {
 
 	/** Returns true if a final field of the serializer is set with a {@link FinalFieldSetter}. */
 	static private boolean hasFinalSetter (FieldSerializer serializer) {
+		resolve(serializer);
 		for (FieldSerializer.CachedField field : serializer.getFields())
 			if (field.finalSetter != null) return true;
 		for (FieldSerializer.CachedField field : serializer.getCopyFields())
 			if (field.finalSetter != null) return true;
 		return false;
+	}
+
+	/** Resolves the setters of the final fields, which is otherwise done when a field is first set. */
+	static private void resolve (FieldSerializer serializer) {
+		for (FieldSerializer.CachedField field : serializer.getFields())
+			FieldSerializer.finalSetter(field);
+		for (FieldSerializer.CachedField field : serializer.getCopyFields())
+			FieldSerializer.finalSetter(field);
+	}
+
+	@Test
+	void testResolvedWhenSet () {
+		// Whether a final field can be set with reflection is checked when it is first set, so no warning is shown for writing.
+		assumeTrue(!isAndroid && FieldSerializer.FieldSerializerConfig.defaultFieldAccess != FieldAccessType.UNSAFE);
+		Kryo kryo = new Kryo();
+		FieldSerializer<Defaults> serializer = new FieldSerializer(kryo, Defaults.class);
+		// The generated code has its own setters, which are also obtained when a field is first set.
+		serializer.getFieldSerializerConfig().setCodeGeneration(false);
+		serializer.updateFields();
+		kryo.register(Defaults.class, serializer);
+		FieldSerializer.CachedField name = serializer.getField("name"), number = serializer.getField("number");
+		assertSame(FinalFieldSetter.unresolved, name.finalSetter);
+		assertSame(FinalFieldSetter.unresolved, number.finalSetter);
+		Output output = new Output(64, -1);
+		kryo.writeObject(output, new Defaults("written", 1));
+		assertSame(FinalFieldSetter.unresolved, name.finalSetter);
+		assertSame(FinalFieldSetter.unresolved, number.finalSetter);
+		Defaults read = kryo.readObject(new Input(output.toBytes()), Defaults.class);
+		assertEquals("written", read.name);
+		assertEquals(1, read.number);
+		assertNotSame(FinalFieldSetter.unresolved, name.finalSetter);
+		assertNotSame(FinalFieldSetter.unresolved, number.finalSetter);
+		Defaults copy = kryo.copy(new Defaults("copied", 2));
+		assertEquals("copied", copy.name);
+		assertEquals(2, copy.number);
 	}
 
 	@Test

@@ -309,22 +309,24 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Reads the value of a field and sets it, with {@link FinalFieldSetter} for a final field if needed. */
 	void readField (CachedField field, Input input, Object object) {
-		if (field.finalSetter == null)
+		FinalFieldSetter setter = finalSetter(field);
+		if (setter == null)
 			field.read(input, object);
 		else
-			field.finalSetter.set(object, field.read(input));
+			setter.set(object, field.read(input));
 	}
 
 	/** Copies the value of a field, with {@link FinalFieldSetter} for a final field if needed. */
 	void copyField (Kryo kryo, CachedField field, Object original, Object copy) {
-		if (field.finalSetter == null) {
+		FinalFieldSetter setter = finalSetter(field);
+		if (setter == null) {
 			field.copy(original, copy);
 			return;
 		}
 		try {
 			Object value = field.get(original);
 			// Primitive values are immutable, all other values are copied like other field values.
-			field.finalSetter.set(copy, field.field.getType().isPrimitive() ? value : kryo.copy(value));
+			setter.set(copy, field.field.getType().isPrimitive() ? value : kryo.copy(value));
 		} catch (IllegalAccessException ex) {
 			throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
 		} catch (KryoException ex) {
@@ -376,11 +378,32 @@ public class FieldSerializer<T> extends Serializer<T> {
 		generics.popGenericType();
 	}
 
+	/** Returns the {@link CachedField#finalSetter} of a final field, resolved when the field is first set, see
+	 * {@link FinalFieldSetter#unresolved}. Null if the field is set with reflection. */
+	static FinalFieldSetter finalSetter (CachedField field) {
+		FinalFieldSetter setter = field.finalSetter;
+		if (setter == FinalFieldSetter.unresolved) field.finalSetter = setter = FinalFieldSetter.create(field.field);
+		return setter;
+	}
+
+	/** Sets a final field with its {@link FinalFieldSetter}. Called by the generated code if setting the field with reflection is
+	 * denied, also for a field that is read with Unsafe, which has no setter otherwise. */
+	static void setFinal (CachedField field, Object object, Object value) {
+		FinalFieldSetter setter = finalSetter(field);
+		if (setter == null) setter = field.finalSetter = FinalFieldSetter.create(field.field); // Unsafe field.
+		if (setter == null) {
+			throw ReflectField.accessError(field.field,
+				new IllegalAccessException("Setting final fields with reflection is denied."));
+		}
+		setter.set(object, value);
+	}
+
 	/** Sets a non-primitive field to null. */
 	void setNull (CachedField cachedField, Object object) {
 		if (cachedField.field.getType().isPrimitive()) return;
-		if (cachedField.finalSetter != null) {
-			cachedField.finalSetter.set(object, null);
+		FinalFieldSetter setter = finalSetter(cachedField);
+		if (setter != null) {
+			setter.set(object, null);
 			return;
 		}
 		try {
@@ -492,7 +515,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		// For Records
 		int index;
 
-		/** Sets the field if it is final and setting it with reflection is denied, else null. */
+		/** Sets the field if it is final and setting it with reflection is denied, else null. {@link FinalFieldSetter#unresolved}
+		 * for a final field until it is first set. */
 		FinalFieldSetter finalSetter;
 
 		// For UnsafeField.
