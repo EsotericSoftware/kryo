@@ -238,6 +238,7 @@ class CodeGenerationTest extends KryoTestCase {
 	void testFinalFieldDenied () {
 		// If setting final fields with reflection is denied, the generated code sets them with the FinalFieldSetter of the cached
 		// field. The class is only used here, because the setter of a field is resolved once per JVM.
+		assumeTrue(Runtime.version().feature() >= 24, "FinalFieldSetter needs Java 24+.");
 		try {
 			FinalFieldSetter.force = true;
 			FieldSerializer serializer = new FieldSerializer(kryo, DeniedFinalField.class);

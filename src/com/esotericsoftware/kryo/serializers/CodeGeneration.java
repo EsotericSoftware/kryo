@@ -388,6 +388,10 @@ final class CodeGeneration {
 
 		/** The body of write for the fields from (inclusive) to (exclusive). */
 		void write (int from, int to) {
+			if (from == to) { // No fields. An empty try block is not valid.
+				code.vreturn();
+				return;
+			}
 			int local = chunked ? 4 : 3; // After the parameters.
 			if (chunked) {
 				chunk = local;
@@ -412,6 +416,10 @@ final class CodeGeneration {
 
 		/** The body of read for the fields from (inclusive) to (exclusive). */
 		void read (int from, int to) {
+			if (from == to) { // No fields. An empty try block is not valid.
+				code.vreturn();
+				return;
+			}
 			int local = chunked ? 4 : 3; // After the parameters.
 			if (tags != null) tag = local++;
 			if (chunked) {
