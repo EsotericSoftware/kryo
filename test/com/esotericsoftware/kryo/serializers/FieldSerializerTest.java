@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 import com.esotericsoftware.kryo.DefaultSerializer;
 import com.esotericsoftware.kryo.Kryo;
@@ -1681,11 +1682,6 @@ class FieldSerializerTest extends KryoTestCase {
 		config.setFieldAccess(fieldAccess);
 		config.setCodeGeneration(false); // With generated code, the fields don't use hidden classes.
 		FieldSerializer serializer = new FieldSerializer(kryo, FieldAccessTypes.class, config);
-		assertEquals(intField, fieldClassName(serializer.getField("value")));
-		assertEquals(objectField, fieldClassName(serializer.getField("object")));
-		// Final fields can't be written with VarHandles.
-		assertEquals(finalField, fieldClassName(serializer.getField("finalValue")));
-
 		kryo.register(FieldAccessTypes.class, serializer);
 		kryo.register(ArrayList.class);
 		FieldAccessTypes object = new FieldAccessTypes();
@@ -1693,6 +1689,59 @@ class FieldSerializerTest extends KryoTestCase {
 		object.object = new ArrayList();
 		FieldAccessTypes copy = roundTrip(5, object);
 		assertEquals(1, copy.value);
+		// After the first use, hidden classes are defined then.
+		assertEquals(intField, fieldClassName(serializer.getField("value")));
+		assertEquals(objectField, fieldClassName(serializer.getField("object")));
+		// Final fields can't be written with VarHandles.
+		assertEquals(finalField, fieldClassName(serializer.getField("finalValue")));
+	}
+
+	@Test
+	void testHiddenFieldsDefinedOnFirstUse () {
+		// Fields are accessed with reflection until the serializer is first used, because many registered classes are never
+		// serialized. Then the hidden classes are defined and the fields are replaced in place, keeping their settings.
+		assumeTrue(CachedFields.hiddenFields);
+		FieldSerializerConfig config = new FieldSerializerConfig();
+		config.setFieldAccess(FieldAccessType.VARHANDLE);
+		config.setCodeGeneration(false);
+		config.setVariableLengthEncoding(false);
+		config.setFieldsCanBeNull(false);
+		FieldSerializer<FieldAccessTypes> serializer = new FieldSerializer(kryo, FieldAccessTypes.class, config);
+		kryo.register(FieldAccessTypes.class, serializer);
+		kryo.register(ArrayList.class);
+		assertTrue(serializer.cachedFields.hiddenFieldsPending());
+
+		FieldAccessTypes object = new FieldAccessTypes();
+		object.value = 1;
+		object.object = new ArrayList();
+		Output output = new Output(64, -1);
+		kryo.writeObject(output, object);
+		assertFalse(serializer.cachedFields.hiddenFieldsPending());
+		assertEquals("IntHiddenField", fieldClassName(serializer.getField("value")));
+		assertEquals("ObjectHiddenField", fieldClassName(serializer.getField("object")));
+		assertSame(serializer.getField("object"), serializer.getCopyFields()[1]);
+		assertFalse(serializer.getField("value").getVariableLengthEncoding()); // The settings from the config are kept.
+		assertFalse(serializer.getField("object").getCanBeNull());
+		FieldAccessTypes read = kryo.readObject(new Input(output.toBytes()), FieldAccessTypes.class);
+		assertEquals(1, read.value);
+		assertEquals(0, ((ArrayList)read.object).size());
+
+		// Accessing the fields defines the hidden classes, so a field that is customized is the field that is used.
+		serializer = new FieldSerializer(kryo, FieldAccessTypes.class, config);
+		assertTrue(serializer.cachedFields.hiddenFieldsPending());
+		CachedField value = serializer.getField("value");
+		assertFalse(serializer.cachedFields.hiddenFieldsPending());
+		assertEquals("IntHiddenField", fieldClassName(value));
+		assertSame(value, serializer.getFields()[2]);
+
+		// A field removed before the first use doesn't get a hidden class.
+		serializer = new FieldSerializer(kryo, FieldAccessTypes.class, config);
+		serializer.removeField("object");
+		kryo.register(FieldAccessTypes.class, serializer);
+		output.reset();
+		kryo.writeObject(output, object);
+		assertEquals("IntHiddenField", fieldClassName(serializer.getField("value")));
+		assertEquals(2, serializer.getFields().length);
 	}
 
 	static private String fieldClassName (CachedField field) {

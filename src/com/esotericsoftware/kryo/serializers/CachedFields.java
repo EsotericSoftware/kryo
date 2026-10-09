@@ -61,6 +61,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 /** @author Nathan Sweet */
 class CachedFields implements Comparator<CachedField> {
@@ -85,6 +86,9 @@ class CachedFields implements Comparator<CachedField> {
 	}
 
 	private final FieldSerializer serializer;
+	/** The fields that are accessed with reflection until the serializer is first used, then with a hidden class each, see
+	 * {@link #fields()}. Null if there are none. */
+	private ArrayList<CachedField> pendingHiddenFields;
 	/** Hidden classes can't be defined on Android or in a native image, and can be disabled by setting the system property
 	 * "kryo.hiddenFields" to "false". Checked before {@link HiddenFields} is used, which can't be loaded on Android. Can be set by
 	 * tests. */
@@ -108,8 +112,10 @@ class CachedFields implements Comparator<CachedField> {
 		return slash == -1 ? name : name.substring(0, slash);
 	}
 
-	CachedField[] fields = new CachedField[0];
-	CachedField[] copyFields = new CachedField[0];
+	/** Accessed with {@link #fields()} and {@link #copyFields()}, which define the hidden classes of the fields on the first
+	 * call. */
+	private CachedField[] fields = new CachedField[0];
+	private CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
 	/** True while {@link FieldSerializer#initializeCachedFields()} is called. */
 	private boolean initializing;
@@ -138,6 +144,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 
 		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
+		pendingHiddenFields = null;
 		RecordComponent[] recordComponents = isRecord(serializer.type) ? serializer.type.getRecordComponents() : null;
 		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
@@ -164,7 +171,7 @@ class CachedFields implements Comparator<CachedField> {
 		} finally {
 			initializing = false;
 		}
-		serializer.fieldsChanged();
+		serializer.fieldsChanged(fields);
 	}
 
 	/** Called after a field was removed. A field removed by {@link FieldSerializer#initializeCachedFields()} is not remembered,
@@ -305,33 +312,108 @@ class CachedFields implements Comparator<CachedField> {
 	}
 
 	private CachedField newVarHandleField (Field field, Class fieldClass, GenericType genericType) {
-		boolean string = isStringField(field, fieldClass);
 		// Generated code doesn't call the fields to write and read, so they don't need a hidden class each.
 		if (hiddenFields && !serializer.codeGenerated()) {
-			try {
-				return HiddenFields.create(field, fieldClass, string, serializer, genericType);
-			} catch (KryoException ex) {
-				if (DEBUG) debug("kryo", "Unable to access field with a hidden class, using a VarHandle: " + field, ex);
-			}
+			// Defining a hidden class takes time and metaspace, so it is done when the serializer is first used, see fields(): many
+			// registered classes are never serialized. Until then the field is accessed with reflection.
+			CachedField cachedField = newReflectField(field, fieldClass, genericType);
+			if (pendingHiddenFields == null) pendingHiddenFields = new ArrayList();
+			pendingHiddenFields.add(cachedField);
+			return cachedField;
 		}
 		try {
-			if (fieldClass.isPrimitive()) {
-				if (fieldClass == int.class) return new VarHandleField.IntVarHandleField(field);
-				if (fieldClass == float.class) return new VarHandleField.FloatVarHandleField(field);
-				if (fieldClass == boolean.class) return new VarHandleField.BooleanVarHandleField(field);
-				if (fieldClass == long.class) return new VarHandleField.LongVarHandleField(field);
-				if (fieldClass == double.class) return new VarHandleField.DoubleVarHandleField(field);
-				if (fieldClass == short.class) return new VarHandleField.ShortVarHandleField(field);
-				if (fieldClass == char.class) return new VarHandleField.CharVarHandleField(field);
-				if (fieldClass == byte.class) return new VarHandleField.ByteVarHandleField(field);
-			}
-			if (string) return new VarHandleField.StringVarHandleField(field);
-			return new VarHandleField(field, serializer, genericType);
+			return newVarHandleField(field, fieldClass, isStringField(field, fieldClass), genericType);
 		} catch (KryoException ex) {
 			// Eg a public field in a package that is exported but not open to Kryo, which can be accessed with reflection.
 			if (DEBUG) debug("kryo", "Unable to access field with a VarHandle, using reflection: " + field, ex);
 			return newReflectField(field, fieldClass, genericType);
 		}
+	}
+
+	/** Returns the fields to write and read. The first call defines a hidden class for each field that is accessed with reflection
+	 * until then, see {@link #newVarHandleField(Field, Class, GenericType)}. The serializers call this when they are used, so the
+	 * hidden classes of the many registered classes that are never serialized are never defined. */
+	CachedField[] fields () {
+		if (pendingHiddenFields != null) defineHiddenFields();
+		return fields;
+	}
+
+	/** Returns the fields to copy, see {@link #fields()}. */
+	CachedField[] copyFields () {
+		if (pendingHiddenFields != null) defineHiddenFields();
+		return copyFields;
+	}
+
+	/** Returns true if hidden classes are defined for fields on the first use, see {@link #fields()}. */
+	boolean hiddenFieldsPending () {
+		return pendingHiddenFields != null;
+	}
+
+	/** Removes the fields for which the predicate is true, see {@link #removeField(CachedField)}. Doesn't define the hidden
+	 * classes of the fields, for {@link FieldSerializer#initializeCachedFields()}. */
+	void removeFields (Predicate<CachedField> remove) {
+		for (CachedField cachedField : fields.clone())
+			if (remove.test(cachedField)) removeField(cachedField);
+	}
+
+	/** Replaces the fields that are accessed with reflection until the serializer is first used with hidden classes, keeping the
+	 * settings from when they were created. Nothing else refers to the fields before they are first used, so the serializers
+	 * aren't notified. Fields that were removed are skipped. */
+	private void defineHiddenFields () {
+		ArrayList<CachedField> pending = pendingHiddenFields;
+		pendingHiddenFields = null;
+		for (int i = 0, n = pending.size(); i < n; i++) {
+			CachedField cachedField = pending.get(i);
+			int index = indexOf(fields, cachedField), copyIndex = indexOf(copyFields, cachedField);
+			if (index == -1 && copyIndex == -1) continue;
+			CachedField hidden = newHiddenField(cachedField);
+			if (hidden == null) continue;
+			hidden.copySettings(cachedField);
+			if (index != -1) fields[index] = hidden;
+			if (copyIndex != -1) copyFields[copyIndex] = hidden;
+		}
+	}
+
+	static private int indexOf (CachedField[] fields, CachedField cachedField) {
+		for (int i = 0, n = fields.length; i < n; i++)
+			if (fields[i] == cachedField) return i;
+		return -1;
+	}
+
+	/** Returns a field with a hidden class, or with a VarHandle if that fails, for a field that is accessed with reflection until
+	 * the serializer is first used. Returns null if the field can only be accessed with reflection. */
+	private CachedField newHiddenField (CachedField cachedField) {
+		Field field = cachedField.field;
+		boolean string = cachedField instanceof StringReflectField;
+		GenericType genericType = cachedField instanceof ReflectField ? ((ReflectField)cachedField).genericType : null;
+		try {
+			return HiddenFields.create(field, field.getType(), string, serializer, genericType);
+		} catch (KryoException ex) {
+			if (DEBUG) debug("kryo", "Unable to access field with a hidden class, using a VarHandle: " + field, ex);
+		}
+		try {
+			return newVarHandleField(field, field.getType(), string, genericType);
+		} catch (KryoException ex) {
+			if (DEBUG) debug("kryo", "Unable to access field with a VarHandle, using reflection: " + field, ex);
+			return null;
+		}
+	}
+
+	/** @param string True for a String field that is written without references, which may be a type variable.
+	 * @throws KryoException if the field can't be accessed with a VarHandle. */
+	private CachedField newVarHandleField (Field field, Class fieldClass, boolean string, GenericType genericType) {
+		if (fieldClass.isPrimitive()) {
+			if (fieldClass == int.class) return new VarHandleField.IntVarHandleField(field);
+			if (fieldClass == float.class) return new VarHandleField.FloatVarHandleField(field);
+			if (fieldClass == boolean.class) return new VarHandleField.BooleanVarHandleField(field);
+			if (fieldClass == long.class) return new VarHandleField.LongVarHandleField(field);
+			if (fieldClass == double.class) return new VarHandleField.DoubleVarHandleField(field);
+			if (fieldClass == short.class) return new VarHandleField.ShortVarHandleField(field);
+			if (fieldClass == char.class) return new VarHandleField.CharVarHandleField(field);
+			if (fieldClass == byte.class) return new VarHandleField.ByteVarHandleField(field);
+		}
+		if (string) return new VarHandleField.StringVarHandleField(field);
+		return new VarHandleField(field, serializer, genericType);
 	}
 
 	private CachedField newReflectField (Field field, Class fieldClass, GenericType genericType) {
@@ -383,7 +465,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + serializer.type.getName());
-		if (!initializing) serializer.fieldsChanged();
+		if (!initializing) serializer.fieldsChanged(fields);
 	}
 
 	/** Removes a field so that it won't be serialized. */
@@ -415,7 +497,7 @@ class CachedFields implements Comparator<CachedField> {
 		}
 		if (!found)
 			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
-		if (!initializing) serializer.fieldsChanged();
+		if (!initializing) serializer.fieldsChanged(fields);
 	}
 
 	/** Sets serializers using annotations.

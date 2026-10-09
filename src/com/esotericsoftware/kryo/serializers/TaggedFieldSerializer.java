@@ -59,6 +59,8 @@ import java.util.ArrayList;
  * flexibility for classes to evolve. This comes at the cost of one varint per field.
  * @author Nathan Sweet */
 public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
+	/** The fields that are written, which are not deprecated, and the fields by tag. Cached from the fields on the first use, see
+	 * {@link #writeTags()}. */
 	private CachedField[] writeTags;
 	private IntMap<CachedField> readTags;
 	private final TaggedFieldSerializerConfig config;
@@ -74,30 +76,49 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	protected void initializeCachedFields () {
-		CachedField[] fields = cachedFields.fields;
 		// Remove untagged fields.
-		for (int i = 0, n = fields.length; i < n; i++) {
-			Field field = fields[i].field;
-			if (field.getAnnotation(Tag.class) == null) {
-				if (TRACE) trace("kryo", "Ignoring field without tag: " + fields[i]);
-				super.removeField(fields[i]);
-			}
-		}
+		cachedFields.removeFields(cachedField -> {
+			if (cachedField.field.getAnnotation(Tag.class) != null) return false;
+			if (TRACE) trace("kryo", "Ignoring field without tag: " + cachedField);
+			return true;
+		});
 	}
 
-	void cachedFieldsChanged () {
+	void cachedFieldsChanged (CachedField[] fields) {
 		// Cache tag values.
-		CachedField[] fields = cachedFields.fields;
-		ArrayList writeTags = new ArrayList(fields.length);
-		readTags = new IntMap((int)(fields.length / 0.8f));
+		IntMap<CachedField> tags = new IntMap((int)(fields.length / 0.8f));
 		for (CachedField cachedField : fields) {
 			Field field = cachedField.field;
 			int tag = field.getAnnotation(Tag.class).value();
-			if (readTags.containsKey(tag))
-				throw new KryoException(String.format("Duplicate tag %d on fields: %s and %s", tag, field, readTags.get(tag).field));
-			readTags.put(tag, cachedField);
-			if (field.getAnnotation(Deprecated.class) == null) writeTags.add(cachedField);
+			if (tags.containsKey(tag))
+				throw new KryoException(String.format("Duplicate tag %d on fields: %s and %s", tag, field, tags.get(tag).field));
+			tags.put(tag, cachedField);
 			cachedField.tag = tag;
+		}
+		writeTags = null;
+		readTags = null;
+	}
+
+	/** Returns the fields that are written. Cached from the fields on the first use, because they are replaced when their hidden
+	 * classes are defined, see {@link CachedFields#fields()}. */
+	private CachedField[] writeTags () {
+		if (writeTags == null) cacheTags();
+		return writeTags;
+	}
+
+	/** Returns the fields by tag, see {@link #writeTags()}. */
+	private IntMap<CachedField> readTags () {
+		if (readTags == null) cacheTags();
+		return readTags;
+	}
+
+	private void cacheTags () {
+		CachedField[] fields = cachedFields.fields();
+		ArrayList writeTags = new ArrayList(fields.length);
+		readTags = new IntMap((int)(fields.length / 0.8f));
+		for (CachedField cachedField : fields) {
+			readTags.put(cachedField.tag, cachedField);
+			if (cachedField.field.getAnnotation(Deprecated.class) == null) writeTags.add(cachedField);
 		}
 		this.writeTags = (CachedField[])writeTags.toArray(new CachedField[writeTags.size()]);
 	}
@@ -114,6 +135,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	/** Generates the code for the tagged fields, with their tags. */
 	GeneratedFields generateCode () {
+		CachedField[] writeTags = writeTags();
 		int[] tags = new int[writeTags.length];
 		for (int i = 0; i < tags.length; i++)
 			tags[i] = writeTags[i].tag;
@@ -133,7 +155,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			return;
 		}
 
-		CachedField[] writeTags = this.writeTags;
+		CachedField[] writeTags = writeTags();
 		output.writeVarInt(writeTags.length + 1, true);
 		boolean readUnknownTagData = config.readUnknownTagData;
 		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
@@ -207,7 +229,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				values = newRecordValues();
 
 			// The generated code reads the tags this serializer writes, in its order, and falls back to readTag for other tags.
-			if (values == null && fieldCount == writeTags.length && generated() != null) {
+			if (values == null && fieldCount == writeTags().length && generated() != null) {
 				readGenerated(fieldInput, object, chunks);
 				return object;
 			}
@@ -237,7 +259,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	/** @param values The record values, or null to set the fields of the object. */
 	private void readTag (Input input, int tag, Object object, Object[] values, boolean chunked) {
-		CachedField cachedField = readTags.get(tag);
+		CachedField cachedField = readTags().get(tag);
 		if (config.readUnknownTagData) {
 			Registration registration;
 			try {
