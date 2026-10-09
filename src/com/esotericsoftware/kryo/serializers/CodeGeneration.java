@@ -195,7 +195,10 @@ final class CodeGeneration {
 		ArrayList<Object> classData = new ArrayList<>(n);
 		int[] setters = classData(fields, kinds, classData);
 
-		String thisClass = CodeGeneration.class.getPackageName().replace('.', '/') + "/Generated$" + type.getSimpleName();
+		// The name without the package, not getSimpleName, which accesses the declaring class and can fail for another class
+		// loader.
+		String typeName = type.getName().substring(type.getName().lastIndexOf('.') + 1);
+		String thisClass = CodeGeneration.class.getPackageName().replace('.', '/') + "/Generated$" + typeName;
 		Bytecode cb = Bytecode.create(thisClass, GeneratedFieldsName);
 		members(cb, thisClass, n, setters);
 		constructor(cb, thisClass);

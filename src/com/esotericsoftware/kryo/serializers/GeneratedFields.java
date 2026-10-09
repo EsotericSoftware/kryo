@@ -51,7 +51,13 @@ abstract class GeneratedFields {
 	/** Returns the generated code for the fields, or null if code can't be generated for them, see
 	 * {@link CodeGeneration#generate(FieldSerializer, CachedField[], boolean, int[])}. */
 	static GeneratedFields generate (FieldSerializer serializer, CachedField[] fields, boolean writeClasses, int[] tags) {
-		return CodeGeneration.generate(serializer, fields, writeClasses, tags);
+		try {
+			return CodeGeneration.generate(serializer, fields, writeClasses, tags);
+		} catch (KryoException ex) {
+			throw ex;
+		} catch (Throwable t) { // Eg an error defining the class, then the cached fields are used.
+			throw new KryoException("Unable to generate code for the fields of: " + className(serializer.type), t);
+		}
 	}
 
 	/** Returned by {@link #readClass(FieldSerializer, Input, CachedField, boolean)} when the value is skipped. */

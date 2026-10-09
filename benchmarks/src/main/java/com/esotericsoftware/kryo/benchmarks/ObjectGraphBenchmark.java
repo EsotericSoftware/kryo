@@ -81,7 +81,6 @@ public class ObjectGraphBenchmark {
 
 		@Setup(Level.Trial)
 		public void setup () {
-			if (codeGeneration && Runtime.version().feature() < 24) throw new IllegalStateException("Code generation needs Java 24+.");
 			// Before registering, because FieldSerializer decides when it is created whether String fields use references.
 			kryo.setReferences(references);
 			kryo.register(ArrayList.class);
