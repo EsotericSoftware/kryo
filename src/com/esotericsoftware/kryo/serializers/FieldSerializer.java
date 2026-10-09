@@ -42,7 +42,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
  * configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be
@@ -75,10 +74,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Generated code that writes and reads the fields, or null if code generation is disabled or not possible for the type. */
 	GeneratedFields generated;
 	private final Object[] recordDefaults;
-
-	/** True after the first serializer without its synthetic fields was logged, so the warning is shown once per JVM, also if Kryo
-	 * instances on different threads create serializers. Can be reset by tests. */
-	static final AtomicBoolean syntheticFieldsWarned = new AtomicBoolean();
 
 	public FieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new FieldSerializerConfig());
@@ -120,16 +115,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
-
-		// The setting can't change anything for TaggedFieldSerializer, which serializes only fields with @Tag, or without
-		// setFieldsAsAccessible, because synthetic fields are not public.
-		if (WARN && config.ignoreSyntheticFields && !config.ignoreSyntheticFieldsSet && config.setFieldsAsAccessible
-			&& !(this instanceof TaggedFieldSerializer) && cachedFields.syntheticFieldIgnored
-			&& syntheticFieldsWarned.compareAndSet(false, true)) {
-			warn("kryo", "The synthetic fields of " + className(type) + " are not serialized, eg the outer instance and captured "
-				+ "variables of an inner class, which are null after reading. Call FieldSerializerConfig#setIgnoreSyntheticFields(false) "
-				+ "to serialize them, or setIgnoreSyntheticFields(true) to ignore them without this warning, which is shown once.");
-		}
 	}
 
 	/** Called when {@link #getFields()} and {@link #getCopyFields()} have been repopulated. Subclasses can override this method to
@@ -784,8 +769,6 @@ public class FieldSerializer<T> extends Serializer<T> {
 		boolean fieldsCanBeNull = true;
 		boolean setFieldsAsAccessible = true;
 		boolean ignoreSyntheticFields = true;
-		/** True if {@link #setIgnoreSyntheticFields(boolean)} was called, then ignored synthetic fields are not logged. */
-		boolean ignoreSyntheticFieldsSet;
 		boolean fixedFieldTypes;
 		boolean copyTransient = true;
 		boolean serializeTransient;
@@ -829,11 +812,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		 * variables of anonymous classes, local classes and non-static member classes. Without them, these objects have a null
 		 * outer instance after reading. The synthetic fields can refer to large or sensitive object graphs, and an inner object
 		 * that is serialized with its outer instance often needs references, because the outer instance refers to the inner object.
-		 * If this is not set, the first ignored synthetic field is logged as a warning.
 		 * @param ignoreSyntheticFields True to never serialize synthetic fields (default), false to always serialize them. */
 		public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
 			this.ignoreSyntheticFields = ignoreSyntheticFields;
-			ignoreSyntheticFieldsSet = true;
 			if (TRACE) trace("kryo", "FieldSerializerConfig ignoreSyntheticFields: " + ignoreSyntheticFields);
 		}
 

@@ -29,19 +29,15 @@ import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
-import com.esotericsoftware.kryo.serializers.FieldSerializerTest.LoggerStub;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-import com.esotericsoftware.kryo.util.Log;
-import com.esotericsoftware.kryo.util.Log.Logger;
 
-import java.util.List;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
-/** Synthetic fields are ignored by default like in Kryo 5, with a warning. They can be serialized: the outer
- * instance and captured variables of inner classes. */
+/** Synthetic fields are ignored by default like in Kryo 5. They can be serialized: the outer instance and captured variables of
+ * inner classes. */
 class SyntheticFieldsTest {
 	static Kryo newKryo (Boolean ignoreSyntheticFields) {
 		Kryo kryo = new Kryo();
@@ -61,54 +57,14 @@ class SyntheticFieldsTest {
 		return (T)kryo.readObject(new Input(output.toBytes()), object.getClass());
 	}
 
-	/** Returns the warnings logged while the serializers for the objects are created. */
-	static List<String> warnings (Kryo kryo, Object... objects) {
-		LoggerStub logger = new LoggerStub();
-		Log.setLogger(logger);
-		FieldSerializer.syntheticFieldsWarned.set(false);
-		try {
-			for (Object object : objects)
-				kryo.getSerializer(object.getClass());
-		} finally {
-			Log.setLogger(new Logger());
-			FieldSerializer.syntheticFieldsWarned.set(true); // Keeps the test output quiet.
-		}
-		return logger.messages;
-	}
-
 	@Test
 	void testIgnoredByDefault () {
+		// Like Kryo 5: the outer instance is not serialized, it is null after reading.
 		Kryo kryo = newKryo(null);
 		assertTrue(new FieldSerializerConfig().getIgnoreSyntheticFields());
 		Outer outer = new Outer("outer");
 		Outer.Member member = outer.new Member();
-		Supplier<String> anonymous = new Supplier<String>() {
-			public String get () {
-				return outer.name;
-			}
-		};
-
-		// The first ignored synthetic field is logged once.
-		List<String> warnings = warnings(kryo, member, anonymous);
-		assertEquals(1, warnings.size(), warnings.toString());
-		assertTrue(warnings.get(0).contains(Outer.Member.class.getName()), warnings.get(0));
-		assertTrue(warnings.get(0).contains("setIgnoreSyntheticFields(false)"), warnings.get(0));
 		assertNull(roundTrip(kryo, member).outer());
-
-		// Not logged if the setting was set.
-		assertEquals(0, warnings(newKryo(true), member, anonymous).size());
-
-		// Not logged for TaggedFieldSerializer, which serializes only fields with @Tag.
-		kryo = newKryo(null);
-		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
-		assertEquals(0, warnings(kryo, member, anonymous).size());
-
-		// Not logged without setFieldsAsAccessible, which serializes only public fields.
-		kryo = newKryo(null);
-		FieldSerializerFactory factory = new FieldSerializerFactory();
-		factory.getConfig().setFieldsAsAccessible(false);
-		kryo.setDefaultSerializer(factory);
-		assertEquals(0, warnings(kryo, member, anonymous).size());
 
 		// Like Kryo 5, so Kryo5Compatibility doesn't need to change it.
 		kryo = newKryo(null);
