@@ -60,8 +60,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		setAcceptsNull(true);
 	}
 
-	void cachedFieldsChanged () {
-		CachedField[] fields = cachedFields.fields;
+	void cachedFieldsChanged (CachedField[] fields) {
 		fieldVersion = new int[fields.length];
 		typeVersion = 0; // Fields may have been removed.
 		for (int i = 0, n = fields.length; i < n; i++) {
@@ -86,7 +85,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 
 		int pop = pushTypeVariables();
 
-		CachedField[] fields = cachedFields.fields;
+		CachedField[] fields = cachedFields.fields();
 		// Write type version.
 		output.writeVarInt(typeVersion + 1, true);
 		// Write fields.
@@ -132,7 +131,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 			return object;
 		}
 
-		CachedField[] fields = cachedFields.fields;
+		CachedField[] fields = cachedFields.fields();
 		for (int i = 0, n = fields.length; i < n; i++) {
 			// Field is not present in input, skip it.
 			if (fieldVersion[i] > version) {

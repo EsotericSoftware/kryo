@@ -123,13 +123,15 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Called after the cached fields changed: after {@link #initializeCachedFields()}, which can remove fields, and after a field
-	 * was removed. Subclasses in this package update what they derive from the fields here. */
-	void cachedFieldsChanged () {
+	 * was removed. Subclasses in this package update what they derive from the fields here.
+	 * @param fields The fields, before their hidden classes are defined on the first use, so this must not keep them. */
+	void cachedFieldsChanged (CachedField[] fields) {
 	}
 
-	/** Called by {@link CachedFields} after {@link #cachedFieldsChanged()}. */
-	final void fieldsChanged () {
-		cachedFieldsChanged();
+	/** Called by {@link CachedFields} when the fields were built or a field was removed.
+	 * @param fields The fields, before their hidden classes are defined on the first use. */
+	final void fieldsChanged (CachedField[] fields) {
+		cachedFieldsChanged(fields);
 		regenerate();
 	}
 
@@ -180,7 +182,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Returns the generated code for the fields, or null if it can't be generated. Subclasses pass their fields and options.
 	 * Called by the super constructor, so subclasses can only use {@link #config}. */
 	GeneratedFields generateCode () {
-		return GeneratedFields.generate(this, cachedFields.fields, writesClasses(), null);
+		return GeneratedFields.generate(this, cachedFields.fields(), writesClasses(), null);
 	}
 
 	/** Returns the generated code for the current config settings, or null if it isn't used. {@link #usesGeneratedCode()} and
@@ -223,7 +225,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return;
 		}
 
-		CachedField[] fields = cachedFields.fields;
+		CachedField[] fields = cachedFields.fields();
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Write", fields[i], output.position());
 			try {
@@ -255,7 +257,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return object;
 		}
 
-		CachedField[] fields = cachedFields.fields;
+		CachedField[] fields = cachedFields.fields();
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Read", fields[i], input.position());
 			try {
@@ -309,22 +311,24 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Reads the value of a field and sets it, with {@link FinalFieldSetter} for a final field if needed. */
 	void readField (CachedField field, Input input, Object object) {
-		if (field.finalSetter == null)
+		FinalFieldSetter setter = finalSetter(field);
+		if (setter == null)
 			field.read(input, object);
 		else
-			field.finalSetter.set(object, field.read(input));
+			setter.set(object, field.read(input));
 	}
 
 	/** Copies the value of a field, with {@link FinalFieldSetter} for a final field if needed. */
 	void copyField (Kryo kryo, CachedField field, Object original, Object copy) {
-		if (field.finalSetter == null) {
+		FinalFieldSetter setter = finalSetter(field);
+		if (setter == null) {
 			field.copy(original, copy);
 			return;
 		}
 		try {
 			Object value = field.get(original);
 			// Primitive values are immutable, all other values are copied like other field values.
-			field.finalSetter.set(copy, field.field.getType().isPrimitive() ? value : kryo.copy(value));
+			setter.set(copy, field.field.getType().isPrimitive() ? value : kryo.copy(value));
 		} catch (IllegalAccessException ex) {
 			throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
 		} catch (KryoException ex) {
@@ -376,11 +380,36 @@ public class FieldSerializer<T> extends Serializer<T> {
 		generics.popGenericType();
 	}
 
+	/** Returns the setter of a final field, resolving it on the first call, see {@link CachedField#finalUnresolved}. Null if the
+	 * field is set with reflection. */
+	static FinalFieldSetter finalSetter (CachedField field) {
+		if (field.finalUnresolved) {
+			field.finalUnresolved = false;
+			field.finalSetter = FinalFieldSetter.create(field.field);
+		}
+		return field.finalSetter;
+	}
+
+	/** Sets a final field with its {@link FinalFieldSetter}, or with Unsafe for an Unsafe field. Called by the generated code if
+	 * setting the field with reflection is denied. */
+	static void setFinal (CachedField field, Object object, Object value) {
+		FinalFieldSetter setter = finalSetter(field);
+		if (setter != null)
+			setter.set(object, value);
+		else if (field.offset != 0)
+			UnsafeField.put(field, object, value);
+		else {
+			throw ReflectField.accessError(field.field,
+				new IllegalAccessException("Setting final fields with reflection is denied."));
+		}
+	}
+
 	/** Sets a non-primitive field to null. */
 	void setNull (CachedField cachedField, Object object) {
 		if (cachedField.field.getType().isPrimitive()) return;
-		if (cachedField.finalSetter != null) {
-			cachedField.finalSetter.set(object, null);
+		FinalFieldSetter setter = finalSetter(cachedField);
+		if (setter != null) {
+			setter.set(object, null);
 			return;
 		}
 		try {
@@ -415,7 +444,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Returns the field with the specified name, allowing field specific settings to be configured. */
 	public CachedField getField (String fieldName) {
-		for (CachedField cachedField : cachedFields.fields)
+		for (CachedField cachedField : cachedFields.fields())
 			if (cachedField.name.equals(fieldName)) return cachedField;
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
 	}
@@ -432,12 +461,12 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Returns the fields used for serialization. */
 	public CachedField[] getFields () {
-		return cachedFields.fields;
+		return cachedFields.fields();
 	}
 
 	/** Returns the fields used for copying. */
 	public CachedField[] getCopyFields () {
-		return cachedFields.copyFields;
+		return cachedFields.copyFields();
 	}
 
 	public Class getType () {
@@ -455,7 +484,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public T copy (Kryo kryo, T original) {
-		final CachedField[] copyFields = cachedFields.copyFields;
+		final CachedField[] copyFields = cachedFields.copyFields();
 		if (recordConstructor == null) {
 			T copy = createCopy(kryo, original);
 			kryo.reference(copy);
@@ -494,6 +523,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		/** Sets the field if it is final and setting it with reflection is denied, else null. */
 		FinalFieldSetter finalSetter;
+		/** True for a final field until it is first set, then {@link #finalSetter} is resolved. Resolving it obtains a method
+		 * handle for setting the field, which Java 26+ warns about like setting the field with reflection, so it is only done when
+		 * Kryo sets a final field, not when a serializer is created, eg to write objects. */
+		boolean finalUnresolved;
 
 		// For UnsafeField.
 		long offset;
@@ -503,6 +536,19 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public CachedField (Field field) {
 			this.field = field;
+		}
+
+		/** Copies the settings of another cached field for the same field, which this field replaces. */
+		void copySettings (CachedField from) {
+			name = from.name;
+			valueClass = from.valueClass;
+			serializer = from.serializer;
+			canBeNull = from.canBeNull;
+			varEncoding = from.varEncoding;
+			optimizePositive = from.optimizePositive;
+			reuseSerializer = from.reuseSerializer;
+			index = from.index;
+			tag = from.tag;
 		}
 
 		/** The concrete class of the values for this field, or null if it is not known. This saves 1-2 bytes. Only set to a

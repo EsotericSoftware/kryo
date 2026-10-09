@@ -67,11 +67,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		this.config = config;
 	}
 
-	void cachedFieldsChanged () {
+	void cachedFieldsChanged (CachedField[] fields) {
 		// Fields are sorted by name, so fields with the same name are adjacent. The exception is thrown when writing or reading,
 		// so the config can still be changed and updateFields called after the serializer is constructed.
 		duplicateFieldName = null;
-		CachedField[] fields = cachedFields.fields;
 		for (int i = 1, n = fields.length; i < n; i++) {
 			CachedField field = fields[i], previous = fields[i - 1];
 			if (field.name.equals(previous.name)) {
@@ -116,7 +115,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		Output fieldOutput = chunked ? chunks.beginWrite(output) : output;
 		int pop = pushTypeVariables();
 
-		CachedField[] fields = cachedFields.fields;
+		CachedField[] fields = cachedFields.fields();
 		ObjectMap context = kryo.getGraphContext();
 		if (!context.containsKey(writeKey)) {
 			if (TRACE) trace("kryo", "Write fields for class: " + type.getName());
@@ -194,7 +193,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			if (fields == null) fields = readFields(kryo, input, chunks);
 
 			// The generated code reads the fields of this serializer in its order, which the data usually has.
-			if (values == null && fields == cachedFields.fields && generated() != null) {
+			if (values == null && fields == cachedFields.fields() && generated() != null) {
 				readGenerated(fieldInput, object, chunks);
 				return object;
 			}
@@ -304,7 +303,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		if (names != null) return fields(kryo, names);
 
 		// The field names are usually the ones this serializer writes, which can be compared without reading them.
-		CachedField[] allFields = cachedFields.fields;
+		CachedField[] allFields = cachedFields.fields();
 		if (!(input instanceof ByteBufferInput) && allFields.length <= input.getMaxArraySize()) {
 			updateFieldNames(allFields);
 			byte[] bytes = fieldNameBytes;
@@ -335,7 +334,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	/** Returns the fields of the data for the current object graph from their names, which can contain unknown fields. */
 	private CachedField[] fields (Kryo kryo, String[] names) {
 		if (TRACE) trace("kryo", "Read fields for class: " + type.getName());
-		CachedField[] allFields = cachedFields.fields;
+		CachedField[] allFields = cachedFields.fields();
 		int length = names.length;
 		CachedField[] fields = new CachedField[length];
 		if (length < binarySearchThreshold) {
