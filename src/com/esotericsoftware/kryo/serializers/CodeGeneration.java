@@ -46,9 +46,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Generates a hidden class per serialized class that writes and reads its fields with straight line code, using the Class-File
  * API (Java 24+). Primitive and String fields are accessed with VarHandles that are constants of the hidden class (its class
  * data) and written directly to the {@link Output}, object fields are delegated to their {@link ReflectField}, which holds the
- * serializer, value class and generic type. Final fields are set with a MethodHandle that is obtained when the field is first
- * set, because VarHandles can't set them and Java 26+ warns when it is obtained. The hidden class depends only on the field
- * names, kinds and encodings, so it is shared by all serializers and Kryo instances for a class.
+ * serializer, value class and generic type. Final fields are set with a MethodHandle, because VarHandles can't set them. The
+ * hidden class depends only on the field names, kinds and encodings, so it is shared by all serializers and Kryo instances for a
+ * class.
  * <p>
  * For example, for {@code class Nested { String name; Nested next; final int value; }} with FieldSerializer, the hidden class is
  * equivalent to:
@@ -101,9 +101,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * and read falls back to {@link TaggedFieldSerializer#readTag(Input, int, Object, boolean)} when the tag isn't the expected one.
  * Classes with more than {@link #batchSize} fields get a private method per batch.
  * <p>
- * A final field is set with a method handle, which is obtained when the field is first set, because Java 26+ warns when it is
- * obtained. If setting the field with reflection is denied, it is set with
- * {@link FieldSerializer#setFinal(CachedField, Object, Object)} instead, with the {@link FinalFieldSetter} of the cached field.
+ * The method handle that sets a final field is the invoker of a {@link MutableCallSite}. Its first call obtains the setter of the
+ * field, because Java 26+ warns when that is done, so it only happens when a final field is set. If setting the field with
+ * reflection is denied, the call site calls {@link FieldSerializer#setFinal(CachedField, Object, Object)} instead, which uses the
+ * {@link FinalFieldSetter} of the cached field, or Unsafe for an Unsafe field.
  * <p>
  * Not supported, so the cached fields are used: records and custom {@link CachedField} implementations.
  * <p>
@@ -230,8 +231,8 @@ final class CodeGeneration {
 		}
 	}
 
-	/** Collects the class data: the VarHandle of each field, then the setter MethodHandle of each final field, which VarHandles
-	 * can't set.
+	/** Collects the class data: the VarHandle of each field, then the call site invoker that sets each final field, which
+	 * VarHandles can't set.
 	 * @return The class data index of the setter of each field, or -1. */
 	static private int[] classData (CachedField[] fields, Kind[] kinds, ArrayList<Object> classData) {
 		int n = fields.length;
@@ -244,7 +245,7 @@ final class CodeGeneration {
 				// The type the generated code passes: String for a type variable resolved to String, else the field type.
 				Class valueType = kinds[i] == Kind.object ? Object.class
 					: kinds[i] == Kind.string ? String.class : fields[i].field.getType();
-				// The setter is obtained when the field is first set, the call site has the resolver until then.
+				// The setter is obtained when the field is first set, until then the target of the call site is the resolver.
 				MutableCallSite callSite = new MutableCallSite(
 					MethodType.methodType(void.class, CachedField.class, Object.class, valueType));
 				callSite.setTarget(MethodHandles.insertArguments(resolveSetter, 0, callSite).asType(callSite.type()));
@@ -268,10 +269,10 @@ final class CodeGeneration {
 		}
 	}
 
-	/** The first set of a final field: makes the setter of the field the target of its call site, or
-	 * {@link FieldSerializer#setFinal(CachedField, Object, Object)} if setting it with reflection is denied, then sets the field.
-	 * The method handle for setting the field is obtained here, when a final field is set for the first time, because Java 26+
-	 * warns when it is obtained. */
+	/** The initial target of the call site of a final field: obtains the setter of the field, which Java 26+ warns about, so it
+	 * only happens when the field is first set. Makes the setter the target of the call site, or
+	 * {@link FieldSerializer#setFinal(CachedField, Object, Object)} if setting the field with reflection is denied, then sets the
+	 * field. */
 	static private void resolveSetter (MutableCallSite callSite, CachedField field, Object object, Object value)
 		throws Throwable {
 		MethodHandle setter = setFinal;

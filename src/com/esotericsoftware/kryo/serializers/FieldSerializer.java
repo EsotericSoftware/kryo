@@ -378,8 +378,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		generics.popGenericType();
 	}
 
-	/** Returns the {@link CachedField#finalSetter} of a final field, resolved when the field is first set, see
-	 * {@link CachedField#finalUnresolved}. Null if the field is set with reflection. */
+	/** Returns the setter of a final field, resolving it on the first call, see {@link CachedField#finalUnresolved}. Null if the
+	 * field is set with reflection. */
 	static FinalFieldSetter finalSetter (CachedField field) {
 		if (field.finalUnresolved) {
 			field.finalUnresolved = false;
@@ -521,9 +521,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		/** Sets the field if it is final and setting it with reflection is denied, else null. */
 		FinalFieldSetter finalSetter;
-		/** True for a final field until it is first set, then {@link #finalSetter} is resolved. Java 26+ warns when a final field
-		 * is set with reflection or a method handle for setting it is obtained, so this is only done when Kryo sets a final field,
-		 * not when a serializer is created, eg to write objects. */
+		/** True for a final field until it is first set, then {@link #finalSetter} is resolved. Resolving it obtains a method
+		 * handle for setting the field, which Java 26+ warns about like setting the field with reflection, so it is only done when
+		 * Kryo sets a final field, not when a serializer is created, eg to write objects. */
 		boolean finalUnresolved;
 
 		// For UnsafeField.

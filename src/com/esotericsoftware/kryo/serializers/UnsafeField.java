@@ -50,7 +50,8 @@ class UnsafeField extends ReflectField {
 		unsafe.putObject(object, offset, value);
 	}
 
-	/** Unsafe doesn't check the type like reflection and VarHandles do, eg if the class in the data changed. */
+	/** Throws if the value is not an instance of the field type: Unsafe doesn't check the type like reflection and VarHandles do,
+	 * eg if the class in the data changed. */
 	static private void checkType (Class type, Field field, Object value) {
 		if (value != null && !type.isInstance(value)) {
 			throw new IllegalArgumentException(
@@ -71,8 +72,9 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
-	/** Sets the value of an Unsafe field, also if it is final. Used by the generated code, which sets final fields with method
-	 * handles, if setting the field with reflection is denied. */
+	/** Sets an Unsafe field to a boxed value, also a final field. Called by
+	 * {@link FieldSerializer#setFinal(CachedField, Object, Object)} for the generated code, which otherwise sets final fields with
+	 * method handles, if setting them with reflection is denied. */
 	static void put (CachedField field, Object object, Object value) {
 		long offset = field.offset;
 		Class type = field.field.getType();
