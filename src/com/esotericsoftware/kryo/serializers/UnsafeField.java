@@ -46,12 +46,16 @@ class UnsafeField extends ReflectField {
 	}
 
 	public void set (Object object, Object value) throws IllegalAccessException {
-		// Unsafe doesn't check the type like reflection and VarHandles do, eg if the class in the data changed.
+		checkType(type, field, value);
+		unsafe.putObject(object, offset, value);
+	}
+
+	/** Unsafe doesn't check the type like reflection and VarHandles do, eg if the class in the data changed. */
+	static private void checkType (Class type, Field field, Object value) {
 		if (value != null && !type.isInstance(value)) {
 			throw new IllegalArgumentException(
 				"Can not set " + type.getName() + " field " + field.getName() + " to " + value.getClass().getName());
 		}
-		unsafe.putObject(object, offset, value);
 	}
 
 	public void copy (Object original, Object copy) {
@@ -72,9 +76,10 @@ class UnsafeField extends ReflectField {
 	static void put (CachedField field, Object object, Object value) {
 		long offset = field.offset;
 		Class type = field.field.getType();
-		if (!type.isPrimitive())
+		if (!type.isPrimitive()) {
+			checkType(type, field.field, value);
 			unsafe.putObject(object, offset, value);
-		else if (type == int.class)
+		} else if (type == int.class)
 			unsafe.putInt(object, offset, (Integer)value);
 		else if (type == long.class)
 			unsafe.putLong(object, offset, (Long)value);

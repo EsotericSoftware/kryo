@@ -278,7 +278,6 @@ final class CodeGeneration {
 		if (!FinalFieldSetter.force) {
 			try {
 				setter = MethodHandles.dropArguments(MethodHandles.lookup().unreflectSetter(field.field), 0, CachedField.class);
-				field.finalUnresolved = false; // Setting the field with reflection is allowed, so the cached field needs no setter.
 			} catch (IllegalAccessException denied) {
 			}
 		}
