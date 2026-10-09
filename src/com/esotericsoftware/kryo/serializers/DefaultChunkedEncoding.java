@@ -47,7 +47,23 @@ import java.util.Arrays;
  * class is written as varint registration ID + 1, or 0 and the class written by Kryo. Format of a field: varlong length, with
  * references varint number of objects, then the field data. The length is written as a varint, which has the same bytes as a
  * varlong for lengths that fit in an int, and read as a varlong, so data with longer fields stays readable.
- * <p>
+ *
+ * <pre>
+ * Scope:  varint count  { varint name ID, name }         class names of unregistered classes
+ *         varint count &lt;&lt; 1 | first  { class, names }   field names, first = those of the outermost object
+ *         object data
+ * Field:  varlong length  [varint objects]  field data    objects only with references
+ * </pre>
+ *
+ * The mark of a field being read is a long that keeps the end of the field, see {@link #beginField(Input)}:
+ *
+ * <pre>
+ * Field length    Bit 63   Bits 62-32                 Bits 31-0
+ * --------------  -------  -------------------------  ---------------------------------------------
+ * &lt; 2 GiB         0        objects after the field    end of the field, lower 32 bits of total()
+ * &gt;= 2 GiB        1        objects after the field    index of the end in longFieldEnds
+ * </pre>
+ *
  * The outermost object is buffered in memory until it is written completely, so it must be smaller than 2 GiB. */
 final class DefaultChunkedEncoding implements ChunkedEncoding {
 	private static final Object contextKey = new Object();
