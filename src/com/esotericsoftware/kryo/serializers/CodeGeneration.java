@@ -27,7 +27,8 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.Bytecode.Code;
+import com.esotericsoftware.kryo.bytecode.Bytecode;
+import com.esotericsoftware.kryo.bytecode.Bytecode.Code;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
 import java.lang.invoke.MethodHandle;

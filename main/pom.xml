@@ -61,7 +61,7 @@
 						<configuration>
 							<release>${javac.target}</release>
 							<excludes>
-								<exclude>**/serializers/ClassFileWriter.java</exclude>
+								<exclude>**/bytecode/ClassFileWriter.java</exclude>
 							</excludes>
 						</configuration>
 					</execution>
@@ -73,7 +73,7 @@
 						</goals>
 						<configuration>
 							<includes>
-								<include>**/serializers/ClassFileWriter.java</include>
+								<include>**/bytecode/ClassFileWriter.java</include>
 							</includes>
 						</configuration>
 					</execution>
@@ -154,6 +154,7 @@
 						<onlyModified>true</onlyModified>
 						<excludes>
 							<!-- Internal APIs. -->
+							<exclude>com.esotericsoftware.kryo.bytecode</exclude>
 							<exclude>com.esotericsoftware.kryo.util.GenericsUtil</exclude>
 							<exclude>com.esotericsoftware.kryo.util.IdentityMap</exclude>
 							<exclude>com.esotericsoftware.kryo.util.IdentityObjectIntMap</exclude>

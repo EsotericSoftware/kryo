@@ -17,7 +17,7 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo.serializers;
+package com.esotericsoftware.kryo.bytecode;
 
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
@@ -37,16 +37,16 @@ final class ClassFileWriter extends Bytecode {
 		superClass = ClassDesc.ofInternalName(superName);
 	}
 
-	void field (String name, String descriptor, int flags) {
+	public void field (String name, String descriptor, int flags) {
 		members.add(cb -> cb.withField(name, ClassDesc.ofDescriptor(descriptor), flags));
 	}
 
-	void method (String name, String descriptor, int flags, Consumer<Code> body) {
+	public void method (String name, String descriptor, int flags, Consumer<Code> body) {
 		members.add(cb -> cb.withMethodBody(name, MethodTypeDesc.ofDescriptor(descriptor), flags,
 			code -> body.accept(new ClassFileCode(code))));
 	}
 
-	byte[] bytes () {
+	public byte[] bytes () {
 		return java.lang.classfile.ClassFile.of().build(thisClass, cb -> {
 			cb.withFlags(ACC_FINAL | ACC_SUPER).withSuperclass(superClass);
 			for (Consumer<java.lang.classfile.ClassBuilder> member : members)
@@ -73,99 +73,99 @@ final class ClassFileWriter extends Bytecode {
 			}
 		}
 
-		void aload (int local) {
+		public void aload (int local) {
 			code.aload(local);
 		}
 
-		void iload (int local) {
+		public void iload (int local) {
 			code.iload(local);
 		}
 
-		void lload (int local) {
+		public void lload (int local) {
 			code.lload(local);
 		}
 
-		void istore (int local) {
+		public void istore (int local) {
 			code.istore(local);
 		}
 
-		void lstore (int local) {
+		public void lstore (int local) {
 			code.lstore(local);
 		}
 
-		void iconst (int value) {
+		public void iconst (int value) {
 			code.loadConstant(value);
 		}
 
-		void ldc (String value) {
+		public void ldc (String value) {
 			code.ldc(value);
 		}
 
-		void ldcClass (String name) {
+		public void ldcClass (String name) {
 			code.ldc(ClassDesc.ofInternalName(name));
 		}
 
-		void getstatic (String owner, String name, String descriptor) {
+		public void getstatic (String owner, String name, String descriptor) {
 			code.getstatic(ClassDesc.ofInternalName(owner), name, ClassDesc.ofDescriptor(descriptor));
 		}
 
-		void putstatic (String owner, String name, String descriptor) {
+		public void putstatic (String owner, String name, String descriptor) {
 			code.putstatic(ClassDesc.ofInternalName(owner), name, ClassDesc.ofDescriptor(descriptor));
 		}
 
-		void getfield (String owner, String name, String descriptor) {
+		public void getfield (String owner, String name, String descriptor) {
 			code.getfield(ClassDesc.ofInternalName(owner), name, ClassDesc.ofDescriptor(descriptor));
 		}
 
-		void putfield (String owner, String name, String descriptor) {
+		public void putfield (String owner, String name, String descriptor) {
 			code.putfield(ClassDesc.ofInternalName(owner), name, ClassDesc.ofDescriptor(descriptor));
 		}
 
-		void invokevirtual (String owner, String name, String descriptor) {
+		public void invokevirtual (String owner, String name, String descriptor) {
 			code.invokevirtual(ClassDesc.ofInternalName(owner), name, MethodTypeDesc.ofDescriptor(descriptor));
 		}
 
-		void invokestatic (String owner, String name, String descriptor) {
+		public void invokestatic (String owner, String name, String descriptor) {
 			code.invokestatic(ClassDesc.ofInternalName(owner), name, MethodTypeDesc.ofDescriptor(descriptor));
 		}
 
-		void invokeinterface (String owner, String name, String descriptor) {
+		public void invokeinterface (String owner, String name, String descriptor) {
 			code.invokeinterface(ClassDesc.ofInternalName(owner), name, MethodTypeDesc.ofDescriptor(descriptor));
 		}
 
-		void invokespecial (String owner, String name, String descriptor) {
+		public void invokespecial (String owner, String name, String descriptor) {
 			code.invokespecial(ClassDesc.ofInternalName(owner), name, MethodTypeDesc.ofDescriptor(descriptor));
 		}
 
-		void checkcast (String name) {
+		public void checkcast (String name) {
 			code.checkcast(ClassDesc.ofInternalName(name));
 		}
 
-		void aaload () {
+		public void aaload () {
 			code.aaload();
 		}
 
-		void pop () {
+		public void pop () {
 			code.pop();
 		}
 
-		void vreturn () {
+		public void vreturn () {
 			code.return_();
 		}
 
-		void athrow () {
+		public void athrow () {
 			code.athrow();
 		}
 
-		void ifThen (int condition, Runnable thenBlock) {
+		public void ifThen (int condition, Runnable thenBlock) {
 			code.ifThen(opcode(condition), block -> block(block, thenBlock));
 		}
 
-		void ifThenElse (int condition, Runnable thenBlock, Runnable elseBlock) {
+		public void ifThenElse (int condition, Runnable thenBlock, Runnable elseBlock) {
 			code.ifThenElse(opcode(condition), block -> block(block, thenBlock), block -> block(block, elseBlock));
 		}
 
-		void trying (Runnable body, Runnable handler) {
+		public void trying (Runnable body, Runnable handler) {
 			code.trying(block -> block(block, body), catches -> catches.catchingAll(block -> block(block, handler)));
 		}
 

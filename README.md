@@ -198,7 +198,7 @@ Building Kryo from source requires JDK 24+ and Maven. To build all artifacts, ru
 mvn clean && mvn install
 ```
 
-The sources are compiled for Java 17 with `-source 17`. JDK 24+ is needed only for `CodeGeneration`, which uses the Class-File API and is loaded only on Java 24+. Because of this, IntelliJ IDEA must not compile with `--release`: untick "Use '--release' option for cross-compilation" in Settings > Build, Execution, Deployment > Compiler > Java Compiler, otherwise it reports the Class-File API as unavailable.
+The sources are compiled for Java 17 with `-source 17`. JDK 24+ is needed only for `ClassFileWriter`, which uses the Class-File API and is loaded only on Java 24+; on older Java versions code generation uses ASM, an optional dependency. Because of this, IntelliJ IDEA must not compile with `--release`: untick "Use '--release' option for cross-compilation" in Settings > Build, Execution, Deployment > Compiler > Java Compiler, otherwise it reports the Class-File API as unavailable.
 
 ### Development
 

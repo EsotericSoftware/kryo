@@ -17,7 +17,7 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo.serializers;
+package com.esotericsoftware.kryo.bytecode;
 
 import java.util.function.Consumer;
 
@@ -36,11 +36,11 @@ final class AsmWriter extends Bytecode {
 		writer.visit(Opcodes.V17, ACC_FINAL | ACC_SUPER, name, null, superName, null);
 	}
 
-	void field (String name, String descriptor, int flags) {
+	public void field (String name, String descriptor, int flags) {
 		writer.visitField(flags, name, descriptor, null, null).visitEnd();
 	}
 
-	void method (String name, String descriptor, int flags, Consumer<Code> body) {
+	public void method (String name, String descriptor, int flags, Consumer<Code> body) {
 		MethodVisitor method = writer.visitMethod(flags, name, descriptor, null, null);
 		method.visitCode();
 		body.accept(new AsmCode(method));
@@ -48,7 +48,7 @@ final class AsmWriter extends Bytecode {
 		method.visitEnd();
 	}
 
-	byte[] bytes () {
+	public byte[] bytes () {
 		writer.visitEnd();
 		return writer.toByteArray();
 	}
@@ -60,27 +60,27 @@ final class AsmWriter extends Bytecode {
 			this.code = code;
 		}
 
-		void aload (int local) {
+		public void aload (int local) {
 			code.visitVarInsn(Opcodes.ALOAD, local);
 		}
 
-		void iload (int local) {
+		public void iload (int local) {
 			code.visitVarInsn(Opcodes.ILOAD, local);
 		}
 
-		void lload (int local) {
+		public void lload (int local) {
 			code.visitVarInsn(Opcodes.LLOAD, local);
 		}
 
-		void istore (int local) {
+		public void istore (int local) {
 			code.visitVarInsn(Opcodes.ISTORE, local);
 		}
 
-		void lstore (int local) {
+		public void lstore (int local) {
 			code.visitVarInsn(Opcodes.LSTORE, local);
 		}
 
-		void iconst (int value) {
+		public void iconst (int value) {
 			if (value >= -1 && value <= 5)
 				code.visitInsn(Opcodes.ICONST_0 + value);
 			else if (value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE)
@@ -91,74 +91,74 @@ final class AsmWriter extends Bytecode {
 				code.visitLdcInsn(value);
 		}
 
-		void ldc (String value) {
+		public void ldc (String value) {
 			code.visitLdcInsn(value);
 		}
 
-		void ldcClass (String name) {
+		public void ldcClass (String name) {
 			code.visitLdcInsn(Type.getObjectType(name));
 		}
 
-		void getstatic (String owner, String name, String descriptor) {
+		public void getstatic (String owner, String name, String descriptor) {
 			code.visitFieldInsn(Opcodes.GETSTATIC, owner, name, descriptor);
 		}
 
-		void putstatic (String owner, String name, String descriptor) {
+		public void putstatic (String owner, String name, String descriptor) {
 			code.visitFieldInsn(Opcodes.PUTSTATIC, owner, name, descriptor);
 		}
 
-		void getfield (String owner, String name, String descriptor) {
+		public void getfield (String owner, String name, String descriptor) {
 			code.visitFieldInsn(Opcodes.GETFIELD, owner, name, descriptor);
 		}
 
-		void putfield (String owner, String name, String descriptor) {
+		public void putfield (String owner, String name, String descriptor) {
 			code.visitFieldInsn(Opcodes.PUTFIELD, owner, name, descriptor);
 		}
 
-		void invokevirtual (String owner, String name, String descriptor) {
+		public void invokevirtual (String owner, String name, String descriptor) {
 			code.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, name, descriptor, false);
 		}
 
-		void invokestatic (String owner, String name, String descriptor) {
+		public void invokestatic (String owner, String name, String descriptor) {
 			code.visitMethodInsn(Opcodes.INVOKESTATIC, owner, name, descriptor, false);
 		}
 
-		void invokeinterface (String owner, String name, String descriptor) {
+		public void invokeinterface (String owner, String name, String descriptor) {
 			code.visitMethodInsn(Opcodes.INVOKEINTERFACE, owner, name, descriptor, true);
 		}
 
-		void invokespecial (String owner, String name, String descriptor) {
+		public void invokespecial (String owner, String name, String descriptor) {
 			code.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, name, descriptor, false);
 		}
 
-		void checkcast (String name) {
+		public void checkcast (String name) {
 			code.visitTypeInsn(Opcodes.CHECKCAST, name);
 		}
 
-		void aaload () {
+		public void aaload () {
 			code.visitInsn(Opcodes.AALOAD);
 		}
 
-		void pop () {
+		public void pop () {
 			code.visitInsn(Opcodes.POP);
 		}
 
-		void vreturn () {
+		public void vreturn () {
 			code.visitInsn(Opcodes.RETURN);
 		}
 
-		void athrow () {
+		public void athrow () {
 			code.visitInsn(Opcodes.ATHROW);
 		}
 
-		void ifThen (int condition, Runnable thenBlock) {
+		public void ifThen (int condition, Runnable thenBlock) {
 			Label end = new Label();
 			code.visitJumpInsn(negate(condition), end);
 			thenBlock.run();
 			code.visitLabel(end);
 		}
 
-		void ifThenElse (int condition, Runnable thenBlock, Runnable elseBlock) {
+		public void ifThenElse (int condition, Runnable thenBlock, Runnable elseBlock) {
 			Label elseLabel = new Label(), end = new Label();
 			code.visitJumpInsn(negate(condition), elseLabel);
 			thenBlock.run();
@@ -168,7 +168,7 @@ final class AsmWriter extends Bytecode {
 			code.visitLabel(end);
 		}
 
-		void trying (Runnable body, Runnable handler) {
+		public void trying (Runnable body, Runnable handler) {
 			Label start = new Label(), end = new Label(), handlerLabel = new Label(), after = new Label();
 			code.visitTryCatchBlock(start, end, handlerLabel, null);
 			code.visitLabel(start);
