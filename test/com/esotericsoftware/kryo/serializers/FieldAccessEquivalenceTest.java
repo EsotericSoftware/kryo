@@ -106,6 +106,14 @@ class FieldAccessEquivalenceTest {
 			kryo.writeObject(output, new Data(true));
 			byte[] bytes = output.toBytes();
 
+			// The mode is used, it didn't fall back to another one. Checked after the first use, hidden classes are defined then.
+			if (!mode.codeGeneration) {
+				FieldSerializer dataSerializer = (FieldSerializer)kryo.getSerializer(Data.class);
+				String setup = mode.name + ", " + serializer;
+				assertEquals(mode.intField, CachedFields.implementationName(dataSerializer.getField("intValue")), setup);
+				assertEquals(mode.objectField, CachedFields.implementationName(dataSerializer.getField("object")), setup);
+			}
+
 			Data read = kryo.readObject(new Input(bytes), Data.class);
 			assertEquals(Long.MIN_VALUE, read.longValue, mode.name);
 			assertEquals("final", read.finalString, mode.name);
@@ -148,13 +156,8 @@ class FieldAccessEquivalenceTest {
 		String setup = mode.name + ", " + serializer;
 		if (mode.codeGeneration)
 			assertNotNull(fieldSerializer.generated(), setup);
-		else {
+		else
 			assertNull(fieldSerializer.generated(), setup);
-			if (type == Data.class) {
-				assertEquals(mode.intField, CachedFields.implementationName(fieldSerializer.getField("intValue")), setup);
-				assertEquals(mode.objectField, CachedFields.implementationName(fieldSerializer.getField("object")), setup);
-			}
-		}
 		return fieldSerializer;
 	}
 
