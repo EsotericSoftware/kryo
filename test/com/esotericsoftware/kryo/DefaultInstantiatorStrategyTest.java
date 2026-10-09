@@ -138,8 +138,9 @@ public class DefaultInstantiatorStrategyTest {
         }.getClass();
         KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(anonymous));
         assertEquals("Class cannot be created (missing no-arg constructor): " + anonymous.getName()
-            + "\nNote: An anonymous class needs its outer instance and captured variables, so it has no no-arg "
-            + "constructor. A named class is safer, eg instead of double brace initialization." + ADVICE, thrown.getMessage());
+            + "\nNote: An anonymous class has no no-arg constructor, because its constructor takes the outer instance, captured "
+            + "variables or the arguments of the super constructor. A named class is safer, eg instead of double brace initialization."
+            + ADVICE, thrown.getMessage());
     }
 
     class Inner {
