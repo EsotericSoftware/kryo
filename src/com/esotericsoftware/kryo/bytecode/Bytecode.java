@@ -54,18 +54,27 @@ public abstract class Bytecode {
 		asm = available;
 	}
 
-	/** Returns a writer for a final class with the internal name, which extends the super class.
+	/** Returns a writer for a final class with the internal name, which extends the super class. Both writers produce the same
+	 * class file, except for the order of the constant pool.
 	 * @throws KryoException if no implementation is available. */
 	static public Bytecode create (String name, String superName) {
-		if (classFileApi) {
-			try {
-				return (Bytecode)ClassFileWriterFactory.create.invokeExact(name, superName);
-			} catch (Throwable t) {
-				throw new KryoException("Unable to create the Class-File API writer.", t);
-			}
-		}
-		if (asm) return new AsmWriter(name, superName);
+		if (classFileApi) return classFileWriter(name, superName);
+		if (asm) return asmWriter(name, superName);
 		throw new KryoException("Code generation needs Java 24+ or ASM on the classpath (org.ow2.asm:asm).");
+	}
+
+	/** Returns the writer that uses the Class-File API, which needs Java 24+. */
+	static public Bytecode classFileWriter (String name, String superName) {
+		try {
+			return (Bytecode)ClassFileWriterFactory.create.invokeExact(name, superName);
+		} catch (Throwable t) {
+			throw new KryoException("Unable to create the Class-File API writer.", t);
+		}
+	}
+
+	/** Returns the writer that uses ASM, which needs org.ow2.asm:asm on the classpath. */
+	static public Bytecode asmWriter (String name, String superName) {
+		return new AsmWriter(name, superName);
 	}
 
 	/** Loaded on first use, which only happens on Java 24+, because ClassFileWriter uses the Class-File API. */
