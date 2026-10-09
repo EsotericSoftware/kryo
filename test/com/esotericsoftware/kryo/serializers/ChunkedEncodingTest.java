@@ -419,34 +419,10 @@ class ChunkedEncodingTest {
 		long length = (1L << 32) + 5;
 		Output header = new Output(16);
 		header.writeVarLong(length, true);
-		byte[] headerBytes = header.toBytes();
-		InputStream stream = new InputStream() {
-			long position, end = headerBytes.length + length + 1;
-
-			public int read () {
-				byte[] b = new byte[1];
-				return read(b, 0, 1) == -1 ? -1 : b[0] & 0xFF;
-			}
-
-			public int read (byte[] b, int offset, int count) {
-				if (position == end) return -1;
-				if (position < headerBytes.length) {
-					b[offset] = headerBytes[(int)position++];
-					return 1;
-				}
-				if (position == end - 1) {
-					b[offset] = 42; // After the field.
-					position++;
-					return 1;
-				}
-				int n = (int)Math.min(count, end - 1 - position); // Field bytes, left as they are.
-				position += n;
-				return n;
-			}
-		};
-		Input input = new Input(stream, 1 << 16);
+		long end = header.position() + length;
+		Input input = sparseInput(end + 1, 0, header.toBytes(), end, new byte[] {42});
 		encoding.endField(input, encoding.beginField(input));
-		assertEquals(headerBytes.length + length, input.total());
+		assertEquals(end, input.total());
 		assertEquals(42, input.readByte());
 	}
 
