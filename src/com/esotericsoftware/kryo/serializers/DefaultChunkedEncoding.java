@@ -301,7 +301,7 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 	 * before the field ends, so the caller keeps the mark. */
 	public long beginField (Input input) {
 		long length = input.readVarLong(true);
-		if (length < 0) throw new KryoException("Invalid field length: " + length);
+		if (length < 0 || length > Long.MAX_VALUE - input.total()) throw new KryoException("Invalid field length: " + length);
 		int objects = 0;
 		if (kryo.getReferences()) {
 			// The IDs of the objects that are not read are reserved, so the number of objects is limited like an array length. It
