@@ -19,8 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.kryo.util.Log.*;
+import static com.esotericsoftware.kryo.util.Util.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -57,13 +57,13 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 	private static final int maxBufferSize = 1024 * 1024;
 
 	private final Kryo kryo;
-	private final ArrayList<WriteScope> writeScopes = new ArrayList();
-	private final ArrayList<ReadScope> readScopes = new ArrayList();
+	private final ArrayList<WriteScope> writeScopes = new ArrayList<>();
+	private final ArrayList<ReadScope> readScopes = new ArrayList<>();
 	private int writeDepth, readDepth;
 	/** The field names read in the current object graph and their classes. Usually there are only a few, so a list is faster than
 	 * a map, which would be cleared for each object graph. */
-	private final ArrayList<Class> fieldNameTypes = new ArrayList();
-	private final ArrayList<String[]> fieldNames = new ArrayList();
+	private final ArrayList<Class> fieldNameTypes = new ArrayList<>();
+	private final ArrayList<String[]> fieldNames = new ArrayList<>();
 	/** The end of each field being read that is 2 GiB or longer, by depth. Shorter fields keep it in the mark. Nested fields are
 	 * started before the outer field ends. */
 	private long[] longFieldEnds = new long[2];
@@ -359,8 +359,8 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		/** The mark of {@link com.esotericsoftware.kryo.ClassResolver#beginDeferredNames()}. */
 		int namesMark;
 		boolean outermostFieldNames;
-		final ArrayList<Class> fieldNameTypes = new ArrayList();
-		final ArrayList<String[]> fieldNames = new ArrayList();
+		final ArrayList<Class> fieldNameTypes = new ArrayList<>();
+		final ArrayList<String[]> fieldNames = new ArrayList<>();
 	}
 
 	static private class ReadScope {
