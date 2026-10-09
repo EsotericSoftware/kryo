@@ -132,19 +132,13 @@ final class CodeGeneration {
 	 *           not the expected one, the field is read with {@link TaggedFieldSerializer#readTag(Input, int, Object, boolean)}.
 	 * @throws KryoException if the hidden class can't be defined. */
 	static GeneratedFields generate (FieldSerializer serializer, CachedField[] fields, boolean writeClasses, int[] tags) {
-		Kind[] kinds = new Kind[fields.length];
+		Kind[] kinds = kinds(serializer.type, fields);
+		if (kinds == null) return null;
 		StringBuilder signature = new StringBuilder(writeClasses ? "classes;" : "");
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField field = fields[i];
-			Kind kind = kind(field);
-			if (kind == null) {
-				if (DEBUG) debug("kryo",
-					"Code generation is not supported for field: " + field.name + " (" + className(serializer.type) + ")");
-				return null;
-			}
-			kinds[i] = kind;
 			signature.append(field.field.getDeclaringClass().getName()).append('.').append(field.field.getName()).append(':')
-				.append(kind);
+				.append(kinds[i]);
 			if (tags != null) signature.append(':').append(tags[i]);
 			signature.append(';');
 		}
@@ -164,6 +158,20 @@ final class CodeGeneration {
 		} catch (Throwable t) {
 			throw new KryoException("Unable to create the generated fields for: " + className(serializer.type), t);
 		}
+	}
+
+	/** The kinds of the fields for the generated code, or null if a field is not supported. */
+	static private Kind[] kinds (Class type, CachedField[] fields) {
+		Kind[] kinds = new Kind[fields.length];
+		for (int i = 0, n = fields.length; i < n; i++) {
+			kinds[i] = kind(fields[i]);
+			if (kinds[i] == null) {
+				if (DEBUG) debug("kryo",
+					"Code generation is not supported for field: " + fields[i].name + " (" + className(type) + ")");
+				return null;
+			}
+		}
+		return kinds;
 	}
 
 	/** The kind of a field for the generated code, or null if the field is not supported. */
@@ -192,13 +200,45 @@ final class CodeGeneration {
 	static private MethodHandle define (Class type, CachedField[] fields, Kind[] kinds, boolean classes, int[] tags) {
 		int n = fields.length;
 		ArrayList<Object> classData = new ArrayList<>(n);
-		int[] setters = classData(fields, kinds, classData);
+		String thisClass = name(type);
+		byte[] bytes = write(Bytecode.create(thisClass, GeneratedFieldsName), thisClass, fields, kinds, classes, tags, classData);
+		try {
+			Lookup hidden = MethodHandles.lookup().defineHiddenClassWithClassData(bytes, classData, true);
+			if (TRACE) trace("kryo", "Generated code for the fields of: " + className(type) + " (" + n + " fields"
+				+ (classes ? ", classes" : "") + (tags != null ? ", tags" : "")
+				+ (n > batchSize ? ", " + (n + batchSize - 1) / batchSize + " batches" : "") + ")");
+			return hidden.findConstructor(hidden.lookupClass(), constructorType)
+				.asType(constructorType.changeReturnType(GeneratedFields.class));
+		} catch (IllegalAccessException | NoSuchMethodException | RuntimeException ex) {
+			throw new KryoException("Unable to define the generated fields for: " + className(type), ex);
+		}
+	}
 
+	/** Returns the internal name of the hidden class for the type. */
+	static private String name (Class type) {
 		// The name without the package, not getSimpleName, which accesses the declaring class and can fail for another class
 		// loader.
 		String typeName = type.getName().substring(type.getName().lastIndexOf('.') + 1);
-		String thisClass = CodeGeneration.class.getPackageName().replace('.', '/') + "/Generated$" + typeName;
-		Bytecode cb = Bytecode.create(thisClass, GeneratedFieldsName);
+		return CodeGeneration.class.getPackageName().replace('.', '/') + "/Generated$" + typeName;
+	}
+
+	/** Returns the class file for the fields, written with the Class-File API or ASM. For tests that compare the writers.
+	 * @throws KryoException if code can't be generated for a field. */
+	static byte[] classFile (boolean asm, Class type, CachedField[] fields, boolean classes, int[] tags) {
+		Kind[] kinds = kinds(type, fields);
+		if (kinds == null) throw new KryoException("Code generation is not supported for a field of: " + className(type));
+		String thisClass = name(type);
+		Bytecode cb = asm ? Bytecode.asmWriter(thisClass, GeneratedFieldsName)
+			: Bytecode.classFileWriter(thisClass, GeneratedFieldsName);
+		return write(cb, thisClass, fields, kinds, classes, tags, new ArrayList<>());
+	}
+
+	/** Writes the hidden class for the fields.
+	 * @param classData Receives the class data of the hidden class. */
+	static private byte[] write (Bytecode cb, String thisClass, CachedField[] fields, Kind[] kinds, boolean classes, int[] tags,
+		ArrayList<Object> classData) {
+		int n = fields.length;
+		int[] setters = classData(fields, kinds, classData);
 		members(cb, thisClass, n, setters);
 		constructor(cb, thisClass);
 		// public void write (OutputDesc output, Object object) and write (OutputDesc output, Object object, ChunkedEncoding chunks)
@@ -213,18 +253,7 @@ final class CodeGeneration {
 			batches(cb, thisClass, "read", readType, n, chunked,
 				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).read(from, to));
 		}
-		byte[] bytes = cb.bytes();
-
-		try {
-			Lookup hidden = MethodHandles.lookup().defineHiddenClassWithClassData(bytes, classData, true);
-			if (TRACE) trace("kryo", "Generated code for the fields of: " + className(type) + " (" + n + " fields"
-				+ (classes ? ", classes" : "") + (tags != null ? ", tags" : "")
-				+ (n > batchSize ? ", " + (n + batchSize - 1) / batchSize + " batches" : "") + ")");
-			return hidden.findConstructor(hidden.lookupClass(), constructorType)
-				.asType(constructorType.changeReturnType(GeneratedFields.class));
-		} catch (IllegalAccessException | NoSuchMethodException | RuntimeException ex) {
-			throw new KryoException("Unable to define the generated fields for: " + className(type), ex);
-		}
+		return cb.bytes();
 	}
 
 	/** Collects the class data: the VarHandle of each field, then the call site invoker that sets each final field, which

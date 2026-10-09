@@ -48,7 +48,8 @@ final class ClassFileWriter extends Bytecode {
 
 	public byte[] bytes () {
 		return java.lang.classfile.ClassFile.of().build(thisClass, cb -> {
-			cb.withFlags(ACC_FINAL | ACC_SUPER).withSuperclass(superClass);
+			// Class file version 61 (Java 17) like AsmWriter, so both writers produce the same class file.
+			cb.withVersion(61, 0).withFlags(ACC_FINAL | ACC_SUPER).withSuperclass(superClass);
 			for (Consumer<java.lang.classfile.ClassBuilder> member : members)
 				member.accept(cb);
 		});
