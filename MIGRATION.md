@@ -111,7 +111,7 @@ Subclasses like TreeMapSerializer need the same setting.
 
 Kryo 6 adds default serializers for these JDK types, see [Default serializers](README.md#default-serializers) for the complete list:
 
-* `Timestamp`, `URI`, `UUID`, `Pattern`, `AtomicBoolean`, `AtomicInteger`, `AtomicLong`, `AtomicReference` and `ConcurrentHashMap.KeySetView`. Kryo 5 serialized `Timestamp` with DateSerializer, which drops the nanoseconds, `KeySetView` with CollectionSerializer, which couldn't read it back, and the other types with the default serializer, usually FieldSerializer. To read data written by Kryo 5, register the serializers Kryo 5 used for these types:
+* `Timestamp`, `URI`, `UUID`, `Pattern`, `AtomicBoolean`, `AtomicInteger`, `AtomicLong`, `AtomicReference` and `ConcurrentHashMap.KeySetView`. Kryo 5 serialized `Timestamp` with DateSerializer, which drops the nanoseconds, `KeySetView` with CollectionSerializer, which couldn't read it back, and the other types with the default serializer, usually FieldSerializer. Subclasses of the atomic types that declare non-transient fields still use the default serializer, because the new serializers would lose these fields. With FieldSerializer, that needs `--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED` on Java 16+ like in Kryo 5, because it reads the private value field of the atomic type. To read data written by Kryo 5, register the serializers Kryo 5 used for these types:
 
   ```java
   kryo.register(Timestamp.class, new DateSerializer());
