@@ -42,12 +42,11 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Generates a hidden class per serialized class that writes and reads its fields with straight line code, using the Class-File
- * API (Java 24+). Primitive and String fields are accessed with VarHandles that are constants of the hidden class (its class
- * data) and written directly to the {@link Output}, object fields are delegated to their {@link ReflectField}, which holds the
- * serializer, value class and generic type. Final fields are set with a MethodHandle, because VarHandles can't set them. The
- * hidden class depends only on the field names, kinds and encodings, so it is shared by all serializers and Kryo instances for a
- * class.
+/** Generates a hidden class per serialized class that writes and reads its fields with straight line code, see {@link Bytecode}.
+ * Primitive and String fields are accessed with VarHandles that are constants of the hidden class (its class data) and written
+ * directly to the {@link Output}, object fields are delegated to their {@link ReflectField}, which holds the serializer, value
+ * class and generic type. Final fields are set with a MethodHandle, because VarHandles can't set them. The hidden class depends
+ * only on the field names, kinds and encodings, so it is shared by all serializers and Kryo instances for a class.
  * <p>
  * For example, for {@code class Nested { String name; Nested next; final int value; }} with FieldSerializer, the hidden class is
  * equivalent to:
@@ -126,8 +125,7 @@ final class CodeGeneration {
 	static int batchSize = 64;
 
 	/** Returns the generated code for the fields, or null if code can't be generated for them. Called by
-	 * {@link GeneratedFields#generate(FieldSerializer, CachedField[], boolean, int[])} by name, because this class is compiled
-	 * separately.
+	 * {@link GeneratedFields#generate(FieldSerializer, CachedField[], boolean, int[])}.
 	 * @param writeClasses If true, the class of each value is written before the value, which is written without null marker, like
 	 *           CompatibleFieldSerializer with unknown field data.
 	 * @param tags If not null, the tag of each field is written before the field, like TaggedFieldSerializer. When a read tag is

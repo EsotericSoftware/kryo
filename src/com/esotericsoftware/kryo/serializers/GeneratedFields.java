@@ -63,8 +63,7 @@ abstract class GeneratedFields {
 	/** Returned by {@link #readClass(FieldSerializer, Input, CachedField, boolean)} when the value is skipped. */
 	static final Registration skip = new Registration(Void.class, new DefaultSerializers.VoidSerializer(), -1);
 
-	// Called by the generated code when the classes are written. Also the helpers of CodeGeneration that don't need the Class-File
-	// API, so the serializers don't reference that class.
+	// Called by the generated code when the classes are written.
 
 	static void writeStringWithClass (Kryo kryo, Output output, String value) {
 		if (value == null) {

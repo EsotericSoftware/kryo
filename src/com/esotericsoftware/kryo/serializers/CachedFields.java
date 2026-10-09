@@ -95,8 +95,8 @@ class CachedFields implements Comparator<CachedField> {
 	 * tests. */
 	static boolean hiddenFields = !isAndroid && !isNativeImage && !"false".equals(System.getProperty("kryo.hiddenFields"));
 
-	/** True if {@link CodeGeneration} can be used: Java 24+, not on Android or in a native image. Checked before the class is
-	 * used, which can't be loaded on older Java versions. */
+	/** True if {@link CodeGeneration} can be used: Java 24+ or ASM on the classpath, not on Android or in a native image. Checked
+	 * before the class is used, which can't be loaded on older Java versions. */
 	static final boolean codeGeneration = !isAndroid && !isNativeImage && (Bytecode.classFileApi || Bytecode.asm);
 
 	/** Returns why {@link #codeGeneration} is false, for logging. */
