@@ -28,6 +28,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.Util;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -53,15 +54,7 @@ import java.util.stream.Stream;
 class AndroidSerializationCompat {
 	/** Test data, written with the immutable collections registered with
 	 * {@link ImmutableCollectionsSerializers#registerSerializers(Kryo)} or with their class names. */
-	static final class Data {
-		final Object testData;
-		final boolean registered;
-
-		Data (Object testData, boolean registered) {
-			this.testData = testData;
-			this.registered = registered;
-		}
-
+	record Data (Object testData, boolean registered) {
 		String fileName () {
 			return testData.getClass().getSimpleName() + (registered ? "-registered" : "") + ".ser";
 		}
@@ -86,14 +79,10 @@ class AndroidSerializationCompat {
 	static final class ImmutableCollections {
 		List<String> list12 = List.of("a"), listN = List.of("a", "b", "c"), subList = List.of("a", "b", "c").subList(1, 3);
 		// Only Stream#toList() creates an immutable list with null elements, which Android has only since API level 34.
-		List<String> listWithNulls = isAndroid() ? Collections.unmodifiableList(Arrays.asList("a", null, "c"))
+		List<String> listWithNulls = Util.isAndroid ? Collections.unmodifiableList(Arrays.asList("a", null, "c"))
 			: Stream.of("a", null, "c").toList();
 		Set<String> set12 = Set.of("x"), setN = Set.of("x", "y", "z");
 		Map<String, Integer> map1 = Map.of("k", 1), mapN = Map.of("k", 1, "l", 2);
-	}
-
-	static boolean isAndroid () {
-		return "Dalvik".equals(System.getProperty("java.vm.name"));
 	}
 
 	/** Configured like {@link SerializationCompatTest}. */
@@ -121,11 +110,11 @@ class AndroidSerializationCompat {
 
 	/** Writes the name and the value of each field, each value with its length, so a value that can't be read can be skipped. */
 	static void write (File directory, Data data) throws Exception {
-		Kryo kryo = kryo(data.registered);
+		Kryo kryo = kryo(data.registered());
 		try (Output output = new Output(new FileOutputStream(new File(directory, data.fileName())))) {
-			for (Field field : fields(data.testData)) {
+			for (Field field : fields(data.testData())) {
 				Output value = new Output(256, -1);
-				kryo.writeClassAndObject(value, field.get(data.testData));
+				kryo.writeClassAndObject(value, field.get(data.testData()));
 				output.writeString(field.getName());
 				output.writeVarInt(value.position(), true);
 				output.writeBytes(value.getBuffer(), 0, value.position());
@@ -137,22 +126,22 @@ class AndroidSerializationCompat {
 	 * replaces List.of with an unmodifiable list below Android API level 30. */
 	static List<String> read (File directory, Data data, int apiLevel) throws Exception {
 		ArrayList<String> failures = new ArrayList<>();
-		Kryo kryo = kryo(data.registered);
+		Kryo kryo = kryo(data.registered());
 		try (Input input = new Input(new FileInputStream(new File(directory, data.fileName())))) {
-			for (Field field : fields(data.testData)) {
+			for (Field field : fields(data.testData())) {
 				String name = input.readString();
 				byte[] bytes = input.readBytes(input.readVarInt(true));
 				check(name.equals(field.getName()), "Expected field " + field.getName() + ": " + name);
 				// Android has ImmutableCollections$Set12 only since API level 34, see README.
-				if (!data.registered && (name.equals("singleImmutableSet") || name.equals("set12")) && apiLevel < 34) continue;
+				if (!data.registered() && (name.equals("singleImmutableSet") || name.equals("set12")) && apiLevel < 34) continue;
 				try {
-					Object actual = kryo.readClassAndObject(new Input(bytes)), expected = field.get(data.testData);
+					Object actual = kryo.readClassAndObject(new Input(bytes)), expected = field.get(data.testData());
 					// Sets of different classes, eg Set.of and LinkedHashSet, iterate in a different order.
 					if (actual instanceof Set && expected instanceof Set && actual.getClass() != expected.getClass())
 						check(actual.equals(expected), "Sets not equal: " + actual + ", " + expected);
 					else
 						assertReflectionEquals(actual, expected, false);
-					if (data.testData instanceof ImmutableCollections) checkImmutable(actual);
+					if (data.testData() instanceof ImmutableCollections) checkImmutable(actual);
 				} catch (Throwable ex) {
 					failures.add(data.fileName() + " " + name + ": " + ex);
 				}
