@@ -26,7 +26,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.KryoObjectInput;
 import com.esotericsoftware.kryo.io.KryoObjectOutput;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.util.ObjectMap;
+import com.esotericsoftware.kryo.util.IdentityMap;
 
 import java.io.Externalizable;
 import java.io.ObjectInput;
@@ -43,8 +43,11 @@ import java.lang.reflect.Method;
  *
  * @author Robert DiFalco {@literal <robert.difalco@gmail.com>} */
 public class ExternalizableSerializer extends Serializer {
-	/** The value is null if the type requires no JavaSerializer. Not a ClassValue, which Android has only since API level 34. */
-	private final ObjectMap<Class, JavaSerializer> javaSerializerByType = new ObjectMap<>();
+	/** Marks types that require no JavaSerializer in {@link #javaSerializerByType}. */
+	static private final JavaSerializer noJavaSerializer = new JavaSerializer();
+
+	/** Not a ClassValue, which Android has only since API level 34. */
+	private final IdentityMap<Class, JavaSerializer> javaSerializerByType = new IdentityMap<>();
 	private KryoObjectInput objectInput = null;
 	private KryoObjectOutput objectOutput = null;
 
@@ -104,11 +107,11 @@ public class ExternalizableSerializer extends Serializer {
 	 * @return a {@code JavaSerializer} if the type requires more than simple externalization. */
 	JavaSerializer getJavaSerializerIfRequired (Class type) {
 		JavaSerializer serializer = javaSerializerByType.get(type);
-		if (serializer == null && !javaSerializerByType.containsKey(type)) {
-			serializer = isJavaSerializerRequired(type) ? new JavaSerializer() : null;
+		if (serializer == null) {
+			serializer = isJavaSerializerRequired(type) ? new JavaSerializer() : noJavaSerializer;
 			javaSerializerByType.put(type, serializer);
 		}
-		return serializer;
+		return serializer == noJavaSerializer ? null : serializer;
 	}
 
 	private boolean isJavaSerializerRequired (Class type) {

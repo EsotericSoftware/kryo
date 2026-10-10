@@ -78,20 +78,25 @@ public class JavaSerializer extends Serializer {
 		}
 	}
 
-	@IgnoreAndroid
 	public Object read (Kryo kryo, Input input, Class type) {
 		try {
 			ObjectMap graphContext = kryo.getGraphContext();
 			ObjectInputStream objectStream = (ObjectInputStream)graphContext.get(readKey);
 			if (objectStream == null) {
 				objectStream = new ObjectInputStreamWithKryoClassLoader(input, kryo);
-				if (objectInputFilter != null) objectStream.setObjectInputFilter(objectInputFilter);
+				if (objectInputFilter != null) applyObjectInputFilter(objectStream);
 				graphContext.put(readKey, objectStream);
 			}
 			return objectStream.readObject();
 		} catch (Exception ex) {
 			throw new KryoException("Error during Java deserialization.", ex);
 		}
+	}
+
+	/** Android has no ObjectInputFilter, so the filter is always null there. */
+	@IgnoreAndroid
+	private void applyObjectInputFilter (ObjectInputStream objectStream) {
+		objectStream.setObjectInputFilter(objectInputFilter);
 	}
 
 	/** {@link ObjectInputStream} uses the last user-defined {@link ClassLoader}, which may not be the correct one. This is a known
