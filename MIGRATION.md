@@ -10,7 +10,6 @@ Kryo 6 has not been released yet. This document collects the changes that affect
 * The default format changed in a few places: strings are written without references, records are serialized by FieldSerializer, maps and chunked encoding write less, enums with constant bodies are treated as final, see [Serialization format](#serialization-format).
 * On Java 24+, fields are accessed with VarHandles instead of `sun.misc.Unsafe`, so Java doesn't warn about Kryo, and the code that reads and writes the fields of a class can be generated, which is 45% to 120% faster, see [Field access](#field-access).
 * Default serializers for about 20 more JDK types, eg `UUID`, `Pattern`, the atomic types, `ByteBuffer`, `EnumMap`, the blocking queues and the unmodifiable and synchronized collections, see [New default serializers](#new-default-serializers).
-* The synthetic fields of anonymous, local and inner classes are serialized, so these objects work after reading, see [FieldSerializer and its subclasses](#fieldserializer-and-its-subclasses).
 * Data that Kryo 5 wrote or read wrongly without an exception now throws one: duplicate field names in CompatibleFieldSerializer, data from a newer class version in VersionFieldSerializer, collections modified while they are written, closures without ClosureSerializer. CompatibleFieldSerializer reads a serialized null as null instead of keeping the constructor's value. See [Behavior changes](#behavior-changes).
 
 ## Import changes
@@ -57,7 +56,7 @@ kryo.setDefaultSerializer(...); // If not FieldSerializer.
 Kryo5Compatibility.configure(kryo);
 ```
 
-This restores the Kryo 5 format for Kryo's default serializers: it enables references for strings, uses RecordSerializer for records, the serializers Kryo 5 used for the types that have new default serializers, the Kryo 5 formats of MapSerializer and of the chunked encoding, treats enums with constant bodies as not final and ignores synthetic fields. Serializers that are registered explicitly or added as default serializers later need these settings themselves, they are listed in each section below.
+This restores the Kryo 5 format for Kryo's default serializers: it enables references for strings, uses RecordSerializer for records, the serializers Kryo 5 used for the types that have new default serializers, the Kryo 5 formats of MapSerializer and of the chunked encoding, and treats enums with constant bodies as not final. Serializers that are registered explicitly or added as default serializers later need these settings themselves, they are listed in each section below.
 
 `Kryo5Compatibility` is a best effort to read existing data with the default serializers. There is no guarantee that it covers a setup with custom serializers, custom class or reference resolvers, or settings that were changed after it was applied, and some Kryo 5 data can't be read at all, eg records with generic components or unmodifiable collections, see the sections below. Use it to keep reading data during a transition, or to read the data once and write it again with the Kryo 6 format, which is smaller, faster and loses no data in skipped fields. Like with the migration from Kryo 4 to Kryo 5, reading data across major versions isn't guaranteed.
 
@@ -192,7 +191,6 @@ These changes don't affect the serialized format of the default configuration, e
 
 ### FieldSerializer and its subclasses
 
-* FieldSerializer and its subclasses serialize the synthetic fields of anonymous classes, local classes and non-static member classes: the outer instance and captured variables, without which these objects are unusable after reading. Kryo 5 ignored all synthetic fields (`ignoreSyntheticFields`), so the outer instance was null after reading. An inner object that is serialized with its outer instance usually needs references, because the outer instance refers to the inner object. Then the exception for the stack overflow explains this. TaggedFieldSerializer serializes only fields with `@Tag`, so it never serializes synthetic fields. To ignore synthetic fields like Kryo 5, set `ignoreSyntheticFields` to true, which `Kryo5Compatibility` does for the default serializer. `FieldSerializerConfig#getIgnoreSyntheticFields` returns a `Boolean`, which is null unless the setting was set.
 * `@Bind` and `@NotNull` are applied to String fields with all field access types. Kryo 5 ignored them for a String field without references if it accessed the field with Unsafe or ReflectASM, and applied them with reflection, so the data depended on the field access. A String field with `@Bind` and a serializer that Kryo 5 wrote this way was written as a plain string, to read it remove the serializer from the annotation. A null value of a String field with `@NotNull` throws an exception when it is written.
 * `@NotNull` is respected on fields that also have `@Bind`. Kryo 5 ignored it because `@Bind` always set `canBeNull`, so these fields are serialized without the null marker.
 * FieldSerializer with `setFieldsAsAccessible(false)` serializes the public, non-final fields of public classes. Kryo 5 serialized no fields at all with this setting.
@@ -228,7 +226,7 @@ These changes don't affect the serialized format of the default configuration, e
 * A custom ClassResolver needs to implement `beginDeferredNames`, `endDeferredNames`, and `readDeferredNames`, and a custom ReferenceResolver `getObjectCount`, for the [chunked encoding](#chunked-encoding) to keep the class names and references of skipped fields.
 * `Generics#pushTypeVariables(GenericsHierarchy, GenericType[])` was removed. Use `pushTypeVariables(GenericsHierarchy, GenericType)` with the declared type returned by the new `Generics#nextGenericType()`.
 * `FieldSerializer.CachedField` has the new abstract method `read(Input)`, which reads a field value without setting it, so a custom subclass of CachedField needs to implement it. Custom implementations of the `Generics` interface need to implement `nextGenericType()` and `pushTypeVariables(GenericsHierarchy, GenericType)`.
-* `CachedField#getField` returns a `Field` shared by all Kryo instances, and `FieldSerializerConfig#getIgnoreSyntheticFields` returns a `Boolean`, see [FieldSerializer and its subclasses](#fieldserializer-and-its-subclasses).
+* `CachedField#getField` returns a `Field` shared by all Kryo instances, see [FieldSerializer and its subclasses](#fieldserializer-and-its-subclasses).
 
 ### Deprecated APIs
 
