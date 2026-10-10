@@ -35,13 +35,26 @@ def code_generation_chunked(params):
         ", chunked" if params.get("chunked") == "true" else "")
 
 
+def variant(params):
+    return params["variant"]
+
+
+def variant_code_generation(params):
+    return variant(params) + (", code generation" if code_generation(params) else "")
+
+
 BUFFER_TYPES = ["array", "byteBuffer", "unsafeArray", "unsafeByteBuffer"]
+KRYO5_VS_KRYO6 = ["Kryo 5", "Kryo 6", "Kryo 6, Unsafe", "Kryo 6, code generation"]
+RECORDS = ["Kryo 5, RecordSerializer", "Kryo 6, FieldSerializer", "Kryo 6, FieldSerializer, code generation"]
 
 # name: the chart file and, unless results is given, the results file. results: the results file, if it is shared with another
-# chart. filter: returns whether a result is shown, from its parameters. unit: the JMH score unit of the results. axis: the title
-# of the y axis. series: returns the series of a result, from its parameters. order: the order of the series. legend: the title
-# of the legend. panel: a parameter that splits the chart into panels, each with its own axis. benchmarks: the benchmark methods
-# to show and their order, the default is all in the order of the results.
+# chart, or a dict of results files and the variant each of them is, which is the "variant" parameter of its results, eg for
+# results of different Kryo versions. filter: returns whether a result is shown, from its parameters. unit: the JMH score unit
+# of the results. axis: the title of the y axis. series: returns the series of a result, from its parameters. order: the order of
+# the series. legend: the title of the legend. panel: a parameter that splits the chart into panels, each with its own axis.
+# benchmark: returns the name of a result on the x axis, from its benchmark method and parameters, the default is the method.
+# benchmarks: the names to show and their order, the default is all in the order of the results. x: the title of the x axis,
+# the default is "Operation". width: the chart width.
 CHARTS = [
     {
         "name": "fieldSerializer",
@@ -82,6 +95,33 @@ CHARTS = [
         "benchmarks": ["field", "version", "compatible", "tagged"],
     },
     {
+        "name": "kryo5VsKryo6",
+        "title": "Kryo 5 vs Kryo 6: ObjectGraphBenchmark, scale 4 with references",
+        "results": {"kryo5": "Kryo 5", "kryo6VarHandle": "Kryo 6", "kryo6Unsafe": "Kryo 6, Unsafe",
+            "kryo6CodeGeneration": "Kryo 6, code generation"},
+        "unit": "ops/s",
+        "axis": "Round trips per second (higher is better)",
+        "series": variant,
+        "order": KRYO5_VS_KRYO6,
+        "legend": "Version",
+        "benchmark": lambda name, params: name + (" chunked" if params.get("chunked") == "true" else ""),
+        "benchmarks": ["field", "version", "compatible", "tagged", "compatible chunked", "tagged chunked"],
+    },
+    {
+        "name": "records",
+        "title": "Kryo 5 vs Kryo 6: RecordSerializerBenchmark",
+        "results": {"kryo5Records": "Kryo 5, RecordSerializer", "kryo6Records": "Kryo 6, FieldSerializer"},
+        "unit": "ops/s",
+        "axis": "Round trips per second (higher is better)",
+        "series": variant_code_generation,
+        "order": RECORDS,
+        "legend": "Version",
+        "benchmark": lambda name, params: references(params),
+        "benchmarks": ["no references", "references"],
+        "x": "Serializer settings",
+        "width": 760,
+    },
+    {
         "name": "string",
         "title": "StringBenchmark",
         "unit": "ns/op",
@@ -114,7 +154,7 @@ CHARTS = [
 ]
 
 # The charts look like the default theme of ggplot2, which was used for the charts before.
-COLORS = {2: ["#F8766D", "#00BFC4"], 4: ["#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"]}
+COLORS = {2: ["#F8766D", "#00BFC4"], 3: ["#F8766D", "#00BA38", "#619CFF"], 4: ["#F8766D", "#7CAE00", "#00BFC4", "#C77CFF"]}
 STYLE = """text { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #4D4D4D }
 .title { font-size: 19px; fill: #000000 }
 .axisTitle, .legendTitle { font-size: 16px; fill: #000000 }
@@ -150,9 +190,9 @@ def tick_step(maximum):
             return factor * power
 
 
-def load(path, unit):
+def load(path, unit, variant=None):
     """Returns the results as dicts with benchmark (the method name), params, score and error (0 if unknown). Returns None if
-    a result has another unit."""
+    a result has another unit. variant is added to the params if given."""
     with open(path) as file:
         entries = json.load(file)
     results = []
@@ -161,9 +201,12 @@ def load(path, unit):
         if metric["scoreUnit"] != unit:
             return None
         error = metric["scoreError"]
+        params = dict(entry.get("params") or {})
+        if variant:
+            params["variant"] = variant
         results.append({
             "benchmark": entry["benchmark"].rsplit(".", 1)[1],
-            "params": entry.get("params") or {},
+            "params": params,
             "score": metric["score"],
             "error": error if isinstance(error, (int, float)) and not math.isnan(error) else 0,
             "jdk": entry.get("jdkVersion", ""),
@@ -175,6 +218,8 @@ def render_panel(chart, results, top, title, label):
     """A bar chart with the benchmarks on the x axis and a bar for each series. top is the y position of the panel."""
     order = chart["order"]
     colors = COLORS[len(order)]
+    if "benchmark" in chart:
+        results = [dict(result, benchmark=chart["benchmark"](result["benchmark"], result["params"])) for result in results]
     benchmarks = list(dict.fromkeys(result["benchmark"] for result in results))
     if "benchmarks" in chart:
         benchmarks = [name for name in chart["benchmarks"] if name in benchmarks]
@@ -184,7 +229,7 @@ def render_panel(chart, results, top, title, label):
         out.append('<text class="title" x="%d" y="%d">%s</text>' % (LEFT - 30, top + 22, escape(title)))
     # The legend is right of the plot, its width is estimated from the longest text.
     legend = 16 + max(22 + 6.5 * max(len(name) for name in order), 8.5 * len(chart["legend"])) + 8
-    left, right = LEFT, WIDTH - legend
+    left, right = LEFT, chart.get("width", WIDTH) - legend
     plot_top, plot_bottom = top + TOP, top + HEIGHT - BOTTOM
     out.append('<rect class="plot" x="%d" y="%d" width="%d" height="%d"/>' % (left, plot_top, right - left,
         plot_bottom - plot_top))
@@ -261,14 +306,14 @@ def render(chart, results):
             for value, label in chart["panels"].items()]
         panels = [panel for panel in panels if panel[1]]
     else:
-        panels = [("Operation", results)]
-    height = HEIGHT * len(panels)
+        panels = [(chart.get("x", "Operation"), results)]
+    width, height = chart.get("width", WIDTH), HEIGHT * len(panels)
     out = [
-        '<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img">' % (WIDTH, height,
-            WIDTH, height),
+        '<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img">' % (width, height,
+            width, height),
         "<title>%s</title>" % escape(chart["title"] + ": " + chart["axis"].lower()),
         "<style>\n%s\n</style>" % STYLE,
-        '<rect class="background" width="%d" height="%d"/>' % (WIDTH, height),
+        '<rect class="background" width="%d" height="%d"/>' % (width, height),
     ]
     for i, (label, panel) in enumerate(panels):
         out += render_panel(chart, panel, i * HEIGHT, None if i else title, label)
@@ -280,13 +325,23 @@ def main():
     results_dir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(directory, "results")
     output_dir = sys.argv[2] if len(sys.argv) > 2 else directory
     for chart in CHARTS:
-        path = os.path.join(results_dir, chart.get("results", chart["name"]) + ".json")
-        if not os.path.exists(path):
-            print("Skipped, no results:", path)
-            continue
-        results = load(path, chart["unit"])
+        results_files = chart.get("results", chart["name"])
+        if not isinstance(results_files, dict):
+            results_files = {results_files: None}
+        results = []
+        for name, variant in results_files.items():
+            path = os.path.join(results_dir, name + ".json")
+            if not os.path.exists(path):
+                print("Skipped, no results:", path)
+                results = None
+                break
+            loaded = load(path, chart["unit"], variant)
+            if not loaded:
+                print("Skipped, results are not in %s: %s" % (chart["unit"], path))
+                results = None
+                break
+            results += loaded
         if not results:
-            print("Skipped, results are not in %s: %s" % (chart["unit"], path))
             continue
         if "filter" in chart:
             results = [result for result in results if chart["filter"](result["params"])]

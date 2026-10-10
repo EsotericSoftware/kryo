@@ -13,22 +13,26 @@ text { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #4D4D4D
 .bar, .line { stroke: #000000 }
 </style>
 <rect class="background" width="1024" height="890"/>
-<text class="title" x="48" y="22">ObjectGraphBenchmark, JDK 25</text>
+<text class="title" x="48" y="22">ObjectGraphBenchmark, JDK 27</text>
 <rect class="plot" x="78" y="34" width="760" height="359"/>
-<line class="minor" x1="78" y1="326.8" x2="838" y2="326.8"/>
-<line class="grid" x1="78" y1="276.8" x2="838" y2="276.8"/>
-<line class="minor" x1="78" y1="226.9" x2="838" y2="226.9"/>
-<line class="grid" x1="78" y1="177.0" x2="838" y2="177.0"/>
-<line class="minor" x1="78" y1="127.1" x2="838" y2="127.1"/>
-<line class="grid" x1="78" y1="77.1" x2="838" y2="77.1"/>
+<line class="minor" x1="78" y1="337.8" x2="838" y2="337.8"/>
+<line class="grid" x1="78" y1="298.8" x2="838" y2="298.8"/>
+<line class="minor" x1="78" y1="259.9" x2="838" y2="259.9"/>
+<line class="grid" x1="78" y1="221.0" x2="838" y2="221.0"/>
+<line class="minor" x1="78" y1="182.1" x2="838" y2="182.1"/>
+<line class="grid" x1="78" y1="143.1" x2="838" y2="143.1"/>
+<line class="minor" x1="78" y1="104.2" x2="838" y2="104.2"/>
+<line class="grid" x1="78" y1="65.3" x2="838" y2="65.3"/>
 <line class="tick" x1="74" y1="376.7" x2="78" y2="376.7"/>
 <text x="71" y="381.2" text-anchor="end">0</text>
-<line class="tick" x1="74" y1="276.8" x2="78" y2="276.8"/>
-<text x="71" y="281.3" text-anchor="end">2K</text>
-<line class="tick" x1="74" y1="177.0" x2="78" y2="177.0"/>
-<text x="71" y="181.5" text-anchor="end">4K</text>
-<line class="tick" x1="74" y1="77.1" x2="78" y2="77.1"/>
-<text x="71" y="81.6" text-anchor="end">6K</text>
+<line class="tick" x1="74" y1="298.8" x2="78" y2="298.8"/>
+<text x="71" y="303.3" text-anchor="end">1K</text>
+<line class="tick" x1="74" y1="221.0" x2="78" y2="221.0"/>
+<text x="71" y="225.5" text-anchor="end">2K</text>
+<line class="tick" x1="74" y1="143.1" x2="78" y2="143.1"/>
+<text x="71" y="147.6" text-anchor="end">3K</text>
+<line class="tick" x1="74" y1="65.3" x2="78" y2="65.3"/>
+<text x="71" y="69.8" text-anchor="end">4K</text>
 <text class="axisTitle" transform="translate(22 213.5) rotate(-90)" text-anchor="middle">Round trips per second (higher is better)</text>
 <line class="grid" x1="186.6" y1="34" x2="186.6" y2="393"/>
 <line class="tick" x1="186.6" y1="393" x2="186.6" y2="397"/>
@@ -43,18 +47,18 @@ text { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #4D4D4D
 <line class="tick" x1="729.9" y1="393" x2="729.9" y2="397"/>
 <text x="729.9" y="412" text-anchor="middle">tagged</text>
 <text class="axisTitle" x="458.2" y="437" text-anchor="middle">Scale 4 (about 1,400 objects)</text>
-<rect class="bar" fill="#F8766D" x="105.2" y="63.9" width="163.0" height="312.8"/>
-<path class="line" fill="none" d="M186.6 77.5V50.3M154.0 77.5h65.2M154.0 50.3h65.2"/>
-<rect class="bar" fill="#F8766D" x="286.2" y="59.9" width="163.0" height="316.8"/>
-<path class="line" fill="none" d="M367.7 65.4V54.4M335.1 65.4h65.2M335.1 54.4h65.2"/>
-<rect class="bar" fill="#F8766D" x="467.3" y="216.2" width="81.5" height="160.5"/>
-<path class="line" fill="none" d="M508.0 219.0V213.4M491.7 219.0h32.6M491.7 213.4h32.6"/>
-<rect class="bar" fill="#00BFC4" x="548.8" y="246.7" width="81.5" height="130.0"/>
-<path class="line" fill="none" d="M589.5 250.7V242.6M573.2 250.7h32.6M573.2 242.6h32.6"/>
-<rect class="bar" fill="#F8766D" x="648.4" y="102.6" width="81.5" height="274.0"/>
-<path class="line" fill="none" d="M689.1 106.6V98.6M672.8 106.6h32.6M672.8 98.6h32.6"/>
-<rect class="bar" fill="#00BFC4" x="729.9" y="243.1" width="81.5" height="133.6"/>
-<path class="line" fill="none" d="M770.6 246.8V239.3M754.3 246.8h32.6M754.3 239.3h32.6"/>
+<rect class="bar" fill="#F8766D" x="105.2" y="53.7" width="163.0" height="323.0"/>
+<path class="line" fill="none" d="M186.6 57.1V50.3M154.0 57.1h65.2M154.0 50.3h65.2"/>
+<rect class="bar" fill="#F8766D" x="286.2" y="55.8" width="163.0" height="320.9"/>
+<path class="line" fill="none" d="M367.7 59.3V52.3M335.1 59.3h65.2M335.1 52.3h65.2"/>
+<rect class="bar" fill="#F8766D" x="467.3" y="174.8" width="81.5" height="201.9"/>
+<path class="line" fill="none" d="M508.0 182.1V167.4M491.7 182.1h32.6M491.7 167.4h32.6"/>
+<rect class="bar" fill="#00BFC4" x="548.8" y="216.3" width="81.5" height="160.4"/>
+<path class="line" fill="none" d="M589.5 218.8V213.8M573.2 218.8h32.6M573.2 213.8h32.6"/>
+<rect class="bar" fill="#F8766D" x="648.4" y="95.4" width="81.5" height="281.3"/>
+<path class="line" fill="none" d="M689.1 96.6V94.1M672.8 96.6h32.6M672.8 94.1h32.6"/>
+<rect class="bar" fill="#00BFC4" x="729.9" y="207.0" width="81.5" height="169.7"/>
+<path class="line" fill="none" d="M770.6 213.2V200.8M754.3 213.2h32.6M754.3 200.8h32.6"/>
 <line class="line" x1="78" y1="376.7" x2="838" y2="376.7"/>
 <text class="legendTitle" x="854" y="199.5">Serializer settings</text>
 <rect class="bar" fill="#F8766D" x="854" y="207.5" width="17" height="17"/>
@@ -62,20 +66,16 @@ text { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #4D4D4D
 <rect class="bar" fill="#00BFC4" x="854" y="224.5" width="17" height="17"/>
 <text class="legend" x="876" y="237.5">chunked</text>
 <rect class="plot" x="78" y="479" width="760" height="359"/>
-<line class="minor" x1="78" y1="765.9" x2="838" y2="765.9"/>
-<line class="grid" x1="78" y1="710.2" x2="838" y2="710.2"/>
-<line class="minor" x1="78" y1="654.5" x2="838" y2="654.5"/>
-<line class="grid" x1="78" y1="598.7" x2="838" y2="598.7"/>
-<line class="minor" x1="78" y1="543.0" x2="838" y2="543.0"/>
-<line class="grid" x1="78" y1="487.3" x2="838" y2="487.3"/>
+<line class="minor" x1="78" y1="749.4" x2="838" y2="749.4"/>
+<line class="grid" x1="78" y1="677.2" x2="838" y2="677.2"/>
+<line class="minor" x1="78" y1="604.9" x2="838" y2="604.9"/>
+<line class="grid" x1="78" y1="532.7" x2="838" y2="532.7"/>
 <line class="tick" x1="74" y1="821.7" x2="78" y2="821.7"/>
 <text x="71" y="826.2" text-anchor="end">0</text>
-<line class="tick" x1="74" y1="710.2" x2="78" y2="710.2"/>
-<text x="71" y="714.7" text-anchor="end">500</text>
-<line class="tick" x1="74" y1="598.7" x2="78" y2="598.7"/>
-<text x="71" y="603.2" text-anchor="end">1K</text>
-<line class="tick" x1="74" y1="487.3" x2="78" y2="487.3"/>
-<text x="71" y="491.8" text-anchor="end">1.5K</text>
+<line class="tick" x1="74" y1="677.2" x2="78" y2="677.2"/>
+<text x="71" y="681.7" text-anchor="end">500</text>
+<line class="tick" x1="74" y1="532.7" x2="78" y2="532.7"/>
+<text x="71" y="537.2" text-anchor="end">1K</text>
 <text class="axisTitle" transform="translate(22 658.5) rotate(-90)" text-anchor="middle">Round trips per second (higher is better)</text>
 <line class="grid" x1="186.6" y1="479" x2="186.6" y2="838"/>
 <line class="tick" x1="186.6" y1="838" x2="186.6" y2="842"/>
@@ -90,18 +90,18 @@ text { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #4D4D4D
 <line class="tick" x1="729.9" y1="838" x2="729.9" y2="842"/>
 <text x="729.9" y="857" text-anchor="middle">tagged</text>
 <text class="axisTitle" x="458.2" y="882" text-anchor="middle">Scale 16 (about 5,200 objects)</text>
-<rect class="bar" fill="#F8766D" x="105.2" y="500.4" width="163.0" height="321.3"/>
-<path class="line" fill="none" d="M186.6 504.6V496.1M154.0 504.6h65.2M154.0 496.1h65.2"/>
-<rect class="bar" fill="#F8766D" x="286.2" y="498.9" width="163.0" height="322.8"/>
-<path class="line" fill="none" d="M367.7 502.4V495.3M335.1 502.4h65.2M335.1 495.3h65.2"/>
-<rect class="bar" fill="#F8766D" x="467.3" y="615.3" width="81.5" height="206.3"/>
-<path class="line" fill="none" d="M508.0 618.6V612.1M491.7 618.6h32.6M491.7 612.1h32.6"/>
-<rect class="bar" fill="#00BFC4" x="548.8" y="652.4" width="81.5" height="169.2"/>
-<path class="line" fill="none" d="M589.5 655.4V649.5M573.2 655.4h32.6M573.2 649.5h32.6"/>
-<rect class="bar" fill="#F8766D" x="648.4" y="521.5" width="81.5" height="300.2"/>
-<path class="line" fill="none" d="M689.1 527.5V515.6M672.8 527.5h32.6M672.8 515.6h32.6"/>
-<rect class="bar" fill="#00BFC4" x="729.9" y="652.3" width="81.5" height="169.4"/>
-<path class="line" fill="none" d="M770.6 654.9V649.7M754.3 654.9h32.6M754.3 649.7h32.6"/>
+<rect class="bar" fill="#F8766D" x="105.2" y="497.9" width="163.0" height="323.8"/>
+<path class="line" fill="none" d="M186.6 500.5V495.3M154.0 500.5h65.2M154.0 495.3h65.2"/>
+<rect class="bar" fill="#F8766D" x="286.2" y="502.5" width="163.0" height="319.2"/>
+<path class="line" fill="none" d="M367.7 508.1V496.8M335.1 508.1h65.2M335.1 496.8h65.2"/>
+<rect class="bar" fill="#F8766D" x="467.3" y="603.2" width="81.5" height="218.5"/>
+<path class="line" fill="none" d="M508.0 607.3V599.1M491.7 607.3h32.6M491.7 599.1h32.6"/>
+<rect class="bar" fill="#00BFC4" x="548.8" y="639.1" width="81.5" height="182.6"/>
+<path class="line" fill="none" d="M589.5 641.3V636.9M573.2 641.3h32.6M573.2 636.9h32.6"/>
+<rect class="bar" fill="#F8766D" x="648.4" y="524.3" width="81.5" height="297.4"/>
+<path class="line" fill="none" d="M689.1 526.2V522.4M672.8 526.2h32.6M672.8 522.4h32.6"/>
+<rect class="bar" fill="#00BFC4" x="729.9" y="636.5" width="81.5" height="185.2"/>
+<path class="line" fill="none" d="M770.6 639.1V633.9M754.3 639.1h32.6M754.3 633.9h32.6"/>
 <line class="line" x1="78" y1="821.7" x2="838" y2="821.7"/>
 <text class="legendTitle" x="854" y="644.5">Serializer settings</text>
 <rect class="bar" fill="#F8766D" x="854" y="652.5" width="17" height="17"/>
