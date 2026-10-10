@@ -95,8 +95,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		final Generics generics = kryo.getGenerics();
 		genericsHierarchy = generics.buildHierarchy(type);
 
-		if (isRecord(type)) {
-			RecordComponent[] components = CachedFields.recordComponents(type);
+		RecordComponent[] components = CachedFields.recordComponents(type);
+		if (components != null) {
 			Class[] componentTypes = new Class[components.length];
 			recordDefaults = new Object[components.length];
 			for (int i = 0; i < components.length; i++) {
