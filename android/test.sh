@@ -28,9 +28,9 @@ fi
 version=$(mvn -q -f ../main/pom.xml help:evaluate -Dexpression=project.version -DforceStdout)
 kryo=../target/kryo-$version.jar
 "${bin}javac" --release 17 -nowarn -d target/classes -cp "$kryo:$androidJar" src/com/esotericsoftware/kryo/android/*.java
-output=$("${bin}java" -cp $d8 com.android.tools.r8.D8 --min-api $minApi --lib "$androidJar" --output target/dex $kryo \
-	$(find target/classes -name '*.class') 2>&1)
-if [ -n "$output" ]; then
+# The output is checked for warnings and printed on errors, so the assignment must not exit with set -e.
+if ! output=$("${bin}java" -cp $d8 com.android.tools.r8.D8 --min-api $minApi --lib "$androidJar" --output target/dex $kryo \
+	$(find target/classes -name '*.class') 2>&1) || [ -n "$output" ]; then
 	echo "$output"
 	exit 1
 fi
