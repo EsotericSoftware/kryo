@@ -40,5 +40,10 @@
 			<type>2</type>
 			<locationURI>PARENT-1-PROJECT_LOC/test</locationURI>
 		</link>
+		<link>
+			<name>test-android</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/test-android</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>
