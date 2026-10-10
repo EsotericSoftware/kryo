@@ -73,12 +73,42 @@ final class CollectionWrapperSerializer extends Serializer<Object> {
 	}
 
 	public Object copy (Kryo kryo, Object original) {
+		if (isAndroid) return copyOnAndroid(kryo, original);
 		if (synchronize) {
 			synchronized (original) {
 				return factory.apply(kryo.copy(wrapped(original)));
 			}
 		}
 		return factory.apply(kryo.copy(wrapped(original)));
+	}
+
+	/** The wrapper of a copy of the elements is referenced before the elements are copied, like {@link CollectionSerializer} does,
+	 * so an element that refers to the wrapper gets the copy. A new collection for each copy of an element would recurse without
+	 * end. */
+	private Object copyOnAndroid (Kryo kryo, Object original) {
+		Object elements;
+		if (synchronize) {
+			synchronized (original) {
+				elements = copyElements(original);
+			}
+		} else
+			elements = copyElements(original);
+		Object copy = factory.apply(elements);
+		kryo.reference(copy);
+		if (elements instanceof Map) {
+			Map map = (Map)elements;
+			Object[] keys = map.keySet().toArray(), values = map.values().toArray();
+			map.clear();
+			for (int i = 0; i < keys.length; i++)
+				map.put(kryo.copy(keys[i]), kryo.copy(values[i]));
+		} else {
+			Collection collection = (Collection)elements;
+			Object[] items = collection.toArray();
+			collection.clear();
+			for (Object item : items)
+				collection.add(kryo.copy(item));
+		}
+		return copy;
 	}
 
 	private Object wrapped (Object wrapper) {

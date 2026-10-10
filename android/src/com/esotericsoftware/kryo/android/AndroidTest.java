@@ -205,6 +205,23 @@ public class AndroidTest {
 				check(read.position() == 2 && read.limit() == 5 && read.get(4) == 5);
 		});
 
+		test("Copy of wrappers that contain themselves", () -> {
+			Kryo kryo = kryo();
+			kryo.setReferences(true);
+			ArrayList<Object> list = new ArrayList<>();
+			List<Object> wrapper = Collections.unmodifiableList(list);
+			list.add("a");
+			list.add(wrapper);
+			List<Object> copy = kryo.copy(wrapper);
+			check(copy.size() == 2 && copy.get(0).equals("a") && copy.get(1) == copy);
+			ArrayList<Object> holder = new ArrayList<>();
+			Set<Object> set = Collections.newSetFromMap(new HashMap<>());
+			holder.add(set);
+			set.add(holder);
+			Set<Object> setCopy = kryo.copy(set);
+			check(((List)setCopy.iterator().next()).get(0) == setCopy);
+		});
+
 		test("ConcurrentHashMap key set", () -> {
 			ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
 			map.put("a", 1);

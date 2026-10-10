@@ -60,6 +60,14 @@ public final class SetFromMapSerializer extends Serializer<Set> {
 	}
 
 	public Set copy (Kryo kryo, Set original) {
+		if (isAndroid) {
+			// The set is referenced before the elements are copied, so an element that refers to the set gets the copy.
+			Set copy = Collections.newSetFromMap(new LinkedHashMap());
+			kryo.reference(copy);
+			for (Object element : original)
+				copy.add(kryo.copy(element));
+			return copy;
+		}
 		Map map = map(original);
 		Map copy = (Map)kryo.copy(map);
 		if (copy == map) {
