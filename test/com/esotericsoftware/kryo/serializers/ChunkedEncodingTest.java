@@ -419,9 +419,130 @@ class ChunkedEncodingTest {
 		long length = (1L << 32) + 5;
 		Output header = new Output(16);
 		header.writeVarLong(length, true);
-		byte[] headerBytes = header.toBytes();
+		long end = header.position() + length;
+		Input input = sparseInput(end + 1, 0, header.toBytes(), end, new byte[] {42});
+		encoding.endField(input, encoding.beginField(input));
+		assertEquals(end, input.total());
+		assertEquals(42, input.readByte());
+	}
+
+	@Test
+	void testLongFieldReferences () {
+		// The number of objects of a field longer than 2 GiB is kept with its end, the IDs of the objects that weren't read are
+		// reserved.
+		Kryo kryo = new Kryo();
+		kryo.setReferences(true);
+		DefaultChunkedEncoding encoding = DefaultChunkedEncoding.get(kryo);
+		long length = (1L << 31) + 10;
+		Output header = new Output(16);
+		header.writeVarLong(length, true);
+		header.writeVarInt(3, true); // Objects.
+		Input input = sparseInput(header.position() + length + 1, 0, header.toBytes(), header.position() + length, new byte[] {42});
+		long mark = encoding.beginField(input);
+		assertTrue(mark < 0);
+		encoding.endField(input, mark);
+		assertEquals(3, kryo.getReferenceResolver().getObjectCount());
+		assertEquals(42, input.readByte());
+	}
+
+	@Test
+	void testNestedLongAndShortFields () {
+		// A long field contains a short field, which uses the packed mark, and a long field. Then a long field isn't ended, eg after
+		// an exception, and ending the outer long field discards it.
+		DefaultChunkedEncoding encoding = DefaultChunkedEncoding.get(new Kryo());
+		long innerLength = 1L << 31;
+		Output inner = new Output(32);
+		inner.writeVarLong(4, true);
+		inner.writeBytes(new byte[] {1, 2, 3, 4});
+		int innerLongStart = inner.position();
+		inner.writeVarLong(innerLength, true);
+		long outerLength = inner.position() + innerLength + 7;
+		Output outer = new Output(16);
+		outer.writeVarLong(outerLength, true);
+		long outerStart = outer.position(), outerEnd = outerStart + outerLength;
+		Input input = sparseInput(outerEnd + 1, 0, outer.toBytes(), outerStart, inner.toBytes(), outerEnd, new byte[] {42});
+
+		long outerMark = encoding.beginField(input);
+		assertTrue(outerMark < 0);
+		long shortMark = encoding.beginField(input);
+		assertTrue(shortMark >= 0);
+		assertEquals(1, input.readByte());
+		encoding.endField(input, shortMark); // Skips the 3 other bytes.
+		assertEquals(outerStart + innerLongStart, input.total());
+		long innerMark = encoding.beginField(input);
+		assertTrue(innerMark < 0);
+		assertNotEquals(outerMark, innerMark);
+		encoding.endField(input, innerMark);
+		assertEquals(outerEnd - 7, input.total());
+		encoding.endField(input, outerMark);
+		assertEquals(outerEnd, input.total());
+		assertEquals(42, input.readByte());
+
+		// The outer long field is ended while a nested long field wasn't, so the next long field gets the outer field's depth.
+		input = sparseInput(outerEnd + 1, 0, outer.toBytes(), outerStart, inner.toBytes(), outerEnd, new byte[] {42});
+		outerMark = encoding.beginField(input);
+		encoding.endField(input, encoding.beginField(input));
+		encoding.beginField(input); // Not ended.
+		encoding.endField(input, outerMark);
+		assertEquals(42, input.readByte());
+		Output next = new Output(16);
+		next.writeVarLong(innerLength, true);
+		input = sparseInput(next.position() + innerLength, 0, next.toBytes());
+		assertEquals(outerMark, encoding.beginField(input));
+	}
+
+	@Test
+	void testFieldLengthLimit () {
+		// A field of Integer.MAX_VALUE bytes uses the packed mark, one byte more the per-depth arrays.
+		DefaultChunkedEncoding encoding = DefaultChunkedEncoding.get(new Kryo());
+		Output first = new Output(16), second = new Output(16);
+		first.writeVarLong(Integer.MAX_VALUE, true);
+		second.writeVarLong(1L << 31, true);
+		long secondStart = first.position() + (long)Integer.MAX_VALUE, end = secondStart + second.position() + (1L << 31);
+		Input input = sparseInput(end + 1, 0, first.toBytes(), secondStart, second.toBytes(), end, new byte[] {42});
+		long mark = encoding.beginField(input);
+		assertTrue(mark >= 0);
+		encoding.endField(input, mark);
+		assertEquals(secondStart, input.total());
+		mark = encoding.beginField(input);
+		assertTrue(mark < 0);
+		encoding.endField(input, mark);
+		assertEquals(end, input.total());
+		assertEquals(42, input.readByte());
+	}
+
+	@Test
+	void testLongFieldOverRead () {
+		// Reading more than a long field contains throws, like for a short field.
+		DefaultChunkedEncoding encoding = DefaultChunkedEncoding.get(new Kryo());
+		long length = (1L << 31) + 1;
+		Output header = new Output(16);
+		header.writeVarLong(length, true);
+		Input input = sparseInput(header.position() + length + 1, 0, header.toBytes());
+		long mark = encoding.beginField(input);
+		input.skip(length + 1);
+		KryoException ex = assertThrows(KryoException.class, () -> encoding.endField(input, mark));
+		assertTrue(ex.getMessage().contains("More data was read than the field contains: 1 bytes"), ex.getMessage());
+	}
+
+	@Test
+	void testInvalidFieldLength () {
+		// A negative length and a length that would overflow the end of the field are invalid.
+		DefaultChunkedEncoding encoding = DefaultChunkedEncoding.get(new Kryo());
+		for (long length : new long[] {-1, Long.MAX_VALUE}) {
+			Output header = new Output(16);
+			header.writeVarLong(length, true);
+			Input input = new Input(header.toBytes());
+			KryoException ex = assertThrows(KryoException.class, () -> encoding.beginField(input));
+			assertTrue(ex.getMessage().startsWith("Invalid field length: " + length), ex.getMessage());
+		}
+	}
+
+	/** Returns an input of the specified length that has the bytes at the positions, given as pairs of a long position and a byte
+	 * array, and arbitrary bytes elsewhere. The other bytes are not materialized, so the input can be longer than 2 GiB. */
+	static private Input sparseInput (long length, Object... segments) {
 		InputStream stream = new InputStream() {
-			long position, end = headerBytes.length + length + 1;
+			long position;
 
 			public int read () {
 				byte[] b = new byte[1];
@@ -429,25 +550,25 @@ class ChunkedEncodingTest {
 			}
 
 			public int read (byte[] b, int offset, int count) {
-				if (position == end) return -1;
-				if (position < headerBytes.length) {
-					b[offset] = headerBytes[(int)position++];
-					return 1;
+				if (position == length) return -1;
+				long next = length;
+				for (int i = 0; i < segments.length; i += 2) {
+					long start = ((Number)segments[i]).longValue();
+					byte[] bytes = (byte[])segments[i + 1];
+					if (position >= start && position < start + bytes.length) {
+						int n = (int)Math.min(count, start + bytes.length - position);
+						System.arraycopy(bytes, (int)(position - start), b, offset, n);
+						position += n;
+						return n;
+					}
+					if (start > position) next = Math.min(next, start);
 				}
-				if (position == end - 1) {
-					b[offset] = 42; // After the field.
-					position++;
-					return 1;
-				}
-				int n = (int)Math.min(count, end - 1 - position); // Field bytes, left as they are.
+				int n = (int)Math.min(count, next - position); // Arbitrary bytes, left as they are.
 				position += n;
 				return n;
 			}
 		};
-		Input input = new Input(stream, 1 << 16);
-		encoding.endField(input, encoding.beginField(input));
-		assertEquals(headerBytes.length + length, input.total());
-		assertEquals(42, input.readByte());
+		return new Input(stream, 1 << 16);
 	}
 
 	@Test
