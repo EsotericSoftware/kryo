@@ -59,11 +59,7 @@ public final class ImmutableCollectionsSerializers {
 	 * level 30. Android has these classes since API level 30, but not all of them: before API level 34 it has Set0, Set1 and Set2
 	 * instead of Set12, and Map0. */
 	static private @Null Class immutableCollectionsClass (String name) {
-		try {
-			return Class.forName("java.util.ImmutableCollections$" + name);
-		} catch (ClassNotFoundException ex) {
-			return null;
-		}
+		return classForName("java.util.ImmutableCollections$" + name);
 	}
 
 	static private void addDefaultSerializer (Kryo kryo, Serializer serializer, String... names) {

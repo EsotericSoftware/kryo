@@ -121,12 +121,16 @@ public class Util {
 	}
 
 	public static boolean isClassAvailable (String className) {
+		return classForName(className) != null;
+	}
+
+	/** Returns the class with the name, or null if it is not available. */
+	public static @Null Class classForName (String className) {
 		try {
-			Class.forName(className);
-			return true;
+			return Class.forName(className);
 		} catch (Exception ex) {
 			debug("kryo", "Class not available: " + className);
-			return false;
+			return null;
 		}
 	}
 

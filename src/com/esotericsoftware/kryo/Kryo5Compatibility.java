@@ -35,7 +35,6 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
 import com.esotericsoftware.kryo.util.HashMapReferenceResolver;
 import com.esotericsoftware.kryo.util.ListReferenceResolver;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
-import com.esotericsoftware.kryo.util.Null;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -197,14 +196,6 @@ public final class Kryo5Compatibility {
 			Registration registration = kryo.getClassResolver().getRegistration(listN);
 			Serializer listSerializer = registration != null ? registration.getSerializer() : kryo.getDefaultSerializer(listN);
 			((CollectionSerializer)listSerializer).setElementsCanBeNull(false);
-		}
-	}
-
-	static private @Null Class classForName (String name) {
-		try {
-			return Class.forName(name);
-		} catch (ClassNotFoundException ex) {
-			return null;
 		}
 	}
 
