@@ -752,10 +752,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 			else if (memoryAccess != null)
 				defaultFieldAccess = memoryAccess.equals("allow") ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
 			else
-				defaultFieldAccess = CachedFields.javaVersion() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+				defaultFieldAccess = javaVersion() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
 			if (DEBUG) {
 				debug("kryo", "Default field access: " + defaultFieldAccess + (isAndroid ? " (Android)"
-					: " (Java " + CachedFields.javaVersion() + ", Unsafe available: " + unsafe + ", Unsafe memory access: "
+					: " (Java " + javaVersion() + ", Unsafe available: " + unsafe + ", Unsafe memory access: "
 						+ (memoryAccess == null ? "default" : memoryAccess) + ")")
 					+ ", code generation available: " + CachedFields.codeGeneration);
 			}

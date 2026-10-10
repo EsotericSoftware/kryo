@@ -113,6 +113,13 @@ public class Util {
 		return module.isNamed() ? module.getName() : "ALL-UNNAMED";
 	}
 
+	/** Returns the feature version of Java, eg 17. Not for Android, which has {@link Runtime#version()} only since API level
+	 * 33. */
+	@IgnoreAndroid
+	public static int javaVersion () {
+		return Runtime.version().feature();
+	}
+
 	public static boolean isClassAvailable (String className) {
 		try {
 			Class.forName(className);

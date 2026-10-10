@@ -42,7 +42,7 @@ abstract class Bytecode {
 	static public final int IFNE = 154, IF_ICMPEQ = 159;
 
 	/** True if the Class-File API is used: Java 24+, unless the system property "kryo.codeGeneration.backend" is "asm". */
-	static public final boolean classFileApi = Runtime.version().feature() >= 24
+	static public final boolean classFileApi = javaVersion() >= 24
 		&& !"asm".equals(System.getProperty("kryo.codeGeneration.backend"));
 	/** True if ASM is on the classpath. */
 	static public final boolean asm;

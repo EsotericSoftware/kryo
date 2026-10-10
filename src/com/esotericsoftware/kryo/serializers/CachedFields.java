@@ -274,13 +274,6 @@ class CachedFields implements Comparator<CachedField> {
 		return isRecord(type) ? type.getRecordComponents() : null;
 	}
 
-	/** Returns the feature version of Java, eg 17. Not used on Android, which has {@link Runtime#version()} only since API level
-	 * 33. */
-	@IgnoreAndroid
-	static int javaVersion () {
-		return Runtime.version().feature();
-	}
-
 	/** Returns the generic type of a field, which all serializers and Kryo instances share, like the Field objects. The generic
 	 * type of a primitive field is only needed while the field is added. */
 	@IgnoreAndroid
