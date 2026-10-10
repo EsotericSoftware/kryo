@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.io;
 
 import static com.esotericsoftware.kryo.KryoAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 import com.esotericsoftware.kryo.Unsafe;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
@@ -29,6 +30,7 @@ import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 import org.junit.jupiter.api.Test;
@@ -37,31 +39,37 @@ import org.junit.jupiter.api.Test;
 @Unsafe
 @SuppressWarnings("restriction")
 class UnsafeByteBufferInputOutputTest {
+	@Test
+	void testReadOnlyBuffer () {
+		UnsafeByteBufferInput input = new UnsafeByteBufferInput(ByteBuffer.allocateDirect(8).asReadOnlyBuffer());
+		input.readInt();
+		assertThrows(KryoBufferUnderflowException.class, input::readLong);
+		ByteBufferInputOutputTest.assertReadOnlyOptionalReads(new UnsafeByteBufferInput(ByteBuffer.allocateDirect(3).asReadOnlyBuffer()));
+	}
 
+	@SuppressWarnings("removal") // Off-heap memory for UnsafeByteBufferOutput.
 	@Test
 	void testByteBufferOutputWithPreallocatedMemory () {
+		assumeTrue(UnsafeUtil.isNewDirectBufferAvailable(), "Streams with preallocated direct memory are not supported on this JVM");
 		long bufAddress = UnsafeUtil.unsafe.allocateMemory(4096);
 		try {
 			ByteBufferOutput outputBuffer = new ByteBufferOutput(UnsafeUtil.newDirectBuffer(bufAddress, 4096));
 			outputBuffer.writeInt(10);
 
-			ByteBufferInput inputBuffer = new ByteBufferInput(outputBuffer.getByteBuffer());
-			inputBuffer.readInt();
+			ByteBufferInput inputBuffer = new ByteBufferInput(UnsafeUtil.newDirectBuffer(bufAddress, 4096));
+			assertEquals(10, inputBuffer.readInt());
 
 			UnsafeUtil.dispose(inputBuffer.getByteBuffer());
 			UnsafeUtil.dispose(outputBuffer.getByteBuffer());
 
 			outputBuffer = new UnsafeByteBufferOutput(bufAddress, 4096);
-			outputBuffer.writeInt(10);
+			outputBuffer.writeInt(11);
 
-			inputBuffer = new UnsafeByteBufferInput(outputBuffer.getByteBuffer());
-			inputBuffer.readInt();
+			inputBuffer = new UnsafeByteBufferInput(bufAddress, 4096);
+			assertEquals(11, inputBuffer.readInt());
 
 			UnsafeUtil.dispose(inputBuffer.getByteBuffer());
 			UnsafeUtil.dispose(outputBuffer.getByteBuffer());
-		} catch (Throwable t) {
-			System.err.println("Streams with preallocated direct memory are not supported on this JVM");
-			t.printStackTrace();
 		} finally {
 			UnsafeUtil.unsafe.freeMemory(bufAddress);
 		}

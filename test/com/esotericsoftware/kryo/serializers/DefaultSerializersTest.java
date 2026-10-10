@@ -22,17 +22,28 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicIntegerSerializer;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
-import com.esotericsoftware.kryo.serializers.DefaultSerializers.KeySetViewSerializer;
+import com.esotericsoftware.kryo.util.MapReferenceResolver;
+import com.esotericsoftware.kryo.util.Util;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -40,13 +51,23 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.TimeZone;
+import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -54,7 +75,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet */
 class DefaultSerializersTest extends KryoTestCase {
@@ -162,6 +183,14 @@ class DefaultSerializersTest extends KryoTestCase {
 	void testString () {
 		kryo = new Kryo();
 		kryo.setReferences(true);
+		// Strings don't use references by default.
+		roundTrip(5, "meow");
+		roundTrip(69, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+		kryo.setReferenceResolver(new MapReferenceResolver() {
+			public boolean useReferences (Class type) {
+				return !Util.isWrapperClass(type) && !Util.isEnum(type);
+			}
+		});
 		roundTrip(6, "meow");
 		roundTrip(70, "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdef");
 
@@ -212,6 +241,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(10, new Date(-1234567));
 
 		kryo.register(java.sql.Date.class);
+		assertEquals(DefaultSerializers.SqlDateSerializer.class, kryo.getSerializer(java.sql.Date.class).getClass());
 		roundTrip(10, new java.sql.Date(Long.MIN_VALUE));
 		roundTrip(2, new java.sql.Date(0));
 		roundTrip(4, new java.sql.Date(1234567));
@@ -219,13 +249,14 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(10, new java.sql.Date(-1234567));
 
 		kryo.register(java.sql.Time.class);
+		assertEquals(DefaultSerializers.SqlTimeSerializer.class, kryo.getSerializer(java.sql.Time.class).getClass());
 		roundTrip(10, new java.sql.Time(Long.MIN_VALUE));
 		roundTrip(2, new java.sql.Time(0));
 		roundTrip(4, new java.sql.Time(1234567));
 		roundTrip(10, new java.sql.Time(Long.MAX_VALUE));
 		roundTrip(10, new java.sql.Time(-1234567));
 
-		kryo.register(java.sql.Timestamp.class);
+		kryo.register(java.sql.Timestamp.class, new DefaultSerializers.DateSerializer());
 		roundTrip(10, new java.sql.Timestamp(Long.MIN_VALUE));
 		roundTrip(2, new java.sql.Timestamp(0));
 		roundTrip(4, new java.sql.Timestamp(1234567));
@@ -235,7 +266,6 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testTimestampSerializer () {
-		kryo.addDefaultSerializer(java.sql.Timestamp.class, DefaultSerializers.TimestampSerializer.class);
 		kryo.register(java.sql.Timestamp.class);
 		roundTrip(11, newTimestamp(Long.MIN_VALUE+808, 0)); // Smallest valid size
 		roundTrip(15, newTimestamp(Long.MIN_VALUE+808, 999_999_999));
@@ -364,7 +394,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
-		roundTrip(85, TestEnumWithMethods.c);
+		roundTrip(83, TestEnumWithMethods.c); // The name of the enum, not of the body of the constant.
 	}
 
 	@Test
@@ -455,10 +485,332 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
+	void testConcurrentSkipListSet () {
+		kryo.register(ConcurrentSkipListSet.class);
+		kryo.register(ConcurrentSkipListSetSubclass.class);
+		kryo.register(IntegerComparator.class);
+		for (ConcurrentSkipListSet<Integer> set : List.of(new ConcurrentSkipListSet<Integer>(new IntegerComparator()),
+			new ConcurrentSkipListSetSubclass(new IntegerComparator()))) {
+			set.addAll(Arrays.asList(7, 0, 5, 123));
+			for (ConcurrentSkipListSet<Integer> result : List.of(writeRead(set), kryo.copy(set))) {
+				assertSame(set.getClass(), result.getClass());
+				assertInstanceOf(IntegerComparator.class, result.comparator());
+				assertEquals(List.of(123, 7, 5, 0), new ArrayList<>(result));
+			}
+		}
+		assertNull(writeRead(new ConcurrentSkipListSet<Integer>()).comparator());
+	}
+
+	@Test
+	void testPriorityBlockingQueue () {
+		kryo.register(PriorityBlockingQueue.class);
+		kryo.register(IntegerComparator.class);
+		PriorityBlockingQueue<Integer> queue = new PriorityBlockingQueue<>(3, new IntegerComparator());
+		queue.addAll(Arrays.asList(7, 0, 5, 123));
+		for (PriorityBlockingQueue<Integer> result : List.of(writeRead(queue), kryo.copy(queue))) {
+			assertInstanceOf(IntegerComparator.class, result.comparator());
+			assertEquals(123, result.poll());
+			assertEquals(7, result.poll());
+		}
+		assertTrue(writeRead(new PriorityBlockingQueue<Integer>()).isEmpty());
+	}
+
+	@Test
+	void testReverseOrderComparators () {
+		kryo.register(TreeSet.class);
+		kryo.register(PriorityQueue.class);
+		kryo.register(ConcurrentSkipListMap.class);
+		kryo.register(IntegerComparator.class);
+		kryo.register(Collections.reverseOrder().getClass());
+		kryo.register(Collections.reverseOrder(String.CASE_INSENSITIVE_ORDER).getClass());
+		kryo.register(String.CASE_INSENSITIVE_ORDER.getClass());
+
+		TreeSet<String> set = new TreeSet<>(Comparator.reverseOrder());
+		set.addAll(Arrays.asList("a", "c", "b"));
+		TreeSet<String> readSet = writeRead(set);
+		assertSame(Collections.reverseOrder(), readSet.comparator());
+		assertEquals(List.of("c", "b", "a"), new ArrayList<>(readSet));
+
+		ConcurrentSkipListMap<String, Integer> map = new ConcurrentSkipListMap<>(Collections.reverseOrder());
+		map.put("a", 1);
+		map.put("b", 2);
+		assertEquals("b", writeRead(map).firstKey());
+
+		PriorityQueue<String> queue = new PriorityQueue<>(Collections.reverseOrder(String.CASE_INSENSITIVE_ORDER));
+		queue.addAll(Arrays.asList("a", "C", "b"));
+		assertEquals("C", writeRead(queue).poll());
+
+		TreeSet<Integer> custom = new TreeSet<>(Collections.reverseOrder(new IntegerComparator()));
+		custom.addAll(Arrays.asList(1, 3, 2));
+		assertEquals(List.of(1, 2, 3), new ArrayList<>(writeRead(custom))); // IntegerComparator is reversed already.
+
+		assertSame(String.CASE_INSENSITIVE_ORDER, writeRead(String.CASE_INSENSITIVE_ORDER));
+		Comparator reverse = Collections.reverseOrder(new IntegerComparator());
+		assertSame(reverse, kryo.copy(reverse));
+
+		// Without fields, the data is the same as with FieldSerializer in Kryo 5.
+		Output output = new Output(16);
+		kryo.writeObject(output, Collections.reverseOrder());
+		kryo.writeObject(output, String.CASE_INSENSITIVE_ORDER);
+		assertEquals(0, output.position());
+	}
+
+	@Test
+	void testBlockingQueues () {
+		kryo.register(ArrayBlockingQueue.class);
+		kryo.register(LinkedBlockingQueue.class);
+		kryo.register(LinkedBlockingDeque.class);
+		kryo.register(ArrayBlockingQueueSubclass.class);
+		for (BlockingQueue<Integer> queue : List.of(new ArrayBlockingQueue<Integer>(5), new LinkedBlockingQueue<Integer>(7),
+			new LinkedBlockingQueue<Integer>(), new LinkedBlockingDeque<Integer>(6), new LinkedBlockingDeque<Integer>(),
+			new ArrayBlockingQueueSubclass(4))) {
+			for (BlockingQueue<Integer> empty : List.of(writeRead(queue), kryo.copy(queue))) {
+				assertSame(queue.getClass(), empty.getClass());
+				assertEquals(queue.remainingCapacity(), empty.remainingCapacity());
+			}
+			queue.addAll(List.of(3, 1, 2));
+			for (BlockingQueue<Integer> result : List.of(writeRead(queue), kryo.copy(queue))) {
+				assertSame(queue.getClass(), result.getClass());
+				assertEquals(queue.remainingCapacity(), result.remainingCapacity()); // The capacity is kept.
+				assertEquals(new ArrayList<>(queue), new ArrayList<>(result));
+			}
+		}
+	}
+
+	@Test
+	void testBlockingQueueCapacity () {
+		// A capacity that can't hold the elements, eg in corrupt data.
+		Kryo writer = new Kryo();
+		writer.register(ArrayBlockingQueue.class, new DefaultSerializers.ArrayBlockingQueueSerializer() {
+			protected void writeHeader (Kryo kryo, Output output, ArrayBlockingQueue queue) {
+				output.writeVarInt(2, true);
+			}
+		});
+		ArrayBlockingQueue<Integer> queue = new ArrayBlockingQueue<>(5);
+		queue.addAll(List.of(3, 1, 2));
+		Output output = new Output(64);
+		writer.writeObject(output, queue);
+		kryo.register(ArrayBlockingQueue.class);
+		KryoException ex = assertThrows(KryoException.class,
+			() -> kryo.readObject(new Input(output.toBytes()), ArrayBlockingQueue.class));
+		assertTrue(ex.getMessage().startsWith("Invalid capacity: 2"), ex.getMessage());
+
+		// maxArraySize limits the array that ArrayBlockingQueue allocates, but not the capacity of LinkedBlockingQueue.
+		output.reset();
+		kryo.writeObject(output, queue);
+		Input input = new Input(output.toBytes());
+		input.setMaxArraySize(4);
+		ex = assertThrows(KryoException.class, () -> kryo.readObject(input, ArrayBlockingQueue.class));
+		assertTrue(ex.getMessage().startsWith("Capacity larger than maxArraySize: 5 > 4"), ex.getMessage());
+		kryo.register(LinkedBlockingQueue.class);
+		output.reset();
+		kryo.writeObject(output, new LinkedBlockingQueue<>(List.of(1)));
+		Input unbounded = new Input(output.toBytes());
+		unbounded.setMaxArraySize(4);
+		assertEquals(Integer.MAX_VALUE - 1, kryo.readObject(unbounded, LinkedBlockingQueue.class).remainingCapacity());
+	}
+
+	@Test
+	void testByteBuffer () {
+		ByteBuffer heap = ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5}).limit(4).position(1);
+		ByteBuffer direct = ByteBuffer.allocateDirect(6).put(new byte[] {6, 7, 8}).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer slice = ByteBuffer.wrap(new byte[] {1, 2, 3, 4}).position(2).slice();
+		for (ByteBuffer buffer : List.of(heap, direct, heap.asReadOnlyBuffer(), direct.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN),
+			slice, ByteBuffer.allocate(0))) {
+			kryo.register(buffer.getClass());
+			for (ByteBuffer result : List.of(writeReadClass(buffer), kryo.copy(buffer))) {
+				assertSame(buffer.getClass(), result.getClass());
+				assertEquals(buffer.position(), result.position());
+				assertEquals(buffer.limit(), result.limit());
+				assertEquals(buffer.capacity(), result.capacity());
+				assertEquals(buffer.order(), result.order());
+				assertEquals(buffer, result); // The bytes from position to limit.
+				assertEquals(buffer.duplicate().position(0), result.duplicate().position(0)); // Also the bytes before the position.
+			}
+		}
+
+		// The position, limit and capacity are checked when reading, eg in corrupt data.
+		Output output = new Output(64);
+		output.writeByte(0);
+		output.writeVarInt(2, true); // Capacity.
+		output.writeVarInt(3, true); // Limit.
+		output.writeVarInt(0, true); // Position.
+		KryoException ex = assertThrows(KryoException.class,
+			() -> kryo.readObject(new Input(output.toBytes()), ByteBuffer.allocate(0).getClass()));
+		assertEquals("Invalid ByteBuffer, position: 0, limit: 3, capacity: 2", ex.getMessage());
+
+		// A negative value from a corrupt varint.
+		output.reset();
+		output.writeByte(0);
+		output.writeVarInt(2, true);
+		output.writeVarInt(1, true);
+		output.writeVarInt(-1, true);
+		ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(output.toBytes()), ByteBuffer.allocate(0).getClass()));
+		assertEquals("Invalid ByteBuffer, position: -1, limit: 1, capacity: 2", ex.getMessage());
+	}
+
+	@Test
+	void testEnumMap () {
+		kryo.register(EnumMap.class);
+		for (Class<? extends Enum> type : List.of(TestEnum.class, BodyEnum.class, EmptyEnum.class)) {
+			kryo.register(type);
+			EnumMap map = new EnumMap(type);
+			for (int i = 0; i < 2; i++) {
+				for (EnumMap result : List.of(writeReadClass(map), kryo.copy(map))) {
+					assertEquals(map, result);
+					assertSame(EnumMap.class, result.getClass());
+					// The key type is kept, also for an empty map.
+					Enum[] constants = type.getEnumConstants();
+					if (constants.length > 0) {
+						result.put(constants[0], "x");
+						assertThrows(ClassCastException.class, () -> result.put(Thread.State.NEW, "x"));
+					}
+				}
+				for (Enum constant : type.getEnumConstants())
+					map.put(constant, constant.name());
+			}
+		}
+	}
+
+	@Test
+	void testEnumMapKeyType () {
+		kryo.register(EnumMap.class);
+		kryo.register(TestEnum.class);
+		kryo.register(String.class);
+		// A key type that isn't an enum, eg in corrupt data.
+		Output output = new Output(64);
+		output.writeByte(1); // Empty map.
+		kryo.writeClass(output, String.class);
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(output.toBytes()), EnumMap.class));
+		assertEquals("Invalid EnumMap key type: java.lang.String", ex.getMessage());
+
+		// A registered EnumMapSerializer for an enum type doesn't write the key type, like in Kryo 5.
+		Kryo kryo5 = new Kryo();
+		kryo5.register(EnumMap.class, new EnumMapSerializer(TestEnum.class));
+		kryo5.register(TestEnum.class);
+		EnumMap<TestEnum, String> map = new EnumMap<>(TestEnum.class);
+		map.put(TestEnum.b, "b");
+		Output withType = new Output(64), withoutType = new Output(64);
+		kryo.writeObject(withType, map);
+		kryo5.writeObject(withoutType, map);
+		assertTrue(withoutType.position() < withType.position());
+		assertEquals(map, kryo5.readObject(new Input(withoutType.toBytes()), EnumMap.class));
+	}
+
+	private <T> T writeReadClass (T object) {
+		Output output = new Output(256);
+		kryo.writeClassAndObject(output, object);
+		return (T)kryo.readClassAndObject(new Input(output.toBytes()));
+	}
+
+	enum BodyEnum {
+		A {
+		},
+		B {
+		}
+	}
+
+	enum EmptyEnum {
+	}
+
+	static class ArrayBlockingQueueSubclass extends ArrayBlockingQueue<Integer> {
+		public ArrayBlockingQueueSubclass (int capacity) {
+			super(capacity);
+		}
+	}
+
+	@Test
+	void testConcurrentSortedCollectionsKryo5 () {
+		// Kryo 5 wrote them with CollectionSerializer.
+		Kryo kryo = new Kryo();
+		Kryo5Compatibility.configure(kryo);
+		for (Class type : new Class[] {ConcurrentSkipListSet.class, PriorityBlockingQueue.class, LinkedBlockingQueue.class,
+			LinkedBlockingDeque.class})
+			assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(type).getClass());
+	}
+
+	@Test
+	void testFileAndInetAddressKryo5 () {
+		// Kryo 5 wrote them with the default serializer, which FieldSerializer can't create without --add-opens.
+		Kryo kryo = new Kryo();
+		kryo.setDefaultSerializer(JavaSerializer.class);
+		Kryo5Compatibility.configure(kryo);
+		for (Class type : new Class[] {File.class, Inet4Address.class, Inet6Address.class, InetSocketAddress.class,
+			ByteBuffer.allocate(0).getClass(), ByteBuffer.allocateDirect(0).getClass()})
+			assertInstanceOf(JavaSerializer.class, kryo.getDefaultSerializer(type), type.getName());
+	}
+
+	private <T> T writeRead (T object) {
+		Output output = new Output(1024);
+		kryo.writeObject(output, object);
+		return (T)kryo.readObject(new Input(output.toBytes()), object.getClass());
+	}
+
+	static class ConcurrentSkipListSetSubclass extends ConcurrentSkipListSet<Integer> {
+		public ConcurrentSkipListSetSubclass (Comparator comparator) {
+			super(comparator);
+		}
+	}
+
+	@Test
+	void testFile () {
+		kryo.register(File.class);
+		for (File file : new File[] {new File("a/b.txt"), new File("/tmp/c.txt"), new File("")}) {
+			assertEquals(file, writeRead(file));
+			assertSame(file, kryo.copy(file));
+		}
+		// A subclass may have more state, so it doesn't use FileSerializer. FieldSerializer may not access the fields of File.
+		assertInstanceOf(DefaultSerializers.FileSerializer.class, kryo.getDefaultSerializer(File.class));
+		try {
+			assertFalse(kryo.getDefaultSerializer(FileSubclass.class) instanceof DefaultSerializers.FileSerializer);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
+	@Test
+	void testInetAddress () throws Exception {
+		kryo.register(Inet4Address.class);
+		kryo.register(Inet6Address.class);
+		byte[] loopback6 = InetAddress.getByName("::1").getAddress();
+		byte[] mapped = new byte[16];
+		mapped[10] = mapped[11] = (byte)0xff;
+		mapped[15] = 1;
+		for (InetAddress address : new InetAddress[] {InetAddress.getByAddress("host", new byte[] {10, 0, 0, 1}),
+			InetAddress.getByAddress(new byte[] {10, 0, 0, 2}), InetAddress.getLoopbackAddress(),
+			Inet6Address.getByAddress(null, loopback6, -1), Inet6Address.getByAddress("host6", loopback6, 3),
+			Inet6Address.getByAddress(null, loopback6, 0), Inet6Address.getByAddress(null, mapped, -1)}) {
+			InetAddress read = writeRead(address);
+			assertSame(address.getClass(), read.getClass());
+			assertEquals(address, read);
+			assertEquals(address.toString(), read.toString()); // Host name and scope.
+		}
+	}
+
+	@Test
+	void testInetSocketAddress () throws Exception {
+		kryo.register(InetSocketAddress.class);
+		for (InetSocketAddress address : new InetSocketAddress[] {
+			new InetSocketAddress(InetAddress.getByAddress("host", new byte[] {10, 0, 0, 1}), 80),
+			new InetSocketAddress(InetAddress.getByAddress(new byte[] {10, 0, 0, 2}), 0),
+			InetSocketAddress.createUnresolved("example.invalid", 443)}) {
+			InetSocketAddress read = writeRead(address);
+			assertEquals(address, read);
+			assertEquals(address.isUnresolved(), read.isUnresolved());
+			assertEquals(address.toString(), read.toString());
+		}
+	}
+
+	static class FileSubclass extends File {
+		public FileSubclass (String path) {
+			super(path);
+		}
+	}
+
+	@Test
 	void testConcurrentHashMapKeySetView () {
 		ConcurrentHashMap.KeySetView<Integer, Boolean> set = ConcurrentHashMap.newKeySet();
 		set.add(12);
-		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.KeySetView.class);
 		kryo.register(ConcurrentHashMap.class);
 		roundTrip(9, set);
 	}
@@ -472,17 +824,29 @@ class DefaultSerializersTest extends KryoTestCase {
 
 		ConcurrentHashMap.KeySetView<String, Integer> set = map.keySet(4);
 
-		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.KeySetView.class);
 		kryo.register(ConcurrentHashMap.class);
-		roundTrip(15, set);
+		roundTrip(13, set);
 	}
 
 	@Test
 	void testEmptyConcurrentHashMapKeySetView () {
 		ConcurrentHashMap.KeySetView set = ConcurrentHashMap.newKeySet();
-		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.KeySetView.class);
 		kryo.register(ConcurrentHashMap.class);
 		roundTrip(5, set);
+	}
+
+	@Test
+	void testConcurrentHashMapKeySet () {
+		ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
+		map.put("1", 1);
+		ConcurrentHashMap.KeySetView<String, Integer> set = map.keySet();
+
+		kryo.register(ConcurrentHashMap.KeySetView.class);
+		kryo.register(ConcurrentHashMap.class);
+		roundTrip(9, set);
+		assertNull(kryo.copy(set).getMappedValue());
 	}
 
 	@Test
@@ -494,7 +858,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 		ConcurrentHashMap.KeySetView<String, Integer> set = map.keySet(4);
 
-		kryo.register(ConcurrentHashMap.KeySetView.class, new KeySetViewSerializer());
+		kryo.register(ConcurrentHashMap.KeySetView.class);
 		kryo.register(ConcurrentHashMap.class);
 		ConcurrentHashMap.KeySetView<String, Integer> copy = kryo.copy(set);
 		assertTrue(set.containsAll(copy) && copy.containsAll(set));
@@ -571,6 +935,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(Enum.class, kryo.readObject(in, Class.class));
 	}
 
+	@SuppressWarnings("deprecation") // Locale.of needs Java 19.
 	@Test
 	void testLocaleSerializer () {
 		kryo.register(Locale.class);
@@ -580,6 +945,24 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(6, Locale.SIMPLIFIED_CHINESE);
 		roundTrip(5, new Locale("es"));
 		roundTrip(16, new Locale("es", "ES", "\u00E1\u00E9\u00ED\u00F3\u00FA"));
+	}
+
+	@SuppressWarnings("deprecation") // Locale.of needs Java 19.
+	@Test
+	void testLocaleWithScript () {
+		kryo.register(Locale.class);
+
+		roundTrip(12, new Locale.Builder().setLanguage("sr").setScript("Cyrl").setRegion("RS").build());
+		roundTrip(25, new Locale.Builder().setLanguage("de").setScript("Latn").setRegion("DE").setExtension('u', "co-phonebk").build());
+		// A language that looks like a language tag is not read as one.
+		roundTrip(8, new Locale("en-US"));
+
+		// Locales without a script are written like in Kryo 5.
+		Output output = new Output(32);
+		output.writeAscii("de");
+		output.writeAscii("AT");
+		output.writeString("");
+		assertEquals(new Locale("de", "AT"), kryo.readObject(new Input(output.toBytes()), Locale.class));
 	}
 
 	@Test
@@ -597,11 +980,30 @@ class DefaultSerializersTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		kryo.setReferences(true);
 
+		// The implementation classes differ between Java vendors and Android, so the name of Charset is written.
 		for (String cs : css) {
 			Charset charset = Charset.forName(cs);
-			int expectedLength = 3 + charset.getClass().getName().length() + cs.length();
+			int expectedLength = 3 + Charset.class.getName().length() + cs.length();
 			roundTrip(expectedLength, charset);
 		}
+
+		kryo = new Kryo();
+		kryo.register(Charset.class);
+		for (String cs : css)
+			roundTrip(1 + cs.length(), Charset.forName(cs));
+	}
+
+	@Test
+	void testTimeZone () {
+		TimeZone timeZone = TimeZone.getTimeZone("Europe/Berlin");
+		kryo.register(TimeZone.class);
+		roundTrip(1 + timeZone.getID().length(), timeZone);
+
+		// The implementation classes differ between Java vendors and Android, so the name of TimeZone is written.
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		roundTrip(2 + TimeZone.class.getName().length() + timeZone.getID().length(), timeZone);
+		assertEquals(TimeZone.class, kryo.getRegistration(timeZone.getClass()).getType());
 	}
 
 	@Test
@@ -623,13 +1025,13 @@ class DefaultSerializersTest extends KryoTestCase {
 	void testURLSerializer () throws Exception {
 		kryo.register(URL.class);
 
-		roundTrip(42, new URL("https://github.com/EsotericSoftware/kryo"));
-		roundTrip(78, new URL("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
+		roundTrip(42, URI.create("https://github.com/EsotericSoftware/kryo").toURL());
+		roundTrip(78, URI.create("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr").toURL());
 	}
 
 	@Test
 	void testURISerializer () throws Exception {
-		kryo.register(URI.class, new DefaultSerializers.URISerializer());
+		kryo.register(URI.class);
 
 		roundTrip(42, new URI("https://github.com/EsotericSoftware/kryo"));
 		roundTrip(78, new URI("https://github.com:443/EsotericSoftware/kryo/pulls?utf8=%E2%9C%93&q=is%3Apr"));
@@ -637,14 +1039,14 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testUUIDSerializer () {
-		kryo.register(UUID.class, new DefaultSerializers.UUIDSerializer());
+		kryo.register(UUID.class);
 
 		roundTrip(17, UUID.fromString("e58ed763-928c-4155-bee9-fdbaaadc15f3"));
 	}
 
 	@Test
 	void testPatternSerializer () {
-		kryo.register(Pattern.class, new DefaultSerializers.PatternSerializer());
+		kryo.register(Pattern.class);
 
 		roundTrip(4, Pattern.compile(".", Pattern.DOTALL));
 		roundTrip(4, Pattern.compile("."));
@@ -652,7 +1054,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testAtomicBooleanSerializer () {
-		kryo.register(AtomicBoolean.class, new DefaultSerializers.AtomicBooleanSerializer());
+		kryo.register(AtomicBoolean.class);
 
 		roundTrip(2, new AtomicBoolean(true));
 		roundTrip(2, new AtomicBoolean(false));
@@ -660,7 +1062,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testAtomicIntegerSerializer () {
-		kryo.register(AtomicInteger.class, new DefaultSerializers.AtomicIntegerSerializer());
+		kryo.register(AtomicInteger.class);
 
 		roundTrip(5, new AtomicInteger());
 		roundTrip(5, new AtomicInteger(0));
@@ -670,7 +1072,7 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testAtomicLongSerializer () {
-		kryo.register(AtomicLong.class, new DefaultSerializers.AtomicLongSerializer());
+		kryo.register(AtomicLong.class);
 
 		roundTrip(9, new AtomicLong());
 		roundTrip(9, new AtomicLong(0));
@@ -680,10 +1082,78 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@Test
 	void testAtomicReferenceSerializer () {
-		kryo.register(AtomicReference.class, new DefaultSerializers.AtomicReferenceSerializer());
+		kryo.register(AtomicReference.class);
 
 		roundTrip(2, new AtomicReference<>());
 		roundTrip(3, new AtomicReference<>(1L));
+	}
+
+	@Test
+	void testAtomicReferenceCycle () {
+		kryo.register(AtomicReference.class);
+		kryo.setReferences(true);
+		AtomicReference<Object> reference = new AtomicReference<>();
+		reference.set(reference);
+
+		Output output = new Output(64);
+		kryo.writeObject(output, reference);
+		AtomicReference<?> read = kryo.readObject(new Input(output.toBytes()), AtomicReference.class);
+		assertSame(read, read.get());
+		AtomicReference<?> copy = kryo.copy(reference);
+		assertSame(copy, copy.get());
+	}
+
+	@Test
+	void testTimestampSubclass () {
+		kryo.register(TimestampSubclass.class);
+		TimestampSubclass timestamp = new TimestampSubclass(1234567);
+		timestamp.setNanos(123_456_789);
+
+		assertSame(TimestampSubclass.class, roundTrip(8, timestamp).getClass());
+		assertSame(TimestampSubclass.class, kryo.copy(timestamp).getClass());
+	}
+
+	@Test
+	void testAtomicSubclasses () {
+		kryo.register(AtomicBooleanSubclass.class);
+		kryo.register(AtomicIntegerSubclass.class);
+		kryo.register(AtomicLongSubclass.class);
+		kryo.register(AtomicReferenceSubclass.class);
+		AtomicBooleanSubclass atomicBoolean = new AtomicBooleanSubclass();
+		atomicBoolean.set(true);
+		AtomicIntegerSubclass atomicInteger = new AtomicIntegerSubclass();
+		atomicInteger.set(1);
+		AtomicLongSubclass atomicLong = new AtomicLongSubclass();
+		atomicLong.set(1);
+		AtomicReferenceSubclass atomicReference = new AtomicReferenceSubclass();
+		atomicReference.set(1L);
+
+		assertSame(AtomicBooleanSubclass.class, roundTrip(2, atomicBoolean).getClass());
+		assertSame(AtomicIntegerSubclass.class, roundTrip(5, atomicInteger).getClass());
+		assertSame(AtomicLongSubclass.class, roundTrip(9, atomicLong).getClass());
+		assertSame(AtomicReferenceSubclass.class, roundTrip(3, atomicReference).getClass());
+		assertSame(AtomicBooleanSubclass.class, kryo.copy(atomicBoolean).getClass());
+		assertSame(AtomicIntegerSubclass.class, kryo.copy(atomicInteger).getClass());
+		assertSame(AtomicLongSubclass.class, kryo.copy(atomicLong).getClass());
+		assertSame(AtomicReferenceSubclass.class, kryo.copy(atomicReference).getClass());
+	}
+
+	@Test
+	void testAtomicSubclassWithFields () {
+		// The atomic serializers would lose the field, so the subclass uses the default serializer. It accesses the value field,
+		// which needs --add-opens java.base/java.util.concurrent.atomic.
+		kryo.register(Counter.class);
+		assertSame(FieldSerializer.class, kryo.getSerializer(Counter.class).getClass());
+		assertSame(AtomicIntegerSerializer.class, kryo.getDefaultSerializer(AtomicIntegerSubclass.class).getClass());
+		Counter counter = new Counter();
+		counter.name = "name";
+		counter.set(1);
+		Counter read = roundTrip(6, counter);
+		assertEquals("name", read.name);
+		assertEquals(1, read.get());
+		Counter copy = kryo.copy(counter);
+		assertEquals("name", copy.name);
+		assertEquals(1, copy.get());
 	}
 
 	protected void doAssertEquals(Object object1, Object object2) {
@@ -750,6 +1220,32 @@ class DefaultSerializersTest extends KryoTestCase {
 		public PriorityQueueSubclass(int initialCapacity, Comparator comparator) {
 			super(initialCapacity, comparator);
 		}
+	}
+
+	static class TimestampSubclass extends java.sql.Timestamp {
+		public TimestampSubclass (long time) {
+			super(time);
+		}
+	}
+
+	static class AtomicBooleanSubclass extends AtomicBoolean {
+	}
+
+	static class AtomicIntegerSubclass extends AtomicInteger {
+	}
+
+	static class AtomicLongSubclass extends AtomicLong {
+	}
+
+	static class Counter extends AtomicInteger {
+		String name;
+
+		public boolean equals (Object obj) {
+			return obj instanceof Counter other && get() == other.get() && Objects.equals(name, other.name);
+		}
+	}
+
+	static class AtomicReferenceSubclass extends AtomicReference<Object> {
 	}
 
 	static class IntegerComparator implements Comparator<Integer> {

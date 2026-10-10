@@ -90,6 +90,7 @@ public class ByteBufferInput extends Input {
 	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
+	@Deprecated
 	public byte[] getBuffer () {
 		throw new UnsupportedOperationException("This input does not used a byte[], see #getByteBuffer().");
 	}
@@ -97,6 +98,7 @@ public class ByteBufferInput extends Input {
 	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #setBuffer(ByteBuffer) */
+	@Deprecated
 	public void setBuffer (byte[] bytes) {
 		throw new UnsupportedOperationException("This input does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}
@@ -104,6 +106,7 @@ public class ByteBufferInput extends Input {
 	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #setBuffer(ByteBuffer) */
+	@Deprecated
 	public void setBuffer (byte[] bytes, int offset, int count) {
 		throw new UnsupportedOperationException("This input does not used a byte[], see #setByteBufferByteBuffer().");
 	}
@@ -165,13 +168,18 @@ public class ByteBufferInput extends Input {
 		if (remaining >= required) return remaining;
 		if (required > capacity) throw new KryoException("Buffer too small: capacity: " + capacity + ", required: " + required);
 
+		if (byteBuffer.isReadOnly()) {
+			checkReadOnly();
+			throw new KryoBufferUnderflowException("Buffer underflow.");
+		}
+
 		int count;
 
 		// Try to fill the buffer.
 		if (remaining > 0) {
 			count = fill(byteBuffer, limit, capacity - limit);
+			setBufferPosition(byteBuffer, position); // Also before the exception, so the input stays consistent.
 			if (count == -1) throw new KryoBufferUnderflowException("Buffer underflow.");
-			setBufferPosition(byteBuffer, position);
 			remaining += count;
 			if (remaining >= required) {
 				limit += count;
@@ -189,6 +197,9 @@ public class ByteBufferInput extends Input {
 			count = fill(byteBuffer, remaining, capacity - remaining);
 			if (count == -1) {
 				if (remaining >= required) break;
+				// The compacted bytes, so the input is consistent after the exception.
+				limit = remaining;
+				setBufferPosition(byteBuffer, 0);
 				throw new KryoBufferUnderflowException("Buffer underflow.");
 			}
 			remaining += count;
@@ -199,6 +210,12 @@ public class ByteBufferInput extends Input {
 		return remaining;
 	}
 
+	/** A read-only buffer can't be filled or compacted, so there are no more bytes than it contains.
+	 * @throws KryoException if bytes would be filled from an InputStream. */
+	private void checkReadOnly () {
+		if (inputStream != null) throw new KryoException("A read-only ByteBuffer can't be filled from an InputStream.");
+	}
+
 	/** Fills the buffer with at least the number of bytes specified, if possible.
 	 * @param optional Must be {@code > 0}.
 	 * @return the number of bytes remaining, but not more than optional, or -1 if {@link #fill(ByteBuffer, int, int)} is unable to
@@ -207,6 +224,10 @@ public class ByteBufferInput extends Input {
 		int remaining = limit - position;
 		if (remaining >= optional) return optional;
 		optional = Math.min(optional, capacity);
+		if (byteBuffer.isReadOnly()) {
+			checkReadOnly();
+			return remaining == 0 ? -1 : Math.min(remaining, optional);
+		}
 
 		// Try to fill the buffer.
 		int count = fill(byteBuffer, limit, capacity - limit);
@@ -347,7 +368,7 @@ public class ByteBufferInput extends Input {
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = Math.min(count, capacity);
+			copyCount = Math.min(count, Math.max(capacity, 1));
 			require(copyCount);
 		}
 	}

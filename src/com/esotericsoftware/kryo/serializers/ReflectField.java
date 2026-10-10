@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
@@ -30,6 +32,7 @@ import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 /** Read and write a non-primitive field using reflection.
  * @author Nathan Sweet
@@ -53,10 +56,20 @@ class ReflectField extends CachedField {
 	}
 
 	public void write (Output output, Object object) {
+		Object value;
+		try {
+			value = get(object);
+		} catch (Throwable t) {
+			KryoException ex = new KryoException("Error accessing field: " + name + " (" + object.getClass().getName() + ")", t);
+			throw ex;
+		}
+		writeValue(output, object, value);
+	}
+
+	/** Writes the value of the field, which was already read from the object. */
+	final void writeValue (Output output, Object object, Object value) {
 		Kryo kryo = fieldSerializer.kryo;
 		try {
-			Object value = get(object);
-
 			Serializer serializer = this.serializer;
 			Class concreteType = resolveFieldClass();
 			if (concreteType == null) {
@@ -67,7 +80,7 @@ class ReflectField extends CachedField {
 				}
 				Registration registration = kryo.writeClass(output, value.getClass());
 				if (serializer == null) serializer = registration.getSerializer();
-				kryo.getGenerics().pushGenericType(genericType);
+				if (fieldSerializer.optimizeGenerics()) kryo.getGenerics().pushGenericType(genericType);
 				kryo.writeObject(output, value, serializer);
 			} else {
 				if (serializer == null) {
@@ -75,7 +88,7 @@ class ReflectField extends CachedField {
 					// The concrete type of the field is known, always use the same serializer.
 					if (valueClass != null && reuseSerializer) this.serializer = serializer;
 				}
-				kryo.getGenerics().pushGenericType(genericType);
+				if (fieldSerializer.optimizeGenerics()) kryo.getGenerics().pushGenericType(genericType);
 				if (canBeNull) {
 					kryo.writeObjectOrNull(output, value, serializer);
 				} else {
@@ -86,18 +99,11 @@ class ReflectField extends CachedField {
 					kryo.writeObject(output, value, serializer);
 				}
 			}
-		} catch (IllegalAccessException ex) {
-			throw new KryoException("Error accessing field: " + name + " (" + object.getClass().getName() + ")", ex);
 		} catch (KryoException ex) {
 			ex.addTrace(name + " (" + object.getClass().getName() + ")");
 			throw ex;
-		} catch (StackOverflowError ex) {
-			throw new KryoException(
-				"A StackOverflow occurred. The most likely cause is that your data has a circular reference resulting in " +
-					"infinite recursion. Try enabling references with Kryo.setReferences(true). If your data structure " +
-					"is really more than " + kryo.getDepth() + " levels deep then try increasing your Java stack size.",
-				ex);
 		} catch (Throwable t) {
+			if (isStackOverflow(t)) throw stackOverflow(kryo, value, t);
 			KryoException ex = new KryoException(t);
 			ex.addTrace(name + " (" + object.getClass().getName() + ")");
 			throw ex;
@@ -107,7 +113,107 @@ class ReflectField extends CachedField {
 		}
 	}
 
+	/** Writes the class of the value, then the value without null marker, like CompatibleFieldSerializer with unknown field data.
+	 * For generated code. */
+	final void writeValueWithClass (Output output, Object object, Object value) {
+		Kryo kryo = fieldSerializer.kryo;
+		if (value == null) {
+			kryo.writeClass(output, null);
+			return;
+		}
+		boolean pushed = false;
+		try {
+			Class valueClass = value.getClass();
+			kryo.writeClass(output, valueClass);
+			Serializer serializer = this.serializer;
+			if (serializer == null) serializer = kryo.getSerializer(valueClass);
+			if (fieldSerializer.optimizeGenerics()) {
+				kryo.getGenerics().pushGenericType(genericType);
+				pushed = true;
+			}
+			kryo.writeObject(output, value, serializer);
+		} catch (KryoException ex) {
+			ex.addTrace(name + " (" + object.getClass().getName() + ")");
+			throw ex;
+		} catch (Throwable t) {
+			if (isStackOverflow(t)) throw stackOverflow(kryo, value, t);
+			KryoException ex = new KryoException(t);
+			ex.addTrace(name + " (" + object.getClass().getName() + ")");
+			throw ex;
+		} finally {
+			if (pushed) kryo.getGenerics().popGenericType();
+		}
+	}
+
+	/** Reads the class, then the value without null marker, like CompatibleFieldSerializer with unknown field data. For generated
+	 * code.
+	 * @param chunked If true, the value is skipped if its class can't be read, then the current value of the field is returned.
+	 * @return null if the class was null. */
+	final Object readValueWithClass (Input input, Object object, boolean chunked) {
+		Kryo kryo = fieldSerializer.kryo;
+		Registration registration = GeneratedFields.readClass(fieldSerializer, input, this, chunked);
+		if (registration == null) return null;
+		if (registration == GeneratedFields.skip) return GeneratedFields.currentValue(this, object);
+		Class valueClass = registration.getType();
+		boolean pushed = false;
+		try {
+			Serializer serializer = this.serializer;
+			if (serializer == null) serializer = kryo.getSerializer(valueClass);
+			if (fieldSerializer.optimizeGenerics()) {
+				kryo.getGenerics().pushGenericType(genericType);
+				pushed = true;
+			}
+			return kryo.readObject(input, valueClass, serializer);
+		} catch (KryoException ex) {
+			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
+			throw ex;
+		} catch (Throwable t) {
+			KryoException ex = new KryoException(t);
+			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
+			throw ex;
+		} finally {
+			if (pushed) kryo.getGenerics().popGenericType();
+		}
+	}
+
+	/** Returns true for a stack overflow, also if it happened while a call site was linked, eg for a string concatenation in a
+	 * catch block deeper in the stack, which throws a BootstrapMethodError instead. */
+	static private boolean isStackOverflow (Throwable t) {
+		return t instanceof StackOverflowError || (t instanceof BootstrapMethodError && t.getCause() instanceof StackOverflowError);
+	}
+
+	/** Returns the exception for a stack overflow, which is most likely a cycle in the data. */
+	private KryoException stackOverflow (Kryo kryo, Object value, Throwable cause) {
+		StringBuilder message = new StringBuilder(512);
+		message.append("A StackOverflow occurred. The most likely cause is that your data has a circular reference resulting in ")
+			.append("infinite recursion. Try enabling references with Kryo.setReferences(true). If your data structure ")
+			.append("is really more than ").append(kryo.getDepth()).append(" levels deep then try increasing your Java stack size.");
+		// The overflow can happen at any field of the cycle, so the declaring class and the value are checked.
+		Class inner = isInnerClass(field.getDeclaringClass()) ? field.getDeclaringClass()
+			: value != null && isInnerClass(value.getClass()) ? value.getClass() : null;
+		if (inner != null) {
+			message.append(" The inner class ").append(className(inner))
+				.append(" is serialized with its outer instance and captured variables, which usually refer back to it. To omit ")
+				.append("them, set FieldSerializerConfig#setIgnoreSyntheticFields(true), or make the class static.");
+		}
+		return new KryoException(message.toString(), cause);
+	}
+
 	public void read (Input input, Object object) {
+		Object value = readValue(input);
+		try {
+			set(object, value);
+		} catch (IllegalAccessException ex) {
+			throw accessError(field, ex);
+		} catch (Throwable t) {
+			KryoException ex = new KryoException(t);
+			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
+			throw ex;
+		}
+	}
+
+	/** Reads the value of the field, which the caller then sets on the object. */
+	final Object readValue (Input input) {
 		Kryo kryo = fieldSerializer.kryo;
 		try {
 			Object value;
@@ -117,12 +223,9 @@ class ReflectField extends CachedField {
 			if (concreteType == null) {
 				// The concrete type of the field is unknown, read the class first.
 				Registration registration = kryo.readClass(input);
-				if (registration == null) {
-					set(object, null);
-					return;
-				}
+				if (registration == null) return null;
 				if (serializer == null) serializer = registration.getSerializer();
-				kryo.getGenerics().pushGenericType(genericType);
+				if (fieldSerializer.optimizeGenerics()) kryo.getGenerics().pushGenericType(genericType);
 				value = kryo.readObject(input, registration.getType(), serializer);
 			} else {
 				if (serializer == null) {
@@ -130,15 +233,13 @@ class ReflectField extends CachedField {
 					// The concrete type of the field is known, always use the same serializer.
 					if (valueClass != null && reuseSerializer) this.serializer = serializer;
 				}
-				kryo.getGenerics().pushGenericType(genericType);
+				if (fieldSerializer.optimizeGenerics()) kryo.getGenerics().pushGenericType(genericType);
 				if (canBeNull)
 					value = kryo.readObjectOrNull(input, concreteType, serializer);
 				else
 					value = kryo.readObject(input, concreteType, serializer);
 			}
-			set(object, value);
-		} catch (IllegalAccessException ex) {
-			throw new KryoException("Error accessing field: " + name + " (" + fieldSerializer.type.getName() + ")", ex);
+			return value;
 		} catch (KryoException ex) {
 			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
@@ -150,6 +251,10 @@ class ReflectField extends CachedField {
 			// Pop in a finally so an exception thrown by the nested read does not leave the generics stack unbalanced.
 			kryo.getGenerics().popGenericType();
 		}
+	}
+
+	public Object read (Input input) {
+		return readValue(input);
 	}
 
 	Class resolveFieldClass () {
@@ -166,7 +271,7 @@ class ReflectField extends CachedField {
 		try {
 			set(copy, fieldSerializer.kryo.copy(get(original)));
 		} catch (IllegalAccessException ex) {
-			throw new KryoException("Error accessing field: " + name + " (" + fieldSerializer.type.getName() + ")", ex);
+			throw accessError(field, ex);
 		} catch (KryoException ex) {
 			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
@@ -175,6 +280,19 @@ class ReflectField extends CachedField {
 			ex.addTrace(name + " (" + fieldSerializer.type.getName() + ")");
 			throw ex;
 		}
+	}
+
+	/** Returns an exception for a field that could not be accessed. Explains how to allow setting final fields, which is denied by
+	 * default in future Java versions (JEP 500). */
+	static KryoException accessError (Field field, Throwable cause) {
+		if (!(cause instanceof IllegalAccessException)) return new KryoException(cause);
+		if (Modifier.isFinal(field.getModifiers())) {
+			return new KryoException("Unable to set final field: " + field.getDeclaringClass().getName() + "." + field.getName()
+				+ ". Allow it with --enable-final-field-mutation=" + Util.moduleName()
+				+ ", make the field non-final, use a record, or register a serializer for the class.", cause);
+		}
+		return new KryoException("Error accessing field: " + field.getName() + " (" + field.getDeclaringClass().getName() + ")",
+			cause);
 	}
 
 	static final class IntReflectField extends CachedField {
@@ -202,17 +320,24 @@ class ReflectField extends CachedField {
 				else
 					field.setInt(object, input.readInt());
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (int)");
 				throw ex;
 			}
+		}
+
+		public Object read (Input input) {
+			if (varEncoding)
+				return input.readVarInt(false);
+			else
+				return input.readInt();
 		}
 
 		public void copy (Object original, Object copy) {
 			try {
 				field.setInt(copy, field.getInt(original));
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (int)");
 				throw ex;
 			}
@@ -238,17 +363,21 @@ class ReflectField extends CachedField {
 			try {
 				field.setFloat(object, input.readFloat());
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (float)");
 				throw ex;
 			}
+		}
+
+		public Object read (Input input) {
+			return input.readFloat();
 		}
 
 		public void copy (Object original, Object copy) {
 			try {
 				field.setFloat(copy, field.getFloat(original));
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (float)");
 				throw ex;
 			}
@@ -274,17 +403,21 @@ class ReflectField extends CachedField {
 			try {
 				field.setShort(object, input.readShort());
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (short)");
 				throw ex;
 			}
+		}
+
+		public Object read (Input input) {
+			return input.readShort();
 		}
 
 		public void copy (Object original, Object copy) {
 			try {
 				field.setShort(copy, field.getShort(original));
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (short)");
 				throw ex;
 			}
@@ -310,18 +443,62 @@ class ReflectField extends CachedField {
 			try {
 				field.setByte(object, input.readByte());
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (byte)");
 				throw ex;
 			}
+		}
+
+		public Object read (Input input) {
+			return input.readByte();
 		}
 
 		public void copy (Object original, Object copy) {
 			try {
 				field.setByte(copy, field.getByte(original));
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (byte)");
+				throw ex;
+			}
+		}
+	}
+
+	static final class StringReflectField extends CachedField {
+		public StringReflectField (Field field) {
+			super(field);
+		}
+
+		public void write (Output output, Object object) {
+			try {
+				output.writeString((String)field.get(object));
+			} catch (Throwable t) {
+				KryoException ex = new KryoException(t);
+				ex.addTrace(name + " (String)");
+				throw ex;
+			}
+		}
+
+		public void read (Input input, Object object) {
+			try {
+				field.set(object, input.readString());
+			} catch (Throwable t) {
+				KryoException ex = accessError(field, t);
+				ex.addTrace(name + " (String)");
+				throw ex;
+			}
+		}
+
+		public Object read (Input input) {
+			return input.readString();
+		}
+
+		public void copy (Object original, Object copy) {
+			try {
+				field.set(copy, field.get(original));
+			} catch (Throwable t) {
+				KryoException ex = accessError(field, t);
+				ex.addTrace(name + " (String)");
 				throw ex;
 			}
 		}
@@ -346,17 +523,21 @@ class ReflectField extends CachedField {
 			try {
 				field.setBoolean(object, input.readBoolean());
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (boolean)");
 				throw ex;
 			}
+		}
+
+		public Object read (Input input) {
+			return input.readBoolean();
 		}
 
 		public void copy (Object original, Object copy) {
 			try {
 				field.setBoolean(copy, field.getBoolean(original));
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (boolean)");
 				throw ex;
 			}
@@ -382,17 +563,21 @@ class ReflectField extends CachedField {
 			try {
 				field.setChar(object, input.readChar());
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (char)");
 				throw ex;
 			}
+		}
+
+		public Object read (Input input) {
+			return input.readChar();
 		}
 
 		public void copy (Object original, Object copy) {
 			try {
 				field.setChar(copy, field.getChar(original));
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (char)");
 				throw ex;
 			}
@@ -424,17 +609,24 @@ class ReflectField extends CachedField {
 				else
 					field.setLong(object, input.readLong());
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (long)");
 				throw ex;
 			}
+		}
+
+		public Object read (Input input) {
+			if (varEncoding)
+				return input.readVarLong(false);
+			else
+				return input.readLong();
 		}
 
 		public void copy (Object original, Object copy) {
 			try {
 				field.setLong(copy, field.getLong(original));
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (long)");
 				throw ex;
 			}
@@ -460,17 +652,21 @@ class ReflectField extends CachedField {
 			try {
 				field.setDouble(object, input.readDouble());
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (double)");
 				throw ex;
 			}
+		}
+
+		public Object read (Input input) {
+			return input.readDouble();
 		}
 
 		public void copy (Object original, Object copy) {
 			try {
 				field.setDouble(copy, field.getDouble(original));
 			} catch (Throwable t) {
-				KryoException ex = new KryoException(t);
+				KryoException ex = accessError(field, t);
 				ex.addTrace(name + " (double)");
 				throw ex;
 			}

@@ -22,7 +22,9 @@ package com.esotericsoftware.kryo.benchmarks;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
+import com.esotericsoftware.kryo.SerializerFactory.VersionFieldSerializerFactory;
 import com.esotericsoftware.kryo.benchmarks.data.Image;
 import com.esotericsoftware.kryo.benchmarks.data.Image.Size;
 import com.esotericsoftware.kryo.benchmarks.data.Media;
@@ -82,8 +84,15 @@ public class FieldSerializerBenchmark {
 		final Input input = new Input(output.getBuffer());
 		Object object;
 
+		/** If true, the field serializers use generated code, which needs Java 24+ or ASM on the classpath. */
+		@Param({"false"}) public boolean codeGeneration;
+
 		@Setup(Level.Trial)
 		public void setup () {
+			if (codeGeneration && !ObjectGraphBenchmark.codeGenerationAvailable())
+				throw new IllegalStateException("Code generation needs Java 24+ or ASM on the classpath.");
+			// Before registering, because FieldSerializer decides when it is created whether String fields use references.
+			kryo.setReferences(references);
 			switch (objectType) {
 			case sample:
 				object = new Sample().populate(references);
@@ -107,8 +116,6 @@ public class FieldSerializerBenchmark {
 				kryo.register(MediaContent.class);
 				break;
 			}
-
-			kryo.setReferences(references);
 		}
 
 		public void roundTrip () {
@@ -126,17 +133,24 @@ public class FieldSerializerBenchmark {
 
 	static public class FieldSerializerState extends BenchmarkState {
 		public void setup () {
-			kryo.setDefaultSerializer(FieldSerializer.class);
+			FieldSerializerFactory factory = new FieldSerializerFactory();
+			factory.getConfig().setCodeGeneration(codeGeneration);
+			kryo.setDefaultSerializer(factory);
 			super.setup();
 		}
 	}
 
 	static public class CompatibleState extends BenchmarkState {
 		@Param({"true", "false"}) public boolean chunked;
+		/** Only used if chunked. */
+		@Param({"false", "true"}) public boolean legacyChunks;
 
+		@SuppressWarnings("deprecation") // legacyChunks
 		public void setup () {
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
+			factory.getConfig().setCodeGeneration(codeGeneration);
 			factory.getConfig().setChunkedEncoding(chunked);
+			factory.getConfig().setLegacyChunks(legacyChunks);
 			factory.getConfig().setReadUnknownFieldData(true); // Typical to always use.
 			kryo.setDefaultSerializer(factory);
 			super.setup();
@@ -145,10 +159,15 @@ public class FieldSerializerBenchmark {
 
 	static public class TaggedState extends BenchmarkState {
 		@Param({"true", "false"}) public boolean chunked;
+		/** Only used if chunked. */
+		@Param({"false", "true"}) public boolean legacyChunks;
 
+		@SuppressWarnings("deprecation") // legacyChunks
 		public void setup () {
 			TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
+			factory.getConfig().setCodeGeneration(codeGeneration);
 			factory.getConfig().setChunkedEncoding(chunked);
+			factory.getConfig().setLegacyChunks(legacyChunks);
 			if (chunked) factory.getConfig().setReadUnknownTagData(true); // Typical to use with chunked.
 			kryo.setDefaultSerializer(factory);
 			super.setup();
@@ -157,7 +176,9 @@ public class FieldSerializerBenchmark {
 
 	static public class VersionState extends BenchmarkState {
 		public void setup () {
-			kryo.setDefaultSerializer(VersionFieldSerializer.class);
+			VersionFieldSerializerFactory factory = new VersionFieldSerializerFactory();
+			factory.getConfig().setCodeGeneration(codeGeneration);
+			kryo.setDefaultSerializer(factory);
 			super.setup();
 		}
 	}

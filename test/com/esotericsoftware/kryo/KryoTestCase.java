@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo;
 
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.kryo.util.Log.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.io.ByteBufferInput;

@@ -48,23 +48,20 @@ import java.time.ZonedDateTime;
  * Implementation note: All serialization is inspired by oracles java.time.Ser. */
 public final class TimeSerializers {
 	public static void addDefaultSerializers (Kryo kryo) {
-		if (isClassAvailable("java.time.Duration")) kryo.addDefaultSerializer(Duration.class, DurationSerializer.class);
-		if (isClassAvailable("java.time.Instant")) kryo.addDefaultSerializer(Instant.class, InstantSerializer.class);
-		if (isClassAvailable("java.time.LocalDate")) kryo.addDefaultSerializer(LocalDate.class, LocalDateSerializer.class);
-		if (isClassAvailable("java.time.LocalTime")) kryo.addDefaultSerializer(LocalTime.class, LocalTimeSerializer.class);
-		if (isClassAvailable("java.time.LocalDateTime"))
-			kryo.addDefaultSerializer(LocalDateTime.class, LocalDateTimeSerializer.class);
-		if (isClassAvailable("java.time.ZoneOffset")) kryo.addDefaultSerializer(ZoneOffset.class, ZoneOffsetSerializer.class);
-		if (isClassAvailable("java.time.ZoneId")) kryo.addDefaultSerializer(ZoneId.class, ZoneIdSerializer.class);
-		if (isClassAvailable("java.time.OffsetTime")) kryo.addDefaultSerializer(OffsetTime.class, OffsetTimeSerializer.class);
-		if (isClassAvailable("java.time.OffsetDateTime"))
-			kryo.addDefaultSerializer(OffsetDateTime.class, OffsetDateTimeSerializer.class);
-		if (isClassAvailable("java.time.ZonedDateTime"))
-			kryo.addDefaultSerializer(ZonedDateTime.class, ZonedDateTimeSerializer.class);
-		if (isClassAvailable("java.time.Year")) kryo.addDefaultSerializer(Year.class, YearSerializer.class);
-		if (isClassAvailable("java.time.YearMonth")) kryo.addDefaultSerializer(YearMonth.class, YearMonthSerializer.class);
-		if (isClassAvailable("java.time.MonthDay")) kryo.addDefaultSerializer(MonthDay.class, MonthDaySerializer.class);
-		if (isClassAvailable("java.time.Period")) kryo.addDefaultSerializer(Period.class, PeriodSerializer.class);
+		kryo.addDefaultSerializer(Duration.class, DurationSerializer::new);
+		kryo.addDefaultSerializer(Instant.class, InstantSerializer::new);
+		kryo.addDefaultSerializer(LocalDate.class, LocalDateSerializer::new);
+		kryo.addDefaultSerializer(LocalTime.class, LocalTimeSerializer::new);
+		kryo.addDefaultSerializer(LocalDateTime.class, LocalDateTimeSerializer::new);
+		kryo.addDefaultSerializer(ZoneOffset.class, ZoneOffsetSerializer::new);
+		kryo.addDefaultSerializer(ZoneId.class, ZoneIdSerializer::new);
+		kryo.addDefaultSerializer(OffsetTime.class, OffsetTimeSerializer::new);
+		kryo.addDefaultSerializer(OffsetDateTime.class, OffsetDateTimeSerializer::new);
+		kryo.addDefaultSerializer(ZonedDateTime.class, ZonedDateTimeSerializer::new);
+		kryo.addDefaultSerializer(Year.class, YearSerializer::new);
+		kryo.addDefaultSerializer(YearMonth.class, YearMonthSerializer::new);
+		kryo.addDefaultSerializer(MonthDay.class, MonthDaySerializer::new);
+		kryo.addDefaultSerializer(Period.class, PeriodSerializer::new);
 	}
 
 	public static class DurationSerializer extends ImmutableSerializer<Duration> {

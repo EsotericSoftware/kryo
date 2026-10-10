@@ -98,6 +98,7 @@ public class KryoDataInput implements DataInput, AutoCloseable {
 	/** Not implemented.
 	 * @throws UnsupportedOperationException when called.
 	 * @deprecated this method is not supported in this implementation. */
+	@Deprecated
 	public String readLine () throws UnsupportedOperationException {
 		throw new UnsupportedOperationException();
 	}

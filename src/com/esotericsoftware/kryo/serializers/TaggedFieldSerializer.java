@@ -21,16 +21,15 @@ package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.Kryo.*;
 import static com.esotericsoftware.kryo.util.Util.*;
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.kryo.util.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.InputChunked;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.OutputChunked;
 import com.esotericsoftware.kryo.util.IntMap;
+import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -60,6 +59,7 @@ import java.util.ArrayList;
  * flexibility for classes to evolve. This comes at the cost of one varint per field.
  * @author Nathan Sweet */
 public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
+	/** The fields that are written, which are not deprecated, and the fields by tag. */
 	private CachedField[] writeTags;
 	private IntMap<CachedField> readTags;
 	private final TaggedFieldSerializerConfig config;
@@ -75,17 +75,15 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	protected void initializeCachedFields () {
-		CachedField[] fields = cachedFields.fields;
 		// Remove untagged fields.
-		for (int i = 0, n = fields.length; i < n; i++) {
-			Field field = fields[i].field;
-			if (field.getAnnotation(Tag.class) == null) {
-				if (TRACE) trace("kryo", "Ignoring field without tag: " + fields[i]);
-				super.removeField(fields[i]);
-			}
-		}
-		fields = cachedFields.fields; // removeField changes cached field array.
+		cachedFields.removeFields(cachedField -> {
+			if (cachedField.field.getAnnotation(Tag.class) != null) return false;
+			if (TRACE) trace("kryo", "Ignoring field without tag: " + cachedField);
+			return true;
+		});
+	}
 
+	void cachedFieldsChanged (CachedField[] fields) {
 		// Cache tag values.
 		ArrayList writeTags = new ArrayList(fields.length);
 		readTags = new IntMap((int)(fields.length / 0.8f));
@@ -101,14 +99,29 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		this.writeTags = (CachedField[])writeTags.toArray(new CachedField[writeTags.size()]);
 	}
 
-	public void removeField (String fieldName) {
-		super.removeField(fieldName);
-		initializeCachedFields();
+	/** The chunked encoding of Kryo 5 writes the tags outside the chunks, so it doesn't use generated code. */
+	boolean usesGeneratedCode () {
+		return !config.legacyChunks;
 	}
 
-	public void removeField (CachedField field) {
-		super.removeField(field);
-		initializeCachedFields();
+	boolean writesClasses () {
+		return config.readUnknownTagData;
+	}
+
+	/** Generates the code for the tagged fields, with their tags. */
+	GeneratedFields generateCode () {
+		CachedField[] writeTags = this.writeTags;
+		int[] tags = new int[writeTags.length];
+		for (int i = 0; i < tags.length; i++)
+			tags[i] = writeTags[i].tag;
+		return GeneratedFields.generate(this, writeTags, writesClasses(), tags);
+	}
+
+	/** Field values must be readable without the field, so they don't depend on the field's generic type when
+	 * {@link TaggedFieldSerializerConfig#setReadUnknownTagData(boolean) readUnknownTagData} is true, unless
+	 * {@link TaggedFieldSerializerConfig#setOptimizeGenerics(boolean) optimizeGenerics} is set. */
+	protected boolean optimizeGenerics () {
+		return config.optimizeGenerics || !config.readUnknownTagData;
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
@@ -117,38 +130,41 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			return;
 		}
 
-		int pop = pushTypeVariables();
-
 		CachedField[] writeTags = this.writeTags;
 		output.writeVarInt(writeTags.length + 1, true);
-		writeHeader(kryo, output, object);
+		boolean readUnknownTagData = config.readUnknownTagData;
+		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
+		boolean chunked = chunks != null;
+		Output fieldOutput = chunked ? chunks.beginWrite(output) : output;
+		// The chunked encoding of Kryo 5 writes the tags and the header outside the chunks.
+		Output objectOutput = config.legacyChunks ? output : fieldOutput;
+		int pop = pushTypeVariables();
+		writeHeader(kryo, objectOutput, object);
 
-		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownTagData;
-		Output fieldOutput;
-		OutputChunked outputChunked = null;
-		if (chunked)
-			fieldOutput = outputChunked = new OutputChunked(output, config.chunkSize);
-		else
-			fieldOutput = output;
+		if (generated() != null) {
+			writeGenerated(fieldOutput, object, chunks);
+			popTypeVariables(pop);
+			if (chunked) chunks.endWrite();
+			return;
+		}
 
 		for (int i = 0, n = writeTags.length; i < n; i++) {
 			CachedField cachedField = writeTags[i];
-			if (TRACE) log("Write", cachedField, output.position());
-			output.writeVarInt(cachedField.tag, true);
+			if (TRACE) log("Write", cachedField, objectOutput.position());
+			objectOutput.writeVarInt(cachedField.tag, true);
+			long mark = chunked ? chunks.beginField(fieldOutput) : 0;
 
 			// Write the value class so the field data can be read even if the field is removed.
 			if (readUnknownTagData) {
 				Class valueClass = null;
 				try {
-					if (object != null) {
-						Object value = cachedField.field.get(object);
-						if (value != null) valueClass = value.getClass();
-					}
+					Object value = cachedField.field.get(object);
+					if (value != null) valueClass = value.getClass();
 				} catch (IllegalAccessException ex) {
 				}
 				kryo.writeClass(fieldOutput, valueClass);
 				if (valueClass == null) {
-					if (chunked) outputChunked.endChunk();
+					if (chunked) chunks.endField(fieldOutput, mark);
 					continue;
 				}
 				cachedField.setCanBeNull(false);
@@ -157,10 +173,11 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			}
 
 			cachedField.write(fieldOutput, object);
-			if (chunked) outputChunked.endChunk();
+			if (chunked) chunks.endField(fieldOutput, mark);
 		}
 
 		popTypeVariables(pop);
+		if (chunked) chunks.endWrite();
 	}
 
 	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class)}. The default implementation does nothing. */
@@ -172,71 +189,112 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		if (fieldCount == NULL) return null;
 		fieldCount--;
 
+		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
+		boolean chunked = chunks != null;
 		int pop = pushTypeVariables();
+		T object = null;
+		try {
+			// In the try block, so the read is ended if the data first written in the object can't be read.
+			Input fieldInput = chunked ? chunks.beginRead(input) : input;
+			Object[] values = null;
+			if (recordConstructor == null) {
+				object = create(kryo, input, type);
+				kryo.reference(object);
+			} else
+				values = newRecordValues();
 
-		T object = create(kryo, input, type);
-		kryo.reference(object);
-
-		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownTagData;
-		Input fieldInput;
-		InputChunked inputChunked = null;
-		if (chunked)
-			fieldInput = inputChunked = new InputChunked(input, config.chunkSize);
-		else
-			fieldInput = input;
-		IntMap<CachedField> readTags = this.readTags;
-		for (int i = 0; i < fieldCount; i++) {
-			int tag = input.readVarInt(true);
-			CachedField cachedField = readTags.get(tag);
-
-			if (readUnknownTagData) {
-				Registration registration;
-				try {
-					registration = kryo.readClass(fieldInput);
-				} catch (KryoException ex) {
-					String message = "Unable to read unknown tag " + tag + " data (unknown type). (" + getType().getName() + "#"
-						+ cachedField + ")";
-					if (!chunked) throw new KryoException(message, ex);
-					if (DEBUG) debug("kryo", message, ex);
-					inputChunked.nextChunk();
-					continue;
-				}
-				if (registration == null) {
-					if (chunked) inputChunked.nextChunk();
-					continue;
-				}
-				Class valueClass = registration.getType();
-				if (cachedField == null) {
-					// Read unknown tag data in case it is a reference.
-					if (TRACE) trace("kryo", "Read unknown tag " + tag + " data, type: " + className(valueClass));
-					try {
-						kryo.readObject(fieldInput, valueClass);
-					} catch (KryoException ex) {
-						String message = "Unable to read unknown tag " + tag + " data, type: " + className(valueClass) + " ("
-							+ getType().getName() + "#" + cachedField + ")";
-						if (!chunked) throw new KryoException(message, ex);
-						if (DEBUG) debug("kryo", message, ex);
-					}
-					if (chunked) inputChunked.nextChunk();
-					continue;
-				}
-				cachedField.setCanBeNull(false);
-				cachedField.setValueClass(valueClass);
-				cachedField.setReuseSerializer(false);
-			} else if (cachedField == null) {
-				if (!chunked) throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
-				if (TRACE) trace("kryo", "Skip unknown field tag: " + tag);
-				inputChunked.nextChunk();
-				continue;
+			// The generated code reads the tags this serializer writes, in its order, and falls back to readTag for other tags.
+			if (values == null && fieldCount == writeTags.length && generated() != null) {
+				readGenerated(fieldInput, object, chunks);
+				return object;
 			}
 
-			if (TRACE) log("Read", cachedField, input.position());
-			cachedField.read(fieldInput, object);
-			if (chunked) inputChunked.nextChunk();
+			for (int i = 0; i < fieldCount; i++) {
+				int tag = input.readVarInt(true); // With legacy chunks, the tags are outside the chunks.
+				long end = chunked ? chunks.beginField(fieldInput) : 0;
+				readTag(fieldInput, tag, object, values, chunked);
+				if (chunked) chunks.endField(fieldInput, end);
+			}
+
+			if (values != null) object = createRecord(values);
+		} finally {
+			// Also after an exception, which is caught if reading an unknown field fails.
+			popTypeVariables(pop);
+			if (chunked) chunks.endRead();
+		}
+		return object;
+	}
+
+	/** Reads the field for a tag, like {@link #read(Kryo, Input, Class)} does for one entry, inside the chunk if chunked. Called
+	 * by the generated code when the tag is not the expected one.
+	 * @param chunked If true, the data is skipped instead of throwing an exception, by the caller's endField. */
+	void readTag (Input input, int tag, Object object, boolean chunked) {
+		readTag(input, tag, object, null, chunked);
+	}
+
+	/** @param values The record values, or null to set the fields of the object. */
+	private void readTag (Input input, int tag, Object object, Object[] values, boolean chunked) {
+		CachedField cachedField = readTags.get(tag);
+		if (config.readUnknownTagData) {
+			Registration registration;
+			try {
+				registration = kryo.readClass(input);
+			} catch (KryoException ex) {
+				String message = "Unable to read unknown tag " + tag + " data (unknown type). (" + getType().getName() + "#"
+					+ cachedField + ")";
+				if (!chunked) throw new KryoException(message, ex);
+				if (DEBUG) debug("kryo", message, ex);
+				return;
+			}
+			if (registration == null) {
+				// The value is null, overwrite the value set by the constructor. Record values are already null.
+				if (cachedField != null && values == null) setNull(cachedField, object);
+				return;
+			}
+			Class valueClass = registration.getType();
+			if (cachedField == null) {
+				if (chunked && config.optimizeGenerics && !config.legacyChunks) {
+					// Without the generic type of the removed field, its data can't be read.
+					if (TRACE) trace("kryo", "Skip unknown tag " + tag + " data, type: " + className(valueClass));
+					return;
+				}
+				// Read unknown tag data in case it is a reference.
+				if (TRACE) trace("kryo", "Read unknown tag " + tag + " data, type: " + className(valueClass));
+				try {
+					kryo.readObject(input, valueClass);
+				} catch (KryoException ex) {
+					String message = "Unable to read unknown tag " + tag + " data, type: " + className(valueClass) + " ("
+						+ getType().getName() + "#" + cachedField + ")";
+					if (!chunked) throw new KryoException(message, ex);
+					if (DEBUG) debug("kryo", message, ex);
+				}
+				return;
+			}
+
+			// Ensure the type in the data is compatible with the field type.
+			Class fieldType = GeneratedFields.readType(cachedField);
+			if (!Util.isAssignableTo(valueClass, fieldType)) {
+				String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
+					+ className(fieldType) + " (" + getType().getName() + "#" + cachedField + ")";
+				if (!chunked) throw new KryoException(message);
+				if (DEBUG) debug("kryo", message);
+				return;
+			}
+
+			cachedField.setCanBeNull(false);
+			cachedField.setValueClass(valueClass);
+			cachedField.setReuseSerializer(false);
+		} else if (cachedField == null) {
+			if (!chunked) throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
+			if (TRACE) trace("kryo", "Skip unknown field tag: " + tag);
+			return;
 		}
 
-		popTypeVariables(pop);
-		return object;
+		if (TRACE) log("Read", cachedField, input.position());
+		if (values == null)
+			readField(cachedField, input, object);
+		else
+			values[cachedField.index] = cachedField.read(input);
 	}
 
 	public TaggedFieldSerializerConfig getTaggedFieldSerializerConfig () {
@@ -252,7 +310,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	/** Configuration for TaggedFieldSerializer instances. */
 	public static class TaggedFieldSerializerConfig extends FieldSerializerConfig {
-		boolean readUnknownTagData, chunked;
+		boolean readUnknownTagData, chunked, legacyChunks, optimizeGenerics;
 		int chunkSize = 1024;
 
 		public TaggedFieldSerializerConfig clone () {
@@ -268,8 +326,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		 * the class is unknown or has been removed) then an exception is thrown or, if {@link #setChunkedEncoding(boolean) chunked
 		 * encoding} is enabled, the data is skipped.
 		 * <p>
-		 * In either case, if the data is skipped and {@link Kryo#setReferences(boolean) references} are enabled, then any
-		 * references in the skipped data are not read and further deserialization receive the wrong references and fail.
+		 * If the data is skipped and {@link Kryo#setReferences(boolean) references} are enabled, references to objects in the
+		 * skipped data are read as null. With {@link #setLegacyChunks(boolean) the chunked encoding of Kryo 5}, or a custom
+		 * ReferenceResolver without {@link com.esotericsoftware.kryo.ReferenceResolver#getObjectCount() getObjectCount}, references
+		 * in skipped data are not read and further deserialization receives the wrong references and fails.
 		 * <p>
 		 * Default is false. */
 		public void setReadUnknownTagData (boolean readUnknownTagData) {
@@ -280,8 +340,11 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			return readUnknownTagData;
 		}
 
-		/** When true, fields are written with chunked encoding to allow unknown field data to be skipped. This impacts performance.
-		 * @see #setReadUnknownTagData(boolean) */
+		/** When true, fields are written with chunked encoding to allow unknown field data to be skipped, eg when the class of a
+		 * removed field no longer exists. Each field is written with its length. The outermost object with chunked encoding is
+		 * buffered until it is written completely, it is not streamed. This impacts performance. Default is false.
+		 * @see #setReadUnknownTagData(boolean)
+		 * @see #setLegacyChunks(boolean) */
 		public void setChunkedEncoding (boolean chunked) {
 			this.chunked = chunked;
 			if (TRACE) trace("kryo", "TaggedFieldSerializerConfig setChunked: " + chunked);
@@ -291,14 +354,53 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			return chunked;
 		}
 
-		/** The maximum size of each chunk for chunked encoding. Default is 1024. */
+		/** When true, {@link #setChunkedEncoding(boolean) chunked encoding} uses the format of Kryo 5, see
+		 * {@link CompatibleFieldSerializer.CompatibleFieldSerializerConfig#setLegacyChunks(boolean)}. Must be true to read data
+		 * written by Kryo 5 with chunked encoding. Default is false.
+		 * @deprecated Only needed to read data written by Kryo 5, see {@link com.esotericsoftware.kryo.Kryo5Compatibility}. Will be
+		 *             removed in Kryo 7. */
+		@Deprecated
+		public void setLegacyChunks (boolean legacyChunks) {
+			this.legacyChunks = legacyChunks;
+			if (TRACE) trace("kryo", "TaggedFieldSerializerConfig setLegacyChunks: " + legacyChunks);
+		}
+
+		/** @deprecated See {@link #setLegacyChunks(boolean)}. */
+		@Deprecated
+		public boolean getLegacyChunks () {
+			return legacyChunks;
+		}
+
+		/** The maximum size of each chunk for {@link #setLegacyChunks(boolean) the chunked encoding of Kryo 5}. Default is 1024.
+		 * @deprecated Only needed with {@link #setLegacyChunks(boolean)}. Will be removed in Kryo 7. */
+		@Deprecated
 		public void setChunkSize (int chunkSize) {
 			this.chunkSize = chunkSize;
 			if (TRACE) trace("kryo", "TaggedFieldSerializerConfig setChunkSize: " + chunkSize);
 		}
 
+		/** @deprecated See {@link #setChunkSize(int)}. */
+		@Deprecated
 		public int getChunkSize () {
 			return chunkSize;
+		}
+
+		/** When true, the generic type of a field is used to optimize its value, eg to omit the class of collection elements, even
+		 * if {@link #setReadUnknownTagData(boolean) readUnknownTagData} is true. Then the value can't be read anymore once the
+		 * field is removed: an exception is thrown or, if chunked encoding is enabled, the data is skipped. Default is false.
+		 * @deprecated Only needed to read data written by Kryo 5, see {@link com.esotericsoftware.kryo.Kryo5Compatibility}. The
+		 *             collection and map serializers write the class of the elements once per collection anyway, so the
+		 *             optimization saves almost nothing. Will be removed in Kryo 7. */
+		@Deprecated
+		public void setOptimizeGenerics (boolean optimizeGenerics) {
+			this.optimizeGenerics = optimizeGenerics;
+			if (TRACE) trace("kryo", "TaggedFieldSerializerConfig setOptimizeGenerics: " + optimizeGenerics);
+		}
+
+		/** @deprecated See {@link #setOptimizeGenerics(boolean)}. */
+		@Deprecated
+		public boolean getOptimizeGenerics () {
+			return optimizeGenerics;
 		}
 	}
 }

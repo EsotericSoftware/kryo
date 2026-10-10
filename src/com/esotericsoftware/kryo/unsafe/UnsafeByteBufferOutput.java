@@ -23,13 +23,12 @@ import static com.esotericsoftware.kryo.unsafe.UnsafeUtil.*;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-
-import sun.nio.ch.DirectBuffer;
 
 /** A {@link ByteBufferOutput} that writes data to a direct ByteBuffer (off-heap memory) using sun.misc.Unsafe. Multi-byte
  * primitive types use native byte order, so the native byte order on different computers which read and write the data must be
@@ -41,6 +40,7 @@ import sun.nio.ch.DirectBuffer;
  * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 @SuppressWarnings("restriction")
+@IgnoreAndroid
 public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	/** Start address of the memory buffer. It must be non-movable, which normally means that is is allocated off-heap. */
 	private long bufferAddress;
@@ -86,14 +86,14 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	}
 
 	public void setBuffer (ByteBuffer buffer, int maxBufferSize) {
-		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
+		if (buffer == null || !buffer.isDirect()) throw new IllegalArgumentException("buffer must be direct.");
 		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
 		super.setBuffer(buffer, maxBufferSize);
 		updateBufferAddress();
 	}
 
 	private void updateBufferAddress () {
-		bufferAddress = ((DirectBuffer)byteBuffer).address();
+		bufferAddress = address(byteBuffer);
 	}
 
 	protected boolean require (int required) throws KryoException {
@@ -239,7 +239,7 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = (int)Math.min(capacity, count);
+			copyCount = (int)Math.min(Math.max(capacity, 1), count);
 			require(copyCount);
 		}
 		setBufferPosition(byteBuffer, position);

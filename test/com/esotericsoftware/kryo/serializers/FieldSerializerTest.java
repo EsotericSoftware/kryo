@@ -36,14 +36,17 @@ import com.esotericsoftware.kryo.serializers.CollectionSerializer.BindCollection
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.IntArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.LongArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldAccessType;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.util.Util;
-import com.esotericsoftware.minlog.Log;
-import com.esotericsoftware.minlog.Log.Logger;
+import com.esotericsoftware.kryo.util.Log;
+import com.esotericsoftware.kryo.util.Log.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -56,13 +59,60 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet */
 @SuppressWarnings("synthetic-access")
 class FieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
+	}
+
+	@Test
+	void testReadPrimitiveFieldValues () {
+		FieldSerializer<SmallPrimitives> serializer = new FieldSerializer<>(kryo, SmallPrimitives.class);
+		SmallPrimitives object = new SmallPrimitives();
+		object.b = 1;
+		object.c = 'c';
+		object.s = 2;
+		object.z = true;
+
+		Output output = new Output(64, -1);
+		serializer.write(kryo, output, object);
+		Input input = new Input(output.toBytes());
+		// Fields are sorted by name: b, c, s, z.
+		CachedField[] fields = serializer.getFields();
+		assertEquals((byte)1, fields[0].read(input));
+		assertEquals('c', fields[1].read(input));
+		assertEquals((short)2, fields[2].read(input));
+		assertEquals(true, fields[3].read(input));
+	}
+
+	@Test
+	void testRecordRemovedPrimitiveComponent () {
+		FieldSerializer serializer = new FieldSerializer(kryo, RecordClass.class);
+		serializer.removeField("width");
+		kryo.register(RecordClass.class, serializer);
+
+		Output output = new Output(64, -1);
+		kryo.writeObject(output, new RecordClass("1", 1, 1L, 1d));
+		RecordClass deserialized = kryo.readObject(new Input(output.toBytes()), RecordClass.class);
+		assertEquals(new RecordClass("1", 0, 1L, 1d), deserialized);
+	}
+
+	@Test
+	void testRecordDeepCopy () {
+		kryo.register(RecordWithList.class);
+		kryo.register(ArrayList.class);
+
+		RecordWithList original = new RecordWithList(new ArrayList<>(Arrays.asList("a", "b")), 1);
+		RecordWithList copy = kryo.copy(original);
+		assertEquals(original, copy);
+		assertNotSame(original.list(), copy.list());
+
+		RecordWithList shallowCopy = kryo.copyShallow(original);
+		assertEquals(original, shallowCopy);
+		assertSame(original.list(), shallowCopy.list());
 	}
 
 	@Test
@@ -190,7 +240,7 @@ class FieldSerializerTest extends KryoTestCase {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setReferences(true);
-		roundTrip(152, test);
+		roundTrip(151, test);
 
 		C c = new C();
 		c.a = new A();
@@ -484,11 +534,11 @@ class FieldSerializerTest extends KryoTestCase {
 		test.container.list.add("three");
 		test.container.list.add("four");
 		test.container.list.add("five");
-		roundTrip(66, test);
+		roundTrip(60, test);
 
 		ArrayList[] al = new ArrayList[1];
 		al[0] = new ArrayList(Arrays.asList(new String[] {"A", "B", "S"}));
-		roundTrip(17, al);
+		roundTrip(14, al);
 	}
 
 	@Test
@@ -748,7 +798,15 @@ class FieldSerializerTest extends KryoTestCase {
 	@Test
 	void testBindSerializerFactoryWithoutClass () {
 		KryoException ex = assertThrows(KryoException.class, () -> kryo.register(BindSerializerFactoryWithoutClassFields.class));
-		assertTrue(ex.getMessage().contains("@Bind serializerFactory requires valueClass"), ex.getMessage());
+		assertTrue(ex.getMessage().contains("@Bind serializer and serializerFactory require valueClass"), ex.getMessage());
+	}
+
+	@Test
+	void testBindSerializerWithoutClass () {
+		// The serializer is created for the value class, so the message tells that it is missing and names the field.
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.register(BindSerializerWithoutClassFields.class));
+		assertTrue(ex.getMessage().contains("@Bind serializer and serializerFactory require valueClass"), ex.getMessage());
+		assertTrue(ex.getMessage().contains("BindSerializerWithoutClassFields.value"), ex.getMessage());
 	}
 
 	@Test
@@ -819,6 +877,22 @@ class FieldSerializerTest extends KryoTestCase {
 		}
 
 		fail("Exception was expected");
+	}
+
+	@Test
+	void testRecord () {
+		kryo.register(RecordClass.class);
+
+		roundTrip(13, new RecordClass("1", 1, 1L, 1d));
+	}
+
+	@Test
+	void testCopyRecord () {
+		kryo.register(RecordClass.class);
+
+		final RecordClass o = new RecordClass("1", 1, 1L, 1d);
+		final RecordClass copy = kryo.copy(o);
+		doAssertEquals(o, copy);
 	}
 
 	public static class DefaultTypes {
@@ -1322,6 +1396,10 @@ class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
+	public static class BindSerializerWithoutClassFields {
+		@Bind(serializer = FieldSerializer.class) TaggedValue value;
+	}
+
 	public static class BindSerializerFactoryWithoutClassFields {
 		@Bind(serializerFactory = FieldSerializerFactory.class) TaggedValue value;
 	}
@@ -1498,4 +1576,255 @@ class FieldSerializerTest extends KryoTestCase {
 		}
 	}
 
+	public record RecordClass(String height, int width, long x, double y) { }
+
+	public record RecordWithList(List<String> list, int number) { }
+
+	public static class SmallPrimitives {
+		byte b;
+		char c;
+		short s;
+		boolean z;
+	}
+
+	@Test
+	void testSetFieldsAsAccessibleFalse () {
+		FieldSerializer serializer = new FieldSerializer(kryo, PublicApiFields.class);
+		serializer.getFieldSerializerConfig().setFieldsAsAccessible(false);
+		serializer.updateFields();
+		kryo.register(PublicApiFields.class, serializer);
+		// Only the public, non-final field of the public class is serialized.
+		assertEquals(1, serializer.getFields().length);
+		assertEquals("a", serializer.getFields()[0].getName());
+
+		PublicApiFields object = new PublicApiFields();
+		object.a = 1;
+		object.b = 2;
+		object.c = 3;
+		Output output = new Output(64);
+		kryo.writeObject(output, object);
+		PublicApiFields read = kryo.readObject(new Input(output.toBytes()), PublicApiFields.class);
+		assertEquals(1, read.a);
+		assertEquals(0, read.b);
+		assertEquals(0, read.c);
+
+		// Fields of a class that is not public (here a nested class of a package-private class) are not in the public API.
+		serializer = new FieldSerializer(kryo, NotPublicApiFields.class);
+		serializer.getFieldSerializerConfig().setFieldsAsAccessible(false);
+		serializer.updateFields();
+		assertEquals(0, serializer.getFields().length);
+	}
+
+	static class NotPublicApiFields {
+		public int a;
+	}
+
+	// Java 26+ can deny setting final fields with reflection (JEP 500), which can't be enabled in the test JVM.
+	@Test
+	void testAccessError () throws Exception {
+		IllegalAccessException denied = new IllegalAccessException("denied");
+		KryoException ex = ReflectField.accessError(AccessErrorFields.class.getDeclaredField("finalValue"), denied);
+		assertTrue(ex.getMessage().startsWith("Unable to set final field: " + AccessErrorFields.class.getName() + ".finalValue."));
+		assertTrue(ex.getMessage().contains("--enable-final-field-mutation=" + Util.moduleName() + ","));
+		assertEquals("ALL-UNNAMED", Util.moduleName()); // The tests run on the class path.
+		assertSame(denied, ex.getCause());
+
+		ex = ReflectField.accessError(AccessErrorFields.class.getDeclaredField("value"), denied);
+		assertTrue(ex.getMessage().startsWith("Error accessing field: value"));
+
+		RuntimeException other = new RuntimeException("other");
+		ex = ReflectField.accessError(AccessErrorFields.class.getDeclaredField("finalValue"), other);
+		assertSame(other, ex.getCause());
+		assertFalse(ex.getMessage().contains("final-field-mutation"));
+	}
+
+	static class AccessErrorFields {
+		int value;
+		final int finalValue = 1;
+	}
+
+	@Test
+	void testFieldAccess () {
+		assertFieldAccess(FieldAccessType.UNSAFE, "IntUnsafeField", "UnsafeField", "IntUnsafeField");
+		assertFieldAccess(FieldAccessType.VARHANDLE, "IntVarHandleField", "VarHandleField", "IntVarHandleField");
+		assertFieldAccess(FieldAccessType.REFLECTION, "IntReflectField", "ReflectField", "IntReflectField");
+	}
+
+	@Test
+	void testFieldAccessWithoutUnsafe () {
+		// Unsafe configured but not available: VarHandles, reflection on Android.
+		assertEquals(FieldAccessType.VARHANDLE, CachedFields.fieldAccess(FieldAccessType.UNSAFE, false, false));
+		assertEquals(FieldAccessType.REFLECTION, CachedFields.fieldAccess(FieldAccessType.UNSAFE, false, true));
+		assertEquals(FieldAccessType.UNSAFE, CachedFields.fieldAccess(FieldAccessType.UNSAFE, true, false));
+	}
+
+	@Test
+	void testDefaultFieldAccess () {
+		// The default is the system property if the tests run with -Dkryo.fieldAccess, else it is Unsafe where it can be used
+		// without a warning. The tests don't set --sun-misc-unsafe-memory-access.
+		String configured = System.getProperty("kryo.fieldAccess");
+		FieldAccessType expected = configured != null ? FieldAccessType.valueOf(configured)
+			: Runtime.version().feature() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+		assertEquals(expected, new FieldSerializerConfig().getFieldAccess());
+	}
+
+	private void assertFieldAccess (FieldAccessType fieldAccess, String intField, String objectField, String finalField) {
+		FieldSerializerConfig config = new FieldSerializerConfig();
+		config.setFieldAccess(fieldAccess);
+		FieldSerializer serializer = new FieldSerializer(kryo, FieldAccessTypes.class, config);
+		kryo.register(FieldAccessTypes.class, serializer);
+		kryo.register(ArrayList.class);
+		FieldAccessTypes object = new FieldAccessTypes();
+		object.value = 1;
+		object.object = new ArrayList();
+		FieldAccessTypes copy = roundTrip(5, object);
+		assertEquals(1, copy.value);
+		assertEquals(intField, fieldClassName(serializer.getField("value")));
+		assertEquals(objectField, fieldClassName(serializer.getField("object")));
+		// Final fields are read with VarHandles, but set with reflection.
+		assertEquals(finalField, fieldClassName(serializer.getField("finalValue")));
+	}
+
+	static private String fieldClassName (CachedField field) {
+		return field.getClass().getSimpleName();
+	}
+
+	@Test
+	void testSameDataWithAllFieldAccessTypes () {
+		// All field access types write the same data, also for final fields, which VarHandles can't set, and for String fields with
+		// references, which are written without references. They all apply @Bind and @NotNull to String fields.
+		for (boolean references : new boolean[] {false, true}) {
+			byte[] expected = null;
+			for (FieldAccessType fieldAccess : new FieldAccessType[] {FieldAccessType.UNSAFE, FieldAccessType.VARHANDLE,
+				FieldAccessType.REFLECTION}) {
+				Kryo kryo = new Kryo();
+				kryo.setReferences(references);
+				FieldSerializerConfig config = new FieldSerializerConfig();
+				config.setFieldAccess(fieldAccess);
+				kryo.register(FieldAccessData.class, new FieldSerializer(kryo, FieldAccessData.class, config));
+				kryo.register(ArrayList.class);
+				Output output = new Output(64, -1);
+				kryo.writeObject(output, new FieldAccessData("string", 5));
+				byte[] bytes = output.toBytes();
+				if (expected == null) expected = bytes;
+				assertArrayEquals(expected, bytes, fieldAccess + ", references: " + references);
+				FieldAccessData read = kryo.readObject(new Input(bytes), FieldAccessData.class);
+				assertEquals("string", read.string);
+				assertEquals("string", read.finalString);
+				assertEquals(5, read.finalValue);
+				assertEquals(new ArrayList(), read.finalObject);
+				assertEquals("STRING", read.bound, fieldAccess.toString());
+				assertEquals("STRING", read.finalBound, fieldAccess.toString());
+
+				FieldAccessData nullValue = new FieldAccessData("string", 5);
+				nullValue.notNull = null;
+				assertThrows(KryoException.class, () -> kryo.writeObject(new Output(64, -1), nullValue), fieldAccess.toString());
+				assertThrows(KryoException.class, () -> kryo.writeObject(new Output(64, -1), new FieldAccessData()),
+					fieldAccess.toString()); // finalNotNull is null.
+			}
+		}
+	}
+
+	public static class FieldAccessData {
+		public String string;
+		public int value;
+		public Object object = new ArrayList();
+		public final String finalString;
+		public final int finalValue;
+		public final Object finalObject = new ArrayList();
+		@Bind(serializer = UpperCaseSerializer.class, valueClass = String.class) public String bound;
+		@Bind(serializer = UpperCaseSerializer.class, valueClass = String.class) public final String finalBound;
+		@NotNull public String notNull = "notNull";
+		@NotNull public final String finalNotNull;
+
+		public FieldAccessData () {
+			finalString = null;
+			finalValue = 0;
+			finalBound = "";
+			finalNotNull = null;
+		}
+
+		public FieldAccessData (String string, int value) {
+			this.string = string;
+			this.value = value;
+			finalString = string;
+			finalValue = value;
+			bound = string;
+			finalBound = string;
+			finalNotNull = string;
+		}
+	}
+
+	public static class UpperCaseSerializer extends Serializer<String> {
+		public void write (Kryo kryo, Output output, String object) {
+			output.writeString(object.toUpperCase());
+		}
+
+		public String read (Kryo kryo, Input input, Class<? extends String> type) {
+			return input.readString();
+		}
+	}
+
+	@Test
+	void testIncompatibleClassInData () {
+		// The class in the data is not assignable to the field type, eg because the field type changed. Unsafe doesn't check the
+		// type, so the field would hold a value of the wrong type.
+		Kryo writer = new Kryo();
+		writer.register(ObjectValue.class, 100);
+		Output output = new Output(64);
+		writer.writeObject(output, new ObjectValue());
+
+		for (FieldAccessType fieldAccess : new FieldAccessType[] {FieldAccessType.UNSAFE, FieldAccessType.VARHANDLE,
+			FieldAccessType.REFLECTION}) {
+			Kryo reader = new Kryo();
+			FieldSerializerConfig config = new FieldSerializerConfig();
+			config.setFieldAccess(fieldAccess);
+			reader.register(NumberValue.class, new FieldSerializer(reader, NumberValue.class, config), 100);
+			assertThrows(KryoException.class, () -> reader.readObject(new Input(output.toBytes()), NumberValue.class),
+				fieldAccess.toString());
+		}
+	}
+
+	public static class ObjectValue {
+		public Object value = "string";
+	}
+
+	public static class NumberValue {
+		public Number value;
+	}
+
+	public static class FieldAccessTypes {
+		public int value;
+		public Object object;
+		public final int finalValue = 2;
+
+		public boolean equals (Object o) {
+			return o instanceof FieldAccessTypes other && value == other.value && Objects.equals(object, other.object)
+				&& finalValue == other.finalValue;
+		}
+	}
+
+	@Test
+	void testBindWithNotNull () {
+		kryo.register(BindWithNotNull.class);
+		kryo.register(ArrayList.class);
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(BindWithNotNull.class);
+		assertFalse(serializer.getField("notNull").getCanBeNull());
+		assertTrue(serializer.getField("nullable").getCanBeNull());
+
+		roundTrip(3, new BindWithNotNull());
+		BindWithNotNull object = new BindWithNotNull();
+		object.notNull = null;
+		assertThrows(KryoException.class, () -> kryo.writeObject(new Output(64), object));
+	}
+
+	public static class BindWithNotNull {
+		@Bind(valueClass = ArrayList.class) @NotNull public ArrayList notNull = new ArrayList();
+		@Bind(valueClass = ArrayList.class) public ArrayList nullable;
+
+		public boolean equals (Object o) {
+			return o instanceof BindWithNotNull other && Objects.equals(notNull, other.notNull)
+				&& Objects.equals(nullable, other.nullable);
+		}
+	}
 }

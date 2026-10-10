@@ -56,4 +56,26 @@ public interface ClassResolver {
 
 	/** Called by {@link Kryo#reset()}. */
 	public void reset ();
+
+	/** Starts deferring class names: a class name that is written the first time in the current object graph is written only as a
+	 * name ID, and the name is written later by {@link #endDeferredNames(Output, int)}. Chunked encoding uses this to write the
+	 * class names before the data, so they are known even if a field is skipped. Calls can be nested. The default implementation
+	 * doesn't defer class names.
+	 * @return The mark for {@link #endDeferredNames(Output, int)}. */
+	public default int beginDeferredNames () {
+		return 0;
+	}
+
+	/** Writes the class names deferred since the mark and ends deferring for the matching {@link #beginDeferredNames()}. */
+	public default void endDeferredNames (Output output, int mark) {
+		output.writeVarInt(0, true);
+	}
+
+	/** Reads class names written by {@link #endDeferredNames(Output, int)} and remembers those that are not known yet. */
+	public default void readDeferredNames (Input input) {
+		for (int i = 0, n = input.readVarInt(true); i < n; i++) {
+			input.readVarInt(true);
+			input.readString();
+		}
+	}
 }

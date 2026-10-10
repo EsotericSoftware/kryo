@@ -24,8 +24,18 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationHandler;
 
 class UtilTest {
+
+    @Test
+    void testRangeEquals() {
+        byte[] a = {1, 2, 3, 4, 5}, b = {9, 3, 4, 5};
+        assertTrue(Util.rangeEquals(a, 2, b, 1, 3));
+        assertTrue(Util.rangeEquals(a, 0, b, 0, 0));
+        assertFalse(Util.rangeEquals(a, 1, b, 1, 3));
+        assertFalse(Util.rangeEquals(a, 2, b, 0, 3));
+    }
 
     @Test
     void testIsAssignableTo() {
@@ -40,7 +50,10 @@ class UtilTest {
         assertTrue(Util.isAssignableTo(int.class, Comparable.class));
         assertTrue(Util.isAssignableTo(int.class, Serializable.class));
 
+        assertTrue(Util.isAssignableTo(InvocationHandler.class, Runnable.class));
+
         assertFalse(Util.isAssignableTo(String.class, Long.class));
+        assertFalse(Util.isAssignableTo(InvocationHandler.class, String.class));
         assertFalse(Util.isAssignableTo(String.class, long.class));
     }
 
@@ -51,5 +64,15 @@ class UtilTest {
         assertEquals(String[].class, Util.getArrayType(String.class));
         assertEquals(String[][].class, Util.getArrayType(String[].class));
         assertEquals(Object[].class, Util.getArrayType(Object.class));
+    }
+
+    @Test
+    void testIsRecord() {
+        assertTrue(Util.isRecord(Point.class));
+        assertFalse(Util.isRecord(String.class));
+        assertFalse(Util.isRecord(Record.class));
+    }
+
+    record Point(int x, int y) {
     }
 }

@@ -23,13 +23,12 @@ import static com.esotericsoftware.kryo.unsafe.UnsafeUtil.*;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.ByteBufferInput;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.InputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-
-import sun.nio.ch.DirectBuffer;
 
 /** A {@link ByteBufferInput} that reads data from direct ByteBuffer (off-heap memory) using sun.misc.Unsafe. Multi-byte primitive
  * types use native byte order, so the native byte order on different computers which read and write the data must be the same.
@@ -40,6 +39,7 @@ import sun.nio.ch.DirectBuffer;
  * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 @SuppressWarnings("restriction")
+@IgnoreAndroid
 public class UnsafeByteBufferInput extends ByteBufferInput {
 	/** Start address of the memory buffer. It must be non-movable, which normally means that is is allocated off-heap. */
 	private long bufferAddress;
@@ -94,14 +94,14 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 	}
 
 	public void setBuffer (ByteBuffer buffer) {
-		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
+		if (buffer == null || !buffer.isDirect()) throw new IllegalArgumentException("buffer must be direct.");
 		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
 		super.setBuffer(buffer);
 		updateBufferAddress();
 	}
 
 	private void updateBufferAddress () {
-		bufferAddress = ((DirectBuffer)byteBuffer).address();
+		bufferAddress = address(byteBuffer);
 	}
 
 	private void setBufferPosition (Buffer buffer, int position) {
@@ -239,7 +239,7 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = Math.min(count, capacity);
+			copyCount = Math.min(count, Math.max(capacity, 1));
 			require(copyCount);
 		}
 		setBufferPosition(byteBuffer, position);

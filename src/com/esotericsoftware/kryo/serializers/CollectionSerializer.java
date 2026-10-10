@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.Kryo.*;
+import static com.esotericsoftware.kryo.util.Util.*;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -30,11 +31,13 @@ import java.util.Collection;
 import java.util.HashSet;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 /** Serializes objects that implement the {@link Collection} interface.
  * <p>
@@ -61,6 +64,10 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	 *           it is written. Data written with either setting can be read with both. */
 	public void setWriteSameClassOnce (boolean writeSameClassOnce) {
 		this.writeSameClassOnce = writeSameClassOnce;
+	}
+
+	public boolean getWriteSameClassOnce () {
+		return writeSameClassOnce;
 	}
 
 	/** The concrete class of the collection elements, or null if it is not known. This saves 1-2 bytes per element. Only set to a
@@ -105,7 +112,8 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		boolean elementsCanBeNull = this.elementsCanBeNull;
 		Serializer elementSerializer = this.elementSerializer;
 		if (elementSerializer == null) {
-			Class genericClass = kryo.getGenerics().nextGenericClass();
+			GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes(Collection.class);
+			Class genericClass = genericTypes == null ? null : genericTypes[0].resolve(kryo.getGenerics());
 			if (genericClass != null && kryo.isFinal(genericClass)) elementSerializer = kryo.getSerializer(genericClass);
 		}
 		try {
@@ -130,7 +138,9 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 			} else { // Serializer is unknown, check if all elements are the same type.
 				Class elementType = null;
 				boolean hasNull = false;
+				int scanned = 0;
 				for (Object element : collection) {
+					scanned++;
 					if (element == null)
 						hasNull = true;
 					else if (elementType == null)
@@ -144,30 +154,38 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				output.writeVarIntFlag(true, length + 1, true);
 				writeHeader(kryo, output, collection);
 				if (elementType == null) { // All elements are null.
+					if (scanned != length) throw sizeChanged(collection, length, scanned);
 					output.writeByte(NULL);
 					return;
 				}
 				// All elements are the same class.
-				kryo.writeClass(output, elementType);
-				elementSerializer = kryo.getSerializer(elementType);
+				elementSerializer = kryo.writeClass(output, elementType).getSerializer();
 				if (elementsCanBeNull) {
 					output.writeBoolean(hasNull);
 					elementsCanBeNull = hasNull;
 				}
 			}
 
+			int count = 0;
 			if (elementSerializer != null) {
 				if (elementsCanBeNull) {
-					for (Object element : collection)
+					for (Object element : collection) {
 						kryo.writeObjectOrNull(output, element, elementSerializer);
+						count++;
+					}
 				} else {
-					for (Object element : collection)
+					for (Object element : collection) {
 						kryo.writeObject(output, element, elementSerializer);
+						count++;
+					}
 				}
 			} else {
-				for (Object element : collection)
+				for (Object element : collection) {
 					kryo.writeClassAndObject(output, element);
+					count++;
+				}
 			}
+			if (count != length) throw sizeChanged(collection, length, count);
 		} finally {
 			kryo.getGenerics().popGenericType();
 		}
@@ -176,6 +194,13 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class, int)}. The default implementation does
 	 * nothing. */
 	protected void writeHeader (Kryo kryo, Output output, T collection) {
+	}
+
+	/** Returns the exception for a collection or map whose size doesn't match the number of elements written. The data can't be
+	 * read, because the size is written first. */
+	static KryoException sizeChanged (Object collection, int size, int count) {
+		return new KryoException("The size of " + className(collection.getClass()) + " changed while it was written: " + size
+			+ " != " + count + " elements. It may have been modified concurrently.");
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation (eg
@@ -193,7 +218,8 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		Class elementClass = this.elementClass;
 		Serializer elementSerializer = this.elementSerializer;
 		if (elementSerializer == null) {
-			Class genericClass = kryo.getGenerics().nextGenericClass();
+			GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes(Collection.class);
+			Class genericClass = genericTypes == null ? null : genericTypes[0].resolve(kryo.getGenerics());
 			if (genericClass != null && kryo.isFinal(genericClass)) {
 				elementSerializer = kryo.getSerializer(genericClass);
 				elementClass = genericClass;
@@ -237,7 +263,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 						return collection;
 					}
 					elementClass = registration.getType();
-					elementSerializer = kryo.getSerializer(elementClass);
+					elementSerializer = registration.getSerializer();
 					if (elementsCanBeNull) elementsCanBeNull = input.readBoolean();
 				}
 			}
@@ -263,7 +289,10 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	/** Used by {@link #copy(Kryo, Collection)} to create the new object. This can be overridden to customize object creation, eg
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)}. */
 	protected T createCopy (Kryo kryo, T original) {
-		return (T)kryo.newInstance(original.getClass());
+		Class type = original.getClass();
+		if (type == ArrayList.class) return (T)new ArrayList<>(original.size());
+		if (type == HashSet.class) return (T)new HashSet<>(Math.max((int)(original.size() / 0.75f) + 1, 16));
+		return (T)kryo.newInstance(type);
 	}
 
 	public T copy (Kryo kryo, T original) {

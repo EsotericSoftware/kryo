@@ -4,12 +4,12 @@
 	<parent>
 		<groupId>com.esotericsoftware</groupId>
 		<artifactId>kryo-parent</artifactId>
-		<version>5.8.0-SNAPSHOT</version>
+		<version>6.0.0-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<groupId>com.esotericsoftware.kryo</groupId>
-	<artifactId>kryo${kryo.major.version}</artifactId>
+	<artifactId>kryo6</artifactId>
 	<packaging>jar</packaging>
 
 	<name>Kryo ${kryo.major.version}</name>
@@ -17,6 +17,8 @@
 
 	<properties>
 		<kryo.root>../</kryo.root>
+		<!-- The classes compiled by the main module with release 17 are shaded, so they are not compiled again. -->
+		<maven.main.skip>true</maven.main.skip>
 	</properties>
 
 	<dependencies>
@@ -24,6 +26,18 @@
 			<groupId>com.esotericsoftware</groupId>
 			<artifactId>kryo</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<!-- Optional for the default jar, but included in the versioned jar. -->
+			<groupId>org.objenesis</groupId>
+			<artifactId>objenesis</artifactId>
+			<version>3.6</version>
+		</dependency>
+		<dependency>
+			<!-- Optional for the default jar, but included in the versioned jar: code generation on Java versions before 24. -->
+			<groupId>org.ow2.asm</groupId>
+			<artifactId>asm</artifactId>
+			<version>9.8</version>
 		</dependency>
 	</dependencies>
 
@@ -33,6 +47,28 @@
 		<testSourceDirectory>${kryo.root}/test</testSourceDirectory>
 		
 		<plugins>
+			<!-- Maven requires a constant artifactId, so it repeats the major version. This checks that both match. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>enforce-artifact-id</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireProperty>
+									<property>project.artifactId</property>
+									<regex>kryo${kryo.major.version}</regex>
+									<regexMessage>The artifactId must be kryo${kryo.major.version}, change it with kryo.major.version.</regexMessage>
+								</requireProperty>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<artifactId>maven-clean-plugin</artifactId>
 				<configuration>
@@ -75,14 +111,17 @@
 							<createDependencyReducedPom>true</createDependencyReducedPom>
 							<dependencyReducedPomLocation>${project.build.directory}/kryo${kryo.major.version}-${project.version}.pom</dependencyReducedPomLocation>
 							<filters>
+								<!-- The classes come from the kryo jar, the manifest with the versioned packages from this module's
+									jar, which contains the same classes. -->
 								<filter>
-									<artifact>com.esotericsoftware:minlog</artifact>
-									<excludes>
-										<exclude>META-INF/MANIFEST.MF</exclude>
-									</excludes>
+									<artifact>com.esotericsoftware.kryo:kryo${kryo.major.version}</artifact>
+									<includes>
+										<include>META-INF/MANIFEST.MF</include>
+										<include>META-INF/maven/**</include>
+									</includes>
 								</filter>
 								<filter>
-									<artifact>com.esotericsoftware:reflectasm</artifact>
+									<artifact>com.esotericsoftware:kryo</artifact>
 									<excludes>
 										<exclude>META-INF/MANIFEST.MF</exclude>
 									</excludes>
@@ -93,6 +132,13 @@
 										<exclude>META-INF/MANIFEST.MF</exclude>
 									</excludes>
 								</filter>
+								<filter>
+									<artifact>org.ow2.asm:asm</artifact>
+									<excludes>
+										<exclude>META-INF/MANIFEST.MF</exclude>
+										<exclude>module-info.class</exclude>
+									</excludes>
+								</filter>
 							</filters>
 							<relocations>
 								<relocation>
@@ -100,20 +146,12 @@
 									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}</shadedPattern>
 								</relocation>
 								<relocation>
-									<pattern>com.esotericsoftware.minlog</pattern>
-									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.minlog</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>com.esotericsoftware.reflectasm</pattern>
-									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.reflectasm</shadedPattern>
-								</relocation>
-								<relocation>
-									<pattern>com.esotericsoftware.asm</pattern>
-									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.asm</shadedPattern>
-								</relocation>
-								<relocation>
 									<pattern>org.objenesis</pattern>
 									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.objectweb.asm</pattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.asm</shadedPattern>
 								</relocation>
 							</relocations>
 						</configuration>
@@ -136,9 +174,6 @@
 				<configuration>
 					<instructions>
 						<Import-Package><![CDATA[
-						COM.jrockit*;resolution:=optional,
-						COM.newmonics*;resolution:=optional,
-						jrockit*;resolution:=optional,
 						sun.reflect;resolution:=optional,
 						sun.misc;resolution:=optional,
 						sun.nio.ch;resolution:=optional
@@ -152,7 +187,9 @@
 						com.esotericsoftware.kryo.kryo${kryo.major.version}.util,
 						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis,
 						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator,
-						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.strategy
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.strategy,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.asm,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.asm.signature
 						</Export-Package>
 					</instructions>
 				</configuration>

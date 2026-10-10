@@ -19,15 +19,17 @@
 
 package com.esotericsoftware.kryo.benchmarks.io;
 
+import java.util.concurrent.TimeUnit;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
-@BenchmarkMode(Mode.SingleShotTime)
-@Measurement(batchSize = 12000000)
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class StringBenchmark {
 	@Benchmark
 	public void writeString (InputOutputState state) {

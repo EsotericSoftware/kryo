@@ -93,6 +93,6 @@ class ArraySerializerTest extends KryoTestCase {
 		roundTrip(43, array);
 
 		kryo.setReferences(true);
-		roundTrip(28, array);
+		roundTrip(44, array);
 	}
 }

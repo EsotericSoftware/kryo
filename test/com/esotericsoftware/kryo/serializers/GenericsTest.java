@@ -19,13 +19,22 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.GenericsTest.A.DontPassToSuper;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.GenericsTest.ClassWithMap.MapKey;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +45,7 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 class GenericsTest extends KryoTestCase {
 	{
@@ -57,7 +67,7 @@ class GenericsTest extends KryoTestCase {
 			new SerializableObjectFoo("three"));
 		BaseGeneric<SerializableObjectFoo> bg1 = new BaseGeneric(list);
 
-		roundTrip(117, bg1);
+		roundTrip(114, bg1);
 	}
 
 	@Test
@@ -71,7 +81,7 @@ class GenericsTest extends KryoTestCase {
 			new SerializableObjectFoo("three"));
 		ConcreteClass cc1 = new ConcreteClass(list);
 
-		roundTrip(117, cc1);
+		roundTrip(114, cc1);
 	}
 
 	// Test for/from https://github.com/EsotericSoftware/kryo/issues/377
@@ -208,6 +218,70 @@ class GenericsTest extends KryoTestCase {
 	}
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/721
+	// A parameterized type without type arguments of its own.
+	@Test
+	void testNonGenericInnerClassOfGenericClass () {
+		kryo.setRegistrationRequired(false);
+		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderInner());
+	}
+
+	// The super class of an inner class passes a type parameter of the enclosing class to the declared type.
+	@Test
+	void testTypeParameterOfEnclosingClass () {
+		kryo.setRegistrationRequired(false);
+		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+		roundTrip(164, new DeclaredTypes.HolderEnclosing());
+	}
+
+	// The type parameter of the class is not passed to the declared interface.
+	@Test
+	void testTypeParameterNotPassedToDeclaredType () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderC());
+	}
+
+	// The type parameters of the class are passed to the declared super class in a different order.
+	@Test
+	void testTypeParametersInDifferentOrder () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderBase());
+	}
+
+	// The same class is held by fields with different declared types.
+	@Test
+	void testDifferentDeclaredTypes () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderMulti());
+	}
+
+	// A class that extends a generic class as a raw type uses the type arguments of the declared type, like Kryo 5.
+	@Test
+	void testRawSubclassOfDeclaredType () {
+		kryo.setRegistrationRequired(false);
+		// Written by Kryo 5.
+		byte[] bytes = Base64.getDecoder().decode(
+			"AQBjb20uZXNvdGVyaWNzb2Z0d2FyZS5rcnlvLnNlcmlhbGl6ZXJzLkdlbmVyaWNzVGVzdCREZWNsYXJlZFR5cGVzJFJhd1N14gEBamF2YS51dGlsLkFycmF5TGlz9AKCYg==");
+		assertEquals(new DeclaredTypes.HolderRaw(), kryo.readObject(new Input(bytes), DeclaredTypes.HolderRaw.class));
+		Output output = new Output(1024);
+		kryo.writeObject(output, new DeclaredTypes.HolderRaw());
+		assertArrayEquals(bytes, output.toBytes());
+	}
+
+	// Each type variable needs two entries, so nested generic objects must not overflow the type variable storage.
+	@Test
+	void testNestedTypeVariables () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderNode());
+	}
+
+	// A type argument that can't be resolved must not shift the following type arguments.
+	@Test
+	void testUnresolvedTypeArgument () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderPair());
+	}
+
 	@Test
 	void testClassHierarchyWithMissingTypeVariables () {
 		ClassWithMissingTypeVariable.A o = new ClassWithMissingTypeVariable.A(
@@ -216,6 +290,76 @@ class GenericsTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 
 		roundTrip(168, o);
+	}
+
+	@Test
+	void testSharedGenericTypes () throws Exception {
+		// The generic types of fields are shared by all Kryo instances. Many instances in many threads resolve the same generic
+		// types at the same time, including the type arguments of a super type (IntMap<String> as a Map).
+		int threadCount = 8;
+		Thread[] threads = new Thread[threadCount];
+		Throwable[] failures = new Throwable[threadCount];
+		for (int i = 0; i < threadCount; i++) {
+			int index = i;
+			threads[i] = new Thread(() -> {
+				try {
+					for (int ii = 0; ii < 100; ii++) {
+						Kryo kryo = new Kryo();
+						kryo.setReferences(true);
+						kryo.register(SharedGenerics.class);
+						kryo.register(SharedGenerics.IntMap.class);
+						kryo.register(ArrayList.class);
+						kryo.register(HashMap.class);
+						SharedGenerics object = new SharedGenerics(index * 1000 + ii);
+						Output output = new Output(1024, -1);
+						kryo.writeObject(output, object);
+						SharedGenerics read = kryo.readObject(new Input(output.toBytes()), SharedGenerics.class);
+						assertEquals(object, read);
+						assertEquals("" + (index * 1000 + ii), read.map.get(1));
+					}
+				} catch (Throwable ex) {
+					failures[index] = ex;
+				}
+			});
+			threads[i].start();
+		}
+		for (Thread thread : threads)
+			thread.join();
+		for (Throwable failure : failures)
+			if (failure != null) throw new AssertionError(failure);
+
+		// Unless on Android, where ClassValue is not available, two Kryo instances use the same generic type for a field.
+		if (!isAndroid) {
+			CachedField field1 = new FieldSerializer(new Kryo(), SharedGenerics.class).getField("map");
+			CachedField field2 = new FieldSerializer(new Kryo(), SharedGenerics.class).getField("map");
+			assertSame(((ReflectField)field1).genericType, ((ReflectField)field2).genericType);
+		}
+	}
+
+	static public class SharedGenerics {
+		static public class IntMap<V> extends HashMap<Integer, V> {
+		}
+
+		IntMap<String> map = new IntMap<>();
+		List<String> list = new ArrayList<>();
+		Map<String, List<Integer>> nested = new HashMap<>();
+
+		public SharedGenerics () {
+		}
+
+		SharedGenerics (int value) {
+			map.put(1, "" + value);
+			list.add("" + value);
+			nested.put("" + value, new ArrayList<>(List.of(value)));
+		}
+
+		public boolean equals (Object other) {
+			return other instanceof SharedGenerics o && map.equals(o.map) && list.equals(o.list) && nested.equals(o.nested);
+		}
+
+		public int hashCode () {
+			return map.hashCode();
+		}
 	}
 
 	interface Holder<V> {
@@ -719,6 +863,206 @@ class GenericsTest extends KryoTestCase {
 			if (o == null || getClass() != o.getClass()) return false;
 			TestObject that = (TestObject) o;
 			return i == that.i;
+		}
+	}
+
+	static class DeclaredTypes {
+		interface C<T> {
+		}
+
+		public static class B<R> implements C<String> {
+			public R r;
+
+			public B () {
+			}
+
+			B (R r) {
+				this.r = r;
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof B b && Objects.equals(r, b.r);
+			}
+		}
+
+		public static class HolderC {
+			public C<String> c = new B<>(1);
+
+			public boolean equals (Object o) {
+				return o instanceof HolderC h && Objects.equals(c, h.c);
+			}
+		}
+
+		public static class Base<K, V> {
+		}
+
+		public static class Sub<A, B> extends Base<B, A> {
+			public A a;
+			public B b;
+
+			public Sub () {
+			}
+
+			Sub (A a, B b) {
+				this.a = a;
+				this.b = b;
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof Sub s && Objects.equals(a, s.a) && Objects.equals(b, s.b);
+			}
+		}
+
+		public static class HolderBase {
+			public Base<String, Integer> base = new Sub<>(1, "x");
+
+			public boolean equals (Object o) {
+				return o instanceof HolderBase h && Objects.equals(base, h.base);
+			}
+		}
+
+		public static class Pair<X, Y> {
+			public X x;
+			public Y y;
+
+			public Pair () {
+			}
+
+			Pair (X x, Y y) {
+				this.x = x;
+				this.y = y;
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof Pair p && Objects.equals(x, p.x) && Objects.equals(y, p.y);
+			}
+		}
+
+		public static class MultiBase<M> {
+		}
+
+		public interface MultiInterface<I> {
+		}
+
+		public static class Multi<T> extends MultiBase<T> implements MultiInterface<T> {
+			public List<T> list = new ArrayList<>();
+
+			Multi<T> add (T value) {
+				list.add(value);
+				return this;
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof Multi m && Objects.equals(list, m.list);
+			}
+		}
+
+		public static class HolderMulti {
+			public MultiBase<String> base = new Multi<String>().add("a");
+			public MultiInterface<Integer> interfaceType = new Multi<Integer>().add(1);
+			public Multi<Long> direct = new Multi<Long>().add(2L);
+			public MultiBase<Integer> base2 = new Multi<Integer>().add(3);
+
+			public boolean equals (Object o) {
+				return o instanceof HolderMulti h && Objects.equals(base, h.base) && Objects.equals(interfaceType, h.interfaceType)
+					&& Objects.equals(direct, h.direct) && Objects.equals(base2, h.base2);
+			}
+		}
+
+		public static class GenericBase<T> {
+			public List<T> list = new ArrayList<>();
+
+			public boolean equals (Object o) {
+				return o != null && o.getClass() == getClass() && Objects.equals(list, ((GenericBase)o).list);
+			}
+		}
+
+		public static class RawSub extends GenericBase {
+		}
+
+		public static class HolderRaw {
+			public GenericBase<String> raw = new RawSub();
+
+			HolderRaw () {
+				raw.list.add("b");
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof HolderRaw h && Objects.equals(raw, h.raw);
+			}
+		}
+
+		public static class Node<A, B, C> {
+			public A a;
+			public B b;
+			public C c;
+			public Node<A, B, C> child;
+
+			public boolean equals (Object o) {
+				return o instanceof Node n && Objects.equals(a, n.a) && Objects.equals(b, n.b) && Objects.equals(c, n.c)
+					&& Objects.equals(child, n.child);
+			}
+		}
+
+		public static class HolderNode {
+			public Node<String, Integer, Long> node = new Node<>();
+
+			HolderNode () {
+				Node<String, Integer, Long> current = node;
+				for (int i = 0; i < 5; i++) {
+					current.a = "a" + i;
+					current.b = i;
+					current.c = (long)i;
+					current.child = new Node<>();
+					current = current.child;
+				}
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof HolderNode h && Objects.equals(node, h.node);
+			}
+		}
+
+		public static class Outer<T> {
+			public class Inner {
+				public int value = 1;
+
+				public boolean equals (Object o) {
+					return o instanceof Outer.Inner i && value == i.value;
+				}
+			}
+		}
+
+		public static class HolderInner {
+			public Outer<String>.Inner inner = new Outer<String>().new Inner();
+
+			public boolean equals (Object o) {
+				return o instanceof HolderInner h && Objects.equals(inner, h.inner);
+			}
+		}
+
+		public static class Enclosing<X> {
+			public class Mid<Y> extends Base<X, Y> {
+			}
+
+			public class Inner<Z> extends Mid<Z> {
+			}
+		}
+
+		public static class HolderEnclosing {
+			public Base<String, Integer> base = new Enclosing<String>().new Inner<Integer>();
+
+			public boolean equals (Object o) {
+				return o instanceof HolderEnclosing h && base.getClass() == h.base.getClass();
+			}
+		}
+
+		public static class HolderPair<T> {
+			public Pair<T, String> pair = new Pair(1, "s");
+
+			public boolean equals (Object o) {
+				return o instanceof HolderPair h && Objects.equals(pair, h.pair);
+			}
 		}
 	}
 }

@@ -188,7 +188,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		}
 		if (capacity == 0) capacity = 16;
 		do {
-			capacity = Math.min(capacity * 2, maxCapacity);
+			capacity = (int)Math.min(capacity * 2L, maxCapacity); // Long, so it does not overflow above 1 GiB.
 		} while (capacity - position < required);
 		byte[] newBuffer = new byte[capacity];
 		System.arraycopy(buffer, 0, newBuffer, 0, position);
@@ -320,13 +320,9 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	/** Writes a 4 byte int. */
 	public void writeInt (int value) throws KryoException {
 		require(4);
-		byte[] buffer = this.buffer;
 		int p = position;
 		position = p + 4;
-		buffer[p] = (byte)value;
-		buffer[p + 1] = (byte)(value >> 8);
-		buffer[p + 2] = (byte)(value >> 16);
-		buffer[p + 3] = (byte)(value >> 24);
+		Bytes.putInt(buffer, p, value);
 	}
 
 	/** Reads an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
@@ -360,6 +356,11 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			buffer[p + 1] = (byte)(value >>> 7);
 			return 2;
 		}
+		return writeVarInt_slow(value);
+	}
+
+	/** Separate from {@link #writeVarInt(int, boolean)} so the common 1-2 byte cases are small enough for the JIT to inline. */
+	private int writeVarInt_slow (int value) {
 		if (value >>> 21 == 0) {
 			require(3);
 			int p = position;
@@ -413,6 +414,12 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			buffer[p + 1] = (byte)(value >>> 6);
 			return 2;
 		}
+		return writeVarIntFlag_slow(first, value);
+	}
+
+	/** Separate from {@link #writeVarIntFlag(boolean, int, boolean)} so the common 1-2 byte cases are small enough for the JIT to
+	 * inline. */
+	private int writeVarIntFlag_slow (int first, int value) {
 		if (value >>> 20 == 0) {
 			require(3);
 			byte[] buffer = this.buffer;
@@ -457,17 +464,9 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	/** Writes an 8 byte long. */
 	public void writeLong (long value) throws KryoException {
 		require(8);
-		byte[] buffer = this.buffer;
 		int p = position;
 		position = p + 8;
-		buffer[p] = (byte)value;
-		buffer[p + 1] = (byte)(value >>> 8);
-		buffer[p + 2] = (byte)(value >>> 16);
-		buffer[p + 3] = (byte)(value >>> 24);
-		buffer[p + 4] = (byte)(value >>> 32);
-		buffer[p + 5] = (byte)(value >>> 40);
-		buffer[p + 6] = (byte)(value >>> 48);
-		buffer[p + 7] = (byte)(value >>> 56);
+		Bytes.putLong(buffer, p, value);
 	}
 
 	/** Reads a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
@@ -502,6 +501,11 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			buffer[p + 1] = (byte)(value >>> 7);
 			return 2;
 		}
+		return writeVarLong_slow(value);
+	}
+
+	/** Separate from {@link #writeVarLong(long, boolean)} so the common 1-2 byte cases are small enough for the JIT to inline. */
+	private int writeVarLong_slow (long value) {
 		if (value >>> 21 == 0) {
 			require(3);
 			int p = position;
@@ -604,14 +608,9 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	/** Writes a 4 byte float. */
 	public void writeFloat (float value) throws KryoException {
 		require(4);
-		byte[] buffer = this.buffer;
 		int p = position;
 		position = p + 4;
-		int intValue = Float.floatToIntBits(value);
-		buffer[p] = (byte)intValue;
-		buffer[p + 1] = (byte)(intValue >> 8);
-		buffer[p + 2] = (byte)(intValue >> 16);
-		buffer[p + 3] = (byte)(intValue >> 24);
+		Bytes.putInt(buffer, p, Float.floatToIntBits(value));
 	}
 
 	/** Writes a 1-5 byte float with reduced precision.
@@ -627,18 +626,9 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	/** Writes an 8 byte double. */
 	public void writeDouble (double value) throws KryoException {
 		require(8);
-		byte[] buffer = this.buffer;
 		int p = position;
 		position = p + 8;
-		long longValue = Double.doubleToLongBits(value);
-		buffer[p] = (byte)longValue;
-		buffer[p + 1] = (byte)(longValue >>> 8);
-		buffer[p + 2] = (byte)(longValue >>> 16);
-		buffer[p + 3] = (byte)(longValue >>> 24);
-		buffer[p + 4] = (byte)(longValue >>> 32);
-		buffer[p + 5] = (byte)(longValue >>> 40);
-		buffer[p + 6] = (byte)(longValue >>> 48);
-		buffer[p + 7] = (byte)(longValue >>> 56);
+		Bytes.putLong(buffer, p, Double.doubleToLongBits(value));
 	}
 
 	/** Writes a 1-9 byte double with reduced precision.
@@ -685,6 +675,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	 * are written as UTF8. If a string is known to be ASCII, {@link #writeAscii(String)} may be used. The string can be read using
 	 * {@link Input#readString()} or {@link Input#readStringBuilder()}.
 	 * @param value May be null. */
+	@SuppressWarnings("deprecation") // The fastest copy of ASCII chars.
 	public void writeString (String value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
@@ -712,20 +703,13 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		writeVarIntFlag(true, charCount + 1, true);
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
-			// Try to write 7 bit chars.
-			byte[] buffer = this.buffer;
-			int p = position;
-			while (true) {
-				int c = value.charAt(charIndex);
-				if (c > 127) break;
-				buffer[p++] = (byte)c;
+			// Find the leading 7 bit chars and write them in bulk. The counted loop lets the JIT eliminate the charAt range checks.
+			while (charIndex < charCount && value.charAt(charIndex) <= 127)
 				charIndex++;
-				if (charIndex == charCount) {
-					position = p;
-					return;
-				}
+			if (charIndex > 0) {
+				value.getBytes(0, charIndex, buffer, position);
+				position += charIndex;
 			}
-			position = p;
 		}
 		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
@@ -735,6 +719,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	 * efficient than {@link #writeString(String)}. The string can be read using {@link Input#readString()} or
 	 * {@link Input#readStringBuilder()}.
 	 * @param value May be null. */
+	@SuppressWarnings("deprecation") // The fastest copy of ASCII chars.
 	public void writeAscii (String value) throws KryoException {
 		if (value == null) {
 			writeByte(0x80); // 0 means null, bit 8 means UTF8.
@@ -779,6 +764,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		}
 	}
 
+	@SuppressWarnings("deprecation") // The fastest copy of ASCII chars.
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
 		if (charCount == 0) return;
 		if (position == capacity) require(1); // Must be able to write at least one character.
@@ -802,13 +788,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			require(count << 2);
 			byte[] buffer = this.buffer;
 			int p = position;
-			for (int n = offset + count; offset < n; offset++, p += 4) {
-				int value = array[offset];
-				buffer[p] = (byte)value;
-				buffer[p + 1] = (byte)(value >> 8);
-				buffer[p + 2] = (byte)(value >> 16);
-				buffer[p + 3] = (byte)(value >> 24);
-			}
+			for (int n = offset + count; offset < n; offset++, p += 4)
+				Bytes.putInt(buffer, p, array[offset]);
 			position = p;
 		} else {
 			for (int n = offset + count; offset < n; offset++)
@@ -832,17 +813,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			require(count << 3);
 			byte[] buffer = this.buffer;
 			int p = position;
-			for (int n = offset + count; offset < n; offset++, p += 8) {
-				long value = array[offset];
-				buffer[p] = (byte)value;
-				buffer[p + 1] = (byte)(value >>> 8);
-				buffer[p + 2] = (byte)(value >>> 16);
-				buffer[p + 3] = (byte)(value >>> 24);
-				buffer[p + 4] = (byte)(value >>> 32);
-				buffer[p + 5] = (byte)(value >>> 40);
-				buffer[p + 6] = (byte)(value >>> 48);
-				buffer[p + 7] = (byte)(value >>> 56);
-			}
+			for (int n = offset + count; offset < n; offset++, p += 8)
+				Bytes.putLong(buffer, p, array[offset]);
 			position = p;
 		} else {
 			for (int n = offset + count; offset < n; offset++)
@@ -866,13 +838,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			require(count << 2);
 			byte[] buffer = this.buffer;
 			int p = position;
-			for (int n = offset + count; offset < n; offset++, p += 4) {
-				int value = Float.floatToIntBits(array[offset]);
-				buffer[p] = (byte)value;
-				buffer[p + 1] = (byte)(value >> 8);
-				buffer[p + 2] = (byte)(value >> 16);
-				buffer[p + 3] = (byte)(value >> 24);
-			}
+			for (int n = offset + count; offset < n; offset++, p += 4)
+				Bytes.putInt(buffer, p, Float.floatToIntBits(array[offset]));
 			position = p;
 		} else {
 			for (int n = offset + count; offset < n; offset++)
@@ -886,17 +853,8 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 			require(count << 3);
 			byte[] buffer = this.buffer;
 			int p = position;
-			for (int n = offset + count; offset < n; offset++, p += 8) {
-				long value = Double.doubleToLongBits(array[offset]);
-				buffer[p] = (byte)value;
-				buffer[p + 1] = (byte)(value >>> 8);
-				buffer[p + 2] = (byte)(value >>> 16);
-				buffer[p + 3] = (byte)(value >>> 24);
-				buffer[p + 4] = (byte)(value >>> 32);
-				buffer[p + 5] = (byte)(value >>> 40);
-				buffer[p + 6] = (byte)(value >>> 48);
-				buffer[p + 7] = (byte)(value >>> 56);
-			}
+			for (int n = offset + count; offset < n; offset++, p += 8)
+				Bytes.putLong(buffer, p, Double.doubleToLongBits(array[offset]));
 			position = p;
 		} else {
 			for (int n = offset + count; offset < n; offset++)

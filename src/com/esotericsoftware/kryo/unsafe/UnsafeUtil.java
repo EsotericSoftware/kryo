@@ -19,9 +19,10 @@
 
 package com.esotericsoftware.kryo.unsafe;
 
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.kryo.util.Log.*;
 
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.reflect.Constructor;
@@ -30,13 +31,13 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
 import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
 
 /** Utility methods for using {@link sun.misc.Unsafe}.
  * <p>
  * Not available on all JVMs. {@link Util#unsafe} can be checked before using this class.
  * @author Roman Levenstein {@literal <romixlev@gmail.com>} */
 @SuppressWarnings("restriction")
+@IgnoreAndroid
 public class UnsafeUtil {
 	/** The sun.misc.Unsafe instance, or null if Unsafe is unavailable. */
 	public static final Unsafe unsafe;
@@ -99,14 +100,25 @@ public class UnsafeUtil {
 		return unsafe.getObject(object, offset);
 	}
 
+	public static boolean getBoolean (Object object, long offset) {
+		return unsafe.getBoolean(object, offset);
+	}
+
 	// Use a static inner class to defer initialization of direct buffer methods until first use
 	private static final class DirectBuffers {
 		// Constructor to be used for creation of ByteBuffers that use pre-allocated memory regions.
 		static Constructor<? extends ByteBuffer> directByteBufferConstructor;
+		// True if the constructor takes the capacity as long (Java 21+).
+		static boolean longCapacity;
 		static {
-			ByteBuffer buffer = ByteBuffer.allocateDirect(1);
+			Class<? extends ByteBuffer> type = ByteBuffer.allocateDirect(1).getClass();
 			try {
-				directByteBufferConstructor = buffer.getClass().getDeclaredConstructor(long.class, int.class);
+				try {
+					directByteBufferConstructor = type.getDeclaredConstructor(long.class, int.class);
+				} catch (NoSuchMethodException ex) {
+					directByteBufferConstructor = type.getDeclaredConstructor(long.class, long.class);
+					longCapacity = true;
+				}
 				directByteBufferConstructor.setAccessible(true);
 			} catch (Exception ex) {
 				if (DEBUG) debug("kryo", "No direct ByteBuffer constructor is available.", ex);
@@ -114,10 +126,27 @@ public class UnsafeUtil {
 			}
 		}
 
+		/** The offset of the address field of direct buffers, or -1 if it isn't available. Here and not in UnsafeUtil, because Java
+		 * 24+ warns at the first Unsafe memory access, which is the first use of direct buffers rather than the first use of
+		 * Kryo. */
+		static final long addressOffset;
+		static {
+			long offset = -1;
+			if (unsafe != null) {
+				try {
+					offset = unsafe.objectFieldOffset(java.nio.Buffer.class.getDeclaredField("address"));
+				} catch (Exception ex) {
+					if (DEBUG) debug("kryo", "The address of direct ByteBuffers is not available.", ex);
+				}
+			}
+			addressOffset = offset;
+		}
+
 		static Method cleanerMethod, cleanMethod;
 		static {
 			try {
-				cleanerMethod = DirectBuffer.class.getMethod("cleaner");
+				// By name, so the class doesn't depend on the JDK internal package at compile time.
+				cleanerMethod = Class.forName("sun.nio.ch.DirectBuffer").getMethod("cleaner");
 				cleanerMethod.setAccessible(true);
 				cleanMethod = cleanerMethod.getReturnType().getMethod("clean");
 			} catch (Exception ex) {
@@ -125,6 +154,15 @@ public class UnsafeUtil {
 				cleanerMethod = null;
 			}
 		}
+	}
+
+	/** Returns the off-heap address of a direct buffer.
+	 * @throws IllegalArgumentException if the buffer is not direct.
+	 * @throws KryoException if the address isn't available. */
+	public static long address (ByteBuffer buffer) {
+		if (!buffer.isDirect()) throw new IllegalArgumentException("buffer must be direct.");
+		if (DirectBuffers.addressOffset == -1) throw new KryoException("The address of direct ByteBuffers is not available.");
+		return unsafe.getLong(buffer, DirectBuffers.addressOffset);
 	}
 
 	/** Throws an exception if offset and count don't describe a range inside an array of the given length. Unsafe doesn't check
@@ -140,8 +178,10 @@ public class UnsafeUtil {
 	 * @throws UnsupportedOperationException if creating a ByteBuffer this way is not available. */
 	public static ByteBuffer newDirectBuffer (long address, int size) {
 		if (!isNewDirectBufferAvailable())
-			throw new UnsupportedOperationException("No direct ByteBuffer constructor is available.");
+			throw new UnsupportedOperationException(
+				"No direct ByteBuffer constructor is available. It requires --add-opens java.base/java.nio=ALL-UNNAMED.");
 		try {
+			if (DirectBuffers.longCapacity) return DirectBuffers.directByteBufferConstructor.newInstance(address, (long)size);
 			return DirectBuffers.directByteBufferConstructor.newInstance(address, size);
 		} catch (Exception ex) {
 			throw new KryoException("Error creating a ByteBuffer at address: " + address, ex);
@@ -155,7 +195,7 @@ public class UnsafeUtil {
 
 	/** Release a direct buffer immediately rather than waiting for GC. */
 	public static void dispose (ByteBuffer buffer) {
-		if (!(buffer instanceof DirectBuffer)) return;
+		if (buffer == null || !buffer.isDirect()) return;
 		if (DirectBuffers.cleanerMethod != null) {
 			try {
 				DirectBuffers.cleanMethod.invoke(DirectBuffers.cleanerMethod.invoke(buffer));

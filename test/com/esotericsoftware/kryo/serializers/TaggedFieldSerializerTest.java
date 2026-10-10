@@ -31,6 +31,8 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,18 @@ import org.junit.jupiter.api.Test;
 class TaggedFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
+	}
+
+	@Test
+	void testTaggedRecordMissingPrimitiveComponent () {
+		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
+		kryo.register(OldPrimitiveRecord.class);
+		kryo.register(NewPrimitiveRecord.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, new OldPrimitiveRecord(3L));
+		NewPrimitiveRecord deserialized = kryo.readObject(new Input(output.toBytes()), NewPrimitiveRecord.class);
+		assertEquals(new NewPrimitiveRecord(3L, 0, false), deserialized);
 	}
 
 	@Test
@@ -58,10 +72,12 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		object1.other = new AnotherClass();
 		object1.other.value = "meow";
 		object1.ignored = 32;
+		object1.record = new RecordClass("1", 1, 1L, 1d);
 		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
 		kryo.register(TestClass.class);
 		kryo.register(AnotherClass.class);
-		TestClass object2 = roundTrip(57, object1);
+		kryo.register(RecordClass.class);
+		TestClass object2 = roundTrip(77, object1);
 		assertEquals(0, object2.ignored);
 	}
 
@@ -76,7 +92,8 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		serializer.removeField("text");
 		kryo.register(TestClass.class, serializer);
 		kryo.register(AnotherClass.class, new TaggedFieldSerializer(kryo, AnotherClass.class));
-		roundTrip(39, object1);
+		kryo.register(RecordClass.class, new TaggedFieldSerializer(kryo, AnotherClass.class));
+		roundTrip(43, object1);
 
 		kryo.register(TestClass.class, new TaggedFieldSerializer(kryo, TestClass.class));
 		Object object2 = kryo.readClassAndObject(input);
@@ -109,6 +126,7 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		factory.getConfig().setChunkedEncoding(true);
 		kryo.setDefaultSerializer(factory);
 		kryo.register(TestClass.class);
+		kryo.register(RecordClass.class);
 		kryo.register(Object[].class);
 		TaggedFieldSerializer<FutureClass> futureSerializer = new TaggedFieldSerializer(kryo, FutureClass.class);
 		futureSerializer.getTaggedFieldSerializerConfig().setChunkedEncoding(true);
@@ -146,6 +164,47 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		assertEquals(futureArray[1], presentArray[1]);
 	}
 
+	@Test
+	void testTaggedRecordNewToOld() {
+		final RecordClass recordClass = new RecordClass("1", 2, 3L, 4d);
+
+		final TaggedFieldSerializer.TaggedFieldSerializerConfig cfg = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+		cfg.setChunkedEncoding(true);
+		cfg.setReadUnknownTagData(true);
+		kryo.setDefaultSerializer(new TaggedFieldSerializerFactory(cfg));
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		Object deserialized = kryo.readObject(input, OldRecordClass.class);
+		input.close();
+
+		assertNotNull(deserialized);
+	}
+
+	@Test
+	void testTaggedRecordOldToNew() {
+		final OldRecordClass recordClass = new OldRecordClass(3L, 4d, 2);
+
+		kryo.setDefaultSerializer(TaggedFieldSerializer.class);
+		kryo.register(RecordClass.class);
+		kryo.register(OldRecordClass.class);
+
+		Output output = new Output(2048, -1);
+		kryo.writeObject(output, recordClass);
+		output.close();
+
+		Input input = new Input(output.toBytes());
+		Object deserialized = kryo.readObject(input, RecordClass.class);
+		input.close();
+
+		assertNotNull(deserialized);
+	}
+
 	/** Attempts to register a class with a field tagged with a value already used in its superclass. Should receive
 	 * IllegalArgumentException. */
 	@Test
@@ -175,8 +234,8 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		config.setReadUnknownTagData(true);
 		kryo.register(ClassWithObjectField.class, serializer);
 
-		roundTrip(8, new ClassWithObjectField(123));
-		roundTrip(9, new ClassWithObjectField("foo"));
+		roundTrip(9, new ClassWithObjectField(123));
+		roundTrip(10, new ClassWithObjectField("foo"));
 	}
 
 	public static class ClassWithObjectField {
@@ -205,7 +264,8 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		@Tag(3) public TestClass child;
 		@Tag(4) public int zzz = 123;
 		@Tag(5) public AnotherClass other;
-		@Tag(6) @Deprecated public int ignored;
+		@Tag(6) public RecordClass record;
+		@Tag(7) @Deprecated public int ignored;
 
 		public boolean equals (Object obj) {
 			if (this == obj) return true;
@@ -221,6 +281,7 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 				if (other.text != null) return false;
 			} else if (!text.equals(other.text)) return false;
 			if (zzz != other.zzz) return false;
+			if (!Objects.equals(record, other.record)) return false;
 			return true;
 		}
 	}
@@ -232,6 +293,10 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 	public static class AnotherClass {
 		@Tag(1) String value;
 	}
+
+	public record OldRecordClass(@Tag(0) long x, @Tag(1) double y, @Tag(2) int width) { }
+
+	public record RecordClass(@Tag(3) String height, @Tag(2) int width, @Tag(0) long x, @Tag(1) double y) { }
 
 	private static class FutureClass {
 		@Tag(0) public Integer value;
@@ -313,5 +378,94 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 	public static class DuplicateTags {
 		@Tag(5) int a;
 		@Tag(5) int b;
+	}
+	public record OldPrimitiveRecord(@Tag(0) long x) { }
+
+	public record NewPrimitiveRecord(@Tag(0) long x, @Tag(1) int added, @Tag(2) boolean flag) { }
+
+
+	// https://github.com/EsotericSoftware/kryo/issues/851
+	@Test
+	void testNullOverwritesDefaultValue () {
+		TaggedFieldSerializer.TaggedFieldSerializerConfig config = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+		config.setReadUnknownTagData(true);
+		kryo.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
+		kryo.register(DefaultValue.class);
+
+		// A non-null value is written and read first, so the field has been used with a value class before.
+		Output output = new Output(64);
+		kryo.writeObject(output, new DefaultValue(5));
+		kryo.writeObject(output, new DefaultValue(null));
+		Input input = new Input(output.toBytes());
+		assertEquals(5, kryo.readObject(input, DefaultValue.class).value);
+		assertNull(kryo.readObject(input, DefaultValue.class).value);
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/1098
+	@Test
+	void testRemovedGenericField () {
+		TaggedFieldSerializer.TaggedFieldSerializerConfig config = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+		config.setReadUnknownTagData(true);
+		kryo.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
+		kryo.register(ArrayList.class);
+		kryo.register(GenericField.class);
+		kryo.register(WithoutGenericField.class);
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, new GenericField());
+		WithoutGenericField read = kryo.readObject(new Input(output.toBytes()), WithoutGenericField.class);
+		assertEquals("a", read.a);
+		assertEquals("z", read.z);
+	}
+
+	@Test
+	void testGenericTypeOfOuterField () {
+		// The type argument of the field holding the object must not be used for the object's fields.
+		TaggedFieldSerializer.TaggedFieldSerializerConfig config = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+		config.setReadUnknownTagData(true);
+		kryo.register(ArrayList.class);
+		kryo.register(GenericBox.class, new TaggedFieldSerializer<>(kryo, GenericBox.class, config));
+		kryo.register(GenericBoxHolder.class, new TaggedFieldSerializer<>(kryo, GenericBoxHolder.class));
+		GenericBoxHolder holder = new GenericBoxHolder();
+		holder.box = new GenericBox<>();
+		holder.box.ids = new ArrayList<>(List.of(1L, 2L));
+		holder.box.value = new ArrayList<>(List.of("x"));
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, holder);
+		GenericBoxHolder read = kryo.readObject(new Input(output.toBytes()), GenericBoxHolder.class);
+		assertEquals(holder.box.ids, read.box.ids);
+		assertEquals(holder.box.value, read.box.value);
+	}
+
+	public static class GenericBox<T> {
+		@Tag(0) public List<Long> ids;
+		@Tag(1) public T value;
+	}
+
+	public static class GenericBoxHolder {
+		@Tag(0) public GenericBox<List<String>> box;
+	}
+
+	public static class GenericField {
+		@Tag(0) public String a = "a";
+		@Tag(1) public List<String> list = new ArrayList<>(List.of("x", "y"));
+		@Tag(2) public String z = "z";
+	}
+
+	public static class WithoutGenericField {
+		@Tag(0) public String a;
+		@Tag(2) public String z;
+	}
+
+	public static class DefaultValue {
+		@Tag(0) public Integer value = 10;
+
+		public DefaultValue () {
+		}
+
+		public DefaultValue (Integer value) {
+			this.value = value;
+		}
 	}
 }

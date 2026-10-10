@@ -89,8 +89,8 @@ class EnumNameSerializerTest extends KryoTestCase {
 		kryo.addDefaultSerializer(Enum.class, EnumNameSerializer.class);
 		kryo.setRegistrationRequired(false);
 
-		roundTrip(93, TestNameEnumWithMethods.ALPHA);
-		roundTrip(92, TestNameEnumWithMethods.BETA);
+		roundTrip(91, TestNameEnumWithMethods.ALPHA); // The name of the enum, not of the body of the constant.
+		roundTrip(90, TestNameEnumWithMethods.BETA);
 	}
 
 	public enum TestNameEnum {

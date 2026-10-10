@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.esotericsoftware</groupId>
 		<artifactId>kryo-parent</artifactId>
-		<version>5.8.0-SNAPSHOT</version>
+		<version>6.0.0-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -27,6 +27,12 @@
 			<groupId>com.esotericsoftware</groupId>
 			<artifactId>kryo</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+		<!-- Code generation on Java versions before 24, optional in Kryo so not transitive. -->
+		<dependency>
+			<groupId>org.ow2.asm</groupId>
+			<artifactId>asm</artifactId>
+			<version>9.8</version>
 		</dependency>
 		<dependency>
 			<groupId>org.openjdk.jmh</groupId>

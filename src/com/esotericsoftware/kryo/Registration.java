@@ -20,9 +20,9 @@
 package com.esotericsoftware.kryo;
 
 import static com.esotericsoftware.kryo.util.Util.*;
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.kryo.util.Log.*;
 
-import org.objenesis.instantiator.ObjectInstantiator;
+import com.esotericsoftware.kryo.util.ObjectInstantiator;
 
 /** Describes the {@link Serializer} and class ID to use for a class.
  * @author Nathan Sweet */

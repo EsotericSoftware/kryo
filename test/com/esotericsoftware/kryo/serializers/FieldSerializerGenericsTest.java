@@ -19,8 +19,11 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
@@ -29,14 +32,140 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.jupiter.api.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 class FieldSerializerGenericsTest extends KryoTestCase {
+	// https://github.com/EsotericSoftware/kryo/issues/860
+	@Test
+	void testTypeArgumentsOfMapAndCollectionSubtypes () {
+		kryo.register(SubtypeFields.class);
+		kryo.register(IntKeyMap.class);
+		kryo.register(SwappedMap.class);
+		kryo.register(StringList.class);
+		kryo.register(ExtraParameterMap.class);
+		kryo.register(HashMap.class);
+		SubtypeFields object = new SubtypeFields();
+		object.intKeys = new IntKeyMap<>();
+		object.intKeys.put(1, "one");
+		object.swapped = new SwappedMap<>();
+		object.swapped.put(2, "two");
+		object.strings = new StringList<>();
+		object.strings.add("three");
+		object.extra = new ExtraParameterMap<>();
+		object.extra.put("four", 4);
+		object.nested = new HashMap<>();
+		object.nested.put("five", new StringList<>());
+		object.nested.get("five").add("six");
+
+		for (boolean optimizedGenerics : new boolean[] {true, false}) {
+			kryo.setOptimizedGenerics(optimizedGenerics);
+			Output output = new Output(1024);
+			kryo.writeObject(output, object);
+			SubtypeFields read = kryo.readObject(new Input(output.toBytes()), SubtypeFields.class);
+			assertEquals(object.intKeys, read.intKeys);
+			assertEquals(object.swapped, read.swapped);
+			assertEquals(object.strings, read.strings);
+			assertEquals(object.extra, read.extra);
+			assertEquals(object.nested, read.nested);
+		}
+	}
+
+	@Test
+	void testParameterizedTypeArgumentOfMapSubtype () {
+		// The value type List<V> of the subtype is resolved like List<Long> of HashMap<String, List<Long>>.
+		kryo.register(ListValueMapField.class, 100);
+		kryo.register(HashMapField.class, 101);
+		kryo.register(ListValueMap.class, 102);
+		kryo.register(HashMap.class, 103);
+		kryo.register(ArrayList.class, 104);
+		ListValueMapField subtype = new ListValueMapField();
+		subtype.map = new ListValueMap<>();
+		subtype.map.put("a", new ArrayList<>(List.of(1L, 2L)));
+		HashMapField hashMap = new HashMapField();
+		hashMap.map = new HashMap<>(subtype.map);
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, subtype);
+		int subtypeLength = output.position();
+		assertEquals(subtype.map, kryo.readObject(new Input(output.toBytes()), ListValueMapField.class).map);
+		output.reset();
+		kryo.writeObject(output, hashMap);
+		assertEquals(output.position(), subtypeLength);
+	}
+
+	@Test
+	void testGenericArrayTypeArgumentOfMapSubtype () {
+		// The value type List<V[]> of the subtype is resolved like List<String[]> of HashMap<String, List<String[]>>.
+		kryo.register(ArrayListValueMapField.class, 100);
+		kryo.register(ArrayHashMapField.class, 101);
+		kryo.register(ArrayListValueMap.class, 102);
+		kryo.register(HashMap.class, 103);
+		kryo.register(ArrayList.class, 104);
+		kryo.register(String[].class, 105);
+		ArrayListValueMapField subtype = new ArrayListValueMapField();
+		subtype.map = new ArrayListValueMap<>();
+		subtype.map.put("a", new ArrayList<>(List.of(new String[] {"b"}, new String[] {"c"})));
+		ArrayHashMapField hashMap = new ArrayHashMapField();
+		hashMap.map = new HashMap<>(subtype.map);
+
+		Output output = new Output(1024);
+		kryo.writeObject(output, subtype);
+		int subtypeLength = output.position();
+		ArrayListValueMapField read = kryo.readObject(new Input(output.toBytes()), ArrayListValueMapField.class);
+		assertArrayEquals(subtype.map.get("a").get(1), read.map.get("a").get(1));
+		output.reset();
+		kryo.writeObject(output, hashMap);
+		assertEquals(output.position(), subtypeLength);
+	}
+
+	public static class ArrayListValueMapField {
+		public ArrayListValueMap<String> map;
+	}
+
+	public static class ArrayHashMapField {
+		public HashMap<String, List<String[]>> map;
+	}
+
+	public static class ArrayListValueMap<V> extends HashMap<String, List<V[]>> {
+	}
+
+	public static class ListValueMapField {
+		public ListValueMap<Long> map;
+	}
+
+	public static class HashMapField {
+		public HashMap<String, List<Long>> map;
+	}
+
+	public static class ListValueMap<V> extends HashMap<String, List<V>> {
+	}
+
+	public static class SubtypeFields {
+		public IntKeyMap<String> intKeys;
+		public SwappedMap<String, Integer> swapped;
+		public StringList<Integer> strings;
+		public ExtraParameterMap<Long, String, Integer> extra;
+		public HashMap<String, StringList<Long>> nested;
+	}
+
+	public static class IntKeyMap<V> extends HashMap<Integer, V> {
+	}
+
+	public static class SwappedMap<V, K> extends HashMap<K, V> {
+	}
+
+	public static class StringList<T> extends ArrayList<String> {
+	}
+
+	public static class ExtraParameterMap<X, K, V> extends HashMap<K, V> {
+	}
+
 	@Test
 	void testNoStackOverflowForSimpleGenericsCase () {
 		FooRef fooRef = new FooRef();

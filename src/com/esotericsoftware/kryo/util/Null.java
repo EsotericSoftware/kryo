@@ -19,14 +19,13 @@
 
 package com.esotericsoftware.kryo.util;
 
-import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Target;
 
 /** An element with this annotation claims that the element may have a {@code null} value. Apart from documentation purposes this
  * annotation is intended to be used by static analysis tools to validate against probable runtime errors or contract violations.
  * @author maltaisn */
-@Documented
-@Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER, ElementType.LOCAL_VARIABLE})
+// Qualified, Eclipse's null analysis may resolve these before the imports on a full build.
+@java.lang.annotation.Documented
+@java.lang.annotation.Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER, ElementType.LOCAL_VARIABLE})
 public @interface Null {
 }

@@ -23,6 +23,7 @@ import static com.esotericsoftware.kryo.unsafe.UnsafeUtil.*;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.InputStream;
@@ -36,6 +37,7 @@ import java.io.InputStream;
  * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 @SuppressWarnings("restriction")
+@IgnoreAndroid
 public class UnsafeInput extends Input {
 	/** Creates an uninitialized Input, {@link #setBuffer(byte[])} must be called before the Input is used. */
 	public UnsafeInput () {
@@ -190,7 +192,7 @@ public class UnsafeInput extends Input {
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = Math.min(count, capacity);
+			copyCount = Math.min(count, Math.max(capacity, 1));
 			require(copyCount);
 		}
 	}

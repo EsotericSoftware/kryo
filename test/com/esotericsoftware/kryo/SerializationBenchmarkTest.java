@@ -27,14 +27,13 @@ import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
 import com.esotericsoftware.kryo.unsafe.UnsafeInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
-import com.esotericsoftware.minlog.Log;
+import com.esotericsoftware.kryo.util.Log;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 /** Timed Kryo serialization with various buffers and settings.
  * @author Roman Levenstein <romixlev@gmail.com>
  * @author Nathan Sweet */
-@TestMethodOrder(MethodOrderer.Alphanumeric.class)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 class SerializationBenchmarkTest extends KryoTestCase {
 	private static final int WARMUP_ITERATIONS = 1000;
 
@@ -76,8 +75,8 @@ class SerializationBenchmarkTest extends KryoTestCase {
 	void testOutput () throws Exception {
 		Output output = new Output(OUTPUT_BUFFER_SIZE);
 		Input input = new Input(output.getBuffer());
-		run("Output", 1, WARMUP_ITERATIONS, output, input, false);
-		run("Output", RUN_CNT, ITER_CNT, output, input, true);
+		run("Output", 1, WARMUP_ITERATIONS, output, input);
+		run("Output", RUN_CNT, ITER_CNT, output, input);
 	}
 
 	@Test
@@ -86,16 +85,16 @@ class SerializationBenchmarkTest extends KryoTestCase {
 		Input input = new Input(output.getBuffer());
 		input.setVariableLengthEncoding(false);
 		output.setVariableLengthEncoding(false);
-		run("OutputFixed", 1, WARMUP_ITERATIONS, output, input, false);
-		run("OutputFixed", RUN_CNT, ITER_CNT, output, input, true);
+		run("OutputFixed", 1, WARMUP_ITERATIONS, output, input);
+		run("OutputFixed", RUN_CNT, ITER_CNT, output, input);
 	}
 
 	@Test
 	void testByteBufferOutput () throws Exception {
 		ByteBufferOutput output = new ByteBufferOutput(OUTPUT_BUFFER_SIZE);
 		ByteBufferInput input = new ByteBufferInput(output.getByteBuffer());
-		run("ByteBufferOutput", 1, WARMUP_ITERATIONS, output, input, false);
-		run("ByteBufferOutput", RUN_CNT, ITER_CNT, output, input, true);
+		run("ByteBufferOutput", 1, WARMUP_ITERATIONS, output, input);
+		run("ByteBufferOutput", RUN_CNT, ITER_CNT, output, input);
 	}
 
 	@Test
@@ -104,8 +103,8 @@ class SerializationBenchmarkTest extends KryoTestCase {
 		ByteBufferInput input = new ByteBufferInput(output.getByteBuffer());
 		input.setVariableLengthEncoding(false);
 		output.setVariableLengthEncoding(false);
-		run("ByteBufferOutputFixed", 1, WARMUP_ITERATIONS, output, input, false);
-		run("ByteBufferOutputFixed", RUN_CNT, ITER_CNT, output, input, true);
+		run("ByteBufferOutputFixed", 1, WARMUP_ITERATIONS, output, input);
+		run("ByteBufferOutputFixed", RUN_CNT, ITER_CNT, output, input);
 	}
 
 	@Test
@@ -113,8 +112,8 @@ class SerializationBenchmarkTest extends KryoTestCase {
 	void testUnsafeOutput () throws Exception {
 		UnsafeOutput output = new UnsafeOutput(OUTPUT_BUFFER_SIZE);
 		UnsafeInput input = new UnsafeInput(output.getBuffer());
-		run("UnsafeOutput", 1, WARMUP_ITERATIONS, output, input, false);
-		run("UnsafeOutput", RUN_CNT, ITER_CNT, output, input, true);
+		run("UnsafeOutput", 1, WARMUP_ITERATIONS, output, input);
+		run("UnsafeOutput", RUN_CNT, ITER_CNT, output, input);
 	}
 
 	@Test
@@ -124,8 +123,8 @@ class SerializationBenchmarkTest extends KryoTestCase {
 		UnsafeInput input = new UnsafeInput(output.getBuffer());
 		input.setVariableLengthEncoding(false);
 		output.setVariableLengthEncoding(false);
-		run("UnsafeOutputFixed", 1, WARMUP_ITERATIONS, output, input, false);
-		run("UnsafeOutputFixed", RUN_CNT, ITER_CNT, output, input, true);
+		run("UnsafeOutputFixed", 1, WARMUP_ITERATIONS, output, input);
+		run("UnsafeOutputFixed", RUN_CNT, ITER_CNT, output, input);
 	}
 
 	@Test
@@ -133,8 +132,8 @@ class SerializationBenchmarkTest extends KryoTestCase {
 	void testUnsafeByteBufferOutput () throws Exception {
 		UnsafeByteBufferOutput output = new UnsafeByteBufferOutput(OUTPUT_BUFFER_SIZE);
 		UnsafeByteBufferInput input = new UnsafeByteBufferInput(output.getByteBuffer());
-		run("UnsafeByteBufferOutput", 1, WARMUP_ITERATIONS, output, input, false);
-		run("UnsafeByteBufferOutput", RUN_CNT, ITER_CNT, output, input, true);
+		run("UnsafeByteBufferOutput", 1, WARMUP_ITERATIONS, output, input);
+		run("UnsafeByteBufferOutput", RUN_CNT, ITER_CNT, output, input);
 	}
 
 	@Test
@@ -144,8 +143,8 @@ class SerializationBenchmarkTest extends KryoTestCase {
 		UnsafeByteBufferInput input = new UnsafeByteBufferInput(output.getByteBuffer());
 		input.setVariableLengthEncoding(false);
 		output.setVariableLengthEncoding(false);
-		run("UnsafeByteBufferOutputFixed", 1, WARMUP_ITERATIONS, output, input, false);
-		run("UnsafeByteBufferOutputFixed", RUN_CNT, ITER_CNT, output, input, true);
+		run("UnsafeByteBufferOutputFixed", 1, WARMUP_ITERATIONS, output, input);
+		run("UnsafeByteBufferOutputFixed", RUN_CNT, ITER_CNT, output, input);
 	}
 
 	private void cleanUpAfterRun () throws InterruptedException {
@@ -154,19 +153,15 @@ class SerializationBenchmarkTest extends KryoTestCase {
 		System.gc();
 	}
 
-	private void run (String name, int runCount, int iterations, Output output, Input input, boolean print) throws Exception {
+	private void run (String name, int runCount, int iterations, Output output, Input input) throws Exception {
 		Kryo kryo = new Kryo();
 		kryo.register(long[].class);
 		kryo.register(double[].class);
 		kryo.register(SampleObject.class);
 		kryo.setReferences(true);
 
-		long average = 0;
-		long best = Long.MAX_VALUE;
 		for (int i = 0; i < runCount; i++) {
 			SampleObject object2 = null;
-
-			long start = System.nanoTime();
 
 			for (int j = 0; j < iterations; j++) {
 				output.setPosition(0);
@@ -177,23 +172,10 @@ class SerializationBenchmarkTest extends KryoTestCase {
 				object2 = kryo.readObject(input, SampleObject.class);
 			}
 
-			long duration = System.nanoTime() - start;
-			duration = TimeUnit.NANOSECONDS.toMillis(duration);
-
 			// Check that unmarshalled object is equal to original one (should never fail).
 			if (!object.equals(object2)) throw new RuntimeException("Unmarshalled object is not equal to original object.");
 
-			if (print) System.out.format("%s (run %d): %,d ms\n", name, i + 1, duration);
-			average += duration;
-			best = Math.min(best, duration);
 			cleanUpAfterRun();
-		}
-
-		average /= runCount;
-
-		if (print) {
-			System.out.format("%s (average): %,d ms\n", name, average);
-			System.out.format("%s (best time): %,d ms\n\n", name, best);
 		}
 	}
 

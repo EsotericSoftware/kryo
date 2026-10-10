@@ -20,7 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.util.Util.*;
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.kryo.util.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -31,14 +31,17 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.Generics;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.kryo.util.Generics.GenericsHierarchy;
-import com.esotericsoftware.reflectasm.FieldAccess;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.RecordComponent;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
  * configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be
@@ -65,6 +68,18 @@ public class FieldSerializer<T> extends Serializer<T> {
 	final CachedFields cachedFields;
 	private final GenericsHierarchy genericsHierarchy;
 
+	// For records.
+	final Constructor recordConstructor;
+
+	/** Generated code that writes and reads the fields, or null if it isn't generated: code generation is disabled or not possible
+	 * for the type, or the fields weren't used yet. */
+	GeneratedFields generated;
+	/** Generated code that copies the fields, see {@link #generatedCopy()}. */
+	GeneratedFields generatedCopy;
+	/** True if the code is generated when the fields are next used or copied, see {@link #generated()}. */
+	boolean generatePending, generateCopyPending;
+	private final Object[] recordDefaults;
+
 	public FieldSerializer (Kryo kryo, Class type) {
 		this(kryo, type, new FieldSerializerConfig());
 	}
@@ -80,13 +95,120 @@ public class FieldSerializer<T> extends Serializer<T> {
 		final Generics generics = kryo.getGenerics();
 		genericsHierarchy = generics.buildHierarchy(type);
 
+		RecordComponent[] components = CachedFields.recordComponents(type);
+		if (components != null) {
+			Class[] componentTypes = new Class[components.length];
+			recordDefaults = new Object[components.length];
+			for (int i = 0; i < components.length; i++) {
+				componentTypes[i] = components[i].getType();
+				if (componentTypes[i].isPrimitive()) recordDefaults[i] = Array.get(Array.newInstance(componentTypes[i], 1), 0);
+			}
+			try {
+				recordConstructor = type.getDeclaredConstructor(componentTypes);
+			} catch (NoSuchMethodException ex) {
+				throw new KryoException("Unable to find canonical constructor: " + className(type), ex);
+			}
+			try {
+				recordConstructor.setAccessible(true);
+			} catch (RuntimeException ex) {
+				if (DEBUG) debug("kryo", "Unable to set canonical constructor as accessible: " + className(type), ex);
+			}
+		} else {
+			recordConstructor = null;
+			recordDefaults = null;
+		}
+
 		cachedFields = new CachedFields(this);
 		cachedFields.rebuild();
 	}
 
 	/** Called when {@link #getFields()} and {@link #getCopyFields()} have been repopulated. Subclasses can override this method to
-	 * configure or remove cached fields. */
+	 * configure or remove cached fields. It is not called when a field is removed. */
 	protected void initializeCachedFields () {
+	}
+
+	/** Called after the cached fields changed: after {@link #initializeCachedFields()}, which can remove fields, and after a field
+	 * was removed. Subclasses in this package update what they derive from the fields here.
+	 * @param fields The fields. The array is replaced when a field is removed, so this must not keep it. */
+	void cachedFieldsChanged (CachedField[] fields) {
+	}
+
+	/** Called by {@link CachedFields} when the fields were built or a field was removed, see
+	 * {@link #cachedFieldsChanged(CachedField[])}. */
+	final void fieldsChanged (CachedField[] fields) {
+		cachedFieldsChanged(fields);
+		regenerate();
+	}
+
+	/** Discards the generated code. If {@link #codeGenerated()}, it is generated again when the fields are next used or copied,
+	 * see {@link #generated()} and {@link #generatedCopy()}. */
+	final void regenerate () {
+		generated = generatedCopy = null;
+		generatePending = generateCopyPending = codeGenerated();
+	}
+
+	/** Returns true if code is generated for the fields: {@link FieldSerializerConfig#setCodeGeneration(boolean)} is enabled and
+	 * the platform supports it. The code is used if {@link #usesGeneratedCode()}. */
+	final boolean codeGenerated () {
+		return config.codeGeneration && CachedFields.codeGeneration;
+	}
+
+	/** Returns true if the generated code can be used with the current config settings, which can be changed without
+	 * {@link #updateFields()}. Subclasses with settings their generated code doesn't support return false. */
+	boolean usesGeneratedCode () {
+		return true;
+	}
+
+	/** Returns true if the class of each value is written before the value, like CompatibleFieldSerializer with unknown field
+	 * data. */
+	boolean writesClasses () {
+		return false;
+	}
+
+	/** Returns the generated code for the fields, or null if it can't be generated. Subclasses pass their fields and options. */
+	GeneratedFields generateCode () {
+		return GeneratedFields.generate(this, cachedFields.fields(), writesClasses(), null);
+	}
+
+	/** Returns the generated code for the current config settings, or null if it isn't used. The code is generated when the fields
+	 * are first used, so registered classes that are never serialized don't need it. If that fails, the cached fields are used.
+	 * {@link #usesGeneratedCode()} and {@link #writesClasses()} can be changed without {@link #updateFields()}, so the code is
+	 * regenerated if the setting it was generated for changed. */
+	final GeneratedFields generated () {
+		if (!usesGeneratedCode()) return null;
+		GeneratedFields generated = this.generated;
+		if (generated != null) {
+			if (generated.writesClasses == writesClasses()) return generated;
+			this.generated = null;
+		} else if (!generatePending) return null;
+		generatePending = false;
+		try {
+			this.generated = generateCode();
+		} catch (KryoException ex) {
+			if (DEBUG) debug("kryo", "Unable to generate code for the fields of: " + className(type), ex);
+		}
+		return this.generated;
+	}
+
+	/** Returns the generated code that copies the fields, or null if it isn't used. Generated when the fields are first copied,
+	 * separately from {@link #generated()} because the fields to copy can differ, eg transient fields are copied but not
+	 * written. */
+	final GeneratedFields generatedCopy () {
+		if (generateCopyPending) {
+			generateCopyPending = false;
+			try {
+				generatedCopy = GeneratedFields.generate(this, cachedFields.copyFields(), false, null);
+			} catch (KryoException ex) {
+				if (DEBUG) debug("kryo", "Unable to generate code to copy the fields of: " + className(type), ex);
+			}
+		}
+		return generatedCopy;
+	}
+
+	/** Returns true if the generic type of a field is used to optimize the serialization of its value, eg to omit the class of
+	 * collection elements. Then the value can only be read with the same generic type. */
+	protected boolean optimizeGenerics () {
+		return true;
 	}
 
 	/** If the returned config settings are modified, {@link #updateFields()} must be called. */
@@ -103,7 +225,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public void write (Kryo kryo, Output output, T object) {
 		int pop = pushTypeVariables();
 
-		CachedField[] fields = cachedFields.fields;
+		if (generated() != null) {
+			writeGenerated(output, object, null);
+			popTypeVariables(pop);
+			return;
+		}
+
+		CachedField[] fields = cachedFields.fields();
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Write", fields[i], output.position());
 			try {
@@ -121,14 +249,33 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int pop = pushTypeVariables();
 
-		T object = create(kryo, input, type);
-		kryo.reference(object);
+		T object = null;
+		Object[] values = null;
+		if (recordConstructor == null) {
+			object = create(kryo, input, type);
+			kryo.reference(object);
+		} else if (generated() != null) {
+			object = (T)generated.readRecord(input);
+			popTypeVariables(pop);
+			return object;
+		} else
+			values = newRecordValues();
 
-		CachedField[] fields = cachedFields.fields;
+		if (generated() != null) {
+			readGenerated(input, object, null);
+			popTypeVariables(pop);
+			return object;
+		}
+
+		CachedField[] fields = cachedFields.fields();
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Read", fields[i], input.position());
 			try {
-				fields[i].read(input, object);
+				final CachedField field = fields[i];
+				if (values == null)
+					readField(field, input, object);
+				else
+					values[field.index] = field.read(input);
 			} catch (KryoException e) {
 				throw e;
 			} catch (Exception e) {
@@ -136,18 +283,100 @@ public class FieldSerializer<T> extends Serializer<T> {
 			}
 		}
 
+		if (values != null) object = createRecord(values);
+
 		popTypeVariables(pop);
 		return object;
+	}
+
+	/** Writes all fields with {@link #generated}.
+	 * @param chunks May be null. */
+	void writeGenerated (Output output, Object object, ChunkedEncoding chunks) {
+		try {
+			if (chunks == null)
+				generated.write(output, object);
+			else
+				generated.write(output, object, chunks);
+		} catch (KryoException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new KryoException("Error writing " + className(type) + " at position " + output.position(), e);
+		}
+	}
+
+	/** Reads all fields with {@link #generated}.
+	 * @param chunks May be null. */
+	void readGenerated (Input input, Object object, ChunkedEncoding chunks) {
+		try {
+			if (chunks == null)
+				generated.read(input, object);
+			else
+				generated.read(input, object, chunks);
+		} catch (KryoException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new KryoException("Error reading " + className(type) + " at position " + input.position(), e);
+		}
+	}
+
+	/** Reads the value of a field and sets it, with {@link #setFinal(CachedField, Object, Object)} for a final field. */
+	void readField (CachedField field, Input input, Object object) {
+		if (field.isFinal)
+			setFinal(field, object, field.read(input));
+		else
+			field.read(input, object);
+	}
+
+	/** Copies the value of a field, with {@link #setFinal(CachedField, Object, Object)} for a final field. */
+	void copyField (Kryo kryo, CachedField field, Object original, Object copy) {
+		if (!field.isFinal) {
+			field.copy(original, copy);
+			return;
+		}
+		try {
+			Object value = field.get(original);
+			// Primitive values are immutable, all other values are copied like other field values.
+			setFinal(field, copy, field.field.getType().isPrimitive() ? value : kryo.copy(value));
+		} catch (IllegalAccessException ex) {
+			throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
+		} catch (KryoException ex) {
+			ex.addTrace(field.name + " (" + className(type) + ")");
+			throw ex;
+		}
+	}
+
+	/** Returns a new array for the component values of a record, indexed by {@link CachedField#index}. */
+	Object[] newRecordValues () {
+		return new Object[recordDefaults.length];
+	}
+
+	/** Creates a record using its canonical constructor. Components without a value, for example because they were not present in
+	 * the serialized data, are set to their default value. */
+	T createRecord (Object[] values) {
+		Object[] defaults = recordDefaults;
+		for (int i = 0, n = values.length; i < n; i++)
+			if (values[i] == null) values[i] = defaults[i];
+		try {
+			return (T)recordConstructor.newInstance(values);
+		} catch (InvocationTargetException ex) {
+			throw new KryoException("Error constructing record: " + className(type), ex.getCause());
+		} catch (Exception ex) {
+			throw new KryoException("Error constructing record: " + className(type), ex);
+		}
 	}
 
 	/** Prepares the type variables for the serialized type. Must be balanced with {@link #popTypeVariables(int)} if {@code > 0} is
 	 * returned. */
 	protected int pushTypeVariables () {
-		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes();
-		if (genericTypes == null) return 0;
+		Generics generics = kryo.getGenerics();
+		GenericType genericType = generics.nextGenericType();
+		if (genericType == null) return 0;
+		// nextGenericType pushes the last type argument for the values of a collection or map. It must not be used for the fields,
+		// which don't push their own generic type if optimizeGenerics is false.
+		generics.popGenericType();
 
-		int pop = kryo.getGenerics().pushTypeVariables(genericsHierarchy, genericTypes);
-		if (TRACE && pop > 0) trace("kryo", "Generics: " + kryo.getGenerics());
+		int pop = generics.pushTypeVariables(genericsHierarchy, genericType);
+		if (TRACE && pop > 0) trace("kryo", "Generics: " + generics);
 		return pop;
 	}
 
@@ -157,6 +386,47 @@ public class FieldSerializer<T> extends Serializer<T> {
 			generics.popTypeVariables(pop);
 		}
 		generics.popGenericType();
+	}
+
+	/** Returns the setter of a final field, resolving it on the first call, see {@link CachedField#finalUnresolved}. Null if the
+	 * field is set with reflection. */
+	static FinalFieldSetter finalSetter (CachedField field) {
+		if (field.finalUnresolved) {
+			field.finalUnresolved = false;
+			field.finalSetter = FinalFieldSetter.create(field.field);
+		}
+		return field.finalSetter;
+	}
+
+	/** Sets a final field, which VarHandles can't set: with reflection, with its {@link FinalFieldSetter} if that is denied, or
+	 * with Unsafe for an Unsafe field. Also called by the generated code if setting the field with reflection is denied. */
+	static void setFinal (CachedField field, Object object, Object value) {
+		FinalFieldSetter setter = finalSetter(field);
+		if (setter != null)
+			setter.set(object, value);
+		else if (field.offset != 0)
+			UnsafeField.put(field, object, value);
+		else {
+			try {
+				field.field.set(object, value);
+			} catch (IllegalAccessException ex) {
+				throw ReflectField.accessError(field.field, ex);
+			}
+		}
+	}
+
+	/** Sets a non-primitive field to null. */
+	void setNull (CachedField cachedField, Object object) {
+		if (cachedField.field.getType().isPrimitive()) return;
+		if (cachedField.isFinal) {
+			setFinal(cachedField, object, null);
+			return;
+		}
+		try {
+			cachedField.field.set(object, null);
+		} catch (IllegalAccessException ex) {
+			throw new KryoException("Error setting field to null: " + cachedField, ex);
+		}
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
@@ -184,7 +454,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Returns the field with the specified name, allowing field specific settings to be configured. */
 	public CachedField getField (String fieldName) {
-		for (CachedField cachedField : cachedFields.fields)
+		for (CachedField cachedField : cachedFields.fields())
 			if (cachedField.name.equals(fieldName)) return cachedField;
 		throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + type.getName());
 	}
@@ -201,12 +471,12 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 	/** Returns the fields used for serialization. */
 	public CachedField[] getFields () {
-		return cachedFields.fields;
+		return cachedFields.fields();
 	}
 
 	/** Returns the fields used for copying. */
 	public CachedField[] getCopyFields () {
-		return cachedFields.copyFields;
+		return cachedFields.copyFields();
 	}
 
 	public Class getType () {
@@ -224,13 +494,36 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public T copy (Kryo kryo, T original) {
-		T copy = createCopy(kryo, original);
-		kryo.reference(copy);
+		GeneratedFields generated = generatedCopy();
+		if (recordConstructor != null && generated != null) return (T)generated.copyRecord(original);
+		final CachedField[] copyFields = cachedFields.copyFields();
+		if (recordConstructor == null) {
+			T copy = createCopy(kryo, original);
+			kryo.reference(copy);
+			if (generated != null)
+				generated.copy(original, copy);
+			else {
+				for (int i = 0, n = copyFields.length; i < n; i++)
+					copyField(kryo, copyFields[i], original, copy);
+			}
+			return copy;
+		}
 
-		for (int i = 0, n = cachedFields.copyFields.length; i < n; i++)
-			cachedFields.copyFields[i].copy(original, copy);
-
-		return copy;
+		Object[] values = newRecordValues();
+		for (int i = 0, n = copyFields.length; i < n; i++) {
+			CachedField field = copyFields[i];
+			try {
+				Object value = field.get(original);
+				// Primitive values are immutable, all other values are copied like other field values.
+				values[field.index] = field.field.getType().isPrimitive() ? value : kryo.copy(value);
+			} catch (IllegalAccessException ex) {
+				throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
+			} catch (KryoException ex) {
+				ex.addTrace(field.name + " (" + className(type) + ")");
+				throw ex;
+			}
+		}
+		return createRecord(values);
 	}
 
 	/** Settings for serializing a field. */
@@ -241,9 +534,19 @@ public class FieldSerializer<T> extends Serializer<T> {
 		Serializer serializer;
 		boolean canBeNull, varEncoding = true, optimizePositive, reuseSerializer = true;
 
-		// For AsmField.
-		FieldAccess access;
-		int accessIndex = -1;
+		// For Records
+		int index;
+
+		/** True for a final field that is set by the serializer with {@link FieldSerializer#setFinal(CachedField, Object, Object)},
+		 * because VarHandles can't set final fields. False for Unsafe fields, which set final fields themselves, for records, which
+		 * set their fields with their constructor, and on Android, where ReflectField sets them. */
+		boolean isFinal;
+		/** Sets the field if it is final and setting it with reflection is denied, else null. */
+		FinalFieldSetter finalSetter;
+		/** True for a final field until it is first set, then {@link #finalSetter} is resolved. Resolving it obtains a method
+		 * handle for setting the field, which Java 26+ warns about like setting the field with reflection, so it is only done when
+		 * Kryo sets a final field, not when a serializer is created, eg to write objects. */
+		boolean finalUnresolved;
 
 		// For UnsafeField.
 		long offset;
@@ -310,12 +613,15 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return varEncoding;
 		}
 
-		/** When true, variable length int and long values are written with fewer bytes for positive values and more bytes for
-		 * negative values. Default is false. */
+		/** @deprecated Has no effect, variable length int and long values are always written optimized for both negative and
+		 *             positive values. Will be removed in Kryo 7. */
+		@Deprecated
 		public void setOptimizePositive (boolean optimizePositive) {
 			this.optimizePositive = optimizePositive;
 		}
 
+		/** @deprecated See {@link #setOptimizePositive(boolean)}. */
+		@Deprecated
 		public boolean getOptimizePositive () {
 			return optimizePositive;
 		}
@@ -347,8 +653,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public abstract void read (Input input, Object object);
 
+		public abstract Object read (Input input);
+
 		public abstract void copy (Object original, Object copy);
 
+		Object get (Object object) throws IllegalAccessException {
+			return field.get(object);
+		}
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has
@@ -394,7 +705,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		/** @see CachedField#setVariableLengthEncoding(boolean) */
 		boolean variableLengthEncoding() default true;
 
-		/** @see CachedField#setOptimizePositive(boolean) */
+		/** @deprecated Has no effect, see {@link CachedField#setOptimizePositive(boolean)}. */
+		@Deprecated
 		boolean optimizePositive() default false;
 	}
 
@@ -406,8 +718,58 @@ public class FieldSerializer<T> extends Serializer<T> {
 	public @interface NotNull {
 	}
 
+	/** How {@link FieldSerializer} reads and writes fields. If a field can't be accessed this way, VarHandles are used, and
+	 * reflection if they can't be used either, eg for final fields, which can't be written with VarHandles, or for records, which
+	 * are never accessed with Unsafe. Reflection works for all fields. */
+	public enum FieldAccessType {
+		/** {@code sun.misc.Unsafe}, if available. Fastest, but deprecated for removal by Java. */
+		UNSAFE,
+		/** {@link java.lang.invoke.VarHandle} for non-final fields. */
+		VARHANDLE,
+		/** {@link Field} reflection. */
+		REFLECTION
+	}
+
 	/** Configuration for FieldSerializer instances. */
 	public static class FieldSerializerConfig implements Cloneable {
+		/** The value of the system property "kryo.fieldAccess" if it is set. Otherwise Unsafe where it can be used without a
+		 * warning, otherwise VarHandles. Java warns about Unsafe memory access since Java 24, unless it is allowed with
+		 * {@code --sun-misc-unsafe-memory-access=allow}. On Android, which has VarHandles only since API level 33, reflection. */
+		static final FieldAccessType defaultFieldAccess;
+		static {
+			String memoryAccess = System.getProperty("sun.misc.unsafe.memory.access");
+			String configured = System.getProperty("kryo.fieldAccess");
+			if (configured != null) {
+				try {
+					defaultFieldAccess = FieldAccessType.valueOf(configured);
+				} catch (IllegalArgumentException ex) {
+					throw new KryoException("Invalid value of the system property kryo.fieldAccess: " + configured, ex);
+				}
+			} else if (isAndroid)
+				defaultFieldAccess = FieldAccessType.REFLECTION;
+			else if (!unsafe)
+				defaultFieldAccess = FieldAccessType.VARHANDLE;
+			else if (memoryAccess != null)
+				defaultFieldAccess = memoryAccess.equals("allow") ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+			else
+				defaultFieldAccess = javaVersion() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+			if (DEBUG) {
+				debug("kryo", "Default field access: " + defaultFieldAccess + (isAndroid ? " (Android)"
+					: " (Java " + javaVersion() + ", Unsafe available: " + unsafe + ", Unsafe memory access: "
+						+ (memoryAccess == null ? "default" : memoryAccess) + ")")
+					+ ", code generation available: " + CachedFields.codeGeneration);
+			}
+		}
+
+		/** True if the system property "kryo.codeGeneration" is "true". */
+		static final boolean defaultCodeGeneration = "true".equals(System.getProperty("kryo.codeGeneration"));
+		static {
+			if (defaultCodeGeneration && !CachedFields.codeGeneration && WARN)
+				warn("kryo", "The system property kryo.codeGeneration is true. " + CachedFields.codeGenerationUnavailable());
+		}
+
+		FieldAccessType fieldAccess = defaultFieldAccess;
+		boolean codeGeneration = defaultCodeGeneration;
 		boolean fieldsCanBeNull = true;
 		boolean setFieldsAsAccessible = true;
 		boolean ignoreSyntheticFields = true;
@@ -419,7 +781,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public FieldSerializerConfig clone () {
 			try {
-				return (FieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
+				return (FieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive and immutable fields.
 			} catch (CloneNotSupportedException ex) {
 				throw new KryoException(ex);
 			}
@@ -438,9 +800,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 
 		/** Controls which fields are serialized.
-		 * @param setFieldsAsAccessible If true, all non-transient fields (inlcuding private fields) will be serialized and
-		 *           {@link java.lang.reflect.Field#setAccessible(boolean) set as accessible} if necessary (default). If false, only
-		 *           fields in the public API will be serialized. */
+		 * @param setFieldsAsAccessible If true, all non-transient fields (including private fields) will be serialized and
+		 *           {@link java.lang.reflect.Field#setAccessible(boolean) set as accessible} (default). If false, only public,
+		 *           non-final fields of public classes will be serialized, which can be accessed without setAccessible. */
 		public void setFieldsAsAccessible (boolean setFieldsAsAccessible) {
 			this.setFieldsAsAccessible = setFieldsAsAccessible;
 			if (TRACE) trace("kryo", "FieldSerializerConfig setFieldsAsAccessible: " + setFieldsAsAccessible);
@@ -450,8 +812,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return setFieldsAsAccessible;
 		}
 
-		/** Controls if synthetic fields are serialized. Default is true.
-		 * @param ignoreSyntheticFields If true, only non-synthetic fields will be serialized. */
+		/** Controls if synthetic fields are serialized, which the compiler generates, eg the outer instance and the captured
+		 * variables of anonymous classes, local classes and non-static member classes. Without them, these objects have a null
+		 * outer instance after reading. The synthetic fields can refer to large or sensitive object graphs, and an inner object
+		 * that is serialized with its outer instance often needs references, because the outer instance refers to the inner object.
+		 * @param ignoreSyntheticFields True to never serialize synthetic fields (default), false to always serialize them. */
 		public void setIgnoreSyntheticFields (boolean ignoreSyntheticFields) {
 			this.ignoreSyntheticFields = ignoreSyntheticFields;
 			if (TRACE) trace("kryo", "FieldSerializerConfig ignoreSyntheticFields: " + ignoreSyntheticFields);
@@ -516,6 +881,38 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public boolean getExtendedFieldNames () {
 			return extendedFieldNames;
+		}
+
+		/** Sets how fields are read and written. Default is the value of the system property "kryo.fieldAccess" if it is set,
+		 * otherwise {@link FieldAccessType#UNSAFE} where Unsafe can be used without a warning, which is before Java 24 or with
+		 * {@code --sun-misc-unsafe-memory-access=allow}, {@link FieldAccessType#REFLECTION} on Android, otherwise
+		 * {@link FieldAccessType#VARHANDLE}. Changes take effect for new serializers or after
+		 * {@link FieldSerializer#updateFields()}. */
+		public void setFieldAccess (FieldAccessType fieldAccess) {
+			if (fieldAccess == null) throw new IllegalArgumentException("fieldAccess cannot be null.");
+			this.fieldAccess = fieldAccess;
+			if (TRACE) trace("kryo", "FieldSerializerConfig fieldAccess: " + fieldAccess);
+		}
+
+		public FieldAccessType getFieldAccess () {
+			return fieldAccess;
+		}
+
+		/** If true, the code that writes, reads and copies the fields of a class is generated as a hidden class, which the JIT can
+		 * optimize much better than the loop over the cached fields: there is no virtual call per field and the field accessors are
+		 * constants. The generated code writes the same bytes. It is generated when the serializer first writes, reads or copies an
+		 * object. Used by FieldSerializer and its subclasses, except with the chunked encoding of Kryo 5. The class is written with
+		 * the Class-File API on Java 24+, or with ASM on older Java versions, which is an optional dependency. Not available on
+		 * Android or in a native image. The cached fields are used where code can't be generated, eg for records with more than 64
+		 * components. Default is false, or true if the system property "kryo.codeGeneration" is "true". */
+		public void setCodeGeneration (boolean codeGeneration) {
+			this.codeGeneration = codeGeneration;
+			if (TRACE) trace("kryo", "FieldSerializerConfig codeGeneration: " + codeGeneration);
+			if (codeGeneration && !CachedFields.codeGeneration && WARN) warn("kryo", CachedFields.codeGenerationUnavailable());
+		}
+
+		public boolean getCodeGeneration () {
+			return codeGeneration;
 		}
 	}
 }

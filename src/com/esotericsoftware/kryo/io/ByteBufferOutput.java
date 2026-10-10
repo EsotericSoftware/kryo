@@ -94,6 +94,7 @@ public class ByteBufferOutput extends Output {
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
+	@Deprecated
 	public byte[] getBuffer () {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #getByteBuffer().");
 	}
@@ -101,6 +102,7 @@ public class ByteBufferOutput extends Output {
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
+	@Deprecated
 	public void setBuffer (byte[] buffer) {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}
@@ -108,6 +110,7 @@ public class ByteBufferOutput extends Output {
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
+	@Deprecated
 	public void setBuffer (byte[] buffer, int maxBufferSize) {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}
@@ -190,7 +193,7 @@ public class ByteBufferOutput extends Output {
 		}
 		if (capacity == 0) capacity = 16;
 		do {
-			capacity = Math.min(capacity * 2, maxCapacity);
+			capacity = (int)Math.min(capacity * 2L, maxCapacity); // Long, so it does not overflow above 1 GiB.
 		} while (capacity - position < required);
 		ByteBuffer newBuffer = !byteBuffer.isDirect() ? ByteBuffer.allocate(capacity) : ByteBuffer.allocateDirect(capacity);
 		setBufferPosition(byteBuffer, 0);
@@ -271,7 +274,7 @@ public class ByteBufferOutput extends Output {
 			count -= copyCount;
 			if (count == 0) return;
 			offset += copyCount;
-			copyCount = Math.min(capacity, count);
+			copyCount = Math.min(Math.max(capacity, 1), count);
 			require(copyCount);
 		}
 	}
@@ -607,19 +610,16 @@ public class ByteBufferOutput extends Output {
 		writeVarIntFlag(true, charCount + 1, true);
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
-			// Try to write 7 bit chars.
+			// Try to write 7 bit chars. A counted loop is required for the JIT to eliminate the charAt range checks and unroll.
 			ByteBuffer byteBuffer = this.byteBuffer;
-			while (true) {
+			int p = position;
+			for (; charIndex < charCount; charIndex++) {
 				int c = value.charAt(charIndex);
 				if (c > 127) break;
-				byteBuffer.put((byte)c);
-				charIndex++;
-				if (charIndex == charCount) {
-					position = getBufferPosition(byteBuffer);
-					return;
-				}
+				byteBuffer.put(p + charIndex, (byte)c);
 			}
-			position = getBufferPosition(byteBuffer);
+			position = p + charIndex;
+			setBufferPosition(byteBuffer, position);
 		}
 		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
@@ -674,6 +674,7 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
+	@SuppressWarnings("deprecation") // The fastest copy of ASCII chars.
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
 		ByteBuffer buffer = this.byteBuffer;
 		int charIndex = 0;
