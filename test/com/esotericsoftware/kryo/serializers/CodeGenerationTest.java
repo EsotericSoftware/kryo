@@ -104,7 +104,7 @@ class CodeGenerationTest extends KryoTestCase {
 			k.register(HashMap.class);
 			k.register(int[].class);
 		}
-		assertNull(((FieldSerializer)cachedFields.getSerializer(AllKinds.class)).generated);
+		assertNull(((FieldSerializer)cachedFields.getSerializer(AllKinds.class)).generated());
 		assertGenerated(AllKinds.class);
 
 		AllKinds object = AllKinds.create();
@@ -175,7 +175,7 @@ class CodeGenerationTest extends KryoTestCase {
 		kryo.register(Nested.class);
 		kryo2.register(Nested.class);
 		GeneratedFields generated1 = assertGenerated(Nested.class);
-		GeneratedFields generated2 = ((FieldSerializer)kryo2.getSerializer(Nested.class)).generated;
+		GeneratedFields generated2 = ((FieldSerializer)kryo2.getSerializer(Nested.class)).generated();
 		assertNotNull(generated2);
 		assertNotSame(generated1, generated2);
 		assertSame(generated1.getClass(), generated2.getClass());
@@ -183,10 +183,43 @@ class CodeGenerationTest extends KryoTestCase {
 	}
 
 	@Test
+	void testGeneratedAtFirstUse () {
+		// The code is generated when the fields are first used, so registered classes that are never serialized don't need it.
+		kryo.register(Nested.class);
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(Nested.class);
+		assertNull(serializer.generated);
+		assertTrue(serializer.generatePending);
+		Nested object = new Nested();
+		object.value = 123;
+		write(kryo, object);
+		assertNotNull(serializer.generated);
+		assertFalse(serializer.generatePending);
+		assertSame(serializer.generated, serializer.generated());
+		assertEquals(123, read(kryo, write(kryo, object), Nested.class).value);
+
+		// If the generation fails, the cached fields are used and the generation is not tried again.
+		int[] generateCalls = new int[1];
+		FieldSerializer failing = new FieldSerializer(kryo, Nested.class, codeGeneration().getConfig()) {
+			GeneratedFields generateCode () {
+				generateCalls[0]++;
+				throw new KryoException("Test failure.");
+			}
+		};
+		kryo.register(Nested.class, failing);
+		assertTrue(failing.generatePending);
+		assertEquals(123, read(kryo, write(kryo, object), Nested.class).value);
+		assertNull(failing.generated);
+		assertFalse(failing.generatePending);
+		assertEquals(1, generateCalls[0]);
+		assertNull(failing.generated());
+		assertEquals(1, generateCalls[0]);
+	}
+
+	@Test
 	void testRemoveFieldAndUpdateFields () {
 		kryo.register(Nested.class);
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(Nested.class);
-		GeneratedFields generated = serializer.generated;
+		GeneratedFields generated = serializer.generated();
 		assertNotNull(generated);
 
 		// Field settings apply without updateFields, like for the cached fields.
@@ -200,9 +233,9 @@ class CodeGenerationTest extends KryoTestCase {
 		serializer.getField("value").setVariableLengthEncoding(true);
 
 		serializer.removeField("value");
-		assertNotNull(serializer.generated);
-		assertNotSame(generated, serializer.generated);
-		assertNotSame(generated.getClass(), serializer.generated.getClass());
+		assertNotNull(serializer.generated());
+		assertNotSame(generated, serializer.generated());
+		assertNotSame(generated.getClass(), serializer.generated().getClass());
 		Nested read = read(kryo, write(kryo, object), Nested.class);
 		assertEquals(0, read.value);
 		assertEquals("name", read.name);
@@ -210,12 +243,12 @@ class CodeGenerationTest extends KryoTestCase {
 		// The removed field stays removed.
 		serializer.getFieldSerializerConfig().setVariableLengthEncoding(false);
 		serializer.updateFields();
-		assertNotNull(serializer.generated);
+		assertNotNull(serializer.generated());
 		assertEquals(4, write(kryo, object).length);
 
 		serializer.getFieldSerializerConfig().setCodeGeneration(false);
 		serializer.updateFields();
-		assertNull(serializer.generated);
+		assertNull(serializer.generated());
 		assertEquals(4, write(kryo, object).length);
 	}
 
@@ -308,7 +341,7 @@ class CodeGenerationTest extends KryoTestCase {
 		serializer.getFieldSerializerConfig().setFieldAccess(FieldAccessType.VARHANDLE); // Unsafe fields have no setter.
 		serializer.updateFields();
 		other.register(FinalField.class, serializer);
-		assertNotNull(serializer.generated);
+		assertNotNull(serializer.generated());
 		assertTrue(serializer.getField("value").finalUnresolved);
 		FinalField copy = other.copy(new FinalField(8, "copy"));
 		assertEquals(8, copy.value);
@@ -382,7 +415,7 @@ class CodeGenerationTest extends KryoTestCase {
 	void testNotSupported () {
 		// Records use the cached fields.
 		kryo.register(Point.class);
-		assertNull(((FieldSerializer)kryo.getSerializer(Point.class)).generated);
+		assertNull(((FieldSerializer)kryo.getSerializer(Point.class)).generated());
 		roundTrip(3, new Point(1, 2));
 
 	}
@@ -412,7 +445,7 @@ class CodeGenerationTest extends KryoTestCase {
 		// T resolved to String: a String field with the field type Object.
 		kryo.register(StringBox.class);
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(StringBox.class);
-		assertNotNull(serializer.generated);
+		assertNotNull(serializer.generated());
 		assertFalse(serializer.getField("value") instanceof ReflectField);
 		StringBox object = new StringBox();
 		object.value = "value";
@@ -437,7 +470,7 @@ class CodeGenerationTest extends KryoTestCase {
 			factory.getConfig().setCodeGeneration(generated);
 			kryo.setDefaultSerializer(factory);
 			kryo.register(StringBox.class);
-			assertEquals(generated, ((FieldSerializer)kryo.getSerializer(StringBox.class)).generated != null);
+			assertEquals(generated, ((FieldSerializer)kryo.getSerializer(StringBox.class)).generated() != null);
 			Output output = new Output(64);
 			output.writeVarInt(1, true);
 			output.writeString("value");
@@ -541,7 +574,7 @@ class CodeGenerationTest extends KryoTestCase {
 		cachedFields.register(ArrayList.class);
 		cachedFields.register(HashMap.class);
 		cachedFields.register(int[].class);
-		assertNull(((FieldSerializer)cachedFields.getSerializer(AllKinds.class)).generated);
+		assertNull(((FieldSerializer)cachedFields.getSerializer(AllKinds.class)).generated());
 		object = AllKinds.create();
 		byte[] bytes = write(kryo, object);
 		assertArrayEquals(write(cachedFields, object), bytes);
@@ -622,7 +655,7 @@ class CodeGenerationTest extends KryoTestCase {
 		factory.getConfig().setChunkedEncoding(true);
 		factory.getConfig().setLegacyChunks(true);
 		kryo.register(Nested.class, new CompatibleFieldSerializer(kryo, Nested.class, factory.getConfig()));
-		assertNull(((FieldSerializer)kryo.getSerializer(Nested.class)).generated);
+		assertNull(((FieldSerializer)kryo.getSerializer(Nested.class)).generated());
 	}
 
 	@Test
@@ -666,7 +699,7 @@ class CodeGenerationTest extends KryoTestCase {
 		cachedFields.setDefaultSerializer(cachedFieldsFactory);
 		cachedFields.register(Tagged.class);
 		cachedFields.register(Nested.class, new FieldSerializer(cachedFields, Nested.class));
-		assertNull(((FieldSerializer)cachedFields.getSerializer(Tagged.class)).generated);
+		assertNull(((FieldSerializer)cachedFields.getSerializer(Tagged.class)).generated());
 		object = Tagged.create();
 		byte[] bytes = write(kryo, object);
 		assertArrayEquals(write(cachedFields, object), bytes);
@@ -778,7 +811,7 @@ class CodeGenerationTest extends KryoTestCase {
 		factory.getConfig().setChunkedEncoding(true);
 		factory.getConfig().setLegacyChunks(true);
 		kryo.register(Tagged.class, new TaggedFieldSerializer(kryo, Tagged.class, factory.getConfig()));
-		assertNull(((FieldSerializer)kryo.getSerializer(Tagged.class)).generated);
+		assertNull(((FieldSerializer)kryo.getSerializer(Tagged.class)).generated());
 	}
 
 	static private void writeTagged (Kryo kryo, Output output, int tag, boolean writeClass, Object value) {
@@ -813,8 +846,8 @@ class CodeGenerationTest extends KryoTestCase {
 
 	private GeneratedFields assertGenerated (Class type) {
 		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(type);
-		assertNotNull(serializer.generated, "No code generated for: " + type);
-		return serializer.generated;
+		assertNotNull(serializer.generated(), "No code generated for: " + type);
+		return serializer.generated();
 	}
 
 	static private byte[] write (Kryo kryo, Object object) {

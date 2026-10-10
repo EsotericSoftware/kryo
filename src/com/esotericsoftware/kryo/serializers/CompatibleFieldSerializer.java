@@ -86,12 +86,11 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 	/** The chunked encoding of Kryo 5 doesn't use generated code. */
 	boolean usesGeneratedCode () {
-		// The super class config, because this is called by the super constructor.
-		return !((CompatibleFieldSerializerConfig)super.config).legacyChunks;
+		return !config.legacyChunks;
 	}
 
 	boolean writesClasses () {
-		return ((CompatibleFieldSerializerConfig)super.config).readUnknownFieldData;
+		return config.readUnknownFieldData;
 	}
 
 	/** Field values must be readable without the field, so they don't depend on the field's generic type when

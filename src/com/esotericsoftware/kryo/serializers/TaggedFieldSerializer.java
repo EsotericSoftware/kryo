@@ -101,12 +101,11 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 	/** The chunked encoding of Kryo 5 writes the tags outside the chunks, so it doesn't use generated code. */
 	boolean usesGeneratedCode () {
-		// The super class config, because this is called by the super constructor.
-		return !((TaggedFieldSerializerConfig)super.config).legacyChunks;
+		return !config.legacyChunks;
 	}
 
 	boolean writesClasses () {
-		return ((TaggedFieldSerializerConfig)super.config).readUnknownTagData;
+		return config.readUnknownTagData;
 	}
 
 	/** Generates the code for the tagged fields, with their tags. */

@@ -71,8 +71,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 	// For records.
 	final Constructor recordConstructor;
 
-	/** Generated code that writes and reads the fields, or null if code generation is disabled or not possible for the type. */
+	/** Generated code that writes and reads the fields, or null if it isn't generated: code generation is disabled or not possible
+	 * for the type, or the fields weren't used yet. */
 	GeneratedFields generated;
+	/** True if the code is generated when the fields are next used, see {@link #generated()}. */
+	boolean generatePending;
 	private final Object[] recordDefaults;
 
 	public FieldSerializer (Kryo kryo, Class type) {
@@ -135,53 +138,54 @@ public class FieldSerializer<T> extends Serializer<T> {
 		regenerate();
 	}
 
-	/** Generates the code for the fields if {@link #codeGenerated()}. If that fails, the cached fields are used. */
+	/** Discards the generated code. If {@link #codeGenerated()}, it is generated again when the fields are next used, see
+	 * {@link #generated()}. */
 	final void regenerate () {
 		generated = null;
-		if (!codeGenerated()) return;
-		try {
-			generated = generateCode();
-		} catch (KryoException ex) {
-			if (DEBUG) debug("kryo", "Unable to generate code for the fields of: " + className(type), ex);
-		}
+		generatePending = codeGenerated();
 	}
 
 	/** Returns true if code is generated for the fields: {@link FieldSerializerConfig#setCodeGeneration(boolean)} is enabled, the
-	 * platform supports it, the class is not a record and {@link #usesGeneratedCode()}. */
+	 * platform supports it and the class is not a record. The code is used if {@link #usesGeneratedCode()}. */
 	final boolean codeGenerated () {
-		return config.codeGeneration && CachedFields.codeGeneration && recordConstructor == null && usesGeneratedCode();
+		return config.codeGeneration && CachedFields.codeGeneration && recordConstructor == null;
 	}
 
 	/** Returns true if the generated code can be used with the current config settings, which can be changed without
-	 * {@link #updateFields()}. Subclasses with settings their generated code doesn't support return false. Called by the super
-	 * constructor, so subclasses can only use {@link #config}. */
+	 * {@link #updateFields()}. Subclasses with settings their generated code doesn't support return false. */
 	boolean usesGeneratedCode () {
 		return true;
 	}
 
 	/** Returns true if the class of each value is written before the value, like CompatibleFieldSerializer with unknown field
-	 * data. Called by the super constructor, so subclasses can only use {@link #config}. */
+	 * data. */
 	boolean writesClasses () {
 		return false;
 	}
 
-	/** Returns the generated code for the fields, or null if it can't be generated. Subclasses pass their fields and options.
-	 * Called by the super constructor, so subclasses can only use {@link #config}. */
+	/** Returns the generated code for the fields, or null if it can't be generated. Subclasses pass their fields and options. */
 	GeneratedFields generateCode () {
 		return GeneratedFields.generate(this, cachedFields.fields(), writesClasses(), null);
 	}
 
-	/** Returns the generated code for the current config settings, or null if it isn't used. {@link #usesGeneratedCode()} and
-	 * {@link #writesClasses()} can be changed without {@link #updateFields()}, so the code is regenerated if the setting it was
-	 * generated for changed. */
+	/** Returns the generated code for the current config settings, or null if it isn't used. The code is generated when the fields
+	 * are first used, so registered classes that are never serialized don't need it. If that fails, the cached fields are used.
+	 * {@link #usesGeneratedCode()} and {@link #writesClasses()} can be changed without {@link #updateFields()}, so the code is
+	 * regenerated if the setting it was generated for changed. */
 	final GeneratedFields generated () {
+		if (!usesGeneratedCode()) return null;
 		GeneratedFields generated = this.generated;
-		if (generated == null || !usesGeneratedCode()) return null;
-		if (generated.writesClasses != writesClasses()) {
-			regenerate();
-			return this.generated;
+		if (generated != null) {
+			if (generated.writesClasses == writesClasses()) return generated;
+			this.generated = null;
+		} else if (!generatePending) return null;
+		generatePending = false;
+		try {
+			this.generated = generateCode();
+		} catch (KryoException ex) {
+			if (DEBUG) debug("kryo", "Unable to generate code for the fields of: " + className(type), ex);
 		}
-		return generated;
+		return this.generated;
 	}
 
 	/** Returns true if the generic type of a field is used to optimize the serialization of its value, eg to omit the class of
@@ -865,10 +869,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		/** If true, the code that writes and reads the fields of a class is generated as a hidden class, which the JIT can optimize
 		 * much better than the loop over the cached fields: there is no virtual call per field and the field accessors are
-		 * constants. The generated code writes the same bytes. Used by FieldSerializer and its subclasses, except with the chunked
-		 * encoding of Kryo 5. The class is written with the Class-File API on Java 24+, or with ASM on older Java versions, which
-		 * is an optional dependency. Not available on Android or in a native image. The cached fields are used where code can't be
-		 * generated, eg for records. Default is false, or true if the system property "kryo.codeGeneration" is "true". */
+		 * constants. The generated code writes the same bytes. It is generated when the serializer first writes or reads an object.
+		 * Used by FieldSerializer and its subclasses, except with the chunked encoding of Kryo 5. The class is written with the
+		 * Class-File API on Java 24+, or with ASM on older Java versions, which is an optional dependency. Not available on Android
+		 * or in a native image. The cached fields are used where code can't be generated, eg for records. Default is false, or true
+		 * if the system property "kryo.codeGeneration" is "true". */
 		public void setCodeGeneration (boolean codeGeneration) {
 			this.codeGeneration = codeGeneration;
 			if (TRACE) trace("kryo", "FieldSerializerConfig codeGeneration: " + codeGeneration);
