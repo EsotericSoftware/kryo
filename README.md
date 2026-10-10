@@ -1570,9 +1570,12 @@ public class KryoSerializer {
    private final Pool<Kryo> kryoPool = new Pool<Kryo>(true, false, 16) {
       protected Kryo create () {
          Kryo kryo = new Kryo();
-         // The default serializer, FieldSerializer, writes the fields of a class as they are. If classes can change
-         // between writing and reading, eg for long term storage, choose a serializer for that, see Compatibility.
-         // kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+         // The default serializer, FieldSerializer, writes the fields of a class as they are. With code generation it
+         // is up to twice as fast, see Code generation. If classes can change between writing and reading, eg for
+         // long term storage, choose a serializer for that, see Compatibility, eg CompatibleFieldSerializerFactory.
+         FieldSerializerConfig config = new FieldSerializerConfig();
+         config.setCodeGeneration(true);
+         kryo.setDefaultSerializer(new FieldSerializerFactory(config));
          // If the object graphs contain cycles or the same object more than once, see References.
          kryo.setReferences(true);
          // If classes have no no-arg constructor, see Object creation.
@@ -1618,7 +1621,7 @@ public class KryoSerializer {
 }
 ```
 
-The same Kryo instances serve both directions, see [Pooling](#pooling) above. A single Kryo instance without pools is enough for a single-threaded application. The decisions in `create` are described in [Compatibility](#compatibility), [References](#references), [Object creation](#object-creation), [Registration](#registration) and [Default serializers](#default-serializers).
+The same Kryo instances serve both directions, see [Pooling](#pooling) above. A single Kryo instance without pools is enough for a single-threaded application. The decisions in `create` are described in [Code generation](#code-generation), [Compatibility](#compatibility), [References](#references), [Object creation](#object-creation), [Registration](#registration) and [Default serializers](#default-serializers).
 
 ## Benchmarks
 
