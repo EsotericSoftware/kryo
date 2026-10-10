@@ -188,7 +188,10 @@ class CachedFields implements Comparator<CachedField> {
 		int modifiers = field.getModifiers();
 		if (Modifier.isStatic(modifiers)) return;
 		FieldSerializerConfig config = serializer.config;
-		if (field.isSynthetic() && config.ignoresSyntheticFields(field.getDeclaringClass())) return;
+		if (field.isSynthetic() && config.ignoreSyntheticFields) {
+			if (TRACE) trace("kryo", "Ignoring synthetic field: " + field);
+			return;
+		}
 
 		if (!config.setFieldsAsAccessible) {
 			if (!isPublicApi(field)) return;
