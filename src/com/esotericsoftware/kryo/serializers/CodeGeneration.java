@@ -29,6 +29,7 @@ import com.esotericsoftware.kryo.serializers.Bytecode.Code;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -138,6 +139,7 @@ import java.util.function.IntConsumer;
  * <p>
  * The class file is written with {@link Bytecode}: with the Class-File API on Java 24+, or with ASM, which is an optional
  * dependency, on older Java versions. */
+@IgnoreAndroid
 final class CodeGeneration {
 	/** The constructors of the hidden classes, by type and field signature. If defining a class failed, its KryoException, so it
 	 * isn't tried again for each serializer. */

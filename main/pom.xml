@@ -134,6 +134,39 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Checks that the classes only use the Android API level 26 (Android 8.0), see README "Android". Code that only runs
+				where the API is available is annotated with @IgnoreAndroid. -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>animal-sniffer-maven-plugin</artifactId>
+				<version>1.28</version>
+				<configuration>
+					<signature>
+						<groupId>com.toasttab.android</groupId>
+						<artifactId>gummy-bears-api-26</artifactId>
+						<version>0.16.0</version>
+					</signature>
+					<annotations>
+						<annotation>com.esotericsoftware.kryo.util.IgnoreAndroid</annotation>
+					</annotations>
+					<ignores>
+						<!-- Android has MethodHandle since API level 26, but the signature lacks the signature polymorphic invokeExact
+							calls. -->
+						<ignore>java.lang.invoke.MethodHandle</ignore>
+						<!-- Only used for records, which Android has since API level 34. -->
+						<ignore>java.lang.reflect.RecordComponent</ignore>
+					</ignores>
+				</configuration>
+				<executions>
+					<execution>
+						<id>android-api-check</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<!-- Checks that the API is binary and source compatible with the last release of the same major version. -->
 			<plugin>
 				<groupId>com.github.siom79.japicmp</groupId>

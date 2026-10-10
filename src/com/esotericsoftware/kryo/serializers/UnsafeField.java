@@ -26,12 +26,14 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.lang.reflect.Field;
 
 /** Read and write a non-primitive field using Unsafe.
  * @author Nathan Sweet */
 @SuppressWarnings("restriction")
+@IgnoreAndroid
 class UnsafeField extends ReflectField {
 	private final Class type;
 
@@ -131,6 +133,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class FloatUnsafeField extends CachedField {
 		public FloatUnsafeField (Field field) {
 			super(field);
@@ -154,6 +157,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class ShortUnsafeField extends CachedField {
 		public ShortUnsafeField (Field field) {
 			super(field);
@@ -177,6 +181,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class ByteUnsafeField extends CachedField {
 		public ByteUnsafeField (Field field) {
 			super(field);
@@ -200,6 +205,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class BooleanUnsafeField extends CachedField {
 		public BooleanUnsafeField (Field field) {
 			super(field);
@@ -223,6 +229,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class CharUnsafeField extends CachedField {
 		public CharUnsafeField (Field field) {
 			super(field);
@@ -278,6 +285,7 @@ class UnsafeField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class DoubleUnsafeField extends CachedField {
 		public DoubleUnsafeField (Field field) {
 			super(field);

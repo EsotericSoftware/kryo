@@ -27,6 +27,7 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
@@ -50,6 +51,7 @@ import java.util.Comparator;
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
  * @author Nathan Sweet */
+@IgnoreAndroid
 public class BeanSerializer<T> extends Serializer<T> {
 	static final Object[] noArgs = {};
 	private CachedProperty[] properties;

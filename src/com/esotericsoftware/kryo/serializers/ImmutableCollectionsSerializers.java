@@ -23,8 +23,10 @@ import static com.esotericsoftware.kryo.util.Util.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -93,7 +95,15 @@ public final class ImmutableCollectionsSerializers {
 			if (size == 1 && first != null) return List.of(first);
 			if (size == 2 && first != null && list.get(1) != null) return List.of(first, list.get(1));
 			if (!list.contains(null)) return List.of(list.toArray());
-			return list.stream().toList(); // Allows null elements.
+			return streamToList ? toList(list) : Collections.unmodifiableList(list);
+		}
+
+		/** Stream#toList() allows null elements. Android has it only since API level 34, like records. */
+		static private final boolean streamToList = !isAndroid || isClassAvailable("java.lang.Record");
+
+		@IgnoreAndroid
+		static private List<Object> toList (List<Object> list) {
+			return list.stream().toList();
 		}
 
 		static void addDefaultSerializers (Kryo kryo) {

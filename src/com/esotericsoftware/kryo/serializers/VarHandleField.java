@@ -24,6 +24,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -36,6 +37,7 @@ import java.lang.reflect.Field;
  * <p>
  * The VarHandle is converted to method handles with erased ({@link Object}) coordinates once, so that every access is an exact
  * invocation without type adaptation. */
+@IgnoreAndroid
 class VarHandleField extends ReflectField {
 	final MethodHandle getter, setter;
 
@@ -97,6 +99,7 @@ class VarHandleField extends ReflectField {
 		return MethodHandles.collectArguments(setter, 1, getter);
 	}
 
+	@IgnoreAndroid
 	static final class IntVarHandleField extends CachedField {
 		final MethodHandle getter, setter, copier;
 
@@ -146,6 +149,7 @@ class VarHandleField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class LongVarHandleField extends CachedField {
 		final MethodHandle getter, setter, copier;
 
@@ -195,6 +199,7 @@ class VarHandleField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class FloatVarHandleField extends CachedField {
 		final MethodHandle getter, setter, copier;
 
@@ -235,6 +240,7 @@ class VarHandleField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class DoubleVarHandleField extends CachedField {
 		final MethodHandle getter, setter, copier;
 
@@ -275,6 +281,7 @@ class VarHandleField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class BooleanVarHandleField extends CachedField {
 		final MethodHandle getter, setter, copier;
 
@@ -315,6 +322,7 @@ class VarHandleField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class ByteVarHandleField extends CachedField {
 		final MethodHandle getter, setter, copier;
 
@@ -355,6 +363,7 @@ class VarHandleField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class ShortVarHandleField extends CachedField {
 		final MethodHandle getter, setter, copier;
 
@@ -395,6 +404,7 @@ class VarHandleField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class CharVarHandleField extends CachedField {
 		final MethodHandle getter, setter, copier;
 
@@ -435,6 +445,7 @@ class VarHandleField extends ReflectField {
 		}
 	}
 
+	@IgnoreAndroid
 	static final class StringVarHandleField extends CachedField {
 		final MethodHandle getter, setter, copier;
 

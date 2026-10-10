@@ -87,12 +87,14 @@ public class Util {
 
 	/** Returns true if the type is a record. Unlike {@link Class#isRecord()}, this can be called on Android before API level 34,
 	 * which doesn't have records. */
+	@IgnoreAndroid
 	public static boolean isRecord (Class type) {
 		return records && type.isRecord();
 	}
 
 	/** Returns true if the bytes of both arrays in the ranges are equal. Unlike
 	 * {@link Arrays#equals(byte[], int, int, byte[], int, int)}, this can be called on Android before API level 33. */
+	@IgnoreAndroid
 	public static boolean rangeEquals (byte[] a, int aFromIndex, byte[] b, int bFromIndex, int length) {
 		if (isAndroid) {
 			for (int i = 0; i < length; i++)
@@ -104,6 +106,7 @@ public class Util {
 
 	/** Returns the name of Kryo's module for command line options like {@code --add-opens}: the module name if Kryo is in a named
 	 * module, otherwise {@code ALL-UNNAMED}. */
+	@IgnoreAndroid
 	public static String moduleName () {
 		if (isAndroid) return "ALL-UNNAMED"; // Android has no modules.
 		Module module = Util.class.getModule();

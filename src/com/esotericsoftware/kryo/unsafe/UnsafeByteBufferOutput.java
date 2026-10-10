@@ -23,6 +23,7 @@ import static com.esotericsoftware.kryo.unsafe.UnsafeUtil.*;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.OutputStream;
@@ -39,6 +40,7 @@ import java.nio.ByteBuffer;
  * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 @SuppressWarnings("restriction")
+@IgnoreAndroid
 public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	/** Start address of the memory buffer. It must be non-movable, which normally means that is is allocated off-heap. */
 	private long bufferAddress;

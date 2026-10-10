@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.unsafe;
 import static com.esotericsoftware.kryo.util.Log.*;
 
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.reflect.Constructor;
@@ -36,6 +37,7 @@ import sun.misc.Unsafe;
  * Not available on all JVMs. {@link Util#unsafe} can be checked before using this class.
  * @author Roman Levenstein {@literal <romixlev@gmail.com>} */
 @SuppressWarnings("restriction")
+@IgnoreAndroid
 public class UnsafeUtil {
 	/** The sun.misc.Unsafe instance, or null if Unsafe is unavailable. */
 	public static final Unsafe unsafe;

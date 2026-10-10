@@ -26,6 +26,7 @@ import java.lang.System.Logger.Level;
 /** Routes Kryo's logging to a {@link System.Logger}, so it can be configured with any logging framework that supports it, eg
  * SLF4J with slf4j-jdk-platform-logging or Log4j with log4j-jpl. Without such an adapter, the logging goes to java.util.logging.
  * @see #install() */
+@IgnoreAndroid
 public class SystemLogger extends Log.Logger {
 	private final System.Logger logger;
 

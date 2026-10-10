@@ -43,6 +43,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
@@ -1013,7 +1014,10 @@ public class DefaultSerializers {
 			output.writeVarInt(buffer.limit(), true);
 			output.writeVarInt(buffer.position(), true);
 			byte[] bytes = new byte[buffer.limit()];
-			buffer.duplicate().position(0).get(bytes);
+			ByteBuffer duplicate = buffer.duplicate();
+			// Buffer methods, because Android API level 26 has no covariant ByteBuffer methods like position(int).
+			((Buffer)duplicate).position(0);
+			duplicate.get(bytes);
 			output.writeBytes(bytes);
 		}
 
@@ -1024,7 +1028,7 @@ public class DefaultSerializers {
 				throw new KryoException(
 					"Invalid ByteBuffer, position: " + position + ", limit: " + limit + ", capacity: " + capacity);
 			ByteBuffer buffer = (flags & DIRECT) != 0 ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
-			buffer.put(input.readBytes(limit)).limit(limit).position(position);
+			((Buffer)buffer.put(input.readBytes(limit))).limit(limit).position(position);
 			if ((flags & READ_ONLY) != 0) buffer = buffer.asReadOnlyBuffer();
 			return buffer.order((flags & LITTLE_ENDIAN) != 0 ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
 		}
@@ -1032,7 +1036,9 @@ public class DefaultSerializers {
 		public ByteBuffer copy (Kryo kryo, ByteBuffer original) {
 			ByteBuffer copy = original.isDirect() ? ByteBuffer.allocateDirect(original.capacity())
 				: ByteBuffer.allocate(original.capacity());
-			copy.put(original.duplicate().clear()).limit(original.limit()).position(original.position());
+			ByteBuffer duplicate = original.duplicate();
+			((Buffer)duplicate).clear();
+			((Buffer)copy.put(duplicate)).limit(original.limit()).position(original.position());
 			if (original.isReadOnly()) copy = copy.asReadOnlyBuffer();
 			return copy.order(original.order());
 		}
@@ -1184,7 +1190,8 @@ public class DefaultSerializers {
 		}
 
 		private ConcurrentHashMap.KeySetView createKeySetView (ConcurrentHashMap map, Object mappedValue) {
-			return mappedValue == null ? map.keySet() : map.keySet(mappedValue);
+			// Map#keySet(), because ConcurrentHashMap#keySet() returns a Set on Android.
+			return mappedValue == null ? (ConcurrentHashMap.KeySetView)((Map)map).keySet() : map.keySet(mappedValue);
 		}
 	}
 

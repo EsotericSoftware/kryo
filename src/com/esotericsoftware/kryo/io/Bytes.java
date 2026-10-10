@@ -21,6 +21,8 @@ package com.esotericsoftware.kryo.io;
 
 import static com.esotericsoftware.kryo.util.Util.*;
 
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
@@ -28,6 +30,7 @@ import java.nio.ByteOrder;
 /** Reads and writes little endian ints and longs in a byte array with a single memory access, using VarHandles. On Android, where
  * VarHandles need API level 33, the bytes are accessed individually. */
 final class Bytes {
+	@IgnoreAndroid
 	static void putInt (byte[] buffer, int p, int value) {
 		if (isAndroid) {
 			buffer[p] = (byte)value;
@@ -38,6 +41,7 @@ final class Bytes {
 			Handles.INT.set(buffer, p, value);
 	}
 
+	@IgnoreAndroid
 	static void putLong (byte[] buffer, int p, long value) {
 		if (isAndroid) {
 			buffer[p] = (byte)value;
@@ -52,6 +56,7 @@ final class Bytes {
 			Handles.LONG.set(buffer, p, value);
 	}
 
+	@IgnoreAndroid
 	static int getInt (byte[] buffer, int p) {
 		if (isAndroid) {
 			return buffer[p] & 0xFF //
@@ -62,6 +67,7 @@ final class Bytes {
 		return (int)Handles.INT.get(buffer, p);
 	}
 
+	@IgnoreAndroid
 	static long getLong (byte[] buffer, int p) {
 		if (isAndroid) {
 			return buffer[p] & 0xFF //
@@ -77,6 +83,7 @@ final class Bytes {
 	}
 
 	/** Separate class so VarHandle is not loaded on Android. */
+	@IgnoreAndroid
 	static private final class Handles {
 		static final VarHandle INT = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN);
 		static final VarHandle LONG = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
