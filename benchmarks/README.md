@@ -51,7 +51,7 @@ To run only a subset of a benchmark, specify the benchmark class name and the me
 
 ## Charts
 
-`run.sh` builds Kryo, runs the benchmarks for the charts with `-f 4 -wi 5 -i 3 -w 2s -r 2s` and writes the results as JSON to `charts/results`. Then it runs `charts/charts.py`, which writes the SVG files to `charts`. The charts of the serializer benchmarks show round trips per second, the charts of the input and output benchmarks show nanoseconds per operation. ObjectGraphBenchmark is run with and without code generation, so it needs Java 24+, and its results make two charts: `objectGraph` with the cached fields and `codeGeneration` with both. Python 3 is needed, without additional packages.
+`run.sh` builds Kryo, runs the benchmarks for the charts with `-f 4 -wi 5 -i 3 -w 2s -r 2s` and writes the results as JSON to `charts/results`. Then it runs `charts/charts.py`, which writes the SVG files to `charts`. The charts of the serializer benchmarks show round trips per second, the charts of the input and output benchmarks show nanoseconds per operation. ObjectGraphBenchmark is run with and without code generation, which needs Java 24+ or ASM on the classpath, a dependency of the benchmarks, and its results make two charts: `objectGraph` with the cached fields and `codeGeneration` with both. Python 3 is needed, without additional packages.
 
 ```
 benchmarks/run.sh

@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
+import com.esotericsoftware.kryo.bytecode.Bytecode;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldAccessType;
@@ -94,15 +95,16 @@ class CachedFields implements Comparator<CachedField> {
 	 * tests. */
 	static boolean hiddenFields = !isAndroid && !isNativeImage && !"false".equals(System.getProperty("kryo.hiddenFields"));
 
-	/** True if {@link CodeGeneration} can be used: Java 24+, not on Android or in a native image. Checked before the class is
-	 * used, which can't be loaded on older Java versions. */
-	static final boolean codeGeneration = !isAndroid && !isNativeImage && Runtime.version().feature() >= 24;
+	/** True if {@link CodeGeneration} can be used: Java 24+ or ASM on the classpath, not on Android or in a native image. Checked
+	 * before the class is used, which can't be loaded on older Java versions. */
+	static final boolean codeGeneration = !isAndroid && !isNativeImage && (Bytecode.classFileApi || Bytecode.asm);
 
 	/** Returns why {@link #codeGeneration} is false, for logging. */
 	static String codeGenerationUnavailable () {
 		if (isAndroid) return "Code generation is not available on Android.";
 		if (isNativeImage) return "Code generation is not available in a native image.";
-		return "Code generation needs Java 24 or later, this is Java " + Runtime.version().feature() + ".";
+		return "Code generation needs Java 24 or later, or ASM on the classpath (org.ow2.asm:asm), this is Java "
+			+ Runtime.version().feature() + " without ASM.";
 	}
 
 	/** The simple name of the field implementation, without the suffix of a hidden class, for logging. */

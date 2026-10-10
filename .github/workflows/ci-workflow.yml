@@ -42,9 +42,17 @@ jobs:
 
       - name: Test with JDK 17
         run: mvn -B test -Djvm=${{ steps.jdk17.outputs.path }}/bin/java
+      - name: Test with JDK 17 and code generation with ASM
+        run: mvn -B test -pl main -Djvm=${{ steps.jdk17.outputs.path }}/bin/java
+        env:
+          JAVA_TOOL_OPTIONS: -Dkryo.codeGeneration=true
 
       - name: Test with JDK 21
         run: mvn -B test -Djvm=${{ steps.jdk21.outputs.path }}/bin/java
+      - name: Test with JDK 21 and code generation with ASM
+        run: mvn -B test -pl main -Djvm=${{ steps.jdk21.outputs.path }}/bin/java
+        env:
+          JAVA_TOOL_OPTIONS: -Dkryo.codeGeneration=true
 
       - name: Test with JDK 25
         run: mvn -B test
@@ -64,6 +72,10 @@ jobs:
         run: mvn -B test -pl main
         env:
           JAVA_TOOL_OPTIONS: -Dkryo.codeGeneration=true
+      - name: Test with JDK 25 and code generation with ASM
+        run: mvn -B test -pl main
+        env:
+          JAVA_TOOL_OPTIONS: -Dkryo.codeGeneration=true -Dkryo.codeGeneration.backend=asm
 
       - name: Test with JDK 27
         run: mvn -B test -Djvm=${{ steps.jdk27.outputs.path }}/bin/java

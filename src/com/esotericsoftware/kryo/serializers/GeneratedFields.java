@@ -29,10 +29,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-
 /** The super class of the hidden classes defined by {@link CodeGeneration}, which write and read the fields of one class with
  * straight line code: the VarHandles of the fields are constants and the object fields are delegated to their
  * {@link ReflectField}. */
@@ -53,38 +49,21 @@ abstract class GeneratedFields {
 	abstract public void read (Input input, Object object, ChunkedEncoding chunks);
 
 	/** Returns the generated code for the fields, or null if code can't be generated for them, see
-	 * {@link CodeGeneration#generate(FieldSerializer, CachedField[], boolean, int[])}. CodeGeneration uses the Java 24+ Class-File
-	 * API, so it is compiled separately and referenced by name, which keeps the other classes compiled against the Java 17 API. */
+	 * {@link CodeGeneration#generate(FieldSerializer, CachedField[], boolean, int[])}. */
 	static GeneratedFields generate (FieldSerializer serializer, CachedField[] fields, boolean writeClasses, int[] tags) {
 		try {
-			return (GeneratedFields)Generator.generate.invokeExact(serializer, fields, writeClasses, tags);
+			return CodeGeneration.generate(serializer, fields, writeClasses, tags);
 		} catch (KryoException ex) {
 			throw ex;
-		} catch (Throwable t) {
+		} catch (Throwable t) { // Eg an error defining the class, then the cached fields are used.
 			throw new KryoException("Unable to generate code for the fields of: " + className(serializer.type), t);
-		}
-	}
-
-	/** Loaded on first use, which only happens on Java 24+. */
-	static private final class Generator {
-		static final MethodHandle generate;
-		static {
-			try {
-				Class codeGeneration = Class.forName(GeneratedFields.class.getPackageName() + ".CodeGeneration");
-				generate = MethodHandles.lookup().findStatic(codeGeneration, "generate",
-					MethodType.methodType(GeneratedFields.class, FieldSerializer.class, CachedField[].class, boolean.class,
-						int[].class));
-			} catch (ReflectiveOperationException ex) {
-				throw new ExceptionInInitializerError(ex);
-			}
 		}
 	}
 
 	/** Returned by {@link #readClass(FieldSerializer, Input, CachedField, boolean)} when the value is skipped. */
 	static final Registration skip = new Registration(Void.class, new DefaultSerializers.VoidSerializer(), -1);
 
-	// Called by the generated code when the classes are written. Also the helpers of CodeGeneration that don't need the Class-File
-	// API, so the serializers don't reference that class.
+	// Called by the generated code when the classes are written.
 
 	static void writeStringWithClass (Kryo kryo, Output output, String value) {
 		if (value == null) {

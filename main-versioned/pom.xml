@@ -33,6 +33,12 @@
 			<artifactId>objenesis</artifactId>
 			<version>3.6</version>
 		</dependency>
+		<dependency>
+			<!-- Optional for the default jar, but included in the versioned jar: code generation on Java versions before 24. -->
+			<groupId>org.ow2.asm</groupId>
+			<artifactId>asm</artifactId>
+			<version>9.8</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -126,6 +132,13 @@
 										<exclude>META-INF/MANIFEST.MF</exclude>
 									</excludes>
 								</filter>
+								<filter>
+									<artifact>org.ow2.asm:asm</artifact>
+									<excludes>
+										<exclude>META-INF/MANIFEST.MF</exclude>
+										<exclude>module-info.class</exclude>
+									</excludes>
+								</filter>
 							</filters>
 							<relocations>
 								<relocation>
@@ -135,6 +148,10 @@
 								<relocation>
 									<pattern>org.objenesis</pattern>
 									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.objectweb.asm</pattern>
+									<shadedPattern>com.esotericsoftware.kryo.kryo${kryo.major.version}.asm</shadedPattern>
 								</relocation>
 							</relocations>
 						</configuration>
@@ -164,13 +181,16 @@
 						</Import-Package>
 						<Export-Package>
 						com.esotericsoftware.kryo.kryo${kryo.major.version},
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.bytecode,
 						com.esotericsoftware.kryo.kryo${kryo.major.version}.io,
 						com.esotericsoftware.kryo.kryo${kryo.major.version}.serializers,
 						com.esotericsoftware.kryo.kryo${kryo.major.version}.unsafe,
 						com.esotericsoftware.kryo.kryo${kryo.major.version}.util,
 						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis,
 						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.instantiator,
-						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.strategy
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.objenesis.strategy,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.asm,
+						com.esotericsoftware.kryo.kryo${kryo.major.version}.asm.signature
 						</Export-Package>
 					</instructions>
 				</configuration>

@@ -29,9 +29,11 @@ import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFact
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.VersionFieldSerializerFactory;
+import com.esotericsoftware.kryo.bytecode.Bytecode;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldAccessType;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
@@ -47,8 +49,10 @@ import java.util.Objects;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 
-/** Tests {@link CodeGeneration}, which needs Java 24+. */
+/** Tests {@link CodeGeneration}, which needs Java 24+ or ASM on the classpath. */
 class CodeGenerationTest extends KryoTestCase {
 	{
 		supportsCopy = true;
@@ -238,6 +242,7 @@ class CodeGenerationTest extends KryoTestCase {
 	void testFinalFieldDenied () {
 		// If setting final fields with reflection is denied, the generated code sets them with the FinalFieldSetter of the cached
 		// field. The class is only used here, because the setter of a field is resolved once per JVM.
+		assumeTrue(Runtime.version().feature() >= 24, "FinalFieldSetter needs Java 24+.");
 		try {
 			FinalFieldSetter.force = true;
 			FieldSerializer serializer = new FieldSerializer(kryo, DeniedFinalField.class);
@@ -322,6 +327,67 @@ class CodeGenerationTest extends KryoTestCase {
 		assertEquals("copy", copy.name);
 		assertFalse(serializer.getField("value").finalUnresolved);
 		assertFalse(serializer.getField("name").finalUnresolved);
+	}
+
+	@Test
+	void testNoFields () {
+		// The generated methods of a class without fields have no try block, which the JVM rejects when it is empty.
+		kryo.register(NoFields.class);
+		assertGenerated(NoFields.class);
+		roundTrip(1, new NoFields());
+		for (boolean chunked : new boolean[] {false, true}) {
+			CompatibleFieldSerializerFactory compatible = compatible(false, chunked);
+			compatible.getConfig().setCodeGeneration(true);
+			kryo.register(NoFields.class, compatible.newSerializer(kryo, NoFields.class));
+			assertGenerated(NoFields.class);
+			roundTrip(chunked ? 5 : 2, new NoFields()); // Class, deferred class names, field name entries, field count.
+
+			TaggedFieldSerializerFactory tagged = tagged(false, chunked);
+			tagged.getConfig().setCodeGeneration(true);
+			kryo.register(NoFields.class, tagged.newSerializer(kryo, NoFields.class));
+			assertGenerated(NoFields.class);
+			roundTrip(chunked ? 4 : 2, new NoFields());
+		}
+	}
+
+	@Test
+	void testWritersProduceSameBytes () {
+		// ClassFileWriter writes class file version 61 like AsmWriter, so the class files of both writers are the same, except
+		// for the order of the constant pool.
+		assumeTrue(Runtime.version().feature() >= 24 && Bytecode.asm, "Both writers are needed.");
+		kryo.register(AllKinds.class);
+		kryo.register(Nested.class);
+		CachedField[] fields = ((FieldSerializer)kryo.getSerializer(AllKinds.class)).getFields();
+		assertSameBytes(AllKinds.class, fields, false, null);
+		assertSameBytes(AllKinds.class, fields, true, null); // CompatibleFieldSerializer with unknown field data.
+		assertSameBytes(NoFields.class, new CachedField[0], false, null);
+
+		TaggedFieldSerializerFactory tagged = tagged(false, false);
+		tagged.getConfig().setCodeGeneration(true);
+		ArrayList<CachedField> tagFields = new ArrayList<>();
+		for (CachedField field : tagged.newSerializer(kryo, Tagged.class).getFields())
+			if (field.getField().getAnnotation(Deprecated.class) == null) tagFields.add(field);
+		fields = tagFields.toArray(new CachedField[0]);
+		int[] tags = new int[fields.length];
+		for (int i = 0; i < tags.length; i++)
+			tags[i] = fields[i].tag;
+		assertSameBytes(Tagged.class, fields, false, tags);
+		assertSameBytes(Tagged.class, fields, true, tags); // TaggedFieldSerializer with unknown tag data.
+	}
+
+	static private void assertSameBytes (Class type, CachedField[] fields, boolean classes, int[] tags) {
+		byte[] classFile = CodeGeneration.classFile(false, type, fields, classes, tags);
+		byte[] asm = CodeGeneration.classFile(true, type, fields, classes, tags);
+		assertArrayEquals(canonical(classFile), canonical(asm),
+			type.getSimpleName() + (classes ? ", classes" : "") + (tags != null ? ", tags" : ""));
+	}
+
+	/** Returns the class file with the constant pool in the order ASM writes it. The writers order the constant pool differently,
+	 * everything else is the same. */
+	static private byte[] canonical (byte[] classFile) {
+		ClassWriter writer = new ClassWriter(0);
+		new ClassReader(classFile).accept(writer, 0);
+		return writer.toByteArray();
 	}
 
 	@Test
@@ -980,6 +1046,12 @@ class CodeGenerationTest extends KryoTestCase {
 
 		public boolean equals (Object obj) {
 			return Objects.equals(value, ((FinalStringBox)obj).value);
+		}
+	}
+
+	static public class NoFields {
+		public boolean equals (Object obj) {
+			return obj instanceof NoFields;
 		}
 	}
 

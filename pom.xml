@@ -391,37 +391,6 @@
 				</plugins>
 			</build>
 		</profile>
-		<!-- Include the tests that require JDK 24+ (code generation with the Class-File API) -->
-		<profile>
-			<id>jdk24ge</id>
-			<activation>
-				<jdk>[24,)</jdk>
-			</activation>
-			<build>
-				<pluginManagement>
-					<plugins>
-						<plugin>
-							<groupId>org.codehaus.mojo</groupId>
-							<artifactId>build-helper-maven-plugin</artifactId>
-							<executions>
-								<execution>
-									<id>add-test-source-jdk24</id>
-									<phase>generate-test-sources</phase>
-									<goals>
-										<goal>add-test-source</goal>
-									</goals>
-									<configuration>
-										<sources>
-											<source>${kryo.root}/test-jdk24</source>
-										</sources>
-									</configuration>
-								</execution>
-							</executions>
-						</plugin>
-					</plugins>
-				</pluginManagement>
-			</build>
-		</profile>
 		<!-- Include any tests that require kotlin -->
 		<profile>
 			<id>kotlin</id>
