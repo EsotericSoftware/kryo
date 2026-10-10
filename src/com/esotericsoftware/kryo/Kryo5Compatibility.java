@@ -184,8 +184,8 @@ public final class Kryo5Compatibility {
 			}));
 		}
 
-		// Not from List.of and Map.of alone, because D8 replaces them with unmodifiable collections below Android API level 30.
-		// Android has the immutable collections only since API level 30.
+		// Android has the immutable collections only since API level 30, and D8 replaces List.of and Map.of with unmodifiable
+		// collections below it, so the classes are found by name.
 		Class mapN = classForName("java.util.ImmutableCollections$MapN", Map.of());
 		if (mapN != null) {
 			// Registered serializers of immutable maps, the default serializers are configured above.

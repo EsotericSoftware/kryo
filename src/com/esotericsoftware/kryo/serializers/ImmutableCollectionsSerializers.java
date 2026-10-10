@@ -60,8 +60,7 @@ public final class ImmutableCollectionsSerializers {
 	 * level 34 it has Set0, Set1 and Set2 instead of Set12, and Map0.
 	 * @param instance May be null for the classes only Android has. */
 	static private @Null Class immutableCollectionsClass (String name, @Null Object instance) {
-		name = "java.util.ImmutableCollections$" + name;
-		return instance != null ? classForName(name, instance) : classForName(name);
+		return classForName("java.util.ImmutableCollections$" + name, instance);
 	}
 
 	static private void addDefaultSerializer (Kryo kryo, Serializer serializer, Class... types) {
@@ -117,12 +116,10 @@ public final class ImmutableCollectionsSerializers {
 			if (size == 1 && first != null) return List.of(first);
 			if (size == 2 && first != null && list.get(1) != null) return List.of(first, list.get(1));
 			if (!list.contains(null)) return List.of(list.toArray());
-			return streamToList ? toList(list) : Collections.unmodifiableList(list);
+			return records ? toList(list) : Collections.unmodifiableList(list);
 		}
 
 		/** Stream#toList() allows null elements. Android has it only since API level 34, like records. */
-		static private final boolean streamToList = !isAndroid || isClassAvailable("java.lang.Record");
-
 		@IgnoreAndroid
 		static private List<Object> toList (List<Object> list) {
 			return list.stream().toList();
@@ -180,10 +177,10 @@ public final class ImmutableCollectionsSerializers {
 		}
 
 		static private final @Null Class mapN = immutableCollectionsClass("MapN", Map.of()),
-			map1 = immutableCollectionsClass("Map1", Map.of(1, 2));
+			map1 = immutableCollectionsClass("Map1", Map.of(1, 2)), map0 = immutableCollectionsClass("Map0", null);
 
 		static void addDefaultSerializers (Kryo kryo) {
-			addDefaultSerializer(kryo, new JdkImmutableMapSerializer(), mapN, map1, immutableCollectionsClass("Map0", null));
+			addDefaultSerializer(kryo, new JdkImmutableMapSerializer(), mapN, map1, map0);
 		}
 
 		static void registerSerializers (Kryo kryo) {
@@ -228,11 +225,11 @@ public final class ImmutableCollectionsSerializers {
 		}
 
 		static private final @Null Class setN = immutableCollectionsClass("SetN", Set.of()),
-			set12 = immutableCollectionsClass("Set12", Set.of(1));
+			set12 = immutableCollectionsClass("Set12", Set.of(1)), set0 = immutableCollectionsClass("Set0", null),
+			set1 = immutableCollectionsClass("Set1", null), set2 = immutableCollectionsClass("Set2", null);
 
 		static void addDefaultSerializers (Kryo kryo) {
-			addDefaultSerializer(kryo, new JdkImmutableSetSerializer(), setN, set12, immutableCollectionsClass("Set0", null),
-				immutableCollectionsClass("Set1", null), immutableCollectionsClass("Set2", null));
+			addDefaultSerializer(kryo, new JdkImmutableSetSerializer(), setN, set12, set0, set1, set2);
 		}
 
 		static void registerSerializers (Kryo kryo) {

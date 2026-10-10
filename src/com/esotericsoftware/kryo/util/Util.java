@@ -44,7 +44,7 @@ public class Util {
 	public static final boolean isNativeImage = System.getProperty("org.graalvm.nativeimage.imagecode") != null;
 
 	/** True if records are available, which is not the case on Android before API level 34. */
-	private static final boolean records = !isAndroid || isClassAvailable("java.lang.Record");
+	public static final boolean records = !isAndroid || isClassAvailable("java.lang.Record");
 
 	/** True if Unsafe is available. Unsafe can be disabled by setting the system property "kryo.unsafe" to "false". It is not
 	 * available if Unsafe memory access is denied with {@code --sun-misc-unsafe-memory-access=deny}. */
@@ -137,9 +137,10 @@ public class Util {
 
 	/** Returns the class of the instance if it has the name, otherwise the class with the name, or null if it is not available. A
 	 * GraalVM native image needs no reflection metadata for the class of an instance. On Android, D8 replaces some JDK methods
-	 * below the API level that has them, eg {@code List.of} below API level 30, so the instance can have another class. */
-	public static @Null Class classForName (String className, Object instance) {
-		if (instance.getClass().getName().equals(className)) return instance.getClass();
+	 * below the API level that has them, eg {@code List.of} below API level 30, so the instance can have another class.
+	 * @param instance May be null. */
+	public static @Null Class classForName (String className, @Null Object instance) {
+		if (instance != null && instance.getClass().getName().equals(className)) return instance.getClass();
 		return classForName(className);
 	}
 

@@ -1485,7 +1485,7 @@ kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiator
 
 The serializers for unmodifiable and synchronized collections are not supported on Android.
 
-The immutable collections of `List.of`, `Set.of` and `Map.of` written on a JVM are read as unmodifiable collections on Android. If they are registered on both sides with `ImmutableCollectionsSerializers.registerSerializers`, this works on all Android versions; written with their class names, it needs API level 30, and for sets with one or two elements API level 34.
+The immutable collections of `List.of`, `Set.of` and `Map.of` written on a JVM are read as unmodifiable collections on Android when the app's minimum API level is below 30, because D8 replaces these methods then. If they are registered on both sides with `ImmutableCollectionsSerializers.registerSerializers`, this works on all Android versions; written with their class names, it needs API level 30, and for sets with one or two elements API level 34.
 
 ## Thread safety
 
