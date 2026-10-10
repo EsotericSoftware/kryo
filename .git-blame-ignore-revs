@@ -1,3 +1,4 @@
 # Commits to ignore in git blame, eg with: git config blame.ignoreRevsFile .git-blame-ignore-revs
-# Normalize line endings to LF
+# Normalize line endings to LF, on kryo-6 and on master
 144258e07fc2eabd1a6e58d618d4825b06660289
+946fcbc4db9fe9b8b9e717e594aaa7bf47e0b0f8
