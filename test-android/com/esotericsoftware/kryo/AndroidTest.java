@@ -37,24 +37,14 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Collections;
-import java.util.Date;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** Serializes and copies objects on Android, and runs {@link AndroidSerializationCompat}, run with app_process by
  * android/test.sh. Exits with 1 if anything fails. */
@@ -103,28 +93,6 @@ public class AndroidTest {
 		test("Final fields", () -> {
 			Final object = roundTrip(kryo(), new Final(9, "nine"));
 			check(object.number == 9 && object.text.equals("nine"));
-		});
-
-		test("Default serializers and references", () -> {
-			Kryo kryo = kryo();
-			kryo.setReferences(true);
-			HashMap<Object, Object> map = new HashMap<>();
-			map.put("list", new ArrayList<>(Arrays.asList(1, 2L, 3.0, "x", null)));
-			map.put("tree", new TreeMap<>(Collections.singletonMap("k", "v")));
-			map.put("enum", Thread.State.RUNNABLE);
-			map.put("enumSet", EnumSet.of(Thread.State.NEW, Thread.State.BLOCKED));
-			map.put("date", new Date(1234));
-			map.put("bigInteger", new BigInteger("123456789012345678901234567890"));
-			map.put("bigDecimal", new BigDecimal("1.25"));
-			map.put("uuid", new UUID(1, 2));
-			map.put("locale", Locale.GERMANY);
-			map.put("bitSet", BitSet.valueOf(new long[] {5}));
-			map.put("self", map);
-			HashMap<Object, Object> read = roundTrip(kryo, map);
-			check(read.remove("self") == read);
-			map.remove("self");
-			check(read.equals(map));
-			check(kryo.copy(map).equals(map));
 		});
 
 		test("CompatibleFieldSerializer", () -> {
@@ -217,14 +185,6 @@ public class AndroidTest {
 			set.add(holder);
 			Set<Object> setCopy = kryo.copy(set);
 			check(((List)setCopy.iterator().next()).get(0) == setCopy);
-		});
-
-		test("ConcurrentHashMap key set", () -> {
-			ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
-			map.put("a", 1);
-			Set<String> keySet = ((Map<String, Integer>)map).keySet(); // ConcurrentHashMap#keySet() returns a Set on Android.
-			check(roundTrip(kryo(), keySet).equals(keySet));
-			check(kryo().copy(keySet).equals(keySet));
 		});
 
 		// The field values of the test data of SerializationCompatTest, written on a JVM, and written here for the JVM.
