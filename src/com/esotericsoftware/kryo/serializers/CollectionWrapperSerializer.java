@@ -19,18 +19,33 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /** Serializes an unmodifiable or synchronized wrapper of {@link java.util.Collections} by writing the wrapped collection or map,
- * which is wrapped again when reading or copying.
+ * which is wrapped again when reading or copying. On Android, which doesn't allow access to the wrapped collection, a collection
+ * or map with the elements is written in the same format, see {@link #newElements(Object)}.
  * <p>
  * A wrapper that is contained in the collection it wraps, directly or indirectly, is read as null there, because the wrapper can
  * only be created after the wrapped collection was read. */
+@SuppressWarnings({"rawtypes", "unchecked"})
 final class CollectionWrapperSerializer extends Serializer<Object> {
 	private final Function<Object, Object> factory;
 	private final WrappedCollectionGetter getter;
@@ -46,13 +61,12 @@ final class CollectionWrapperSerializer extends Serializer<Object> {
 	}
 
 	public void write (Kryo kryo, Output output, Object wrapper) {
-		Object wrapped = getter.get(wrapper);
 		if (synchronize) {
 			synchronized (wrapper) {
-				kryo.writeClassAndObject(output, wrapped);
+				kryo.writeClassAndObject(output, wrapped(wrapper));
 			}
 		} else
-			kryo.writeClassAndObject(output, wrapped);
+			kryo.writeClassAndObject(output, wrapped(wrapper));
 	}
 
 	public Object read (Kryo kryo, Input input, Class<?> type) {
@@ -60,12 +74,48 @@ final class CollectionWrapperSerializer extends Serializer<Object> {
 	}
 
 	public Object copy (Kryo kryo, Object original) {
-		Object wrapped = getter.get(original);
 		if (synchronize) {
 			synchronized (original) {
-				return factory.apply(kryo.copy(wrapped));
+				return copyWrapper(kryo, original);
 			}
 		}
-		return factory.apply(kryo.copy(wrapped));
+		return copyWrapper(kryo, original);
+	}
+
+	private Object wrapped (Object wrapper) {
+		if (!isAndroid) return getter.get(wrapper);
+		Object elements = newElements(wrapper);
+		addElements(elements, wrapper, element -> element);
+		return elements;
+	}
+
+	private Object copyWrapper (Kryo kryo, Object original) {
+		if (!isAndroid) return factory.apply(kryo.copy(getter.get(original)));
+		// The copy is referenced before the elements are copied, so an element that refers to the wrapper gets the copy.
+		Object elements = newElements(original), copy = factory.apply(elements);
+		kryo.reference(copy);
+		addElements(elements, original, kryo::copy);
+		return copy;
+	}
+
+	/** On Android, which doesn't allow access to the wrapped collection, returns a collection or map for the elements of the
+	 * wrapper, like Apache Fory does: a list, a LinkedHashSet or LinkedHashMap, which keep the order, or a TreeSet or TreeMap with
+	 * the comparator. */
+	static private Object newElements (Object wrapper) {
+		if (wrapper instanceof SortedMap) return new TreeMap(((SortedMap)wrapper).comparator());
+		if (wrapper instanceof Map) return new LinkedHashMap();
+		if (wrapper instanceof SortedSet) return new TreeSet(((SortedSet)wrapper).comparator());
+		if (wrapper instanceof Set) return new LinkedHashSet();
+		return new ArrayList();
+	}
+
+	static private void addElements (Object elements, Object wrapper, UnaryOperator<Object> copy) {
+		if (elements instanceof Map) {
+			for (Map.Entry entry : ((Map<?, ?>)wrapper).entrySet())
+				((Map)elements).put(copy.apply(entry.getKey()), copy.apply(entry.getValue()));
+		} else {
+			for (Object element : (Collection)wrapper)
+				((Collection)elements).add(copy.apply(element));
+		}
 	}
 }

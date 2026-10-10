@@ -17,10 +17,8 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo.android;
+package com.esotericsoftware.kryo;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -28,49 +26,36 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.CompatibleFieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.ExternalizableSerializer;
-import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
 
-import android.os.Build;
-
 import java.io.Externalizable;
-import java.io.FileInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
-/** Serializes and copies objects on Android, run with app_process by android/test.sh with the file written by {@link JvmData}.
- * Exits with 1 if anything fails. */
+/** Serializes and copies objects on Android, and runs {@link AndroidSerializationCompat}, run with app_process by
+ * android/test.sh. Exits with 1 if anything fails. */
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class AndroidTest {
 	static boolean failed;
 
 	public static void main (String[] args) {
-		System.out.println("Android API level " + Build.VERSION.SDK_INT + ", " + System.getProperty("java.vm.name"));
+		// The arguments are the Android API level and the directories of AndroidSerializationCompat, see android/test.sh.
+		int apiLevel = Integer.parseInt(args[0]);
+		System.out.println("Android API level " + apiLevel + ", " + System.getProperty("java.vm.name"));
 
 		test("Output and Input", () -> {
 			Output output = new Output(16, -1);
@@ -108,28 +93,6 @@ public class AndroidTest {
 		test("Final fields", () -> {
 			Final object = roundTrip(kryo(), new Final(9, "nine"));
 			check(object.number == 9 && object.text.equals("nine"));
-		});
-
-		test("Default serializers and references", () -> {
-			Kryo kryo = kryo();
-			kryo.setReferences(true);
-			HashMap<Object, Object> map = new HashMap<>();
-			map.put("list", new ArrayList<>(Arrays.asList(1, 2L, 3.0, "x", null)));
-			map.put("tree", new TreeMap<>(Collections.singletonMap("k", "v")));
-			map.put("enum", Thread.State.RUNNABLE);
-			map.put("enumSet", EnumSet.of(Thread.State.NEW, Thread.State.BLOCKED));
-			map.put("date", new Date(1234));
-			map.put("bigInteger", new BigInteger("123456789012345678901234567890"));
-			map.put("bigDecimal", new BigDecimal("1.25"));
-			map.put("uuid", new UUID(1, 2));
-			map.put("locale", Locale.GERMANY);
-			map.put("bitSet", BitSet.valueOf(new long[] {5}));
-			map.put("self", map);
-			HashMap<Object, Object> read = roundTrip(kryo, map);
-			check(read.remove("self") == read);
-			map.remove("self");
-			check(read.equals(map));
-			check(kryo.copy(map).equals(map));
 		});
 
 		test("CompatibleFieldSerializer", () -> {
@@ -207,31 +170,33 @@ public class AndroidTest {
 				check(read.position() == 2 && read.limit() == 5 && read.get(4) == 5);
 		});
 
-		test("ConcurrentHashMap key set", () -> {
-			ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
-			map.put("a", 1);
-			Set<String> keySet = ((Map<String, Integer>)map).keySet(); // ConcurrentHashMap#keySet() returns a Set on Android.
-			check(roundTrip(kryo(), keySet).equals(keySet));
-			check(kryo().copy(keySet).equals(keySet));
+		test("Copy of wrappers that contain themselves", () -> {
+			Kryo kryo = kryo();
+			kryo.setReferences(true);
+			ArrayList<Object> list = new ArrayList<>();
+			List<Object> wrapper = Collections.unmodifiableList(list);
+			list.add("a");
+			list.add(wrapper);
+			List<Object> copy = kryo.copy(wrapper);
+			check(copy.size() == 2 && copy.get(0).equals("a") && copy.get(1) == copy);
+			ArrayList<Object> holder = new ArrayList<>();
+			Set<Object> set = Collections.newSetFromMap(new HashMap<>());
+			holder.add(set);
+			set.add(holder);
+			Set<Object> setCopy = kryo.copy(set);
+			check(((List)setCopy.iterator().next()).get(0) == setCopy);
 		});
 
-		try (Input input = new Input(new FileInputStream(args[0]))) {
-			test("Registered immutable collections from a JVM", () -> {
-				Kryo kryo = kryo();
-				ImmutableCollectionsSerializers.registerSerializers(kryo);
-				checkImmutableCollections((List)kryo.readClassAndObject(input));
-				Set set = (Set)kryo.readClassAndObject(input);
-				check(set.equals(Collections.singleton("x")));
-				checkImmutable(set);
-			});
-			// Android has the JDK's immutable collections since API level 30.
-			if (Build.VERSION.SDK_INT >= 30)
-				test("Immutable collections from a JVM", () -> checkImmutableCollections((List)kryo().readClassAndObject(input)));
-			else
-				System.out.println("Skipped: Immutable collections from a JVM, needs API level 30.");
-		} catch (IOException ex) {
-			throw new RuntimeException(ex);
-		}
+		// The field values of the test data of SerializationCompatTest, written on a JVM, and written here for the JVM.
+		File androidDirectory = new File(args[2]);
+		androidDirectory.mkdirs();
+		test("SerializationCompatTest test data from a JVM", () -> {
+			List<String> failures = AndroidSerializationCompat.readAndWrite(new File(args[1]), androidDirectory,
+				apiLevel);
+			for (String failure : failures)
+				System.out.println("  " + failure);
+			check(failures.isEmpty());
+		});
 
 		if (failed) System.exit(1);
 		System.out.println("All tests passed.");
@@ -247,33 +212,6 @@ public class AndroidTest {
 		Output output = new Output(1024, -1);
 		kryo.writeClassAndObject(output, object);
 		return (T)kryo.readClassAndObject(new Input(output.toBytes()));
-	}
-
-	static void checkImmutableCollections (List<Object> collections) {
-		check(collections.get(0).equals(Arrays.asList("a")));
-		check(collections.get(1).equals(Arrays.asList("a", "b", "c")));
-		check(collections.get(2).equals(Arrays.asList("b", "c")));
-		check(collections.get(3).equals(Arrays.asList("a", null, "c")));
-		check(collections.get(4).equals(new HashSet<>(Arrays.asList("x", "y", "z"))));
-		check(collections.get(5).equals(Collections.singletonMap("k", 1)));
-		HashMap<String, Integer> map = new HashMap<>();
-		map.put("k", 1);
-		map.put("l", 2);
-		check(collections.get(6).equals(map));
-		for (Object collection : collections)
-			checkImmutable(collection);
-	}
-
-	static void checkImmutable (Object collection) {
-		try {
-			if (collection instanceof Map)
-				((Map)collection).put("new", 0);
-			else
-				((Collection)collection).add("new");
-		} catch (UnsupportedOperationException expected) {
-			return;
-		}
-		throw new AssertionError("Mutable: " + collection.getClass().getName());
 	}
 
 	static void check (boolean condition) {

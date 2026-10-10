@@ -980,11 +980,30 @@ class DefaultSerializersTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		kryo.setReferences(true);
 
+		// The implementation classes differ between Java vendors and Android, so the name of Charset is written.
 		for (String cs : css) {
 			Charset charset = Charset.forName(cs);
-			int expectedLength = 3 + charset.getClass().getName().length() + cs.length();
+			int expectedLength = 3 + Charset.class.getName().length() + cs.length();
 			roundTrip(expectedLength, charset);
 		}
+
+		kryo = new Kryo();
+		kryo.register(Charset.class);
+		for (String cs : css)
+			roundTrip(1 + cs.length(), Charset.forName(cs));
+	}
+
+	@Test
+	void testTimeZone () {
+		TimeZone timeZone = TimeZone.getTimeZone("Europe/Berlin");
+		kryo.register(TimeZone.class);
+		roundTrip(1 + timeZone.getID().length(), timeZone);
+
+		// The implementation classes differ between Java vendors and Android, so the name of TimeZone is written.
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		roundTrip(2 + TimeZone.class.getName().length() + timeZone.getID().length(), timeZone);
+		assertEquals(TimeZone.class, kryo.getRegistration(timeZone.getClass()).getType());
 	}
 
 	@Test

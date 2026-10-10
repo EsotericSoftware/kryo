@@ -325,11 +325,9 @@ public class Kryo {
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		ImmutableCollectionsSerializers.addDefaultSerializers(this);
-		if (!isAndroid) { // The wrapped collection can't be accessed on Android.
-			UnmodifiableCollectionSerializers.addDefaultSerializers(this);
-			SynchronizedCollectionSerializers.addDefaultSerializers(this);
-			addDefaultSerializer(Collections.newSetFromMap(new HashMap<>()).getClass(), new SetFromMapSerializer());
-		}
+		UnmodifiableCollectionSerializers.addDefaultSerializers(this);
+		SynchronizedCollectionSerializers.addDefaultSerializers(this);
+		addDefaultSerializer(Collections.newSetFromMap(new HashMap<>()).getClass(), new SetFromMapSerializer());
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
@@ -567,6 +565,10 @@ public class Kryo {
 	/** If the class is not registered and {@link Kryo#setRegistrationRequired(boolean)} is false or
 	 * {@link #setAllowedUnregisteredClasses(Predicate)} allows the class, it is automatically registered using the
 	 * {@link Kryo#addDefaultSerializer(Class, Class) default serializer}.
+	 * <p>
+	 * An unregistered subclass of {@link Charset} or {@link TimeZone} uses the registration of Charset or TimeZone, because the
+	 * implementation classes differ between Java vendors and Android. An EnumSet uses the registration of EnumSet, if it is
+	 * registered.
 	 * @throws IllegalArgumentException if the class is not registered, {@link Kryo#setRegistrationRequired(boolean)} is true and
 	 *            the class is not allowed.
 	 * @see ClassResolver#getRegistration(Class) */
@@ -590,6 +592,12 @@ public class Kryo {
 				}
 			} else if (EnumSet.class.isAssignableFrom(type))
 				registration = classResolver.getRegistration(EnumSet.class);
+			// The implementation classes of charsets and time zones differ between Java vendors and Android, and their serializers
+			// only write the name or ID.
+			else if (type != Charset.class && Charset.class.isAssignableFrom(type))
+				registration = getRegistration(Charset.class);
+			else if (type != TimeZone.class && TimeZone.class.isAssignableFrom(type))
+				registration = getRegistration(TimeZone.class);
 			else if (isClosure(type)) {
 				registration = classResolver.getRegistration(ClosureSerializer.Closure.class);
 				// The class of a closure can't be found by its name when reading, so it can't be registered implicitly.
