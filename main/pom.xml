@@ -49,6 +49,30 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<!-- The tests that android/test.sh runs on Android, compiled here so the build checks them. -->
+					<execution>
+						<id>add-android-test-source</id>
+						<phase>generate-test-sources</phase>
+						<goals>
+							<goal>add-test-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${kryo.root}/test-android</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>net.revelc.code.formatter</groupId>
+				<artifactId>formatter-maven-plugin</artifactId>
+				<configuration>
+					<directories combine.children="append">
+						<directory>${kryo.root}/test-android</directory>
+					</directories>
+				</configuration>
 			</plugin>
 			<!-- The build needs JDK 24+, but the classes must only use the Java 17 API, which javac checks with release 17. The
 				classes that are only loaded on newer Java versions are compiled separately, against the API of the JDK. -->

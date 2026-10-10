@@ -2,6 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="src" path="test-android"/>
 	<classpathentry kind="src" path="benchmarks/src/main/java"/>
 	<classpathentry kind="src" path=".apt_generated">
 		<attributes>

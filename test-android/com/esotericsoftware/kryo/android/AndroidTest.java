@@ -34,8 +34,6 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
 
-import android.os.Build;
-
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
@@ -61,14 +59,16 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Serializes and copies objects on Android, and runs {@link AndroidSerializationCompat}, run with app_process by android/test.sh.
- * Exits with 1 if anything fails. */
+/** Serializes and copies objects on Android, and runs {@link AndroidSerializationCompat}, run with app_process by
+ * android/test.sh. Exits with 1 if anything fails. */
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class AndroidTest {
 	static boolean failed;
 
 	public static void main (String[] args) {
-		System.out.println("Android API level " + Build.VERSION.SDK_INT + ", " + System.getProperty("java.vm.name"));
+		// The arguments are the Android API level and the directories of AndroidSerializationCompat, see android/test.sh.
+		int apiLevel = Integer.parseInt(args[0]);
+		System.out.println("Android API level " + apiLevel + ", " + System.getProperty("java.vm.name"));
 
 		test("Output and Input", () -> {
 			Output output = new Output(16, -1);
@@ -231,11 +231,11 @@ public class AndroidTest {
 		});
 
 		// The field values of the test data of SerializationCompatTest, written on a JVM, and written here for the JVM.
-		File androidDirectory = new File(args[1]);
+		File androidDirectory = new File(args[2]);
 		androidDirectory.mkdirs();
 		test("SerializationCompatTest test data from a JVM", () -> {
-			List<String> failures = AndroidSerializationCompat.readAndWrite(new File(args[0]), androidDirectory,
-				Build.VERSION.SDK_INT);
+			List<String> failures = AndroidSerializationCompat.readAndWrite(new File(args[1]), androidDirectory,
+				apiLevel);
 			for (String failure : failures)
 				System.out.println("  " + failure);
 			check(failures.isEmpty());

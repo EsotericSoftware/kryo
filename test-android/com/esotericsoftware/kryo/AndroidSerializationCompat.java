@@ -46,8 +46,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /** {@link SerializationCompatTest} between a JVM and Android, for each field of the test data separately, so one type that fails
- * doesn't hide the others: the JVM writes the field values ({@link #main(String[])} with "write"), Android reads and compares them
- * and writes them again ({@link #readAndWrite(File, File, int)}), and the JVM reads and compares those ("read"). Run by
+ * doesn't hide the others: the JVM writes the field values ({@link #main(String[])} with "write"), Android reads and compares
+ * them and writes them again ({@link #readAndWrite(File, File, int)}), and the JVM reads and compares those ("read"). Run by
  * android/test.sh. */
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class AndroidSerializationCompat {
@@ -67,8 +67,8 @@ public class AndroidSerializationCompat {
 		}
 	}
 
-	/** Returns the test data with the types the Android API level has: java.time since API level 26, the immutable collections
-	 * by class name since 30, records since 34. Registered immutable collections can be read on all Android versions. */
+	/** Returns the test data with the types the Android API level has: java.time since API level 26, the immutable collections by
+	 * class name since 30, records since 34. Registered immutable collections can be read on all Android versions. */
 	static List<Data> testData (int apiLevel) {
 		ArrayList<Data> testData = new ArrayList<>();
 		testData.add(new Data(new TestData(), false));

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Converts the Kryo jar and the tests in src to dex with D8, the dexer of the Android build tools, for the minimum Android API
+# Converts the Kryo jar and the tests in test-android to dex with D8, the dexer of the Android build tools, for the minimum Android API
 # level that Kryo supports, and runs AndroidTest on the connected device or emulator, including SerializationCompatTest between
 # the JVM and Android, see AndroidSerializationCompat. Fails on any D8 warning for Kryo, eg bytecode that needs a newer API
 # level, which Animal Sniffer doesn't check. Needs the Android SDK (ANDROID_HOME) and the Kryo jar, built with:
@@ -35,7 +35,7 @@ mvn -q -f ../main/pom.xml dependency:build-classpath -Dmdep.includeScope=test -D
 libraries=$(tr ':' '\n' < target/dependencies.txt \
 	| grep -E '/(objenesis|commons-lang3|junit-jupiter-api|junit-platform-commons|opentest4j|apiguardian-api)-[0-9]' | paste -sd: -)
 compatTest="../test/com/esotericsoftware/kryo"
-"${bin}javac" --release 17 -nowarn -d target/classes -cp "$kryo:$androidJar:$libraries" $(find src -name '*.java') \
+"${bin}javac" --release 17 -nowarn -d target/classes -cp "$kryo:$libraries" $(find ../test-android -name '*.java') \
 	$compatTest/SerializationCompatTestData.java $compatTest/TestDataJava11.java $compatTest/TestDataJava17.java \
 	$compatTest/ReflectionAssert.java
 # Kryo is checked for D8 warnings, the output is printed on errors, so the assignment must not exit with set -e.
@@ -61,13 +61,14 @@ device=/data/local/tmp/kryo-android-test
 "$adb" push target/dex/kryo/classes.dex $device/kryo.dex > /dev/null
 "$adb" push target/dex/test/classes.dex $device/test.dex > /dev/null
 "$adb" push target/compat/jvm $device/ > /dev/null
+apiLevel=$("$adb" shell getprop ro.build.version.sdk | tr -d '\r')
 # app_process runs a main class with the Android framework, which dalvikvm can't.
 status=0
 "$adb" shell "CLASSPATH=$device/kryo.dex:$device/test.dex app_process /system/bin com.esotericsoftware.kryo.android.AndroidTest \
-	$device/jvm $device/android" || status=1
+	$apiLevel $device/jvm $device/android" || status=1
 
 # The files written on Android, read on the JVM.
 "$adb" pull $device/android target/compat > /dev/null
 "${bin}java" -cp "target/classes:$kryo:$(cat target/dependencies.txt)" com.esotericsoftware.kryo.AndroidSerializationCompat read \
-	target/compat/android "$("$adb" shell getprop ro.build.version.sdk | tr -d '\r')" || status=1
+	target/compat/android $apiLevel || status=1
 exit $status
