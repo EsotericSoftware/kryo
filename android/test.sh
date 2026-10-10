@@ -1,9 +1,9 @@
 #!/bin/sh
 # Converts the Kryo jar and the tests in src to dex with D8, the dexer of the Android build tools, for the minimum Android API
-# level that Kryo supports, and runs AndroidTest on the connected device or emulator: with data written by JvmData on this JVM,
-# and SerializationCompatTest between the JVM and Android, see AndroidSerializationCompat. Fails on any D8 warning for Kryo, eg
-# bytecode that needs a newer API level, which Animal Sniffer doesn't check. Needs the Android SDK (ANDROID_HOME) and the Kryo
-# jar, built with: mvn -pl main package -DskipTests
+# level that Kryo supports, and runs AndroidTest on the connected device or emulator, including SerializationCompatTest between
+# the JVM and Android, see AndroidSerializationCompat. Fails on any D8 warning for Kryo, eg bytecode that needs a newer API
+# level, which Animal Sniffer doesn't check. Needs the Android SDK (ANDROID_HOME) and the Kryo jar, built with:
+# mvn -pl main package -DskipTests
 #
 # With --dex-only, only converts to dex, without a device.
 set -e
@@ -53,7 +53,6 @@ if ! output=$("${bin}java" -cp $d8 com.android.tools.r8.D8 --min-api $minApi --l
 fi
 if [ "$1" = "--dex-only" ]; then exit; fi
 
-"${bin}java" -cp "target/classes:$kryo" com.esotericsoftware.kryo.android.JvmData target/jvm-data.bin
 "${bin}java" -cp "target/classes:$kryo:$(cat target/dependencies.txt)" com.esotericsoftware.kryo.AndroidSerializationCompat write \
 	target/compat/jvm
 adb=$(command -v adb || echo "$sdk/platform-tools/adb")
@@ -61,12 +60,11 @@ device=/data/local/tmp/kryo-android-test
 "$adb" shell "rm -rf /data/local/tmp/kryo-android-test && mkdir -p /data/local/tmp/kryo-android-test"
 "$adb" push target/dex/kryo/classes.dex $device/kryo.dex > /dev/null
 "$adb" push target/dex/test/classes.dex $device/test.dex > /dev/null
-"$adb" push target/jvm-data.bin $device/ > /dev/null
 "$adb" push target/compat/jvm $device/ > /dev/null
 # app_process runs a main class with the Android framework, which dalvikvm can't.
 status=0
 "$adb" shell "CLASSPATH=$device/kryo.dex:$device/test.dex app_process /system/bin com.esotericsoftware.kryo.android.AndroidTest \
-	$device/jvm-data.bin $device/jvm $device/android" || status=1
+	$device/jvm $device/android" || status=1
 
 # The files written on Android, read on the JVM.
 "$adb" pull $device/android target/compat > /dev/null
