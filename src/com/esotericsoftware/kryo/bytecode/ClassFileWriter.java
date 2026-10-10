@@ -90,6 +90,10 @@ final class ClassFileWriter extends Bytecode {
 			code.istore(local);
 		}
 
+		public void astore (int local) {
+			code.astore(local);
+		}
+
 		public void lstore (int local) {
 			code.lstore(local);
 		}
@@ -152,6 +156,10 @@ final class ClassFileWriter extends Bytecode {
 
 		public void vreturn () {
 			code.return_();
+		}
+
+		public void areturn () {
+			code.areturn();
 		}
 
 		public void athrow () {

@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.benchmarks;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
@@ -87,8 +88,12 @@ public class RecordSerializerBenchmark {
 	record NonPublicRecordRectangle (String height, int width, long x, double y) { }
 
 	static public class FieldSerializerState extends BenchmarkState {
+		@Param({"false", "true"}) public boolean codeGeneration;
+
 		public void setup () {
-			kryo.setDefaultSerializer(FieldSerializer.class);
+			FieldSerializerFactory factory = new FieldSerializerFactory();
+			factory.getConfig().setCodeGeneration(codeGeneration);
+			kryo.setDefaultSerializer(factory);
 			kryo.register(RecordRectangle.class);
 			kryo.register(NonPublicRecordRectangle.class);
 			super.setup();

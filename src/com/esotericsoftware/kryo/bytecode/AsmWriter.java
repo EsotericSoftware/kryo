@@ -76,6 +76,10 @@ final class AsmWriter extends Bytecode {
 			code.visitVarInsn(Opcodes.ISTORE, local);
 		}
 
+		public void astore (int local) {
+			code.visitVarInsn(Opcodes.ASTORE, local);
+		}
+
 		public void lstore (int local) {
 			code.visitVarInsn(Opcodes.LSTORE, local);
 		}
@@ -145,6 +149,10 @@ final class AsmWriter extends Bytecode {
 
 		public void vreturn () {
 			code.visitInsn(Opcodes.RETURN);
+		}
+
+		public void areturn () {
+			code.visitInsn(Opcodes.ARETURN);
 		}
 
 		public void athrow () {

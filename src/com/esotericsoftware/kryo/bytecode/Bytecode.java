@@ -138,6 +138,8 @@ public abstract class Bytecode {
 
 		abstract public void istore (int local);
 
+		abstract public void astore (int local);
+
 		abstract public void lstore (int local);
 
 		/** Loads an int constant. */
@@ -172,6 +174,8 @@ public abstract class Bytecode {
 		abstract public void pop ();
 
 		abstract public void vreturn ();
+
+		abstract public void areturn ();
 
 		abstract public void athrow ();
 

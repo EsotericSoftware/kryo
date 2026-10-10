@@ -51,6 +51,17 @@ abstract class GeneratedFields {
 	/** Copies all fields of the original to the copy, the values of object fields with {@link Kryo#copy(Object)}. */
 	abstract public void copy (Object original, Object copy);
 
+	/** Returns a new record with the component values read from the input. Only for records, which set their fields with their
+	 * canonical constructor. */
+	public Object readRecord (Input input) {
+		throw new UnsupportedOperationException();
+	}
+
+	/** Returns a copy of the record, the values of object components copied with {@link Kryo#copy(Object)}. Only for records. */
+	public Object copyRecord (Object original) {
+		throw new UnsupportedOperationException();
+	}
+
 	/** Returns the generated code for the fields, or null if code can't be generated for them, see
 	 * {@link CodeGeneration#generate(FieldSerializer, CachedField[], boolean, int[])}. */
 	static GeneratedFields generate (FieldSerializer serializer, CachedField[] fields, boolean writeClasses, int[] tags) {
