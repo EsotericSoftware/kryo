@@ -110,3 +110,21 @@ jobs:
 
       - name: Build and run the native image test
         run: native-image/build.sh
+
+  android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: 25
+          cache: 'maven'
+
+      # The build checks the Android API with Animal Sniffer, D8 the bytecode. The runner has the Android SDK in ANDROID_HOME.
+      - name: Build Kryo
+        run: mvn -B --no-transfer-progress -pl main package -DskipTests
+
+      - name: Convert Kryo to dex with D8
+        run: android/d8.sh
