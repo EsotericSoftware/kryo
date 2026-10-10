@@ -17,7 +17,7 @@
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-package com.esotericsoftware.kryo.bytecode;
+package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.util.Util.*;
 
@@ -32,9 +32,9 @@ import java.util.function.Consumer;
  * emits. Implemented with the Class-File API on Java 24+ ({@link ClassFileWriter}) and with ASM ({@link AsmWriter}), which is an
  * optional dependency, on older Java versions.
  * <p>
- * Internal, used by {@code com.esotericsoftware.kryo.serializers.CodeGeneration}. Public only because it is in its own package,
- * which keeps the dependency on ASM out of the serializers. */
-public abstract class Bytecode {
+ * Used by {@link CodeGeneration}. Only {@link AsmWriter} references ASM classes, and it is loaded only if ASM is on the
+ * classpath. */
+abstract class Bytecode {
 	static public final int ACC_PUBLIC = 0x0001, ACC_PRIVATE = 0x0002, ACC_STATIC = 0x0008, ACC_FINAL = 0x0010, ACC_SUPER = 0x0020;
 	/** The condition opcodes of {@link Code#ifThen(int, Runnable)}: the top of the stack is not 0, the top two ints are equal. */
 	static public final int IFNE = 154, IF_ICMPEQ = 159;
@@ -129,7 +129,7 @@ public abstract class Bytecode {
 	}
 
 	/** Emits the bytecode of a method. */
-	abstract static public class Code {
+	abstract static class Code {
 		abstract public void aload (int local);
 
 		abstract public void iload (int local);

@@ -25,7 +25,6 @@ import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.VersionFieldSerializerFactory;
 import com.esotericsoftware.kryo.benchmarks.data.graph.ObjectGraph;
-import com.esotericsoftware.kryo.bytecode.Bytecode;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
@@ -69,6 +68,18 @@ public class ObjectGraphBenchmark {
 		return state.kryo.copy(state.object);
 	}
 
+	/** Returns true if code generation is available: the Class-File API of Java 24+ or ASM on the classpath. */
+	static boolean codeGenerationAvailable () {
+		for (String name : new String[] {"java.lang.classfile.ClassFile", "org.objectweb.asm.ClassWriter"}) {
+			try {
+				Class.forName(name);
+				return true;
+			} catch (ClassNotFoundException ignored) {
+			}
+		}
+		return false;
+	}
+
 	//
 
 	@State(Scope.Thread)
@@ -87,7 +98,7 @@ public class ObjectGraphBenchmark {
 
 		@Setup(Level.Trial)
 		public void setup () {
-			if (codeGeneration && !Bytecode.classFileApi && !Bytecode.asm)
+			if (codeGeneration && !codeGenerationAvailable())
 				throw new IllegalStateException("Code generation needs Java 24+ or ASM on the classpath.");
 			// Before registering, because FieldSerializer decides when it is created whether String fields use references.
 			kryo.setReferences(references);

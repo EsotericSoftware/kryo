@@ -28,16 +28,16 @@ out = sys.argv[1]
 src = "src/main/java/com/esotericsoftware/kryo/benchmarks/"
 # Without the codeGeneration parameter, the check for its platform support and the copy benchmark, which Kryo 5 doesn't have.
 graph = open(src + "ObjectGraphBenchmark.java").read()
-graph = graph.replace("import com.esotericsoftware.kryo.bytecode.Bytecode;\n", "")
 graph = re.sub(r"\t\t/\*\* If true, the field serializers use generated code.*?\n\t\t@Param\(\{\"false\"\}\) public boolean codeGeneration;\n\n", "", graph, flags=re.S)
 graph = re.sub(r"\t\t\tif \(codeGeneration && .*?\n\t\t\t\tthrow new IllegalStateException\(.*?\n", "", graph)
+graph = re.sub(r"\t/\*\* Returns true if code generation is available.*?\n\t\}\n\n", "", graph, flags=re.S)
 graph = graph.replace("\t\t\tfactory.getConfig().setCodeGeneration(codeGeneration);\n", "")
 graph = re.sub(r"\n\t@Benchmark\n\tpublic Object copy \(FieldSerializerState state\) \{\n.*?\n\t\}\n", "", graph, flags=re.S)
 records = open(src + "RecordSerializerBenchmark.java").read()
 records = records.replace("\t\t@Param({\"false\", \"true\"}) public boolean codeGeneration;\n\n", "")
 records = records.replace("\t\t\tfactory.getConfig().setCodeGeneration(codeGeneration);\n", "")
 for name, text in (("ObjectGraphBenchmark", graph), ("RecordSerializerBenchmark", records)):
-    assert "codeGeneration" not in text and "Bytecode" not in text, name
+    assert "codeGeneration" not in text, name
     open(out + "/" + name + ".java", "w").write(text)
 PY
 cat > $kryo5/pom.xml <<'POM'
