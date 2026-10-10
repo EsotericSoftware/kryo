@@ -1151,7 +1151,7 @@ Kryo provides many serializers with various configuration options and levels of 
 
 ### FieldSerializer
 
-FieldSerializer works by serializing each non-transient field. It can serialize POJOs and many other classes without any configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be serialized. With [code generation](#code-generation), FieldSerializer and its subclasses are 45% to 120% faster.
+FieldSerializer works by serializing each non-transient field. It can serialize POJOs and many other classes without any configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be serialized. With [code generation](#code-generation), FieldSerializer and its subclasses are 1.8 to 2.8 times faster.
 
 FieldSerializer is efficient by writing only the field data, without any schema information, using the Java class files as the schema. It does not support adding, removing, or changing the type of fields without invalidating previously serialized bytes. Renaming fields is allowed only if it doesn't change the alphabetical order of the fields.
 
@@ -1170,7 +1170,7 @@ Setting | Description | Default value
 `variableLengthEncoding` | If true, variable length values are used for int and long fields. | true
 `extendedFieldNames` | If true, field names are prefixed by their declaring class. This can avoid conflicts when a subclass has a field with the same name as a super class. | false
 `fieldAccess` | How fields are read and written: `UNSAFE` (fastest, but deprecated for removal by Java and warns on Java 24+), `VARHANDLE` (slower than Unsafe without `codeGeneration`), `REFLECTION`. If a field can't be accessed this way, VarHandles are used, and reflection if they can't be used either, eg for final fields. | `UNSAFE` before Java 24 or with `--sun-misc-unsafe-memory-access=allow`, otherwise `VARHANDLE`. Also `VARHANDLE` if Unsafe is not available or disabled with `-Dkryo.unsafe=false`. `REFLECTION` on Android. The system property `kryo.fieldAccess` overrides the default, eg `-Dkryo.fieldAccess=UNSAFE`.
-`codeGeneration` | If true, the code that writes, reads and copies the fields of a class is generated, which is 45% to 120% faster, see [Code generation](#code-generation). | false, or true if the system property `kryo.codeGeneration` is `true`.
+`codeGeneration` | If true, the code that writes, reads and copies the fields of a class is generated, which is 1.8 to 2.8 times faster, see [Code generation](#code-generation). | false, or true if the system property `kryo.codeGeneration` is `true`.
 
 With `VARHANDLE`, the VarHandles are not constants for the JIT compiler, so each field access is an indirect call and FieldSerializer is slower than with `UNSAFE`. With `codeGeneration`, the generated code has the VarHandles as constants and is faster than with `UNSAFE`.
 
@@ -1178,7 +1178,7 @@ VarHandles can read but not set final fields, so Kryo sets them with reflection.
 
 #### Code generation
 
-FieldSerializer and its subclasses can generate the code that writes, reads and copies the fields of a class, instead of looping over the cached fields. The generated code is straight line code with the field accessors as constants, which the JIT compiler optimizes much better: there is no virtual call per field. FieldSerializer and its subclasses are 45% to 120% faster with it on object graphs, see the [benchmarks](#benchmarks). The generated code writes the same bytes as the cached fields, so it can be enabled or disabled without affecting the serialized data.
+FieldSerializer and its subclasses can generate the code that writes, reads and copies the fields of a class, instead of looping over the cached fields. The generated code is straight line code with the field accessors as constants, which the JIT compiler optimizes much better: there is no virtual call per field. FieldSerializer and its subclasses are 1.8 to 2.8 times faster with it on object graphs, see the [benchmarks](#benchmarks). The generated code writes the same bytes as the cached fields, so it can be enabled or disabled without affecting the serialized data.
 
 ```java
 FieldSerializerConfig config = new FieldSerializerConfig();
@@ -1626,6 +1626,18 @@ The same Kryo instances serve both directions, see [Pooling](#pooling) above. A 
 ## Benchmarks
 
 Kryo provides a number of [JMH](https://openjdk.org/projects/code-tools/jmh/)-based [benchmarks](https://github.com/EsotericSoftware/kryo/tree/kryo-6/benchmarks). The charts are [generated](https://github.com/EsotericSoftware/kryo/tree/kryo-6/benchmarks#charts) from the benchmark results.
+
+### Kryo 5 and Kryo 6
+
+Kryo 5 accesses fields with `sun.misc.Unsafe`, which Java deprecated for removal and warns about since Java 24. Kryo 6 accesses fields with VarHandles by default on Java 24+, which is safe and warning free. With this default, Kryo 6 is 10% to 21% slower than Kryo 5 for the field serializers and 60% faster for their chunked encoding, which has a new format. With Unsafe [field access](#fieldserializer-settings) Kryo 6 is 20% to 27% faster than Kryo 5, and with [code generation](#code-generation) 2.1 to 3.6 times. ObjectGraphBenchmark at scale 4 with references, Kryo 5.7.1 and Kryo 6 with their default settings, see `benchmarks/kryo5-vs-kryo6.sh`.
+
+![Kryo 5 vs Kryo 6](benchmarks/charts/kryo5VsKryo6.svg)
+
+Records are serialized by FieldSerializer in Kryo 6, which is 2.2 to 2.5 times faster than the RecordSerializer of Kryo 5, and 4.2 to 6 times faster with code generation.
+
+![Kryo 5 vs Kryo 6: records](benchmarks/charts/records.svg)
+
+### Kryo 6
 
 ![FieldSerializerBenchmark](benchmarks/charts/fieldSerializer.svg)
 ![ObjectGraphBenchmark](benchmarks/charts/objectGraph.svg)

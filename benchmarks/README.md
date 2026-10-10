@@ -63,7 +63,11 @@ JMH parameters given to the script replace the defaults, eg to try the script wi
 benchmarks/run.sh -f 1 -wi 1 -i 2 -w 200ms -r 200ms
 ```
 
-`charts/kryo5-vs-kryo6.svg` compares Kryo 5.7.0 with Kryo 6 and Kryo 6 with code generation: ObjectGraphBenchmark at scale 4 with references, both with their default settings on JDK 25, run with the same JMH arguments. The Kryo 5 bars come from the same benchmark compiled against Kryo 5.7.0 without the `codeGeneration` parameter, which Kryo 5 doesn't have, and the chart was rendered with `render` of `charts.py`. It is not part of `run.sh`.
+`kryo5-vs-kryo6.sh` runs the benchmarks for the charts that compare Kryo 5 with Kryo 6 and generates the charts: `kryo5VsKryo6` is ObjectGraphBenchmark at scale 4 with references, with Kryo 6 by default (VarHandles), with Unsafe field access and with code generation, and `records` is RecordSerializerBenchmark. The Kryo 5 bars come from the same benchmarks compiled against Kryo 5.7.1 without the `codeGeneration` parameter, which Kryo 5 doesn't have, in `target/kryo5`. Both versions use their default settings. The results are written to `charts/results` like the other charts, the script takes the same JMH parameters as `run.sh`.
+
+```
+benchmarks/kryo5-vs-kryo6.sh -f 2 -wi 5 -i 5 -w 1s -r 1s
+```
 
 To generate the charts again from existing results:
 
