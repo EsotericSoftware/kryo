@@ -188,7 +188,7 @@ To use the latest Kryo snapshot, use:
 
 ### Without Maven
 
-Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#installation) on your classpath, along with the optional Objenesis JAR found in [lib](https://github.com/EsotericSoftware/kryo/tree/kryo-6/lib) if needed.
+Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#installation) on your classpath, along with the optional Objenesis and ASM JARs found in [lib](https://github.com/EsotericSoftware/kryo/tree/kryo-6/lib) if needed.
 
 ### Building from source
 
