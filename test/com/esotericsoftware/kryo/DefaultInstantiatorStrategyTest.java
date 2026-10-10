@@ -128,8 +128,8 @@ public class DefaultInstantiatorStrategyTest {
         // A non-static member class has no no-arg constructor, because it takes the outer instance.
         KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(Inner.class));
         assertEquals("Class cannot be created (missing no-arg constructor): " + Inner.class.getName()
-            + "\nNote: An inner class is serialized with its outer instance, but it has no no-arg constructor. Making the class "
-            + "static is safer." + ADVICE, thrown.getMessage());
+            + "\nNote: An inner class needs its outer instance, so it has no no-arg constructor. Making the class static "
+            + "is safer." + ADVICE, thrown.getMessage());
     }
 
     @Test
@@ -138,8 +138,9 @@ public class DefaultInstantiatorStrategyTest {
         }.getClass();
         KryoException thrown = assertThrows(KryoException.class, () -> tryInstantiate(anonymous));
         assertEquals("Class cannot be created (missing no-arg constructor): " + anonymous.getName()
-            + "\nNote: An anonymous class is serialized with its outer instance and captured variables, but it has no no-arg "
-            + "constructor. A named class is safer, eg instead of double brace initialization." + ADVICE, thrown.getMessage());
+            + "\nNote: An anonymous class has no no-arg constructor, because its constructor takes the outer instance, captured "
+            + "variables or the arguments of the super constructor. A named class is safer, eg instead of double brace initialization."
+            + ADVICE, thrown.getMessage());
     }
 
     class Inner {
