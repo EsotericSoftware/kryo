@@ -41,12 +41,14 @@ import java.lang.invoke.VarHandle.AccessMode;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntConsumer;
 
-/** Generates a hidden class per serialized class that writes and reads its fields with straight line code, see {@link Bytecode}.
- * Primitive and String fields are accessed with VarHandles that are constants of the hidden class (its class data) and written
- * directly to the {@link Output}, object fields are delegated to their {@link ReflectField}, which holds the serializer, value
- * class and generic type. Final fields are set with a MethodHandle, because VarHandles can't set them. The hidden class depends
- * only on the field names, kinds and encodings, so it is shared by all serializers and Kryo instances for a class.
+/** Generates a hidden class per serialized class that writes, reads and copies its fields with straight line code, see
+ * {@link Bytecode}. Primitive and String fields are accessed with VarHandles that are constants of the hidden class (its class
+ * data) and written directly to the {@link Output}, object fields are delegated to their {@link ReflectField}, which holds the
+ * serializer, value class and generic type. Final fields are set with a MethodHandle, because VarHandles can't set them. The
+ * hidden class depends only on the field names, kinds and encodings, so it is shared by all serializers and Kryo instances for a
+ * class.
  * <p>
  * For example, for {@code class Nested { String name; Nested next; final int value; }} with FieldSerializer, the hidden class is
  * equivalent to:
@@ -91,6 +93,19 @@ import java.util.concurrent.ConcurrentHashMap;
  *    }
  *
  *    // write and read with a ChunkedEncoding parameter wrap each field in beginField and endField.
+ *
+ *    public void copy (Object original, Object copy) {
+ *       int index = 0;
+ *       try {
+ *          f0.set(copy, (String)f0.get(original));
+ *          index = 1;
+ *          f1.set(copy, serializer.kryo.copy(f1.get(original)));
+ *          index = 2;
+ *          s2.invokeExact(fields[2], copy, (int)f2.get(original));
+ *       } catch (Throwable t) {
+ *          throw GeneratedFields.copyError(t, fields[index], original);
+ *       }
+ *    }
  * }
  * </pre>
  *
@@ -253,6 +268,9 @@ final class CodeGeneration {
 			batches(cb, thisClass, "read", readType, n, chunked,
 				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).read(from, to));
 		}
+		// public void copy (Object original, Object copy)
+		batches(cb, thisClass, "copy", descriptor(void.class, Object.class, Object.class), n, false,
+			(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, false).copy(from, to));
 		return cb.bytes();
 	}
 
@@ -390,8 +408,9 @@ final class CodeGeneration {
 		void emit (Code code, int from, int to);
 	}
 
-	/** Emits the body of a write or read method of the hidden class, see the class javadoc. The locals are 0 this, 1 the output or
-	 * input, 2 the object and 3 the chunks if chunked. Each method emits the statement or expression in its comment. */
+	/** Emits the body of a write, read or copy method of the hidden class, see the class javadoc. The locals are 0 this, 1 the
+	 * output, input or original, 2 the object or copy and 3 the chunks if chunked. Each method emits the statement or expression
+	 * in its comment. */
 	static private final class Emitter {
 		final Code code;
 		final String thisClass;
@@ -419,38 +438,17 @@ final class CodeGeneration {
 
 		/** The body of write for the fields from (inclusive) to (exclusive). */
 		void write (int from, int to) {
-			if (from == to) { // No fields. An empty try block is not valid.
-				code.vreturn();
-				return;
-			}
 			int local = chunked ? 4 : 3; // After the parameters.
 			if (chunked) {
 				chunk = local;
 				local += 2;
 			}
 			index = local;
-			// int index = from; try { index = i; <write field i> ... } catch (Throwable t) { throw writeError(t, fields[index],
-			// output); }
-			code.iconst(from);
-			code.istore(index);
-			code.trying( () -> {
-				for (int i = from; i < to; i++) {
-					if (i != from) {
-						code.iconst(i);
-						code.istore(index);
-					}
-					writeField(i);
-				}
-			}, () -> throwError("writeError", "(Ljava/lang/Throwable;" + CachedFieldDesc + OutputDesc + ")" + KryoExceptionDesc));
-			code.vreturn();
+			fields(from, to, this::writeField, "writeError", OutputDesc);
 		}
 
 		/** The body of read for the fields from (inclusive) to (exclusive). */
 		void read (int from, int to) {
-			if (from == to) { // No fields. An empty try block is not valid.
-				code.vreturn();
-				return;
-			}
 			int local = chunked ? 4 : 3; // After the parameters.
 			if (tags != null) tag = local++;
 			if (chunked) {
@@ -458,8 +456,22 @@ final class CodeGeneration {
 				local += 2;
 			}
 			index = local;
-			// int index = from; try { index = i; <read field i> ... } catch (Throwable t) { throw readError(t, fields[index],
-			// input); }
+			fields(from, to, this::readField, "readError", InputDesc);
+		}
+
+		/** The body of copy for the fields from (inclusive) to (exclusive). */
+		void copy (int from, int to) {
+			index = 3; // After the parameters.
+			fields(from, to, this::copyField, "copyError", "Ljava/lang/Object;");
+		}
+
+		/** int index = from; try { index = i; <field i> ... } catch (Throwable t) { throw GeneratedFields.<error>(t, fields[index],
+		 * <local 1>); } */
+		void fields (int from, int to, IntConsumer field, String error, String local1Desc) {
+			if (from == to) { // No fields. An empty try block is not valid.
+				code.vreturn();
+				return;
+			}
 			code.iconst(from);
 			code.istore(index);
 			code.trying( () -> {
@@ -468,9 +480,9 @@ final class CodeGeneration {
 						code.iconst(i);
 						code.istore(index);
 					}
-					readField(i);
+					field.accept(i);
 				}
-			}, () -> throwError("readError", "(Ljava/lang/Throwable;" + CachedFieldDesc + InputDesc + ")" + KryoExceptionDesc));
+			}, () -> throwError(error, "(Ljava/lang/Throwable;" + CachedFieldDesc + local1Desc + ")" + KryoExceptionDesc));
 			code.vreturn();
 		}
 
@@ -591,25 +603,39 @@ final class CodeGeneration {
 				code.iconst(chunked ? 1 : 0);
 				code.invokestatic(GeneratedFieldsName, "readPrimitiveClass",
 					"(" + FieldSerializerDesc + InputDesc + CachedFieldDesc + "Z)Z");
-				code.ifThen(IFNE, () -> set(i));
+				code.ifThen(IFNE, () -> set(i, () -> read(i)));
 				return;
 			}
-			set(i);
+			set(i, () -> read(i));
 		}
 
-		/** fi.set(object, <read>), or si.invokeExact(fields[i], object, <read>) for a final field. */
-		void set (int i) {
+		/** <set field i of the copy to> (T)fi.get(original), or serializer.kryo.copy(fi.get(original)) for an object field. */
+		void copyField (int i) {
+			Kind kind = kinds[i];
+			set(i, () -> {
+				if (kind != Kind.object)
+					value(i, kind.type, 1);
+				else { // serializer.kryo.copy(fi.get(original))
+					kryo();
+					value(i, kind.type, 1);
+					code.invokevirtual(KryoName, "copy", "(Ljava/lang/Object;)Ljava/lang/Object;");
+				}
+			});
+		}
+
+		/** fi.set(object, <value>), or si.invokeExact(fields[i], object, <value>) for a final field. */
+		void set (int i, Runnable value) {
 			Kind kind = kinds[i];
 			if (setters[i] == -1) {
 				code.getstatic(thisClass, "f" + i, VarHandleDesc);
 				code.aload(2);
-				read(i);
+				value.run();
 				code.invokevirtual(VarHandleName, "set", "(Ljava/lang/Object;" + kind.type + ")V");
 			} else {
 				code.getstatic(thisClass, "s" + i, MethodHandleDesc);
 				field(i);
 				code.aload(2);
-				read(i);
+				value.run();
 				code.invokevirtual(MethodHandleName, "invokeExact", "(" + CachedFieldDesc + "Ljava/lang/Object;" + kind.type + ")V");
 			}
 		}
@@ -694,8 +720,13 @@ final class CodeGeneration {
 
 		/** (T)fi.get(object) */
 		void value (int i, String type) {
+			value(i, type, 2);
+		}
+
+		/** (T)fi.get(<local>) */
+		void value (int i, String type, int local) {
 			code.getstatic(thisClass, "f" + i, VarHandleDesc);
-			code.aload(2);
+			code.aload(local);
 			code.invokevirtual(VarHandleName, "get", "(Ljava/lang/Object;)" + type);
 		}
 	}

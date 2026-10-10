@@ -1170,7 +1170,7 @@ Setting | Description | Default value
 `variableLengthEncoding` | If true, variable length values are used for int and long fields. | true
 `extendedFieldNames` | If true, field names are prefixed by their declaring class. This can avoid conflicts when a subclass has a field with the same name as a super class. | false
 `fieldAccess` | How fields are read and written: `UNSAFE` (fastest, but deprecated for removal by Java and warns on Java 24+), `VARHANDLE` (slower than Unsafe without `codeGeneration`), `REFLECTION`. If a field can't be accessed this way, VarHandles are used, and reflection if they can't be used either, eg for final fields. | `UNSAFE` before Java 24 or with `--sun-misc-unsafe-memory-access=allow`, otherwise `VARHANDLE`. Also `VARHANDLE` if Unsafe is not available or disabled with `-Dkryo.unsafe=false`. `REFLECTION` on Android. The system property `kryo.fieldAccess` overrides the default, eg `-Dkryo.fieldAccess=UNSAFE`.
-`codeGeneration` | If true, the code that writes and reads the fields of a class is generated, which is 45% to 120% faster, see [Code generation](#code-generation). | false, or true if the system property `kryo.codeGeneration` is `true`.
+`codeGeneration` | If true, the code that writes, reads and copies the fields of a class is generated, which is 45% to 120% faster, see [Code generation](#code-generation). | false, or true if the system property `kryo.codeGeneration` is `true`.
 
 With `VARHANDLE`, the VarHandles are not constants for the JIT compiler, so each field access is an indirect call and FieldSerializer is slower than with `UNSAFE`. With `codeGeneration`, the generated code has the VarHandles as constants and is faster than with `UNSAFE`.
 
@@ -1178,7 +1178,7 @@ VarHandles can read but not set final fields, so Kryo sets them with reflection.
 
 #### Code generation
 
-FieldSerializer and its subclasses can generate the code that writes and reads the fields of a class, instead of looping over the cached fields. The generated code is straight line code with the field accessors as constants, which the JIT compiler optimizes much better: there is no virtual call per field. FieldSerializer and its subclasses are 45% to 120% faster with it on object graphs, see the [benchmarks](#benchmarks). The generated code writes the same bytes as the cached fields, so it can be enabled or disabled without affecting the serialized data.
+FieldSerializer and its subclasses can generate the code that writes, reads and copies the fields of a class, instead of looping over the cached fields. The generated code is straight line code with the field accessors as constants, which the JIT compiler optimizes much better: there is no virtual call per field. FieldSerializer and its subclasses are 45% to 120% faster with it on object graphs, see the [benchmarks](#benchmarks). The generated code writes the same bytes as the cached fields, so it can be enabled or disabled without affecting the serialized data.
 
 ```java
 FieldSerializerConfig config = new FieldSerializerConfig();
