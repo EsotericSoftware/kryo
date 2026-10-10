@@ -205,6 +205,7 @@ The sources are compiled for Java 17 with `-source 17`. JDK 24+ is needed only f
 
 * `mvn -pl main test` runs the tests. To run them on another Java version, pass its `java`, eg `mvn -pl main test -Djvm=/path/to/jdk17/bin/java`.
 * The tests can be run with other settings than the defaults, eg `JAVA_TOOL_OPTIONS=-Dkryo.fieldAccess=REFLECTION mvn -pl main test` or `JAVA_TOOL_OPTIONS=-Dkryo.codeGeneration=true mvn -pl main test`. With `-Dkryo.codeGeneration.backend=asm`, code generation uses ASM on Java 24+ too.
+* Eclipse: import the project in the `eclipse` directory, which needs a JDK 24+ JRE for `ClassFileWriter`.
 * The source code is formatted with the Eclipse formatter settings in `eclipse/code-format.xml`, which pull request builds check: `mvn -pl main formatter:format`.
 * The [benchmarks](benchmarks) have their own README.
 
