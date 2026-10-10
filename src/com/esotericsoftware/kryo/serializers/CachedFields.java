@@ -51,6 +51,7 @@ import com.esotericsoftware.kryo.serializers.UnsafeField.LongUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.ShortUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.StringUnsafeField;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -68,6 +69,7 @@ class CachedFields implements Comparator<CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
 
 	/** Caches shared by all serializers and Kryo instances. Not used on Android, which has ClassValue only since API level 34. */
+	@IgnoreAndroid
 	static private final class SharedCaches {
 		/** The declared fields of a class. Class#getDeclaredFields() returns new Field objects for each call, which take as much
 		 * memory as the cached fields. */
@@ -96,7 +98,7 @@ class CachedFields implements Comparator<CachedField> {
 		if (isAndroid) return "Code generation is not available on Android.";
 		if (isNativeImage) return "Code generation is not available in a native image.";
 		return "Code generation needs Java 24 or later, or ASM on the classpath (org.ow2.asm:asm), this is Java "
-			+ Runtime.version().feature() + " without ASM.";
+			+ javaVersion() + " without ASM.";
 	}
 
 	/** The fields to write and read, see {@link #fields()}, and the fields to copy, see {@link #copyFields()}. */
@@ -130,10 +132,10 @@ class CachedFields implements Comparator<CachedField> {
 		}
 
 		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
-		RecordComponent[] recordComponents = isRecord(serializer.type) ? serializer.type.getRecordComponents() : null;
+		RecordComponent[] recordComponents = recordComponents(serializer.type);
 		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
-			for (Field field : isAndroid ? nextClass.getDeclaredFields() : SharedCaches.declaredFields.get(nextClass))
+			for (Field field : declaredFields(nextClass))
 				addField(field, recordComponents, newFields, newCopyFields);
 			nextClass = nextClass.getSuperclass();
 		}
@@ -260,8 +262,21 @@ class CachedFields implements Comparator<CachedField> {
 		}
 	}
 
+	/** Returns the declared fields of a class, which all serializers and Kryo instances share, except on Android. */
+	@IgnoreAndroid
+	static private Field[] declaredFields (Class type) {
+		return isAndroid ? type.getDeclaredFields() : SharedCaches.declaredFields.get(type);
+	}
+
+	/** Returns the components of a record, or null if the type is not a record. */
+	@IgnoreAndroid
+	static RecordComponent[] recordComponents (Class type) {
+		return isRecord(type) ? type.getRecordComponents() : null;
+	}
+
 	/** Returns the generic type of a field, which all serializers and Kryo instances share, like the Field objects. The generic
 	 * type of a primitive field is only needed while the field is added. */
+	@IgnoreAndroid
 	static private GenericType genericType (Class declaringClass, Class type, Field field) {
 		if (isAndroid || field.getType().isPrimitive()) return new GenericType(declaringClass, type, field.getGenericType());
 		return SharedCaches.genericTypes.get(type).computeIfAbsent(field,

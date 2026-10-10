@@ -25,6 +25,7 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.reflect.Constructor;
@@ -39,6 +40,7 @@ import java.util.Comparator;
  * @deprecated FieldSerializer and its subclasses serialize records by default and are faster. Use this serializer only to read
  *             records written by Kryo 5, see {@link com.esotericsoftware.kryo.Kryo5Compatibility}. */
 @Deprecated
+@IgnoreAndroid
 public class RecordSerializer<T> extends ImmutableSerializer<T> {
 	private static final ClassValue<Constructor<?>> CONSTRUCTOR = new ClassValue<Constructor<?>>() {
 		protected Constructor<?> computeValue (Class<?> type) {

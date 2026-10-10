@@ -25,6 +25,7 @@ import com.esotericsoftware.kryo.KryoSerializable;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 import com.esotericsoftware.kryo.util.ObjectMap;
 
 import java.io.IOException;
@@ -43,7 +44,7 @@ import java.io.ObjectStreamClass;
 public class JavaSerializer extends Serializer {
 	/** The graph context key for the input stream. The output stream is stored with this serializer as key. */
 	private final Object readKey = new Object();
-	private ObjectInputFilter objectInputFilter;
+	@IgnoreAndroid private ObjectInputFilter objectInputFilter;
 
 	/** Sets an {@link ObjectInputFilter} on each {@link ObjectInputStream} this serializer creates for reading, before any object
 	 * is read from it. The filter then decides about every class, array length, reference and depth in the Java serialization
@@ -51,11 +52,13 @@ public class JavaSerializer extends Serializer {
 	 * resolved, without being initialized, before the filter sees it. This is opt-in protection for reading data from an untrusted
 	 * source. When null (the default), this serializer sets no filter and behavior is unchanged.
 	 * @param objectInputFilter May be null. */
+	@IgnoreAndroid
 	public void setObjectInputFilter (ObjectInputFilter objectInputFilter) {
 		this.objectInputFilter = objectInputFilter;
 	}
 
 	/** @return May be null. */
+	@IgnoreAndroid
 	public ObjectInputFilter getObjectInputFilter () {
 		return objectInputFilter;
 	}
@@ -81,13 +84,19 @@ public class JavaSerializer extends Serializer {
 			ObjectInputStream objectStream = (ObjectInputStream)graphContext.get(readKey);
 			if (objectStream == null) {
 				objectStream = new ObjectInputStreamWithKryoClassLoader(input, kryo);
-				if (objectInputFilter != null) objectStream.setObjectInputFilter(objectInputFilter);
+				if (objectInputFilter != null) applyObjectInputFilter(objectStream);
 				graphContext.put(readKey, objectStream);
 			}
 			return objectStream.readObject();
 		} catch (Exception ex) {
 			throw new KryoException("Error during Java deserialization.", ex);
 		}
+	}
+
+	/** Android has no ObjectInputFilter, so the filter is always null there. */
+	@IgnoreAndroid
+	private void applyObjectInputFilter (ObjectInputStream objectStream) {
+		objectStream.setObjectInputFilter(objectInputFilter);
 	}
 
 	/** {@link ObjectInputStream} uses the last user-defined {@link ClassLoader}, which may not be the correct one. This is a known

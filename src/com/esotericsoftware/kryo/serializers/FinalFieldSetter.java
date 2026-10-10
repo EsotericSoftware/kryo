@@ -24,6 +24,7 @@ import static com.esotericsoftware.kryo.util.Log.*;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -60,6 +61,7 @@ import java.lang.reflect.Method;
  * that isn't serializable or a transient final field that is copied, are set with reflection, which fails as before.
  * <p>
  * Not used on Android. */
+@IgnoreAndroid
 final class FinalFieldSetter extends ObjectInputStream {
 	static private final Object reflectionFactory;
 	static private final Method defaultReadObject;

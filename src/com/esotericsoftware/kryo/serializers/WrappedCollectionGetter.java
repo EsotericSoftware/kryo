@@ -23,6 +23,7 @@ import static com.esotericsoftware.kryo.util.Util.*;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -49,6 +50,7 @@ final class WrappedCollectionGetter {
 		return getter.apply(wrapper);
 	}
 
+	@IgnoreAndroid
 	private Function<Object, Object> getter () {
 		Field field;
 		try {

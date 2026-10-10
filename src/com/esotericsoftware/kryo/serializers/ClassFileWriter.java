@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
+
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ import java.util.function.Consumer;
  * with -source 17 on JDK 24+ and only loaded on Java 24+. The Class-File API is referenced with qualified names and the IDE
  * inspection for the language level is suppressed, see "Building from source" in README.md. */
 @SuppressWarnings("Since15")
+@IgnoreAndroid
 final class ClassFileWriter extends Bytecode {
 	private final ClassDesc thisClass, superClass;
 	private final ArrayList<Consumer<java.lang.classfile.ClassBuilder>> members = new ArrayList<>();
@@ -55,6 +58,7 @@ final class ClassFileWriter extends Bytecode {
 		});
 	}
 
+	@IgnoreAndroid
 	static private final class ClassFileCode extends Code {
 		/** The builder of the current block: the method, or a nested block of an if or try. */
 		private java.lang.classfile.CodeBuilder code;

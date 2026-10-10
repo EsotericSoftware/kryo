@@ -21,6 +21,8 @@ package com.esotericsoftware.kryo.io;
 
 import static com.esotericsoftware.kryo.util.Util.*;
 
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
@@ -35,7 +37,7 @@ final class Bytes {
 			buffer[p + 2] = (byte)(value >> 16);
 			buffer[p + 3] = (byte)(value >> 24);
 		} else
-			Handles.INT.set(buffer, p, value);
+			Handles.putInt(buffer, p, value);
 	}
 
 	static void putLong (byte[] buffer, int p, long value) {
@@ -49,7 +51,7 @@ final class Bytes {
 			buffer[p + 6] = (byte)(value >>> 48);
 			buffer[p + 7] = (byte)(value >>> 56);
 		} else
-			Handles.LONG.set(buffer, p, value);
+			Handles.putLong(buffer, p, value);
 	}
 
 	static int getInt (byte[] buffer, int p) {
@@ -59,7 +61,7 @@ final class Bytes {
 				| (buffer[p + 2] & 0xFF) << 16 //
 				| (buffer[p + 3] & 0xFF) << 24;
 		}
-		return (int)Handles.INT.get(buffer, p);
+		return Handles.getInt(buffer, p);
 	}
 
 	static long getLong (byte[] buffer, int p) {
@@ -73,12 +75,30 @@ final class Bytes {
 				| (long)(buffer[p + 6] & 0xFF) << 48 //
 				| (long)buffer[p + 7] << 56;
 		}
-		return (long)Handles.LONG.get(buffer, p);
+		return Handles.getLong(buffer, p);
 	}
 
-	/** Separate class so VarHandle is not loaded on Android. */
+	/** Separate class, which Android never loads: ART verifies all methods of a class when it is loaded, and the VarHandle calls,
+	 * which D8 desugars below API level 33, fail verification for byte arrays. */
+	@IgnoreAndroid
 	static private final class Handles {
 		static final VarHandle INT = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN);
 		static final VarHandle LONG = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
+
+		static void putInt (byte[] buffer, int p, int value) {
+			INT.set(buffer, p, value);
+		}
+
+		static void putLong (byte[] buffer, int p, long value) {
+			LONG.set(buffer, p, value);
+		}
+
+		static int getInt (byte[] buffer, int p) {
+			return (int)INT.get(buffer, p);
+		}
+
+		static long getLong (byte[] buffer, int p) {
+			return (long)LONG.get(buffer, p);
+		}
 	}
 }

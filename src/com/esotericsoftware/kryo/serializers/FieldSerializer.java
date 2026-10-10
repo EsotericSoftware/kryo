@@ -95,8 +95,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		final Generics generics = kryo.getGenerics();
 		genericsHierarchy = generics.buildHierarchy(type);
 
-		if (isRecord(type)) {
-			RecordComponent[] components = type.getRecordComponents();
+		RecordComponent[] components = CachedFields.recordComponents(type);
+		if (components != null) {
 			Class[] componentTypes = new Class[components.length];
 			recordDefaults = new Object[components.length];
 			for (int i = 0; i < components.length; i++) {
@@ -752,10 +752,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 			else if (memoryAccess != null)
 				defaultFieldAccess = memoryAccess.equals("allow") ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
 			else
-				defaultFieldAccess = Runtime.version().feature() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
+				defaultFieldAccess = javaVersion() < 24 ? FieldAccessType.UNSAFE : FieldAccessType.VARHANDLE;
 			if (DEBUG) {
 				debug("kryo", "Default field access: " + defaultFieldAccess + (isAndroid ? " (Android)"
-					: " (Java " + Runtime.version().feature() + ", Unsafe available: " + unsafe + ", Unsafe memory access: "
+					: " (Java " + javaVersion() + ", Unsafe available: " + unsafe + ", Unsafe memory access: "
 						+ (memoryAccess == null ? "default" : memoryAccess) + ")")
 					+ ", code generation available: " + CachedFields.codeGeneration);
 			}

@@ -27,6 +27,7 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.io.Serializable;
 import java.lang.invoke.MethodHandle;
@@ -48,6 +49,7 @@ import java.lang.reflect.Method;
  * JDK internals.
  * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
+@IgnoreAndroid
 public class ClosureSerializer extends Serializer {
 	/** Marker class used to find the class {@link Registration} for closure instances.
 	 * @see Kryo#isClosure(Class) */
@@ -66,6 +68,7 @@ public class ClosureSerializer extends Serializer {
 
 	/** The caches are in a holder class, so ClassValue is only loaded when a closure is serialized. Android has ClassValue only
 	 * since API level 34, but no serializable lambdas at all, so the serializer can be registered there like before. */
+	@IgnoreAndroid
 	static private final class Caches {
 		/** The method the compiler generates in each class that contains a serializable lambda, see
 		 * SerializedLambda#readResolve. */

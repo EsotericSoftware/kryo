@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 
 import com.esotericsoftware.kryo.KryoException;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -34,13 +35,14 @@ import java.util.function.Consumer;
  * <p>
  * Used by {@link CodeGeneration}. Only {@link AsmWriter} references ASM classes, and it is loaded only if ASM is on the
  * classpath. */
+@IgnoreAndroid
 abstract class Bytecode {
 	static public final int ACC_PUBLIC = 0x0001, ACC_PRIVATE = 0x0002, ACC_STATIC = 0x0008, ACC_FINAL = 0x0010, ACC_SUPER = 0x0020;
 	/** The condition opcodes of {@link Code#ifThen(int, Runnable)}: the top of the stack is not 0, the top two ints are equal. */
 	static public final int IFNE = 154, IF_ICMPEQ = 159;
 
 	/** True if the Class-File API is used: Java 24+, unless the system property "kryo.codeGeneration.backend" is "asm". */
-	static public final boolean classFileApi = Runtime.version().feature() >= 24
+	static public final boolean classFileApi = javaVersion() >= 24
 		&& !"asm".equals(System.getProperty("kryo.codeGeneration.backend"));
 	/** True if ASM is on the classpath. */
 	static public final boolean asm;
@@ -78,6 +80,7 @@ abstract class Bytecode {
 	}
 
 	/** Loaded on first use, which only happens on Java 24+, because ClassFileWriter uses the Class-File API. */
+	@IgnoreAndroid
 	static private final class ClassFileWriterFactory {
 		static final MethodHandle create;
 		static {

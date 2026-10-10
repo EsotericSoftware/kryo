@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -1003,6 +1004,7 @@ public class DefaultSerializers {
 	/** Serializer for {@link ByteBuffer}, which writes the bytes up to the limit, the position, limit and capacity, the byte order
 	 * and whether it is direct or read-only. The mark can't be read with public API and is not written. A buffer that shares its
 	 * content, eg a slice, is read with its own content. */
+	@IgnoreAndroid // The Android API level 26 has no covariant ByteBuffer methods like position(int), but D8 replaces them.
 	public static class ByteBufferSerializer extends Serializer<ByteBuffer> {
 		private static final int DIRECT = 1, READ_ONLY = 2, LITTLE_ENDIAN = 4;
 
@@ -1184,7 +1186,8 @@ public class DefaultSerializers {
 		}
 
 		private ConcurrentHashMap.KeySetView createKeySetView (ConcurrentHashMap map, Object mappedValue) {
-			return mappedValue == null ? map.keySet() : map.keySet(mappedValue);
+			// Map#keySet(), because ConcurrentHashMap#keySet() returns a Set on Android.
+			return mappedValue == null ? (ConcurrentHashMap.KeySetView)((Map)map).keySet() : map.keySet(mappedValue);
 		}
 	}
 
