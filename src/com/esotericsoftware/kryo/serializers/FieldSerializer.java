@@ -147,10 +147,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 		generatePending = generateCopyPending = codeGenerated();
 	}
 
-	/** Returns true if code is generated for the fields: {@link FieldSerializerConfig#setCodeGeneration(boolean)} is enabled, the
-	 * platform supports it and the class is not a record. The code is used if {@link #usesGeneratedCode()}. */
+	/** Returns true if code is generated for the fields: {@link FieldSerializerConfig#setCodeGeneration(boolean)} is enabled and
+	 * the platform supports it. The code is used if {@link #usesGeneratedCode()}. */
 	final boolean codeGenerated () {
-		return config.codeGeneration && CachedFields.codeGeneration && recordConstructor == null;
+		return config.codeGeneration && CachedFields.codeGeneration;
 	}
 
 	/** Returns true if the generated code can be used with the current config settings, which can be changed without
@@ -254,6 +254,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 		if (recordConstructor == null) {
 			object = create(kryo, input, type);
 			kryo.reference(object);
+		} else if (generated() != null) {
+			object = (T)generated.readRecord(input);
+			popTypeVariables(pop);
+			return object;
 		} else
 			values = newRecordValues();
 
@@ -490,11 +494,12 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	public T copy (Kryo kryo, T original) {
+		GeneratedFields generated = generatedCopy();
+		if (recordConstructor != null && generated != null) return (T)generated.copyRecord(original);
 		final CachedField[] copyFields = cachedFields.copyFields();
 		if (recordConstructor == null) {
 			T copy = createCopy(kryo, original);
 			kryo.reference(copy);
-			GeneratedFields generated = generatedCopy();
 			if (generated != null)
 				generated.copy(original, copy);
 			else {
@@ -898,8 +903,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		 * constants. The generated code writes the same bytes. It is generated when the serializer first writes, reads or copies an
 		 * object. Used by FieldSerializer and its subclasses, except with the chunked encoding of Kryo 5. The class is written with
 		 * the Class-File API on Java 24+, or with ASM on older Java versions, which is an optional dependency. Not available on
-		 * Android or in a native image. The cached fields are used where code can't be generated, eg for records. Default is false,
-		 * or true if the system property "kryo.codeGeneration" is "true". */
+		 * Android or in a native image. The cached fields are used where code can't be generated, eg for records with more than 64
+		 * components. Default is false, or true if the system property "kryo.codeGeneration" is "true". */
 		public void setCodeGeneration (boolean codeGeneration) {
 			this.codeGeneration = codeGeneration;
 			if (TRACE) trace("kryo", "FieldSerializerConfig codeGeneration: " + codeGeneration);

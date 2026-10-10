@@ -38,6 +38,7 @@ import java.lang.invoke.MethodType;
 import java.lang.invoke.MutableCallSite;
 import java.lang.invoke.VarHandle;
 import java.lang.invoke.VarHandle.AccessMode;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -94,6 +95,19 @@ import java.util.function.IntConsumer;
  *
  *    // write and read with a ChunkedEncoding parameter wrap each field in beginField and endField.
  *
+ *    // For a record, which sets its fields with its canonical constructor, c, with the parameters in field order:
+ *    public Object readRecord (Input input) {
+ *       int index = 0;
+ *       Object record;
+ *       try {
+ *          record = c.invokeExact(input.readString(), (index = 1, ((ReflectField)fields[1]).readValue(input)), ...);
+ *       } catch (Throwable t) {
+ *          throw GeneratedFields.readError(t, fields[index], input);
+ *       }
+ *       return record;
+ *    }
+ *    // copyRecord gets the values like copy.
+ *
  *    public void copy (Object original, Object copy) {
  *       int index = 0;
  *       try {
@@ -119,7 +133,9 @@ import java.util.function.IntConsumer;
  * reflection is denied, the call site calls {@link FieldSerializer#setFinal(CachedField, Object, Object)} instead, which uses the
  * {@link FinalFieldSetter} of the cached field, or Unsafe for an Unsafe field.
  * <p>
- * Not supported, so the cached fields are used: records and custom {@link CachedField} implementations.
+ * Not supported, so the cached fields are used: records with more than {@link #batchSize} components, because their constructor
+ * call can't be split, records with removed components, which the cached fields set to their defaults, and custom
+ * {@link CachedField} implementations.
  * <p>
  * The class file is written with {@link Bytecode}: with the Class-File API on Java 24+, or with ASM, which is an optional
  * dependency, on older Java versions. */
@@ -149,6 +165,13 @@ final class CodeGeneration {
 	static GeneratedFields generate (FieldSerializer serializer, CachedField[] fields, boolean writeClasses, int[] tags) {
 		Kind[] kinds = kinds(serializer.type, fields);
 		if (kinds == null) return null;
+		Constructor recordConstructor = serializer.recordConstructor;
+		if (recordConstructor != null && (fields.length > batchSize || fields.length != recordConstructor.getParameterCount())) {
+			// The constructor call can't be split into batches, and the cached fields set the defaults of removed components.
+			if (DEBUG) debug("kryo", "Code generation is not supported for a record with more than " + batchSize
+				+ " components or removed components: " + className(serializer.type));
+			return null;
+		}
 		StringBuilder signature = new StringBuilder(writeClasses ? "classes;" : "");
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField field = fields[i];
@@ -160,7 +183,7 @@ final class CodeGeneration {
 
 		Object constructor = constructors.get(serializer.type).computeIfAbsent(signature.toString(), key -> {
 			try {
-				return define(serializer.type, fields, kinds, writeClasses, tags);
+				return define(serializer.type, recordConstructor, fields, kinds, writeClasses, tags);
 			} catch (KryoException ex) {
 				return ex;
 			}
@@ -212,11 +235,13 @@ final class CodeGeneration {
 	// The hidden class.
 
 	/** Defines the hidden class for the fields and returns its constructor. */
-	static private MethodHandle define (Class type, CachedField[] fields, Kind[] kinds, boolean classes, int[] tags) {
+	static private MethodHandle define (Class type, Constructor recordConstructor, CachedField[] fields, Kind[] kinds,
+		boolean classes, int[] tags) {
 		int n = fields.length;
 		ArrayList<Object> classData = new ArrayList<>(n);
 		String thisClass = name(type);
-		byte[] bytes = write(Bytecode.create(thisClass, GeneratedFieldsName), thisClass, fields, kinds, classes, tags, classData);
+		byte[] bytes = write(Bytecode.create(thisClass, GeneratedFieldsName), thisClass, recordConstructor, fields, kinds, classes,
+			tags, classData);
 		try {
 			Lookup hidden = MethodHandles.lookup().defineHiddenClassWithClassData(bytes, classData, true);
 			if (TRACE) trace("kryo", "Generated code for the fields of: " + className(type) + " (" + n + " fields"
@@ -238,23 +263,27 @@ final class CodeGeneration {
 	}
 
 	/** Returns the class file for the fields, written with the Class-File API or ASM. For tests that compare the writers.
+	 * @param recordConstructor The canonical constructor if the type is a record, else null.
 	 * @throws KryoException if code can't be generated for a field. */
-	static byte[] classFile (boolean asm, Class type, CachedField[] fields, boolean classes, int[] tags) {
+	static byte[] classFile (boolean asm, Class type, Constructor recordConstructor, CachedField[] fields, boolean classes,
+		int[] tags) {
 		Kind[] kinds = kinds(type, fields);
 		if (kinds == null) throw new KryoException("Code generation is not supported for a field of: " + className(type));
 		String thisClass = name(type);
 		Bytecode cb = asm ? Bytecode.asmWriter(thisClass, GeneratedFieldsName)
 			: Bytecode.classFileWriter(thisClass, GeneratedFieldsName);
-		return write(cb, thisClass, fields, kinds, classes, tags, new ArrayList<>());
+		return write(cb, thisClass, recordConstructor, fields, kinds, classes, tags, new ArrayList<>());
 	}
 
 	/** Writes the hidden class for the fields.
+	 * @param recordConstructor The canonical constructor if the type is a record, else null.
 	 * @param classData Receives the class data of the hidden class. */
-	static private byte[] write (Bytecode cb, String thisClass, CachedField[] fields, Kind[] kinds, boolean classes, int[] tags,
-		ArrayList<Object> classData) {
+	static private byte[] write (Bytecode cb, String thisClass, Constructor recordConstructor, CachedField[] fields, Kind[] kinds,
+		boolean classes, int[] tags, ArrayList<Object> classData) {
 		int n = fields.length;
-		int[] setters = classData(fields, kinds, classData);
-		members(cb, thisClass, n, setters);
+		int[] setters = classData(fields, kinds, recordConstructor, classData);
+		boolean record = recordConstructor != null;
+		members(cb, thisClass, n, setters, record);
 		constructor(cb, thisClass);
 		// public void write (Output output, Object object) and write (Output output, Object object, ChunkedEncoding chunks)
 		// public void read (Input input, Object object) and read (Input input, Object object, ChunkedEncoding chunks)
@@ -271,32 +300,69 @@ final class CodeGeneration {
 		// public void copy (Object original, Object copy)
 		batches(cb, thisClass, "copy", descriptor(void.class, Object.class, Object.class), n, false,
 			(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, false).copy(from, to));
+		if (record) {
+			// public Object readRecord (Input input) and copyRecord (Object original)
+			cb.method("readRecord", descriptor(Object.class, Input.class), ACC_PUBLIC, code -> {
+				Emitter emitter = new Emitter(code, thisClass, kinds, setters, tags, classes, false);
+				emitter.record(emitter::read, "readError", InputDesc);
+			});
+			cb.method("copyRecord", descriptor(Object.class, Object.class), ACC_PUBLIC, code -> {
+				Emitter emitter = new Emitter(code, thisClass, kinds, setters, tags, classes, false);
+				emitter.record(emitter::copyValue, "copyError", "Ljava/lang/Object;");
+			});
+		}
 		return cb.bytes();
 	}
 
 	/** Collects the class data: the VarHandle of each field, then the call site invoker that sets each final field, which
-	 * VarHandles can't set.
+	 * VarHandles can't set, or the canonical constructor of a record, which sets its fields.
 	 * @return The class data index of the setter of each field, or -1. */
-	static private int[] classData (CachedField[] fields, Kind[] kinds, ArrayList<Object> classData) {
+	static private int[] classData (CachedField[] fields, Kind[] kinds, Constructor recordConstructor,
+		ArrayList<Object> classData) {
 		int n = fields.length;
 		for (int i = 0; i < n; i++)
 			classData.add(VarHandleField.varHandle(fields[i].field));
 		int[] setters = new int[n];
 		for (int i = 0; i < n; i++) {
 			setters[i] = -1;
-			if (!((VarHandle)classData.get(i)).isAccessModeSupported(AccessMode.SET)) {
-				// The type the generated code passes: String for a type variable resolved to String, else the field type.
-				Class valueType = kinds[i] == Kind.object ? Object.class
-					: kinds[i] == Kind.string ? String.class : fields[i].field.getType();
+			if (recordConstructor == null && !((VarHandle)classData.get(i)).isAccessModeSupported(AccessMode.SET)) {
 				// The setter is obtained when the field is first set, until then the target of the call site is the resolver.
 				MutableCallSite callSite = new MutableCallSite(
-					MethodType.methodType(void.class, CachedField.class, Object.class, valueType));
+					MethodType.methodType(void.class, CachedField.class, Object.class, valueType(kinds[i], fields[i])));
 				callSite.setTarget(MethodHandles.insertArguments(resolveSetter, 0, callSite).asType(callSite.type()));
 				setters[i] = classData.size();
 				classData.add(callSite.dynamicInvoker());
 			}
 		}
+		if (recordConstructor != null) classData.add(recordConstructor(recordConstructor, fields, kinds));
 		return setters;
+	}
+
+	/** The type of the values the generated code passes: String for a type variable resolved to String, else the field type. */
+	static private Class valueType (Kind kind, CachedField field) {
+		return kind == Kind.object ? Object.class : kind == Kind.string ? String.class : field.field.getType();
+	}
+
+	/** Returns the canonical constructor of a record as a method handle that takes the component values in field order, with the
+	 * types the generated code passes, and returns Object. */
+	static private MethodHandle recordConstructor (Constructor constructor, CachedField[] fields, Kind[] kinds) {
+		Class type = constructor.getDeclaringClass();
+		MethodHandle handle;
+		try {
+			handle = MethodHandles.privateLookupIn(type, MethodHandles.lookup()).unreflectConstructor(constructor);
+		} catch (IllegalAccessException ex) {
+			throw new KryoException("Unable to access the canonical constructor: " + className(type), ex);
+		}
+		int n = fields.length;
+		Class[] fieldTypes = new Class[n], componentTypes = new Class[n];
+		int[] reorder = new int[n]; // The field that provides each component.
+		for (int i = 0; i < n; i++) {
+			fieldTypes[i] = valueType(kinds[i], fields[i]);
+			componentTypes[fields[i].index] = fieldTypes[i];
+			reorder[fields[i].index] = i;
+		}
+		handle = handle.asType(MethodType.methodType(Object.class, componentTypes));
+		return MethodHandles.permuteArguments(handle, MethodType.methodType(Object.class, fieldTypes), reorder);
 	}
 
 	static private final MethodHandle resolveSetter, setFinal;
@@ -329,14 +395,15 @@ final class CodeGeneration {
 		callSite.getTarget().invoke(field, object, value);
 	}
 
-	/** Emits the fields: the VarHandle fi and setter si of each field, initialized from the class data, and the serializer and
-	 * fields of the serializer instance. */
-	static private void members (Bytecode cb, String thisClass, int n, int[] setters) {
-		// static final VarHandle f0; static final MethodHandle s0; ...
+	/** Emits the fields: the VarHandle fi and setter si of each field and the constructor c of a record, initialized from the
+	 * class data, and the serializer and fields of the serializer instance. */
+	static private void members (Bytecode cb, String thisClass, int n, int[] setters, boolean record) {
+		// static final VarHandle f0; static final MethodHandle s0; ... static final MethodHandle c; for a record
 		for (int i = 0; i < n; i++) {
 			cb.field("f" + i, VarHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
 			if (setters[i] != -1) cb.field("s" + i, MethodHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
 		}
+		if (record) cb.field("c", MethodHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
 		// final FieldSerializer serializer; final CachedField[] fields;
 		cb.field("serializer", FieldSerializerDesc, ACC_PRIVATE | ACC_FINAL);
 		cb.field("fields", CachedFieldArrayDesc, ACC_PRIVATE | ACC_FINAL);
@@ -350,6 +417,10 @@ final class CodeGeneration {
 					loadClassData(code, setters[i], MethodHandleDesc, MethodHandleName);
 					code.putstatic(thisClass, "s" + i, MethodHandleDesc);
 				}
+			}
+			if (record) {
+				loadClassData(code, n, MethodHandleDesc, MethodHandleName);
+				code.putstatic(thisClass, "c", MethodHandleDesc);
 			}
 			code.vreturn();
 		});
@@ -463,6 +534,31 @@ final class CodeGeneration {
 		void copy (int from, int to) {
 			index = 3; // After the parameters.
 			fields(from, to, this::copyField, "copyError", "Ljava/lang/Object;");
+		}
+
+		/** The body of readRecord or copyRecord: int index = 0; Object record; try { record = c.invokeExact(<value 0>, index = 1,
+		 * <value 1>, ...); } catch (Throwable t) { throw GeneratedFields.<error>(t, fields[index], <local 1>); } return record; */
+		void record (IntConsumer value, String error, String local1Desc) {
+			index = 2; // After the parameter.
+			int record = 3;
+			code.iconst(0);
+			code.istore(index);
+			code.trying( () -> {
+				code.getstatic(thisClass, "c", MethodHandleDesc);
+				StringBuilder type = new StringBuilder("(");
+				for (int i = 0, n = kinds.length; i < n; i++) {
+					if (i != 0) {
+						code.iconst(i);
+						code.istore(index);
+					}
+					value.accept(i);
+					type.append(kinds[i].type);
+				}
+				code.invokevirtual(MethodHandleName, "invokeExact", type + ")Ljava/lang/Object;");
+				code.astore(record);
+			}, () -> throwError(error, "(Ljava/lang/Throwable;" + CachedFieldDesc + local1Desc + ")" + KryoExceptionDesc));
+			code.aload(record);
+			code.areturn();
 		}
 
 		/** int index = from; try { index = i; <field i> ... } catch (Throwable t) { throw GeneratedFields.<error>(t, fields[index],
@@ -609,18 +705,21 @@ final class CodeGeneration {
 			set(i, () -> read(i));
 		}
 
-		/** <set field i of the copy to> (T)fi.get(original), or serializer.kryo.copy(fi.get(original)) for an object field. */
+		/** <set field i of the copy to> <copy value i> */
 		void copyField (int i) {
+			set(i, () -> copyValue(i));
+		}
+
+		/** (T)fi.get(original), or serializer.kryo.copy(fi.get(original)) for an object field. */
+		void copyValue (int i) {
 			Kind kind = kinds[i];
-			set(i, () -> {
-				if (kind != Kind.object)
-					value(i, kind.type, 1);
-				else { // serializer.kryo.copy(fi.get(original))
-					kryo();
-					value(i, kind.type, 1);
-					code.invokevirtual(KryoName, "copy", "(Ljava/lang/Object;)Ljava/lang/Object;");
-				}
-			});
+			if (kind != Kind.object)
+				value(i, kind.type, 1);
+			else {
+				kryo();
+				value(i, kind.type, 1);
+				code.invokevirtual(KryoName, "copy", "(Ljava/lang/Object;)Ljava/lang/Object;");
+			}
 		}
 
 		/** fi.set(object, <value>), or si.invokeExact(fields[i], object, <value>) for a final field. */
