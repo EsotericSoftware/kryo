@@ -121,9 +121,9 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
 
 Kryo 6 requires Java 17 or later. Kryo 5 requires Java 8 or later. See [MIGRATION.md](MIGRATION.md) for the changes when upgrading from Kryo 5.
 
-Kryo has no required dependencies. [Objenesis](http://objenesis.org/) is an optional dependency, needed by the [instantiator strategies](#instantiatorstrategy) that create objects without calling a constructor only on Android and other JVMs without the JDK's serialization constructors. Kryo publishes two kinds of artifacts/jars:
-* the default jar, which is meant for direct usage in applications (not libraries). It declares Objenesis as an optional dependency, so add it if needed.
-* a "versioned" jar which includes Objenesis and should be used by other libraries. Different libraries shall be able to use different major versions of Kryo.
+Kryo has no required dependencies. [Objenesis](http://objenesis.org/) is an optional dependency, needed by the [instantiator strategies](#instantiatorstrategy) that create objects without calling a constructor only on Android and other JVMs without the JDK's serialization constructors. [ASM](https://asm.ow2.io/) is an optional dependency, needed for [code generation](#code-generation) on Java 17 to 23. Kryo publishes two kinds of artifacts/jars:
+* the default jar, which is meant for direct usage in applications (not libraries). It declares Objenesis and ASM as optional dependencies, so add them if needed.
+* a "versioned" jar which includes Objenesis and ASM and should be used by other libraries. Different libraries shall be able to use different major versions of Kryo.
 
 The two jars differ as follows:
 
@@ -131,7 +131,7 @@ The two jars differ as follows:
 | --- | --- | --- |
 | Maven coordinates | `com.esotericsoftware:kryo` | `com.esotericsoftware.kryo:kryo6` |
 | Package | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo6` |
-| Dependencies | Objenesis (optional) | None (Objenesis bundled and relocated into `com.esotericsoftware.kryo.kryo6`) |
+| Dependencies | Objenesis and ASM (optional) | None (Objenesis and ASM bundled and relocated into `com.esotericsoftware.kryo.kryo6`) |
 | Java module name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.kryo6` |
 | OSGi bundle symbolic name | `com.esotericsoftware.kryo` | `com.esotericsoftware.kryo.6` |
 

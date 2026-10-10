@@ -5,7 +5,7 @@ Kryo 6 has not been released yet. This document collects the changes that affect
 ## Key changes
 
 * Kryo 6 requires Java 17 and Android 8.0 (API level 26), see [Requirements](#requirements).
-* Kryo has no required dependencies anymore: Objenesis is optional, ReflectASM and MinLog are gone. The imports of `Log` and of the instantiator strategies change, see [Import changes](#import-changes).
+* Kryo has no required dependencies anymore: Objenesis and ASM are optional, ReflectASM and MinLog are gone. The imports of `Log` and of the instantiator strategies change, see [Import changes](#import-changes).
 * Data written by Kryo 5 can be read with `Kryo5Compatibility.configure(kryo)`, as far as Kryo's default serializers are concerned, see [Reading data written by Kryo 5](#reading-data-written-by-kryo-5). The Kryo 6 format is smaller and faster, so write data again with it where you can.
 * The default format changed in a few places: strings are written without references, records are serialized by FieldSerializer, maps and chunked encoding write less, enums with constant bodies are treated as final, see [Serialization format](#serialization-format).
 * On Java 24+, fields are accessed with VarHandles instead of `sun.misc.Unsafe`, so Java doesn't warn about Kryo. The code that reads and writes the fields of a class can be generated, which is 45% to 120% faster, see [Field access](#field-access).
@@ -45,7 +45,7 @@ The same applies to `SerializingInstantiatorStrategy`, and to `InstantiatorStrat
 
 Kryo 6 requires Java 17 or later, and Android 8.0 (API level 26) or later, see [Android](README.md#android). See [Installation](README.md#installation) for the Maven coordinates of the regular and the versioned jar.
 
-Kryo 6 has no required dependencies. [Objenesis](http://objenesis.org/) is an optional dependency of the regular jar, needed only on Android and other JVMs without the JDK's serialization constructors, see [Changed APIs](#changed-apis). The versioned jar includes it as before.
+Kryo 6 has no required dependencies. [Objenesis](http://objenesis.org/) is an optional dependency of the regular jar, needed only on Android and other JVMs without the JDK's serialization constructors, see [Changed APIs](#changed-apis). [ASM](https://asm.ow2.io/) is an optional dependency of the regular jar, needed for code generation on Java 17 to 23, see [Field access](#field-access). The versioned jar includes both.
 
 ## Reading data written by Kryo 5
 
