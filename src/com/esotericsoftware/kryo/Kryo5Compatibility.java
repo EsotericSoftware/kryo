@@ -184,15 +184,19 @@ public final class Kryo5Compatibility {
 			}));
 		}
 
-		// Android has the immutable collections only since API level 30.
-		if (!isAndroid || isClassAvailable("java.util.ImmutableCollections")) {
+		// Android has the immutable collections only since API level 30, and D8 replaces List.of and Map.of with unmodifiable
+		// collections below it, so the classes are found by name.
+		Class mapN = classForName("java.util.ImmutableCollections$MapN", Map.of());
+		if (mapN != null) {
 			// Registered serializers of immutable maps, the default serializers are configured above.
-			Registration registration = kryo.getClassResolver().getRegistration(Map.of().getClass());
+			Registration registration = kryo.getClassResolver().getRegistration(mapN);
 			if (registration != null) ((MapSerializer)registration.getSerializer()).setWriteSameClassOnce(false);
+		}
+		Class listN = classForName("java.util.ImmutableCollections$ListN", List.of());
+		if (listN != null) {
 			// Kryo 5 didn't support null elements in immutable lists.
-			registration = kryo.getClassResolver().getRegistration(List.of().getClass());
-			Serializer listSerializer = registration != null ? registration.getSerializer()
-				: kryo.getDefaultSerializer(List.of().getClass());
+			Registration registration = kryo.getClassResolver().getRegistration(listN);
+			Serializer listSerializer = registration != null ? registration.getSerializer() : kryo.getDefaultSerializer(listN);
 			((CollectionSerializer)listSerializer).setElementsCanBeNull(false);
 		}
 	}
