@@ -96,6 +96,11 @@ jobs:
 
   android:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The minimum API level, and the last one without Set12 and Stream#toList.
+        api-level: [26, 33]
 
     steps:
       - uses: actions/checkout@v7
@@ -114,10 +119,10 @@ jobs:
       - name: Build Kryo
         run: mvn -B --no-transfer-progress -pl main package -DskipTests
 
-      - name: Convert to dex with D8 and test on Android 8 (API level 26)
+      - name: Convert to dex with D8 and test on Android API level ${{ matrix.api-level }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 26
+          api-level: ${{ matrix.api-level }}
           arch: x86_64
           target: default
           disable-animations: true

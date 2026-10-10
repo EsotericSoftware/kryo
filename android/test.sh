@@ -1,6 +1,6 @@
 #!/bin/sh
 # Converts the Kryo jar and AndroidTest to dex with D8, the dexer of the Android build tools, for the minimum Android API level
-# that Kryo supports, and runs AndroidTest on the connected device or emulator. Fails on any D8 warning, eg bytecode that needs
+# that Kryo supports, and runs AndroidTest on the connected device or emulator, with data written by JvmData on this JVM. Fails on any D8 warning, eg bytecode that needs
 # a newer API level, which Animal Sniffer doesn't check. Needs the Android SDK (ANDROID_HOME) and the Kryo jar, built with:
 # mvn -pl main package -DskipTests
 #
@@ -39,7 +39,10 @@ fi
 echo "D8 converted kryo-$version.jar for Android API level $minApi without warnings."
 if [ "$1" = "--dex-only" ]; then exit; fi
 
+"${bin}java" -cp "target/classes:$kryo" com.esotericsoftware.kryo.android.JvmData target/jvm-data.bin
 adb=$(command -v adb || echo "$sdk/platform-tools/adb")
 "$adb" push target/dex/classes.dex /data/local/tmp/kryo-android-test.dex > /dev/null
+"$adb" push target/jvm-data.bin /data/local/tmp/kryo-jvm-data.bin > /dev/null
 # app_process runs a main class with the Android framework, which dalvikvm can't.
-"$adb" shell "CLASSPATH=/data/local/tmp/kryo-android-test.dex app_process /system/bin com.esotericsoftware.kryo.android.AndroidTest"
+"$adb" shell "CLASSPATH=/data/local/tmp/kryo-android-test.dex app_process /system/bin com.esotericsoftware.kryo.android.AndroidTest \
+	/data/local/tmp/kryo-jvm-data.bin"
