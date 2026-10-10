@@ -175,6 +175,10 @@ The serializer for immutable lists created by `List.of` and `Stream.toList` supp
 ((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(false);
 ```
 
+### Charsets and time zones
+
+An unregistered charset or time zone is written with the class name `java.nio.charset.Charset` or `java.util.TimeZone` instead of its implementation class, eg `sun.nio.cs.UTF_8` or `sun.util.calendar.ZoneInfo`, which differ between Java vendors and Android. With registration required, register `Charset.class` and `TimeZone.class`. Kryo 5 reads these names too, and Kryo 6 still reads the implementation classes written by Kryo 5 where they exist.
+
 ### Locales with a script
 
 LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language tag, so the script and extensions are kept ([#1053](https://github.com/EsotericSoftware/kryo/issues/1053)). Kryo 5 lost them. Other locales are written as before, so Kryo 6 reads all locales written by Kryo 5.
