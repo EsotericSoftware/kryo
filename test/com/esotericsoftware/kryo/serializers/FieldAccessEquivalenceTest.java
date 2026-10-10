@@ -43,25 +43,20 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 
-/** All ways to access fields write the same bytes: Unsafe, VarHandles with and without hidden classes, reflection and generated
- * code, for each FieldSerializer subclass and with the settings that change how fields are written. */
+/** All ways to access fields write the same bytes: Unsafe, VarHandles, reflection and generated code, for each FieldSerializer
+ * subclass and with the settings that change how fields are written. */
 class FieldAccessEquivalenceTest {
 	/** @param intField The implementation of an int field, null with generated code.
 	 * @param objectField The implementation of an Object field, null with generated code. */
-	record Mode (String name, FieldAccessType fieldAccess, boolean hiddenFields, boolean codeGeneration, String intField,
-		String objectField) {
+	record Mode (String name, FieldAccessType fieldAccess, boolean codeGeneration, String intField, String objectField) {
 	}
 
 	static List<Mode> modes () {
 		List<Mode> modes = new ArrayList<>();
-		if (Util.unsafe) modes.add(new Mode("Unsafe", FieldAccessType.UNSAFE, false, false, "IntUnsafeField", "UnsafeField"));
-		if (CachedFields.hiddenFields) {
-			modes.add(new Mode("VarHandle hidden classes", FieldAccessType.VARHANDLE, true, false, "IntHiddenField",
-				"ObjectHiddenField"));
-		}
-		modes.add(new Mode("VarHandle", FieldAccessType.VARHANDLE, false, false, "IntVarHandleField", "VarHandleField"));
-		modes.add(new Mode("reflection", FieldAccessType.REFLECTION, false, false, "IntReflectField", "ReflectField"));
-		if (CachedFields.codeGeneration) modes.add(new Mode("code generation", FieldAccessType.VARHANDLE, true, true, null, null));
+		if (Util.unsafe) modes.add(new Mode("Unsafe", FieldAccessType.UNSAFE, false, "IntUnsafeField", "UnsafeField"));
+		modes.add(new Mode("VarHandle", FieldAccessType.VARHANDLE, false, "IntVarHandleField", "VarHandleField"));
+		modes.add(new Mode("reflection", FieldAccessType.REFLECTION, false, "IntReflectField", "ReflectField"));
+		if (CachedFields.codeGeneration) modes.add(new Mode("code generation", FieldAccessType.VARHANDLE, true, null, null));
 		return modes;
 	}
 
@@ -90,41 +85,35 @@ class FieldAccessEquivalenceTest {
 
 	/** Writes the data, then checks that reading it and writing it again gives the same bytes. */
 	static byte[] write (Mode mode, String serializer, boolean references, boolean varEncoding) {
-		boolean hiddenFields = CachedFields.hiddenFields;
-		CachedFields.hiddenFields = mode.hiddenFields;
-		try {
-			Kryo kryo = new Kryo();
-			kryo.setReferences(references);
-			kryo.register(ArrayList.class);
-			kryo.register(HashMap.class);
-			kryo.register(int[].class);
-			kryo.register(Kind.class);
-			kryo.register(Data.class, serializer(kryo, Data.class, mode, serializer, varEncoding));
-			kryo.register(Inner.class, serializer(kryo, Inner.class, mode, serializer, varEncoding));
+		Kryo kryo = new Kryo();
+		kryo.setReferences(references);
+		kryo.register(ArrayList.class);
+		kryo.register(HashMap.class);
+		kryo.register(int[].class);
+		kryo.register(Kind.class);
+		kryo.register(Data.class, serializer(kryo, Data.class, mode, serializer, varEncoding));
+		kryo.register(Inner.class, serializer(kryo, Inner.class, mode, serializer, varEncoding));
 
-			Output output = new Output(256, -1);
-			kryo.writeObject(output, new Data(true));
-			byte[] bytes = output.toBytes();
+		Output output = new Output(256, -1);
+		kryo.writeObject(output, new Data(true));
+		byte[] bytes = output.toBytes();
 
-			// The mode is used, it didn't fall back to another one. Checked after the first use, hidden classes are defined then.
-			if (!mode.codeGeneration) {
-				FieldSerializer dataSerializer = (FieldSerializer)kryo.getSerializer(Data.class);
-				String setup = mode.name + ", " + serializer;
-				assertEquals(mode.intField, CachedFields.implementationName(dataSerializer.getField("intValue")), setup);
-				assertEquals(mode.objectField, CachedFields.implementationName(dataSerializer.getField("object")), setup);
-			}
-
-			Data read = kryo.readObject(new Input(bytes), Data.class);
-			assertEquals(Long.MIN_VALUE, read.longValue, mode.name);
-			assertEquals("final", read.finalString, mode.name);
-			assertEquals(-7, read.inner.finalValue, mode.name);
-			output.reset();
-			kryo.writeObject(output, read);
-			assertArrayEquals(bytes, output.toBytes(), "read and written again, " + mode.name);
-			return bytes;
-		} finally {
-			CachedFields.hiddenFields = hiddenFields;
+		// The mode is used, it didn't fall back to another one.
+		if (!mode.codeGeneration) {
+			FieldSerializer dataSerializer = (FieldSerializer)kryo.getSerializer(Data.class);
+			String setup = mode.name + ", " + serializer;
+			assertEquals(mode.intField, dataSerializer.getField("intValue").getClass().getSimpleName(), setup);
+			assertEquals(mode.objectField, dataSerializer.getField("object").getClass().getSimpleName(), setup);
 		}
+
+		Data read = kryo.readObject(new Input(bytes), Data.class);
+		assertEquals(Long.MIN_VALUE, read.longValue, mode.name);
+		assertEquals("final", read.finalString, mode.name);
+		assertEquals(-7, read.inner.finalValue, mode.name);
+		output.reset();
+		kryo.writeObject(output, read);
+		assertArrayEquals(bytes, output.toBytes(), "read and written again, " + mode.name);
+		return bytes;
 	}
 
 	static Serializer serializer (Kryo kryo, Class type, Mode mode, String serializer, boolean varEncoding) {
