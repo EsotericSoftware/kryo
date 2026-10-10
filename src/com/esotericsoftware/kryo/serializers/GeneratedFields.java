@@ -29,8 +29,8 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
-/** The super class of the hidden classes defined by {@link CodeGeneration}, which write and read the fields of one class with
- * straight line code: the VarHandles of the fields are constants and the object fields are delegated to their
+/** The super class of the hidden classes defined by {@link CodeGeneration}, which write, read and copy the fields of one class
+ * with straight line code: the VarHandles of the fields are constants and the object fields are delegated to their
  * {@link ReflectField}. */
 abstract class GeneratedFields {
 	/** True if the class of each value is written before the value, see {@link CodeGeneration#generate}. */
@@ -47,6 +47,9 @@ abstract class GeneratedFields {
 
 	/** Reads all fields into the object, each from a chunk. */
 	abstract public void read (Input input, Object object, ChunkedEncoding chunks);
+
+	/** Copies all fields of the original to the copy, the values of object fields with {@link Kryo#copy(Object)}. */
+	abstract public void copy (Object original, Object copy);
 
 	/** Returns the generated code for the fields, or null if code can't be generated for them, see
 	 * {@link CodeGeneration#generate(FieldSerializer, CachedField[], boolean, int[])}. */
@@ -102,6 +105,14 @@ abstract class GeneratedFields {
 		if (t instanceof KryoException) return (KryoException)t;
 		if (t instanceof Error) throw (Error)t;
 		return new KryoException("Error reading " + field + " at position " + input.position(), t);
+	}
+
+	/** Called by the generated code when copying a field fails, to name the field like the loop over the cached fields. */
+	static KryoException copyError (Throwable t, CachedField field, Object original) {
+		if (t instanceof Error) throw (Error)t;
+		KryoException ex = t instanceof KryoException ? (KryoException)t : new KryoException(t);
+		ex.addTrace(field.name + " (" + className(original.getClass()) + ")");
+		return ex;
 	}
 
 	/** Returns the value of the field, to set it again when its value in the data is skipped. */

@@ -385,8 +385,60 @@ class CodeGenerationTest extends KryoTestCase {
 		FinalField copy = other.copy(new FinalField(8, "copy"));
 		assertEquals(8, copy.value);
 		assertEquals("copy", copy.name);
+		assertTrue(serializer.getField("value").finalUnresolved); // The generated copy also uses the call site.
+		// A cached field resolves its own setter when it sets the field, eg when it is used directly.
+		serializer.getField("value").copy(new FinalField(9, "direct"), copy);
+		assertEquals(9, copy.value);
 		assertFalse(serializer.getField("value").finalUnresolved);
-		assertFalse(serializer.getField("name").finalUnresolved);
+		assertTrue(serializer.getField("name").finalUnresolved);
+	}
+
+	@Test
+	void testCopy () {
+		kryo.register(AllKinds.class);
+		kryo.register(Nested.class);
+		kryo.register(Color.class);
+		kryo.register(ArrayList.class);
+		kryo.register(HashMap.class);
+		kryo.register(int[].class);
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(AllKinds.class);
+		assertNull(serializer.generatedCopy);
+		AllKinds object = AllKinds.create();
+		AllKinds copy = kryo.copy(object);
+		assertNotNull(serializer.generatedCopy);
+		assertEquals(object, copy);
+		assertNotSame(object.nested, copy.nested);
+		assertNotSame(object.ints, copy.ints);
+		assertSame(object.string, copy.string);
+		// The same hidden class as for writing and reading, the fields are the same.
+		assertSame(serializer.generated().getClass(), serializer.generatedCopy.getClass());
+
+		// Final fields are set with the call site, see testFinalField.
+		kryo.register(FinalField.class);
+		FinalField finalCopy = kryo.copy(new FinalField(7, "name"));
+		assertEquals(7, finalCopy.value);
+		assertEquals("name", finalCopy.name);
+
+		// Transient fields are copied but not written, so the copy fields get their own hidden class.
+		kryo.register(Transient.class);
+		Transient transientObject = new Transient();
+		transientObject.value = 1;
+		transientObject.note = "note";
+		Transient transientCopy = kryo.copy(transientObject);
+		assertEquals(1, transientCopy.value);
+		assertEquals("note", transientCopy.note);
+		FieldSerializer transientSerializer = (FieldSerializer)kryo.getSerializer(Transient.class);
+		assertNotSame(transientSerializer.generated().getClass(), transientSerializer.generatedCopy.getClass());
+		assertEquals(1, write(kryo, transientObject).length); // Only value.
+
+		// Without code generation.
+		Kryo cachedFields = new Kryo();
+		FieldSerializerFactory factory = new FieldSerializerFactory();
+		factory.getConfig().setCodeGeneration(false); // In case the system property enables it.
+		cachedFields.setDefaultSerializer(factory);
+		cachedFields.register(Transient.class);
+		assertEquals("note", cachedFields.copy(transientObject).note);
+		assertNull(((FieldSerializer)cachedFields.getSerializer(Transient.class)).generatedCopy);
 	}
 
 	@Test
@@ -964,6 +1016,11 @@ class CodeGenerationTest extends KryoTestCase {
 		public int hashCode () {
 			return value;
 		}
+	}
+
+	static public class Transient {
+		int value;
+		transient String note;
 	}
 
 	static public class Strings {

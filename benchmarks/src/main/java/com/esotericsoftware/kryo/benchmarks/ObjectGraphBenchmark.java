@@ -64,6 +64,11 @@ public class ObjectGraphBenchmark {
 		return state.roundTrip();
 	}
 
+	@Benchmark
+	public Object copy (FieldSerializerState state) {
+		return state.kryo.copy(state.object);
+	}
+
 	//
 
 	@State(Scope.Thread)

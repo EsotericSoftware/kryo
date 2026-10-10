@@ -74,8 +74,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Generated code that writes and reads the fields, or null if it isn't generated: code generation is disabled or not possible
 	 * for the type, or the fields weren't used yet. */
 	GeneratedFields generated;
-	/** True if the code is generated when the fields are next used, see {@link #generated()}. */
-	boolean generatePending;
+	/** Generated code that copies the fields, see {@link #generatedCopy()}. */
+	GeneratedFields generatedCopy;
+	/** True if the code is generated when the fields are next used or copied, see {@link #generated()}. */
+	boolean generatePending, generateCopyPending;
 	private final Object[] recordDefaults;
 
 	public FieldSerializer (Kryo kryo, Class type) {
@@ -138,11 +140,11 @@ public class FieldSerializer<T> extends Serializer<T> {
 		regenerate();
 	}
 
-	/** Discards the generated code. If {@link #codeGenerated()}, it is generated again when the fields are next used, see
-	 * {@link #generated()}. */
+	/** Discards the generated code. If {@link #codeGenerated()}, it is generated again when the fields are next used or copied,
+	 * see {@link #generated()} and {@link #generatedCopy()}. */
 	final void regenerate () {
-		generated = null;
-		generatePending = codeGenerated();
+		generated = generatedCopy = null;
+		generatePending = generateCopyPending = codeGenerated();
 	}
 
 	/** Returns true if code is generated for the fields: {@link FieldSerializerConfig#setCodeGeneration(boolean)} is enabled, the
@@ -186,6 +188,21 @@ public class FieldSerializer<T> extends Serializer<T> {
 			if (DEBUG) debug("kryo", "Unable to generate code for the fields of: " + className(type), ex);
 		}
 		return this.generated;
+	}
+
+	/** Returns the generated code that copies the fields, or null if it isn't used. Generated when the fields are first copied,
+	 * separately from {@link #generated()} because the fields to copy can differ, eg transient fields are copied but not
+	 * written. */
+	final GeneratedFields generatedCopy () {
+		if (generateCopyPending) {
+			generateCopyPending = false;
+			try {
+				generatedCopy = GeneratedFields.generate(this, cachedFields.copyFields(), false, null);
+			} catch (KryoException ex) {
+				if (DEBUG) debug("kryo", "Unable to generate code to copy the fields of: " + className(type), ex);
+			}
+		}
+		return generatedCopy;
 	}
 
 	/** Returns true if the generic type of a field is used to optimize the serialization of its value, eg to omit the class of
@@ -477,8 +494,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 		if (recordConstructor == null) {
 			T copy = createCopy(kryo, original);
 			kryo.reference(copy);
-			for (int i = 0, n = copyFields.length; i < n; i++)
-				copyField(kryo, copyFields[i], original, copy);
+			GeneratedFields generated = generatedCopy();
+			if (generated != null)
+				generated.copy(original, copy);
+			else {
+				for (int i = 0, n = copyFields.length; i < n; i++)
+					copyField(kryo, copyFields[i], original, copy);
+			}
 			return copy;
 		}
 
@@ -871,13 +893,13 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return fieldAccess;
 		}
 
-		/** If true, the code that writes and reads the fields of a class is generated as a hidden class, which the JIT can optimize
-		 * much better than the loop over the cached fields: there is no virtual call per field and the field accessors are
-		 * constants. The generated code writes the same bytes. It is generated when the serializer first writes or reads an object.
-		 * Used by FieldSerializer and its subclasses, except with the chunked encoding of Kryo 5. The class is written with the
-		 * Class-File API on Java 24+, or with ASM on older Java versions, which is an optional dependency. Not available on Android
-		 * or in a native image. The cached fields are used where code can't be generated, eg for records. Default is false, or true
-		 * if the system property "kryo.codeGeneration" is "true". */
+		/** If true, the code that writes, reads and copies the fields of a class is generated as a hidden class, which the JIT can
+		 * optimize much better than the loop over the cached fields: there is no virtual call per field and the field accessors are
+		 * constants. The generated code writes the same bytes. It is generated when the serializer first writes, reads or copies an
+		 * object. Used by FieldSerializer and its subclasses, except with the chunked encoding of Kryo 5. The class is written with
+		 * the Class-File API on Java 24+, or with ASM on older Java versions, which is an optional dependency. Not available on
+		 * Android or in a native image. The cached fields are used where code can't be generated, eg for records. Default is false,
+		 * or true if the system property "kryo.codeGeneration" is "true". */
 		public void setCodeGeneration (boolean codeGeneration) {
 			this.codeGeneration = codeGeneration;
 			if (TRACE) trace("kryo", "FieldSerializerConfig codeGeneration: " + codeGeneration);
