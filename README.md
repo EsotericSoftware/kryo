@@ -368,7 +368,7 @@ input.nextChunk();
 input.close();
 ```
 
-The `chunkedEncoding` setting of [CompatibleFieldSerializer](#compatiblefieldserializer-settings) and [TaggedFieldSerializer](#taggedfieldserializer-settings) writes each field with its length, so fields can be skipped. Since Kryo 6 it has its own format and doesn't use OutputChunked and InputChunked, except with the deprecated `legacyChunks` setting.
+The `chunkedEncoding` setting of [CompatibleFieldSerializer](#compatiblefieldserializer-settings) and [TaggedFieldSerializer](#taggedfieldserializer-settings) writes each field with its length, so fields can be skipped. Since Kryo 6 it has its own format and doesn't use OutputChunked and InputChunked, except with the deprecated `legacyChunks` setting. The outermost object with chunked encoding is buffered in memory until it is written completely, so it must be smaller than 2 GiB and needs as much memory as its serialized size.
 
 ### Buffer performance
 
