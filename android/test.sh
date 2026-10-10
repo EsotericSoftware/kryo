@@ -64,7 +64,7 @@ device=/data/local/tmp/kryo-android-test
 apiLevel=$("$adb" shell getprop ro.build.version.sdk | tr -d '\r')
 # app_process runs a main class with the Android framework, which dalvikvm can't.
 status=0
-"$adb" shell "CLASSPATH=$device/kryo.dex:$device/test.dex app_process /system/bin com.esotericsoftware.kryo.android.AndroidTest \
+"$adb" shell "CLASSPATH=$device/kryo.dex:$device/test.dex app_process /system/bin com.esotericsoftware.kryo.AndroidTest \
 	$apiLevel $device/jvm $device/android" || status=1
 
 # The files written on Android, read on the JVM.

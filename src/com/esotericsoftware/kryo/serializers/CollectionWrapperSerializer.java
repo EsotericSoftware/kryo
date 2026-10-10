@@ -37,10 +37,11 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /** Serializes an unmodifiable or synchronized wrapper of {@link java.util.Collections} by writing the wrapped collection or map,
- * which is wrapped again when reading or copying. On Android, which doesn't allow access to the wrapped collection, a copy of the
- * elements is written in the same format, see {@link #copyElements(Object)}.
+ * which is wrapped again when reading or copying. On Android, which doesn't allow access to the wrapped collection, a collection
+ * or map with the elements is written in the same format, see {@link #newElements(Object)}.
  * <p>
  * A wrapper that is contained in the collection it wraps, directly or indirectly, is read as null there, because the wrapper can
  * only be created after the wrapped collection was read. */
@@ -73,64 +74,48 @@ final class CollectionWrapperSerializer extends Serializer<Object> {
 	}
 
 	public Object copy (Kryo kryo, Object original) {
-		if (isAndroid) return copyOnAndroid(kryo, original);
 		if (synchronize) {
 			synchronized (original) {
-				return factory.apply(kryo.copy(wrapped(original)));
+				return copyWrapper(kryo, original);
 			}
 		}
-		return factory.apply(kryo.copy(wrapped(original)));
-	}
-
-	/** The wrapper of a copy of the elements is referenced before the elements are copied, like {@link CollectionSerializer} does,
-	 * so an element that refers to the wrapper gets the copy. A new collection for each copy of an element would recurse without
-	 * end. */
-	private Object copyOnAndroid (Kryo kryo, Object original) {
-		Object elements;
-		if (synchronize) {
-			synchronized (original) {
-				elements = copyElements(original);
-			}
-		} else
-			elements = copyElements(original);
-		Object copy = factory.apply(elements);
-		kryo.reference(copy);
-		if (elements instanceof Map) {
-			Map map = (Map)elements;
-			Object[] keys = map.keySet().toArray(), values = map.values().toArray();
-			map.clear();
-			for (int i = 0; i < keys.length; i++)
-				map.put(kryo.copy(keys[i]), kryo.copy(values[i]));
-		} else {
-			Collection collection = (Collection)elements;
-			Object[] items = collection.toArray();
-			collection.clear();
-			for (Object item : items)
-				collection.add(kryo.copy(item));
-		}
-		return copy;
+		return copyWrapper(kryo, original);
 	}
 
 	private Object wrapped (Object wrapper) {
-		return isAndroid ? copyElements(wrapper) : getter.get(wrapper);
+		if (!isAndroid) return getter.get(wrapper);
+		Object elements = newElements(wrapper);
+		addElements(elements, wrapper, element -> element);
+		return elements;
 	}
 
-	/** Returns a collection or map with the elements of the wrapper, like Apache Fory does on Android: a list for a collection, a
-	 * LinkedHashSet or LinkedHashMap, which keep the order, or a TreeSet or TreeMap with the comparator. The wrapper is read as a
-	 * wrapper of that collection or map. */
-	static Object copyElements (Object wrapper) {
-		if (wrapper instanceof SortedMap) {
-			TreeMap copy = new TreeMap(((SortedMap)wrapper).comparator());
-			copy.putAll((Map)wrapper);
-			return copy;
+	private Object copyWrapper (Kryo kryo, Object original) {
+		if (!isAndroid) return factory.apply(kryo.copy(getter.get(original)));
+		// The copy is referenced before the elements are copied, so an element that refers to the wrapper gets the copy.
+		Object elements = newElements(original), copy = factory.apply(elements);
+		kryo.reference(copy);
+		addElements(elements, original, kryo::copy);
+		return copy;
+	}
+
+	/** On Android, which doesn't allow access to the wrapped collection, returns a collection or map for the elements of the
+	 * wrapper, like Apache Fory does: a list, a LinkedHashSet or LinkedHashMap, which keep the order, or a TreeSet or TreeMap with
+	 * the comparator. */
+	static private Object newElements (Object wrapper) {
+		if (wrapper instanceof SortedMap) return new TreeMap(((SortedMap)wrapper).comparator());
+		if (wrapper instanceof Map) return new LinkedHashMap();
+		if (wrapper instanceof SortedSet) return new TreeSet(((SortedSet)wrapper).comparator());
+		if (wrapper instanceof Set) return new LinkedHashSet();
+		return new ArrayList();
+	}
+
+	static private void addElements (Object elements, Object wrapper, UnaryOperator<Object> copy) {
+		if (elements instanceof Map) {
+			for (Map.Entry entry : ((Map<?, ?>)wrapper).entrySet())
+				((Map)elements).put(copy.apply(entry.getKey()), copy.apply(entry.getValue()));
+		} else {
+			for (Object element : (Collection)wrapper)
+				((Collection)elements).add(copy.apply(element));
 		}
-		if (wrapper instanceof Map) return new LinkedHashMap((Map)wrapper);
-		if (wrapper instanceof SortedSet) {
-			TreeSet copy = new TreeSet(((SortedSet)wrapper).comparator());
-			copy.addAll((SortedSet)wrapper);
-			return copy;
-		}
-		if (wrapper instanceof Set) return new LinkedHashSet((Set)wrapper);
-		return new ArrayList((Collection)wrapper);
 	}
 }

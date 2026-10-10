@@ -50,7 +50,7 @@ import java.util.stream.Stream;
  * them and writes them again ({@link #readAndWrite(File, File, int)}), and the JVM reads and compares those ("read"). Run by
  * android/test.sh. */
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class AndroidSerializationCompat {
+class AndroidSerializationCompat {
 	/** Test data, written with the immutable collections registered with
 	 * {@link ImmutableCollectionsSerializers#registerSerializers(Kryo)} or with their class names. */
 	static final class Data {
@@ -174,7 +174,7 @@ public class AndroidSerializationCompat {
 	}
 
 	/** On Android: reads the files written on the JVM in the JVM directory and writes them again in the Android directory. */
-	public static List<String> readAndWrite (File jvmDirectory, File androidDirectory, int apiLevel) throws Exception {
+	static List<String> readAndWrite (File jvmDirectory, File androidDirectory, int apiLevel) throws Exception {
 		ArrayList<String> failures = new ArrayList<>();
 		for (Data data : testData(apiLevel)) {
 			failures.addAll(read(jvmDirectory, data, apiLevel));
