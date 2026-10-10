@@ -241,7 +241,7 @@
 					<version>2.29.0</version>
 					<configuration>
 						<configFile>${kryo.root}/eclipse/code-format.xml</configFile>
-						<lineEnding>KEEP</lineEnding>
+						<lineEnding>LF</lineEnding>
 						<removeTrailingWhitespace>false</removeTrailingWhitespace>
 						<compilerSource>${javac.target}</compilerSource>
 						<compilerCompliance>${javac.target}</compilerCompliance>
