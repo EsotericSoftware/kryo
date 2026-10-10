@@ -12,7 +12,9 @@ d8Version=9.5.23
 minApi=26
 
 sdk=${ANDROID_HOME:-$HOME/Library/Android/sdk}
-androidJar=$(ls -d "$sdk"/platforms/android-*/android.jar | sort -t- -k2 -n | tail -1)
+# The newest platform, sorted by its number so the SDK path doesn't matter.
+platform=$(ls "$sdk"/platforms | grep -E '^android-[0-9]+$' | sort -t- -k2 -n | tail -1)
+androidJar=$sdk/platforms/$platform/android.jar
 if [ ! -f "$androidJar" ]; then
 	echo "No android.jar found in $sdk/platforms, set ANDROID_HOME."
 	exit 1
