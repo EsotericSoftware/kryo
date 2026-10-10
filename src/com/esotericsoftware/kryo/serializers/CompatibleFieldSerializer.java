@@ -42,8 +42,9 @@ import java.util.Arrays;
  * {@link CompatibleFieldSerializerConfig#setChunkedEncoding(boolean)}. Additionally, the first time the class is encountered in
  * the serialized bytes, a simple schema is written containing the field name strings.
  * <p>
- * Note that the field data is identified by name. If a super class has a field with the same name as a subclass,
- * {@link CompatibleFieldSerializerConfig#setExtendedFieldNames(boolean)} must be true, otherwise an exception is thrown.
+ * Note that the field data is identified by name. If a super class has a field with the same name as a subclass, the fields are
+ * identified by their order, the field of the subclass first, so removing one of them mixes up the values. Use
+ * {@link CompatibleFieldSerializerConfig#setExtendedFieldNames(boolean)} to identify them by their class.
  * @author Nathan Sweet */
 public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private static final int binarySearchThreshold = 32;
@@ -51,8 +52,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	private final CompatibleFieldSerializerConfig config;
 	/** The graph context key for the field names written. The fields read are stored with this serializer as key. */
 	private final Object writeKey = new Object();
-	/** The error message if fields with the same name can't be distinguished, else null. */
-	private String duplicateFieldName;
+	/** True if fields have the same name, which are identified by their order, see {@link #fieldsByOrder}. */
+	private boolean duplicateNames;
 	/** The names of the cached fields in the same order, and as they are written inline. See {@link #updateFieldNames}. */
 	private String[] fieldNames;
 	private byte[] fieldNameBytes;
@@ -68,17 +69,16 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	void cachedFieldsChanged (CachedField[] fields) {
-		// Fields are sorted by name, so fields with the same name are adjacent. The exception is thrown when writing or reading,
-		// so the config can still be changed and updateFields called after the serializer is constructed.
-		duplicateFieldName = null;
+		// Fields are sorted by name, so fields with the same name are adjacent.
+		duplicateNames = false;
 		for (int i = 1, n = fields.length; i < n; i++) {
 			CachedField field = fields[i], previous = fields[i - 1];
 			if (field.name.equals(previous.name)) {
-				duplicateFieldName = "Field \"" + field.name + "\" is declared in both "
-					+ className(previous.field.getDeclaringClass())
-					+ " and " + className(field.field.getDeclaringClass())
-					+ ". CompatibleFieldSerializer identifies fields by name, so "
-					+ "CompatibleFieldSerializerConfig#setExtendedFieldNames must be true for " + className(type) + ".";
+				duplicateNames = true;
+				if (DEBUG) debug("kryo", "Field \"" + field.name + "\" is declared in both "
+					+ className(previous.field.getDeclaringClass()) + " and " + className(field.field.getDeclaringClass())
+					+ ", the fields are identified by their order. CompatibleFieldSerializerConfig#setExtendedFieldNames identifies "
+					+ "them by their class.");
 				return;
 			}
 		}
@@ -107,7 +107,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
-		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
 		boolean readUnknownFieldData = config.readUnknownFieldData;
 		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.legacyChunks, config.chunkSize);
 		boolean chunked = chunks != null;
@@ -170,7 +169,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
-		if (duplicateFieldName != null) throw new KryoException(duplicateFieldName);
 		boolean readUnknownFieldData = config.readUnknownFieldData;
 		int pop = pushTypeVariables();
 		T object = null;
@@ -336,7 +334,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		CachedField[] allFields = cachedFields.fields();
 		int length = names.length;
 		CachedField[] fields = new CachedField[length];
-		if (length < binarySearchThreshold) {
+		if (duplicateNames || containsDuplicates(names))
+			fieldsByOrder(names, allFields, fields);
+		else if (length < binarySearchThreshold) {
 			outer:
 			for (int i = 0; i < length; i++) {
 				String schemaName = names[i];
@@ -376,6 +376,33 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		if (Arrays.equals(fields, allFields)) fields = allFields;
 		kryo.getGraphContext().put(this, fields);
 		return fields;
+	}
+
+	/** Returns true if the names, which are sorted, contain a name twice. */
+	static private boolean containsDuplicates (String[] names) {
+		for (int i = 1, n = names.length; i < n; i++)
+			if (names[i].equals(names[i - 1])) return true;
+		return false;
+	}
+
+	/** Finds the cached field for each name when fields have the same name, which a subclass and its super class can declare: the
+	 * fields are sorted by name, so the k-th field with a name in the data is the k-th cached field with that name, the field of
+	 * the subclass first. Kryo 5 wrote these fields the same way, but read all of them into one field. */
+	static private void fieldsByOrder (String[] names, CachedField[] allFields, CachedField[] fields) {
+		for (int i = 0, length = names.length; i < length;) {
+			String name = names[i];
+			int end = i + 1;
+			while (end < length && names[end].equals(name))
+				end++;
+			int index = 0; // The first cached field with the name, or allFields.length if there is none.
+			while (index < allFields.length && !allFields[index].name.equals(name))
+				index++;
+			for (; i < end; i++) {
+				boolean found = index < allFields.length && allFields[index].name.equals(name);
+				fields[i] = found ? allFields[index++] : null;
+				if (!found && TRACE) trace("kryo", "Unknown field will be skipped: " + name);
+			}
+		}
 	}
 
 	public CompatibleFieldSerializerConfig getCompatibleFieldSerializerConfig () {
