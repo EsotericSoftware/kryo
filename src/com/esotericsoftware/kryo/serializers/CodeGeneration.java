@@ -539,6 +539,13 @@ final class CodeGeneration {
 		/** The body of readRecord or copyRecord: int index = 0; Object record; try { record = c.invokeExact(<value 0>, index = 1,
 		 * <value 1>, ...); } catch (Throwable t) { throw GeneratedFields.<error>(t, fields[index], <local 1>); } return record; */
 		void record (IntConsumer value, String error, String local1Desc) {
+			int n = kinds.length;
+			if (n == 0) { // No fields to name in an error. return c.invokeExact();
+				code.getstatic(thisClass, "c", MethodHandleDesc);
+				code.invokevirtual(MethodHandleName, "invokeExact", "()Ljava/lang/Object;");
+				code.areturn();
+				return;
+			}
 			index = 2; // After the parameter.
 			int record = 3;
 			code.iconst(0);
@@ -546,7 +553,7 @@ final class CodeGeneration {
 			code.trying( () -> {
 				code.getstatic(thisClass, "c", MethodHandleDesc);
 				StringBuilder type = new StringBuilder("(");
-				for (int i = 0, n = kinds.length; i < n; i++) {
+				for (int i = 0; i < n; i++) {
 					if (i != 0) {
 						code.iconst(i);
 						code.istore(index);

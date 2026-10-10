@@ -1188,7 +1188,7 @@ kryo.setDefaultSerializer(new FieldSerializerFactory(config));
 
 The same setting exists on the configs of the subclasses, eg `CompatibleFieldSerializerConfig`. The system property `kryo.codeGeneration=true` enables code generation for all Kryo instances.
 
-Code generation needs Java 24+, where the class is written with the Class-File API, or [ASM](https://asm.ow2.io/) on the classpath on Java 17 to 23: `org.ow2.asm:asm` is an optional dependency of Kryo, which the versioned jar includes. One small hidden class is defined per serialized class, once per JVM, when the serializer first writes or reads an object, so registered classes that are never serialized don't need one. Code generation is not available on Android or in a native image, and not used for the chunked encoding of Kryo 5 or records with more than 64 components, which use the cached fields. If it is enabled but not available, Kryo logs a warning and uses the cached fields.
+Code generation needs Java 24+, where the class is written with the Class-File API, or [ASM](https://asm.ow2.io/) on the classpath on Java 17 to 23: `org.ow2.asm:asm` is an optional dependency of Kryo, which the versioned jar includes. One small hidden class is defined per serialized class, once per JVM, when the serializer first writes or reads an object, so registered classes that are never serialized don't need one. Code generation is not available on Android or in a native image, and not used for the chunked encoding of Kryo 5 or records with more than 64 components or removed components, which use the cached fields. If it is enabled but not available, Kryo logs a warning and uses the cached fields.
 
 #### CachedField settings
 

@@ -534,6 +534,12 @@ class CodeGenerationTest extends KryoTestCase {
 		assertEquals(shape, read(cachedFields, bytes, Shape.class));
 		assertEquals(shape, read(kryo, write(cachedFields, shape), Shape.class));
 
+		// A record without components has no field to name in an error, so it is constructed without a try block.
+		kryo.register(Empty.class);
+		assertGenerated(Empty.class);
+		roundTrip(1, new Empty());
+		assertEquals(new Empty(), kryo.copy(new Empty()));
+
 		// A record with a removed component uses the cached fields, which set the default value.
 		Kryo removed = new Kryo();
 		removed.setDefaultSerializer(codeGeneration());
@@ -1228,6 +1234,9 @@ class CodeGenerationTest extends KryoTestCase {
 	}
 
 	public record Shape (String name, Point point, Object any, double scale) {
+	}
+
+	public record Empty () {
 	}
 
 	public enum Color {
