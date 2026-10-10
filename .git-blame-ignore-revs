@@ -1,0 +1,3 @@
+# Commits to ignore in git blame, eg with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# Normalize line endings to LF
+144258e07fc2eabd1a6e58d618d4825b06660289
