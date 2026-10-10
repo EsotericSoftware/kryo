@@ -25,10 +25,10 @@ import static com.esotericsoftware.kryo.util.Log.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.bytecode.Bytecode;
 import com.esotericsoftware.kryo.bytecode.Bytecode.Code;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 
 import java.lang.invoke.MethodHandle;
@@ -241,8 +241,8 @@ final class CodeGeneration {
 		int[] setters = classData(fields, kinds, classData);
 		members(cb, thisClass, n, setters);
 		constructor(cb, thisClass);
-		// public void write (OutputDesc output, Object object) and write (OutputDesc output, Object object, ChunkedEncoding chunks)
-		// public void read (InputDesc input, Object object) and read (InputDesc input, Object object, ChunkedEncoding chunks)
+		// public void write (Output output, Object object) and write (Output output, Object object, ChunkedEncoding chunks)
+		// public void read (Input input, Object object) and read (Input input, Object object, ChunkedEncoding chunks)
 		for (boolean chunked : new boolean[] {false, true}) {
 			String writeType = chunked ? descriptor(void.class, Output.class, Object.class, ChunkedEncoding.class)
 				: descriptor(void.class, Output.class, Object.class);
@@ -311,18 +311,18 @@ final class CodeGeneration {
 		callSite.getTarget().invoke(field, object, value);
 	}
 
-	/** Emits the fields: the VarHandleDesc fi and setter si of each field, initialized from the class data, and the serializer and
+	/** Emits the fields: the VarHandle fi and setter si of each field, initialized from the class data, and the serializer and
 	 * fields of the serializer instance. */
 	static private void members (Bytecode cb, String thisClass, int n, int[] setters) {
-		// static final VarHandleDesc f0; static final MethodHandleDesc s0; ...
+		// static final VarHandle f0; static final MethodHandle s0; ...
 		for (int i = 0; i < n; i++) {
 			cb.field("f" + i, VarHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
 			if (setters[i] != -1) cb.field("s" + i, MethodHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
 		}
-		// final FieldSerializerDesc serializer; final CachedField[] fields;
+		// final FieldSerializer serializer; final CachedField[] fields;
 		cb.field("serializer", FieldSerializerDesc, ACC_PRIVATE | ACC_FINAL);
 		cb.field("fields", CachedFieldArrayDesc, ACC_PRIVATE | ACC_FINAL);
-		// static { f0 = (VarHandleDesc)MethodHandlesName.classDataAt(MethodHandlesName.lookup(), "_", VarHandleDesc.class, 0); ...
+		// static { f0 = (VarHandle)MethodHandles.classDataAt(MethodHandles.lookup(), "_", VarHandle.class, 0); ...
 		// }
 		cb.method("<clinit>", "()V", ACC_STATIC, code -> {
 			for (int i = 0; i < n; i++) {
@@ -337,7 +337,7 @@ final class CodeGeneration {
 		});
 	}
 
-	/** Emits: (T)MethodHandlesName.classDataAt(MethodHandlesName.lookup(), "_", T.class, index) */
+	/** Emits: (T)MethodHandles.classDataAt(MethodHandles.lookup(), "_", T.class, index) */
 	static private void loadClassData (Code code, int index, String descriptor, String name) {
 		code.invokestatic(MethodHandlesName, "lookup", "()" + LookupDesc);
 		code.ldc("_");
@@ -348,7 +348,7 @@ final class CodeGeneration {
 		code.checkcast(name);
 	}
 
-	/** Emits: public Generated$Type (FieldSerializerDesc serializer, CachedField[] fields) */
+	/** Emits: public Generated$Type (FieldSerializer serializer, CachedField[] fields) */
 	static private void constructor (Bytecode cb, String thisClass) {
 		cb.method("<init>", "(" + FieldSerializerDesc + CachedFieldArrayDesc + ")V", ACC_PUBLIC, code -> {
 			code.aload(0);
@@ -512,7 +512,7 @@ final class CodeGeneration {
 				code.invokevirtual(ReflectFieldName, classes ? "writeValueWithClass" : "writeValue",
 					"(" + OutputDesc + "Ljava/lang/Object;Ljava/lang/Object;)V");
 			} else if (classes && kind == Kind.string) {
-				// GeneratedFieldsName.writeStringWithClass(serializer.kryo, output, (String)fi.get(object))
+				// GeneratedFields.writeStringWithClass(serializer.kryo, output, (String)fi.get(object))
 				kryo();
 				code.aload(1);
 				value(i, "Ljava/lang/String;");
@@ -584,7 +584,7 @@ final class CodeGeneration {
 		 * value is skipped, the field keeps its value. */
 		void readValue (int i) {
 			if (classes && kinds[i].primitive) {
-				// if (GeneratedFieldsName.readPrimitiveClass(serializer, input, fields[i], chunked)) <set>
+				// if (GeneratedFields.readPrimitiveClass(serializer, input, fields[i], chunked)) <set>
 				serializer();
 				code.aload(1);
 				field(i);
@@ -630,7 +630,7 @@ final class CodeGeneration {
 				} else
 					code.invokevirtual(ReflectFieldName, "readValue", "(" + InputDesc + ")Ljava/lang/Object;");
 			} else if (classes && kind == Kind.string) {
-				// GeneratedFieldsName.readStringWithClass(serializer, input, fields[i], object, chunked)
+				// GeneratedFields.readStringWithClass(serializer, input, fields[i], object, chunked)
 				serializer();
 				code.aload(1);
 				field(i);
@@ -655,7 +655,7 @@ final class CodeGeneration {
 			}
 		}
 
-		/** throw GeneratedFieldsName.<error>(t, fields[index], output or input), with the Throwable t on the stack. */
+		/** throw GeneratedFields.<error>(t, fields[index], output or input), with the Throwable t on the stack. */
 		void throwError (String error, String type) {
 			code.aload(0);
 			code.getfield(thisClass, "fields", CachedFieldArrayDesc);
@@ -713,10 +713,9 @@ final class CodeGeneration {
 		/** The descriptor of the type and the internal name of its wrapper class. */
 		final String type, wrapper;
 		final boolean primitive;
-		/** The OutputDesc and InputDesc methods and their descriptors. */
+		/** The Output and Input methods and their descriptors. */
 		final String write, read, writeType, readType;
-		/** True for int and long, which are written with variable length if {@link CachedFieldDesc#varEncoding}, with these
-		 * methods. */
+		/** True for int and long, which are written with variable length if {@link CachedField#varEncoding}, with these methods. */
 		final boolean varEncodable;
 		final String writeVar, readVar, writeVarType, readVarType;
 

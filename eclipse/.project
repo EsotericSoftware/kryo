@@ -40,10 +40,5 @@
 			<type>2</type>
 			<locationURI>PARENT-1-PROJECT_LOC/test</locationURI>
 		</link>
-		<link>
-			<name>test-jdk24</name>
-			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/test-jdk24</locationURI>
-		</link>
 	</linkedResources>
 </projectDescription>

@@ -33,9 +33,9 @@ import com.esotericsoftware.kryo.bytecode.Bytecode;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldAccessType;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
-import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer.Since;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
@@ -48,11 +48,11 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
-import org.junit.jupiter.api.Test;
 
-/** Tests {@link CodeGeneration}, which needs Java 24+. */
+/** Tests {@link CodeGeneration}, which needs Java 24+ or ASM on the classpath. */
 class CodeGenerationTest extends KryoTestCase {
 	{
 		supportsCopy = true;
