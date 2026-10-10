@@ -1483,7 +1483,7 @@ Kryo 6 supports Android from API level 26 (Android 8.0). FieldSerializer accesse
 kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 ```
 
-The serializers for unmodifiable and synchronized collections are not supported on Android.
+Android doesn't allow access to the collection wrapped by the unmodifiable and synchronized collections of `java.util.Collections` and by `Collections.newSetFromMap`, so Kryo writes a copy of their elements there, in the same format: they are read as a wrapper of a list, a `LinkedHashSet` or `LinkedHashMap`, or a `TreeSet` or `TreeMap` with the comparator.
 
 The immutable collections of `List.of`, `Set.of` and `Map.of` written on a JVM are read as unmodifiable collections on Android when the app's minimum API level is below 30, because D8 replaces these methods then. If they are registered on both sides with `ImmutableCollectionsSerializers.registerSerializers`, this works on all Android versions; written with their class names, it needs API level 30, and for sets with one or two elements API level 34.
 

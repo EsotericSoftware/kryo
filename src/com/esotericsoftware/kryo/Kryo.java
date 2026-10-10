@@ -325,11 +325,9 @@ public class Kryo {
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		ImmutableCollectionsSerializers.addDefaultSerializers(this);
-		if (!isAndroid) { // The wrapped collection can't be accessed on Android.
-			UnmodifiableCollectionSerializers.addDefaultSerializers(this);
-			SynchronizedCollectionSerializers.addDefaultSerializers(this);
-			addDefaultSerializer(Collections.newSetFromMap(new HashMap<>()).getClass(), new SetFromMapSerializer());
-		}
+		UnmodifiableCollectionSerializers.addDefaultSerializers(this);
+		SynchronizedCollectionSerializers.addDefaultSerializers(this);
+		addDefaultSerializer(Collections.newSetFromMap(new HashMap<>()).getClass(), new SetFromMapSerializer());
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.

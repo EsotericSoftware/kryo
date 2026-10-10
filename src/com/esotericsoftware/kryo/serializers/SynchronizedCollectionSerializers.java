@@ -89,7 +89,7 @@ public final class SynchronizedCollectionSerializers {
 	}
 
 	/** Adds default serializers for synchronized Collections and Maps created via {@link Collections}. The Kryo constructor calls
-	 * this, except on Android. */
+	 * this. */
 	public static void addDefaultSerializers (Kryo kryo) {
 		try {
 			for (Map.Entry<Class<?>, Function<Object, Object>> factory : DefaultFactories.factories.entrySet())

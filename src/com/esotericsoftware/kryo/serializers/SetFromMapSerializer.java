@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
@@ -27,14 +29,15 @@ import com.esotericsoftware.kryo.io.Output;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
 /** Serializer for the set returned by {@link Collections#newSetFromMap(Map)}, which writes the map that backs it, so eg the map
  * class and comparator are kept. The JDK offers no public API to get the map, so it is read from a private JDK field, like for
- * the unmodifiable and synchronized collections. The Kryo constructor adds it as a default serializer, except on Android. When
- * registration is required, register {@code Collections.newSetFromMap(new HashMap<>()).getClass()}, which is the class for all
- * maps.
+ * the unmodifiable and synchronized collections. On Android, which doesn't allow access to the map, a LinkedHashMap with the
+ * elements is written in the same format. The Kryo constructor adds it as a default serializer. When registration is required,
+ * register {@code Collections.newSetFromMap(new HashMap<>()).getClass()}, which is the class for all maps.
  * <p>
  * The set can only be created after its map was read or copied. So with references, an element that refers to the set through the
  * map is read as null there, like for the unmodifiable and synchronized collections, and gets a different set when copied. A
@@ -49,7 +52,7 @@ public final class SetFromMapSerializer extends Serializer<Set> {
 	}
 
 	public void write (Kryo kryo, Output output, Set set) {
-		kryo.writeClassAndObject(output, mapGetter.get(set));
+		kryo.writeClassAndObject(output, map(set));
 	}
 
 	public Set read (Kryo kryo, Input input, Class<? extends Set> type) {
@@ -57,13 +60,21 @@ public final class SetFromMapSerializer extends Serializer<Set> {
 	}
 
 	public Set copy (Kryo kryo, Set original) {
-		Map map = (Map)mapGetter.get(original);
+		Map map = map(original);
 		Map copy = (Map)kryo.copy(map);
 		if (copy == map) {
 			throw new KryoException(
 				"A shallow copy of a set returned by Collections.newSetFromMap is not supported, the copy needs its own map.");
 		}
 		return newSetFromMap(copy);
+	}
+
+	private Map map (Set set) {
+		if (!isAndroid) return (Map)mapGetter.get(set);
+		LinkedHashMap map = new LinkedHashMap();
+		for (Object element : set)
+			map.put(element, Boolean.TRUE);
+		return map;
 	}
 
 	/** {@link Collections#newSetFromMap(Map)} requires an empty map, so the keys are added again. */

@@ -19,18 +19,32 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static com.esotericsoftware.kryo.util.Util.*;
+
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 
 /** Serializes an unmodifiable or synchronized wrapper of {@link java.util.Collections} by writing the wrapped collection or map,
- * which is wrapped again when reading or copying.
+ * which is wrapped again when reading or copying. On Android, which doesn't allow access to the wrapped collection, a copy of the
+ * elements is written in the same format, see {@link #copyElements(Object)}.
  * <p>
  * A wrapper that is contained in the collection it wraps, directly or indirectly, is read as null there, because the wrapper can
  * only be created after the wrapped collection was read. */
+@SuppressWarnings({"rawtypes", "unchecked"})
 final class CollectionWrapperSerializer extends Serializer<Object> {
 	private final Function<Object, Object> factory;
 	private final WrappedCollectionGetter getter;
@@ -46,13 +60,12 @@ final class CollectionWrapperSerializer extends Serializer<Object> {
 	}
 
 	public void write (Kryo kryo, Output output, Object wrapper) {
-		Object wrapped = getter.get(wrapper);
 		if (synchronize) {
 			synchronized (wrapper) {
-				kryo.writeClassAndObject(output, wrapped);
+				kryo.writeClassAndObject(output, wrapped(wrapper));
 			}
 		} else
-			kryo.writeClassAndObject(output, wrapped);
+			kryo.writeClassAndObject(output, wrapped(wrapper));
 	}
 
 	public Object read (Kryo kryo, Input input, Class<?> type) {
@@ -60,12 +73,34 @@ final class CollectionWrapperSerializer extends Serializer<Object> {
 	}
 
 	public Object copy (Kryo kryo, Object original) {
-		Object wrapped = getter.get(original);
 		if (synchronize) {
 			synchronized (original) {
-				return factory.apply(kryo.copy(wrapped));
+				return factory.apply(kryo.copy(wrapped(original)));
 			}
 		}
-		return factory.apply(kryo.copy(wrapped));
+		return factory.apply(kryo.copy(wrapped(original)));
+	}
+
+	private Object wrapped (Object wrapper) {
+		return isAndroid ? copyElements(wrapper) : getter.get(wrapper);
+	}
+
+	/** Returns a collection or map with the elements of the wrapper, like Apache Fory does on Android: a list for a collection, a
+	 * LinkedHashSet or LinkedHashMap, which keep the order, or a TreeSet or TreeMap with the comparator. The wrapper is read as a
+	 * wrapper of that collection or map. */
+	static Object copyElements (Object wrapper) {
+		if (wrapper instanceof SortedMap) {
+			TreeMap copy = new TreeMap(((SortedMap)wrapper).comparator());
+			copy.putAll((Map)wrapper);
+			return copy;
+		}
+		if (wrapper instanceof Map) return new LinkedHashMap((Map)wrapper);
+		if (wrapper instanceof SortedSet) {
+			TreeSet copy = new TreeSet(((SortedSet)wrapper).comparator());
+			copy.addAll((SortedSet)wrapper);
+			return copy;
+		}
+		if (wrapper instanceof Set) return new LinkedHashSet((Set)wrapper);
+		return new ArrayList((Collection)wrapper);
 	}
 }

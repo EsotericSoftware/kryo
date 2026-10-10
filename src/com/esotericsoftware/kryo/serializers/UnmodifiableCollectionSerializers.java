@@ -120,7 +120,7 @@ public final class UnmodifiableCollectionSerializers {
 	}
 
 	/** Adds default serializers for unmodifiable Collections and Maps created via {@link Collections}, including the navigable and
-	 * the Java 21+ sequenced wrappers. The Kryo constructor calls this, except on Android. */
+	 * the Java 21+ sequenced wrappers. The Kryo constructor calls this. */
 	public static void addDefaultSerializers (Kryo kryo) {
 		try {
 			for (Map.Entry<Class<?>, Function<Object, Object>> factory : DefaultFactories.factories.entrySet())

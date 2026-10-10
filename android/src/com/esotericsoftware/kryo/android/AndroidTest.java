@@ -19,6 +19,7 @@
 
 package com.esotericsoftware.kryo.android;
 
+import com.esotericsoftware.kryo.AndroidSerializationCompat;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
@@ -37,6 +38,7 @@ import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
 import android.os.Build;
 
 import java.io.Externalizable;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -232,6 +234,17 @@ public class AndroidTest {
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}
+
+		// The field values of the test data of SerializationCompatTest, written on a JVM, and written here for the JVM.
+		File androidDirectory = new File(args[2]);
+		androidDirectory.mkdirs();
+		test("SerializationCompatTest test data from a JVM", () -> {
+			List<String> failures = AndroidSerializationCompat.readAndWrite(new File(args[1]), androidDirectory,
+				Build.VERSION.SDK_INT);
+			for (String failure : failures)
+				System.out.println("  " + failure);
+			check(failures.isEmpty());
+		});
 
 		if (failed) System.exit(1);
 		System.out.println("All tests passed.");
