@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -43,7 +44,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
@@ -1004,6 +1004,7 @@ public class DefaultSerializers {
 	/** Serializer for {@link ByteBuffer}, which writes the bytes up to the limit, the position, limit and capacity, the byte order
 	 * and whether it is direct or read-only. The mark can't be read with public API and is not written. A buffer that shares its
 	 * content, eg a slice, is read with its own content. */
+	@IgnoreAndroid // The Android API level 26 has no covariant ByteBuffer methods like position(int), but D8 replaces them.
 	public static class ByteBufferSerializer extends Serializer<ByteBuffer> {
 		private static final int DIRECT = 1, READ_ONLY = 2, LITTLE_ENDIAN = 4;
 
@@ -1014,10 +1015,7 @@ public class DefaultSerializers {
 			output.writeVarInt(buffer.limit(), true);
 			output.writeVarInt(buffer.position(), true);
 			byte[] bytes = new byte[buffer.limit()];
-			ByteBuffer duplicate = buffer.duplicate();
-			// Buffer methods, because Android API level 26 has no covariant ByteBuffer methods like position(int).
-			((Buffer)duplicate).position(0);
-			duplicate.get(bytes);
+			buffer.duplicate().position(0).get(bytes);
 			output.writeBytes(bytes);
 		}
 
@@ -1028,7 +1026,7 @@ public class DefaultSerializers {
 				throw new KryoException(
 					"Invalid ByteBuffer, position: " + position + ", limit: " + limit + ", capacity: " + capacity);
 			ByteBuffer buffer = (flags & DIRECT) != 0 ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
-			((Buffer)buffer.put(input.readBytes(limit))).limit(limit).position(position);
+			buffer.put(input.readBytes(limit)).limit(limit).position(position);
 			if ((flags & READ_ONLY) != 0) buffer = buffer.asReadOnlyBuffer();
 			return buffer.order((flags & LITTLE_ENDIAN) != 0 ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
 		}
@@ -1036,9 +1034,7 @@ public class DefaultSerializers {
 		public ByteBuffer copy (Kryo kryo, ByteBuffer original) {
 			ByteBuffer copy = original.isDirect() ? ByteBuffer.allocateDirect(original.capacity())
 				: ByteBuffer.allocate(original.capacity());
-			ByteBuffer duplicate = original.duplicate();
-			((Buffer)duplicate).clear();
-			((Buffer)copy.put(duplicate)).limit(original.limit()).position(original.position());
+			copy.put(original.duplicate().clear()).limit(original.limit()).position(original.position());
 			if (original.isReadOnly()) copy = copy.asReadOnlyBuffer();
 			return copy.order(original.order());
 		}
