@@ -30,7 +30,6 @@ import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFact
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.VersionFieldSerializerFactory;
-import com.esotericsoftware.kryo.bytecode.Bytecode;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
