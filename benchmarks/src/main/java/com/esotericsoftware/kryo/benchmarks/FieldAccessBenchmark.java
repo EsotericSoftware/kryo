@@ -108,6 +108,11 @@ public class FieldAccessBenchmark {
 				kryo.register(PrivateFields.class);
 				kryo.register(ArrayList.class);
 				break;
+			case finalFields:
+				object = FinalFields.populate();
+				kryo.register(FinalFields.class);
+				kryo.register(ArrayList.class);
+				break;
 			}
 
 			if (polluted) pollute();
@@ -131,7 +136,7 @@ public class FieldAccessBenchmark {
 		}
 
 		public enum ObjectType {
-			sample, media, privateFields
+			sample, media, privateFields, finalFields
 		}
 	}
 
@@ -255,6 +260,44 @@ public class FieldAccessBenchmark {
 		public String s12 = "s12";
 		public String t12 = "t12";
 		public Object o12 = "o12";
+	}
+
+	/** The fields of {@link PrivateFields} as final fields, which VarHandles can read but not set. */
+	static class FinalFields {
+		private final int id;
+		private final long timestamp;
+		private final double score;
+		private final boolean active;
+		private final short count;
+		private final String name;
+		private final String description;
+		private final Integer boxed;
+		private final List<String> tags;
+		private final FinalFields child;
+
+		FinalFields () { // For Kryo.
+			this(0, 0, 0, false, (short)0, null, null, null, null, null);
+		}
+
+		FinalFields (int id, long timestamp, double score, boolean active, short count, String name, String description,
+			Integer boxed, List<String> tags, FinalFields child) {
+			this.id = id;
+			this.timestamp = timestamp;
+			this.score = score;
+			this.active = active;
+			this.count = count;
+			this.name = name;
+			this.description = description;
+			this.boxed = boxed;
+			this.tags = tags;
+			this.child = child;
+		}
+
+		static FinalFields populate () {
+			FinalFields child = new FinalFields(1, 0, 0, false, (short)0, "child", null, null, null, null);
+			return new FinalFields(123, 1234567890123L, 1.5, true, (short)7, "name", "a longer description", 42,
+				new ArrayList<>(List.of("a", "b", "c")), child);
+		}
 	}
 
 	/** A typical class with private fields. */

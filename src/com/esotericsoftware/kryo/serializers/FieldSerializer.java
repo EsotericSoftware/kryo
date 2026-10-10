@@ -298,26 +298,24 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 	}
 
-	/** Reads the value of a field and sets it, with {@link FinalFieldSetter} for a final field if needed. */
+	/** Reads the value of a field and sets it, with {@link #setFinal(CachedField, Object, Object)} for a final field. */
 	void readField (CachedField field, Input input, Object object) {
-		FinalFieldSetter setter = finalSetter(field);
-		if (setter == null)
-			field.read(input, object);
+		if (field.isFinal)
+			setFinal(field, object, field.read(input));
 		else
-			setter.set(object, field.read(input));
+			field.read(input, object);
 	}
 
-	/** Copies the value of a field, with {@link FinalFieldSetter} for a final field if needed. */
+	/** Copies the value of a field, with {@link #setFinal(CachedField, Object, Object)} for a final field. */
 	void copyField (Kryo kryo, CachedField field, Object original, Object copy) {
-		FinalFieldSetter setter = finalSetter(field);
-		if (setter == null) {
+		if (!field.isFinal) {
 			field.copy(original, copy);
 			return;
 		}
 		try {
 			Object value = field.get(original);
 			// Primitive values are immutable, all other values are copied like other field values.
-			setter.set(copy, field.field.getType().isPrimitive() ? value : kryo.copy(value));
+			setFinal(field, copy, field.field.getType().isPrimitive() ? value : kryo.copy(value));
 		} catch (IllegalAccessException ex) {
 			throw new KryoException("Error accessing field: " + field.name + " (" + className(type) + ")", ex);
 		} catch (KryoException ex) {
@@ -379,8 +377,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 		return field.finalSetter;
 	}
 
-	/** Sets a final field with its {@link FinalFieldSetter}, or with Unsafe for an Unsafe field. Called by the generated code if
-	 * setting the field with reflection is denied. */
+	/** Sets a final field, which VarHandles can't set: with reflection, with its {@link FinalFieldSetter} if that is denied, or
+	 * with Unsafe for an Unsafe field. Also called by the generated code if setting the field with reflection is denied. */
 	static void setFinal (CachedField field, Object object, Object value) {
 		FinalFieldSetter setter = finalSetter(field);
 		if (setter != null)
@@ -388,17 +386,19 @@ public class FieldSerializer<T> extends Serializer<T> {
 		else if (field.offset != 0)
 			UnsafeField.put(field, object, value);
 		else {
-			throw ReflectField.accessError(field.field,
-				new IllegalAccessException("Setting final fields with reflection is denied."));
+			try {
+				field.field.set(object, value);
+			} catch (IllegalAccessException ex) {
+				throw ReflectField.accessError(field.field, ex);
+			}
 		}
 	}
 
 	/** Sets a non-primitive field to null. */
 	void setNull (CachedField cachedField, Object object) {
 		if (cachedField.field.getType().isPrimitive()) return;
-		FinalFieldSetter setter = finalSetter(cachedField);
-		if (setter != null) {
-			setter.set(object, null);
+		if (cachedField.isFinal) {
+			setFinal(cachedField, object, null);
 			return;
 		}
 		try {
@@ -510,6 +510,10 @@ public class FieldSerializer<T> extends Serializer<T> {
 		// For Records
 		int index;
 
+		/** True for a final field that is set by the serializer with {@link FieldSerializer#setFinal(CachedField, Object, Object)},
+		 * because VarHandles can't set final fields. False for Unsafe fields, which set final fields themselves, for records, which
+		 * set their fields with their constructor, and on Android, where ReflectField sets them. */
+		boolean isFinal;
 		/** Sets the field if it is final and setting it with reflection is denied, else null. */
 		FinalFieldSetter finalSetter;
 		/** True for a final field until it is first set, then {@link #finalSetter} is resolved. Resolving it obtains a method

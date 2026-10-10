@@ -205,18 +205,21 @@ class CachedFields implements Comparator<CachedField> {
 		Class fieldClass = genericType.getType() instanceof Class ? (Class)genericType.getType() : field.getType();
 		CachedField cachedField;
 		FieldAccessType fieldAccess = fieldAccess();
-		if (fieldAccess == FieldAccessType.UNSAFE && !isRecord(type))
+		boolean isFinal = Modifier.isFinal(modifiers);
+		if (fieldAccess == FieldAccessType.UNSAFE && !isRecord(type)) // Unsafe fields set final fields themselves.
 			cachedField = newUnsafeField(field, fieldClass, genericType);
-		else if (fieldAccess != FieldAccessType.REFLECTION && !Modifier.isFinal(modifiers)
-		// Android has VarHandles only since API level 33, so they are only used there if configured explicitly.
-			&& (!isAndroid || fieldAccess == FieldAccessType.VARHANDLE))
-			cachedField = newVarHandleField(field, fieldClass, genericType);
 		else {
-			cachedField = newReflectField(field, fieldClass, genericType);
-			// A final field is set with reflection, which may be denied. That is checked when the field is first set. Records set
-			// their fields with their constructor. FinalFieldSetter is not loaded on Android, which has ClassValue only since API
-			// level 34.
-			if (Modifier.isFinal(modifiers) && recordComponents == null && !isAndroid) cachedField.finalUnresolved = true;
+			if (fieldAccess != FieldAccessType.REFLECTION
+				// Android has VarHandles only since API level 33, so they are only used there if configured explicitly, and not for
+				// final fields, which ReflectField sets with reflection there.
+				&& (!isAndroid || (fieldAccess == FieldAccessType.VARHANDLE && !isFinal)))
+				cachedField = newVarHandleField(field, fieldClass, genericType);
+			else
+				cachedField = newReflectField(field, fieldClass, genericType);
+			// VarHandles can read but not set final fields, so the serializer sets them with reflection, which may be denied. That
+			// is checked when the field is first set. Records set their fields with their constructor. FinalFieldSetter is not
+			// loaded on Android, which has ClassValue only since API level 34.
+			if (isFinal && recordComponents == null && !isAndroid) cachedField.isFinal = cachedField.finalUnresolved = true;
 		}
 
 		cachedField.varEncoding = config.varEncoding;
