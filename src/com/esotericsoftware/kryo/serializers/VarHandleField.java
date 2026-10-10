@@ -43,7 +43,7 @@ class VarHandleField extends ReflectField {
 		super(field, serializer, genericType);
 		VarHandle handle = varHandle(field);
 		getter = getter(handle, Object.class);
-		setter = setter(handle, Object.class);
+		setter = setter(handle, Object.class, this);
 	}
 
 	public Object get (Object object) {
@@ -74,8 +74,22 @@ class VarHandleField extends ReflectField {
 		return handle.toMethodHandle(AccessMode.GET).asType(MethodType.methodType(type, Object.class));
 	}
 
-	static MethodHandle setter (VarHandle handle, Class type) {
-		return handle.toMethodHandle(AccessMode.SET).asType(MethodType.methodType(void.class, Object.class, type));
+	/** Returns a method handle (Object object, T value)void that sets the field. VarHandles can't set final fields, those are set
+	 * with {@link FieldSerializer#setFinal(CachedField, Object, Object)}. */
+	static MethodHandle setter (VarHandle handle, Class type, CachedField field) {
+		MethodType setterType = MethodType.methodType(void.class, Object.class, type);
+		if (handle.isAccessModeSupported(AccessMode.SET)) return handle.toMethodHandle(AccessMode.SET).asType(setterType);
+		return MethodHandles.insertArguments(setFinal, 0, field).asType(setterType);
+	}
+
+	static private final MethodHandle setFinal;
+	static {
+		try {
+			setFinal = MethodHandles.lookup().findStatic(FieldSerializer.class, "setFinal",
+				MethodType.methodType(void.class, CachedField.class, Object.class, Object.class));
+		} catch (IllegalAccessException | NoSuchMethodException ex) {
+			throw new KryoException(ex);
+		}
 	}
 
 	/** Combines the setter and getter into a single method handle {@code (Object copy, Object original)} that copies the field. */
@@ -90,7 +104,7 @@ class VarHandleField extends ReflectField {
 			super(field);
 			VarHandle handle = varHandle(field);
 			getter = getter(handle, int.class);
-			setter = setter(handle, int.class);
+			setter = setter(handle, int.class, this);
 			copier = copier(getter, setter);
 		}
 
@@ -139,7 +153,7 @@ class VarHandleField extends ReflectField {
 			super(field);
 			VarHandle handle = varHandle(field);
 			getter = getter(handle, long.class);
-			setter = setter(handle, long.class);
+			setter = setter(handle, long.class, this);
 			copier = copier(getter, setter);
 		}
 
@@ -188,7 +202,7 @@ class VarHandleField extends ReflectField {
 			super(field);
 			VarHandle handle = varHandle(field);
 			getter = getter(handle, float.class);
-			setter = setter(handle, float.class);
+			setter = setter(handle, float.class, this);
 			copier = copier(getter, setter);
 		}
 
@@ -228,7 +242,7 @@ class VarHandleField extends ReflectField {
 			super(field);
 			VarHandle handle = varHandle(field);
 			getter = getter(handle, double.class);
-			setter = setter(handle, double.class);
+			setter = setter(handle, double.class, this);
 			copier = copier(getter, setter);
 		}
 
@@ -268,7 +282,7 @@ class VarHandleField extends ReflectField {
 			super(field);
 			VarHandle handle = varHandle(field);
 			getter = getter(handle, boolean.class);
-			setter = setter(handle, boolean.class);
+			setter = setter(handle, boolean.class, this);
 			copier = copier(getter, setter);
 		}
 
@@ -308,7 +322,7 @@ class VarHandleField extends ReflectField {
 			super(field);
 			VarHandle handle = varHandle(field);
 			getter = getter(handle, byte.class);
-			setter = setter(handle, byte.class);
+			setter = setter(handle, byte.class, this);
 			copier = copier(getter, setter);
 		}
 
@@ -348,7 +362,7 @@ class VarHandleField extends ReflectField {
 			super(field);
 			VarHandle handle = varHandle(field);
 			getter = getter(handle, short.class);
-			setter = setter(handle, short.class);
+			setter = setter(handle, short.class, this);
 			copier = copier(getter, setter);
 		}
 
@@ -388,7 +402,7 @@ class VarHandleField extends ReflectField {
 			super(field);
 			VarHandle handle = varHandle(field);
 			getter = getter(handle, char.class);
-			setter = setter(handle, char.class);
+			setter = setter(handle, char.class, this);
 			copier = copier(getter, setter);
 		}
 
@@ -428,7 +442,7 @@ class VarHandleField extends ReflectField {
 			super(field);
 			VarHandle handle = varHandle(field);
 			getter = getter(handle, String.class);
-			setter = setter(handle, String.class);
+			setter = setter(handle, String.class, this);
 			copier = copier(getter, setter);
 		}
 

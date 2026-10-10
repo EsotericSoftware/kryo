@@ -190,6 +190,26 @@ class FinalFieldsTest {
 	}
 
 	@Test
+	void testCachedFieldSetsFinalField () {
+		// The read and copy methods of a cached field set a final field, which VarHandles can't set.
+		assumeTrue(!isAndroid);
+		Kryo kryo = new Kryo();
+		FieldSerializer<Defaults> serializer = new FieldSerializer(kryo, Defaults.class);
+		serializer.getFieldSerializerConfig().setFieldAccess(FieldAccessType.VARHANDLE);
+		serializer.updateFields();
+		Defaults object = new Defaults("original", 1);
+		Output output = new Output(64);
+		output.writeVarInt(5, false);
+		serializer.getField("number").read(new Input(output.toBytes()), object);
+		assertEquals(5, object.number);
+		Defaults copy = new Defaults();
+		serializer.getField("name").copy(object, copy);
+		assertEquals("original", copy.name);
+		serializer.getField("number").copy(object, copy);
+		assertEquals(5, copy.number);
+	}
+
+	@Test
 	void testResolvedWhenSet () {
 		// Whether a final field can be set with reflection is checked when it is first set, so no warning is shown for writing.
 		assumeTrue(!isAndroid && FieldSerializer.FieldSerializerConfig.defaultFieldAccess != FieldAccessType.UNSAFE);

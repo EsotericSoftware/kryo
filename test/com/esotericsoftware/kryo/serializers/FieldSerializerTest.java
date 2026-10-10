@@ -1646,7 +1646,7 @@ class FieldSerializerTest extends KryoTestCase {
 	@Test
 	void testFieldAccess () {
 		assertFieldAccess(FieldAccessType.UNSAFE, "IntUnsafeField", "UnsafeField", "IntUnsafeField");
-		assertFieldAccess(FieldAccessType.VARHANDLE, "IntVarHandleField", "VarHandleField", "IntReflectField");
+		assertFieldAccess(FieldAccessType.VARHANDLE, "IntVarHandleField", "VarHandleField", "IntVarHandleField");
 		assertFieldAccess(FieldAccessType.REFLECTION, "IntReflectField", "ReflectField", "IntReflectField");
 	}
 
@@ -1681,7 +1681,7 @@ class FieldSerializerTest extends KryoTestCase {
 		assertEquals(1, copy.value);
 		assertEquals(intField, fieldClassName(serializer.getField("value")));
 		assertEquals(objectField, fieldClassName(serializer.getField("object")));
-		// Final fields can't be written with VarHandles.
+		// Final fields are read with VarHandles, but set with reflection.
 		assertEquals(finalField, fieldClassName(serializer.getField("finalValue")));
 	}
 

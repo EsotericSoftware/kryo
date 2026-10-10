@@ -37,9 +37,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /** Sets a final field of a serializable class if setting final fields with reflection is denied (JEP 500, eg with
- * {@code --illegal-final-field-mutation=deny}). Otherwise final fields are set with reflection like other fields, and this class
- * is not used. With Unsafe field access, final fields are set with Unsafe, which is not affected, so this class is not used
- * either.
+ * {@code --illegal-final-field-mutation=deny}). Otherwise final fields are set with reflection, see
+ * {@link FieldSerializer#setFinal(CachedField, Object, Object)}, and this class is not used. With Unsafe field access, final
+ * fields are set with Unsafe, which is not affected, so this class is not used either.
  * <p>
  * Java serialization is allowed to set final fields. Since Java 24, {@code ReflectionFactory.defaultReadObjectForSerialization}
  * provides a method handle that does what {@link ObjectInputStream#defaultReadObject()} does for one class: it sets all

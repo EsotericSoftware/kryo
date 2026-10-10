@@ -1174,7 +1174,21 @@ Setting | Description | Default value
 
 With `VARHANDLE`, the VarHandles are not constants for the JIT compiler, so each field access is an indirect call and FieldSerializer is slower than with `UNSAFE`. With `codeGeneration`, the generated code has the VarHandles as constants and is faster than with `UNSAFE`.
 
-VarHandles cannot set final fields, so these are set with reflection. Java 26+ warns when final fields are set with reflection and will deny it in the future. Kryo only sets a final field when it reads or copies an object, so the warning is not shown for writing. To allow it, start Java with `--enable-final-field-mutation=ALL-UNNAMED` (or the name of Kryo's module). If it is denied, Kryo sets the final fields of serializable classes with the method handles that Java provides for deserialization, on Java 24+. This is not possible for final fields that are transient or declared in a class that isn't serializable, is `Externalizable` or declares `serialPersistentFields`, and not for subclasses of FieldSerializer that read the fields themselves. Alternatively, make the fields non-final, use records, or register a serializer for the class.
+VarHandles can read but not set final fields, so Kryo sets them with reflection. Java 26+ warns when final fields are set with reflection and will deny it in the future. Kryo only sets a final field when it reads or copies an object, so the warning is not shown for writing. To allow it, start Java with `--enable-final-field-mutation=ALL-UNNAMED` (or the name of Kryo's module). If it is denied, Kryo sets the final fields of serializable classes with the method handles that Java provides for deserialization, on Java 24+. This is not possible for final fields that are transient or declared in a class that isn't serializable, is `Externalizable` or declares `serialPersistentFields`, and not for subclasses of FieldSerializer that read the fields themselves. Alternatively, make the fields non-final, use records, or register a serializer for the class.
+
+#### Code generation
+
+FieldSerializer and its subclasses can generate the code that writes and reads the fields of a class, instead of looping over the cached fields. The generated code is straight line code with the field accessors as constants, which the JIT compiler optimizes much better: there is no virtual call per field. FieldSerializer and its subclasses are 45% to 120% faster with it on object graphs, see the [benchmarks](#benchmarks). The generated code writes the same bytes as the cached fields, so it can be enabled or disabled without affecting the serialized data.
+
+```java
+FieldSerializerConfig config = new FieldSerializerConfig();
+config.setCodeGeneration(true);
+kryo.setDefaultSerializer(new FieldSerializerFactory(config));
+```
+
+The same setting exists on the configs of the subclasses, eg `CompatibleFieldSerializerConfig`. The system property `kryo.codeGeneration=true` enables code generation for all Kryo instances.
+
+Code generation needs Java 24+, where the class is written with the Class-File API, or [ASM](https://asm.ow2.io/) on the classpath on Java 17 to 23: `org.ow2.asm:asm` is an optional dependency of Kryo, which the versioned jar includes. One small hidden class is defined per serialized class, once per JVM, when the serializer first writes or reads an object, so registered classes that are never serialized don't need one. Code generation is not available on Android or in a native image, and not used for records or the chunked encoding of Kryo 5, which use the cached fields. If it is enabled but not available, Kryo logs a warning and uses the cached fields.
 
 #### Code generation
 
