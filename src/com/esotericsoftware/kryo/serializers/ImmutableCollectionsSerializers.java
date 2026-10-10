@@ -54,25 +54,24 @@ public final class ImmutableCollectionsSerializers {
 		JdkImmutableSetSerializer.registerSerializers(kryo);
 	}
 
-	/** Returns the class java.util.ImmutableCollections$name, or null if it doesn't exist. The classes are not taken from
-	 * instances like {@code List.of().getClass()}, because D8 replaces {@code List.of} with an unmodifiable list below Android API
-	 * level 30. Android has these classes since API level 30, but not all of them: before API level 34 it has Set0, Set1 and Set2
-	 * instead of Set12, and Map0. */
-	static private @Null Class immutableCollectionsClass (String name) {
-		return classForName("java.util.ImmutableCollections$" + name);
+	/** Returns the class java.util.ImmutableCollections$name, or null if it doesn't exist. The class of the instance is used if it
+	 * has that name, so a GraalVM native image needs no reflection metadata for it. On Android, D8 replaces {@code List.of} with
+	 * an unmodifiable list below API level 30, and Android has these classes since API level 30, but not all of them: before API
+	 * level 34 it has Set0, Set1 and Set2 instead of Set12, and Map0.
+	 * @param instance May be null for the classes only Android has. */
+	static private @Null Class immutableCollectionsClass (String name, @Null Object instance) {
+		name = "java.util.ImmutableCollections$" + name;
+		return instance != null ? classForName(name, instance) : classForName(name);
 	}
 
-	static private void addDefaultSerializer (Kryo kryo, Serializer serializer, String... names) {
-		for (String name : names) {
-			Class type = immutableCollectionsClass(name);
+	static private void addDefaultSerializer (Kryo kryo, Serializer serializer, Class... types) {
+		for (Class type : types)
 			if (type != null) kryo.addDefaultSerializer(type, serializer);
-		}
 	}
 
 	/** Registers the class, or the placeholder if the class doesn't exist, so the registration IDs are the same on all platforms.
 	 * Data of a missing class is read as the immutable collections of the platform. */
-	static private void register (Kryo kryo, Serializer serializer, String name, Class placeholder) {
-		Class type = immutableCollectionsClass(name);
+	static private void register (Kryo kryo, Serializer serializer, @Null Class type, Class placeholder) {
 		kryo.register(type != null ? type : placeholder, serializer);
 	}
 
@@ -150,15 +149,19 @@ public final class ImmutableCollectionsSerializers {
 			return list.stream().toList();
 		}
 
+		static private final @Null Class listN = immutableCollectionsClass("ListN", List.of()),
+			list12 = immutableCollectionsClass("List12", List.of(1)),
+			subList = immutableCollectionsClass("SubList", List.of(1, 2, 3, 4).subList(0, 2));
+
 		static void addDefaultSerializers (Kryo kryo) {
-			addDefaultSerializer(kryo, new JdkImmutableListSerializer(), "ListN", "List12", "SubList");
+			addDefaultSerializer(kryo, new JdkImmutableListSerializer(), listN, list12, subList);
 		}
 
 		static void registerSerializers (Kryo kryo) {
 			JdkImmutableListSerializer serializer = new JdkImmutableListSerializer();
-			register(kryo, serializer, "ListN", MissingListN.class);
-			register(kryo, serializer, "List12", MissingList12.class);
-			register(kryo, serializer, "SubList", MissingSubList.class);
+			register(kryo, serializer, listN, MissingListN.class);
+			register(kryo, serializer, list12, MissingList12.class);
+			register(kryo, serializer, subList, MissingSubList.class);
 		}
 	}
 
@@ -197,14 +200,17 @@ public final class ImmutableCollectionsSerializers {
 			return Map.copyOf(copy);
 		}
 
+		static private final @Null Class mapN = immutableCollectionsClass("MapN", Map.of()),
+			map1 = immutableCollectionsClass("Map1", Map.of(1, 2));
+
 		static void addDefaultSerializers (Kryo kryo) {
-			addDefaultSerializer(kryo, new JdkImmutableMapSerializer(), "MapN", "Map1", "Map0");
+			addDefaultSerializer(kryo, new JdkImmutableMapSerializer(), mapN, map1, immutableCollectionsClass("Map0", null));
 		}
 
 		static void registerSerializers (Kryo kryo) {
 			JdkImmutableMapSerializer serializer = new JdkImmutableMapSerializer();
-			register(kryo, serializer, "MapN", MissingMapN.class);
-			register(kryo, serializer, "Map1", MissingMap1.class);
+			register(kryo, serializer, mapN, MissingMapN.class);
+			register(kryo, serializer, map1, MissingMap1.class);
 		}
 	}
 
@@ -242,14 +248,18 @@ public final class ImmutableCollectionsSerializers {
 			return Set.copyOf(copy);
 		}
 
+		static private final @Null Class setN = immutableCollectionsClass("SetN", Set.of()),
+			set12 = immutableCollectionsClass("Set12", Set.of(1));
+
 		static void addDefaultSerializers (Kryo kryo) {
-			addDefaultSerializer(kryo, new JdkImmutableSetSerializer(), "SetN", "Set12", "Set0", "Set1", "Set2");
+			addDefaultSerializer(kryo, new JdkImmutableSetSerializer(), setN, set12, immutableCollectionsClass("Set0", null),
+				immutableCollectionsClass("Set1", null), immutableCollectionsClass("Set2", null));
 		}
 
 		static void registerSerializers (Kryo kryo) {
 			JdkImmutableSetSerializer serializer = new JdkImmutableSetSerializer();
-			register(kryo, serializer, "SetN", MissingSetN.class);
-			register(kryo, serializer, "Set12", MissingSet12.class);
+			register(kryo, serializer, setN, MissingSetN.class);
+			register(kryo, serializer, set12, MissingSet12.class);
 		}
 	}
 

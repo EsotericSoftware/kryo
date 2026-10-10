@@ -43,6 +43,8 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -184,13 +186,13 @@ public final class Kryo5Compatibility {
 
 		// Android has the immutable collections only since API level 30. By name, because D8 replaces List.of and Map.of with
 		// unmodifiable collections below API level 30.
-		Class mapN = classForName("java.util.ImmutableCollections$MapN");
+		Class mapN = classForName("java.util.ImmutableCollections$MapN", Map.of());
 		if (mapN != null) {
 			// Registered serializers of immutable maps, the default serializers are configured above.
 			Registration registration = kryo.getClassResolver().getRegistration(mapN);
 			if (registration != null) ((MapSerializer)registration.getSerializer()).setWriteSameClassOnce(false);
 		}
-		Class listN = classForName("java.util.ImmutableCollections$ListN");
+		Class listN = classForName("java.util.ImmutableCollections$ListN", List.of());
 		if (listN != null) {
 			// Kryo 5 didn't support null elements in immutable lists.
 			Registration registration = kryo.getClassResolver().getRegistration(listN);

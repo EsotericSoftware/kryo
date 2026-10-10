@@ -124,7 +124,8 @@ public class Util {
 		return classForName(className) != null;
 	}
 
-	/** Returns the class with the name, or null if it is not available. */
+	/** Returns the class with the name, or null if it is not available. In a GraalVM native image, the class needs reflection
+	 * metadata, unless it is taken from an instance, see {@link #classForName(String, Object)}. */
 	public static @Null Class classForName (String className) {
 		try {
 			return Class.forName(className);
@@ -132,6 +133,14 @@ public class Util {
 			debug("kryo", "Class not available: " + className);
 			return null;
 		}
+	}
+
+	/** Returns the class of the instance if it has the name, otherwise the class with the name, or null if it is not available. A
+	 * GraalVM native image needs no reflection metadata for the class of an instance. On Android, D8 replaces some JDK methods
+	 * below the API level that has them, eg {@code List.of} below API level 30, so the instance can have another class. */
+	public static @Null Class classForName (String className, Object instance) {
+		if (instance.getClass().getName().equals(className)) return instance.getClass();
+		return classForName(className);
 	}
 
 	/** Returns the primitive wrapper class for a primitive class, or the specified class if it is not primitive. */
