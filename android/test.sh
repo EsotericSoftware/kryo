@@ -32,7 +32,8 @@ version=$(mvn -q -f ../main/pom.xml help:evaluate -Dexpression=project.version -
 kryo=../target/kryo-$version.jar
 # The test data and comparison of SerializationCompatTest, and the libraries they and StdInstantiatorStrategy need on Android.
 mvn -q -f ../main/pom.xml dependency:build-classpath -Dmdep.includeScope=test -Dmdep.outputFile="$PWD/target/dependencies.txt"
-libraries=$(tr ':' '\n' < target/dependencies.txt | grep -E '/(objenesis|commons-lang3|junit-jupiter-api|junit-platform-commons|opentest4j|apiguardian-api)-[0-9]' | paste -sd: -)
+libraries=$(tr ':' '\n' < target/dependencies.txt \
+	| grep -E '/(objenesis|commons-lang3|junit-jupiter-api|junit-platform-commons|opentest4j|apiguardian-api)-[0-9]' | paste -sd: -)
 compatTest="../test/com/esotericsoftware/kryo"
 "${bin}javac" --release 17 -nowarn -d target/classes -cp "$kryo:$androidJar:$libraries" $(find src -name '*.java') \
 	$compatTest/SerializationCompatTestData.java $compatTest/TestDataJava11.java $compatTest/TestDataJava17.java \
@@ -44,8 +45,12 @@ if ! output=$("${bin}java" -cp $d8 com.android.tools.r8.D8 --min-api $minApi --l
 	exit 1
 fi
 echo "D8 converted kryo-$version.jar for Android API level $minApi without warnings."
-"${bin}java" -cp $d8 com.android.tools.r8.D8 --min-api $minApi --lib "$androidJar" --lib $kryo --output target/dex/test \
-	$(find target/classes -name '*.class') $(echo "$libraries" | tr ':' ' ') 2> target/d8-test.txt
+# The tests and libraries are not checked for D8 warnings.
+if ! output=$("${bin}java" -cp $d8 com.android.tools.r8.D8 --min-api $minApi --lib "$androidJar" --lib $kryo --output target/dex/test \
+	$(find target/classes -name '*.class') $(echo "$libraries" | tr ':' ' ') 2>&1); then
+	echo "$output"
+	exit 1
+fi
 if [ "$1" = "--dex-only" ]; then exit; fi
 
 "${bin}java" -cp "target/classes:$kryo" com.esotericsoftware.kryo.android.JvmData target/jvm-data.bin
@@ -53,7 +58,7 @@ if [ "$1" = "--dex-only" ]; then exit; fi
 	target/compat/jvm
 adb=$(command -v adb || echo "$sdk/platform-tools/adb")
 device=/data/local/tmp/kryo-android-test
-"$adb" shell "rm -rf $device && mkdir -p $device"
+"$adb" shell "rm -rf /data/local/tmp/kryo-android-test && mkdir -p /data/local/tmp/kryo-android-test"
 "$adb" push target/dex/kryo/classes.dex $device/kryo.dex > /dev/null
 "$adb" push target/dex/test/classes.dex $device/test.dex > /dev/null
 "$adb" push target/jvm-data.bin $device/ > /dev/null
