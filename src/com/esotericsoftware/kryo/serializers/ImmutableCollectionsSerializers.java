@@ -75,27 +75,6 @@ public final class ImmutableCollectionsSerializers {
 		kryo.register(type != null ? type : placeholder, serializer);
 	}
 
-	static private final class MissingListN {
-	}
-
-	static private final class MissingList12 {
-	}
-
-	static private final class MissingSubList {
-	}
-
-	static private final class MissingMapN {
-	}
-
-	static private final class MissingMap1 {
-	}
-
-	static private final class MissingSetN {
-	}
-
-	static private final class MissingSet12 {
-	}
-
 	/** Serializer for the immutable lists created by {@code List.of} and {@code Stream.toList}, which can contain null elements.
 	 * All list classes share one serializer. */
 	public static final class JdkImmutableListSerializer extends CollectionSerializer<List<Object>> {
@@ -263,4 +242,25 @@ public final class ImmutableCollectionsSerializers {
 		}
 	}
 
+	// Placeholders for missing classes, see register(Kryo, Serializer, Class, Class).
+	static private final class MissingListN {
+	}
+
+	static private final class MissingList12 {
+	}
+
+	static private final class MissingSubList {
+	}
+
+	static private final class MissingMapN {
+	}
+
+	static private final class MissingMap1 {
+	}
+
+	static private final class MissingSetN {
+	}
+
+	static private final class MissingSet12 {
+	}
 }
