@@ -464,11 +464,44 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	// https://github.com/EsotericSoftware/kryo/issues/699
 	@Test
 	void testDuplicateFieldNames () {
-		kryo.register(ExtendedTestClass.class, new CompatibleFieldSerializer(kryo, ExtendedTestClass.class));
+		// A subclass field with the name of a super class field: both are written and identified by their order, the subclass
+		// field first. Kryo 5 wrote the same data, but read both values into one field.
+		kryo.register(DuplicateFieldChild.class, new CompatibleFieldSerializer(kryo, DuplicateFieldChild.class));
+		DuplicateFieldChild object = new DuplicateFieldChild();
+		object.value = 7;
+		((DuplicateFieldParent)object).value = 8;
+		DuplicateFieldChild read = roundTrip(16, object);
+		assertEquals(7, read.value);
+		assertEquals(8, ((DuplicateFieldParent)read).value);
 
-		KryoException ex = assertThrows(KryoException.class, () -> kryo.writeObject(new Output(1024), new ExtendedTestClass()));
-		assertTrue(ex.getMessage().contains("setExtendedFieldNames"), ex.getMessage());
-		assertThrows(KryoException.class, () -> kryo.readObject(new Input(new byte[16]), ExtendedTestClass.class));
+		// Data with another field, so the fields are looked up by name instead of using the serializer's fields.
+		Kryo writer = new Kryo();
+		writer.register(DuplicateFieldChildExtra.class, new CompatibleFieldSerializer(writer, DuplicateFieldChildExtra.class), 100);
+		DuplicateFieldChildExtra extra = new DuplicateFieldChildExtra();
+		extra.value = 3;
+		((DuplicateFieldParent)extra).value = 4;
+		Output output = new Output(64);
+		writer.writeClassAndObject(output, extra);
+		kryo.register(DuplicateFieldChild.class, new CompatibleFieldSerializer(kryo, DuplicateFieldChild.class), 100);
+		read = (DuplicateFieldChild)kryo.readClassAndObject(new Input(output.toBytes()));
+		assertEquals(3, read.value);
+		assertEquals(4, ((DuplicateFieldParent)read).value);
+
+		// The other way: data without the extra field.
+		output = new Output(64);
+		kryo.writeClassAndObject(output, object);
+		DuplicateFieldChildExtra readExtra = (DuplicateFieldChildExtra)writer.readClassAndObject(new Input(output.toBytes()));
+		assertEquals(7, readExtra.value);
+		assertEquals(8, ((DuplicateFieldParent)readExtra).value);
+		assertEquals("extra", readExtra.extra);
+
+		// With extendedFieldNames, the fields are identified by their class.
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+		config.setExtendedFieldNames(true);
+		kryo.register(DuplicateFieldChild.class, new CompatibleFieldSerializer(kryo, DuplicateFieldChild.class, config));
+		read = roundTrip(57, object);
+		assertEquals(7, read.value);
+		assertEquals(8, ((DuplicateFieldParent)read).value);
 	}
 
 	@Test
@@ -1204,6 +1237,11 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 
 	public static class DuplicateFieldParent {
 		public int value = 1;
+	}
+
+	public static class DuplicateFieldChildExtra extends DuplicateFieldParent {
+		public int value = 2;
+		public String extra = "extra";
 	}
 
 	public static class DuplicateFieldChild extends DuplicateFieldParent {
