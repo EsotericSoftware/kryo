@@ -35,6 +35,7 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer;
 import com.esotericsoftware.kryo.util.HashMapReferenceResolver;
 import com.esotericsoftware.kryo.util.ListReferenceResolver;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
+import com.esotericsoftware.kryo.util.Null;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -43,8 +44,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -184,16 +183,28 @@ public final class Kryo5Compatibility {
 			}));
 		}
 
-		// Android has the immutable collections only since API level 30.
-		if (!isAndroid || isClassAvailable("java.util.ImmutableCollections")) {
+		// Android has the immutable collections only since API level 30. By name, because D8 replaces List.of and Map.of with
+		// unmodifiable collections below API level 30.
+		Class mapN = classForName("java.util.ImmutableCollections$MapN");
+		if (mapN != null) {
 			// Registered serializers of immutable maps, the default serializers are configured above.
-			Registration registration = kryo.getClassResolver().getRegistration(Map.of().getClass());
+			Registration registration = kryo.getClassResolver().getRegistration(mapN);
 			if (registration != null) ((MapSerializer)registration.getSerializer()).setWriteSameClassOnce(false);
+		}
+		Class listN = classForName("java.util.ImmutableCollections$ListN");
+		if (listN != null) {
 			// Kryo 5 didn't support null elements in immutable lists.
-			registration = kryo.getClassResolver().getRegistration(List.of().getClass());
-			Serializer listSerializer = registration != null ? registration.getSerializer()
-				: kryo.getDefaultSerializer(List.of().getClass());
+			Registration registration = kryo.getClassResolver().getRegistration(listN);
+			Serializer listSerializer = registration != null ? registration.getSerializer() : kryo.getDefaultSerializer(listN);
 			((CollectionSerializer)listSerializer).setElementsCanBeNull(false);
+		}
+	}
+
+	static private @Null Class classForName (String name) {
+		try {
+			return Class.forName(name);
+		} catch (ClassNotFoundException ex) {
+			return null;
 		}
 	}
 

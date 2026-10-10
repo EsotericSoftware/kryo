@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.android;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -162,6 +163,13 @@ public class AndroidTest {
 		test("VersionFieldSerializer", () -> {
 			Kryo kryo = kryo();
 			kryo.setDefaultSerializer(VersionFieldSerializer.class);
+			Pojo pojo = Pojo.create();
+			check(roundTrip(kryo, pojo).equals(pojo));
+		});
+
+		test("Kryo5Compatibility", () -> {
+			Kryo kryo = kryo();
+			Kryo5Compatibility.configure(kryo);
 			Pojo pojo = Pojo.create();
 			check(roundTrip(kryo, pojo).equals(pojo));
 		});
