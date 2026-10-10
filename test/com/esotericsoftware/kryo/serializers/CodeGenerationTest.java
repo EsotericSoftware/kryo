@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assumptions.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
@@ -213,6 +214,44 @@ class CodeGenerationTest extends KryoTestCase {
 		assertEquals(1, generateCalls[0]);
 		assertNull(failing.generated());
 		assertEquals(1, generateCalls[0]);
+	}
+
+	@Test
+	void testGeneratedAtFirstRead () {
+		// The first use can be a read, for FieldSerializer and its subclasses: the code is generated when the fields are read.
+		FieldSerializerFactory field = codeGeneration(), fieldCached = new FieldSerializerFactory();
+		fieldCached.getConfig().setCodeGeneration(false); // In case the system property enables it.
+		CompatibleFieldSerializerFactory compatible = compatible(true, false), compatibleCached = compatible(true, false);
+		compatible.getConfig().setCodeGeneration(true);
+		compatibleCached.getConfig().setCodeGeneration(false);
+		TaggedFieldSerializerFactory tagged = tagged(true, false), taggedCached = tagged(true, false);
+		tagged.getConfig().setCodeGeneration(true);
+		taggedCached.getConfig().setCodeGeneration(false);
+		SerializerFactory[] factories = {field, compatible, tagged}, cachedFactories = {fieldCached, compatibleCached, taggedCached};
+		Class[] types = {Nested.class, Nested.class, Tagged.class};
+		Tagged object = Tagged.create();
+		for (int i = 0; i < 3; i++) {
+			Kryo cachedFields = new Kryo();
+			cachedFields.setDefaultSerializer(cachedFactories[i]);
+			register(cachedFields, types[i]);
+			Object value = types[i] == Tagged.class ? object : object.nested;
+			byte[] bytes = write(cachedFields, value);
+
+			Kryo kryo = new Kryo();
+			kryo.setDefaultSerializer(factories[i]);
+			register(kryo, types[i]);
+			FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(types[i]);
+			assertNull(serializer.generated, serializer.getClass().getSimpleName());
+			assertEquals(value, read(kryo, bytes, types[i]));
+			assertNotNull(serializer.generated, serializer.getClass().getSimpleName());
+			assertArrayEquals(bytes, write(kryo, value));
+		}
+	}
+
+	/** Registers the type with the default serializer. Tagged also needs Nested, which has no tags. */
+	static private void register (Kryo kryo, Class type) {
+		kryo.register(type);
+		if (type == Tagged.class) kryo.register(Nested.class, new FieldSerializer(kryo, Nested.class));
 	}
 
 	@Test
