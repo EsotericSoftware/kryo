@@ -141,8 +141,10 @@ class AndroidSerializationCompat {
 					if (apiLevel < 34 && (name.equals("singleImmutableSet") || name.equals("set12") || name.equals("set2")
 						|| name.equals("emptyImmutableSet") || name.equals("set0") || name.equals("emptyImmutableMap")
 						|| name.equals("map0"))) continue;
-					if (apiLevel == 30 && (name.equals("emptyImmutableList") || name.equals("list0") || name.equals("singleImmutableList")
-						|| name.equals("list12") || name.equals("list2") || name.equals("subList"))) continue;
+					if (apiLevel == 30
+						&& (name.equals("emptyImmutableList") || name.equals("list0") || name.equals("singleImmutableList")
+							|| name.equals("list12") || name.equals("list2") || name.equals("subList")))
+						continue;
 				}
 				try {
 					Object actual = kryo.readClassAndObject(new Input(bytes)), expected = field.get(data.testData());
