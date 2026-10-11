@@ -19,7 +19,11 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.Registration;
 
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +47,23 @@ class ImmutableCollectionsSerializersTest extends KryoTestCase {
 		ImmutableCollectionsSerializers.registerSerializers(kryo);
 		kryo.register(HashMap.class);
 		kryo.register(TestClass.class);
+	}
+
+	// The registration IDs are the same on all platforms: the JDK classes in the order of Kryo 5, each registered as a placeholder
+	// where the platform doesn't have it. The classes only Android has share these IDs, see AndroidSerializationCompat.
+	@Test
+	void testRegistrationOrder () {
+		Kryo kryo = new Kryo();
+		int firstId = kryo.getNextRegistrationId();
+		ImmutableCollectionsSerializers.registerSerializers(kryo);
+		String[] names = {"ListN", "List12", "SubList", "MapN", "Map1", "SetN", "Set12"};
+		for (int i = 0; i < names.length; i++) {
+			Registration registration = kryo.getRegistration(firstId + i);
+			String name = registration.getType().getSimpleName();
+			assertTrue(name.equals(names[i]) || name.equals("Missing" + names[i]), firstId + i + ": " + name);
+			assertTrue(registration.getSerializer().getClass().getSimpleName().startsWith("JdkImmutable"), name);
+		}
+		assertEquals(firstId + names.length, kryo.getNextRegistrationId());
 	}
 
 	@Test

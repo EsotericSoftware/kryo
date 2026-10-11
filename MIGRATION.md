@@ -175,6 +175,8 @@ The serializer for immutable lists created by `List.of` and `Stream.toList` supp
 ((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(false);
 ```
 
+`ImmutableCollectionsSerializers.registerSerializers` registers the same IDs on all platforms: on Android, the classes it lacks are registered with placeholders, and the classes only Android has, eg `Set0` before API level 34, share the ID of the JDK class they replace, so registered immutable collections can be read across the platforms. Kryo 5 skipped the missing classes, so the IDs differed between Android and the JVM. Written with their class names, some immutable collections can't be read across the platforms, see [Android](README.md#android).
+
 ### Charsets and time zones
 
 An unregistered charset or time zone is written with the class name `java.nio.charset.Charset` or `java.util.TimeZone` instead of its implementation class, eg `sun.nio.cs.UTF_8` or `sun.util.calendar.ZoneInfo`, which differ between Java vendors and Android. With registration required, register `Charset.class` and `TimeZone.class`. Kryo 5 reads these names too, and Kryo 6 still reads the implementation classes written by Kryo 5 where they exist.
