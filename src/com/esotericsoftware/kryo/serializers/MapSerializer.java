@@ -148,23 +148,26 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		boolean hasNull = false, sameKeyClass = keySerializer == null, sameValueClass = valueSerializer == null;
 		Class keyClass = null, valueClass = null;
 		if (writeSameClassOnce) {
-			for (Object object : map.entrySet()) {
-				Entry entry = (Entry)object;
-				Object key = entry.getKey(), value = entry.getValue();
-				if (key == null || value == null) hasNull = true;
-				if (sameKeyClass) {
-					if (key == null || keyClass != null && keyClass != key.getClass())
-						sameKeyClass = false;
-					else
-						keyClass = key.getClass();
+			// Nothing to find if the serializers are known and nulls are excluded.
+			if (keysCanBeNull || valuesCanBeNull || sameKeyClass || sameValueClass) {
+				for (Object object : map.entrySet()) {
+					Entry entry = (Entry)object;
+					Object key = entry.getKey(), value = entry.getValue();
+					if (key == null || value == null) hasNull = true;
+					if (sameKeyClass) {
+						if (key == null || keyClass != null && keyClass != key.getClass())
+							sameKeyClass = false;
+						else
+							keyClass = key.getClass();
+					}
+					if (sameValueClass) {
+						if (value == null || valueClass != null && valueClass != value.getClass())
+							sameValueClass = false;
+						else
+							valueClass = value.getClass();
+					}
+					if (hasNull && !sameKeyClass && !sameValueClass) break; // Nothing more to find.
 				}
-				if (sameValueClass) {
-					if (value == null || valueClass != null && valueClass != value.getClass())
-						sameValueClass = false;
-					else
-						valueClass = value.getClass();
-				}
-				if (hasNull && !sameKeyClass && !sameValueClass) break; // Nothing more to find.
 			}
 			output.writeVarIntFlag(hasNull, size + 1, true);
 			if (!hasNull) keysCanBeNull = valuesCanBeNull = false;
