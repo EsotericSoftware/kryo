@@ -194,6 +194,8 @@ final class CodeGeneration {
 			GeneratedFields generated = (GeneratedFields)((MethodHandle)constructor).invokeExact(serializer, fields);
 			generated.writesClasses = writeClasses;
 			return generated;
+		} catch (VirtualMachineError ex) {
+			throw ex;
 		} catch (Throwable t) {
 			throw new KryoException("Unable to create the generated fields for: " + className(serializer.type), t);
 		}
