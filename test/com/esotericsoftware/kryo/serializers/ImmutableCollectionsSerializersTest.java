@@ -23,8 +23,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.Registration;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +75,54 @@ class ImmutableCollectionsSerializersTest extends KryoTestCase {
 		roundTrip(7, new TestClass(List.of(), Map.of(), Set.of()));
 		roundTrip(11, new TestClass(List.of(1), Map.of(1, 2), Set.of(1)));
 		roundTrip(17, new TestClass(List.of(1, 2, 3), Map.of(1, 2, 3, 4), Set.of(1, 2, 3)));
+	}
+
+	// The same immutable collection twice: the reference resolves to the immutable collection, not to the mutable collection it is
+	// read with.
+	@Test
+	void testReferences () {
+		kryo.setReferences(true);
+		kryo.register(Object[].class);
+		for (Object collection : new Object[] {List.of(1, 2), List.of(1, 2, 3).subList(0, 2), Set.of(1, 2), Map.of(1, 2)}) {
+			Output output = new Output(64);
+			kryo.writeClassAndObject(output, new Object[] {collection, collection});
+			Object[] read = (Object[])kryo.readClassAndObject(new Input(output.toBytes()));
+			assertEquals(collection, read[0]);
+			assertSame(read[0], read[1]);
+			Object[] copy = kryo.copy(new Object[] {collection, collection});
+			assertEquals(collection, copy[0]);
+			assertSame(copy[0], copy[1]);
+		}
+	}
+
+	// An element that refers to its immutable collection: the collection doesn't exist yet when the element is read or copied, so
+	// the element gets the mutable collection the elements are read into, or a copy, which is equal. Later references resolve to
+	// the immutable collection, see testReferences.
+	@Test
+	void testElementReferringToCollection () {
+		kryo.setReferences(true);
+		kryo.register(Node.class);
+		Node node = new Node();
+		for (Object collection : new Object[] {List.of(node), Set.of(node), Map.of(1, node)}) {
+			node.collection = collection;
+			Output output = new Output(64);
+			kryo.writeClassAndObject(output, collection);
+			Object read = kryo.readClassAndObject(new Input(output.toBytes()));
+			assertEquals(collection.getClass(), read.getClass());
+			assertEquals(read, element(read).collection);
+			Object copy = kryo.copy(collection);
+			assertEquals(collection.getClass(), copy.getClass());
+			assertEquals(copy, element(copy).collection);
+		}
+	}
+
+	private static Node element (Object collection) {
+		Collection elements = collection instanceof Map ? ((Map)collection).values() : (Collection)collection;
+		return (Node)elements.iterator().next();
+	}
+
+	public static class Node {
+		public Object collection;
 	}
 
 	@Test
