@@ -283,6 +283,13 @@ class GenericsTest extends KryoTestCase {
 		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderNode());
 	}
 
+	// The type variables of a nested object of the same class are unknown, they must not resolve to those of the enclosing object.
+	@Test
+	void testNestedObjectOfSameClass () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderNestedPair());
+	}
+
 	// A type argument that can't be resolved must not shift the following type arguments.
 	@Test
 	void testUnresolvedTypeArgument () {
@@ -943,6 +950,14 @@ class GenericsTest extends KryoTestCase {
 
 			public boolean equals (Object o) {
 				return o instanceof Pair p && Objects.equals(x, p.x) && Objects.equals(y, p.y);
+			}
+		}
+
+		public static class HolderNestedPair {
+			public Pair<Pair<String, String>, Integer> pair = new Pair<>(new Pair<>("a", "b"), 1);
+
+			public boolean equals (Object o) {
+				return o instanceof HolderNestedPair h && Objects.equals(pair, h.pair);
 			}
 		}
 

@@ -124,6 +124,17 @@ public final class DefaultGenerics implements Generics {
 	@Override
 	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType type) {
 		int startSize = argumentsSize;
+		if (type == null) {
+			// The type arguments are unknown. The type variables hide those of an enclosing object of the same class, if any.
+			if (startSize == 0) return 0;
+			TypeVariable[] params = hierarchy.parameters;
+			ensureCapacity(params.length);
+			for (TypeVariable param : params) {
+				arguments[argumentsSize++] = param;
+				arguments[argumentsSize++] = null;
+			}
+			return argumentsSize - startSize;
+		}
 		Class declared = (Class)type.type; // Always a class, because the type has type arguments.
 		GenericType[] args = type.arguments;
 
@@ -216,7 +227,7 @@ public final class DefaultGenerics implements Generics {
 			if (i != 0) buffer.append(", ");
 			buffer.append(((TypeVariable)arguments[i]).getName());
 			buffer.append("=");
-			buffer.append(((Class)arguments[i + 1]).getSimpleName());
+			buffer.append(arguments[i + 1] == null ? "?" : ((Class)arguments[i + 1]).getSimpleName());
 		}
 		return buffer.toString();
 	}
