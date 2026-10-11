@@ -28,11 +28,15 @@ import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.SerializerFactory.BaseSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.CompatibleFieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSerializerConfig;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
+import com.esotericsoftware.kryo.unsafe.UnsafeInput;
+import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
 import java.io.ByteArrayInputStream;
@@ -58,6 +62,30 @@ class ChunkedEncodingTest {
 		Entity read = compatibleKryo(false, false, false).readObject(new Input(bytes), Entity.class);
 		assertEquals(10, read.c.a);
 		assertEquals(15, read.d.a);
+	}
+
+	@Test
+	void testScopeBufferOfParentKind () {
+		// An Unsafe stream writes fixed length values in the native byte order, which differs from Output on big-endian platforms.
+		assertSame(Output.class, DefaultChunkedEncoding.newBuffer(new Output(16)).getClass());
+		assertSame(Output.class, DefaultChunkedEncoding.newBuffer(new ByteBufferOutput(16)).getClass());
+		assertSame(UnsafeOutput.class, DefaultChunkedEncoding.newBuffer(new UnsafeOutput(16)).getClass());
+		assertSame(UnsafeOutput.class, DefaultChunkedEncoding.newBuffer(new UnsafeByteBufferOutput(16)).getClass());
+
+		// The buffer is replaced when the same Kryo writes to a stream of another kind. The int field is written with fixed length,
+		// which has the byte order of the stream, unlike a varint.
+		Kryo kryo = compatibleKryo(true, false, false);
+		((FieldSerializer)kryo.getSerializer(Entity3.class)).getField("a").setVariableLengthEncoding(false);
+		Entity entity = entity(false);
+		for (Output output : new Output[] {new UnsafeOutput(1024), new Output(1024), new UnsafeByteBufferOutput(1024), new Output(1024)}) {
+			kryo.writeObject(output, entity);
+			Input input = output instanceof UnsafeOutput || output instanceof UnsafeByteBufferOutput ? new UnsafeInput(output.toBytes())
+				: new Input(output.toBytes());
+			Entity read = kryo.readObject(input, Entity.class);
+			assertEquals(10, read.c.a);
+			assertEquals("s10", read.c.s);
+			assertEquals(15, read.d.a);
+		}
 	}
 
 	@Test

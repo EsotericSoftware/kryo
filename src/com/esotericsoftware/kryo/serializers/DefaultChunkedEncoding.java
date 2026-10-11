@@ -28,6 +28,8 @@ import com.esotericsoftware.kryo.ReferenceResolver;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
+import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -119,8 +121,8 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		WriteScope scope = writeScopes.get(writeDepth++);
 		scope.parent = output;
 		scope.nested = 0;
-		if (scope.buffer == null)
-			scope.buffer = new Output(256, -1);
+		if (scope.buffer == null || isUnsafe(scope.buffer) != isUnsafe(output))
+			scope.buffer = newBuffer(output);
 		else
 			scope.buffer.reset();
 		// The object data is read from the input directly, which has the encoding of the output.
@@ -365,6 +367,17 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 			for (int i = read; i < objects; i++)
 				referenceResolver.nextReadId(Object.class);
 		}
+	}
+
+	/** Returns a buffer of the kind of the parent output: an Unsafe stream writes fixed length values in the native byte order, a
+	 * plain Output in little-endian, and the object data is read from the parent's input, so the buffer must write the same byte
+	 * order as the parent. */
+	static Output newBuffer (Output parent) {
+		return isUnsafe(parent) ? new UnsafeOutput(256, -1) : new Output(256, -1);
+	}
+
+	static private boolean isUnsafe (Output output) {
+		return output instanceof UnsafeOutput || output instanceof UnsafeByteBufferOutput;
 	}
 
 	static private class WriteScope {
