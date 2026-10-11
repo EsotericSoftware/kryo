@@ -208,6 +208,11 @@ class MapSerializerTest extends KryoTestCase {
 		roundTrip(15, map);
 		map.put(null, 3);
 		roundTrip(21, map);
+		// A null key doesn't prevent writing the value class once.
+		LinkedHashMap nullKey = new LinkedHashMap();
+		nullKey.put(null, 1);
+		nullKey.put("a", 2);
+		roundTrip(10, nullKey);
 		LinkedHashMap nullValues = new LinkedHashMap();
 		nullValues.put("a", null);
 		roundTrip(7, nullValues);

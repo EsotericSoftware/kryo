@@ -141,26 +141,36 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		}
 
 		// The size has a flag for whether the map contains a null key or value. If not, keys and values with a known serializer
-		// are written without a null marker, like the elements of CollectionSerializer.
+		// are written without a null marker, like the elements of CollectionSerializer. The same pass over the entries finds
+		// whether all keys or values have the same class, which is written once if the key or value serializer is unknown.
 		boolean keysCanBeNull = this.keysCanBeNull, valuesCanBeNull = this.valuesCanBeNull;
+		Serializer keySerializer = this.keySerializer, valueSerializer = this.valueSerializer;
+		boolean hasNull = false, sameKeyClass = keySerializer == null, sameValueClass = valueSerializer == null;
+		Class keyClass = null, valueClass = null;
 		if (writeSameClassOnce) {
-			boolean hasNull = false;
-			if (keysCanBeNull || valuesCanBeNull) {
-				for (Object object : map.entrySet()) {
-					Entry entry = (Entry)object;
-					if (entry.getKey() == null || entry.getValue() == null) {
-						hasNull = true;
-						break;
-					}
+			for (Object object : map.entrySet()) {
+				Entry entry = (Entry)object;
+				Object key = entry.getKey(), value = entry.getValue();
+				if (key == null || value == null) hasNull = true;
+				if (sameKeyClass) {
+					if (key == null || keyClass != null && keyClass != key.getClass())
+						sameKeyClass = false;
+					else
+						keyClass = key.getClass();
 				}
+				if (sameValueClass) {
+					if (value == null || valueClass != null && valueClass != value.getClass())
+						sameValueClass = false;
+					else
+						valueClass = value.getClass();
+				}
+				if (hasNull && !sameKeyClass && !sameValueClass) break; // Nothing more to find.
 			}
 			output.writeVarIntFlag(hasNull, size + 1, true);
 			if (!hasNull) keysCanBeNull = valuesCanBeNull = false;
 		} else
 			output.writeVarInt(size + 1, true);
 		writeHeader(kryo, output, map);
-
-		Serializer keySerializer = this.keySerializer, valueSerializer = this.valueSerializer;
 
 		GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes(Map.class);
 		if (genericTypes != null) {
@@ -176,16 +186,14 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 
 		// If a serializer is unknown, write the class once if all keys or values are not null and have the same class.
 		if (keySerializer == null && writeSameClassOnce) {
-			Class keyClass = sameClass(map.keySet());
-			Registration registration = kryo.writeClass(output, keyClass);
+			Registration registration = kryo.writeClass(output, sameKeyClass ? keyClass : null);
 			if (registration != null) {
 				keySerializer = registration.getSerializer();
 				keysCanBeNull = false;
 			}
 		}
 		if (valueSerializer == null && writeSameClassOnce) {
-			Class valueClass = sameClass(map.values());
-			Registration registration = kryo.writeClass(output, valueClass);
+			Registration registration = kryo.writeClass(output, sameValueClass ? valueClass : null);
 			if (registration != null) {
 				valueSerializer = registration.getSerializer();
 				valuesCanBeNull = false;
@@ -219,18 +227,6 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	/** Can be overidden to write data needed for {@link #create(Kryo, Input, Class, int)}. The default implementation does
 	 * nothing. */
 	protected void writeHeader (Kryo kryo, Output output, T map) {
-	}
-
-	/** Returns the class of all objects, or null if there is a null object or the objects have different classes. */
-	private Class sameClass (Iterable objects) {
-		Class type = null;
-		for (Object object : objects) {
-			if (object == null) return null;
-			if (type == null)
-				type = object.getClass();
-			else if (object.getClass() != type) return null;
-		}
-		return type;
 	}
 
 	/** Used by {@link #read(Kryo, Input, Class)} to create the new object. This can be overridden to customize object creation, eg
