@@ -289,6 +289,7 @@ final class CodeGeneration {
 		constructor(cb, thisClass);
 		// public void write (Output output, Object object) and write (Output output, Object object, ChunkedEncoding chunks)
 		// public void read (Input input, Object object) and read (Input input, Object object, ChunkedEncoding chunks)
+		// A record is read with readRecord and copied with copyRecord, its fields can't be set.
 		for (boolean chunked : new boolean[] {false, true}) {
 			String writeType = chunked ? descriptor(void.class, Output.class, Object.class, ChunkedEncoding.class)
 				: descriptor(void.class, Output.class, Object.class);
@@ -296,11 +297,11 @@ final class CodeGeneration {
 				: descriptor(void.class, Input.class, Object.class);
 			batches(cb, thisClass, "write", writeType, n, chunked,
 				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).write(from, to));
-			batches(cb, thisClass, "read", readType, n, chunked,
+			if (!record) batches(cb, thisClass, "read", readType, n, chunked,
 				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).read(from, to));
 		}
 		// public void copy (Object original, Object copy)
-		batches(cb, thisClass, "copy", descriptor(void.class, Object.class, Object.class), n, false,
+		if (!record) batches(cb, thisClass, "copy", descriptor(void.class, Object.class, Object.class), n, false,
 			(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, false).copy(from, to));
 		if (record) {
 			// public Object readRecord (Input input) and copyRecord (Object original)

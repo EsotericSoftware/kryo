@@ -29,7 +29,6 @@ import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.ObjectMap;
-import com.esotericsoftware.kryo.util.Util;
 
 import java.util.Arrays;
 
@@ -193,14 +192,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				long end = chunked ? chunks.beginField(fieldInput) : 0;
 
 				if (readUnknownFieldData) {
-					Registration registration;
-					try {
-						registration = kryo.readClass(fieldInput);
-					} catch (KryoException ex) {
-						String message = "Unable to read unknown data (unknown type). (" + getType().getName() + "#" + cachedField
-							+ ")";
-						if (!chunked) throw new KryoException(message, ex);
-						if (DEBUG) debug("kryo", message, ex);
+					Registration registration = GeneratedFields.readClass(this, fieldInput, cachedField,
+						cachedField == null ? "unknown" : cachedField.name, chunked);
+					if (registration == GeneratedFields.skip) {
 						chunks.endField(fieldInput, end);
 						continue;
 					}
@@ -224,22 +218,11 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 							kryo.readObject(fieldInput, valueClass);
 						} catch (KryoException ex) {
 							String message = "Unable to read unknown data, type: " + className(valueClass) + " (" + getType().getName()
-								+ "#" + cachedField + ")";
+								+ ")";
 							if (!chunked) throw new KryoException(message, ex);
 							if (DEBUG) debug("kryo", message, ex);
 						}
 						if (chunked) chunks.endField(fieldInput, end);
-						continue;
-					}
-
-					// Ensure the type in the data is compatible with the field type.
-					Class fieldType = GeneratedFields.readType(cachedField);
-					if (!Util.isAssignableTo(valueClass, fieldType)) {
-						String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
-							+ className(fieldType) + " (" + getType().getName() + "#" + cachedField + ")";
-						if (!chunked) throw new KryoException(message);
-						if (DEBUG) debug("kryo", message);
-						chunks.endField(fieldInput, end);
 						continue;
 					}
 

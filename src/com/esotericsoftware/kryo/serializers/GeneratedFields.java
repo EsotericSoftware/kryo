@@ -42,14 +42,21 @@ abstract class GeneratedFields {
 	/** Writes all fields of the object, each in a chunk. */
 	abstract public void write (Output output, Object object, ChunkedEncoding chunks);
 
-	/** Reads all fields into the object. */
-	abstract public void read (Input input, Object object);
+	/** Reads all fields into the object. Not for records, see {@link #readRecord(Input)}. */
+	public void read (Input input, Object object) {
+		throw new UnsupportedOperationException();
+	}
 
-	/** Reads all fields into the object, each from a chunk. */
-	abstract public void read (Input input, Object object, ChunkedEncoding chunks);
+	/** Reads all fields into the object, each from a chunk. Not for records. */
+	public void read (Input input, Object object, ChunkedEncoding chunks) {
+		throw new UnsupportedOperationException();
+	}
 
-	/** Copies all fields of the original to the copy, the values of object fields with {@link Kryo#copy(Object)}. */
-	abstract public void copy (Object original, Object copy);
+	/** Copies all fields of the original to the copy, the values of object fields with {@link Kryo#copy(Object)}. Not for records,
+	 * see {@link #copyRecord(Object)}. */
+	public void copy (Object original, Object copy) {
+		throw new UnsupportedOperationException();
+	}
 
 	/** Returns a new record with the component values read from the input. Only for records, which set their fields with their
 	 * canonical constructor. */
@@ -92,7 +99,7 @@ abstract class GeneratedFields {
 	 * @return null if the class was null. */
 	static String readStringWithClass (FieldSerializer serializer, Input input, CachedField field, Object object,
 		boolean chunked) {
-		Registration registration = readClass(serializer, input, field, chunked);
+		Registration registration = readClass(serializer, input, field, field.name, chunked);
 		if (registration == null) return null;
 		if (registration == skip) return (String)currentValue(field, object);
 		return input.readString();
@@ -159,30 +166,31 @@ abstract class GeneratedFields {
 	 * @param chunked If true, the value is skipped if its class can't be read.
 	 * @return false if the class was null or the value is skipped, then the field keeps its value. */
 	static boolean readPrimitiveClass (FieldSerializer serializer, Input input, CachedField field, boolean chunked) {
-		Registration registration = readClass(serializer, input, field, chunked);
+		Registration registration = readClass(serializer, input, field, field.name, chunked);
 		return registration != null && registration != skip;
 	}
 
-	/** Reads the class of a field value and ensures it is compatible with the field type, like CompatibleFieldSerializer with
-	 * unknown field data.
+	/** Reads the class of a field value and, if the field is known, ensures it is compatible with the field type. Used by
+	 * CompatibleFieldSerializer and TaggedFieldSerializer with unknown field data and by the generated code.
+	 * @param field May be null if the field is unknown.
+	 * @param name The field in messages.
 	 * @param chunked If true, {@link #skip} is returned instead of throwing an exception, the caller's endField skips the data.
 	 * @return null if the class was null. */
-	static Registration readClass (FieldSerializer serializer, Input input, CachedField field, boolean chunked) {
+	static Registration readClass (FieldSerializer serializer, Input input, CachedField field, String name, boolean chunked) {
 		Registration registration;
 		try {
 			registration = serializer.kryo.readClass(input);
 		} catch (KryoException ex) {
-			String message = "Unable to read unknown data (unknown type). (" + serializer.type.getName() + "#" + field + ")";
+			String message = "Unable to read unknown data (unknown type). (" + serializer.type.getName() + "#" + name + ")";
 			if (!chunked) throw new KryoException(message, ex);
 			if (DEBUG) debug("kryo", message, ex);
 			return skip;
 		}
-		if (registration == null) return null;
+		if (registration == null || field == null) return registration;
 		Class valueClass = registration.getType(), fieldType = readType(field);
 		if (!isAssignableTo(valueClass, fieldType)) {
 			String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
-				+ className(fieldType)
-				+ " (" + serializer.type.getName() + "#" + field + ")";
+				+ className(fieldType) + " (" + serializer.type.getName() + "#" + name + ")";
 			if (!chunked) throw new KryoException(message);
 			if (DEBUG) debug("kryo", message);
 			return skip;
