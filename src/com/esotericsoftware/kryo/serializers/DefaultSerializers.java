@@ -1474,8 +1474,8 @@ public class DefaultSerializers {
 	/** Serializer for the map entries of the JDK: {@code Map.entry}, {@link AbstractMap.SimpleEntry} and
 	 * {@link AbstractMap.SimpleImmutableEntry}. Writes the key and the value with their classes, like FieldSerializer does, which
 	 * can't access their fields on Java 16+ without {@code --add-opens java.base/java.util=ALL-UNNAMED}. With references, the
-	 * value of a mutable entry can reference the entry. The key and the value of an immutable entry can't, because the entry is
-	 * created after they are read. */
+	 * value of a mutable entry can reference the entry, but its key can't, because the entry is created with the key. The key and
+	 * the value of an immutable entry can't, because the entry is created after they are read. */
 	public static class MapEntrySerializer extends Serializer<Entry> {
 		private final BiFunction<Object, Object, Entry> factory;
 		private final boolean mutable;
