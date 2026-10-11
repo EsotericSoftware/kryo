@@ -221,7 +221,7 @@ public class Kryo {
 	private int copyDepth;
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
-	private Object needsCopyReference;
+	private Object needsCopyReference, copyReferenced;
 	private Generics generics = new DefaultGenerics(this);
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and references disabled. */
@@ -990,6 +990,7 @@ public class Kryo {
 				if (object == null) throw new IllegalArgumentException("object cannot be null.");
 				originalToCopy.put(needsCopyReference, object);
 				needsCopyReference = null;
+				copyReferenced = object;
 			}
 		} else if (references && object != null) {
 			int id = readReferenceIds.pop();
@@ -1008,11 +1009,11 @@ public class Kryo {
 		else if (id != NO_REF) referenceResolver.setReadObject(id, object);
 	}
 
-	/** Maps the original to the copy a serializer returned, also if the serializer referenced another copy, eg a mutable
-	 * collection it then copied to an immutable one. */
+	/** Maps the original to the copy a serializer returned, unless the serializer referenced that copy: if it referenced another
+	 * copy, eg a mutable collection it then copied to an immutable one, the returned copy replaces it. */
 	private void referenceCopy (Object original, Object copy) {
+		if (copyReferences && copyReferenced != copy) originalToCopy.put(original, copy);
 		needsCopyReference = null;
-		if (copyReferences) originalToCopy.put(original, copy);
 	}
 
 	/** Resets object graph state: unregistered class names, references to previously serialized or deserialized objects, the
@@ -1048,8 +1049,9 @@ public class Kryo {
 			if (existingCopy != null) return (T)existingCopy;
 
 			// Nested copies must not replace the object of an outer copy that the serializer has not referenced yet.
-			Object outerNeedsCopyReference = needsCopyReference;
+			Object outerNeedsCopyReference = needsCopyReference, outerCopyReferenced = copyReferenced;
 			if (copyReferences) needsCopyReference = object;
+			copyReferenced = null;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
@@ -1057,6 +1059,7 @@ public class Kryo {
 				copy = getSerializer(object.getClass()).copy(this, object);
 			referenceCopy(object, copy);
 			needsCopyReference = outerNeedsCopyReference;
+			copyReferenced = outerCopyReferenced;
 			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy, -1);
 			return (T)copy;
 		} finally {
@@ -1077,8 +1080,9 @@ public class Kryo {
 			if (existingCopy != null) return (T)existingCopy;
 
 			// Nested copies must not replace the object of an outer copy that the serializer has not referenced yet.
-			Object outerNeedsCopyReference = needsCopyReference;
+			Object outerNeedsCopyReference = needsCopyReference, outerCopyReferenced = copyReferenced;
 			if (copyReferences) needsCopyReference = object;
+			copyReferenced = null;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
@@ -1086,6 +1090,7 @@ public class Kryo {
 				copy = serializer.copy(this, object);
 			referenceCopy(object, copy);
 			needsCopyReference = outerNeedsCopyReference;
+			copyReferenced = outerCopyReferenced;
 			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy, -1);
 			return (T)copy;
 		} finally {
@@ -1106,8 +1111,9 @@ public class Kryo {
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
-			Object outerNeedsCopyReference = needsCopyReference; // See copy(Object).
+			Object outerNeedsCopyReference = needsCopyReference, outerCopyReferenced = copyReferenced; // See copy(Object).
 			if (copyReferences) needsCopyReference = object;
+			copyReferenced = null;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
@@ -1115,6 +1121,7 @@ public class Kryo {
 				copy = getSerializer(object.getClass()).copy(this, object);
 			referenceCopy(object, copy);
 			needsCopyReference = outerNeedsCopyReference;
+			copyReferenced = outerCopyReferenced;
 			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy, -1);
 			return (T)copy;
 		} finally {
@@ -1136,8 +1143,9 @@ public class Kryo {
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
-			Object outerNeedsCopyReference = needsCopyReference; // See copy(Object).
+			Object outerNeedsCopyReference = needsCopyReference, outerCopyReferenced = copyReferenced; // See copy(Object).
 			if (copyReferences) needsCopyReference = object;
+			copyReferenced = null;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
@@ -1145,6 +1153,7 @@ public class Kryo {
 				copy = serializer.copy(this, object);
 			referenceCopy(object, copy);
 			needsCopyReference = outerNeedsCopyReference;
+			copyReferenced = outerCopyReferenced;
 			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy, -1);
 			return (T)copy;
 		} finally {
