@@ -180,7 +180,7 @@ The serializer for immutable lists created by `List.of` and `Stream.toList` supp
 
 ### Enum sets, charsets and time zones
 
-An unregistered enum set, charset or time zone is written with the class name `java.util.EnumSet`, `java.nio.charset.Charset` or `java.util.TimeZone` instead of its implementation class, eg `java.util.RegularEnumSet`, `sun.nio.cs.UTF_8` or `sun.util.calendar.ZoneInfo`, which differ between Java vendors and Android. With registration required, register `EnumSet.class`, `Charset.class` and `TimeZone.class`. Kryo 5 reads these names too, and Kryo 6 still reads the implementation classes written by Kryo 5 where they exist. A `Class` value of an implementation class is read as `EnumSet`, `Charset` or `TimeZone`, registered or not, like in Kryo 5 for a registered `EnumSet`.
+An unregistered enum set, charset or time zone is written with the class name `java.util.EnumSet`, `java.nio.charset.Charset` or `java.util.TimeZone` instead of its implementation class, eg `java.util.RegularEnumSet`, `sun.nio.cs.UTF_8` or `sun.util.calendar.ZoneInfo`, which differ between Java vendors and Android. With registration required, register `EnumSet.class`, `Charset.class` and `TimeZone.class`. Kryo 5 reads these names too, and Kryo 6 still reads the implementation classes written by Kryo 5 where they exist. A `Class` value of an unregistered implementation class is read as `EnumSet`, `Charset` or `TimeZone`, whether the base class is registered explicitly or implicitly, like in Kryo 5 for a registered `EnumSet`. An implementation class that is registered itself keeps its registration.
 
 ### Locales with a script
 

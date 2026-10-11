@@ -575,9 +575,10 @@ public class Kryo {
 	 * {@link #setAllowedUnregisteredClasses(Predicate)} allows the class, it is automatically registered using the
 	 * {@link Kryo#addDefaultSerializer(Class, Class) default serializer}.
 	 * <p>
-	 * An unregistered subclass of {@link Charset} or {@link TimeZone} uses the registration of Charset or TimeZone, because the
-	 * implementation classes differ between Java vendors and Android. An EnumSet uses the registration of EnumSet, if it is
-	 * registered.
+	 * An unregistered subclass of {@link EnumSet}, {@link Charset} or {@link TimeZone} uses the registration of EnumSet, Charset
+	 * or TimeZone, which is registered automatically under the same conditions, because the implementation classes differ between
+	 * Java vendors and Android. Likewise, an enum constant with a body uses the registration of its enum. A {@code Class} value of
+	 * such a class is read as the base class.
 	 * @throws IllegalArgumentException if the class is not registered, {@link Kryo#setRegistrationRequired(boolean)} is true and
 	 *            the class is not allowed.
 	 * @see ClassResolver#getRegistration(Class) */
