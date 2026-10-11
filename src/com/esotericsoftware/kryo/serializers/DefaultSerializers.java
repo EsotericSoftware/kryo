@@ -1001,12 +1001,17 @@ public class DefaultSerializers {
 		public void write (Kryo kryo, Output output, ByteBuffer buffer) {
 			output.writeByte((buffer.isDirect() ? DIRECT : 0) | (buffer.isReadOnly() ? READ_ONLY : 0)
 				| (buffer.order() == ByteOrder.LITTLE_ENDIAN ? LITTLE_ENDIAN : 0));
+			int limit = buffer.limit();
 			output.writeVarInt(buffer.capacity(), true);
-			output.writeVarInt(buffer.limit(), true);
+			output.writeVarInt(limit, true);
 			output.writeVarInt(buffer.position(), true);
-			byte[] bytes = new byte[buffer.limit()];
-			buffer.duplicate().position(0).get(bytes);
-			output.writeBytes(bytes);
+			if (buffer.hasArray())
+				output.writeBytes(buffer.array(), buffer.arrayOffset(), limit);
+			else {
+				byte[] bytes = new byte[limit];
+				buffer.duplicate().position(0).get(bytes);
+				output.writeBytes(bytes);
+			}
 		}
 
 		public ByteBuffer read (Kryo kryo, Input input, Class<? extends ByteBuffer> type) {
@@ -1016,7 +1021,11 @@ public class DefaultSerializers {
 				throw new KryoException(
 					"Invalid ByteBuffer, position: " + position + ", limit: " + limit + ", capacity: " + capacity);
 			ByteBuffer buffer = (flags & DIRECT) != 0 ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
-			buffer.put(input.readBytes(limit)).limit(limit).position(position);
+			if (buffer.hasArray())
+				input.readBytes(buffer.array(), 0, limit);
+			else
+				buffer.put(input.readBytes(limit));
+			buffer.limit(limit).position(position);
 			if ((flags & READ_ONLY) != 0) buffer = buffer.asReadOnlyBuffer();
 			return buffer.order((flags & LITTLE_ENDIAN) != 0 ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
 		}
