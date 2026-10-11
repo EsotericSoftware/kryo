@@ -29,9 +29,7 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.TimeZone;
 
 /** Resolves classes by ID or by fully qualified class name.
  * @author Nathan Sweet */
@@ -131,10 +129,10 @@ public class DefaultClassResolver implements ClassResolver {
 
 	protected void writeName (Output output, Class type, Registration registration) {
 		output.writeByte(1); // NAME + 2
-		// An enum constant with a body is written as its enum, so the name and its ID don't depend on the bodies. A charset or time
-		// zone is written as Charset or TimeZone, because the implementation classes differ, see Kryo#getRegistration(Class).
-		Class registeredType = registration.getType();
-		if (registeredType.isEnum() || registeredType == Charset.class || registeredType == TimeZone.class) type = registeredType;
+		// The name of the registration's type is written, which can differ from the class: an enum constant with a body is written
+		// as its enum, so the name doesn't depend on the bodies, and a charset, time zone or enum set as Charset, TimeZone or
+		// EnumSet, because their implementation classes differ between Java vendors and Android, see Kryo#getRegistration(Class).
+		type = registration.getType();
 		if (classToNameId != null) {
 			int nameId = classToNameId.get(type, -1);
 			if (nameId != -1) {
