@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -59,6 +60,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -718,6 +720,80 @@ class DefaultSerializersTest extends KryoTestCase {
 	static class ArrayBlockingQueueSubclass extends ArrayBlockingQueue<Integer> {
 		public ArrayBlockingQueueSubclass (int capacity) {
 			super(capacity);
+		}
+	}
+
+	// A subclass without a constructor for the comparator or capacity is created with kryo.newInstance, eg with its no-arg
+	// constructor, like a subclass of any other collection.
+	@Test
+	void testSubclassWithoutConstructorArguments () {
+		kryo.register(Collections.reverseOrder().getClass());
+		for (Class type : new Class[] {FixedTreeSet.class, FixedSkipListSet.class, FixedPriorityQueue.class,
+			FixedPriorityBlockingQueue.class, FixedArrayBlockingQueue.class, FixedBlockingQueue.class, FixedBlockingDeque.class})
+			kryo.register(type);
+
+		// The comparator of the no-arg constructor is kept.
+		for (Collection<Integer> sorted : List.of(new FixedTreeSet(), new FixedSkipListSet())) {
+			sorted.addAll(List.of(1, 2, 3));
+			assertEquals(List.of(3, 2, 1), new ArrayList<>(writeRead(sorted)));
+			assertEquals(List.of(3, 2, 1), new ArrayList<>(kryo.copy(sorted)));
+		}
+		for (Queue<Integer> queue : List.of(new FixedPriorityQueue(), new FixedPriorityBlockingQueue())) {
+			queue.addAll(List.of(1, 2, 3));
+			assertEquals(3, writeRead(queue).peek());
+			assertEquals(3, kryo.copy(queue).peek());
+		}
+
+		// The capacity of the no-arg constructor is kept.
+		for (BlockingQueue<Integer> queue : List.of(new FixedArrayBlockingQueue(), new FixedBlockingQueue(),
+			new FixedBlockingDeque())) {
+			queue.addAll(List.of(1, 2, 3));
+			BlockingQueue<Integer> read = writeRead(queue);
+			assertEquals(List.of(1, 2, 3), new ArrayList<>(read));
+			assertEquals(4, read.remainingCapacity());
+			assertEquals(4, kryo.copy(queue).remainingCapacity());
+		}
+	}
+
+	static class FixedTreeSet extends TreeSet<Integer> {
+		public FixedTreeSet () {
+			super(Collections.reverseOrder());
+		}
+	}
+
+	static class FixedSkipListSet extends ConcurrentSkipListSet<Integer> {
+		public FixedSkipListSet () {
+			super(Collections.reverseOrder());
+		}
+	}
+
+	static class FixedPriorityQueue extends PriorityQueue<Integer> {
+		public FixedPriorityQueue () {
+			super(Collections.reverseOrder());
+		}
+	}
+
+	static class FixedPriorityBlockingQueue extends PriorityBlockingQueue<Integer> {
+		public FixedPriorityBlockingQueue () {
+			super(11, Collections.reverseOrder());
+		}
+	}
+
+	static class FixedArrayBlockingQueue extends ArrayBlockingQueue<Integer> {
+		public FixedArrayBlockingQueue () {
+			super(7);
+		}
+	}
+
+	static class FixedBlockingQueue extends LinkedBlockingQueue<Integer> {
+		public FixedBlockingQueue () {
+			super(7);
+		}
+	}
+
+	static class FixedBlockingDeque extends LinkedBlockingDeque<Integer> {
+		public FixedBlockingDeque () {
+			super(7);
 		}
 	}
 

@@ -75,14 +75,16 @@ class AndroidSerializationCompat {
 		return testData;
 	}
 
-	/** The immutable collections that TestDataJava11 doesn't have, which are read as immutable collections. */
+	/** The immutable collections that TestDataJava11 doesn't have, which are read as immutable collections. The empty collections
+	 * and the collections with two elements have other classes on Android, see ImmutableCollectionsSerializers. */
 	static final class ImmutableCollections {
-		List<String> list12 = List.of("a"), listN = List.of("a", "b", "c"), subList = List.of("a", "b", "c").subList(1, 3);
+		List<String> list0 = List.of(), list12 = List.of("a"), list2 = List.of("a", "b"), listN = List.of("a", "b", "c"),
+			subList = List.of("a", "b", "c").subList(1, 3);
 		// Only Stream#toList() creates an immutable list with null elements, which Android has only since API level 34.
 		List<String> listWithNulls = Util.isAndroid ? Collections.unmodifiableList(Arrays.asList("a", null, "c"))
 			: Stream.of("a", null, "c").toList();
-		Set<String> set12 = Set.of("x"), setN = Set.of("x", "y", "z");
-		Map<String, Integer> map1 = Map.of("k", 1), mapN = Map.of("k", 1, "l", 2);
+		Set<String> set0 = Set.of(), set12 = Set.of("x"), set2 = Set.of("x", "y"), setN = Set.of("x", "y", "z");
+		Map<String, Integer> map0 = Map.of(), map1 = Map.of("k", 1), mapN = Map.of("k", 1, "l", 2);
 	}
 
 	/** Configured like {@link SerializationCompatTest}. */
@@ -132,8 +134,18 @@ class AndroidSerializationCompat {
 				String name = input.readString();
 				byte[] bytes = input.readBytes(input.readVarInt(true));
 				check(name.equals(field.getName()), "Expected field " + field.getName() + ": " + name);
-				// Android has ImmutableCollections$Set12 only since API level 34, see README.
-				if (!data.registered() && (name.equals("singleImmutableSet") || name.equals("set12")) && apiLevel < 34) continue;
+				// Before API level 34, Android has ImmutableCollections$Set0, Set1, Set2 and Map0 instead of Set12 and MapN for the
+				// empty map, and API level 30 has List0, List1 and List2 instead of List12 and SubList, so by their class names
+				// these collections can't be read across the platforms, see README.
+				if (!data.registered()) {
+					if (apiLevel < 34 && (name.equals("singleImmutableSet") || name.equals("set12") || name.equals("set2")
+						|| name.equals("emptyImmutableSet") || name.equals("set0") || name.equals("emptyImmutableMap")
+						|| name.equals("map0"))) continue;
+					if (apiLevel == 30
+						&& (name.equals("emptyImmutableList") || name.equals("list0") || name.equals("singleImmutableList")
+							|| name.equals("list12") || name.equals("list2") || name.equals("subList")))
+						continue;
+				}
 				try {
 					Object actual = kryo.readClassAndObject(new Input(bytes)), expected = field.get(data.testData());
 					// Sets of different classes, eg Set.of and LinkedHashSet, iterate in a different order.
@@ -190,8 +202,9 @@ class AndroidSerializationCompat {
 			return;
 		}
 		ArrayList<String> failures = new ArrayList<>();
-		for (Data data : testData(Integer.parseInt(args[2])))
-			failures.addAll(read(directory, data, Integer.MAX_VALUE));
+		int apiLevel = Integer.parseInt(args[2]);
+		for (Data data : testData(apiLevel))
+			failures.addAll(read(directory, data, apiLevel));
 		for (String failure : failures)
 			System.out.println("FAILED on the JVM, written on Android: " + failure);
 		if (!failures.isEmpty()) System.exit(1);

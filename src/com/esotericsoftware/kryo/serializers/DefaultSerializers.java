@@ -847,26 +847,16 @@ public class DefaultSerializers {
 		}
 
 		protected TreeSet create (Kryo kryo, Input input, Class<? extends TreeSet> type, int size) {
-			return createTreeSet(type, (Comparator)kryo.readClassAndObject(input));
+			return createTreeSet(kryo, type, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected TreeSet createCopy (Kryo kryo, TreeSet original) {
-			return createTreeSet(original.getClass(), original.comparator());
+			return createTreeSet(kryo, original.getClass(), original.comparator());
 		}
 
-		private TreeSet createTreeSet (Class<? extends Collection> type, Comparator comparator) {
+		private TreeSet createTreeSet (Kryo kryo, Class<? extends TreeSet> type, Comparator comparator) {
 			if (type == TreeSet.class || type == null) return new TreeSet(comparator);
-			// Use reflection for subclasses.
-			try {
-				Constructor constructor = type.getConstructor(Comparator.class);
-				try {
-					constructor.setAccessible(true);
-				} catch (SecurityException ignored) {
-				}
-				return (TreeSet)constructor.newInstance(comparator);
-			} catch (Exception ex) {
-				throw new KryoException(ex);
-			}
+			return newInstance(kryo, type, new Class[] {Comparator.class}, comparator); // Subclass.
 		}
 	}
 
@@ -878,27 +868,18 @@ public class DefaultSerializers {
 		}
 
 		protected PriorityQueue create (Kryo kryo, Input input, Class<? extends PriorityQueue> type, int size) {
-			return createPriorityQueue(type, size, (Comparator)kryo.readClassAndObject(input));
+			return createPriorityQueue(kryo, type, size, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected PriorityQueue createCopy (Kryo kryo, PriorityQueue original) {
-			return createPriorityQueue(original.getClass(), original.size(), original.comparator());
+			return createPriorityQueue(kryo, original.getClass(), original.size(), original.comparator());
 		}
 
-		private PriorityQueue createPriorityQueue (Class<? extends Collection> type, int size, Comparator comparator) {
-			final int initialCapacity = Math.max(size, 1);
+		private PriorityQueue createPriorityQueue (Kryo kryo, Class<? extends PriorityQueue> type, int size,
+			Comparator comparator) {
+			int initialCapacity = Math.max(size, 1);
 			if (type == PriorityQueue.class || type == null) return new PriorityQueue(initialCapacity, comparator);
-			// Use reflection for subclasses.
-			try {
-				Constructor constructor = type.getConstructor(int.class, Comparator.class);
-				try {
-					constructor.setAccessible(true);
-				} catch (SecurityException ignored) {
-				}
-				return (PriorityQueue)constructor.newInstance(initialCapacity, comparator);
-			} catch (Exception ex) {
-				throw new KryoException(ex);
-			}
+			return newInstance(kryo, type, new Class[] {int.class, Comparator.class}, initialCapacity, comparator); // Subclass.
 		}
 	}
 
@@ -910,16 +891,16 @@ public class DefaultSerializers {
 		}
 
 		protected ConcurrentSkipListSet create (Kryo kryo, Input input, Class<? extends ConcurrentSkipListSet> type, int size) {
-			return createSet(type, (Comparator)kryo.readClassAndObject(input));
+			return createSet(kryo, type, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected ConcurrentSkipListSet createCopy (Kryo kryo, ConcurrentSkipListSet original) {
-			return createSet(original.getClass(), original.comparator());
+			return createSet(kryo, original.getClass(), original.comparator());
 		}
 
-		private ConcurrentSkipListSet createSet (Class<? extends ConcurrentSkipListSet> type, Comparator comparator) {
+		private ConcurrentSkipListSet createSet (Kryo kryo, Class<? extends ConcurrentSkipListSet> type, Comparator comparator) {
 			if (type == ConcurrentSkipListSet.class || type == null) return new ConcurrentSkipListSet(comparator);
-			return newInstance(type, new Class[] {Comparator.class}, comparator); // Subclass.
+			return newInstance(kryo, type, new Class[] {Comparator.class}, comparator); // Subclass.
 		}
 	}
 
@@ -931,17 +912,18 @@ public class DefaultSerializers {
 		}
 
 		protected PriorityBlockingQueue create (Kryo kryo, Input input, Class<? extends PriorityBlockingQueue> type, int size) {
-			return createQueue(type, size, (Comparator)kryo.readClassAndObject(input));
+			return createQueue(kryo, type, size, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected PriorityBlockingQueue createCopy (Kryo kryo, PriorityBlockingQueue original) {
-			return createQueue(original.getClass(), original.size(), original.comparator());
+			return createQueue(kryo, original.getClass(), original.size(), original.comparator());
 		}
 
-		private PriorityBlockingQueue createQueue (Class<? extends PriorityBlockingQueue> type, int size, Comparator comparator) {
+		private PriorityBlockingQueue createQueue (Kryo kryo, Class<? extends PriorityBlockingQueue> type, int size,
+			Comparator comparator) {
 			int initialCapacity = Math.max(size, 1);
 			if (type == PriorityBlockingQueue.class || type == null) return new PriorityBlockingQueue(initialCapacity, comparator);
-			return newInstance(type, new Class[] {int.class, Comparator.class}, initialCapacity, comparator); // Subclass.
+			return newInstance(kryo, type, new Class[] {int.class, Comparator.class}, initialCapacity, comparator); // Subclass.
 		}
 	}
 
@@ -953,16 +935,16 @@ public class DefaultSerializers {
 		}
 
 		protected ArrayBlockingQueue create (Kryo kryo, Input input, Class<? extends ArrayBlockingQueue> type, int size) {
-			return createQueue(type, readCapacity(input, size, true));
+			return createQueue(kryo, type, readCapacity(input, size, true));
 		}
 
 		protected ArrayBlockingQueue createCopy (Kryo kryo, ArrayBlockingQueue original) {
-			return createQueue(original.getClass(), original.size() + original.remainingCapacity());
+			return createQueue(kryo, original.getClass(), original.size() + original.remainingCapacity());
 		}
 
-		private ArrayBlockingQueue createQueue (Class<? extends ArrayBlockingQueue> type, int capacity) {
+		private ArrayBlockingQueue createQueue (Kryo kryo, Class<? extends ArrayBlockingQueue> type, int capacity) {
 			if (type == ArrayBlockingQueue.class || type == null) return new ArrayBlockingQueue(capacity);
-			return newInstance(type, new Class[] {int.class}, capacity); // Subclass.
+			return newInstance(kryo, type, new Class[] {int.class}, capacity); // Subclass.
 		}
 	}
 
@@ -973,16 +955,16 @@ public class DefaultSerializers {
 		}
 
 		protected LinkedBlockingQueue create (Kryo kryo, Input input, Class<? extends LinkedBlockingQueue> type, int size) {
-			return createQueue(type, readCapacity(input, size, false));
+			return createQueue(kryo, type, readCapacity(input, size, false));
 		}
 
 		protected LinkedBlockingQueue createCopy (Kryo kryo, LinkedBlockingQueue original) {
-			return createQueue(original.getClass(), original.size() + original.remainingCapacity());
+			return createQueue(kryo, original.getClass(), original.size() + original.remainingCapacity());
 		}
 
-		private LinkedBlockingQueue createQueue (Class<? extends LinkedBlockingQueue> type, int capacity) {
+		private LinkedBlockingQueue createQueue (Kryo kryo, Class<? extends LinkedBlockingQueue> type, int capacity) {
 			if (type == LinkedBlockingQueue.class || type == null) return new LinkedBlockingQueue(capacity);
-			return newInstance(type, new Class[] {int.class}, capacity); // Subclass.
+			return newInstance(kryo, type, new Class[] {int.class}, capacity); // Subclass.
 		}
 	}
 
@@ -993,16 +975,16 @@ public class DefaultSerializers {
 		}
 
 		protected LinkedBlockingDeque create (Kryo kryo, Input input, Class<? extends LinkedBlockingDeque> type, int size) {
-			return createDeque(type, readCapacity(input, size, false));
+			return createDeque(kryo, type, readCapacity(input, size, false));
 		}
 
 		protected LinkedBlockingDeque createCopy (Kryo kryo, LinkedBlockingDeque original) {
-			return createDeque(original.getClass(), original.size() + original.remainingCapacity());
+			return createDeque(kryo, original.getClass(), original.size() + original.remainingCapacity());
 		}
 
-		private LinkedBlockingDeque createDeque (Class<? extends LinkedBlockingDeque> type, int capacity) {
+		private LinkedBlockingDeque createDeque (Kryo kryo, Class<? extends LinkedBlockingDeque> type, int capacity) {
 			if (type == LinkedBlockingDeque.class || type == null) return new LinkedBlockingDeque(capacity);
-			return newInstance(type, new Class[] {int.class}, capacity); // Subclass.
+			return newInstance(kryo, type, new Class[] {int.class}, capacity); // Subclass.
 		}
 	}
 
@@ -1090,10 +1072,18 @@ public class DefaultSerializers {
 		}
 	}
 
-	/** Creates an instance of a subclass with the public constructor for the parameter types. */
-	static <T> T newInstance (Class<? extends T> type, Class[] parameterTypes, Object... arguments) {
+	/** Creates an instance of a subclass with the public constructor for the parameter types, or with
+	 * {@link Kryo#newInstance(Class)} if it has none, eg a subclass that passes a fixed comparator or capacity to the super
+	 * constructor. Like CollectionSerializer, this creates a broken object if the instantiator strategy doesn't call a
+	 * constructor, eg StdInstantiatorStrategy for a class without a no-arg constructor. */
+	static <T> T newInstance (Kryo kryo, Class<? extends T> type, Class[] parameterTypes, Object... arguments) {
+		Constructor<? extends T> constructor;
 		try {
-			Constructor<? extends T> constructor = type.getConstructor(parameterTypes);
+			constructor = type.getConstructor(parameterTypes);
+		} catch (NoSuchMethodException ex) {
+			return kryo.newInstance(type);
+		}
+		try {
 			try {
 				constructor.setAccessible(true); // A public constructor of a class that isn't public.
 			} catch (RuntimeException ignored) {

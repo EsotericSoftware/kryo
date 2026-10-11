@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
@@ -41,6 +42,35 @@ import org.junit.jupiter.api.Test;
 class TaggedFieldSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
+	}
+
+	// A final field read as null is set with Unsafe like other values, not with reflection, which Java 24+ warns about.
+	@Test
+	void testNullFinalFieldWithUnsafe () {
+		assumeTrue(com.esotericsoftware.kryo.util.Util.unsafe);
+		TaggedFieldSerializer.TaggedFieldSerializerConfig config = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+		config.setFieldAccess(FieldSerializer.FieldAccessType.UNSAFE);
+		config.setReadUnknownTagData(true);
+		TaggedFieldSerializer<FinalField> serializer = new TaggedFieldSerializer<>(kryo, FinalField.class, config);
+		kryo.register(FinalField.class, serializer);
+		Output output = new Output(64, -1);
+		kryo.writeObject(output, new FinalField(null));
+		// Reflection can't set the field if it isn't accessible, Unsafe can.
+		serializer.getField("value").getField().setAccessible(false);
+		FinalField object = kryo.readObject(new Input(output.toBytes()), FinalField.class);
+		assertNull(object.value);
+	}
+
+	public static class FinalField {
+		@Tag(1) public final String value;
+
+		public FinalField () {
+			value = "default";
+		}
+
+		public FinalField (String value) {
+			this.value = value;
+		}
 	}
 
 	@Test

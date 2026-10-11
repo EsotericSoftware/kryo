@@ -1615,6 +1615,20 @@ class FieldSerializerTest extends KryoTestCase {
 		assertEquals(0, serializer.getFields().length);
 	}
 
+	// The components of a record are always serialized, although their fields are private and final.
+	@Test
+	void testSetFieldsAsAccessibleFalseRecord () {
+		FieldSerializer serializer = new FieldSerializer(kryo, RecordClass.class);
+		serializer.getFieldSerializerConfig().setFieldsAsAccessible(false);
+		serializer.updateFields();
+		assertEquals(4, serializer.getFields().length);
+		kryo.register(RecordClass.class, serializer);
+		RecordClass record = new RecordClass("tall", 2, 3, 4.5);
+		Output output = new Output(64);
+		kryo.writeObject(output, record);
+		assertEquals(record, kryo.readObject(new Input(output.toBytes()), RecordClass.class));
+	}
+
 	static class NotPublicApiFields {
 		public int a;
 	}
