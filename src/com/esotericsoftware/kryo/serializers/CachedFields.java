@@ -178,7 +178,9 @@ class CachedFields implements Comparator<CachedField> {
 			return;
 		}
 
-		if (!config.setFieldsAsAccessible) {
+		// The components of a record are its public API through the accessors and the canonical constructor, which is set
+		// accessible anyway, so they are always serialized.
+		if (!config.setFieldsAsAccessible && recordComponents == null) {
 			if (!isPublicApi(field)) return;
 		} else {
 			try {
