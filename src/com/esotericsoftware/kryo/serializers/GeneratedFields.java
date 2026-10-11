@@ -81,7 +81,7 @@ abstract class GeneratedFields {
 		}
 	}
 
-	/** Returned by {@link #readClass(FieldSerializer, Input, CachedField, boolean)} when the value is skipped. */
+	/** Returned by {@link #readClass(FieldSerializer, Input, CachedField, String, boolean)} when the value is skipped. */
 	static final Registration skip = new Registration(Void.class, new DefaultSerializers.VoidSerializer(), -1);
 
 	// Called by the generated code when the classes are written.
