@@ -39,7 +39,6 @@ import java.lang.invoke.MutableCallSite;
 import java.lang.invoke.VarHandle;
 import java.lang.invoke.VarHandle.AccessMode;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntConsumer;
@@ -575,8 +574,8 @@ final class CodeGeneration {
 			code.areturn();
 		}
 
-		/** int index = from; try { index = i; <field i> ... } catch (Throwable t) { throw GeneratedFields.<error>(t, fields[index],
-		 * <local 1>); } */
+		/** {@code int index = from; try { index = i; <field i> ... } catch (Throwable t) { throw GeneratedFields.<error>(t,
+		 * fields[index], <local 1>); }} */
 		void fields (int from, int to, IntConsumer field, String error, String local1Desc) {
 			if (from == to) { // No fields. An empty try block is not valid.
 				code.vreturn();
@@ -596,8 +595,8 @@ final class CodeGeneration {
 			code.vreturn();
 		}
 
-		/** output.writeVarInt(TAG, true); long mark = chunks.beginField(output); <write the value>; chunks.endField(output,
-		 * mark); */
+		/** {@code output.writeVarInt(TAG, true); long mark = chunks.beginField(output); <write the value>; chunks.endField(output,
+		 * mark);} */
 		void writeField (int i) {
 			if (tags != null) {
 				code.aload(1);
@@ -663,8 +662,8 @@ final class CodeGeneration {
 			}
 		}
 
-		/** int tag = input.readVarInt(true); long end = chunks.beginField(input); if (tag == TAG) <read the value> else
-		 * ((TaggedFieldSerializer)serializer).readTag(input, tag, object, chunked); chunks.endField(input, end); */
+		/** {@code int tag = input.readVarInt(true); long end = chunks.beginField(input); if (tag == TAG) <read the value> else
+		 * ((TaggedFieldSerializer)serializer).readTag(input, tag, object, chunked); chunks.endField(input, end);} */
 		void readField (int i) {
 			if (tags != null) {
 				code.aload(1);

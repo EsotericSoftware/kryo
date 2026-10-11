@@ -182,10 +182,10 @@ abstract class Bytecode {
 
 		abstract public void athrow ();
 
-		/** if (<condition>) block, see {@link Bytecode#IFNE}. */
+		/** {@code if (condition) block}, see {@link Bytecode#IFNE}. */
 		abstract public void ifThen (int condition, Runnable block);
 
-		/** if (<condition>) thenBlock else elseBlock */
+		/** {@code if (condition) thenBlock else elseBlock} */
 		abstract public void ifThenElse (int condition, Runnable thenBlock, Runnable elseBlock);
 
 		/** try { body } catch (Throwable t) { handler }, with the Throwable on the stack in the handler, which must throw. */

@@ -126,7 +126,7 @@ public class Util {
 
 	/** Returns the class with the name, or null if it is not available. In a GraalVM native image, the class needs reflection
 	 * metadata, unless it is taken from an instance, see {@link #classForName(String, Object)}. */
-	public static @Null Class classForName (String className) {
+	static private @Null Class classForName (String className) {
 		try {
 			return Class.forName(className);
 		} catch (Exception ex) {

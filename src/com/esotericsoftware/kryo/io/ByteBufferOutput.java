@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /** An {@link Output} that uses a ByteBuffer rather than a byte[].
  * <p>
@@ -35,7 +34,6 @@ import java.nio.ByteOrder;
  * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 public class ByteBufferOutput extends Output {
-	private static final ByteOrder nativeOrder = ByteOrder.nativeOrder();
 
 	protected ByteBuffer byteBuffer;
 
