@@ -290,6 +290,13 @@ class GenericsTest extends KryoTestCase {
 		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderNestedPair());
 	}
 
+	// Also if the declared type of the nested object has arguments and only some of them can be resolved.
+	@Test
+	void testNestedObjectOfSameClassPartiallyResolved () {
+		kryo.setRegistrationRequired(false);
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderSwap<>());
+	}
+
 	// A type argument that can't be resolved must not shift the following type arguments.
 	@Test
 	void testUnresolvedTypeArgument () {
@@ -958,6 +965,41 @@ class GenericsTest extends KryoTestCase {
 
 			public boolean equals (Object o) {
 				return o instanceof HolderNestedPair h && Objects.equals(pair, h.pair);
+			}
+		}
+
+		public static class Swap<X, Y> {
+			public X x;
+			public Y y;
+			public Swap<Y, X> swapped;
+
+			public Swap () {
+			}
+
+			Swap (X x, Y y) {
+				this.x = x;
+				this.y = y;
+				swapped = new Swap<>(y, x, null);
+			}
+
+			private Swap (X x, Y y, Swap swapped) {
+				this.x = x;
+				this.y = y;
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof Swap s && Objects.equals(x, s.x) && Objects.equals(y, s.y) && Objects.equals(swapped, s.swapped);
+			}
+		}
+
+		/** The swapped pair of a pair resolves the type variables of its declared type {@code Swap<Y, X>} against the enclosing
+		 * pair, not against its own entries. T isn't known when the holder is written, so for the first pair only Y is known. */
+		public static class HolderSwap<T> {
+			public Swap<T, Integer> partial = new Swap<>((T)"a", 1);
+			public Swap<String, Integer> known = new Swap<>("b", 2);
+
+			public boolean equals (Object o) {
+				return o instanceof HolderSwap h && Objects.equals(partial, h.partial) && Objects.equals(known, h.known);
 			}
 		}
 

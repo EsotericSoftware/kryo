@@ -139,21 +139,19 @@ public final class DefaultGenerics implements Generics {
 		GenericType[] args = type.arguments;
 
 		// The type parameters of the class, which come first in the hierarchy. The arguments are for the declared type, which can
-		// be a super type of the class with different type parameters.
+		// be a super type of the class with different type parameters. An unknown argument is stored as null, so the type variable
+		// doesn't resolve to that of an enclosing object of the same class.
+		boolean resolvedAny = false;
 		if (hierarchy.rootTotal > 0) {
 			int[] indices = hierarchy.argumentIndices(declared);
 			ensureCapacity(hierarchy.total);
 			int[] counts = hierarchy.counts;
 			TypeVariable[] params = hierarchy.parameters;
 			for (int i = 0, p = 0, n = indices.length; i < n; i++) {
-				int count = counts[i];
 				int index = indices[i];
-				Class resolved = index == -1 ? null : args[index].resolve(this);
-				if (resolved == null) {
-					p += count;
-					continue;
-				}
-				for (int nn = p + count; p < nn; p++) {
+				Class resolved = index == -1 ? null : resolve(args[index], startSize);
+				if (resolved != null) resolvedAny = true;
+				for (int nn = p + counts[i]; p < nn; p++) {
 					arguments[argumentsSize++] = params[p];
 					arguments[argumentsSize++] = resolved;
 				}
@@ -162,11 +160,11 @@ public final class DefaultGenerics implements Generics {
 
 		// If no type parameters of the class are passed to the declared super class, eg because the class extends it as a raw type,
 		// use the arguments for the type parameters of the declared class.
-		if (argumentsSize == startSize && declared != hierarchy.type && !declared.isInterface()) {
+		if (!resolvedAny && declared != hierarchy.type && !declared.isInterface()) {
 			TypeVariable[] params = type.typeVariables();
 			ensureCapacity(params.length);
 			for (int i = 0; i < params.length; i++) {
-				Class resolved = args[i].resolve(this);
+				Class resolved = resolve(args[i], startSize);
 				if (resolved == null) continue;
 				arguments[argumentsSize++] = params[i];
 				arguments[argumentsSize++] = resolved;
@@ -194,9 +192,21 @@ public final class DefaultGenerics implements Generics {
 			arguments[i++] = null;
 	}
 
+	/** Resolves a type argument of the declared type against the entries below the ones being pushed: the declared type can use
+	 * the type variables of the class itself, eg a field {@code Pair<Y, X>} in {@code Pair<X, Y>}, which must resolve to the
+	 * entries of the enclosing object. */
+	private Class resolve (GenericType argument, int size) {
+		if (argument.type instanceof Class) return (Class)argument.type;
+		return resolveTypeVariable((TypeVariable)argument.type, size);
+	}
+
 	@Override
 	public Class resolveTypeVariable (TypeVariable typeVariable) {
-		for (int i = argumentsSize - 2; i >= 0; i -= 2) {
+		return resolveTypeVariable(typeVariable, argumentsSize);
+	}
+
+	private Class resolveTypeVariable (TypeVariable typeVariable, int size) {
+		for (int i = size - 2; i >= 0; i -= 2) {
 			final Type arg = arguments[i];
 			if (arg == typeVariable || arg.equals(typeVariable)) return (Class)arguments[i + 1];
 		}
