@@ -72,8 +72,10 @@ class ChunkedEncodingTest {
 		assertSame(UnsafeOutput.class, DefaultChunkedEncoding.newBuffer(new UnsafeOutput(16)).getClass());
 		assertSame(UnsafeOutput.class, DefaultChunkedEncoding.newBuffer(new UnsafeByteBufferOutput(16)).getClass());
 
-		// The buffer is replaced when the same Kryo writes to a stream of another kind.
+		// The buffer is replaced when the same Kryo writes to a stream of another kind. The int field is written with fixed length,
+		// which has the byte order of the stream, unlike a varint.
 		Kryo kryo = compatibleKryo(true, false, false);
+		((FieldSerializer)kryo.getSerializer(Entity3.class)).getField("a").setVariableLengthEncoding(false);
 		Entity entity = entity(false);
 		for (Output output : new Output[] {new UnsafeOutput(1024), new Output(1024), new UnsafeByteBufferOutput(1024), new Output(1024)}) {
 			kryo.writeObject(output, entity);
