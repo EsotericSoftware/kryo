@@ -49,23 +49,16 @@ public class LinkedHashMapSerializer extends MapSerializer<LinkedHashMap> {
 	protected LinkedHashMap create (Kryo kryo, Input input, Class<? extends LinkedHashMap> type, int size) {
 		boolean accessOrder = input.readBoolean();
 		if (type != LinkedHashMap.class) return super.create(kryo, input, type, size);
-		return new LinkedHashMap(capacity(size), 0.75f, accessOrder);
+		return new LinkedHashMap(hashMapCapacity(size), 0.75f, accessOrder);
 	}
 
 	protected LinkedHashMap createCopy (Kryo kryo, LinkedHashMap original) {
 		if (original.getClass() != LinkedHashMap.class) return super.createCopy(kryo, original);
-		return new LinkedHashMap(capacity(original.size()), 0.75f, accessOrder(original));
+		return new LinkedHashMap(hashMapCapacity(original.size()), 0.75f, accessOrder(original));
 	}
 
 	/** Returns the access order of a LinkedHashMap, or false for a subclass, whose constructor sets it. */
 	private static boolean accessOrder (LinkedHashMap map) {
 		return map.getClass() == LinkedHashMap.class && (Boolean)accessOrder.get(map);
-	}
-
-	/** Returns the capacity for the size with the default load factor, like {@link MapSerializer} for HashMap. */
-	private static int capacity (int size) {
-		if (size < 3) return size + 1;
-		if (size < 1073741824) return (int)(size / 0.75f + 1); // Max POT.
-		return size;
 	}
 }

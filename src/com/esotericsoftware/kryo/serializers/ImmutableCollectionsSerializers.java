@@ -99,11 +99,6 @@ public final class ImmutableCollectionsSerializers {
 		}
 
 		@Override
-		protected List<Object> createCopy (Kryo kryo, List<Object> original) {
-			return new ArrayList<>(original.size());
-		}
-
-		@Override
 		public List<Object> read (Kryo kryo, Input input, Class<? extends List<Object>> type) {
 			List<Object> list = super.read(kryo, input, type);
 			if (list == null) {
@@ -165,12 +160,7 @@ public final class ImmutableCollectionsSerializers {
 
 		@Override
 		protected Map<Object, Object> create (Kryo kryo, Input input, Class<? extends Map<Object, Object>> type, int size) {
-			return new HashMap<>();
-		}
-
-		@Override
-		protected Map<Object, Object> createCopy (Kryo kryo, Map<Object, Object> original) {
-			return new HashMap<>();
+			return new HashMap<>(hashMapCapacity(size));
 		}
 
 		@Override
@@ -185,7 +175,7 @@ public final class ImmutableCollectionsSerializers {
 		@Override
 		public Map<Object, Object> copy (Kryo kryo, Map<Object, Object> original) {
 			// Not super.copy, which references the mutable map. Kryo references the immutable map, which can't contain itself.
-			HashMap<Object, Object> copy = new HashMap<>();
+			HashMap<Object, Object> copy = new HashMap<>(hashMapCapacity(original.size()));
 			for (Map.Entry<Object, Object> entry : original.entrySet())
 				copy.put(kryo.copy(entry.getKey()), kryo.copy(entry.getValue()));
 			return Map.copyOf(copy);
@@ -213,12 +203,7 @@ public final class ImmutableCollectionsSerializers {
 
 		@Override
 		protected Set<Object> create (Kryo kryo, Input input, Class<? extends Set<Object>> type, int size) {
-			return new HashSet<>();
-		}
-
-		@Override
-		protected Set<Object> createCopy (Kryo kryo, Set<Object> original) {
-			return new HashSet<>();
+			return new HashSet<>(MapSerializer.hashMapCapacity(size));
 		}
 
 		@Override
@@ -233,7 +218,7 @@ public final class ImmutableCollectionsSerializers {
 		@Override
 		public Set<Object> copy (Kryo kryo, Set<Object> original) {
 			// Not super.copy, which references the mutable set. Kryo references the immutable set, which can't contain itself.
-			HashSet<Object> copy = new HashSet<>();
+			HashSet<Object> copy = new HashSet<>(MapSerializer.hashMapCapacity(original.size()));
 			for (Object element : original)
 				copy.add(kryo.copy(element));
 			return Set.copyOf(copy);

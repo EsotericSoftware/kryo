@@ -189,7 +189,7 @@ public class Kryo {
 
 	private static final int REF = -1;
 	private static final int NO_REF = -2;
-	private static final int DEFAULT_SERIALIZER_SIZE = 68;
+	private static final int DEFAULT_SERIALIZER_SIZE = 128; // More than the constructor adds.
 
 	SerializerFactory defaultSerializer = new FieldSerializerFactory();
 	final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(DEFAULT_SERIALIZER_SIZE);

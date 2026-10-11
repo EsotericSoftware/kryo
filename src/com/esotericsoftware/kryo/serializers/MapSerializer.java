@@ -237,14 +237,15 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	 * to call a constructor with arguments. The default implementation uses {@link Kryo#newInstance(Class)} with a special case
 	 * for HashMap. */
 	protected T create (Kryo kryo, Input input, Class<? extends T> type, int size) {
-		if (type == HashMap.class) {
-			if (size < 3)
-				size++;
-			else if (size < 1073741824) // Max POT.
-				size = (int)(size / 0.75f + 1); // 0.75 is the default load factor.
-			return (T)new HashMap(size);
-		}
+		if (type == HashMap.class) return (T)new HashMap(hashMapCapacity(size));
 		return kryo.newInstance(type);
+	}
+
+	/** Returns the initial capacity of a HashMap or HashSet that holds the size without resizing, with the default load factor. */
+	static int hashMapCapacity (int size) {
+		if (size < 3) return size + 1;
+		if (size < 1073741824) return (int)(size / 0.75f + 1); // Max POT.
+		return size;
 	}
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
@@ -328,7 +329,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	}
 
 	protected T createCopy (Kryo kryo, T original) {
-		if (original.getClass() == HashMap.class) return (T)new HashMap(Math.max((int)(original.size() / 0.75f) + 1, 16));
+		if (original.getClass() == HashMap.class) return (T)new HashMap(hashMapCapacity(original.size()));
 		return (T)kryo.newInstance(original.getClass());
 	}
 

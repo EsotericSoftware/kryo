@@ -208,7 +208,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	 * The default implementation uses {@link Kryo#newInstance(Class)} with special cases for ArrayList and HashSet. */
 	protected T create (Kryo kryo, Input input, Class<? extends T> type, int size) {
 		if (type == ArrayList.class) return (T)new ArrayList<>(size);
-		if (type == HashSet.class) return (T)new HashSet<>(Math.max((int)(size / 0.75f) + 1, 16));
+		if (type == HashSet.class) return (T)new HashSet<>(MapSerializer.hashMapCapacity(size));
 		T collection = kryo.newInstance(type);
 		if (collection instanceof ArrayList) ((ArrayList)collection).ensureCapacity(size);
 		return collection;
@@ -291,7 +291,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 	protected T createCopy (Kryo kryo, T original) {
 		Class type = original.getClass();
 		if (type == ArrayList.class) return (T)new ArrayList<>(original.size());
-		if (type == HashSet.class) return (T)new HashSet<>(Math.max((int)(original.size() / 0.75f) + 1, 16));
+		if (type == HashSet.class) return (T)new HashSet<>(MapSerializer.hashMapCapacity(original.size()));
 		return (T)kryo.newInstance(type);
 	}
 
