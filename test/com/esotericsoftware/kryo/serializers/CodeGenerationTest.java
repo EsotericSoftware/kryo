@@ -533,6 +533,19 @@ class CodeGenerationTest extends KryoTestCase {
 		assertEquals(shape, read(cachedFields, bytes, Shape.class));
 		assertEquals(shape, read(kryo, write(cachedFields, shape), Shape.class));
 
+		// An exception of the canonical constructor names the record, not the last component.
+		kryo.register(Range.class);
+		assertGenerated(Range.class);
+		Output output = new Output(16);
+		output.writeVarInt(5, false);
+		output.writeVarInt(1, false);
+		output.writeBoolean(false);
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(output.toBytes()), Range.class));
+		assertTrue(ex.getMessage().startsWith("Error constructing record: "), ex.getMessage());
+		assertSame(IllegalArgumentException.class, ex.getCause().getClass());
+		ex = assertThrows(KryoException.class, () -> kryo.copy(new Range(1, 5, true)));
+		assertTrue(ex.getMessage().startsWith("Error constructing record: "), ex.getMessage());
+
 		// A record without components has no field to name in an error, so it is constructed without a try block.
 		kryo.register(Empty.class);
 		assertGenerated(Empty.class);
@@ -1227,6 +1240,20 @@ class CodeGenerationTest extends KryoTestCase {
 	static public class Wide {
 		static final int count = 200;
 		int f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22, f23, f24, f25, f26, f27, f28, f29, f30, f31, f32, f33, f34, f35, f36, f37, f38, f39, f40, f41, f42, f43, f44, f45, f46, f47, f48, f49, f50, f51, f52, f53, f54, f55, f56, f57, f58, f59, f60, f61, f62, f63, f64, f65, f66, f67, f68, f69, f70, f71, f72, f73, f74, f75, f76, f77, f78, f79, f80, f81, f82, f83, f84, f85, f86, f87, f88, f89, f90, f91, f92, f93, f94, f95, f96, f97, f98, f99, f100, f101, f102, f103, f104, f105, f106, f107, f108, f109, f110, f111, f112, f113, f114, f115, f116, f117, f118, f119, f120, f121, f122, f123, f124, f125, f126, f127, f128, f129, f130, f131, f132, f133, f134, f135, f136, f137, f138, f139, f140, f141, f142, f143, f144, f145, f146, f147, f148, f149, f150, f151, f152, f153, f154, f155, f156, f157, f158, f159, f160, f161, f162, f163, f164, f165, f166, f167, f168, f169, f170, f171, f172, f173, f174, f175, f176, f177, f178, f179, f180, f181, f182, f183, f184, f185, f186, f187, f188, f189, f190, f191, f192, f193, f194, f195, f196, f197, f198, f199;
+	}
+
+	/** The canonical constructor fails for from > to, and for a copy if it is created to fail. */
+	public record Range (int from, int to, boolean failCopy) {
+		static boolean failNext;
+
+		public Range {
+			if (from > to) throw new IllegalArgumentException("from > to");
+			if (failNext) {
+				failNext = false;
+				throw new IllegalStateException("copy");
+			}
+			failNext = failCopy;
+		}
 	}
 
 	public record Point (int x, int y) {
