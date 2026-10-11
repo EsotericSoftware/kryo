@@ -45,8 +45,15 @@ if ! output=$("${bin}java" -cp $d8 com.android.tools.r8.D8 --min-api $minApi --l
 	exit 1
 fi
 echo "D8 converted kryo-$version.jar for Android API level $minApi without warnings."
-# The tests and libraries are not checked for D8 warnings.
-if ! output=$("${bin}java" -cp $d8 com.android.tools.r8.D8 --min-api $minApi --lib "$androidJar" --lib $kryo --output target/dex/test \
+# The tests are converted for the API level of the device, so they create the classes that the device has, eg the immutable
+# collections of List.of on API level 30+, which D8 replaces below. The tests and libraries are not checked for D8 warnings.
+adb=$(command -v adb || echo "$sdk/platform-tools/adb")
+testApi=$minApi
+if [ "$1" != "--dex-only" ]; then
+	apiLevel=$("$adb" shell getprop ro.build.version.sdk | tr -d '\r')
+	testApi=$apiLevel
+fi
+if ! output=$("${bin}java" -cp $d8 com.android.tools.r8.D8 --min-api $testApi --lib "$androidJar" --lib $kryo --output target/dex/test \
 	$(find target/classes -name '*.class') $(echo "$libraries" | tr ':' ' ') 2>&1); then
 	echo "$output"
 	exit 1
@@ -55,13 +62,11 @@ if [ "$1" = "--dex-only" ]; then exit; fi
 
 "${bin}java" -cp "target/classes:$kryo:$(cat target/dependencies.txt)" com.esotericsoftware.kryo.AndroidSerializationCompat write \
 	target/compat/jvm
-adb=$(command -v adb || echo "$sdk/platform-tools/adb")
 device=/data/local/tmp/kryo-android-test
 "$adb" shell "rm -rf /data/local/tmp/kryo-android-test && mkdir -p /data/local/tmp/kryo-android-test"
 "$adb" push target/dex/kryo/classes.dex $device/kryo.dex > /dev/null
 "$adb" push target/dex/test/classes.dex $device/test.dex > /dev/null
 "$adb" push target/compat/jvm $device/ > /dev/null
-apiLevel=$("$adb" shell getprop ro.build.version.sdk | tr -d '\r')
 # app_process runs a main class with the Android framework, which dalvikvm can't.
 status=0
 "$adb" shell "CLASSPATH=$device/kryo.dex:$device/test.dex app_process /system/bin com.esotericsoftware.kryo.AndroidTest \

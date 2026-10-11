@@ -132,8 +132,10 @@ class AndroidSerializationCompat {
 				String name = input.readString();
 				byte[] bytes = input.readBytes(input.readVarInt(true));
 				check(name.equals(field.getName()), "Expected field " + field.getName() + ": " + name);
-				// Android has ImmutableCollections$Set12 only since API level 34, see README.
-				if (!data.registered() && (name.equals("singleImmutableSet") || name.equals("set12")) && apiLevel < 34) continue;
+				// Before API level 34, Android has ImmutableCollections$Set0, Set1, Set2 and Map0 instead of Set12 and MapN for the
+				// empty map, so by their class names these sets and maps can't be read across the platforms, see README.
+				if (!data.registered() && apiLevel < 34 && (name.equals("singleImmutableSet") || name.equals("set12")
+					|| name.equals("emptyImmutableSet") || name.equals("emptyImmutableMap"))) continue;
 				try {
 					Object actual = kryo.readClassAndObject(new Input(bytes)), expected = field.get(data.testData());
 					// Sets of different classes, eg Set.of and LinkedHashSet, iterate in a different order.
@@ -187,8 +189,9 @@ class AndroidSerializationCompat {
 			return;
 		}
 		ArrayList<String> failures = new ArrayList<>();
-		for (Data data : testData(Integer.parseInt(args[2])))
-			failures.addAll(read(directory, data, Integer.MAX_VALUE));
+		int apiLevel = Integer.parseInt(args[2]);
+		for (Data data : testData(apiLevel))
+			failures.addAll(read(directory, data, apiLevel));
 		for (String failure : failures)
 			System.out.println("FAILED on the JVM, written on Android: " + failure);
 		if (!failures.isEmpty()) System.exit(1);
