@@ -30,7 +30,10 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Generics;
+import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.kryo.util.IgnoreAndroid;
+import com.esotericsoftware.kryo.util.Null;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -49,6 +52,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -82,6 +86,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
@@ -1456,6 +1461,77 @@ public class DefaultSerializers {
 		private AtomicReference create (Kryo kryo, Class<? extends AtomicReference> type) {
 			if (type == AtomicReference.class || type == null) return new AtomicReference();
 			return kryo.newInstance(type);
+		}
+	}
+
+	/** Serializer for the map entries of the JDK: {@code Map.entry}, {@link AbstractMap.SimpleEntry} and
+	 * {@link AbstractMap.SimpleImmutableEntry}. Writes the key and the value like FieldSerializer does, which can't access their
+	 * fields on Java 16+ without {@code --add-opens java.base/java.util=ALL-UNNAMED}: with their classes, or without them if the
+	 * type arguments of the entry are known and final, eg from a field {@code Map.Entry<String, Integer>}. With references, the
+	 * value of a mutable entry can reference the entry, but its key can't, because the entry is created with the key. The key and
+	 * the value of an immutable entry can't, because the entry is created after they are read. */
+	public static class MapEntrySerializer extends Serializer<Entry> {
+		private static final Class[] noTypes = new Class[2];
+		private final BiFunction<Object, Object, Entry> factory;
+		private final boolean mutable;
+
+		/** @param factory Creates an entry from a key and a value.
+		 * @param mutable If true, the entry is created with a null value and the value is set with {@link Entry#setValue(Object)}
+		 *           after the entry is registered as a reference, so the value can reference the entry. */
+		public MapEntrySerializer (BiFunction<Object, Object, Entry> factory, boolean mutable) {
+			this.factory = factory;
+			this.mutable = mutable;
+		}
+
+		public void write (Kryo kryo, Output output, Entry object) {
+			Class[] types = types(kryo);
+			writeObject(kryo, output, object.getKey(), types[0]);
+			writeObject(kryo, output, object.getValue(), types[1]);
+		}
+
+		/** Returns the classes of the key and the value if the type arguments of the entry are known and final, otherwise null.
+		 * Like FieldSerializer, which doesn't resolve the type arguments of a type variable field, the type arguments of the key
+		 * and the value, eg {@code List<String>}, are not used for their elements, so the data is the same as FieldSerializer
+		 * wrote. */
+		private Class[] types (Kryo kryo) {
+			Generics generics = kryo.getGenerics();
+			GenericType[] genericTypes = generics.nextGenericTypes(Entry.class);
+			if (genericTypes == null) return noTypes;
+			generics.popGenericType(); // Pushed by nextGenericTypes for the value.
+			Class keyType = genericTypes[0].resolve(generics), valueType = genericTypes[1].resolve(generics);
+			return new Class[] {keyType != null && kryo.isFinal(keyType) ? keyType : null,
+				valueType != null && kryo.isFinal(valueType) ? valueType : null};
+		}
+
+		private void writeObject (Kryo kryo, Output output, Object value, @Null Class type) {
+			if (type == null)
+				kryo.writeClassAndObject(output, value);
+			else
+				kryo.writeObjectOrNull(output, value, kryo.getSerializer(type));
+		}
+
+		public Entry read (Kryo kryo, Input input, Class<? extends Entry> type) {
+			Class[] types = types(kryo);
+			Object key = readObject(kryo, input, types[0]);
+			if (!mutable) return factory.apply(key, readObject(kryo, input, types[1]));
+			Entry entry = factory.apply(key, null);
+			kryo.reference(entry);
+			entry.setValue(readObject(kryo, input, types[1]));
+			return entry;
+		}
+
+		private Object readObject (Kryo kryo, Input input, @Null Class type) {
+			if (type == null) return kryo.readClassAndObject(input);
+			return kryo.readObjectOrNull(input, type, kryo.getSerializer(type));
+		}
+
+		public Entry copy (Kryo kryo, Entry original) {
+			Object key = kryo.copy(original.getKey());
+			if (!mutable) return factory.apply(key, kryo.copy(original.getValue()));
+			Entry entry = factory.apply(key, null);
+			kryo.reference(entry);
+			entry.setValue(kryo.copy(original.getValue()));
+			return entry;
 		}
 	}
 }

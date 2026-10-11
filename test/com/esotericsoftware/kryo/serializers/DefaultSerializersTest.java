@@ -44,6 +44,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -56,6 +57,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -1232,6 +1234,45 @@ class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(1, copy.get());
 	}
 
+	@Test
+	void testMapEntry () {
+		// FieldSerializer can't access the fields of these classes on Java 16+ without --add-opens java.base/java.util.
+		kryo.register(Map.entry("", "").getClass());
+		kryo.register(AbstractMap.SimpleEntry.class);
+		kryo.register(AbstractMap.SimpleImmutableEntry.class);
+		roundTrip(7, Map.entry("key", 1));
+		roundTrip(7, new AbstractMap.SimpleEntry<>("key", 1));
+		roundTrip(6, new AbstractMap.SimpleImmutableEntry<>("key", null));
+	}
+
+	@Test
+	void testMapEntryGenerics () {
+		// The key and value are written without their classes if the type arguments of the field are final, like FieldSerializer.
+		kryo.register(Map.entry("", "").getClass());
+		kryo.register(AbstractMap.SimpleEntry.class);
+		kryo.register(EntryHolder.class);
+		roundTrip(13, new EntryHolder(Map.entry("key", 1), new AbstractMap.SimpleEntry<>("key", 1)));
+		roundTrip(12, new EntryHolder(Map.entry("key", 1), new AbstractMap.SimpleEntry<>("key", null)));
+	}
+
+	@Test
+	void testMapEntryReferences () {
+		// The value of a mutable entry can reference the entry.
+		kryo.setReferences(true);
+		kryo.register(AbstractMap.SimpleEntry.class);
+		kryo.register(ArrayList.class);
+		AbstractMap.SimpleEntry<String, List> entry = new AbstractMap.SimpleEntry<>("key", new ArrayList());
+		entry.getValue().add(entry);
+		Output output = new Output(32);
+		kryo.writeObject(output, entry);
+		AbstractMap.SimpleEntry<String, List> read = kryo.readObject(new Input(output.toBytes()), AbstractMap.SimpleEntry.class);
+		assertEquals("key", read.getKey());
+		assertSame(read, read.getValue().get(0));
+		AbstractMap.SimpleEntry<String, List> copy = kryo.copy(entry);
+		assertNotSame(entry, copy);
+		assertSame(copy, copy.getValue().get(0));
+	}
+
 	protected void doAssertEquals(Object object1, Object object2) {
 		if (object1 instanceof PriorityQueue && object2 instanceof PriorityQueue) {
 			final PriorityQueue q1 = (PriorityQueue) object1;
@@ -1322,6 +1363,9 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	static class AtomicReferenceSubclass extends AtomicReference<Object> {
+	}
+
+	record EntryHolder (Map.Entry<String, Integer> typed, Map.Entry<String, Object> keyTyped) {
 	}
 
 	static class IntegerComparator implements Comparator<Integer> {

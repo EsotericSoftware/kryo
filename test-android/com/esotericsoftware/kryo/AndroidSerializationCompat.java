@@ -151,6 +151,9 @@ class AndroidSerializationCompat {
 					// Sets of different classes, eg Set.of and LinkedHashSet, iterate in a different order.
 					if (actual instanceof Set && expected instanceof Set && actual.getClass() != expected.getClass())
 						check(actual.equals(expected), "Sets not equal: " + actual + ", " + expected);
+					// D8 replaces Map.entry with SimpleImmutableEntry below API level 30.
+					else if (actual instanceof Map.Entry && expected instanceof Map.Entry && actual.getClass() != expected.getClass())
+						check(actual.equals(expected), "Entries not equal: " + actual + ", " + expected);
 					else
 						assertReflectionEquals(actual, expected, false);
 					if (data.testData() instanceof ImmutableCollections) checkImmutable(actual);

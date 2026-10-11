@@ -82,6 +82,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.LinkedBlockingDe
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LinkedBlockingQueueSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LocaleSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.LongSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.MapEntrySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.PatternSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.PriorityBlockingQueueSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.PriorityQueueSerializer;
@@ -141,6 +142,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.sql.Timestamp;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -322,6 +324,13 @@ public class Kryo {
 		addDefaultSerializer(AtomicInteger.class, withoutSubclassFields(AtomicInteger.class, new AtomicIntegerSerializer()));
 		addDefaultSerializer(AtomicLong.class, withoutSubclassFields(AtomicLong.class, new AtomicLongSerializer()));
 		addDefaultSerializer(AtomicReference.class, withoutSubclassFields(AtomicReference.class, new AtomicReferenceSerializer()));
+		addDefaultSerializer(AbstractMap.SimpleEntry.class,
+			exactType(AbstractMap.SimpleEntry.class, new MapEntrySerializer(AbstractMap.SimpleEntry::new, true)));
+		addDefaultSerializer(AbstractMap.SimpleImmutableEntry.class,
+			exactType(AbstractMap.SimpleImmutableEntry.class, new MapEntrySerializer(AbstractMap.SimpleImmutableEntry::new, false)));
+		// Below API level 30, D8 replaces Map.entry with SimpleImmutableEntry on Android.
+		Class keyValueHolder = classForName("java.util.KeyValueHolder", Map.entry("", ""));
+		if (keyValueHolder != null) addDefaultSerializer(keyValueHolder, new MapEntrySerializer(Map::entry, false));
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		ImmutableCollectionsSerializers.addDefaultSerializers(this);

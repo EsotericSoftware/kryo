@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo;
 
 import com.esotericsoftware.kryo.SerializationCompatTestData;
 
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +36,9 @@ public class TestDataJava11 extends SerializationCompatTestData.TestData {
     private List<Integer> immutableList;
     private Map<Integer, Integer> immutableMap;
     private Set<Integer> immutableSet;
+    private Map.Entry<String, Integer> entry;
+    private Map.Entry<String, Integer> simpleEntry;
+    private Map.Entry<String, Integer> simpleImmutableEntry;
 
     public TestDataJava11 () {
         emptyImmutableList = List.of();
@@ -46,5 +50,8 @@ public class TestDataJava11 extends SerializationCompatTestData.TestData {
         immutableList = List.of(1, 2, 3);
         immutableMap = Map.of(1, 2, 3, 4);
         immutableSet = Set.of(1, 2, 3);
+        entry = Map.entry("k", 1);
+        simpleEntry = new AbstractMap.SimpleEntry<>("k", 2);
+        simpleImmutableEntry = new AbstractMap.SimpleImmutableEntry<>("k", 3);
     }
 }
