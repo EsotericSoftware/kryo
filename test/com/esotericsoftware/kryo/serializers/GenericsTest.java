@@ -226,6 +226,14 @@ class GenericsTest extends KryoTestCase {
 		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderInner());
 	}
 
+	// A parameterized type without type arguments of its own as a type argument of a super type.
+	@Test
+	void testNonGenericInnerClassAsTypeArgument () {
+		kryo.setRegistrationRequired(false);
+		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+		roundTrip(Integer.MIN_VALUE, new DeclaredTypes.HolderInnerElements());
+	}
+
 	// The super class of an inner class passes a type parameter of the enclosing class to the declared type.
 	@Test
 	void testTypeParameterOfEnclosingClass () {
@@ -1038,6 +1046,26 @@ class GenericsTest extends KryoTestCase {
 
 			public boolean equals (Object o) {
 				return o instanceof HolderInner h && Objects.equals(inner, h.inner);
+			}
+		}
+
+		public static class InnerList extends ArrayList<Outer<String>.Inner> {
+		}
+
+		public static class InnerValueMap<K> extends HashMap<K, Outer<String>.Inner> {
+		}
+
+		public static class HolderInnerElements {
+			public InnerList list = new InnerList();
+			public InnerValueMap<String> map = new InnerValueMap<>();
+
+			public HolderInnerElements () {
+				list.add(new Outer<String>().new Inner());
+				map.put("a", new Outer<String>().new Inner());
+			}
+
+			public boolean equals (Object o) {
+				return o instanceof HolderInnerElements h && list.equals(h.list) && map.equals(h.map);
 			}
 		}
 

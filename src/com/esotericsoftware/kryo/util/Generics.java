@@ -382,6 +382,8 @@ public interface Generics {
 			ParameterizedType parameterized = (ParameterizedType)argument;
 			GenericType result = new GenericType((Class)type, (Class)type, parameterized.getRawType());
 			Type[] actual = parameterized.getActualTypeArguments();
+			// A non-generic inner class of a generic class, eg Outer<String>.Inner, has no type arguments of its own.
+			if (actual.length == 0) return result;
 			result.arguments = new GenericType[actual.length];
 			for (int i = 0; i < actual.length; i++)
 				result.arguments[i] = substitute(actual[i], parameterList);
