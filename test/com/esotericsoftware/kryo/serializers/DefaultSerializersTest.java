@@ -719,6 +719,51 @@ class DefaultSerializersTest extends KryoTestCase {
 		}
 	}
 
+	// A subclass without a constructor for the comparator or capacity is created with kryo.newInstance, eg with its no-arg
+	// constructor, like a subclass of any other collection.
+	@Test
+	void testSubclassWithoutConstructorArguments () {
+		kryo.register(Collections.reverseOrder().getClass());
+		kryo.register(FixedTreeSet.class);
+		kryo.register(FixedSkipListSet.class);
+		kryo.register(FixedBlockingQueue.class);
+
+		FixedTreeSet treeSet = new FixedTreeSet();
+		treeSet.addAll(List.of(1, 2, 3));
+		assertEquals(List.of(3, 2, 1), new ArrayList<>(writeRead(treeSet)));
+		assertEquals(List.of(3, 2, 1), new ArrayList<>(kryo.copy(treeSet)));
+
+		FixedSkipListSet skipListSet = new FixedSkipListSet();
+		skipListSet.addAll(List.of(1, 2, 3));
+		assertEquals(List.of(3, 2, 1), new ArrayList<>(writeRead(skipListSet)));
+		assertEquals(List.of(3, 2, 1), new ArrayList<>(kryo.copy(skipListSet)));
+
+		FixedBlockingQueue queue = new FixedBlockingQueue();
+		queue.addAll(List.of(1, 2, 3));
+		FixedBlockingQueue read = writeRead(queue);
+		assertEquals(List.of(1, 2, 3), new ArrayList<>(read));
+		assertEquals(4, read.remainingCapacity());
+		assertEquals(4, kryo.copy(queue).remainingCapacity());
+	}
+
+	static class FixedTreeSet extends TreeSet<Integer> {
+		public FixedTreeSet () {
+			super(Collections.reverseOrder());
+		}
+	}
+
+	static class FixedSkipListSet extends ConcurrentSkipListSet<Integer> {
+		public FixedSkipListSet () {
+			super(Collections.reverseOrder());
+		}
+	}
+
+	static class FixedBlockingQueue extends LinkedBlockingQueue<Integer> {
+		public FixedBlockingQueue () {
+			super(7);
+		}
+	}
+
 	@Test
 	void testConcurrentSortedCollectionsKryo5 () {
 		// Kryo 5 wrote them with CollectionSerializer.
