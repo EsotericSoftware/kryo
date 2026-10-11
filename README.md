@@ -643,7 +643,7 @@ SynchronizedCollectionSerializers.register(kryo);
 
 On Java 21+, the set returned by `Collections.newSequencedSetFromMap` is a second class: `kryo.register(Collections.newSequencedSetFromMap(new LinkedHashMap<>()).getClass())`. Like the sequenced wrappers, register it last or with an explicit ID, so the IDs of the other classes are the same on older Java versions.
 
-The serializers for the unmodifiable and synchronized wrappers and for `Collections.newSetFromMap` read private JDK fields, because the JDK offers no public API to get the wrapped collection. They need `--add-opens java.base/java.util=ALL-UNNAMED` or Unsafe, and are not available on Android. All other built-in default serializers use only public API.
+The serializers for the unmodifiable and synchronized wrappers and for `Collections.newSetFromMap` and `newSequencedSetFromMap` read private JDK fields, because the JDK offers no public API to get the wrapped collection. They need `--add-opens java.base/java.util=ALL-UNNAMED` or Unsafe, and are not available on Android. All other built-in default serializers use only public API.
 
 Some JDK classes have no built-in default serializer, because they can't be serialized with public API or only partially:
 
