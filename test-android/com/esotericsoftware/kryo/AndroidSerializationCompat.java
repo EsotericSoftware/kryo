@@ -75,14 +75,16 @@ class AndroidSerializationCompat {
 		return testData;
 	}
 
-	/** The immutable collections that TestDataJava11 doesn't have, which are read as immutable collections. */
+	/** The immutable collections that TestDataJava11 doesn't have, which are read as immutable collections. The empty collections
+	 * and the collections with two elements have other classes on Android, see ImmutableCollectionsSerializers. */
 	static final class ImmutableCollections {
-		List<String> list12 = List.of("a"), listN = List.of("a", "b", "c"), subList = List.of("a", "b", "c").subList(1, 3);
+		List<String> list0 = List.of(), list12 = List.of("a"), list2 = List.of("a", "b"), listN = List.of("a", "b", "c"),
+			subList = List.of("a", "b", "c").subList(1, 3);
 		// Only Stream#toList() creates an immutable list with null elements, which Android has only since API level 34.
 		List<String> listWithNulls = Util.isAndroid ? Collections.unmodifiableList(Arrays.asList("a", null, "c"))
 			: Stream.of("a", null, "c").toList();
-		Set<String> set12 = Set.of("x"), setN = Set.of("x", "y", "z");
-		Map<String, Integer> map1 = Map.of("k", 1), mapN = Map.of("k", 1, "l", 2);
+		Set<String> set0 = Set.of(), set12 = Set.of("x"), set2 = Set.of("x", "y"), setN = Set.of("x", "y", "z");
+		Map<String, Integer> map0 = Map.of(), map1 = Map.of("k", 1), mapN = Map.of("k", 1, "l", 2);
 	}
 
 	/** Configured like {@link SerializationCompatTest}. */
@@ -136,10 +138,11 @@ class AndroidSerializationCompat {
 				// empty map, and API level 30 has List0, List1 and List2 instead of List12 and SubList, so by their class names
 				// these collections can't be read across the platforms, see README.
 				if (!data.registered()) {
-					if (apiLevel < 34 && (name.equals("singleImmutableSet") || name.equals("set12") || name.equals("emptyImmutableSet")
-						|| name.equals("emptyImmutableMap"))) continue;
-					if (apiLevel == 30 && (name.equals("emptyImmutableList") || name.equals("singleImmutableList")
-						|| name.equals("list12") || name.equals("subList"))) continue;
+					if (apiLevel < 34 && (name.equals("singleImmutableSet") || name.equals("set12") || name.equals("set2")
+						|| name.equals("emptyImmutableSet") || name.equals("set0") || name.equals("emptyImmutableMap")
+						|| name.equals("map0"))) continue;
+					if (apiLevel == 30 && (name.equals("emptyImmutableList") || name.equals("list0") || name.equals("singleImmutableList")
+						|| name.equals("list12") || name.equals("list2") || name.equals("subList"))) continue;
 				}
 				try {
 					Object actual = kryo.readClassAndObject(new Input(bytes)), expected = field.get(data.testData());
