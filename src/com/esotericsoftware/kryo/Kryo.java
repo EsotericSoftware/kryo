@@ -1267,8 +1267,8 @@ public class Kryo {
 	}
 
 	/** Returns true if strings are written with references: references are enabled and the reference resolver uses references for
-	 * strings. {@link FieldSerializer} calls this when it creates a String field, after which the result can't change, see
-	 * {@link #setReferences(boolean)}. */
+	 * strings. The first call fixes the result, after which it can't change, see {@link #setReferences(boolean)}.
+	 * {@link FieldSerializer} calls this when it creates a String field. */
 	public boolean usesStringReferences () {
 		if (stringFieldReferences == -1) stringFieldReferences = stringReferences(references, referenceResolver) ? 1 : 0;
 		return stringFieldReferences == 1;
@@ -1361,7 +1361,7 @@ public class Kryo {
 	}
 
 	/** Returns true if the specified type is final. Final types can be serialized more efficiently because they are
-	 * non-polymorphic.
+	 * non-polymorphic. Enums are final by default, also if their constants have bodies, see {@link #setEnumsFinal(boolean)}.
 	 * <p>
 	 * This can be overridden to force non-final classes to be treated as final. Eg, if an application uses ArrayList extensively
 	 * but never uses an ArrayList subclass, treating ArrayList as final could allow FieldSerializer to save 1-2 bytes per
@@ -1412,8 +1412,7 @@ public class Kryo {
 	/** Tracks the generic type arguments and actual classes for type variables in the object graph during serialization.
 	 * <p>
 	 * When serializing a type with a single type parameter, {@link Generics#nextGenericClass() nextGenericClass} will return the
-	 * generic class (or null) and must be followed by {@link Generics#popGenericType() popGenericType}. See
-	 * {@link CollectionSerializer} for an example.
+	 * generic class (or null) and must be followed by {@link Generics#popGenericType() popGenericType}.
 	 * <p>
 	 * When serializing a type with multiple type parameters, {@link Generics#nextGenericTypes() nextGenericTypes} will return an
 	 * array of {@link GenericType}, then for each of those {@link GenericType#resolve(Generics) resolve} returns the generic

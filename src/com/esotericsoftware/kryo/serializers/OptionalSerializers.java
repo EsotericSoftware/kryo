@@ -31,8 +31,8 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
-/** Serializers for {@link Optional}, {@link OptionalInt}, {@link OptionalLong} and {@link OptionalDouble}. Are added as default
- * serializers for Java 8 or later. */
+/** Serializers for {@link Optional}, {@link OptionalInt}, {@link OptionalLong} and {@link OptionalDouble}, which are added as
+ * default serializers. */
 public final class OptionalSerializers {
 	public static void addDefaultSerializers (Kryo kryo) {
 		kryo.addDefaultSerializer(Optional.class, OptionalSerializer::new);

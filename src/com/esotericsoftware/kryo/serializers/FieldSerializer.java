@@ -45,7 +45,7 @@ import java.lang.reflect.RecordComponent;
 
 /** Serializes objects using direct field assignment. FieldSerializer is generic and can serialize most classes without any
  * configuration. All non-public fields are written and read by default, so it is important to evaluate each class that will be
- * serialized. If fields are public, serialization may be faster.
+ * serialized.
  * <p>
  * FieldSerializer is efficient by writing only the field data, without any schema information, using the Java class files as the
  * schema. It does not support adding, removing, or changing the type of fields without invalidating previously serialized bytes.
@@ -643,6 +643,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return name;
 		}
 
+		/** Returns the field, which is shared by all Kryo instances and must not be changed. */
 		public Field getField () {
 			return field;
 		}
@@ -655,6 +656,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 
 		public abstract void read (Input input, Object object);
 
+		/** Reads the value of the field without setting it, eg a record component, which the record's constructor sets. */
 		public abstract Object read (Input input);
 
 		public abstract void copy (Object original, Object copy);

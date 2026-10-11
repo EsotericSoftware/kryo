@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Serializers for java.util.ImmutableCollections, Are added as default serializers for Java 9 or later. */
+/** Serializers for java.util.ImmutableCollections, which are added as default serializers. */
 public final class ImmutableCollectionsSerializers {
 	public static void addDefaultSerializers (Kryo kryo) {
 		JdkImmutableListSerializer.addDefaultSerializers(kryo);
