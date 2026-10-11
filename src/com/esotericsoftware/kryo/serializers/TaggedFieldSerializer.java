@@ -29,7 +29,6 @@ import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.IntMap;
-import com.esotericsoftware.kryo.util.Util;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -231,16 +230,9 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	private void readTag (Input input, int tag, Object object, Object[] values, boolean chunked) {
 		CachedField cachedField = readTags.get(tag);
 		if (config.readUnknownTagData) {
-			Registration registration;
-			try {
-				registration = kryo.readClass(input);
-			} catch (KryoException ex) {
-				String message = "Unable to read unknown tag " + tag + " data (unknown type). (" + getType().getName() + "#"
-					+ cachedField + ")";
-				if (!chunked) throw new KryoException(message, ex);
-				if (DEBUG) debug("kryo", message, ex);
-				return;
-			}
+			Registration registration = GeneratedFields.readClass(this, input, cachedField,
+				cachedField == null ? "tag " + tag : cachedField.name, chunked);
+			if (registration == GeneratedFields.skip) return;
 			if (registration == null) {
 				// The value is null, overwrite the value set by the constructor. Record values are already null.
 				if (cachedField != null && values == null) setNull(cachedField, object);
@@ -259,20 +251,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 					kryo.readObject(input, valueClass);
 				} catch (KryoException ex) {
 					String message = "Unable to read unknown tag " + tag + " data, type: " + className(valueClass) + " ("
-						+ getType().getName() + "#" + cachedField + ")";
+						+ getType().getName() + ")";
 					if (!chunked) throw new KryoException(message, ex);
 					if (DEBUG) debug("kryo", message, ex);
 				}
-				return;
-			}
-
-			// Ensure the type in the data is compatible with the field type.
-			Class fieldType = GeneratedFields.readType(cachedField);
-			if (!Util.isAssignableTo(valueClass, fieldType)) {
-				String message = "Read type is incompatible with the field type: " + className(valueClass) + " -> "
-					+ className(fieldType) + " (" + getType().getName() + "#" + cachedField + ")";
-				if (!chunked) throw new KryoException(message);
-				if (DEBUG) debug("kryo", message);
 				return;
 			}
 
