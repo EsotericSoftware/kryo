@@ -1485,7 +1485,7 @@ kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiator
 
 Android doesn't allow access to the collection wrapped by the unmodifiable and synchronized collections of `java.util.Collections` and by `Collections.newSetFromMap`, so Kryo writes a copy of their elements there, in the same format: they are read as a wrapper of a list, a `LinkedHashSet` or `LinkedHashMap`, or a `TreeSet` or `TreeMap` with the comparator. With references, the wrapped collection is not the same object as other references to it.
 
-The immutable collections of `List.of`, `Set.of` and `Map.of` written on a JVM are read as unmodifiable collections on Android when the app's minimum API level is below 30, because D8 replaces these methods then. If they are registered on both sides with `ImmutableCollectionsSerializers.registerSerializers`, this works on all Android versions; written with their class names, it needs API level 30, and for sets with one or two elements API level 34.
+The immutable collections of `List.of`, `Set.of` and `Map.of` written on a JVM are read as unmodifiable collections on Android when the app's minimum API level is below 30, because D8 replaces these methods then. If they are registered on both sides with `ImmutableCollectionsSerializers.registerSerializers`, this works on all Android versions; written with their class names, it needs API level 30, and for sets with one or two elements API level 34. Likewise, D8 replaces `Map.entry` with `AbstractMap.SimpleImmutableEntry` below API level 30, and an entry of `Map.entry` written on a JVM can be read on Android from API level 30.
 
 ## Thread safety
 

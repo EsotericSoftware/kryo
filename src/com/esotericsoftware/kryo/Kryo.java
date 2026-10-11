@@ -325,12 +325,12 @@ public class Kryo {
 		addDefaultSerializer(AtomicLong.class, withoutSubclassFields(AtomicLong.class, new AtomicLongSerializer()));
 		addDefaultSerializer(AtomicReference.class, withoutSubclassFields(AtomicReference.class, new AtomicReferenceSerializer()));
 		addDefaultSerializer(AbstractMap.SimpleEntry.class,
-			exactType(AbstractMap.SimpleEntry.class, new MapEntrySerializer(AbstractMap.SimpleEntry::new)));
+			exactType(AbstractMap.SimpleEntry.class, new MapEntrySerializer(AbstractMap.SimpleEntry::new, true)));
 		addDefaultSerializer(AbstractMap.SimpleImmutableEntry.class,
-			exactType(AbstractMap.SimpleImmutableEntry.class, new MapEntrySerializer(AbstractMap.SimpleImmutableEntry::new)));
+			exactType(AbstractMap.SimpleImmutableEntry.class, new MapEntrySerializer(AbstractMap.SimpleImmutableEntry::new, false)));
 		// Below API level 30, D8 replaces Map.entry with SimpleImmutableEntry on Android.
 		Class keyValueHolder = classForName("java.util.KeyValueHolder", Map.entry("", ""));
-		if (keyValueHolder != null) addDefaultSerializer(keyValueHolder, new MapEntrySerializer(Map::entry));
+		if (keyValueHolder != null) addDefaultSerializer(keyValueHolder, new MapEntrySerializer(Map::entry, false));
 		OptionalSerializers.addDefaultSerializers(this);
 		TimeSerializers.addDefaultSerializers(this);
 		ImmutableCollectionsSerializers.addDefaultSerializers(this);

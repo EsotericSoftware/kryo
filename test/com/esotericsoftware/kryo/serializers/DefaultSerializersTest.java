@@ -1169,6 +1169,24 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(6, new AbstractMap.SimpleImmutableEntry<>("key", null));
 	}
 
+	@Test
+	void testMapEntryReferences () {
+		// The value of a mutable entry can reference the entry.
+		kryo.setReferences(true);
+		kryo.register(AbstractMap.SimpleEntry.class);
+		kryo.register(ArrayList.class);
+		AbstractMap.SimpleEntry<String, List> entry = new AbstractMap.SimpleEntry<>("key", new ArrayList());
+		entry.getValue().add(entry);
+		Output output = new Output(32);
+		kryo.writeObject(output, entry);
+		AbstractMap.SimpleEntry<String, List> read = kryo.readObject(new Input(output.toBytes()), AbstractMap.SimpleEntry.class);
+		assertEquals("key", read.getKey());
+		assertSame(read, read.getValue().get(0));
+		AbstractMap.SimpleEntry<String, List> copy = kryo.copy(entry);
+		assertNotSame(entry, copy);
+		assertSame(copy, copy.getValue().get(0));
+	}
+
 	protected void doAssertEquals(Object object1, Object object2) {
 		if (object1 instanceof PriorityQueue && object2 instanceof PriorityQueue) {
 			final PriorityQueue q1 = (PriorityQueue) object1;

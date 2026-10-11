@@ -1473,13 +1473,19 @@ public class DefaultSerializers {
 
 	/** Serializer for the map entries of the JDK: {@code Map.entry}, {@link AbstractMap.SimpleEntry} and
 	 * {@link AbstractMap.SimpleImmutableEntry}. Writes the key and the value with their classes, like FieldSerializer does, which
-	 * can't access their fields on Java 16+ without {@code --add-opens java.base/java.util=ALL-UNNAMED}. */
+	 * can't access their fields on Java 16+ without {@code --add-opens java.base/java.util=ALL-UNNAMED}. With references, the
+	 * value of a mutable entry can reference the entry. The key and the value of an immutable entry can't, because the entry is
+	 * created after they are read. */
 	public static class MapEntrySerializer extends Serializer<Entry> {
 		private final BiFunction<Object, Object, Entry> factory;
+		private final boolean mutable;
 
-		/** @param factory Creates an entry from a key and a value. */
-		public MapEntrySerializer (BiFunction<Object, Object, Entry> factory) {
+		/** @param factory Creates an entry from a key and a value.
+		 * @param mutable If true, the entry is created with a null value and the value is set with {@link Entry#setValue(Object)}
+		 *           after the entry is registered as a reference, so the value can reference the entry. */
+		public MapEntrySerializer (BiFunction<Object, Object, Entry> factory, boolean mutable) {
 			this.factory = factory;
+			this.mutable = mutable;
 		}
 
 		public void write (Kryo kryo, Output output, Entry object) {
@@ -1489,12 +1495,20 @@ public class DefaultSerializers {
 
 		public Entry read (Kryo kryo, Input input, Class<? extends Entry> type) {
 			Object key = kryo.readClassAndObject(input);
-			return factory.apply(key, kryo.readClassAndObject(input));
+			if (!mutable) return factory.apply(key, kryo.readClassAndObject(input));
+			Entry entry = factory.apply(key, null);
+			kryo.reference(entry);
+			entry.setValue(kryo.readClassAndObject(input));
+			return entry;
 		}
 
 		public Entry copy (Kryo kryo, Entry original) {
 			Object key = kryo.copy(original.getKey());
-			return factory.apply(key, kryo.copy(original.getValue()));
+			if (!mutable) return factory.apply(key, kryo.copy(original.getValue()));
+			Entry entry = factory.apply(key, null);
+			kryo.reference(entry);
+			entry.setValue(kryo.copy(original.getValue()));
+			return entry;
 		}
 	}
 }
