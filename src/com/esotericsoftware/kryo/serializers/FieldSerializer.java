@@ -370,7 +370,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 	protected int pushTypeVariables () {
 		Generics generics = kryo.getGenerics();
 		GenericType genericType = generics.nextGenericType();
-		if (genericType == null) return 0;
+		if (genericType == null) return generics.pushTypeVariables(genericsHierarchy, null);
 		// nextGenericType pushes the last type argument for the values of a collection or map. It must not be used for the fields,
 		// which don't push their own generic type if optimizeGenerics is false.
 		generics.popGenericType();

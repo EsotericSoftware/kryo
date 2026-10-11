@@ -83,7 +83,9 @@ public interface Generics {
 	/** Stores the types of the type parameters for the specified class hierarchy, resolved from the type arguments of the declared
 	 * type, eg the type of the field that holds the object. The declared type can be a super class or interface of the class of
 	 * the hierarchy. Must be balanced by {@link #popTypeVariables(int)} if {@code > 0} is returned.
-	 * @param type The declared type, as returned by {@link #nextGenericType()}.
+	 * @param type The declared type, as returned by {@link #nextGenericType()}, or null if it is not known. Then the type
+	 *           variables of the hierarchy are stored as unknown, so they don't resolve to those of an enclosing object of the
+	 *           same class.
 	 * @return The number of entries that were pushed. */
 	int pushTypeVariables (GenericsHierarchy hierarchy, GenericType type);
 
