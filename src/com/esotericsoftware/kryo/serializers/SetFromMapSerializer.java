@@ -26,7 +26,9 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Null;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -37,7 +39,9 @@ import java.util.Set;
  * class and comparator are kept. The JDK offers no public API to get the map, so it is read from a private JDK field, like for
  * the unmodifiable and synchronized collections. On Android, which doesn't allow access to the map, a LinkedHashMap with the
  * elements is written in the same format. The Kryo constructor adds it as a default serializer. When registration is required,
- * register {@code Collections.newSetFromMap(new HashMap<>()).getClass()}, which is the class for all maps.
+ * register {@code Collections.newSetFromMap(new HashMap<>()).getClass()}, which is the class for all maps, and on Java 21+
+ * {@code Collections.newSequencedSetFromMap(new LinkedHashMap<>()).getClass()}, which is read as a sequenced set. Register it
+ * last or with an explicit ID, so the IDs of the other classes are the same on older Java versions.
  * <p>
  * The set can only be created after its map was read or copied. So with references, an element that refers to the set through the
  * map is read as null there, like for the unmodifiable and synchronized collections, and gets a different set when copied. A
@@ -46,6 +50,22 @@ import java.util.Set;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class SetFromMapSerializer extends Serializer<Set> {
 	private static final WrappedCollectionGetter mapGetter = new WrappedCollectionGetter("java.util.Collections$SetFromMap", "m");
+
+	/** The class of the set returned by Collections.newSequencedSetFromMap, a subclass of the SetFromMap class, and the method.
+	 * Null before Java 21. In a GraalVM native image, the method is only found with reflection metadata for it. */
+	private static final @Null Class sequencedType;
+	private static final @Null Method newSequencedSetFromMap;
+	static {
+		Class type = null;
+		Method method = null;
+		try {
+			method = Collections.class.getMethod("newSequencedSetFromMap", Class.forName("java.util.SequencedMap"));
+			type = method.invoke(null, new LinkedHashMap()).getClass();
+		} catch (Exception ignored) { // Before Java 21.
+		}
+		sequencedType = type;
+		newSequencedSetFromMap = method;
+	}
 
 	public SetFromMapSerializer () {
 		setAcceptsNull(false);
@@ -56,13 +76,13 @@ public final class SetFromMapSerializer extends Serializer<Set> {
 	}
 
 	public Set read (Kryo kryo, Input input, Class<? extends Set> type) {
-		return newSetFromMap((Map)kryo.readClassAndObject(input));
+		return newSetFromMap(type, (Map)kryo.readClassAndObject(input));
 	}
 
 	public Set copy (Kryo kryo, Set original) {
 		if (isAndroid) {
 			// The set is referenced before the elements are copied, so an element that refers to the set gets the copy.
-			Set copy = Collections.newSetFromMap(new LinkedHashMap());
+			Set copy = create(original.getClass(), new LinkedHashMap());
 			kryo.reference(copy);
 			for (Object element : original)
 				copy.add(kryo.copy(element));
@@ -74,7 +94,7 @@ public final class SetFromMapSerializer extends Serializer<Set> {
 			throw new KryoException(
 				"A shallow copy of a set returned by Collections.newSetFromMap is not supported, the copy needs its own map.");
 		}
-		return newSetFromMap(copy);
+		return newSetFromMap(original.getClass(), copy);
 	}
 
 	private Map map (Set set) {
@@ -85,12 +105,23 @@ public final class SetFromMapSerializer extends Serializer<Set> {
 		return map;
 	}
 
-	/** {@link Collections#newSetFromMap(Map)} requires an empty map, so the keys are added again. */
-	private Set newSetFromMap (Map map) {
+	/** Returns a set of the specified class backed by the map, which must be empty, so the keys are added again. */
+	private Set newSetFromMap (Class type, Map map) {
 		ArrayList keys = new ArrayList(map.keySet());
 		map.clear();
-		Set set = Collections.newSetFromMap(map);
+		Set set = create(type, map);
 		set.addAll(keys);
 		return set;
+	}
+
+	/** Returns a set of the specified class backed by the empty map: a sequenced set for the class of
+	 * Collections.newSequencedSetFromMap, otherwise {@link Collections#newSetFromMap(Map)}. */
+	private static Set create (Class type, Map map) {
+		if (type != sequencedType) return Collections.newSetFromMap(map);
+		try {
+			return (Set)newSequencedSetFromMap.invoke(null, map);
+		} catch (Exception ex) {
+			throw new KryoException("Error creating a set with Collections.newSequencedSetFromMap.", ex);
+		}
 	}
 }

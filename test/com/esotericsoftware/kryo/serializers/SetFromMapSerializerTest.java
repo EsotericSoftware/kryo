@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -82,6 +83,26 @@ class SetFromMapSerializerTest extends KryoTestCase {
 
 		KryoException ex = assertThrows(KryoException.class, () -> kryo.copyShallow(set));
 		assertTrue(ex.getMessage().startsWith("A shallow copy"), ex.getMessage());
+	}
+
+	// The set returned by newSequencedSetFromMap has its own class, a subclass of the SetFromMap class.
+	@Test
+	void testSequencedSetFromMap () throws Exception {
+		Method method;
+		try {
+			method = Collections.class.getMethod("newSequencedSetFromMap", Class.forName("java.util.SequencedMap"));
+		} catch (ClassNotFoundException ex) {
+			return; // Before Java 21.
+		}
+		Set<String> set = (Set<String>)method.invoke(null, new LinkedHashMap<>());
+		kryo.register(set.getClass());
+		Collections.addAll(set, "b", "a", "c");
+		Set<String> read = roundTrip(14, set);
+		assertSame(set.getClass(), read.getClass());
+		assertEquals(List.of("b", "a", "c"), List.copyOf(read));
+		Set<String> copy = kryo.copy(set);
+		assertSame(set.getClass(), copy.getClass());
+		assertEquals(List.of("b", "a", "c"), List.copyOf(copy));
 	}
 
 	private Set<String> setFromMap (Map<String, Boolean> map) {
