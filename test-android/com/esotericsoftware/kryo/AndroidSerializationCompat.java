@@ -133,9 +133,14 @@ class AndroidSerializationCompat {
 				byte[] bytes = input.readBytes(input.readVarInt(true));
 				check(name.equals(field.getName()), "Expected field " + field.getName() + ": " + name);
 				// Before API level 34, Android has ImmutableCollections$Set0, Set1, Set2 and Map0 instead of Set12 and MapN for the
-				// empty map, so by their class names these sets and maps can't be read across the platforms, see README.
-				if (!data.registered() && apiLevel < 34 && (name.equals("singleImmutableSet") || name.equals("set12")
-					|| name.equals("emptyImmutableSet") || name.equals("emptyImmutableMap"))) continue;
+				// empty map, and API level 30 has List0, List1 and List2 instead of List12 and SubList, so by their class names
+				// these collections can't be read across the platforms, see README.
+				if (!data.registered()) {
+					if (apiLevel < 34 && (name.equals("singleImmutableSet") || name.equals("set12") || name.equals("emptyImmutableSet")
+						|| name.equals("emptyImmutableMap"))) continue;
+					if (apiLevel == 30 && (name.equals("emptyImmutableList") || name.equals("singleImmutableList")
+						|| name.equals("list12") || name.equals("subList"))) continue;
+				}
 				try {
 					Object actual = kryo.readClassAndObject(new Input(bytes)), expected = field.get(data.testData());
 					// Sets of different classes, eg Set.of and LinkedHashSet, iterate in a different order.
