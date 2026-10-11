@@ -148,7 +148,10 @@ public class Input extends InputStream implements Poolable {
 		this.maxArraySize = maxArraySize;
 	}
 
-	/** Returns the total number of bytes read. */
+	/** Returns the total number of bytes read. The chunked encoding of CompatibleFieldSerializer and TaggedFieldSerializer finds
+	 * the end of a field with it, so a subclass that reads or skips bytes from the {@link #getInputStream() InputStream} without
+	 * the buffer, eg in {@link #read(byte[], int, int)}, {@link #readBytes(byte[], int, int)} or {@link #skip(int)}, must add them
+	 * to the total. */
 	public long total () {
 		return total + position;
 	}
