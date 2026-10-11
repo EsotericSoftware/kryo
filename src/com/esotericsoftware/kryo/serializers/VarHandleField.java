@@ -457,6 +457,14 @@ class VarHandleField extends ReflectField {
 			copier = copier(getter, setter);
 		}
 
+		public Object get (Object object) {
+			try {
+				return (String)getter.invokeExact(object);
+			} catch (Throwable t) {
+				throw new KryoException(t);
+			}
+		}
+
 		public void write (Output output, Object object) {
 			try {
 				output.writeString((String)getter.invokeExact(object));
