@@ -664,6 +664,19 @@ public class FieldSerializer<T> extends Serializer<T> {
 		Object get (Object object) throws IllegalAccessException {
 			return field.get(object);
 		}
+
+		/** Returns the class of the value for {@link CompatibleFieldSerializer} and {@link TaggedFieldSerializer} to write before
+		 * the value, or null if the value is null. The value of a primitive field isn't read, its class is the wrapper class. */
+		Class classOfValue (Object object) {
+			Class type = field.getType();
+			if (type.isPrimitive()) return getWrapperClass(type);
+			try {
+				Object value = get(object);
+				return value == null ? null : value.getClass();
+			} catch (IllegalAccessException ex) {
+				throw new KryoException("Error accessing field: " + name + " (" + object.getClass().getName() + ")", ex);
+			}
+		}
 	}
 
 	/** Indicates a field should be ignored when its declaring class is registered unless the {@link Kryo#getContext() context} has

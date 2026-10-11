@@ -315,6 +315,10 @@ class UnsafeField extends ReflectField {
 			offset = unsafe.objectFieldOffset(field);
 		}
 
+		public Object get (Object object) {
+			return unsafe.getObject(object, offset);
+		}
+
 		public void write (Output output, Object object) {
 			output.writeString((String)unsafe.getObject(object, offset));
 		}

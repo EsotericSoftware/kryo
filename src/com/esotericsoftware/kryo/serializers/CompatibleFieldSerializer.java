@@ -142,14 +142,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 			// Write the value class so the field data can be read even if the field is removed.
 			if (readUnknownFieldData) {
-				Class valueClass = null;
-				try {
-					if (object != null) {
-						Object value = cachedField.field.get(object);
-						if (value != null) valueClass = value.getClass();
-					}
-				} catch (IllegalAccessException ex) {
-				}
+				Class valueClass = cachedField.classOfValue(object);
 				kryo.writeClass(fieldOutput, valueClass);
 				if (valueClass == null) {
 					if (chunked) chunks.endField(fieldOutput, mark);
