@@ -49,6 +49,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -82,6 +83,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
@@ -1466,6 +1468,33 @@ public class DefaultSerializers {
 		private AtomicReference create (Kryo kryo, Class<? extends AtomicReference> type) {
 			if (type == AtomicReference.class || type == null) return new AtomicReference();
 			return kryo.newInstance(type);
+		}
+	}
+
+	/** Serializer for the map entries of the JDK: {@code Map.entry}, {@link AbstractMap.SimpleEntry} and
+	 * {@link AbstractMap.SimpleImmutableEntry}. Writes the key and the value with their classes, like FieldSerializer does, which
+	 * can't access their fields on Java 16+ without {@code --add-opens java.base/java.util=ALL-UNNAMED}. */
+	public static class MapEntrySerializer extends Serializer<Entry> {
+		private final BiFunction<Object, Object, Entry> factory;
+
+		/** @param factory Creates an entry from a key and a value. */
+		public MapEntrySerializer (BiFunction<Object, Object, Entry> factory) {
+			this.factory = factory;
+		}
+
+		public void write (Kryo kryo, Output output, Entry object) {
+			kryo.writeClassAndObject(output, object.getKey());
+			kryo.writeClassAndObject(output, object.getValue());
+		}
+
+		public Entry read (Kryo kryo, Input input, Class<? extends Entry> type) {
+			Object key = kryo.readClassAndObject(input);
+			return factory.apply(key, kryo.readClassAndObject(input));
+		}
+
+		public Entry copy (Kryo kryo, Entry original) {
+			Object key = kryo.copy(original.getKey());
+			return factory.apply(key, kryo.copy(original.getValue()));
 		}
 	}
 }

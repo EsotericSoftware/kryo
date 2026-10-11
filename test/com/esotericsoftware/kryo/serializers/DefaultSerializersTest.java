@@ -44,6 +44,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -55,6 +56,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.TimeZone;
@@ -1154,6 +1156,17 @@ class DefaultSerializersTest extends KryoTestCase {
 		Counter copy = kryo.copy(counter);
 		assertEquals("name", copy.name);
 		assertEquals(1, copy.get());
+	}
+
+	@Test
+	void testMapEntry () {
+		// FieldSerializer can't access the fields of these classes on Java 16+ without --add-opens java.base/java.util.
+		kryo.register(Map.entry("", "").getClass());
+		kryo.register(AbstractMap.SimpleEntry.class);
+		kryo.register(AbstractMap.SimpleImmutableEntry.class);
+		roundTrip(7, Map.entry("key", 1));
+		roundTrip(7, new AbstractMap.SimpleEntry<>("key", 1));
+		roundTrip(6, new AbstractMap.SimpleImmutableEntry<>("key", null));
 	}
 
 	protected void doAssertEquals(Object object1, Object object2) {

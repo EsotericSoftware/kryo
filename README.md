@@ -621,7 +621,7 @@ Numbers and atomics | `BigInteger`, `BigDecimal`, `AtomicBoolean`, `AtomicIntege
 Date and time | `Date`, `java.sql.Date`, `Time`, `Timestamp`, `Calendar`, `TimeZone`, and `Duration`, `Instant`, `LocalDate`, `LocalTime`, `LocalDateTime`, `ZoneOffset`, `ZoneId`, `OffsetTime`, `OffsetDateTime`, `ZonedDateTime`, `Year`, `YearMonth`, `MonthDay`, `Period`
 Other value types | `Class`, `Enum`, `Optional`, `OptionalInt`, `OptionalLong`, `OptionalDouble`, `UUID`, `URI`, `URL`, `Pattern`, `Locale`, `Currency`, `Charset`, `BitSet`
 Collections | Any `Collection` with a no-arg constructor (CollectionSerializer), `TreeSet`, `PriorityQueue`, `EnumSet`, `ConcurrentSkipListSet`, `PriorityBlockingQueue`, `ArrayBlockingQueue`, `LinkedBlockingQueue`, `LinkedBlockingDeque`, `ConcurrentHashMap.keySet`, `Arrays.asList`
-Maps | Any `Map` with a no-arg constructor (MapSerializer), `TreeMap`, `ConcurrentSkipListMap`, `EnumMap` (not subclasses)
+Maps | Any `Map` with a no-arg constructor (MapSerializer), `TreeMap`, `ConcurrentSkipListMap`, `EnumMap` (not subclasses), the entries of `Map.entry`, `AbstractMap.SimpleEntry` and `AbstractMap.SimpleImmutableEntry` (not subclasses)
 JDK collection factories | `Collections.emptyList`/`emptySet`/`emptyMap`, `singletonList`/`singleton`/`singletonMap`, the immutable collections of `List.of`, `Set.of` and `Map.of`, the [unmodifiable and synchronized wrappers](#unmodifiable-and-synchronized-collections) and `Collections.newSetFromMap`
 Comparators | `Collections.reverseOrder()`, `Collections.reverseOrder(Comparator)`, `String.CASE_INSENSITIVE_ORDER`
 Files and network | `File` and `InetSocketAddress` (not subclasses), `InetAddress`, `ByteBuffer`
