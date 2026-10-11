@@ -643,7 +643,7 @@ SynchronizedCollectionSerializers.register(kryo);
 
 On Java 21+, the set returned by `Collections.newSequencedSetFromMap` is a second class: `kryo.register(Collections.newSequencedSetFromMap(new LinkedHashMap<>()).getClass())`. Like the sequenced wrappers, register it last or with an explicit ID, so the IDs of the other classes are the same on older Java versions.
 
-The serializers for the unmodifiable and synchronized wrappers and for `Collections.newSetFromMap` and `newSequencedSetFromMap` read private JDK fields, because the JDK offers no public API to get the wrapped collection. They need `--add-opens java.base/java.util=ALL-UNNAMED` or Unsafe, and are not available on Android. All other built-in default serializers use only public API.
+The serializers for the unmodifiable and synchronized wrappers and for `Collections.newSetFromMap` and `newSequencedSetFromMap` read private JDK fields, because the JDK offers no public API to get the wrapped collection. They need `--add-opens java.base/java.util=ALL-UNNAMED` or Unsafe; on Android, which allows neither, they write a copy of the elements, see [Android](#android). All other built-in default serializers use only public API.
 
 Some JDK classes have no built-in default serializer, because they can't be serialized with public API or only partially:
 
@@ -892,7 +892,7 @@ Kryo `getGenerics` provides generic type information so serializers can be more 
 
 Generic type inference is enabled by default and can be disabled with Kryo `setOptimizedGenerics(false)`. Disabling generics optimization can increase performance at the cost of a larger serialized size.
 
-If the class has a single type parameter, `nextGenericClass` returns the type parameter class, or null if none. After reading or writing any nested objects, `popGenericType` must be called. See CollectionSerializer for an example.
+If the class has a single type parameter, `nextGenericClass` returns the type parameter class, or null if none. After reading or writing any nested objects, `popGenericType` must be called.
 
 ```java
 public class SomeClass<T> {
@@ -1576,7 +1576,7 @@ public class KryoSerializer {
       protected Kryo create () {
          Kryo kryo = new Kryo();
          // The default serializer, FieldSerializer, writes the fields of a class as they are. With code generation it
-         // is up to twice as fast, see Code generation. If classes can change between writing and reading, eg for
+         // is 1.8 to 2.8 times faster, see Code generation. If classes can change between writing and reading, eg for
          // long term storage, choose a serializer for that, see Compatibility, eg CompatibleFieldSerializerFactory.
          FieldSerializerConfig config = new FieldSerializerConfig();
          config.setCodeGeneration(true);

@@ -30,8 +30,8 @@ import java.lang.reflect.Method;
 
 /** Creates objects without calling their constructors, for {@link StdInstantiatorStrategy} and
  * {@link SerializingInstantiatorStrategy}: with the serialization constructors of the JDK's
- * {@code sun.reflect.ReflectionFactory}, like Java serialization and Objenesis on HotSpot, else with Unsafe, else with
- * Objenesis. */
+ * {@code sun.reflect.ReflectionFactory}, like Java serialization and Objenesis on HotSpot, else with Unsafe for
+ * StdInstantiatorStrategy, else with Objenesis. */
 final class Instantiators {
 	/** {@code sun.reflect.ReflectionFactory}, accessed with reflection, so there is no compile time dependency and no class
 	 * loading where it doesn't exist, eg on Android. */
