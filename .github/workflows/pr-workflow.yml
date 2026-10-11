@@ -39,6 +39,10 @@ jobs:
         run: mvn -B test -pl main -Djvm=${{ steps.jdk17.outputs.path }}/bin/java
         env:
           JAVA_TOOL_OPTIONS: -Dkryo.codeGeneration=true
+      - name: Test with JDK 17 and VarHandle field access
+        run: mvn -B test -pl main -Djvm=${{ steps.jdk17.outputs.path }}/bin/java
+        env:
+          JAVA_TOOL_OPTIONS: -Dkryo.fieldAccess=VARHANDLE
 
       - name: Check code formatting
         run: mvn -B --no-transfer-progress -pl main formatter:validate

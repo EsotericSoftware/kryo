@@ -35,7 +35,7 @@
 		<dependency>
 			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm</artifactId>
-			<version>9.8</version>
+			<version>9.11</version>
 			<optional>true</optional>
 		</dependency>
 	</dependencies>
