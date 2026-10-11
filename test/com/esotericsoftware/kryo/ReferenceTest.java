@@ -145,7 +145,8 @@ class ReferenceTest extends KryoTestCase {
 		assertSame(copy[0], copy[1]);
 	}
 
-	// A serializer's copy must not return null for an object, like before copying referenced the returned copy.
+	// With copy references, a serializer's copy must not return null for an object, like before copying referenced the returned
+	// copy. Without copy references, the null is returned like before.
 	@Test
 	void testCopyReturningNull () {
 		kryo.register(Wrapper.class, new Serializer<Wrapper>() {
@@ -162,6 +163,9 @@ class ReferenceTest extends KryoTestCase {
 		});
 		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> kryo.copy(new Wrapper("value")));
 		assertEquals("object cannot be null.", ex.getMessage());
+
+		kryo.setCopyReferences(false);
+		assertNull(kryo.copy(new Wrapper("value")));
 	}
 
 	public static class Wrapper {
