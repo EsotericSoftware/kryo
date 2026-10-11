@@ -67,7 +67,7 @@ abstract class GeneratedFields {
 	static GeneratedFields generate (FieldSerializer serializer, CachedField[] fields, boolean writeClasses, int[] tags) {
 		try {
 			return CodeGeneration.generate(serializer, fields, writeClasses, tags);
-		} catch (KryoException ex) {
+		} catch (KryoException | VirtualMachineError ex) {
 			throw ex;
 		} catch (Throwable t) { // Eg an error defining the class, then the cached fields are used.
 			throw new KryoException("Unable to generate code for the fields of: " + className(serializer.type), t);
@@ -116,6 +116,26 @@ abstract class GeneratedFields {
 		if (t instanceof KryoException) return (KryoException)t;
 		if (t instanceof Error) throw (Error)t;
 		return new KryoException("Error reading " + field + " at position " + input.position(), t);
+	}
+
+	/** Called by the generated code when reading a record fails: a field is named like the loop over the cached fields, or the
+	 * record if its constructor failed, like {@link FieldSerializer#createRecord(Object[])}.
+	 * @param index The index of the field, or the number of fields if the constructor failed. */
+	static KryoException readRecordError (Throwable t, CachedField[] fields, int index, Input input) {
+		if (index < fields.length) return readError(t, fields[index], input);
+		return recordError(t, fields);
+	}
+
+	/** Called by the generated code when copying a record fails, see
+	 * {@link #readRecordError(Throwable, CachedField[], int, Input)}. */
+	static KryoException copyRecordError (Throwable t, CachedField[] fields, int index, Object original) {
+		if (index < fields.length) return copyError(t, fields[index], original);
+		return recordError(t, fields);
+	}
+
+	static private KryoException recordError (Throwable t, CachedField[] fields) {
+		if (t instanceof Error) throw (Error)t;
+		return new KryoException("Error constructing record: " + className(fields[0].field.getDeclaringClass()), t);
 	}
 
 	/** Called by the generated code when copying a field fails, to name the field like the loop over the cached fields. */

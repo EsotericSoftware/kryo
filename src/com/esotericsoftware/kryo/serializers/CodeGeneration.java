@@ -100,9 +100,9 @@ import java.util.function.IntConsumer;
  *       int index = 0;
  *       Object record;
  *       try {
- *          record = c.invokeExact(input.readString(), (index = 1, ((ReflectField)fields[1]).readValue(input)), ...);
+ *          record = c.invokeExact(input.readString(), (index = 1, ((ReflectField)fields[1]).readValue(input)), ..., index = n);
  *       } catch (Throwable t) {
- *          throw GeneratedFields.readError(t, fields[index], input);
+ *          throw GeneratedFields.readRecordError(t, fields, index, input);
  *       }
  *       return record;
  *    }
@@ -305,11 +305,11 @@ final class CodeGeneration {
 			// public Object readRecord (Input input) and copyRecord (Object original)
 			cb.method("readRecord", descriptor(Object.class, Input.class), ACC_PUBLIC, code -> {
 				Emitter emitter = new Emitter(code, thisClass, kinds, setters, tags, classes, false);
-				emitter.record(emitter::read, "readError", InputDesc);
+				emitter.record(emitter::read, "readRecordError", InputDesc);
 			});
 			cb.method("copyRecord", descriptor(Object.class, Object.class), ACC_PUBLIC, code -> {
 				Emitter emitter = new Emitter(code, thisClass, kinds, setters, tags, classes, false);
-				emitter.record(emitter::copyValue, "copyError", "Ljava/lang/Object;");
+				emitter.record(emitter::copyValue, "copyRecordError", "Ljava/lang/Object;");
 			});
 		}
 		return cb.bytes();
@@ -538,7 +538,8 @@ final class CodeGeneration {
 		}
 
 		/** The body of readRecord or copyRecord: int index = 0; Object record; try { record = c.invokeExact(<value 0>, index = 1,
-		 * <value 1>, ...); } catch (Throwable t) { throw GeneratedFields.<error>(t, fields[index], <local 1>); } return record; */
+		 * <value 1>, ..., index = n); } catch (Throwable t) { throw GeneratedFields.<error>(t, fields, index, <local 1>); } return
+		 * record; The index is the number of fields while the constructor runs, so its exception names the record, not a field. */
 		void record (IntConsumer value, String error, String local1Desc) {
 			int n = kinds.length;
 			if (n == 0) { // No fields to name in an error. return c.invokeExact();
@@ -562,9 +563,12 @@ final class CodeGeneration {
 					value.accept(i);
 					type.append(kinds[i].type);
 				}
+				code.iconst(n);
+				code.istore(index);
 				code.invokevirtual(MethodHandleName, "invokeExact", type + ")Ljava/lang/Object;");
 				code.astore(record);
-			}, () -> throwError(error, "(Ljava/lang/Throwable;" + CachedFieldDesc + local1Desc + ")" + KryoExceptionDesc));
+			}, () -> throwRecordError(error,
+				"(Ljava/lang/Throwable;" + CachedFieldArrayDesc + "I" + local1Desc + ")" + KryoExceptionDesc));
 			code.aload(record);
 			code.areturn();
 		}
@@ -794,6 +798,16 @@ final class CodeGeneration {
 			code.getfield(thisClass, "fields", CachedFieldArrayDesc);
 			code.iload(index);
 			code.aaload();
+			code.aload(1);
+			code.invokestatic(GeneratedFieldsName, error, type);
+			code.athrow();
+		}
+
+		/** throw GeneratedFields.<error>(t, fields, index, <local 1>); */
+		void throwRecordError (String error, String type) {
+			code.aload(0);
+			code.getfield(thisClass, "fields", CachedFieldArrayDesc);
+			code.iload(index);
 			code.aload(1);
 			code.invokestatic(GeneratedFieldsName, error, type);
 			code.athrow();
