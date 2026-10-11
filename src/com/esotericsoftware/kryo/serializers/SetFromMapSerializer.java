@@ -40,7 +40,8 @@ import java.util.Set;
  * the unmodifiable and synchronized collections. On Android, which doesn't allow access to the map, a LinkedHashMap with the
  * elements is written in the same format. The Kryo constructor adds it as a default serializer. When registration is required,
  * register {@code Collections.newSetFromMap(new HashMap<>()).getClass()}, which is the class for all maps, and on Java 21+
- * {@code Collections.newSequencedSetFromMap(new LinkedHashMap<>()).getClass()}, which is read as a sequenced set.
+ * {@code Collections.newSequencedSetFromMap(new LinkedHashMap<>()).getClass()}, which is read as a sequenced set. Register it
+ * last or with an explicit ID, so the IDs of the other classes are the same on older Java versions.
  * <p>
  * The set can only be created after its map was read or copied. So with references, an element that refers to the set through the
  * map is read as null there, like for the unmodifiable and synchronized collections, and gets a different set when copied. A
