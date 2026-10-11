@@ -634,7 +634,7 @@ Some of these classes are JDK-internal, so when registration is required they ca
 ```java
 kryo.register(Arrays.asList().getClass());
 kryo.register(Collections.reverseOrder().getClass());
-kryo.register(Collections.newSetFromMap(new HashMap<>()).getClass());
+kryo.register(Collections.newSetFromMap(new HashMap<>()).getClass()); // On Java 21+ also newSequencedSetFromMap(new LinkedHashMap<>()).
 kryo.register(ByteBuffer.allocate(0).getClass()); // Also allocateDirect and asReadOnlyBuffer.
 ImmutableCollectionsSerializers.registerSerializers(kryo);
 UnmodifiableCollectionSerializers.register(kryo);
