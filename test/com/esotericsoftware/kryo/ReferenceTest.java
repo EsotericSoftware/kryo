@@ -112,6 +112,47 @@ class ReferenceTest extends KryoTestCase {
 		fail("Exception was expected");
 	}
 
+	// A serializer that references a provisional object and returns another one, like the serializers for immutable collections:
+	// later references resolve to the returned object, reading and copying.
+	@Test
+	void testReferenceToReturnedObject () {
+		kryo.setReferences(true);
+		kryo.register(Object[].class);
+		kryo.register(Wrapper.class, new Serializer<Wrapper>() {
+			public void write (Kryo kryo, Output output, Wrapper wrapper) {
+				output.writeString(wrapper.value);
+			}
+
+			public Wrapper read (Kryo kryo, Input input, Class<? extends Wrapper> type) {
+				kryo.reference(new Wrapper("provisional"));
+				return new Wrapper(input.readString());
+			}
+
+			public Wrapper copy (Kryo kryo, Wrapper original) {
+				kryo.reference(new Wrapper("provisional"));
+				return new Wrapper(original.value);
+			}
+		});
+		Wrapper wrapper = new Wrapper("value");
+		Object[] array = {wrapper, wrapper};
+		Output output = new Output(64);
+		kryo.writeClassAndObject(output, array);
+		Object[] read = (Object[])kryo.readClassAndObject(new Input(output.toBytes()));
+		assertEquals("value", ((Wrapper)read[1]).value);
+		assertSame(read[0], read[1]);
+		Object[] copy = kryo.copy(array);
+		assertEquals("value", ((Wrapper)copy[1]).value);
+		assertSame(copy[0], copy[1]);
+	}
+
+	public static class Wrapper {
+		final String value;
+
+		Wrapper (String value) {
+			this.value = value;
+		}
+	}
+
 	public static class ArrayListHolder {
 		private List<Object> parent;
 
