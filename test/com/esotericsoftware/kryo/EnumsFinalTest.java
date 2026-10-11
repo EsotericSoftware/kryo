@@ -33,7 +33,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** Enums with constant bodies are serialized like other enums, so bodies can be added or removed. */
-@SuppressWarnings("deprecation")
 class EnumsFinalTest {
 	@Test
 	void testIsFinal () {
@@ -42,7 +41,7 @@ class EnumsFinalTest {
 		assertTrue(kryo.isFinal(BodyOp.MINUS.getClass())); // The class of the body.
 		assertTrue(kryo.isFinal(BodyOp[].class));
 		assertFalse(kryo.isFinal(Enum.class));
-		kryo.setEnumsFinal(false);
+		kryo.setFormat(Kryo.Format.KRYO5);
 		assertFalse(kryo.isFinal(BodyOp.class));
 		assertTrue(kryo.isFinal(PlainOp.class));
 	}
@@ -96,7 +95,7 @@ class EnumsFinalTest {
 
 	private Kryo kryo (boolean enumsFinal, Class op, Class holder) {
 		Kryo kryo = new Kryo();
-		kryo.setEnumsFinal(enumsFinal);
+		kryo.setFormat(enumsFinal ? Kryo.Format.KRYO6 : Kryo.Format.KRYO5);
 		kryo.register(op, 100);
 		kryo.register(holder, 101);
 		kryo.register(java.util.ArrayList.class, 102);

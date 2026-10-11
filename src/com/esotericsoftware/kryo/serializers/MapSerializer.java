@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
@@ -44,7 +45,6 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	private Class keyClass, valueClass;
 	private Serializer keySerializer, valueSerializer;
 	private boolean keysCanBeNull = true, valuesCanBeNull = true;
-	private boolean writeSameClassOnce = true;
 
 	public MapSerializer () {
 		setAcceptsNull(true);
@@ -114,19 +114,6 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
 
-	/** @param writeSameClassOnce True if the class of the keys or values is written only once when it is unknown and all keys or
-	 *           values are not null and have the same class, and keys and values are written without a null marker if the map
-	 *           contains no null key or value. False to read and write the format of Kryo 5, which writes the class of each key
-	 *           and value if it is unknown, and otherwise a null marker if the serializer doesn't accept null or references are
-	 *           enabled, also if the map contains no null. Default is true. */
-	public void setWriteSameClassOnce (boolean writeSameClassOnce) {
-		this.writeSameClassOnce = writeSameClassOnce;
-	}
-
-	public boolean getWriteSameClassOnce () {
-		return writeSameClassOnce;
-	}
-
 	public void write (Kryo kryo, Output output, T map) {
 		if (map == null) {
 			output.writeByte(0);
@@ -142,11 +129,14 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 
 		// The size has a flag for whether the map contains a null key or value. If not, keys and values with a known serializer
 		// are written without a null marker, like the elements of CollectionSerializer. The same pass over the entries finds
-		// whether all keys or values have the same class, which is written once if the key or value serializer is unknown.
+		// whether all keys or values have the same class, which is written once if the key or value serializer is unknown. Kryo 5
+		// wrote the class of each key and value if it was unknown, and otherwise a null marker if the serializer doesn't accept
+		// null or references are enabled, also if the map contains no null.
 		boolean keysCanBeNull = this.keysCanBeNull, valuesCanBeNull = this.valuesCanBeNull;
 		Serializer keySerializer = this.keySerializer, valueSerializer = this.valueSerializer;
 		boolean hasNull = false, sameKeyClass = keySerializer == null, sameValueClass = valueSerializer == null;
 		Class keyClass = null, valueClass = null;
+		boolean writeSameClassOnce = kryo.getFormat() != Format.KRYO5;
 		if (writeSameClassOnce) {
 			// Nothing to find if the serializers are known and nulls are excluded.
 			if (keysCanBeNull || valuesCanBeNull || sameKeyClass || sameValueClass) {
@@ -249,6 +239,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		boolean keysCanBeNull = this.keysCanBeNull, valuesCanBeNull = this.valuesCanBeNull;
+		boolean writeSameClassOnce = kryo.getFormat() != Format.KRYO5; // See write.
 		int length;
 		if (writeSameClassOnce) {
 			boolean hasNull = input.readVarIntFlag();

@@ -175,14 +175,14 @@ class MapSerializerTest extends KryoTestCase {
 		}
 	}
 
-	/** Returns the bytes after checking that they are read as the same map. */
-	private byte[] writeTypedMap (TypedMap object, boolean references, boolean writeSameClassOnce) {
+	/** Returns the bytes after checking that they are read as the same map.
+	 * @param kryo6 False for the format of Kryo 5. */
+	private byte[] writeTypedMap (TypedMap object, boolean references, boolean kryo6) {
 		Kryo kryo = new Kryo();
+		kryo.setFormat(kryo6 ? Kryo.Format.KRYO6 : Kryo.Format.KRYO5);
 		kryo.setReferences(references);
 		kryo.register(TypedMap.class);
-		MapSerializer serializer = new MapSerializer();
-		serializer.setWriteSameClassOnce(writeSameClassOnce);
-		kryo.register(HashMap.class, serializer);
+		kryo.register(HashMap.class);
 		Output output = new Output(64, -1);
 		kryo.writeObject(output, object);
 		assertEquals(object.map, kryo.readObject(new Input(output.toBytes()), TypedMap.class).map);
@@ -219,12 +219,10 @@ class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	void testWriteSameClassOnceDisabled () {
-		MapSerializer serializer = new MapSerializer();
-		assertTrue(serializer.getWriteSameClassOnce());
-		serializer.setWriteSameClassOnce(false);
-		assertFalse(serializer.getWriteSameClassOnce());
-		kryo.register(LinkedHashMap.class, serializer);
+	void testKryo5Format () {
+		// The class of each key and value is written.
+		kryo.setFormat(Kryo.Format.KRYO5);
+		kryo.register(LinkedHashMap.class);
 		LinkedHashMap map = new LinkedHashMap();
 		map.put("a", 1);
 		map.put("b", 2);

@@ -22,9 +22,9 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.SerializerFactory.BaseSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
@@ -191,9 +191,9 @@ class ChunkedEncodingTest {
 		// names are not found for the new class.
 		for (boolean legacyChunks : new boolean[] {false, true}) {
 			Kryo kryo = new Kryo();
+			kryo.setFormat(legacyChunks ? Format.KRYO5 : Format.KRYO6);
 			CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
 			config.setChunkedEncoding(true);
-			config.setLegacyChunks(legacyChunks);
 			config.setReadUnknownFieldData(false);
 			kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
 			kryo.setRegistrationRequired(false);
@@ -254,10 +254,10 @@ class ChunkedEncodingTest {
 		// comes before the class names and field names of the scope.
 		for (boolean legacyChunks : new boolean[] {false, true}) {
 			Kryo kryo = compatibleKryo(true, false, legacyChunks);
-			kryo.register(Entity3.class, new Entity3Serializer(kryo, legacyChunks), 21);
+			kryo.register(Entity3.class, new Entity3Serializer(kryo), 21);
 			byte[] bytes = write(kryo, new Entity3(5));
 			Kryo reader = compatibleKryo(true, false, legacyChunks);
-			reader.register(Entity3.class, new Entity3Serializer(reader, legacyChunks), 21);
+			reader.register(Entity3.class, new Entity3Serializer(reader), 21);
 			Entity3 read = reader.readObject(new Input(bytes), Entity3.class);
 			assertEquals(5, read.a);
 			assertEquals("s5", read.s);
@@ -265,10 +265,9 @@ class ChunkedEncodingTest {
 	}
 
 	static class Entity3Serializer extends CompatibleFieldSerializer<Entity3> {
-		Entity3Serializer (Kryo kryo, boolean legacyChunks) {
+		Entity3Serializer (Kryo kryo) {
 			super(kryo, Entity3.class);
 			getCompatibleFieldSerializerConfig().setChunkedEncoding(true);
-			getCompatibleFieldSerializerConfig().setLegacyChunks(legacyChunks);
 		}
 
 		public void write (Kryo kryo, Output output, Entity3 object) {
@@ -632,19 +631,14 @@ class ChunkedEncodingTest {
 	}
 
 	@Test
-	void testKryo5Compatibility () {
-		// Kryo5Compatibility enables the chunked encoding of Kryo 5.
+	void testKryo5Format () {
+		// The Kryo 5 format uses the chunked encoding of Kryo 5, with the generic types of the fields and references for strings.
 		Kryo writer = new Kryo();
+		writer.setFormat(Format.KRYO5);
 		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
 		config.setChunkedEncoding(true);
-		config.setLegacyChunks(true);
-		config.setOptimizeGenerics(true);
 		writer.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
-		writer.setReferenceResolver(new MapReferenceResolver() { // Kryo 5 used references for strings.
-			public boolean useReferences (Class type) {
-				return type == String.class || super.useReferences(type);
-			}
-		});
+		writer.setReferences(true);
 		writer.register(Entity.class, 20);
 		writer.register(Entity3.class, 21);
 		writer.register(Entity2.class, 22);
@@ -652,10 +646,10 @@ class ChunkedEncodingTest {
 		byte[] bytes = write(writer, entity);
 
 		Kryo reader = new Kryo();
+		reader.setFormat(Format.KRYO5); // Before registering, which creates the serializers.
 		config = new CompatibleFieldSerializerConfig();
 		config.setChunkedEncoding(true);
 		reader.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
-		Kryo5Compatibility.configure(reader); // Before registering, which creates the serializers.
 		reader.setReferences(true);
 		reader.register(Entity.class, 20);
 		reader.register(Entity3.class, 21);
@@ -663,52 +657,6 @@ class ChunkedEncodingTest {
 		Entity read = reader.readObject(new Input(bytes), Entity.class);
 		assertEquals(5, read.b.x.a);
 		assertSame(read.b.x, read.d);
-	}
-
-	@Test
-	void testUnknownDataOptimizedGenerics () {
-		// With optimizeGenerics, the class of the elements is not written, so the data of a removed field can't be read. It is
-		// skipped.
-		for (boolean references : new boolean[] {false, true}) {
-			Kryo writer = optimizedKryo(references);
-			writer.register(GenericEntity.class, 30);
-			GenericEntity entity = new GenericEntity();
-			entity.a = new ArrayList<>(List.of("a", "b"));
-			entity.b = new HashMap<>(Map.of(1, "b"));
-			entity.z = "z";
-			byte[] bytes = write(writer, entity);
-
-			Kryo reader = optimizedKryo(references);
-			reader.register(GenericEntity2.class, 30);
-			assertEquals("z", reader.readObject(new Input(bytes), GenericEntity2.class).z);
-
-			TaggedFieldSerializerConfig config = new TaggedFieldSerializerConfig();
-			config.setChunkedEncoding(true);
-			config.setReadUnknownTagData(true);
-			config.setOptimizeGenerics(true);
-			writer.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
-			writer.register(TaggedGenericEntity.class, 33);
-			TaggedGenericEntity tagged = new TaggedGenericEntity();
-			tagged.a = entity.a;
-			tagged.b = entity.b;
-			tagged.z = "z";
-			byte[] taggedBytes = write(writer, tagged);
-
-			reader.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
-			reader.register(TaggedGenericEntity2.class, 33);
-			assertEquals("z", reader.readObject(new Input(taggedBytes), TaggedGenericEntity2.class).z);
-		}
-	}
-
-	private Kryo optimizedKryo (boolean references) {
-		Kryo kryo = compatibleKryo(true, references, false);
-		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
-		config.setChunkedEncoding(true);
-		config.setOptimizeGenerics(true);
-		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
-		kryo.register(ArrayList.class, 31);
-		kryo.register(HashMap.class, 32);
-		return kryo;
 	}
 
 	@Test
@@ -806,9 +754,9 @@ class ChunkedEncodingTest {
 
 	private Kryo compatibleKryo (boolean registration, boolean references, boolean legacyChunks) {
 		Kryo kryo = new Kryo();
+		kryo.setFormat(legacyChunks ? Format.KRYO5 : Format.KRYO6);
 		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
 		config.setChunkedEncoding(true);
-		config.setLegacyChunks(legacyChunks);
 		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
 		kryo.setReferences(references);
 		kryo.setRegistrationRequired(registration);
@@ -828,9 +776,9 @@ class ChunkedEncodingTest {
 
 	private Kryo taggedKryo (boolean legacyChunks) {
 		Kryo kryo = new Kryo();
+		kryo.setFormat(legacyChunks ? Format.KRYO5 : Format.KRYO6);
 		TaggedFieldSerializerConfig config = new TaggedFieldSerializerConfig();
 		config.setChunkedEncoding(true);
-		config.setLegacyChunks(legacyChunks);
 		config.setReadUnknownTagData(true);
 		kryo.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
 		kryo.setReferences(true);
@@ -941,26 +889,6 @@ class ChunkedEncodingTest {
 
 	public static class TaggedEntity2 {
 		@Tag(1) public Entity3 x;
-	}
-
-	public static class GenericEntity {
-		public ArrayList<String> a;
-		public HashMap<Integer, String> b;
-		public String z;
-	}
-
-	public static class GenericEntity2 {
-		public String z;
-	}
-
-	public static class TaggedGenericEntity {
-		@Tag(1) public ArrayList<String> a;
-		@Tag(2) public HashMap<Integer, String> b;
-		@Tag(3) public String z;
-	}
-
-	public static class TaggedGenericEntity2 {
-		@Tag(3) public String z;
 	}
 
 	public static class MisreadEntity {

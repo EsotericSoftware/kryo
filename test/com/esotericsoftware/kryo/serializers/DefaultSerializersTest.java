@@ -22,8 +22,8 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -822,7 +822,7 @@ class DefaultSerializersTest extends KryoTestCase {
 	void testConcurrentSortedCollectionsKryo5 () {
 		// Kryo 5 wrote them with CollectionSerializer.
 		Kryo kryo = new Kryo();
-		Kryo5Compatibility.configure(kryo);
+		kryo.setFormat(Format.KRYO5);
 		for (Class type : new Class[] {ConcurrentSkipListSet.class, PriorityBlockingQueue.class, LinkedBlockingQueue.class,
 			LinkedBlockingDeque.class})
 			assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(type).getClass());
@@ -833,7 +833,7 @@ class DefaultSerializersTest extends KryoTestCase {
 		// Kryo 5 wrote them with the default serializer, which FieldSerializer can't create without --add-opens.
 		Kryo kryo = new Kryo();
 		kryo.setDefaultSerializer(JavaSerializer.class);
-		Kryo5Compatibility.configure(kryo);
+		kryo.setFormat(Format.KRYO5);
 		for (Class type : new Class[] {File.class, Inet4Address.class, Inet6Address.class, InetSocketAddress.class,
 			ByteBuffer.allocate(0).getClass(), ByteBuffer.allocateDirect(0).getClass()})
 			assertInstanceOf(JavaSerializer.class, kryo.getDefaultSerializer(type), type.getName());

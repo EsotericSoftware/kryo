@@ -107,6 +107,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.serializers.MapSerializer;
 import com.esotericsoftware.kryo.serializers.OptionalSerializers;
+import com.esotericsoftware.kryo.serializers.RecordSerializer;
 import com.esotericsoftware.kryo.serializers.SetFromMapSerializer;
 import com.esotericsoftware.kryo.serializers.SynchronizedCollectionSerializers;
 import com.esotericsoftware.kryo.serializers.TimeSerializers;
@@ -125,6 +126,7 @@ import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.NoGenerics;
+import com.esotericsoftware.kryo.util.Null;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 
@@ -191,8 +193,8 @@ public class Kryo {
 	private static final int NO_REF = -2;
 	private static final int DEFAULT_SERIALIZER_SIZE = 128; // More than the constructor adds.
 
-	SerializerFactory defaultSerializer = new FieldSerializerFactory();
-	final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(DEFAULT_SERIALIZER_SIZE);
+	private SerializerFactory defaultSerializer = new FieldSerializerFactory();
+	private final ArrayList<DefaultSerializerEntry> defaultSerializers = new ArrayList(DEFAULT_SERIALIZER_SIZE);
 	private final int lowPriorityDefaultSerializerCount;
 	private ObjectMap<String, Class> defaultSerializerTypes;
 
@@ -202,7 +204,9 @@ public class Kryo {
 	private InstantiatorStrategy strategy = new DefaultInstantiatorStrategy();
 	private boolean registrationRequired = true;
 	private boolean warnUnregisteredClasses;
-	private boolean enumsFinal = true;
+	private Format format = Format.KRYO6;
+	/** True once a serializer was created, after which the format can't change. */
+	private boolean serializerCreated;
 	private Predicate<Class> allowedUnregisteredClasses;
 
 	private int depth, maxDepth = Integer.MAX_VALUE;
@@ -210,7 +214,7 @@ public class Kryo {
 	private volatile Thread thread;
 	private ObjectMap context, graphContext;
 
-	ReferenceResolver referenceResolver;
+	private ReferenceResolver referenceResolver;
 	private final IntArray readReferenceIds = new IntArray(0);
 	private boolean references, copyReferences = true;
 	/** Whether String fields of FieldSerializer use references: -1 until the first String field is created, then 0 or 1. The field
@@ -282,11 +286,11 @@ public class Kryo {
 		addDefaultSerializer(Collections.singletonMap(null, null).getClass(), CollectionsSingletonMapSerializer::new);
 		addDefaultSerializer(Collections.singleton(null).getClass(), CollectionsSingletonSetSerializer::new);
 		addDefaultSerializer(TreeSet.class, TreeSetSerializer::new);
-		addDefaultSerializer(ConcurrentSkipListSet.class, ConcurrentSkipListSetSerializer::new);
-		addDefaultSerializer(PriorityBlockingQueue.class, PriorityBlockingQueueSerializer::new);
-		addDefaultSerializer(ArrayBlockingQueue.class, ArrayBlockingQueueSerializer::new);
-		addDefaultSerializer(LinkedBlockingQueue.class, LinkedBlockingQueueSerializer::new);
-		addDefaultSerializer(LinkedBlockingDeque.class, LinkedBlockingDequeSerializer::new);
+		addKryo6DefaultSerializer(ConcurrentSkipListSet.class, factory(ConcurrentSkipListSetSerializer::new));
+		addKryo6DefaultSerializer(PriorityBlockingQueue.class, factory(PriorityBlockingQueueSerializer::new));
+		addDefaultSerializer(ArrayBlockingQueue.class, ArrayBlockingQueueSerializer::new); // Kryo 5 couldn't read it.
+		addKryo6DefaultSerializer(LinkedBlockingQueue.class, factory(LinkedBlockingQueueSerializer::new));
+		addKryo6DefaultSerializer(LinkedBlockingDeque.class, factory(LinkedBlockingDequeSerializer::new));
 		addDefaultSerializer(Collections.reverseOrder().getClass(), new ReverseOrderSerializer());
 		addDefaultSerializer(Collections.reverseOrder(String.CASE_INSENSITIVE_ORDER).getClass(),
 			new ReverseOrderComparatorSerializer());
@@ -301,29 +305,30 @@ public class Kryo {
 		addDefaultSerializer(Locale.class, LocaleSerializer::new);
 		addDefaultSerializer(Charset.class, CharsetSerializer::new);
 		addDefaultSerializer(URL.class, URLSerializer::new);
-		addDefaultSerializer(File.class, exactType(File.class, new FileSerializer()));
-		addDefaultSerializer(InetAddress.class, new InetAddressSerializer());
-		addDefaultSerializer(InetSocketAddress.class, exactType(InetSocketAddress.class, new InetSocketAddressSerializer()));
+		addKryo6DefaultSerializer(File.class, exactType(File.class, new FileSerializer()));
+		addKryo6DefaultSerializer(InetAddress.class, new SingletonSerializerFactory(new InetAddressSerializer()));
+		addKryo6DefaultSerializer(InetSocketAddress.class, exactType(InetSocketAddress.class, new InetSocketAddressSerializer()));
 		addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer::new);
 		addDefaultSerializer(void.class, new VoidSerializer());
 		addDefaultSerializer(PriorityQueue.class, new PriorityQueueSerializer());
 		addDefaultSerializer(BitSet.class, new BitSetSerializer());
-		addDefaultSerializer(ByteBuffer.class, new ByteBufferSerializer());
+		addKryo6DefaultSerializer(ByteBuffer.class, new SingletonSerializerFactory(new ByteBufferSerializer()));
 		addDefaultSerializer(KryoSerializable.class, KryoSerializableSerializer::new);
 		try {
 			addDefaultSerializer(java.sql.Date.class, SqlDateSerializer::new);
 			addDefaultSerializer(java.sql.Time.class, SqlTimeSerializer::new);
-			addDefaultSerializer(Timestamp.class, TimestampSerializer::new);
+			addKryo6DefaultSerializer(Timestamp.class, factory(TimestampSerializer::new));
 		} catch (NoClassDefFoundError ignored) { // java.sql is not available in a named module that doesn't require it.
 		}
 		addDefaultSerializer(ConcurrentHashMap.KeySetView.class, KeySetViewSerializer::new);
-		addDefaultSerializer(URI.class, URISerializer::new);
-		addDefaultSerializer(UUID.class, UUIDSerializer::new);
-		addDefaultSerializer(Pattern.class, PatternSerializer::new);
-		addDefaultSerializer(AtomicBoolean.class, withoutSubclassFields(AtomicBoolean.class, new AtomicBooleanSerializer()));
-		addDefaultSerializer(AtomicInteger.class, withoutSubclassFields(AtomicInteger.class, new AtomicIntegerSerializer()));
-		addDefaultSerializer(AtomicLong.class, withoutSubclassFields(AtomicLong.class, new AtomicLongSerializer()));
-		addDefaultSerializer(AtomicReference.class, withoutSubclassFields(AtomicReference.class, new AtomicReferenceSerializer()));
+		addKryo6DefaultSerializer(URI.class, factory(URISerializer::new));
+		addKryo6DefaultSerializer(UUID.class, factory(UUIDSerializer::new));
+		addKryo6DefaultSerializer(Pattern.class, factory(PatternSerializer::new));
+		addKryo6DefaultSerializer(AtomicBoolean.class, withoutSubclassFields(AtomicBoolean.class, new AtomicBooleanSerializer()));
+		addKryo6DefaultSerializer(AtomicInteger.class, withoutSubclassFields(AtomicInteger.class, new AtomicIntegerSerializer()));
+		addKryo6DefaultSerializer(AtomicLong.class, withoutSubclassFields(AtomicLong.class, new AtomicLongSerializer()));
+		addKryo6DefaultSerializer(AtomicReference.class,
+			withoutSubclassFields(AtomicReference.class, new AtomicReferenceSerializer()));
 		addDefaultSerializer(AbstractMap.SimpleEntry.class,
 			exactType(AbstractMap.SimpleEntry.class, new MapEntrySerializer(AbstractMap.SimpleEntry::new, true)));
 		addDefaultSerializer(AbstractMap.SimpleImmutableEntry.class,
@@ -337,6 +342,7 @@ public class Kryo {
 		UnmodifiableCollectionSerializers.addDefaultSerializers(this);
 		SynchronizedCollectionSerializers.addDefaultSerializers(this);
 		addDefaultSerializer(Collections.newSetFromMap(new HashMap<>()).getClass(), new SetFromMapSerializer());
+		insertDefaultSerializer(Object.class, kryo5RecordSerializer(), Format.KRYO5); // Records, see isSupported.
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
@@ -394,11 +400,35 @@ public class Kryo {
 	public void addDefaultSerializer (Class type, Supplier<? extends Serializer> serializerSupplier) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (serializerSupplier == null) throw new IllegalArgumentException("serializerSupplier cannot be null.");
-		insertDefaultSerializer(type, new BaseSerializerFactory() {
+		insertDefaultSerializer(type, factory(serializerSupplier));
+	}
+
+	private static SerializerFactory factory (Supplier<? extends Serializer> serializerSupplier) {
+		return new BaseSerializerFactory() {
 			public Serializer newSerializer (Kryo kryo, Class type) {
 				return serializerSupplier.get();
 			}
-		});
+		};
+	}
+
+	/** Adds a default serializer that is only used with {@link Format#KRYO6}. With {@link Format#KRYO5}, the type gets the
+	 * serializer Kryo 5 used by default, which had no default serializer for it. */
+	private void addKryo6DefaultSerializer (Class type, SerializerFactory serializerFactory) {
+		insertDefaultSerializer(type, serializerFactory, Format.KRYO6);
+	}
+
+	/** Kryo 5 serialized records with RecordSerializer. The entry is for Object, so it has the lowest priority. */
+	@SuppressWarnings("deprecation")
+	private static SerializerFactory kryo5RecordSerializer () {
+		return new BaseSerializerFactory() {
+			public Serializer newSerializer (Kryo kryo, Class type) {
+				return new RecordSerializer(type);
+			}
+
+			public boolean isSupported (Class type) {
+				return isRecord(type);
+			}
+		};
 	}
 
 	/** Instances of the specified class will use the specified serializer when {@link #register(Class)} or
@@ -416,10 +446,15 @@ public class Kryo {
 	}
 
 	private int insertDefaultSerializer (Class type, SerializerFactory factory) {
+		return insertDefaultSerializer(type, factory, null);
+	}
+
+	/** @param format The format the serializer is used with, or null for all formats. */
+	private int insertDefaultSerializer (Class type, SerializerFactory factory, Format format) {
 		int lowest = 0;
 		for (int i = 0, n = defaultSerializers.size() - lowPriorityDefaultSerializerCount; i < n; i++)
 			if (type.isAssignableFrom(defaultSerializers.get(i).type)) lowest = i + 1;
-		defaultSerializers.add(lowest, new DefaultSerializerEntry(type, factory));
+		defaultSerializers.add(lowest, new DefaultSerializerEntry(type, factory, format));
 		defaultSerializerTypes = null;
 		return lowest;
 	}
@@ -462,12 +497,14 @@ public class Kryo {
 	 * serializer. */
 	public Serializer getDefaultSerializer (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
+		serializerCreated = true;
 
 		Serializer serializerForAnnotation = getDefaultSerializerForAnnotatedType(type);
 		if (serializerForAnnotation != null) return serializerForAnnotation;
 
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
+			if (entry.format != null && entry.format != format) continue;
 			if (entry.type.isAssignableFrom(type) && entry.serializerFactory.isSupported(type))
 				return entry.serializerFactory.newSerializer(this, type);
 		}
@@ -1231,13 +1268,18 @@ public class Kryo {
 	public boolean setReferences (boolean references) {
 		boolean old = this.references;
 		if (references == old) return references;
+		ReferenceResolver referenceResolver = this.referenceResolver;
+		if (references && referenceResolver == null) {
+			referenceResolver = new MapReferenceResolver();
+			referenceResolver.setKryo(this); // Before the check, useReferences needs the Kryo instance.
+		}
 		checkStringReferences(references, referenceResolver);
 		if (old) {
 			referenceResolver.reset();
 			readObject = null;
 		}
 		this.references = references;
-		if (references && referenceResolver == null) referenceResolver = new MapReferenceResolver();
+		this.referenceResolver = referenceResolver;
 		if (TRACE) trace("kryo", "References: " + references);
 		return !references;
 	}
@@ -1275,7 +1317,7 @@ public class Kryo {
 	}
 
 	/** Throws if a String field was created and the specified settings change whether strings use references. */
-	void checkStringReferences (boolean references, ReferenceResolver referenceResolver) {
+	private void checkStringReferences (boolean references, ReferenceResolver referenceResolver) {
 		if (stringFieldReferences != -1 && stringReferences(references, referenceResolver) != (stringFieldReferences == 1)) {
 			throw new KryoException(
 				"Whether strings use references can't be changed after a FieldSerializer was created for a class "
@@ -1361,7 +1403,7 @@ public class Kryo {
 	}
 
 	/** Returns true if the specified type is final. Final types can be serialized more efficiently because they are
-	 * non-polymorphic. Enums are final by default, also if their constants have bodies, see {@link #setEnumsFinal(boolean)}.
+	 * non-polymorphic. Enums are final, also if their constants have bodies, except with {@link Format#KRYO5}.
 	 * <p>
 	 * This can be overridden to force non-final classes to be treated as final. Eg, if an application uses ArrayList extensively
 	 * but never uses an ArrayList subclass, treating ArrayList as final could allow FieldSerializer to save 1-2 bytes per
@@ -1369,24 +1411,36 @@ public class Kryo {
 	public boolean isFinal (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (type.isArray()) type = Util.getElementClass(type);
-		if (enumsFinal && type.isEnum()) return true; // Also with constant bodies, which are subclasses.
+		// Also with constant bodies, which are subclasses. Kryo 5 wrote the class of these enums, because they aren't final.
+		if (type.isEnum() && format != Format.KRYO5) return true;
 		return Modifier.isFinal(type.getModifiers());
 	}
 
-	/** If true, {@link #isFinal(Class)} returns true for enums, also if their constants have bodies, which are subclasses. Then
-	 * the class of an enum value is not written if the enum is known, eg from the type of a field, also if a constant has a body,
-	 * so adding or removing bodies doesn't change the serialized bytes. If false, the class is written for enums with constant
-	 * bodies, like in Kryo 5. This must be set before classes are registered. Default is true.
-	 * @deprecated Only needed to read data written by Kryo 5, see {@link Kryo5Compatibility}. Will be removed in Kryo 7. */
-	@Deprecated
-	public void setEnumsFinal (boolean enumsFinal) {
-		this.enumsFinal = enumsFinal;
+	/** Sets the serialization format, see {@link Format}. The default serializers, Kryo's reference resolvers and the collection,
+	 * map and field serializers write and read the format of the Kryo instance. The serializer of a class is chosen for the format
+	 * when the class is registered, so the format must be set before classes are registered. Default is {@link Format#KRYO6}.
+	 * @throws KryoException if a serializer was already created, or if this changes whether strings use references after a String
+	 *            field was created, see {@link #setReferences(boolean)}. */
+	public void setFormat (Format format) {
+		if (format == null) throw new IllegalArgumentException("format cannot be null.");
+		if (format == this.format) return;
+		if (serializerCreated) {
+			throw new KryoException("The format can't be changed after a serializer was created, because the serializer of a "
+				+ "class is chosen for the format when the class is registered. Set the format before registering classes.");
+		}
+		Format old = this.format;
+		this.format = format; // Before the check, useReferences depends on the format.
+		try {
+			checkStringReferences(references, referenceResolver);
+		} catch (KryoException ex) {
+			this.format = old;
+			throw ex;
+		}
+		if (TRACE) trace("kryo", "Format: " + format);
 	}
 
-	/** @deprecated See {@link #setEnumsFinal(boolean)}. */
-	@Deprecated
-	public boolean getEnumsFinal () {
-		return enumsFinal;
+	public Format getFormat () {
+		return format;
 	}
 
 	/** Returns true if the specified type is a closure. When true, Kryo uses {@link Closure} instead of the specified type to find
@@ -1439,13 +1493,27 @@ public class Kryo {
 		generics = optimizedGenerics ? new DefaultGenerics(this) : NoGenerics.INSTANCE;
 	}
 
-	static final class DefaultSerializerEntry {
+	private static final class DefaultSerializerEntry {
 		final Class type;
 		final SerializerFactory serializerFactory;
+		/** The format the serializer is used with, or null for all formats. */
+		final @Null Format format;
 
-		DefaultSerializerEntry (Class type, SerializerFactory serializerFactory) {
+		DefaultSerializerEntry (Class type, SerializerFactory serializerFactory, @Null Format format) {
 			this.type = type;
 			this.serializerFactory = serializerFactory;
+			this.format = format;
 		}
+	}
+
+	/** The serialization format of a Kryo version, see {@link Kryo#setFormat(Format)}. */
+	public enum Format {
+		/** The format of Kryo 5, to read data written by Kryo 5 and to write data that Kryo 5 can read, see MIGRATION.md. Strings
+		 * use references, records are serialized with RecordSerializer, the types that have new default serializers in Kryo 6 use
+		 * the serializers Kryo 5 used, MapSerializer writes the class of each key and value, the chunked encoding writes chunks and
+		 * uses the generic types of fields, and enums with constant bodies are not final. */
+		KRYO5,
+		/** The format of Kryo 6, the default. It is smaller and faster than {@link #KRYO5}. */
+		KRYO6
 	}
 }

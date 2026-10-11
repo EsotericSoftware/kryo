@@ -22,16 +22,23 @@ package com.esotericsoftware.kryo;
 import static com.esotericsoftware.kryo.ReflectionAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.Kryo5TestData.TestData;
 import com.esotericsoftware.kryo.Kryo5TestData.TestDataJava8;
-import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.DateSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimestampSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.UUIDSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import com.esotericsoftware.kryo.serializers.MapSerializer;
+import com.esotericsoftware.kryo.serializers.RecordSerializer;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
@@ -46,8 +53,12 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -58,8 +69,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
-/** Reads data written by Kryo 5 with {@link Kryo5Compatibility}: the data of {@link SerializationCompatTest} in Kryo 5 and the
- * types that have new default serializers in Kryo 6. */
+/** Reads data written by Kryo 5 with {@link Format#KRYO5}: the data of {@link SerializationCompatTest} in Kryo 5 and the types
+ * that have new default serializers in Kryo 6. */
 class Kryo5CompatibilityTest {
 	@Test
 	void testKryo5TestData () throws IOException {
@@ -137,9 +148,9 @@ class Kryo5CompatibilityTest {
 	@Test
 	void testRegisteredSerializerOfNewDefaultType () {
 		Kryo kryo = new Kryo();
+		kryo.setFormat(Format.KRYO5);
 		TimestampSerializer serializer = new TimestampSerializer();
 		kryo.register(Timestamp.class, serializer);
-		Kryo5Compatibility.configure(kryo);
 		assertSame(serializer, kryo.getSerializer(Timestamp.class));
 
 		Timestamp timestamp = new Timestamp(1234567890123L);
@@ -149,27 +160,64 @@ class Kryo5CompatibilityTest {
 		assertEquals(timestamp, kryo.readObject(new Input(output.toBytes()), Timestamp.class)); // The nanoseconds are kept.
 	}
 
-	@SuppressWarnings("deprecation")
 	@Test
-	void testOptimizeGenerics () {
+	void testFormatBeforeRegistration () {
+		// The serializer of a class is chosen for the format when the class is registered, so the format can't change afterward.
 		Kryo kryo = new Kryo();
-		CompatibleFieldSerializerFactory compatible = new CompatibleFieldSerializerFactory();
-		kryo.setDefaultSerializer(compatible);
-		Kryo5Compatibility.configure(kryo);
-		assertTrue(compatible.getConfig().getOptimizeGenerics());
+		kryo.setFormat(Format.KRYO5);
+		kryo.setFormat(Format.KRYO5);
+		kryo.register(ArrayList.class);
+		kryo.setFormat(Format.KRYO5); // Unchanged.
+		assertThrows(KryoException.class, () -> kryo.setFormat(Format.KRYO6));
+		assertEquals(Format.KRYO5, kryo.getFormat());
+
+		Kryo kryo6 = new Kryo();
+		kryo6.getDefaultSerializer(ArrayList.class);
+		assertThrows(KryoException.class, () -> kryo6.setFormat(Format.KRYO5));
+		assertEquals(Format.KRYO6, kryo6.getFormat());
+	}
+
+	@Test
+	void testDefaultSerializers () {
+		// The types that have new default serializers in Kryo 6 use the serializers Kryo 5 used by default.
+		Kryo kryo = new Kryo();
+		kryo.setFormat(Format.KRYO5);
+		kryo.setDefaultSerializer(JavaSerializer.class); // FieldSerializer can't access the fields of UUID without --add-opens.
+		assertSame(JavaSerializer.class, kryo.getDefaultSerializer(UUID.class).getClass());
+		assertSame(DateSerializer.class, kryo.getDefaultSerializer(Timestamp.class).getClass());
+		assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(LinkedBlockingQueue.class).getClass());
+		assertSame(RecordSerializer.class, kryo.getDefaultSerializer(Point.class).getClass());
 
 		kryo = new Kryo();
-		TaggedFieldSerializerFactory tagged = new TaggedFieldSerializerFactory();
-		kryo.setDefaultSerializer(tagged);
-		Kryo5Compatibility.configure(kryo);
-		assertTrue(tagged.getConfig().getOptimizeGenerics());
+		assertSame(UUIDSerializer.class, kryo.getDefaultSerializer(UUID.class).getClass());
+		assertSame(TimestampSerializer.class, kryo.getDefaultSerializer(Timestamp.class).getClass());
+		assertSame(FieldSerializer.class, kryo.getDefaultSerializer(Point.class).getClass());
+	}
+
+	record Point (int x, int y) {
+	}
+
+	@Test
+	void testMapSerializerFormat () {
+		// MapSerializer writes the Kryo 5 format, also if it is registered explicitly: the class of each key and value.
+		Kryo kryo5 = new Kryo();
+		kryo5.setFormat(Format.KRYO5);
+		kryo5.register(HashMap.class, new MapSerializer());
+		Kryo kryo6 = new Kryo();
+		kryo6.register(HashMap.class, new MapSerializer());
+
+		HashMap map = new HashMap(Map.of("a", 1, "b", 2));
+		byte[] bytes = write(kryo5, map);
+		assertEquals(write(kryo6, map).length + 2, bytes.length);
+		assertEquals(map, kryo5.readObject(new Input(bytes), HashMap.class));
+		assertEquals(map, kryo6.readObject(new Input(write(kryo6, map)), HashMap.class));
 	}
 
 	@Test
 	void testRegisteredImmutableCollections () {
 		Kryo kryo = new Kryo();
+		kryo.setFormat(Format.KRYO5);
 		ImmutableCollectionsSerializers.registerSerializers(kryo);
-		Kryo5Compatibility.configure(kryo);
 		// Like Kryo 5, null elements of the same class are not supported.
 		assertThrows(IllegalArgumentException.class,
 			() -> kryo.writeClassAndObject(new Output(64), Stream.of(null, 1, null).toList()));
@@ -177,42 +225,38 @@ class Kryo5CompatibilityTest {
 
 	@Test
 	void testReferenceResolver () {
-		// Kryo's reference resolvers are replaced by ones that use references for strings, without enabling references.
+		// Kryo's reference resolvers use references for strings, without enabling references.
 		Kryo kryo = new Kryo();
-		Kryo5Compatibility.configure(kryo);
+		kryo.setFormat(Format.KRYO5);
 		assertFalse(kryo.getReferences());
 		kryo.setReferences(true);
 		assertTrue(kryo.getReferenceResolver().useReferences(String.class));
+		assertFalse(new Kryo(new MapReferenceResolver()).getReferenceResolver().useReferences(String.class));
 
-		kryo = new Kryo(new MapReferenceResolver(100));
-		Kryo5Compatibility.configure(kryo);
-		assertTrue(kryo.getReferenceResolver().useReferences(String.class));
-		assertEquals(100, ((MapReferenceResolver)kryo.getReferenceResolver()).getMaximumCapacity());
-
-		// Strings shared by identity are written as references, with each of Kryo's reference resolvers.
+		// Strings shared by identity are written as references, with each of Kryo's reference resolvers and their subclasses.
 		for (ReferenceResolver resolver : new ReferenceResolver[] {new MapReferenceResolver(), new ListReferenceResolver(),
-			new HashMapReferenceResolver()}) {
+			new HashMapReferenceResolver(), new MapReferenceResolver() {
+			}}) {
 			kryo = new Kryo(resolver);
+			kryo.setFormat(Format.KRYO5);
 			kryo.setRegistrationRequired(false);
-			Kryo5Compatibility.configure(kryo);
-			assertNotSame(resolver, kryo.getReferenceResolver());
-			assertTrue(kryo.getReferenceResolver().useReferences(String.class));
+			assertTrue(resolver.useReferences(String.class));
 			String shared = new String("shared");
 			ArrayList<String> list = new ArrayList<>(List.of(shared, shared));
-			Output output = new Output(64);
-			kryo.writeObject(output, list);
-			ArrayList<String> read = kryo.readObject(new Input(output.toBytes()), ArrayList.class);
+			ArrayList<String> read = kryo.readObject(new Input(write(kryo, list)), ArrayList.class);
 			assertEquals(list, read);
-			assertSame(read.get(0), read.get(1), resolver.getClass().getSimpleName());
+			assertSame(read.get(0), read.get(1), resolver.getClass().getName());
 		}
 
-		// Subclasses decide themselves.
-		MapReferenceResolver custom = new MapReferenceResolver() {
+		// Custom reference resolvers decide themselves.
+		ReferenceResolver custom = new MapReferenceResolver() {
+			public boolean useReferences (Class type) {
+				return type != String.class;
+			}
 		};
 		kryo = new Kryo(custom);
-		Kryo5Compatibility.configure(kryo);
-		assertSame(custom, kryo.getReferenceResolver());
-		assertFalse(kryo.getReferenceResolver().useReferences(String.class));
+		kryo.setFormat(Format.KRYO5);
+		assertFalse(custom.useReferences(String.class));
 	}
 
 	@Test
@@ -223,7 +267,7 @@ class Kryo5CompatibilityTest {
 		kryo.setReferences(true); // Kryo's reference resolvers don't use references for strings.
 		kryo.setReferences(false);
 		kryo.setReferenceResolver(new ListReferenceResolver());
-		assertThrows(KryoException.class, () -> Kryo5Compatibility.configure(kryo));
+		assertThrows(KryoException.class, () -> kryo.setFormat(Format.KRYO5)); // Also because a serializer was created.
 		assertThrows(KryoException.class, () -> kryo.setReferenceResolver(new MapReferenceResolver() {
 			public boolean useReferences (Class type) {
 				return true;
@@ -231,28 +275,45 @@ class Kryo5CompatibilityTest {
 		}));
 
 		Kryo kryo5 = new Kryo();
-		Kryo5Compatibility.configure(kryo5);
+		kryo5.setFormat(Format.KRYO5);
 		kryo5.setReferences(true);
 		kryo5.register(WithString.class);
 		kryo5.setReferences(true);
 		assertThrows(KryoException.class, () -> kryo5.setReferences(false));
-		assertThrows(KryoException.class, () -> kryo5.setReferenceResolver(new MapReferenceResolver()));
+		assertThrows(KryoException.class, () -> kryo5.setReferenceResolver(new MapReferenceResolver() {
+			public boolean useReferences (Class type) {
+				return type != String.class;
+			}
+		}));
 
-		// Without references, String fields are written directly, so the resolver can change.
+		// A String field of a serializer created directly, without references: the format can change, but then enabling
+		// references would change whether the field uses references.
 		Kryo kryo6 = new Kryo();
-		kryo6.register(WithString.class);
-		Kryo5Compatibility.configure(kryo6);
+		new FieldSerializer(kryo6, WithString.class);
+		kryo6.setFormat(Format.KRYO5);
 		assertThrows(KryoException.class, () -> kryo6.setReferences(true));
 
+		// With references, the format can't change after the String field was created.
+		Kryo kryo7 = new Kryo(new MapReferenceResolver());
+		new FieldSerializer(kryo7, WithString.class);
+		assertThrows(KryoException.class, () -> kryo7.setFormat(Format.KRYO5));
+		assertEquals(Format.KRYO6, kryo7.getFormat());
+
 		// The resolver has its Kryo instance when useReferences is called for the check.
-		Kryo kryo7 = new Kryo();
-		kryo7.register(WithString.class);
-		kryo7.setReferenceResolver(new MapReferenceResolver() {
+		Kryo kryo8 = new Kryo();
+		kryo8.register(WithString.class);
+		kryo8.setReferenceResolver(new MapReferenceResolver() {
 			public boolean useReferences (Class type) {
 				return !this.kryo.isFinal(type); // Needs the Kryo instance set by setKryo.
 			}
 		});
-		assertTrue(kryo7.getReferences());
+		assertTrue(kryo8.getReferences());
+	}
+
+	private byte[] write (Kryo kryo, Object object) {
+		Output output = new Output(256, -1);
+		kryo.writeObject(output, object);
+		return output.toBytes();
 	}
 
 	static public class WithString {
@@ -267,7 +328,7 @@ class Kryo5CompatibilityTest {
 		} catch (Throwable ex) {
 			correct = false;
 		}
-		assertFalse(correct, "The Kryo 5 data was read correctly without Kryo5Compatibility.");
+		assertFalse(correct, "The Kryo 5 data was read correctly with the Kryo 6 format.");
 	}
 
 	private Kryo newKryo (boolean kryo5) {
@@ -278,12 +339,12 @@ class Kryo5CompatibilityTest {
 	private Kryo newKryo (boolean kryo5, Consumer<Kryo> setup) {
 		// Same configuration as SerializationCompatTest.
 		Kryo kryo = new Kryo(new Kryo5ClassResolver(), new MapReferenceResolver());
+		if (kryo5) kryo.setFormat(Format.KRYO5); // Before registering, which creates the serializers.
 		kryo.setInstantiatorStrategy(new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
 		kryo.register(EnumSet.class);
 		setup.accept(kryo);
-		if (kryo5) Kryo5Compatibility.configure(kryo);
 		return kryo;
 	}
 

@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.benchmarks;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
@@ -145,12 +146,11 @@ public class FieldSerializerBenchmark {
 		/** Only used if chunked. */
 		@Param({"false", "true"}) public boolean legacyChunks;
 
-		@SuppressWarnings("deprecation") // legacyChunks
 		public void setup () {
+			kryo.setFormat(legacyChunks ? Format.KRYO5 : Format.KRYO6);
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
 			factory.getConfig().setCodeGeneration(codeGeneration);
 			factory.getConfig().setChunkedEncoding(chunked);
-			factory.getConfig().setLegacyChunks(legacyChunks);
 			factory.getConfig().setReadUnknownFieldData(true); // Typical to always use.
 			kryo.setDefaultSerializer(factory);
 			super.setup();
@@ -162,12 +162,11 @@ public class FieldSerializerBenchmark {
 		/** Only used if chunked. */
 		@Param({"false", "true"}) public boolean legacyChunks;
 
-		@SuppressWarnings("deprecation") // legacyChunks
 		public void setup () {
+			kryo.setFormat(legacyChunks ? Format.KRYO5 : Format.KRYO6);
 			TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
 			factory.getConfig().setCodeGeneration(codeGeneration);
 			factory.getConfig().setChunkedEncoding(chunked);
-			factory.getConfig().setLegacyChunks(legacyChunks);
 			if (chunked) factory.getConfig().setReadUnknownTagData(true); // Typical to use with chunked.
 			kryo.setDefaultSerializer(factory);
 			super.setup();

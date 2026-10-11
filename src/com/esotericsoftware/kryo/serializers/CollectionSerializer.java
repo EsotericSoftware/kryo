@@ -59,6 +59,11 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		this.elementsCanBeNull = elementsCanBeNull;
 	}
 
+	/** Returns whether the elements can be null, which the serializers of Kryo's immutable collections decide by the format. */
+	boolean elementsCanBeNull (Kryo kryo) {
+		return elementsCanBeNull;
+	}
+
 	/** @param writeSameClassOnce True if the class of the elements is written only once when it is unknown and all elements have
 	 *           the same class (default). False to write the class of each element, eg if the class of an element can change while
 	 *           it is written. Data written with either setting can be read with both. */
@@ -109,7 +114,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 			return;
 		}
 
-		boolean elementsCanBeNull = this.elementsCanBeNull;
+		boolean elementsCanBeNull = elementsCanBeNull(kryo);
 		Serializer elementSerializer = this.elementSerializer;
 		if (elementSerializer == null) {
 			GenericType[] genericTypes = kryo.getGenerics().nextGenericTypes(Collection.class);
@@ -229,7 +234,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		try {
 			T collection;
 			int length;
-			boolean elementsCanBeNull = this.elementsCanBeNull;
+			boolean elementsCanBeNull = elementsCanBeNull(kryo);
 			if (elementSerializer != null) {
 				if (elementsCanBeNull) {
 					elementsCanBeNull = input.readVarIntFlag();
