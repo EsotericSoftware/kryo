@@ -1500,8 +1500,9 @@ public class DefaultSerializers {
 		}
 
 		/** Returns the classes of the key and the value if the type arguments of the entry are known and final, otherwise null.
-		 * Like FieldSerializer, which doesn't resolve the type arguments of a type variable field, the type arguments of the key and
-		 * the value, eg {@code List<String>}, are not used for their elements, so the data is the same as FieldSerializer wrote. */
+		 * Like FieldSerializer, which doesn't resolve the type arguments of a type variable field, the type arguments of the key
+		 * and the value, eg {@code List<String>}, are not used for their elements, so the data is the same as FieldSerializer
+		 * wrote. */
 		private Class[] types (Kryo kryo) {
 			Generics generics = kryo.getGenerics();
 			GenericType[] genericTypes = generics.nextGenericTypes(Entry.class);
