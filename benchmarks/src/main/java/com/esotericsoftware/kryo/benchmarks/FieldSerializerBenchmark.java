@@ -143,11 +143,10 @@ public class FieldSerializerBenchmark {
 
 	static public class CompatibleState extends BenchmarkState {
 		@Param({"true", "false"}) public boolean chunked;
-		/** Only used if chunked. */
-		@Param({"false", "true"}) public boolean legacyChunks;
+		@Param({"KRYO6", "KRYO5"}) public Format format;
 
 		public void setup () {
-			kryo.setFormat(legacyChunks ? Format.KRYO5 : Format.KRYO6);
+			kryo.setFormat(format);
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
 			factory.getConfig().setCodeGeneration(codeGeneration);
 			factory.getConfig().setChunkedEncoding(chunked);
@@ -159,11 +158,10 @@ public class FieldSerializerBenchmark {
 
 	static public class TaggedState extends BenchmarkState {
 		@Param({"true", "false"}) public boolean chunked;
-		/** Only used if chunked. */
-		@Param({"false", "true"}) public boolean legacyChunks;
+		@Param({"KRYO6", "KRYO5"}) public Format format;
 
 		public void setup () {
-			kryo.setFormat(legacyChunks ? Format.KRYO5 : Format.KRYO6);
+			kryo.setFormat(format);
 			TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
 			factory.getConfig().setCodeGeneration(codeGeneration);
 			factory.getConfig().setChunkedEncoding(chunked);

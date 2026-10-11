@@ -205,8 +205,8 @@ public class Kryo {
 	private boolean registrationRequired = true;
 	private boolean warnUnregisteredClasses;
 	private Format format = Format.KRYO6;
-	/** True once a serializer was created, after which the format can't change. */
-	private boolean serializerCreated;
+	/** True once the format was used to create or register a serializer, after which it can't change. */
+	private boolean formatUsed;
 	private Predicate<Class> allowedUnregisteredClasses;
 
 	private int depth, maxDepth = Integer.MAX_VALUE;
@@ -355,6 +355,7 @@ public class Kryo {
 		register(short.class, new ShortSerializer());
 		register(long.class, new LongSerializer());
 		register(double.class, new DoubleSerializer());
+		formatUsed = false; // The registrations above don't depend on the format.
 	}
 
 	// --- Default serializers ---
@@ -411,8 +412,8 @@ public class Kryo {
 		};
 	}
 
-	/** Adds a default serializer that is only used with {@link Format#KRYO6}. With {@link Format#KRYO5}, the type gets the
-	 * serializer Kryo 5 used by default, which had no default serializer for it. */
+	/** Adds a default serializer that is only used with {@link Format#KRYO6}. With {@link Format#KRYO5}, the type gets the next
+	 * matching default serializer or the default serializer, like in Kryo 5, which had no default serializer for it. */
 	private void addKryo6DefaultSerializer (Class type, SerializerFactory serializerFactory) {
 		insertDefaultSerializer(type, serializerFactory, Format.KRYO6);
 	}
@@ -497,7 +498,7 @@ public class Kryo {
 	 * serializer. */
 	public Serializer getDefaultSerializer (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		serializerCreated = true;
+		formatUsed = true;
 
 		Serializer serializerForAnnotation = getDefaultSerializerForAnnotatedType(type);
 		if (serializerForAnnotation != null) return serializerForAnnotation;
@@ -591,6 +592,7 @@ public class Kryo {
 	public Registration register (Registration registration) {
 		int id = registration.getId();
 		if (id < 0) throw new IllegalArgumentException("id must be > 0: " + id);
+		formatUsed = true; // The serializer may have been created for the format.
 
 		Registration existing = classResolver.unregister(id);
 		if (DEBUG && existing != null && existing.getType() != registration.getType())
@@ -1411,22 +1413,26 @@ public class Kryo {
 	public boolean isFinal (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (type.isArray()) type = Util.getElementClass(type);
-		// Also with constant bodies, which are subclasses. Kryo 5 wrote the class of these enums, because they aren't final.
-		if (type.isEnum() && format != Format.KRYO5) return true;
+		if (type.isEnum()) {
+			formatUsed = true; // Serializers decide when they are created whether to write the class of a field value.
+			// Also with constant bodies, which are subclasses. Kryo 5 wrote the class of these enums, because they aren't final.
+			if (format != Format.KRYO5) return true;
+		}
 		return Modifier.isFinal(type.getModifiers());
 	}
 
-	/** Sets the serialization format, see {@link Format}. The default serializers, Kryo's reference resolvers and the collection,
-	 * map and field serializers write and read the format of the Kryo instance. The serializer of a class is chosen for the format
-	 * when the class is registered, so the format must be set before classes are registered. Default is {@link Format#KRYO6}.
-	 * @throws KryoException if a serializer was already created, or if this changes whether strings use references after a String
-	 *            field was created, see {@link #setReferences(boolean)}. */
+	/** Sets the serialization format, see {@link Format}. Kryo's serializers and reference resolvers write and read the format of
+	 * their Kryo instance. Serializers are chosen and configured for the format when they are created, so the format must be set
+	 * before classes are registered or serializers are created. Default is {@link Format#KRYO6}.
+	 * @throws KryoException if the format was already used to create or register a serializer, or if this changes whether strings
+	 *            use references after a String field was created, see {@link #setReferences(boolean)}. */
 	public void setFormat (Format format) {
 		if (format == null) throw new IllegalArgumentException("format cannot be null.");
 		if (format == this.format) return;
-		if (serializerCreated) {
-			throw new KryoException("The format can't be changed after a serializer was created, because the serializer of a "
-				+ "class is chosen for the format when the class is registered. Set the format before registering classes.");
+		if (formatUsed) {
+			throw new KryoException("The format can't be changed after it was used to create or register a serializer, because "
+				+ "serializers are chosen and configured for the format when they are created. Set the format before registering "
+				+ "classes.");
 		}
 		Format old = this.format;
 		this.format = format; // Before the check, useReferences depends on the format.

@@ -175,6 +175,18 @@ class Kryo5CompatibilityTest {
 		kryo6.getDefaultSerializer(ArrayList.class);
 		assertThrows(KryoException.class, () -> kryo6.setFormat(Format.KRYO5));
 		assertEquals(Format.KRYO6, kryo6.getFormat());
+
+		// A serializer created directly decides when it is created whether to write the class of an enum field value.
+		Kryo kryo7 = new Kryo();
+		kryo7.register(WithEnum.class, new FieldSerializer(kryo7, WithEnum.class));
+		assertThrows(KryoException.class, () -> kryo7.setFormat(Format.KRYO5));
+		Kryo kryo8 = new Kryo();
+		new FieldSerializer(kryo8, WithEnum.class);
+		assertThrows(KryoException.class, () -> kryo8.setFormat(Format.KRYO5));
+	}
+
+	static public class WithEnum {
+		BodyOp op;
 	}
 
 	@Test
@@ -248,15 +260,6 @@ class Kryo5CompatibilityTest {
 			assertSame(read.get(0), read.get(1), resolver.getClass().getName());
 		}
 
-		// Custom reference resolvers decide themselves.
-		ReferenceResolver custom = new MapReferenceResolver() {
-			public boolean useReferences (Class type) {
-				return type != String.class;
-			}
-		};
-		kryo = new Kryo(custom);
-		kryo.setFormat(Format.KRYO5);
-		assertFalse(custom.useReferences(String.class));
 	}
 
 	@Test

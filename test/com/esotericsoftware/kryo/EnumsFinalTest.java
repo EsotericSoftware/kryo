@@ -41,9 +41,11 @@ class EnumsFinalTest {
 		assertTrue(kryo.isFinal(BodyOp.MINUS.getClass())); // The class of the body.
 		assertTrue(kryo.isFinal(BodyOp[].class));
 		assertFalse(kryo.isFinal(Enum.class));
-		kryo.setFormat(Kryo.Format.KRYO5);
-		assertFalse(kryo.isFinal(BodyOp.class));
-		assertTrue(kryo.isFinal(PlainOp.class));
+		assertThrows(KryoException.class, () -> kryo.setFormat(Kryo.Format.KRYO5)); // The format was used.
+		Kryo kryo5 = new Kryo();
+		kryo5.setFormat(Kryo.Format.KRYO5);
+		assertFalse(kryo5.isFinal(BodyOp.class));
+		assertTrue(kryo5.isFinal(PlainOp.class));
 	}
 
 	@Test

@@ -13,7 +13,7 @@ jmh="java -cp target/classes:$(cat target/classpath.txt) org.openjdk.jmh.Main $a
 
 set -x
 mkdir -p charts/results
-$jmh charts/results/fieldSerializer.json FieldSerializerBenchmark -p legacyChunks=false
+$jmh charts/results/fieldSerializer.json FieldSerializerBenchmark -p format=KRYO6
 # With and without code generation, for the objectGraph and codeGeneration charts.
 $jmh charts/results/objectGraph.json ObjectGraphBenchmark -p scale=4,16 -p chunked=false,true -p codeGeneration=false,true
 # The unsafe byte buffers need sun.nio.ch.DirectBuffer.

@@ -53,7 +53,6 @@ import org.junit.jupiter.api.Test;
 
 /** Skipping a chunk, eg because the class of a removed field no longer exists, must not break the rest of the object graph
  * (#1247). */
-@SuppressWarnings("deprecation") // legacyChunks, optimizeGenerics
 class ChunkedEncodingTest {
 	@Test
 	void testUnregisteredClassNameInSkippedChunk () {
@@ -632,7 +631,7 @@ class ChunkedEncodingTest {
 
 	@Test
 	void testKryo5Format () {
-		// The Kryo 5 format uses the chunked encoding of Kryo 5, with the generic types of the fields and references for strings.
+		// The Kryo 5 format uses the chunked encoding of Kryo 5.
 		Kryo writer = new Kryo();
 		writer.setFormat(Format.KRYO5);
 		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
@@ -657,6 +656,47 @@ class ChunkedEncodingTest {
 		Entity read = reader.readObject(new Input(bytes), Entity.class);
 		assertEquals(5, read.b.x.a);
 		assertSame(read.b.x, read.d);
+	}
+
+	@Test
+	void testUnknownGenericField () {
+		// With the Kryo 5 format, the class of the elements is not written, so the data of a removed field can't be read. It is
+		// skipped.
+		for (boolean references : new boolean[] {false, true}) {
+			Kryo writer = kryo5(references);
+			writer.register(GenericEntity.class, 30);
+			GenericEntity entity = new GenericEntity();
+			entity.a = new ArrayList<>(List.of("a", "b"));
+			entity.b = new HashMap<>(Map.of(1, "b"));
+			entity.z = "z";
+			byte[] bytes = write(writer, entity);
+
+			Kryo reader = kryo5(references);
+			reader.register(GenericEntity2.class, 30);
+			assertEquals("z", reader.readObject(new Input(bytes), GenericEntity2.class).z);
+
+			TaggedFieldSerializerConfig config = new TaggedFieldSerializerConfig();
+			config.setChunkedEncoding(true);
+			config.setReadUnknownTagData(true);
+			writer.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
+			writer.register(TaggedGenericEntity.class, 33);
+			TaggedGenericEntity tagged = new TaggedGenericEntity();
+			tagged.a = entity.a;
+			tagged.b = entity.b;
+			tagged.z = "z";
+			byte[] taggedBytes = write(writer, tagged);
+
+			reader.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
+			reader.register(TaggedGenericEntity2.class, 33);
+			assertEquals("z", reader.readObject(new Input(taggedBytes), TaggedGenericEntity2.class).z);
+		}
+	}
+
+	private Kryo kryo5 (boolean references) {
+		Kryo kryo = compatibleKryo(true, references, true);
+		kryo.register(ArrayList.class, 31);
+		kryo.register(HashMap.class, 32);
+		return kryo;
 	}
 
 	@Test
@@ -889,6 +929,26 @@ class ChunkedEncodingTest {
 
 	public static class TaggedEntity2 {
 		@Tag(1) public Entity3 x;
+	}
+
+	public static class GenericEntity {
+		public ArrayList<String> a;
+		public HashMap<Integer, String> b;
+		public String z;
+	}
+
+	public static class GenericEntity2 {
+		public String z;
+	}
+
+	public static class TaggedGenericEntity {
+		@Tag(1) public ArrayList<String> a;
+		@Tag(2) public HashMap<Integer, String> b;
+		@Tag(3) public String z;
+	}
+
+	public static class TaggedGenericEntity2 {
+		@Tag(3) public String z;
 	}
 
 	public static class MisreadEntity {

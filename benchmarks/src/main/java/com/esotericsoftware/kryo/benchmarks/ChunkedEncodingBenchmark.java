@@ -55,7 +55,7 @@ public class ChunkedEncodingBenchmark {
 
 	@State(Scope.Thread)
 	static public class BenchmarkState {
-		@Param({"false", "true"}) public boolean legacyChunks;
+		@Param({"KRYO6", "KRYO5"}) public Format format;
 		@Param({"false", "true"}) public boolean references;
 
 		Kryo kryo, skipKryo;
@@ -76,7 +76,7 @@ public class ChunkedEncodingBenchmark {
 
 		private Kryo kryo (boolean registerContent) {
 			Kryo kryo = new Kryo();
-			kryo.setFormat(legacyChunks ? Format.KRYO5 : Format.KRYO6);
+			kryo.setFormat(format);
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
 			factory.getConfig().setChunkedEncoding(true);
 			kryo.setDefaultSerializer(factory);

@@ -59,7 +59,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 		this.elementsCanBeNull = elementsCanBeNull;
 	}
 
-	/** Returns whether the elements can be null, which the serializers of Kryo's immutable collections decide by the format. */
+	/** Returns whether the elements can be null, which the serializer of immutable lists decides by the format. */
 	boolean elementsCanBeNull (Kryo kryo) {
 		return elementsCanBeNull;
 	}
