@@ -486,14 +486,17 @@ public class Kryo {
 		Serializer serializerForAnnotation = getDefaultSerializerForAnnotatedType(type);
 		if (serializerForAnnotation != null) return serializerForAnnotation;
 
+		int builtIn = defaultSerializers.size() - lowPriorityDefaultSerializerCount;
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
+			// Kryo 5 had RecordSerializer as the first built-in default serializer, so a record that is also a Collection, Map or
+			// KryoSerializable was serialized as a record.
+			if (i == builtIn && format == Format.KRYO5 && isRecord(type)) return new RecordSerializer(type);
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
 			if (entry.kryo6Only && format == Format.KRYO5) continue;
 			if (entry.type.isAssignableFrom(type) && entry.serializerFactory.isSupported(type))
 				return entry.serializerFactory.newSerializer(this, type);
 		}
 
-		if (format == Format.KRYO5 && isRecord(type)) return new RecordSerializer(type); // Like Kryo 5.
 		return newDefaultSerializer(type);
 	}
 

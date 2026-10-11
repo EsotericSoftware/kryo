@@ -35,6 +35,7 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.UUIDSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
 import com.esotericsoftware.kryo.serializers.RecordSerializer;
 import com.esotericsoftware.kryo.util.HashMapReferenceResolver;
 import com.esotericsoftware.kryo.util.ListReferenceResolver;
@@ -147,14 +148,27 @@ class Kryo5FormatTest {
 			LinkedBlockingDeque.class})
 			assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(type).getClass(), type.getName());
 		assertSame(RecordSerializer.class, kryo.getDefaultSerializer(Point.class).getClass());
+		// Like Kryo 5, records come before the built-in default serializers, but after the added ones.
+		assertSame(RecordSerializer.class, kryo.getDefaultSerializer(SerializablePoint.class).getClass());
+		kryo.addDefaultSerializer(SerializablePoint.class, JavaSerializer.class);
+		assertSame(JavaSerializer.class, kryo.getDefaultSerializer(SerializablePoint.class).getClass());
 
 		kryo = new Kryo();
 		assertSame(UUIDSerializer.class, kryo.getDefaultSerializer(UUID.class).getClass());
 		assertSame(TimestampSerializer.class, kryo.getDefaultSerializer(Timestamp.class).getClass());
 		assertSame(FieldSerializer.class, kryo.getDefaultSerializer(Point.class).getClass());
+		assertSame(KryoSerializableSerializer.class, kryo.getDefaultSerializer(SerializablePoint.class).getClass());
 	}
 
 	record Point (int x, int y) {
+	}
+
+	record SerializablePoint (int x, int y) implements KryoSerializable {
+		public void write (Kryo kryo, Output output) {
+		}
+
+		public void read (Kryo kryo, Input input) {
+		}
 	}
 
 	@Test

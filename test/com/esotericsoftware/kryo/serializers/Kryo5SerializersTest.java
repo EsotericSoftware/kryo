@@ -85,11 +85,14 @@ class Kryo5SerializersTest extends KryoTestCase {
 				int flag = size >= 63 && size < 127 ? 1 : 0;
 				assertEquals(writeTypedMap(object, references, Format.KRYO5).length - markers + flag, bytes.length);
 
-				object.map.put("null", null);
-				writeTypedMap(object, references, Format.KRYO6);
-				object.map.remove("null");
-				object.map.put(null, 5);
-				writeTypedMap(object, references, Format.KRYO6);
+				for (Format format : Format.values()) {
+					object.map.put("null", null);
+					writeTypedMap(object, references, format);
+					object.map.remove("null");
+					object.map.put(null, 5);
+					writeTypedMap(object, references, format);
+					object.map.remove(null);
+				}
 			}
 		}
 	}
