@@ -1170,6 +1170,16 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	@Test
+	void testMapEntryGenerics () {
+		// The key and value are written without their classes if the type arguments of the field are final, like FieldSerializer.
+		kryo.register(Map.entry("", "").getClass());
+		kryo.register(AbstractMap.SimpleEntry.class);
+		kryo.register(EntryHolder.class);
+		roundTrip(13, new EntryHolder(Map.entry("key", 1), new AbstractMap.SimpleEntry<>("key", 1)));
+		roundTrip(12, new EntryHolder(Map.entry("key", 1), new AbstractMap.SimpleEntry<>("key", null)));
+	}
+
+	@Test
 	void testMapEntryReferences () {
 		// The value of a mutable entry can reference the entry.
 		kryo.setReferences(true);
@@ -1277,6 +1287,9 @@ class DefaultSerializersTest extends KryoTestCase {
 	}
 
 	static class AtomicReferenceSubclass extends AtomicReference<Object> {
+	}
+
+	record EntryHolder (Map.Entry<String, Integer> typed, Map.Entry<String, Object> keyTyped) {
 	}
 
 	static class IntegerComparator implements Comparator<Integer> {
