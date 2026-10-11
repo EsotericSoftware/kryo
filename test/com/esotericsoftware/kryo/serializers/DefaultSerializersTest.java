@@ -386,7 +386,28 @@ class DefaultSerializersTest extends KryoTestCase {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		kryo.setReferences(true);
-		roundTrip(101, EnumSet.of(TestEnum.a, TestEnum.c));
+		roundTrip(94, EnumSet.of(TestEnum.a, TestEnum.c)); // The name of EnumSet, not of the implementation class.
+		assertEquals(EnumSet.class, kryo.getRegistration(EnumSet.of(TestEnum.a).getClass()).getType());
+	}
+
+	@Test
+	void testClassOfImplementationClasses () {
+		// The classes Kryo serializes as another class are read as that class, see ClassSerializer.
+		Class[] classes = {TestEnumWithMethods.a.getClass(), EnumSet.of(TestEnum.a).getClass(), Charset.forName("UTF-8").getClass(),
+			TimeZone.getTimeZone("Europe/Berlin").getClass()};
+		Class[] expected = {TestEnumWithMethods.class, EnumSet.class, Charset.class, TimeZone.class};
+		for (boolean registered : new boolean[] {false, true}) {
+			kryo = new Kryo();
+			kryo.setRegistrationRequired(registered);
+			kryo.register(Class.class);
+			if (registered) for (Class type : expected)
+				kryo.register(type);
+			for (int i = 0; i < classes.length; i++) {
+				Output output = new Output(128);
+				kryo.writeObject(output, classes[i]);
+				assertEquals(expected[i], kryo.readObject(new Input(output.toBytes()), Class.class));
+			}
+		}
 	}
 
 	@Test

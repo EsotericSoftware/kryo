@@ -162,7 +162,7 @@ kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
 
 ### Enums with constant bodies
 
-The class of an enum value is not written if the enum is known, eg from the type of a field, also if its constants have bodies like `PLUS { ... }`. Kryo 5 wrote the class for these enums, because they aren't final, so adding or removing a body changed the serialized bytes ([#454](https://github.com/EsotericSoftware/kryo/issues/454)). The name of an unregistered enum constant with a body is the name of its enum, which Kryo 5 can read too. To read data written by Kryo 5, set this before registering classes, which `Kryo5Compatibility` does. The setting is deprecated, because it is only needed for that:
+The class of an enum value is not written if the enum is known, eg from the type of a field, also if its constants have bodies like `PLUS { ... }`. Kryo 5 wrote the class for these enums, because they aren't final, so adding or removing a body changed the serialized bytes ([#454](https://github.com/EsotericSoftware/kryo/issues/454)). The name of an unregistered enum constant with a body is the name of its enum, which Kryo 5 can read too. This also applies to a `Class` value: the class of a constant with a body, eg `Op.PLUS.getClass()`, is read as the enum, like in Kryo 5 when the enum is registered. To read data written by Kryo 5, set this before registering classes, which `Kryo5Compatibility` does. The setting is deprecated, because it is only needed for that:
 
 ```java
 kryo.setEnumsFinal(false);
@@ -178,9 +178,9 @@ The serializer for immutable lists created by `List.of` and `Stream.toList` supp
 
 `ImmutableCollectionsSerializers.registerSerializers` registers the same IDs on all platforms: on Android, the classes it lacks are registered with placeholders, and the classes only Android has, eg `Set0` before API level 34, share the ID of the JDK class they replace, so registered immutable collections can be read across the platforms. Kryo 5 skipped the missing classes, so the IDs differed between Android and the JVM. Written with their class names, some immutable collections can't be read across the platforms, see [Android](README.md#android).
 
-### Charsets and time zones
+### Enum sets, charsets and time zones
 
-An unregistered charset or time zone is written with the class name `java.nio.charset.Charset` or `java.util.TimeZone` instead of its implementation class, eg `sun.nio.cs.UTF_8` or `sun.util.calendar.ZoneInfo`, which differ between Java vendors and Android. With registration required, register `Charset.class` and `TimeZone.class`. Kryo 5 reads these names too, and Kryo 6 still reads the implementation classes written by Kryo 5 where they exist.
+An unregistered enum set, charset or time zone is written with the class name `java.util.EnumSet`, `java.nio.charset.Charset` or `java.util.TimeZone` instead of its implementation class, eg `java.util.RegularEnumSet`, `sun.nio.cs.UTF_8` or `sun.util.calendar.ZoneInfo`, which differ between Java vendors and Android. With registration required, register `EnumSet.class`, `Charset.class` and `TimeZone.class`. Kryo 5 reads these names too, and Kryo 6 still reads the implementation classes written by Kryo 5 where they exist. A `Class` value of an unregistered implementation class is read as `EnumSet`, `Charset` or `TimeZone`, whether the base class is registered explicitly or implicitly, like in Kryo 5 for a registered `EnumSet`. An implementation class that is registered itself keeps its registration.
 
 ### Locales with a script
 

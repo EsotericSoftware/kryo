@@ -360,6 +360,9 @@ public class DefaultSerializers {
 		}
 	}
 
+	/** Serializer for {@link Class}. A class that Kryo serializes as another class is read as that class, see
+	 * {@link Kryo#getRegistration(Class)}: the class of an enum constant with a body is read as its enum, and the unregistered
+	 * implementation classes of enum sets, charsets and time zones as {@link EnumSet}, {@link Charset} and {@link TimeZone}. */
 	public static class ClassSerializer extends ImmutableSerializer<Class> {
 		{
 			setAcceptsNull(true);
