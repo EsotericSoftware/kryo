@@ -418,14 +418,16 @@ public class FieldSerializer<T> extends Serializer<T> {
 	/** Sets a non-primitive field to null. */
 	void setNull (CachedField cachedField, Object object) {
 		if (cachedField.field.getType().isPrimitive()) return;
-		if (cachedField.isFinal) {
+		if (cachedField.offset != 0) // An Unsafe field, which sets final fields itself.
+			UnsafeField.put(cachedField, object, null);
+		else if (cachedField.isFinal)
 			setFinal(cachedField, object, null);
-			return;
-		}
-		try {
-			cachedField.field.set(object, null);
-		} catch (IllegalAccessException ex) {
-			throw new KryoException("Error setting field to null: " + cachedField, ex);
+		else {
+			try {
+				cachedField.field.set(object, null);
+			} catch (IllegalAccessException ex) {
+				throw new KryoException("Error setting field to null: " + cachedField, ex);
+			}
 		}
 	}
 
