@@ -37,7 +37,7 @@
 			<!-- Optional for the default jar, but included in the versioned jar: code generation on Java versions before 24. -->
 			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm</artifactId>
-			<version>9.8</version>
+			<version>9.11</version>
 		</dependency>
 	</dependencies>
 
