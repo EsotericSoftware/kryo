@@ -1012,6 +1012,7 @@ public class Kryo {
 	/** Maps the original to the copy a serializer returned, unless the serializer referenced that copy: if it referenced another
 	 * copy, eg a mutable collection it then copied to an immutable one, the returned copy replaces it. */
 	private void referenceCopy (Object original, Object copy) {
+		if (copy == null) throw new IllegalArgumentException("object cannot be null.");
 		if (copyReferences && copyReferenced != copy) originalToCopy.put(original, copy);
 		needsCopyReference = null;
 	}
