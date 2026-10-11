@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -57,6 +58,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -724,26 +726,31 @@ class DefaultSerializersTest extends KryoTestCase {
 	@Test
 	void testSubclassWithoutConstructorArguments () {
 		kryo.register(Collections.reverseOrder().getClass());
-		kryo.register(FixedTreeSet.class);
-		kryo.register(FixedSkipListSet.class);
-		kryo.register(FixedBlockingQueue.class);
+		for (Class type : new Class[] {FixedTreeSet.class, FixedSkipListSet.class, FixedPriorityQueue.class,
+			FixedPriorityBlockingQueue.class, FixedArrayBlockingQueue.class, FixedBlockingQueue.class, FixedBlockingDeque.class})
+			kryo.register(type);
 
-		FixedTreeSet treeSet = new FixedTreeSet();
-		treeSet.addAll(List.of(1, 2, 3));
-		assertEquals(List.of(3, 2, 1), new ArrayList<>(writeRead(treeSet)));
-		assertEquals(List.of(3, 2, 1), new ArrayList<>(kryo.copy(treeSet)));
+		// The comparator of the no-arg constructor is kept.
+		for (Collection<Integer> sorted : List.of(new FixedTreeSet(), new FixedSkipListSet())) {
+			sorted.addAll(List.of(1, 2, 3));
+			assertEquals(List.of(3, 2, 1), new ArrayList<>(writeRead(sorted)));
+			assertEquals(List.of(3, 2, 1), new ArrayList<>(kryo.copy(sorted)));
+		}
+		for (Queue<Integer> queue : List.of(new FixedPriorityQueue(), new FixedPriorityBlockingQueue())) {
+			queue.addAll(List.of(1, 2, 3));
+			assertEquals(3, writeRead(queue).peek());
+			assertEquals(3, kryo.copy(queue).peek());
+		}
 
-		FixedSkipListSet skipListSet = new FixedSkipListSet();
-		skipListSet.addAll(List.of(1, 2, 3));
-		assertEquals(List.of(3, 2, 1), new ArrayList<>(writeRead(skipListSet)));
-		assertEquals(List.of(3, 2, 1), new ArrayList<>(kryo.copy(skipListSet)));
-
-		FixedBlockingQueue queue = new FixedBlockingQueue();
-		queue.addAll(List.of(1, 2, 3));
-		FixedBlockingQueue read = writeRead(queue);
-		assertEquals(List.of(1, 2, 3), new ArrayList<>(read));
-		assertEquals(4, read.remainingCapacity());
-		assertEquals(4, kryo.copy(queue).remainingCapacity());
+		// The capacity of the no-arg constructor is kept.
+		for (BlockingQueue<Integer> queue : List.of(new FixedArrayBlockingQueue(), new FixedBlockingQueue(),
+			new FixedBlockingDeque())) {
+			queue.addAll(List.of(1, 2, 3));
+			BlockingQueue<Integer> read = writeRead(queue);
+			assertEquals(List.of(1, 2, 3), new ArrayList<>(read));
+			assertEquals(4, read.remainingCapacity());
+			assertEquals(4, kryo.copy(queue).remainingCapacity());
+		}
 	}
 
 	static class FixedTreeSet extends TreeSet<Integer> {
@@ -758,8 +765,32 @@ class DefaultSerializersTest extends KryoTestCase {
 		}
 	}
 
+	static class FixedPriorityQueue extends PriorityQueue<Integer> {
+		public FixedPriorityQueue () {
+			super(Collections.reverseOrder());
+		}
+	}
+
+	static class FixedPriorityBlockingQueue extends PriorityBlockingQueue<Integer> {
+		public FixedPriorityBlockingQueue () {
+			super(11, Collections.reverseOrder());
+		}
+	}
+
+	static class FixedArrayBlockingQueue extends ArrayBlockingQueue<Integer> {
+		public FixedArrayBlockingQueue () {
+			super(7);
+		}
+	}
+
 	static class FixedBlockingQueue extends LinkedBlockingQueue<Integer> {
 		public FixedBlockingQueue () {
+			super(7);
+		}
+	}
+
+	static class FixedBlockingDeque extends LinkedBlockingDeque<Integer> {
+		public FixedBlockingDeque () {
 			super(7);
 		}
 	}
