@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.*;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory;
@@ -698,7 +697,6 @@ class CodeGenerationTest extends KryoTestCase {
 		testCompatibleFieldSerializer(true, true, 0);
 	}
 
-	@SuppressWarnings("deprecation") // Kryo 5 chunks.
 	private void testCompatibleFieldSerializer (boolean readUnknownFieldData, boolean chunked, int length) {
 		CompatibleFieldSerializerFactory factory = compatible(readUnknownFieldData, chunked);
 		factory.getConfig().setCodeGeneration(true);
@@ -806,13 +804,6 @@ class CodeGenerationTest extends KryoTestCase {
 		cachedFields.register(Nested.class, new CompatibleFieldSerializer(cachedFields, Nested.class, cachedFieldsFactory.getConfig()));
 		assertArrayEquals(write(cachedFields, nested), write(kryo, nested));
 		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownFieldData);
-
-		// The chunked encoding of Kryo 5 uses the cached fields.
-		factory.getConfig().setChunkedEncoding(true);
-		Kryo kryo5 = new Kryo();
-		kryo5.setFormat(Format.KRYO5);
-		kryo5.register(Nested.class, new CompatibleFieldSerializer(kryo5, Nested.class, factory.getConfig()));
-		assertNull(((FieldSerializer)kryo5.getSerializer(Nested.class)).generated());
 	}
 
 	@Test
@@ -963,13 +954,6 @@ class CodeGenerationTest extends KryoTestCase {
 				assertTrue(ex.getMessage().contains("Read type is incompatible with the field type"), ex.getMessage());
 			}
 		}
-
-		// The chunked encoding of Kryo 5 uses the cached fields.
-		factory.getConfig().setChunkedEncoding(true);
-		Kryo kryo5 = new Kryo();
-		kryo5.setFormat(Format.KRYO5);
-		kryo5.register(Tagged.class, new TaggedFieldSerializer(kryo5, Tagged.class, factory.getConfig()));
-		assertNull(((FieldSerializer)kryo5.getSerializer(Tagged.class)).generated());
 	}
 
 	static private void writeTagged (Kryo kryo, Output output, int tag, boolean writeClass, Object value) {

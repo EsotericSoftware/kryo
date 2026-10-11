@@ -55,19 +55,17 @@ Kryo kryo = new Kryo();
 kryo.setFormat(Format.KRYO5);
 ```
 
-Kryo's serializers and reference resolvers write and read the format of their Kryo instance. With the Kryo 5 format, strings use references, records are serialized with RecordSerializer, the types that have new default serializers in Kryo 6 use the serializers Kryo 5 used, MapSerializer and the chunked encoding write the Kryo 5 format, CompatibleFieldSerializer and TaggedFieldSerializer use the generic types of fields, and enums with constant bodies are not final. This applies to the default serializers, to serializers that are registered explicitly or added as default serializers, and to subclasses of Kryo's reference resolvers that inherit `useReferences`. Serializers that were registered with Kryo 5 keep being registered, see [New default serializers](#new-default-serializers).
+Kryo's serializers and reference resolvers then write and read the Kryo 5 format, also when they are registered explicitly, added as default serializers, or subclassed without overriding `useReferences`; each section under [Serialization format](#serialization-format) says what changes. Serializers are configured for the format when they are created, so `setFormat` throws an exception once a class was registered or a serializer created. Serializers you registered with Kryo 5 for types that now have default serializers, eg `UUIDSerializer`, must still be registered, see [New default serializers](#new-default-serializers).
 
-Serializers are chosen and configured for the format when they are created, so the format must be set before classes are registered: `setFormat` throws an exception if the format was already used, eg by registering a class. `getFormat` returns the format, eg to store it with the data.
-
-The Kryo 5 format is a best effort to read existing data with Kryo's serializers. There is no guarantee that it covers a setup with custom serializers or custom class or reference resolvers, and some Kryo 5 data can't be read at all, eg records with generic components or unmodifiable collections, see the sections below. Use it to keep reading data during a transition, or to read the data once and write it again with the Kryo 6 format, which is smaller, faster and loses no data in skipped fields. Like with the migration from Kryo 4 to Kryo 5, reading data across major versions isn't guaranteed.
+The Kryo 5 format is a best effort. It doesn't cover custom serializers or custom class or reference resolvers, and some Kryo 5 data can't be read at all, eg records with generic components or unmodifiable collections. Use it to keep reading data during a transition, or to read the data once and write it again with the Kryo 6 format, which is smaller, faster and loses no data in skipped fields. Like with the migration from Kryo 4 to Kryo 5, reading data across major versions isn't guaranteed.
 
 Kryo 5 can read data written with the Kryo 5 format, unless it contains locales with a script, generic types that Kryo 6 resolves but Kryo 5 ignored, see [Collections and maps](#collections-and-maps), or types Kryo 5 couldn't read, eg `EnumMap` or `ArrayBlockingQueue`.
 
-Like in Kryo 5, String fields of FieldSerializer and its subclasses decide when the serializer is created whether they use references: Kryo 5 wrote String fields without references if `setReferences(true)` was called after registering the classes, but strings in collections and arrays with references. To read such data, keep the order of `setReferences` and `register` the Kryo 5 code used, and set the format before registering classes. Unlike Kryo 5, Kryo 6 throws an exception if `setReferences`, `setReferenceResolver` or `setFormat` changes whether strings use references after a String field was created, because the data of that field would differ from the data of a Kryo instance that was configured before registering the classes.
+Like in Kryo 5, a String field of FieldSerializer and its subclasses decides when it is created whether it uses references: Kryo 5 wrote String fields without references if `setReferences(true)` was called after registering the classes, but strings in collections and arrays with references. To read such data, keep the order of `setReferences` and `register` the Kryo 5 code used. Unlike Kryo 5, Kryo 6 throws an exception if `setReferences` or `setReferenceResolver` changes whether strings use references after a String field was created.
 
 ## Serialization format
 
-The following changes affect data serialized with Kryo 5, the most common first. Each section says how to read the Kryo 5 data without the Kryo 5 format, eg for a single class.
+The following changes affect data serialized with Kryo 5, the most common first. Each section says how to read the Kryo 5 data.
 
 ### Strings with references
 
@@ -142,7 +140,7 @@ The end of a field is found with `Input#total()`, so a custom Input that reads o
 
 ### Generic fields with CompatibleFieldSerializer and TaggedFieldSerializer
 
-CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` no longer use the generic type of a field to optimize its value. Kryo 5 omitted the class of collection elements and map keys and values if the field's type arguments were final, eg `List<String>`, so the value could not be read anymore once the field was removed ([#1098](https://github.com/EsotericSoftware/kryo/issues/1098)). To read such data written by Kryo 5, use the Kryo 5 format, which uses the generic types like Kryo 5, so data with such a field that has since been removed can only be read if it was written with chunked encoding. The collection and map serializers write the class of the elements once per collection anyway, so the optimization saves almost nothing.
+CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` no longer use the generic type of a field to optimize its value. Kryo 5 omitted the class of collection elements and map keys and values if the field's type arguments were final, eg `List<String>`, so the value could not be read anymore once the field was removed ([#1098](https://github.com/EsotericSoftware/kryo/issues/1098)). To read such data written by Kryo 5, use the Kryo 5 format, which uses the generic types like Kryo 5, so data with such a field that has since been removed can only be read if it was written with chunked encoding.
 
 ### Enums with constant bodies
 

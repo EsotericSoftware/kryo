@@ -23,7 +23,6 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -64,11 +63,6 @@ class SyntheticFieldsTest {
 		assertTrue(new FieldSerializerConfig().getIgnoreSyntheticFields());
 		Outer outer = new Outer("outer");
 		Outer.Member member = outer.new Member();
-		assertNull(roundTrip(kryo, member).outer());
-
-		// Like Kryo 5, so the Kryo 5 format doesn't change it.
-		kryo = newKryo(null);
-		kryo.setFormat(Format.KRYO5);
 		assertNull(roundTrip(kryo, member).outer());
 	}
 

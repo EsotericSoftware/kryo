@@ -22,7 +22,6 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.SerializerFactory.BaseSerializerFactory;
@@ -37,16 +36,13 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSe
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
 import com.esotericsoftware.kryo.unsafe.UnsafeInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
-import com.esotericsoftware.kryo.util.MapReferenceResolver;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
@@ -57,8 +53,8 @@ class ChunkedEncodingTest {
 	@Test
 	void testUnregisteredClassNameInSkippedChunk () {
 		Entity entity = entity(false);
-		byte[] bytes = removeEntity2(write(compatibleKryo(false, false, false), entity));
-		Entity read = compatibleKryo(false, false, false).readObject(new Input(bytes), Entity.class);
+		byte[] bytes = removeEntity2(write(compatibleKryo(false, false), entity));
+		Entity read = compatibleKryo(false, false).readObject(new Input(bytes), Entity.class);
 		assertEquals(10, read.c.a);
 		assertEquals(15, read.d.a);
 	}
@@ -73,7 +69,7 @@ class ChunkedEncodingTest {
 
 		// The buffer is replaced when the same Kryo writes to a stream of another kind. The int field is written with fixed length,
 		// which has the byte order of the stream, unlike a varint.
-		Kryo kryo = compatibleKryo(true, false, false);
+		Kryo kryo = compatibleKryo(true, false);
 		((FieldSerializer)kryo.getSerializer(Entity3.class)).getField("a").setVariableLengthEncoding(false);
 		Entity entity = entity(false);
 		for (Output output : new Output[] {new UnsafeOutput(1024), new Output(1024), new UnsafeByteBufferOutput(1024), new Output(1024)}) {
@@ -90,8 +86,8 @@ class ChunkedEncodingTest {
 	@Test
 	void testFieldNamesInSkippedChunk () {
 		Entity entity = entity(false);
-		byte[] bytes = write(compatibleKryo(true, false, false), entity);
-		Kryo reader = compatibleKryo(true, false, false);
+		byte[] bytes = write(compatibleKryo(true, false), entity);
+		Kryo reader = compatibleKryo(true, false);
 		reader.getClassResolver().unregister(22); // Entity2 was removed.
 		Entity read = reader.readObject(new Input(bytes), Entity.class);
 		assertEquals(10, read.c.a);
@@ -102,8 +98,8 @@ class ChunkedEncodingTest {
 	@Test
 	void testReferencesInSkippedChunk () {
 		Entity entity = entity(true);
-		byte[] bytes = write(compatibleKryo(true, true, false), entity);
-		Kryo reader = compatibleKryo(true, true, false);
+		byte[] bytes = write(compatibleKryo(true, true), entity);
+		Kryo reader = compatibleKryo(true, true);
 		reader.getClassResolver().unregister(22);
 		Entity read = reader.readObject(new Input(bytes), Entity.class);
 		assertEquals(10, read.c.a);
@@ -130,18 +126,18 @@ class ChunkedEncodingTest {
 	void testNestedStream () {
 		// DeflateSerializer writes Entity2 to its own stream, which starts a new scope with its own class names and field names.
 		Entity entity = entity(true);
-		Kryo writer = compatibleKryo(true, true, false);
+		Kryo writer = compatibleKryo(true, true);
 		writer.register(Entity2.class, new DeflateSerializer(writer.getDefaultSerializer(Entity2.class)), 22);
 		byte[] bytes = write(writer, entity);
 
-		Kryo reader = compatibleKryo(true, true, false);
+		Kryo reader = compatibleKryo(true, true);
 		reader.register(Entity2.class, new DeflateSerializer(reader.getDefaultSerializer(Entity2.class)), 22);
 		Entity read = reader.readObject(new Input(bytes), Entity.class);
 		assertEquals(5, read.b.x.a);
 		assertSame(read.b.x, read.d);
 		assertSame(read.c, read.e);
 
-		reader = compatibleKryo(true, true, false);
+		reader = compatibleKryo(true, true);
 		reader.getClassResolver().unregister(22);
 		read = reader.readObject(new Input(bytes), Entity.class);
 		assertEquals(10, read.c.a);
@@ -188,57 +184,47 @@ class ChunkedEncodingTest {
 	void testChangedFieldType () {
 		// Without readUnknownFieldData, the class of a field with a final type is not written. If the type changed, the field
 		// names are not found for the new class.
-		for (boolean legacyChunks : new boolean[] {false, true}) {
-			Kryo kryo = new Kryo();
-			kryo.setFormat(legacyChunks ? Format.KRYO5 : Format.KRYO6);
-			CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
-			config.setChunkedEncoding(true);
-			config.setReadUnknownFieldData(false);
-			kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
-			kryo.setRegistrationRequired(false);
-			byte[] bytes = write(kryo, new Outer1());
-			if (legacyChunks) // The field names are identified by their position.
-				assertEquals(5, kryo.readObject(new Input(bytes), Outer2.class).inner.a);
-			else {
-				KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(bytes), Outer2.class));
-				assertTrue(ex.getMessage().contains("readUnknownFieldData"));
-			}
-		}
+		Kryo kryo = new Kryo();
+		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setReadUnknownFieldData(false);
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		kryo.setRegistrationRequired(false);
+		byte[] bytes = write(kryo, new Outer1());
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(bytes), Outer2.class));
+		assertTrue(ex.getMessage().contains("readUnknownFieldData"));
 	}
 
 	@Test
-	void testTaggedLegacyChunks () {
-		// The tags are written outside the chunks.
-		for (boolean legacyChunks : new boolean[] {false, true}) {
-			TaggedEntity entity = new TaggedEntity();
-			entity.b = new TaggedEntity2();
-			entity.b.x = new Entity3(5);
-			entity.c = new Entity3(10);
-			byte[] bytes = write(taggedKryo(legacyChunks), entity);
-			TaggedEntity read = taggedKryo(legacyChunks).readObject(new Input(bytes), TaggedEntity.class);
-			assertEquals(5, read.b.x.a);
-			assertEquals(10, read.c.a);
-			assertNull(read.d);
+	void testTaggedRemovedField () {
+		TaggedEntity entity = new TaggedEntity();
+		entity.b = new TaggedEntity2();
+		entity.b.x = new Entity3(5);
+		entity.c = new Entity3(10);
+		byte[] bytes = write(taggedKryo(), entity);
+		TaggedEntity read = taggedKryo().readObject(new Input(bytes), TaggedEntity.class);
+		assertEquals(5, read.b.x.a);
+		assertEquals(10, read.c.a);
+		assertNull(read.d);
 
-			Kryo reader = taggedKryo(legacyChunks);
-			((TaggedFieldSerializer)reader.getSerializer(TaggedEntity.class)).removeField("b");
-			read = reader.readObject(new Input(bytes), TaggedEntity.class);
-			assertNull(read.b);
-			assertEquals(10, read.c.a);
-		}
+		Kryo reader = taggedKryo();
+		((TaggedFieldSerializer)reader.getSerializer(TaggedEntity.class)).removeField("b");
+		read = reader.readObject(new Input(bytes), TaggedEntity.class);
+		assertNull(read.b);
+		assertEquals(10, read.c.a);
 	}
 
 	@Test
 	void testOtherSerializerInField () {
 		// The class names and references in data written by other serializers in a skipped field are not lost.
 		for (boolean deflate : new boolean[] {false, true}) {
-			Kryo writer = compatibleKryo(false, true, false);
+			Kryo writer = compatibleKryo(false, true);
 			Serializer serializer = new FieldSerializer(writer, Entity2.class);
 			writer.register(Entity2.class, deflate ? new DeflateSerializer(serializer) : serializer, 22);
 			Entity entity = entity(true); // Entity3 is unregistered and first written by FieldSerializer in the skipped field.
 			byte[] bytes = write(writer, entity);
 
-			Kryo reader = compatibleKryo(false, true, false); // Entity2 is not registered, so the field is skipped.
+			Kryo reader = compatibleKryo(false, true); // Entity2 is not registered, so the field is skipped.
 			Entity read = reader.readObject(new Input(bytes), Entity.class);
 			assertNull(read.b);
 			assertEquals(10, read.c.a);
@@ -251,16 +237,14 @@ class ChunkedEncodingTest {
 	void testCreate () {
 		// A subclass writes data for create before the object, as described in the README. For the outermost object, this data
 		// comes before the class names and field names of the scope.
-		for (boolean legacyChunks : new boolean[] {false, true}) {
-			Kryo kryo = compatibleKryo(true, false, legacyChunks);
-			kryo.register(Entity3.class, new Entity3Serializer(kryo), 21);
-			byte[] bytes = write(kryo, new Entity3(5));
-			Kryo reader = compatibleKryo(true, false, legacyChunks);
-			reader.register(Entity3.class, new Entity3Serializer(reader), 21);
-			Entity3 read = reader.readObject(new Input(bytes), Entity3.class);
-			assertEquals(5, read.a);
-			assertEquals("s5", read.s);
-		}
+		Kryo kryo = compatibleKryo(true, false);
+		kryo.register(Entity3.class, new Entity3Serializer(kryo), 21);
+		byte[] bytes = write(kryo, new Entity3(5));
+		Kryo reader = compatibleKryo(true, false);
+		reader.register(Entity3.class, new Entity3Serializer(reader), 21);
+		Entity3 read = reader.readObject(new Input(bytes), Entity3.class);
+		assertEquals(5, read.a);
+		assertEquals("s5", read.s);
 	}
 
 	static class Entity3Serializer extends CompatibleFieldSerializer<Entity3> {
@@ -280,26 +264,18 @@ class ChunkedEncodingTest {
 	}
 
 	@Test
-	void testLegacyChunks () {
-		// With the chunked encoding of Kryo 5, the class name of Entity3 is lost with the skipped chunk.
-		byte[] bytes = removeEntity2(write(compatibleKryo(false, false, true), entity(false)));
-		Entity read = compatibleKryo(false, false, true).readObject(new Input(bytes), Entity.class);
-		assertNull(read.c);
-	}
-
-	@Test
 	void testLargeFields () {
 		// Field lengths that need more than the reserved byte, nested in another large field.
 		for (boolean references : new boolean[] {false, true}) {
 			Entity entity = entity(references);
 			entity.b.x.s = "x".repeat(300);
 			entity.c.s = "c".repeat(20000);
-			byte[] bytes = write(compatibleKryo(true, references, false), entity);
-			Entity read = compatibleKryo(true, references, false).readObject(new Input(bytes), Entity.class);
+			byte[] bytes = write(compatibleKryo(true, references), entity);
+			Entity read = compatibleKryo(true, references).readObject(new Input(bytes), Entity.class);
 			assertEquals(entity.b.x.s, read.b.x.s);
 			assertEquals(entity.c.s, read.c.s);
 
-			Kryo reader = compatibleKryo(true, references, false);
+			Kryo reader = compatibleKryo(true, references);
 			reader.getClassResolver().unregister(22);
 			read = reader.readObject(new Input(bytes), Entity.class);
 			assertEquals(entity.c.s, read.c.s);
@@ -313,11 +289,11 @@ class ChunkedEncodingTest {
 		entity.b.x.s = "x".repeat(300);
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		Output output = new Output(outputStream, 16);
-		compatibleKryo(false, true, false).writeObject(output, entity);
+		compatibleKryo(false, true).writeObject(output, entity);
 		output.flush();
 		byte[] bytes = removeEntity2(outputStream.toByteArray());
 
-		Entity read = compatibleKryo(false, true, false).readObject(new Input(new ByteArrayInputStream(bytes), 16), Entity.class);
+		Entity read = compatibleKryo(false, true).readObject(new Input(new ByteArrayInputStream(bytes), 16), Entity.class);
 		assertEquals(10, read.c.a);
 		assertNull(read.d);
 		assertSame(read.c, read.e);
@@ -326,7 +302,7 @@ class ChunkedEncodingTest {
 	@Test
 	void testException () {
 		// An exception while writing must not affect the next object graph.
-		Kryo kryo = compatibleKryo(false, false, false);
+		Kryo kryo = compatibleKryo(false, false);
 		kryo.register(Failing.class, new Serializer<Failing>() {
 			public void write (Kryo kryo, Output output, Failing object) {
 				throw new KryoException("failed");
@@ -343,8 +319,8 @@ class ChunkedEncodingTest {
 
 		byte[] bytes = write(kryo, entity(false));
 		// The field names collected before the exception are not written.
-		assertArrayEquals(write(compatibleKryo(false, false, false), entity(false)), bytes);
-		Entity read = compatibleKryo(false, false, false).readObject(new Input(bytes), Entity.class);
+		assertArrayEquals(write(compatibleKryo(false, false), entity(false)), bytes);
+		Entity read = compatibleKryo(false, false).readObject(new Input(bytes), Entity.class);
 		assertEquals(5, read.b.x.a);
 		assertEquals(10, read.c.a);
 	}
@@ -352,7 +328,7 @@ class ChunkedEncodingTest {
 	@Test
 	void testExceptionThenRead () throws Exception {
 		// Reading in the same object graph must not keep the scope left over by an exception while writing.
-		Kryo kryo = compatibleKryo(false, false, false);
+		Kryo kryo = compatibleKryo(false, false);
 		kryo.setAutoReset(false);
 		kryo.register(Failing.class, new Serializer<Failing>() {
 			public void write (Kryo kryo, Output output, Failing object) {
@@ -369,12 +345,12 @@ class ChunkedEncodingTest {
 		assertThrows(KryoException.class, () -> write(kryo, failing));
 		kryo.reset();
 
-		kryo.readObject(new Input(write(compatibleKryo(false, false, false), entity(false))), Entity.class);
+		kryo.readObject(new Input(write(compatibleKryo(false, false), entity(false))), Entity.class);
 		byte[] bytes = write(kryo, entity(false));
 		Field writeDepth = DefaultChunkedEncoding.class.getDeclaredField("writeDepth");
 		writeDepth.setAccessible(true);
 		assertEquals(0, writeDepth.getInt(DefaultChunkedEncoding.get(kryo)));
-		assertEquals(10, compatibleKryo(false, false, false).readObject(new Input(bytes), Entity.class).c.a);
+		assertEquals(10, compatibleKryo(false, false).readObject(new Input(bytes), Entity.class).c.a);
 	}
 
 	@Test
@@ -385,10 +361,10 @@ class ChunkedEncodingTest {
 		MisreadEntity entity = new MisreadEntity();
 		entity.a = new int[] {1, 2, 300};
 		entity.z = "z";
-		compatibleKryo(false, false, false).writeObject(output, entity);
+		compatibleKryo(false, false).writeObject(output, entity);
 		Input input = new Input(output.toBytes());
 		input.setVariableLengthEncoding(false);
-		MisreadEntity read = compatibleKryo(false, false, false).readObject(input, MisreadEntity.class);
+		MisreadEntity read = compatibleKryo(false, false).readObject(input, MisreadEntity.class);
 		assertArrayEquals((int[])entity.a, (int[])read.a);
 		assertEquals("z", read.z);
 	}
@@ -401,9 +377,9 @@ class ChunkedEncodingTest {
 		entity.b.x = new Entity3(5);
 		entity.e = new Entity3(10);
 		for (boolean tagged : new boolean[] {false, true}) {
-			Kryo writer = tagged ? taggedKryo() : compatibleKryo(false, true, false);
+			Kryo writer = tagged ? taggedKryo() : compatibleKryo(false, true);
 			byte[] bytes = write(writer, entity);
-			Kryo reader = tagged ? taggedKryo() : compatibleKryo(false, true, false);
+			Kryo reader = tagged ? taggedKryo() : compatibleKryo(false, true);
 			Input input = new Input(bytes);
 			for (int length = 0; length < bytes.length; length++) {
 				input.setBuffer(bytes, 0, length);
@@ -603,12 +579,12 @@ class ChunkedEncodingTest {
 		ArrayList<Entity> list = new ArrayList<>();
 		list.add(entity(false));
 		list.add(entity(false));
-		Kryo writer = compatibleKryo(false, false, false);
+		Kryo writer = compatibleKryo(false, false);
 		Output output = new Output(1024, -1);
 		writer.writeClassAndObject(output, list);
 		byte[] bytes = removeEntity2(output.toBytes());
 
-		ArrayList<Entity> read = (ArrayList)compatibleKryo(false, false, false).readClassAndObject(new Input(bytes));
+		ArrayList<Entity> read = (ArrayList)compatibleKryo(false, false).readClassAndObject(new Input(bytes));
 		for (Entity entity : read) {
 			assertNull(entity.b);
 			assertEquals(10, entity.c.a);
@@ -620,8 +596,8 @@ class ChunkedEncodingTest {
 	void testRecord () {
 		RecordEntity entity = new RecordEntity(new Entity2(), new Entity3(10));
 		entity.b().x = new Entity3(5);
-		byte[] bytes = write(compatibleKryo(true, false, false), entity);
-		Kryo reader = compatibleKryo(true, false, false);
+		byte[] bytes = write(compatibleKryo(true, false), entity);
+		Kryo reader = compatibleKryo(true, false);
 		reader.getClassResolver().unregister(22);
 		RecordEntity read = reader.readObject(new Input(bytes), RecordEntity.class);
 		assertNull(read.b());
@@ -630,81 +606,11 @@ class ChunkedEncodingTest {
 	}
 
 	@Test
-	void testKryo5Format () {
-		// The Kryo 5 format uses the chunked encoding of Kryo 5.
-		Kryo writer = new Kryo();
-		writer.setFormat(Format.KRYO5);
-		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
-		config.setChunkedEncoding(true);
-		writer.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
-		writer.setReferences(true);
-		writer.register(Entity.class, 20);
-		writer.register(Entity3.class, 21);
-		writer.register(Entity2.class, 22);
-		Entity entity = entity(true);
-		byte[] bytes = write(writer, entity);
-
-		Kryo reader = new Kryo();
-		reader.setFormat(Format.KRYO5); // Before registering, which creates the serializers.
-		config = new CompatibleFieldSerializerConfig();
-		config.setChunkedEncoding(true);
-		reader.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
-		reader.setReferences(true);
-		reader.register(Entity.class, 20);
-		reader.register(Entity3.class, 21);
-		reader.register(Entity2.class, 22);
-		Entity read = reader.readObject(new Input(bytes), Entity.class);
-		assertEquals(5, read.b.x.a);
-		assertSame(read.b.x, read.d);
-	}
-
-	@Test
-	void testUnknownGenericField () {
-		// With the Kryo 5 format, the class of the elements is not written, so the data of a removed field can't be read. It is
-		// skipped.
-		for (boolean references : new boolean[] {false, true}) {
-			Kryo writer = kryo5(references);
-			writer.register(GenericEntity.class, 30);
-			GenericEntity entity = new GenericEntity();
-			entity.a = new ArrayList<>(List.of("a", "b"));
-			entity.b = new HashMap<>(Map.of(1, "b"));
-			entity.z = "z";
-			byte[] bytes = write(writer, entity);
-
-			Kryo reader = kryo5(references);
-			reader.register(GenericEntity2.class, 30);
-			assertEquals("z", reader.readObject(new Input(bytes), GenericEntity2.class).z);
-
-			TaggedFieldSerializerConfig config = new TaggedFieldSerializerConfig();
-			config.setChunkedEncoding(true);
-			config.setReadUnknownTagData(true);
-			writer.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
-			writer.register(TaggedGenericEntity.class, 33);
-			TaggedGenericEntity tagged = new TaggedGenericEntity();
-			tagged.a = entity.a;
-			tagged.b = entity.b;
-			tagged.z = "z";
-			byte[] taggedBytes = write(writer, tagged);
-
-			reader.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
-			reader.register(TaggedGenericEntity2.class, 33);
-			assertEquals("z", reader.readObject(new Input(taggedBytes), TaggedGenericEntity2.class).z);
-		}
-	}
-
-	private Kryo kryo5 (boolean references) {
-		Kryo kryo = compatibleKryo(true, references, true);
-		kryo.register(ArrayList.class, 31);
-		kryo.register(HashMap.class, 32);
-		return kryo;
-	}
-
-	@Test
 	void testMisreadUnknownData () {
 		// The class of a removed field was replaced by an incompatible class. Reading its data past the field or reading more
 		// objects than it contains throws, so the reference IDs after the field are never wrong.
 		for (boolean references : new boolean[] {false, true}) {
-			Kryo writer = compatibleKryo(true, references, false);
+			Kryo writer = compatibleKryo(true, references);
 			writer.register(MisreadEntity.class, 30);
 			writer.register(MisreadInner.class, new FieldSerializer(writer, MisreadInner.class), 31);
 			MisreadEntity entity = new MisreadEntity();
@@ -712,14 +618,14 @@ class ChunkedEncodingTest {
 			entity.z = "z";
 			byte[] bytes = write(writer, entity);
 
-			Kryo reader = compatibleKryo(true, references, false);
+			Kryo reader = compatibleKryo(true, references);
 			reader.register(MisreadEntity2.class, 30);
 			reader.register(MisreadInner2.class, new FieldSerializer(reader, MisreadInner2.class), 31);
 			KryoException ex = assertThrows(KryoException.class, () -> reader.readObject(new Input(bytes), MisreadEntity2.class));
 			assertTrue(ex.getMessage().startsWith("More data was read than the field contains"));
 		}
 
-		Kryo writer = compatibleKryo(true, true, false);
+		Kryo writer = compatibleKryo(true, true);
 		writer.register(MisreadEntity.class, 30);
 		writer.register(MisreadInner3.class, new FieldSerializer(writer, MisreadInner3.class), 31);
 		writer.register(ArrayList.class, 32);
@@ -729,7 +635,7 @@ class ChunkedEncodingTest {
 		entity.e = entity.d;
 		byte[] bytes = write(writer, entity);
 
-		Kryo reader = compatibleKryo(true, true, false);
+		Kryo reader = compatibleKryo(true, true);
 		reader.register(MisreadEntity2.class, 30);
 		reader.register(MisreadInner4.class, new FieldSerializer(reader, MisreadInner4.class), 31);
 		reader.register(ArrayList.class, 32);
@@ -741,7 +647,7 @@ class ChunkedEncodingTest {
 	@Test
 	void testExceptionInUnknownData () {
 		// An exception while reading the data of a removed field, inside a nested object, must not affect the next object.
-		Kryo writer = compatibleKryo(true, false, false);
+		Kryo writer = compatibleKryo(true, false);
 		writer.register(FailingEntity.class, 30);
 		writer.register(Failing.class, new Serializer<Failing>() {
 			public void write (Kryo kryo, Output output, Failing object) {
@@ -765,7 +671,7 @@ class ChunkedEncodingTest {
 		Output output = new Output(1024, -1);
 		writer.writeObject(output, list);
 
-		Kryo reader = compatibleKryo(true, false, false);
+		Kryo reader = compatibleKryo(true, false);
 		reader.register(FailingEntity.class, 30);
 		reader.register(Failing.class, new Serializer<Failing>() {
 			public void write (Kryo kryo, Output output, Failing object) {
@@ -782,7 +688,7 @@ class ChunkedEncodingTest {
 		assertEquals("z1", read.get(1).z);
 	}
 
-	private Entity entity (boolean references) {
+	static Entity entity (boolean references) {
 		Entity entity = new Entity();
 		entity.b = new Entity2();
 		entity.b.x = new Entity3(5); // Entity3 is first written in the chunk that is skipped.
@@ -792,9 +698,8 @@ class ChunkedEncodingTest {
 		return entity;
 	}
 
-	private Kryo compatibleKryo (boolean registration, boolean references, boolean legacyChunks) {
+	private Kryo compatibleKryo (boolean registration, boolean references) {
 		Kryo kryo = new Kryo();
-		kryo.setFormat(legacyChunks ? Format.KRYO5 : Format.KRYO6);
 		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
 		config.setChunkedEncoding(true);
 		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
@@ -811,12 +716,7 @@ class ChunkedEncodingTest {
 	}
 
 	private Kryo taggedKryo () {
-		return taggedKryo(false);
-	}
-
-	private Kryo taggedKryo (boolean legacyChunks) {
 		Kryo kryo = new Kryo();
-		kryo.setFormat(legacyChunks ? Format.KRYO5 : Format.KRYO6);
 		TaggedFieldSerializerConfig config = new TaggedFieldSerializerConfig();
 		config.setChunkedEncoding(true);
 		config.setReadUnknownTagData(true);
@@ -826,25 +726,25 @@ class ChunkedEncodingTest {
 		return kryo;
 	}
 
-	private byte[] write (Kryo kryo, Object object) {
+	static byte[] write (Kryo kryo, Object object) {
 		Output output = new Output(1024, -1);
 		kryo.writeObject(output, object);
 		return output.toBytes();
 	}
 
-	private byte[] removeEntity2 (byte[] bytes) {
+	static byte[] removeEntity2 (byte[] bytes) {
 		return removeEntity2(bytes, "Entity2", "EntityZ");
 	}
 
 	/** Replaces the class name so the class is not found when reading. Short class names are written as ASCII with the high bit
 	 * set on the last character, long ones as UTF-8 with their length. */
-	private byte[] removeEntity2 (byte[] bytes, String name, String replacement) {
+	static byte[] removeEntity2 (byte[] bytes, String name, String replacement) {
 		int count = replace(bytes, "$" + name, "$" + replacement, true) + replace(bytes, "$" + name, "$" + replacement, false);
 		assertTrue(count > 0);
 		return bytes;
 	}
 
-	private int replace (byte[] bytes, String name, String replacement, boolean highBit) {
+	static int replace (byte[] bytes, String name, String replacement, boolean highBit) {
 		byte[] search = name.getBytes(StandardCharsets.US_ASCII), replace = replacement.getBytes(StandardCharsets.US_ASCII);
 		if (highBit) {
 			search[search.length - 1] |= 0x80;
@@ -929,26 +829,6 @@ class ChunkedEncodingTest {
 
 	public static class TaggedEntity2 {
 		@Tag(1) public Entity3 x;
-	}
-
-	public static class GenericEntity {
-		public ArrayList<String> a;
-		public HashMap<Integer, String> b;
-		public String z;
-	}
-
-	public static class GenericEntity2 {
-		public String z;
-	}
-
-	public static class TaggedGenericEntity {
-		@Tag(1) public ArrayList<String> a;
-		@Tag(2) public HashMap<Integer, String> b;
-		@Tag(3) public String z;
-	}
-
-	public static class TaggedGenericEntity2 {
-		@Tag(3) public String z;
 	}
 
 	public static class MisreadEntity {

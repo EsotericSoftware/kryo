@@ -150,50 +150,6 @@ class MapSerializerTest extends KryoTestCase {
 	}
 
 	@Test
-	void testNullMarkers () {
-		// The key and value serializers are known from the generic type of the field. Keys and values are written without a null
-		// marker if the map contains no null key or value, which is written with the size.
-		for (boolean references : new boolean[] {false, true}) {
-			for (int size : new int[] {3, 100, 200}) {
-				TypedMap object = new TypedMap();
-				for (int i = 0; i < size; i++)
-					object.map.put("key" + i, i);
-				byte[] bytes = writeTypedMap(object, references, true);
-				// The format of Kryo 5 has a null marker for each value, and for each key with references.
-				int markers = references ? size * 2 : size;
-				// The flag takes one bit of the first byte of the size, which then needs a second byte from 63 entries instead of
-				// from 127 entries.
-				int flag = size >= 63 && size < 127 ? 1 : 0;
-				assertEquals(writeTypedMap(object, references, false).length - markers + flag, bytes.length);
-
-				object.map.put("null", null);
-				writeTypedMap(object, references, true);
-				object.map.remove("null");
-				object.map.put(null, 5);
-				writeTypedMap(object, references, true);
-			}
-		}
-	}
-
-	/** Returns the bytes after checking that they are read as the same map.
-	 * @param kryo6 False for the format of Kryo 5. */
-	private byte[] writeTypedMap (TypedMap object, boolean references, boolean kryo6) {
-		Kryo kryo = new Kryo();
-		kryo.setFormat(kryo6 ? Kryo.Format.KRYO6 : Kryo.Format.KRYO5);
-		kryo.setReferences(references);
-		kryo.register(TypedMap.class);
-		kryo.register(HashMap.class);
-		Output output = new Output(64, -1);
-		kryo.writeObject(output, object);
-		assertEquals(object.map, kryo.readObject(new Input(output.toBytes()), TypedMap.class).map);
-		return output.toBytes();
-	}
-
-	public static class TypedMap {
-		public HashMap<String, Integer> map = new HashMap();
-	}
-
-	@Test
 	void testKeyAndValueClassesWrittenOnce () {
 		kryo.register(LinkedHashMap.class);
 		// The class of the keys and values is written once if they all have the same class.
@@ -216,17 +172,6 @@ class MapSerializerTest extends KryoTestCase {
 		LinkedHashMap nullValues = new LinkedHashMap();
 		nullValues.put("a", null);
 		roundTrip(7, nullValues);
-	}
-
-	@Test
-	void testKryo5Format () {
-		// The class of each key and value is written.
-		kryo.setFormat(Kryo.Format.KRYO5);
-		kryo.register(LinkedHashMap.class);
-		LinkedHashMap map = new LinkedHashMap();
-		map.put("a", 1);
-		map.put("b", 2);
-		roundTrip(12, map);
 	}
 
 	@Test

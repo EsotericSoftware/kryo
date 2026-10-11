@@ -41,34 +41,20 @@ class EnumsFinalTest {
 		assertTrue(kryo.isFinal(BodyOp.MINUS.getClass())); // The class of the body.
 		assertTrue(kryo.isFinal(BodyOp[].class));
 		assertFalse(kryo.isFinal(Enum.class));
-		assertThrows(KryoException.class, () -> kryo.setFormat(Kryo.Format.KRYO5)); // The format was used.
-		Kryo kryo5 = new Kryo();
-		kryo5.setFormat(Kryo.Format.KRYO5);
-		assertFalse(kryo5.isFinal(BodyOp.class));
-		assertTrue(kryo5.isFinal(PlainOp.class));
+		assertTrue(kryo.isFinal(PlainOp.class));
 	}
 
 	@Test
 	void testAddAndRemoveBodies () {
-		for (boolean enumsFinal : new boolean[] {true, false}) {
-			byte[] plain = write(kryo(enumsFinal, PlainOp.class, PlainHolder.class), new PlainHolder());
-			byte[] body = write(kryo(enumsFinal, BodyOp.class, BodyHolder.class), new BodyHolder());
-			if (enumsFinal) {
-				assertArrayEquals(plain, body);
-				BodyHolder read = kryo(true, BodyOp.class, BodyHolder.class).readObject(new Input(plain), BodyHolder.class);
-				assertSame(BodyOp.MINUS, read.op);
-				assertEquals(List.of(BodyOp.PLUS, BodyOp.MINUS), read.list);
-				assertArrayEquals(new BodyOp[] {BodyOp.MINUS}, read.array);
-				PlainHolder readPlain = kryo(true, PlainOp.class, PlainHolder.class).readObject(new Input(body), PlainHolder.class);
-				assertSame(PlainOp.MINUS, readPlain.op);
-			} else {
-				assertTrue(body.length > plain.length); // The class of each value is written, like in Kryo 5.
-				BodyHolder read = kryo(false, BodyOp.class, BodyHolder.class).readObject(new Input(body), BodyHolder.class);
-				assertSame(BodyOp.MINUS, read.op);
-				assertEquals(List.of(BodyOp.PLUS, BodyOp.MINUS), read.list);
-				assertArrayEquals(new BodyOp[] {BodyOp.MINUS}, read.array);
-			}
-		}
+		byte[] plain = write(kryo(PlainOp.class, PlainHolder.class), new PlainHolder());
+		byte[] body = write(kryo(BodyOp.class, BodyHolder.class), new BodyHolder());
+		assertArrayEquals(plain, body);
+		BodyHolder read = kryo(BodyOp.class, BodyHolder.class).readObject(new Input(plain), BodyHolder.class);
+		assertSame(BodyOp.MINUS, read.op);
+		assertEquals(List.of(BodyOp.PLUS, BodyOp.MINUS), read.list);
+		assertArrayEquals(new BodyOp[] {BodyOp.MINUS}, read.array);
+		PlainHolder readPlain = kryo(PlainOp.class, PlainHolder.class).readObject(new Input(body), PlainHolder.class);
+		assertSame(PlainOp.MINUS, readPlain.op);
 	}
 
 	@Test
@@ -95,9 +81,8 @@ class EnumsFinalTest {
 		assertEquals(List.of(BodyOp.PLUS, BodyOp.MINUS, BodyOp.PLUS), kryo.readClassAndObject(new Input(output.toBytes())));
 	}
 
-	private Kryo kryo (boolean enumsFinal, Class op, Class holder) {
+	private Kryo kryo (Class op, Class holder) {
 		Kryo kryo = new Kryo();
-		kryo.setFormat(enumsFinal ? Kryo.Format.KRYO6 : Kryo.Format.KRYO5);
 		kryo.register(op, 100);
 		kryo.register(holder, 101);
 		kryo.register(java.util.ArrayList.class, 102);

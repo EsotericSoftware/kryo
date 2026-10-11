@@ -27,7 +27,7 @@ import com.esotericsoftware.kryo.io.Output;
 /** Chunked encoding of {@link CompatibleFieldSerializer} and {@link TaggedFieldSerializer}, which allows skipping the data of a
  * field. Implemented by {@link DefaultChunkedEncoding} and, for the format of Kryo 5, by {@link LegacyChunkedEncoding}. */
 interface ChunkedEncoding {
-	/** Returns the chunked encoding for the serializer config and the Kryo format, or null if chunked encoding is disabled. */
+	/** Returns the chunked encoding for the Kryo format, or null if chunked encoding is disabled. */
 	static ChunkedEncoding get (Kryo kryo, boolean chunked) {
 		if (!chunked) return null;
 		return kryo.getFormat() == Format.KRYO5 ? LegacyChunkedEncoding.instance : DefaultChunkedEncoding.get(kryo);

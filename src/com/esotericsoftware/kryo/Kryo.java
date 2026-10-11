@@ -126,7 +126,6 @@ import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.IntArray;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.NoGenerics;
-import com.esotericsoftware.kryo.util.Null;
 import com.esotericsoftware.kryo.util.ObjectMap;
 import com.esotericsoftware.kryo.util.Util;
 
@@ -205,7 +204,7 @@ public class Kryo {
 	private boolean registrationRequired = true;
 	private boolean warnUnregisteredClasses;
 	private Format format = Format.KRYO6;
-	/** True once the format was used to create or register a serializer, after which it can't change. */
+	/** True once a serializer decided something for the format when it was created, after which the format can't change. */
 	private boolean formatUsed;
 	private Predicate<Class> allowedUnregisteredClasses;
 
@@ -342,7 +341,6 @@ public class Kryo {
 		UnmodifiableCollectionSerializers.addDefaultSerializers(this);
 		SynchronizedCollectionSerializers.addDefaultSerializers(this);
 		addDefaultSerializer(Collections.newSetFromMap(new HashMap<>()).getClass(), new SetFromMapSerializer());
-		insertDefaultSerializer(Object.class, kryo5RecordSerializer(), Format.KRYO5); // Records, see isSupported.
 		lowPriorityDefaultSerializerCount = defaultSerializers.size();
 
 		// Primitives and string. Primitive wrappers automatically use the same registration as primitives.
@@ -355,7 +353,6 @@ public class Kryo {
 		register(short.class, new ShortSerializer());
 		register(long.class, new LongSerializer());
 		register(double.class, new DoubleSerializer());
-		formatUsed = false; // The registrations above don't depend on the format.
 	}
 
 	// --- Default serializers ---
@@ -415,21 +412,7 @@ public class Kryo {
 	/** Adds a default serializer that is only used with {@link Format#KRYO6}. With {@link Format#KRYO5}, the type gets the next
 	 * matching default serializer or the default serializer, like in Kryo 5, which had no default serializer for it. */
 	private void addKryo6DefaultSerializer (Class type, SerializerFactory serializerFactory) {
-		insertDefaultSerializer(type, serializerFactory, Format.KRYO6);
-	}
-
-	/** Kryo 5 serialized records with RecordSerializer. The entry is for Object, so it has the lowest priority. */
-	@SuppressWarnings("deprecation")
-	private static SerializerFactory kryo5RecordSerializer () {
-		return new BaseSerializerFactory() {
-			public Serializer newSerializer (Kryo kryo, Class type) {
-				return new RecordSerializer(type);
-			}
-
-			public boolean isSupported (Class type) {
-				return isRecord(type);
-			}
-		};
+		insertDefaultSerializer(type, serializerFactory, true);
 	}
 
 	/** Instances of the specified class will use the specified serializer when {@link #register(Class)} or
@@ -446,18 +429,17 @@ public class Kryo {
 		insertDefaultSerializer(type, new ReflectionSerializerFactory(serializerClass));
 	}
 
-	private int insertDefaultSerializer (Class type, SerializerFactory factory) {
-		return insertDefaultSerializer(type, factory, null);
+	private void insertDefaultSerializer (Class type, SerializerFactory factory) {
+		insertDefaultSerializer(type, factory, false);
 	}
 
-	/** @param format The format the serializer is used with, or null for all formats. */
-	private int insertDefaultSerializer (Class type, SerializerFactory factory, Format format) {
+	/** @param kryo6Only True if the serializer is only used with {@link Format#KRYO6}. */
+	private void insertDefaultSerializer (Class type, SerializerFactory factory, boolean kryo6Only) {
 		int lowest = 0;
 		for (int i = 0, n = defaultSerializers.size() - lowPriorityDefaultSerializerCount; i < n; i++)
 			if (type.isAssignableFrom(defaultSerializers.get(i).type)) lowest = i + 1;
-		defaultSerializers.add(lowest, new DefaultSerializerEntry(type, factory, format));
+		defaultSerializers.add(lowest, new DefaultSerializerEntry(type, factory, kryo6Only));
 		defaultSerializerTypes = null;
-		return lowest;
 	}
 
 	/** Returns a factory for the serializer that is used for the type, but not its subclasses, which may have more state. */
@@ -496,6 +478,7 @@ public class Kryo {
 
 	/** Returns the best matching serializer for a class. This method can be overridden to implement custom logic to choose a
 	 * serializer. */
+	@SuppressWarnings("deprecation") // RecordSerializer
 	public Serializer getDefaultSerializer (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		formatUsed = true;
@@ -505,11 +488,12 @@ public class Kryo {
 
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
-			if (entry.format != null && entry.format != format) continue;
+			if (entry.kryo6Only && format == Format.KRYO5) continue;
 			if (entry.type.isAssignableFrom(type) && entry.serializerFactory.isSupported(type))
 				return entry.serializerFactory.newSerializer(this, type);
 		}
 
+		if (format == Format.KRYO5 && isRecord(type)) return new RecordSerializer(type); // Like Kryo 5.
 		return newDefaultSerializer(type);
 	}
 
@@ -592,7 +576,6 @@ public class Kryo {
 	public Registration register (Registration registration) {
 		int id = registration.getId();
 		if (id < 0) throw new IllegalArgumentException("id must be > 0: " + id);
-		formatUsed = true; // The serializer may have been created for the format.
 
 		Registration existing = classResolver.unregister(id);
 		if (DEBUG && existing != null && existing.getType() != registration.getType())
@@ -1314,6 +1297,7 @@ public class Kryo {
 	 * strings. The first call fixes the result, after which it can't change, see {@link #setReferences(boolean)}.
 	 * {@link FieldSerializer} calls this when it creates a String field. */
 	public boolean usesStringReferences () {
+		formatUsed = true; // With the Kryo 5 format, strings use references.
 		if (stringFieldReferences == -1) stringFieldReferences = stringReferences(references, referenceResolver) ? 1 : 0;
 		return stringFieldReferences == 1;
 	}
@@ -1424,24 +1408,15 @@ public class Kryo {
 	/** Sets the serialization format, see {@link Format}. Kryo's serializers and reference resolvers write and read the format of
 	 * their Kryo instance. Serializers are chosen and configured for the format when they are created, so the format must be set
 	 * before classes are registered or serializers are created. Default is {@link Format#KRYO6}.
-	 * @throws KryoException if the format was already used to create or register a serializer, or if this changes whether strings
-	 *            use references after a String field was created, see {@link #setReferences(boolean)}. */
+	 * @throws KryoException if the format was already used to create a serializer. */
 	public void setFormat (Format format) {
 		if (format == null) throw new IllegalArgumentException("format cannot be null.");
 		if (format == this.format) return;
 		if (formatUsed) {
-			throw new KryoException("The format can't be changed after it was used to create or register a serializer, because "
-				+ "serializers are chosen and configured for the format when they are created. Set the format before registering "
-				+ "classes.");
+			throw new KryoException("The format can't be changed after it was used to create a serializer, because serializers "
+				+ "are chosen and configured for the format when they are created. Set the format before registering classes.");
 		}
-		Format old = this.format;
-		this.format = format; // Before the check, useReferences depends on the format.
-		try {
-			checkStringReferences(references, referenceResolver);
-		} catch (KryoException ex) {
-			this.format = old;
-			throw ex;
-		}
+		this.format = format;
 		if (TRACE) trace("kryo", "Format: " + format);
 	}
 
@@ -1502,13 +1477,12 @@ public class Kryo {
 	private static final class DefaultSerializerEntry {
 		final Class type;
 		final SerializerFactory serializerFactory;
-		/** The format the serializer is used with, or null for all formats. */
-		final @Null Format format;
+		final boolean kryo6Only;
 
-		DefaultSerializerEntry (Class type, SerializerFactory serializerFactory, @Null Format format) {
+		DefaultSerializerEntry (Class type, SerializerFactory serializerFactory, boolean kryo6Only) {
 			this.type = type;
 			this.serializerFactory = serializerFactory;
-			this.format = format;
+			this.kryo6Only = kryo6Only;
 		}
 	}
 
@@ -1516,8 +1490,9 @@ public class Kryo {
 	public enum Format {
 		/** The format of Kryo 5, to read data written by Kryo 5 and to write data that Kryo 5 can read, see MIGRATION.md. Strings
 		 * use references, records are serialized with RecordSerializer, the types that have new default serializers in Kryo 6 use
-		 * the serializers Kryo 5 used, MapSerializer writes the class of each key and value, the chunked encoding writes chunks and
-		 * uses the generic types of fields, and enums with constant bodies are not final. */
+		 * the serializers Kryo 5 used, MapSerializer writes the class of each key and value, CompatibleFieldSerializer and
+		 * TaggedFieldSerializer use the generic types of fields, the chunked encoding writes chunks, and enums with constant bodies
+		 * are not final. */
 		KRYO5,
 		/** The format of Kryo 6, the default. It is smaller and faster than {@link #KRYO5}. */
 		KRYO6

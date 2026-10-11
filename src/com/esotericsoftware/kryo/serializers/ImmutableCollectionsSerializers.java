@@ -100,6 +100,7 @@ public final class ImmutableCollectionsSerializers {
 		}
 
 		/** Kryo 5 didn't support null elements in immutable lists. */
+		@Override
 		boolean elementsCanBeNull (Kryo kryo) {
 			return kryo.getFormat() != Format.KRYO5 && super.elementsCanBeNull(kryo);
 		}
