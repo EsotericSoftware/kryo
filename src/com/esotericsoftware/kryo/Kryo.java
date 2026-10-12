@@ -687,7 +687,7 @@ public class Kryo {
 		try {
 			return classResolver.writeClass(output, type);
 		} finally {
-			if (depth == 0 && autoReset) graphComplete();
+			if (depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -701,7 +701,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			getRegistration(object.getClass()).getSerializer().write(this, output, object);
 		} finally {
-			if (--depth == 0 && autoReset) graphComplete();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -716,7 +716,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			serializer.write(this, output, object);
 		} finally {
-			if (--depth == 0 && autoReset) graphComplete();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -741,7 +741,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			serializer.write(this, output, object);
 		} finally {
-			if (--depth == 0 && autoReset) graphComplete();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -766,7 +766,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			serializer.write(this, output, object);
 		} finally {
-			if (--depth == 0 && autoReset) graphComplete();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -785,7 +785,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			registration.getSerializer().write(this, output, object);
 		} finally {
-			if (--depth == 0 && autoReset) graphComplete();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -832,7 +832,7 @@ public class Kryo {
 		try {
 			return classResolver.readClass(input);
 		} finally {
-			if (depth == 0 && autoReset) graphComplete();
+			if (depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -854,7 +854,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
-			if (--depth == 0 && autoReset) graphComplete();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -877,7 +877,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
-			if (--depth == 0 && autoReset) graphComplete();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -906,7 +906,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
-			if (--depth == 0 && autoReset) graphComplete();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -935,7 +935,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
-			if (--depth == 0 && autoReset) graphComplete();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -961,7 +961,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
-			if (--depth == 0 && autoReset) graphComplete();
+			if (--depth == 0 && autoReset) reset();
 		}
 	}
 
@@ -1050,41 +1050,27 @@ public class Kryo {
 	/** Resets object graph state: unregistered class names, references to previously serialized or deserialized objects, the
 	 * {@link #getOriginalToCopyMap() original to copy map}, the {@link #getGraphContext() graph context} and the
 	 * {@link #getGenerics() generic type information} collected during serialization. If {@link #setAutoReset(boolean) auto reset}
-	 * is true, this method is called automatically when an object graph has been completely serialized or deserialized, unless a
-	 * copy is in progress, and when a copy is complete, unless an object graph is in progress. If overridden, the super method
-	 * must be called. */
+	 * is true, this method is called automatically when an object graph has been completely serialized or deserialized. It is also
+	 * called when a copy is complete. The object graph state is kept while an object graph is in progress and the copy state while
+	 * a copy is in progress, eg when a serializer's copy method serializes the object. If overridden, the super method must be
+	 * called. */
 	public void reset () {
-		resetGraph();
-		resetCopy();
-		if (TRACE) trace("kryo", "Object graph complete.");
-	}
-
-	/** Resets the graph state when an object graph is complete, and the copy state too unless a copy is in progress, eg a
-	 * serializer's copy method serializing the object. */
-	private void graphComplete () {
-		if (copyDepth == 0)
-			reset();
-		else
-			resetGraph();
-	}
-
-	private void resetGraph () {
-		depth = 0;
-		if (graphContext != null) graphContext.clear(2048);
-		classResolver.reset();
-		generics.reset();
-		if (references) {
-			referenceResolver.reset();
+		if (depth == 0) {
+			if (graphContext != null) graphContext.clear(2048);
+			classResolver.reset();
+			generics.reset();
+			if (references) {
+				referenceResolver.reset();
+				readObject = null;
+			}
 			readReferenceIds.clear(); // Not empty after a failed read.
-			readObject = null;
 		}
-	}
-
-	private void resetCopy () {
-		copyDepth = 0;
-		if (originalToCopy != null) originalToCopy.clear(2048);
-		needsCopyReference = null;
-		copyReferenced = null;
+		if (copyDepth == 0) {
+			if (originalToCopy != null) originalToCopy.clear(2048);
+			needsCopyReference = null;
+			copyReferenced = null;
+		}
+		if (TRACE) trace("kryo", "Object graph complete.");
 	}
 
 	/** Returns a deep copy of the object. Serializers for the classes involved must support {@link Serializer#copy(Kryo, Object)}.
@@ -1147,12 +1133,7 @@ public class Kryo {
 			needsCopyReference = outerNeedsCopyReference;
 			copyReferenced = outerCopyReferenced;
 			copyGraphDepth = outerCopyGraphDepth;
-			if (--copyDepth == 0) {
-				if (depth == 0)
-					reset();
-				else
-					resetCopy();
-			}
+			if (--copyDepth == 0) reset();
 		}
 	}
 
