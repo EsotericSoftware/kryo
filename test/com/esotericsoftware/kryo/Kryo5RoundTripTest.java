@@ -54,14 +54,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 @org.junit.jupiter.api.Tag("kryo5")
 class Kryo5RoundTripTest {
 	/** The fields of the test data that Kryo 5 can't round trip itself, so they are null in the tests: its FieldSerializer can't
-	 * write the unmodifiable and synchronized collections, the set from map, the key set view and EnumMap, and loses data of
-	 * Timestamp (nanos), URI, Pattern (flags), InetAddress and InetSocketAddress. {@link #testKryo5Broken(Class)} checks the
-	 * list. */
-	static final Set<String> kryo5Broken = Set.of("_timestamp", "_uri", "_pattern", "_keySetView", "_inetAddress",
-		"_inetSocketAddress", "_enumMap", "_emptyEnumMap", "_setFromMap", "_unmodifiableList", "_unmodifiableLinkedList",
-		"_unmodifiableSet", "_unmodifiableSortedSet", "_unmodifiableNavigableSet", "_unmodifiableSortedMap",
-		"_unmodifiableNavigableMap", "_synchronizedList", "_synchronizedSet", "_synchronizedSortedSet", "_synchronizedNavigableSet",
-		"_synchronizedMap", "_synchronizedSortedMap", "_synchronizedNavigableMap");
+	 * write the set from map and EnumMap, and loses data of Timestamp (nanos), URI, Pattern (flags), InetAddress and
+	 * InetSocketAddress. {@link #testKryo5Broken(Class)} checks the list. */
+	static final Set<String> kryo5Broken = Set.of("_timestamp", "_uri", "_pattern", "_inetAddress", "_inetSocketAddress",
+		"_enumMap", "_emptyEnumMap", "_setFromMap");
 
 	/** The fields whose class names differ, also with the Kryo 5 format: Kryo 6 writes the name of the registration's type (see
 	 * DefaultClassResolver#writeName), so a time zone as java.util.TimeZone, each charset as java.nio.charset.Charset and an enum
@@ -221,6 +217,11 @@ class Kryo5RoundTripTest {
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
 		kryo.register(EnumSet.class);
+		// Kryo 6 has these serializers by default, Kryo 5 on request.
+		com.esotericsoftware.kryo.kryo5.serializers.UnmodifiableCollectionSerializers.addDefaultSerializers(kryo);
+		com.esotericsoftware.kryo.kryo5.serializers.SynchronizedCollectionSerializers.addDefaultSerializers(kryo);
+		kryo.addDefaultSerializer(java.util.concurrent.ConcurrentHashMap.KeySetView.class,
+			new com.esotericsoftware.kryo.kryo5.serializers.DefaultSerializers.KeySetViewSerializer());
 		return kryo;
 	}
 
