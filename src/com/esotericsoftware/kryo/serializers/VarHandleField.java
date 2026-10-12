@@ -118,7 +118,7 @@ class VarHandleField extends ReflectField {
 				else
 					output.writeInt((int)getter.invokeExact(object));
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -129,7 +129,7 @@ class VarHandleField extends ReflectField {
 				else
 					setter.invokeExact(object, input.readInt());
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -144,7 +144,7 @@ class VarHandleField extends ReflectField {
 			try {
 				copier.invokeExact(copy, original);
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 	}
@@ -168,7 +168,7 @@ class VarHandleField extends ReflectField {
 				else
 					output.writeLong((long)getter.invokeExact(object));
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -179,7 +179,7 @@ class VarHandleField extends ReflectField {
 				else
 					setter.invokeExact(object, input.readLong());
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -194,7 +194,7 @@ class VarHandleField extends ReflectField {
 			try {
 				copier.invokeExact(copy, original);
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 	}
@@ -215,7 +215,7 @@ class VarHandleField extends ReflectField {
 			try {
 				output.writeFloat((float)getter.invokeExact(object));
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -223,7 +223,7 @@ class VarHandleField extends ReflectField {
 			try {
 				setter.invokeExact(object, input.readFloat());
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -235,7 +235,7 @@ class VarHandleField extends ReflectField {
 			try {
 				copier.invokeExact(copy, original);
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 	}
@@ -256,7 +256,7 @@ class VarHandleField extends ReflectField {
 			try {
 				output.writeDouble((double)getter.invokeExact(object));
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -264,7 +264,7 @@ class VarHandleField extends ReflectField {
 			try {
 				setter.invokeExact(object, input.readDouble());
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -276,7 +276,7 @@ class VarHandleField extends ReflectField {
 			try {
 				copier.invokeExact(copy, original);
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 	}
@@ -297,7 +297,7 @@ class VarHandleField extends ReflectField {
 			try {
 				output.writeBoolean((boolean)getter.invokeExact(object));
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -305,7 +305,7 @@ class VarHandleField extends ReflectField {
 			try {
 				setter.invokeExact(object, input.readBoolean());
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -317,7 +317,7 @@ class VarHandleField extends ReflectField {
 			try {
 				copier.invokeExact(copy, original);
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 	}
@@ -338,7 +338,7 @@ class VarHandleField extends ReflectField {
 			try {
 				output.writeByte((byte)getter.invokeExact(object));
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -346,7 +346,7 @@ class VarHandleField extends ReflectField {
 			try {
 				setter.invokeExact(object, input.readByte());
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -358,7 +358,7 @@ class VarHandleField extends ReflectField {
 			try {
 				copier.invokeExact(copy, original);
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 	}
@@ -379,7 +379,7 @@ class VarHandleField extends ReflectField {
 			try {
 				output.writeShort((short)getter.invokeExact(object));
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -387,7 +387,7 @@ class VarHandleField extends ReflectField {
 			try {
 				setter.invokeExact(object, input.readShort());
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -399,7 +399,7 @@ class VarHandleField extends ReflectField {
 			try {
 				copier.invokeExact(copy, original);
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 	}
@@ -420,7 +420,7 @@ class VarHandleField extends ReflectField {
 			try {
 				output.writeChar((char)getter.invokeExact(object));
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -428,7 +428,7 @@ class VarHandleField extends ReflectField {
 			try {
 				setter.invokeExact(object, input.readChar());
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -440,7 +440,7 @@ class VarHandleField extends ReflectField {
 			try {
 				copier.invokeExact(copy, original);
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 	}
@@ -461,7 +461,7 @@ class VarHandleField extends ReflectField {
 			try {
 				return (String)getter.invokeExact(object);
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -469,7 +469,7 @@ class VarHandleField extends ReflectField {
 			try {
 				output.writeString((String)getter.invokeExact(object));
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -477,7 +477,7 @@ class VarHandleField extends ReflectField {
 			try {
 				setter.invokeExact(object, input.readString());
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 
@@ -489,7 +489,7 @@ class VarHandleField extends ReflectField {
 			try {
 				copier.invokeExact(copy, original);
 			} catch (Throwable t) {
-				throw new KryoException(t);
+				throw error(t);
 			}
 		}
 	}

@@ -167,7 +167,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				cachedField.setReuseSerializer(false);
 			}
 
-			cachedField.write(fieldOutput, object);
+			writeField(cachedField, fieldOutput, object);
 			if (chunked) chunks.endField(fieldOutput, mark);
 		}
 
@@ -264,10 +264,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		if (TRACE) log("Read", cachedField, input.position());
-		if (values == null)
-			readField(cachedField, input, object);
-		else
-			values[cachedField.index] = cachedField.read(input);
+		readField(cachedField, input, object, values);
 	}
 
 	public TaggedFieldSerializerConfig getTaggedFieldSerializerConfig () {

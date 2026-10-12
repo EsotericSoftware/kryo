@@ -31,6 +31,8 @@ import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
+import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer.BindCollection;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.IntArraySerializer;
@@ -86,6 +88,40 @@ class FieldSerializerTest extends KryoTestCase {
 		assertEquals('c', fields[1].read(input));
 		assertEquals((short)2, fields[2].read(input));
 		assertEquals(true, fields[3].read(input));
+	}
+
+	@Test
+	void testBufferExceptionsKeepTypeAndNameField () {
+		testBufferExceptionsKeepTypeAndNameField(new FieldSerializer(kryo, BufferFields.class));
+		// Without unknown field data the fields are written like FieldSerializer, after the field names.
+		CompatibleFieldSerializer.CompatibleFieldSerializerConfig config = new CompatibleFieldSerializer.CompatibleFieldSerializerConfig();
+		config.setReadUnknownFieldData(false);
+		testBufferExceptionsKeepTypeAndNameField(new CompatibleFieldSerializer(kryo, BufferFields.class, config));
+	}
+
+	private void testBufferExceptionsKeepTypeAndNameField (Serializer<BufferFields> serializer) {
+		kryo.register(BufferFields.class, serializer);
+		BufferFields object = new BufferFields();
+		object.a = 1;
+		object.b = Long.MAX_VALUE;
+		object.c = "hello";
+		Output full = new Output(64);
+		kryo.writeObject(full, object);
+		byte[] bytes = full.toBytes();
+		// The fields take 1, 9 and 5 bytes, any bytes before them are written by Kryo.
+		int start = bytes.length - 15;
+		for (int size = start; size < bytes.length; size++) {
+			String name = size < start + 1 ? "a" : size < start + 10 ? "b" : "c";
+			String trace = "Serialization trace:\n" + name + " (" + BufferFields.class.getName() + ")";
+
+			Output output = new Output(size, size);
+			KryoException ex = assertThrows(KryoBufferOverflowException.class, () -> kryo.writeObject(output, object));
+			assertTrue(ex.getMessage().endsWith(trace), ex.getMessage());
+
+			Input input = new Input(bytes, 0, size);
+			ex = assertThrows(KryoBufferUnderflowException.class, () -> kryo.readObject(input, BufferFields.class));
+			assertTrue(ex.getMessage().endsWith(trace), ex.getMessage());
+		}
 	}
 
 	@Test
@@ -1840,5 +1876,11 @@ class FieldSerializerTest extends KryoTestCase {
 			return o instanceof BindWithNotNull other && Objects.equals(notNull, other.notNull)
 				&& Objects.equals(nullable, other.nullable);
 		}
+	}
+
+	public static class BufferFields {
+		public int a;
+		public long b;
+		public String c;
 	}
 }

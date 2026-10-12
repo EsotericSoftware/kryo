@@ -113,14 +113,14 @@ abstract class GeneratedFields {
 
 	/** Called by the generated code when writing a field fails, to name the field like the loop over the cached fields. */
 	static KryoException writeError (Throwable t, CachedField field, Output output) {
-		if (t instanceof KryoException) return (KryoException)t;
+		if (t instanceof KryoException) return FieldSerializer.traceField((KryoException)t, field);
 		if (t instanceof Error) throw (Error)t;
 		return new KryoException("Error writing " + field + " at position " + output.position(), t);
 	}
 
 	/** Called by the generated code when reading a field fails, to name the field like the loop over the cached fields. */
 	static KryoException readError (Throwable t, CachedField field, Input input) {
-		if (t instanceof KryoException) return (KryoException)t;
+		if (t instanceof KryoException) return FieldSerializer.traceField((KryoException)t, field);
 		if (t instanceof Error) throw (Error)t;
 		return new KryoException("Error reading " + field + " at position " + input.position(), t);
 	}
