@@ -75,8 +75,7 @@ class UnsafeField extends ReflectField {
 	}
 
 	/** Sets an Unsafe field to a boxed value, also a final field. Called by
-	 * {@link FieldSerializer#setFinal(CachedField, Object, Object)} for the generated code, which otherwise sets final fields with
-	 * method handles, if setting them with reflection is denied. */
+	 * {@link FieldSerializer#setFinal(CachedField, Object, Object)}, also for the generated code. */
 	static void put (CachedField field, Object object, Object value) {
 		long offset = field.offset;
 		Class type = field.field.getType();

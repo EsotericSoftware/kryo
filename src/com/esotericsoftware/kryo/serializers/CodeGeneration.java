@@ -127,10 +127,13 @@ import java.util.function.IntConsumer;
  * and read falls back to {@link TaggedFieldSerializer#readTag(Input, int, Object, boolean)} when the tag isn't the expected one.
  * Classes with more than {@link #batchSize} fields get a private method per batch.
  * <p>
- * The method handle that sets a final field is the invoker of a {@link MutableCallSite}. Its first call obtains the setter of the
- * field, because Java 26+ warns when that is done, so it only happens when a final field is set. If setting the field with
- * reflection is denied, the call site calls {@link FieldSerializer#setFinal(CachedField, Object, Object)} instead, which uses the
- * {@link FinalFieldSetter} of the cached field, or Unsafe for an Unsafe field.
+ * The method handle that sets a final field is the invoker of a {@link MutableCallSite}. For an Unsafe field, its first call
+ * makes {@link FieldSerializer#setFinal(CachedField, Object, Object)} the target, which sets the field with Unsafe like the
+ * cached fields, without reflection. Otherwise its first call obtains the setter of the field, because Java 26+ warns when that
+ * is done, so it only happens when a final field is set. If setting the field with reflection is denied, the call site calls
+ * {@link FieldSerializer#setFinal(CachedField, Object, Object)} instead, which uses the {@link FinalFieldSetter} of the cached
+ * field. Unsafe fields are part of the signature of the hidden class, so serializers with other field access don't share its call
+ * sites.
  * <p>
  * Not supported, so the cached fields are used: records with more than {@link #batchSize} components, because their constructor
  * call can't be split, records with removed components, which the cached fields set to their defaults, and custom
@@ -178,6 +181,8 @@ final class CodeGeneration {
 			signature.append(field.field.getDeclaringClass().getName()).append('.').append(field.field.getName()).append(':')
 				.append(kinds[i]);
 			if (tags != null) signature.append(':').append(tags[i]);
+			// The call site of a final field resolves its setter by the field access, so the classes for Unsafe fields are separate.
+			if (field.offset != 0) signature.append(":unsafe");
 			signature.append(';');
 		}
 
@@ -381,14 +386,14 @@ final class CodeGeneration {
 		}
 	}
 
-	/** The initial target of the call site of a final field: obtains the setter of the field, which Java 26+ warns about, so it
-	 * only happens when the field is first set. Makes the setter the target of the call site, or
-	 * {@link FieldSerializer#setFinal(CachedField, Object, Object)} if setting the field with reflection is denied, then sets the
-	 * field. */
+	/** The initial target of the call site of a final field. For an Unsafe field, makes
+	 * {@link FieldSerializer#setFinal(CachedField, Object, Object)} the target, which sets it with Unsafe. Otherwise obtains the
+	 * setter of the field, which Java 26+ warns about, so it only happens when the field is first set, and makes it the target, or
+	 * setFinal if setting the field with reflection is denied. Then sets the field. */
 	static private void resolveSetter (MutableCallSite callSite, CachedField field, Object object, Object value)
 		throws Throwable {
 		MethodHandle setter = setFinal;
-		if (!FinalFieldSetter.force) {
+		if (field.offset == 0 && !FinalFieldSetter.force) { // Unsafe fields are set with Unsafe, without reflection.
 			try {
 				setter = MethodHandles.dropArguments(MethodHandles.lookup().unreflectSetter(field.field), 0, CachedField.class);
 			} catch (IllegalAccessException denied) {

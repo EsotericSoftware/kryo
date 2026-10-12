@@ -370,7 +370,8 @@ class CodeGenerationTest extends KryoTestCase {
 
 	@Test
 	void testFinalFieldSecondSerializer () {
-		// The call site of a final field is shared by all serializers of the class, it is resolved by the first that sets the field.
+		// The call site of a final field is shared by all serializers of the class with the same field access, it is resolved by
+		// the first that sets the field.
 		// The cached field of another serializer resolves its own setter when it is first set outside the generated code, eg by
 		// copy, so the generated code doesn't change the cached fields of other serializers.
 		kryo.register(FinalField.class);
@@ -392,6 +393,60 @@ class CodeGenerationTest extends KryoTestCase {
 		assertEquals(9, copy.value);
 		assertFalse(serializer.getField("value").finalUnresolved);
 		assertTrue(serializer.getField("name").finalUnresolved);
+	}
+
+	@Test
+	void testFinalFieldUnsafe () {
+		// With Unsafe field access, the generated code sets a final field with Unsafe, without the reflective setter that Java 26+
+		// warns about. Only the Unsafe setter checks the type with this message, reflection throws a ClassCastException.
+		assumeTrue(com.esotericsoftware.kryo.util.Util.unsafe);
+		Kryo writer = new Kryo();
+		writer.register(ObjectValue.class, 100);
+		kryo.register(UnsafeFinalNumberValue.class, finalFieldSerializer(kryo, UnsafeFinalNumberValue.class, FieldAccessType.UNSAFE),
+			100);
+		KryoException ex = assertThrows(KryoException.class,
+			() -> read(kryo, write(writer, new ObjectValue()), UnsafeFinalNumberValue.class));
+		Throwable cause = ex;
+		while (cause.getCause() != null)
+			cause = cause.getCause();
+		assertTrue(cause.getMessage().startsWith("Can not set java.lang.Number field value to java.lang.String"), cause.getMessage());
+	}
+
+	@Test
+	void testFinalFieldAccessTypes () throws Exception {
+		// The call sites of a hidden class are resolved by the first serializer that sets the field, so the field access types have
+		// separate hidden classes and the order of first use doesn't matter. A class per order, call sites are resolved once per JVM.
+		assumeTrue(com.esotericsoftware.kryo.util.Util.unsafe);
+		assertFinalFieldAccessTypes(UnsafeFirst.class, FieldAccessType.UNSAFE, FieldAccessType.VARHANDLE, FieldAccessType.REFLECTION);
+		assertFinalFieldAccessTypes(VarHandleFirst.class, FieldAccessType.VARHANDLE, FieldAccessType.REFLECTION,
+			FieldAccessType.UNSAFE);
+	}
+
+	private void assertFinalFieldAccessTypes (Class<? extends FinalField> type, FieldAccessType... fieldAccessTypes)
+		throws Exception {
+		Map<FieldAccessType, FieldSerializer> serializers = new HashMap<>();
+		for (FieldAccessType fieldAccess : fieldAccessTypes) {
+			Kryo kryo = new Kryo();
+			FieldSerializer serializer = finalFieldSerializer(kryo, type, fieldAccess);
+			kryo.register(type, serializer);
+			assertNotNull(serializer.generated(), fieldAccess.toString());
+			FinalField object = type.getConstructor(int.class, String.class).newInstance(7, "name");
+			assertEquals(object, read(kryo, write(kryo, object), type), fieldAccess.toString());
+			assertEquals(object, kryo.copy(object), fieldAccess.toString());
+			serializers.put(fieldAccess, serializer);
+		}
+		FieldSerializer varHandle = serializers.get(FieldAccessType.VARHANDLE);
+		assertNotSame(serializers.get(FieldAccessType.UNSAFE).generated().getClass(), varHandle.generated().getClass());
+		// The call site resolved a setter for the VarHandle fields, they weren't set with setFinal of the Unsafe call site.
+		assertTrue(varHandle.getField("value").finalUnresolved);
+	}
+
+	static private FieldSerializer finalFieldSerializer (Kryo kryo, Class type, FieldAccessType fieldAccess) {
+		FieldSerializer serializer = new FieldSerializer(kryo, type);
+		serializer.getFieldSerializerConfig().setCodeGeneration(true);
+		serializer.getFieldSerializerConfig().setFieldAccess(fieldAccess);
+		serializer.updateFields();
+		return serializer;
 	}
 
 	@Test
@@ -1112,6 +1167,28 @@ class CodeGenerationTest extends KryoTestCase {
 
 	static public class FinalNumberValue {
 		public final Number value = null;
+	}
+
+	static public class UnsafeFinalNumberValue {
+		public final Number value = null;
+	}
+
+	static public class UnsafeFirst extends FinalField {
+		public UnsafeFirst () {
+		}
+
+		public UnsafeFirst (int value, String name) {
+			super(value, name);
+		}
+	}
+
+	static public class VarHandleFirst extends FinalField {
+		public VarHandleFirst () {
+		}
+
+		public VarHandleFirst (int value, String name) {
+			super(value, name);
+		}
 	}
 
 	static public class DeniedFinalField implements java.io.Serializable {
