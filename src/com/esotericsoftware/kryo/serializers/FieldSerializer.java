@@ -338,10 +338,15 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 	}
 
-	/** Copies the value of a field, with {@link #setFinal(CachedField, Object, Object)} for a final field. */
+	/** Copies the value of a field, with {@link #setFinal(CachedField, Object, Object)} for a final field, naming the field in the
+	 * exception if copying fails. */
 	void copyField (Kryo kryo, CachedField field, Object original, Object copy) {
 		if (!field.isFinal) {
-			field.copy(original, copy);
+			try {
+				field.copy(original, copy);
+			} catch (KryoException ex) {
+				throw traceField(ex, field);
+			}
 			return;
 		}
 		try {
