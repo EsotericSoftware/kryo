@@ -96,7 +96,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 		}
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Write", fields[i], output.position());
-			fields[i].write(output, object);
+			writeField(fields[i], output, object);
 		}
 
 		popTypeVariables(pop);
@@ -139,10 +139,7 @@ public class VersionFieldSerializer<T> extends FieldSerializer<T> {
 				continue;
 			}
 			if (TRACE) log("Read", fields[i], input.position());
-			if (values == null)
-				readField(fields[i], input, object);
-			else
-				values[fields[i].index] = fields[i].read(input);
+			readField(fields[i], input, object, values);
 		}
 
 		if (values != null) object = createRecord(values);

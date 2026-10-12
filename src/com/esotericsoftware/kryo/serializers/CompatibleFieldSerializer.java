@@ -153,7 +153,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				cachedField.setReuseSerializer(false);
 			}
 
-			cachedField.write(fieldOutput, object);
+			writeField(cachedField, fieldOutput, object);
 			if (chunked) chunks.endField(fieldOutput, mark);
 		}
 
@@ -232,10 +232,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				}
 
 				if (TRACE) log("Read", cachedField, input.position());
-				if (values == null)
-					readField(cachedField, fieldInput, object);
-				else
-					values[cachedField.index] = cachedField.read(fieldInput);
+				readField(cachedField, fieldInput, object, values);
 				if (chunked) chunks.endField(fieldInput, end);
 			}
 

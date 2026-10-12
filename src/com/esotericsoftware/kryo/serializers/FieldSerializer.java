@@ -234,13 +234,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		CachedField[] fields = cachedFields.fields();
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Write", fields[i], output.position());
-			try {
-				fields[i].write(output, object);
-			} catch (KryoException e) {
-				throw e;
-			} catch (Exception e) {
-				throw new KryoException("Error writing " + fields[i] + " at position " + output.position(), e);
-			}
+			writeField(fields[i], output, object);
 		}
 
 		popTypeVariables(pop);
@@ -270,17 +264,7 @@ public class FieldSerializer<T> extends Serializer<T> {
 		CachedField[] fields = cachedFields.fields();
 		for (int i = 0, n = fields.length; i < n; i++) {
 			if (TRACE) log("Read", fields[i], input.position());
-			try {
-				final CachedField field = fields[i];
-				if (values == null)
-					readField(field, input, object);
-				else
-					values[field.index] = field.read(input);
-			} catch (KryoException e) {
-				throw e;
-			} catch (Exception e) {
-				throw new KryoException("Error reading " + fields[i] + " at position " + input.position(), e);
-			}
+			readField(fields[i], input, object, values);
 		}
 
 		if (values != null) object = createRecord(values);
@@ -319,12 +303,39 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 	}
 
-	/** Reads the value of a field and sets it, with {@link #setFinal(CachedField, Object, Object)} for a final field. */
-	void readField (CachedField field, Input input, Object object) {
-		if (field.isFinal)
-			setFinal(field, object, field.read(input));
-		else
-			field.read(input, object);
+	/** Adds a primitive or String field to the trace of an exception thrown while writing or reading it. Other fields add
+	 * themselves, see {@link ReflectField}. */
+	static KryoException traceField (KryoException ex, CachedField field) {
+		if (!(field instanceof ReflectField)) ex.addTrace(field.name + " (" + field.field.getDeclaringClass().getName() + ")");
+		return ex;
+	}
+
+	/** Writes a field, naming it in the exception if writing fails. */
+	void writeField (CachedField field, Output output, Object object) {
+		try {
+			field.write(output, object);
+		} catch (KryoException ex) {
+			throw traceField(ex, field);
+		} catch (Exception ex) {
+			throw new KryoException("Error writing " + field + " at position " + output.position(), ex);
+		}
+	}
+
+	/** Reads a field and sets it, with {@link #setFinal(CachedField, Object, Object)} for a final field, or stores its value for a
+	 * record, naming the field in the exception if reading fails. */
+	void readField (CachedField field, Input input, Object object, Object[] values) {
+		try {
+			if (values != null)
+				values[field.index] = field.read(input);
+			else if (field.isFinal)
+				setFinal(field, object, field.read(input));
+			else
+				field.read(input, object);
+		} catch (KryoException ex) {
+			throw traceField(ex, field);
+		} catch (Exception ex) {
+			throw new KryoException("Error reading " + field + " at position " + input.position(), ex);
+		}
 	}
 
 	/** Copies the value of a field, with {@link #setFinal(CachedField, Object, Object)} for a final field. */
