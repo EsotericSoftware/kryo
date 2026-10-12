@@ -1531,8 +1531,8 @@ public class Kryo {
 		 * use references, records are serialized with RecordSerializer, the types that have new default serializers in Kryo 6 use
 		 * the serializers Kryo 5 used, MapSerializer writes the class of each key and value, CompatibleFieldSerializer and
 		 * TaggedFieldSerializer use the generic types of fields, the chunked encoding writes chunks, enums with constant bodies are
-		 * not final, and String fields ignore {@link FieldSerializer.Bind} and {@link FieldSerializer.NotNull}, which is also
-		 * ignored next to {@link FieldSerializer.Bind}. */
+		 * not final, String fields without references ignore {@link FieldSerializer.Bind} and {@link FieldSerializer.NotNull}, and
+		 * {@link FieldSerializer.NotNull} is ignored next to {@link FieldSerializer.Bind}. */
 		KRYO5,
 		/** The format of Kryo 6, the default. It is smaller and faster than {@link #KRYO5}. */
 		KRYO6
