@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assumptions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Kryo.Format;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.TaggedFieldSerializerFactory;
@@ -41,6 +42,8 @@ import com.esotericsoftware.kryo.serializers.ChunkedEncodingTest.RecordEntity;
 import com.esotericsoftware.kryo.serializers.ChunkedEncodingTest.TaggedEntity;
 import com.esotericsoftware.kryo.serializers.ChunkedEncodingTest.TaggedEntity2;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.CompatibleFieldSerializerConfig;
+import com.esotericsoftware.kryo.serializers.FieldSerializerTest.BindWithNotNull;
+import com.esotericsoftware.kryo.serializers.FieldSerializerTest.FieldAccessData;
 import com.esotericsoftware.kryo.serializers.SyntheticFieldsTest.Outer;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSerializerConfig;
@@ -262,6 +265,44 @@ class Kryo5SerializersTest extends KryoTestCase {
 					assertNotNull(generated, type.getName());
 			}
 		}
+	}
+
+	@Test
+	void testBindAndNotNull () {
+		// Like Kryo 5 with Unsafe or ReflectASM, @Bind and @NotNull are ignored for String fields without references, and @NotNull
+		// is ignored next to @Bind.
+		Kryo kryo = new Kryo();
+		kryo.setFormat(Format.KRYO5);
+		kryo.setReferences(false);
+		kryo.register(FieldAccessData.class);
+		kryo.register(BindWithNotNull.class);
+		kryo.register(ArrayList.class);
+		FieldAccessData object = new FieldAccessData("string", 5);
+		object.notNull = null;
+		FieldAccessData read = roundTrip(kryo, object);
+		assertEquals("string", read.bound); // The serializer is ignored.
+		assertNull(read.notNull);
+
+		FieldSerializer serializer = (FieldSerializer)kryo.getSerializer(BindWithNotNull.class);
+		assertTrue(serializer.getField("notNull").getCanBeNull());
+		BindWithNotNull bindWithNotNull = new BindWithNotNull();
+		bindWithNotNull.notNull = null;
+		assertEquals(bindWithNotNull, roundTrip(kryo, bindWithNotNull));
+
+		// With references, Kryo 5 applied the annotations to String fields.
+		Kryo references = new Kryo();
+		references.setFormat(Format.KRYO5);
+		references.setReferences(true);
+		references.register(FieldAccessData.class);
+		references.register(ArrayList.class);
+		assertEquals("STRING", roundTrip(references, new FieldAccessData("string", 5)).bound);
+		assertThrows(KryoException.class, () -> references.writeObject(new Output(64, -1), object));
+	}
+
+	private <T> T roundTrip (Kryo kryo, T object) {
+		Output output = new Output(64, -1);
+		kryo.writeObject(output, object);
+		return (T)kryo.readObject(new Input(output.toBytes()), object.getClass());
 	}
 
 	@Test

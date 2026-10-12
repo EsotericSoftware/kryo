@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.kryo.util.Log.*;
 
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
@@ -297,11 +298,12 @@ class CachedFields implements Comparator<CachedField> {
 
 	/** Returns true if a String field is written directly as a string, which all field access types decide the same way, so they
 	 * write the same data, eg for a final field that VarHandles can't set. Not with references for strings, and not with
-	 * {@link Bind} or {@link NotNull}, which only the fields for objects apply. Kryo remembers the decision for strings, so it
-	 * can't change afterward. */
+	 * {@link Bind} or {@link NotNull}, which only the fields for objects apply, except with {@link Format#KRYO5}: Kryo 5 ignored
+	 * them for String fields with Unsafe and ReflectASM. Kryo remembers the decision for strings, so it can't change afterward. */
 	private boolean isStringField (Field field, Class fieldClass) {
-		return fieldClass == String.class && !field.isAnnotationPresent(Bind.class) && !field.isAnnotationPresent(NotNull.class)
-			&& !serializer.kryo.usesStringReferences();
+		if (fieldClass != String.class || serializer.kryo.usesStringReferences()) return false;
+		return serializer.kryo.getFormat() == Format.KRYO5
+			|| !field.isAnnotationPresent(Bind.class) && !field.isAnnotationPresent(NotNull.class);
 	}
 
 	private CachedField newUnsafeField (Field field, Class fieldClass, GenericType genericType) {
@@ -470,7 +472,9 @@ class CachedFields implements Comparator<CachedField> {
 				"@Bind serializer and serializerFactory require valueClass");
 			if (serializer != null) cachedField.setSerializer(serializer);
 
-			cachedField.setCanBeNull(annotation.canBeNull() && !field.isAnnotationPresent(NotNull.class));
+			// Kryo 5 ignored @NotNull with @Bind.
+			cachedField.setCanBeNull(annotation.canBeNull()
+				&& (this.serializer.kryo.getFormat() == Format.KRYO5 || !field.isAnnotationPresent(NotNull.class)));
 			cachedField.setVariableLengthEncoding(annotation.variableLengthEncoding());
 		}
 
