@@ -225,6 +225,8 @@ public class Kryo {
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
 	private Object needsCopyReference, copyReferenced;
+	/** The depth of the innermost copy, to tell a read nested in a copy from the copy calling {@link #reference(Object)}. */
+	private int copyGraphDepth;
 	private Generics generics = new DefaultGenerics(this);
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and references disabled. */
@@ -685,7 +687,7 @@ public class Kryo {
 		try {
 			return classResolver.writeClass(output, type);
 		} finally {
-			if (depth == 0 && autoReset) reset();
+			if (depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -699,7 +701,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			getRegistration(object.getClass()).getSerializer().write(this, output, object);
 		} finally {
-			if (--depth == 0 && autoReset) reset();
+			if (--depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -714,7 +716,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			serializer.write(this, output, object);
 		} finally {
-			if (--depth == 0 && autoReset) reset();
+			if (--depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -739,7 +741,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			serializer.write(this, output, object);
 		} finally {
-			if (--depth == 0 && autoReset) reset();
+			if (--depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -764,7 +766,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			serializer.write(this, output, object);
 		} finally {
-			if (--depth == 0 && autoReset) reset();
+			if (--depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -783,7 +785,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Write", object, output.position());
 			registration.getSerializer().write(this, output, object);
 		} finally {
-			if (--depth == 0 && autoReset) reset();
+			if (--depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -830,7 +832,7 @@ public class Kryo {
 		try {
 			return classResolver.readClass(input);
 		} finally {
-			if (depth == 0 && autoReset) reset();
+			if (depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -852,7 +854,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
-			if (--depth == 0 && autoReset) reset();
+			if (--depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -875,7 +877,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
-			if (--depth == 0 && autoReset) reset();
+			if (--depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -904,7 +906,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
-			if (--depth == 0 && autoReset) reset();
+			if (--depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -933,7 +935,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
-			if (--depth == 0 && autoReset) reset();
+			if (--depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -959,7 +961,7 @@ public class Kryo {
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
 			return object;
 		} finally {
-			if (--depth == 0 && autoReset) reset();
+			if (--depth == 0 && autoReset) graphComplete();
 		}
 	}
 
@@ -1011,7 +1013,7 @@ public class Kryo {
 	 * objects.
 	 * @param object May be null, unless calling this method from {@link Serializer#copy(Kryo, Object)}. */
 	public void reference (Object object) {
-		if (copyDepth > 0) {
+		if (copyDepth > 0 && depth == copyGraphDepth) {
 			if (needsCopyReference != null) {
 				if (object == null) throw new IllegalArgumentException("object cannot be null.");
 				originalToCopy.put(needsCopyReference, object);
@@ -1048,146 +1050,109 @@ public class Kryo {
 	/** Resets object graph state: unregistered class names, references to previously serialized or deserialized objects, the
 	 * {@link #getOriginalToCopyMap() original to copy map}, the {@link #getGraphContext() graph context} and the
 	 * {@link #getGenerics() generic type information} collected during serialization. If {@link #setAutoReset(boolean) auto reset}
-	 * is true, this method is called automatically when an object graph has been completely serialized or deserialized. If
-	 * overridden, the super method must be called. */
+	 * is true, this method is called automatically when an object graph has been completely serialized or deserialized, unless a
+	 * copy is in progress, and when a copy is complete, unless an object graph is in progress. If overridden, the super method
+	 * must be called. */
 	public void reset () {
+		resetGraph();
+		resetCopy();
+		if (TRACE) trace("kryo", "Object graph complete.");
+	}
+
+	/** Resets the graph state when an object graph is complete, and the copy state too unless a copy is in progress, eg a
+	 * serializer's copy method serializing the object. */
+	private void graphComplete () {
+		if (copyDepth == 0)
+			reset();
+		else
+			resetGraph();
+	}
+
+	private void resetGraph () {
 		depth = 0;
 		if (graphContext != null) graphContext.clear(2048);
 		classResolver.reset();
 		generics.reset();
 		if (references) {
 			referenceResolver.reset();
+			readReferenceIds.clear(); // Not empty after a failed read.
 			readObject = null;
 		}
+	}
 
+	private void resetCopy () {
 		copyDepth = 0;
 		if (originalToCopy != null) originalToCopy.clear(2048);
-
-		if (TRACE) trace("kryo", "Object graph complete.");
+		needsCopyReference = null;
+		copyReferenced = null;
 	}
 
 	/** Returns a deep copy of the object. Serializers for the classes involved must support {@link Serializer#copy(Kryo, Object)}.
 	 * @param object May be null. */
 	public <T> T copy (T object) {
-		if (object == null) return null;
-		if (copyShallow) return object;
-		copyDepth++;
-		try {
-			if (originalToCopy == null) originalToCopy = new IdentityMap();
-			Object existingCopy = originalToCopy.get(object);
-			if (existingCopy != null) return (T)existingCopy;
-
-			// Nested copies must not replace the object of an outer copy that the serializer has not referenced yet.
-			Object outerNeedsCopyReference = needsCopyReference, outerCopyReferenced = copyReferenced;
-			if (copyReferences) needsCopyReference = object;
-			copyReferenced = null;
-			Object copy;
-			if (object instanceof KryoCopyable)
-				copy = ((KryoCopyable)object).copy(this);
-			else
-				copy = getSerializer(object.getClass()).copy(this, object);
-			referenceCopy(object, copy);
-			needsCopyReference = outerNeedsCopyReference;
-			copyReferenced = outerCopyReferenced;
-			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy, -1);
-			return (T)copy;
-		} finally {
-			if (--copyDepth == 0) reset();
-		}
+		return copy(object, null, false);
 	}
 
 	/** Returns a deep copy of the object using the specified serializer. Serializers for the classes involved must support
 	 * {@link Serializer#copy(Kryo, Object)}.
 	 * @param object May be null. */
 	public <T> T copy (T object, Serializer serializer) {
-		if (object == null) return null;
-		if (copyShallow) return object;
-		copyDepth++;
-		try {
-			if (originalToCopy == null) originalToCopy = new IdentityMap();
-			Object existingCopy = originalToCopy.get(object);
-			if (existingCopy != null) return (T)existingCopy;
-
-			// Nested copies must not replace the object of an outer copy that the serializer has not referenced yet.
-			Object outerNeedsCopyReference = needsCopyReference, outerCopyReferenced = copyReferenced;
-			if (copyReferences) needsCopyReference = object;
-			copyReferenced = null;
-			Object copy;
-			if (object instanceof KryoCopyable)
-				copy = ((KryoCopyable)object).copy(this);
-			else
-				copy = serializer.copy(this, object);
-			referenceCopy(object, copy);
-			needsCopyReference = outerNeedsCopyReference;
-			copyReferenced = outerCopyReferenced;
-			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy, -1);
-			return (T)copy;
-		} finally {
-			if (--copyDepth == 0) reset();
-		}
+		return copy(object, serializer, false);
 	}
 
 	/** Returns a shallow copy of the object. Serializers for the classes involved must support
 	 * {@link Serializer#copy(Kryo, Object)}.
 	 * @param object May be null. */
 	public <T> T copyShallow (T object) {
-		if (object == null) return null;
-		copyDepth++;
-		boolean outerCopyShallow = copyShallow; // Restored, because a serializer can make a nested shallow copy.
-		copyShallow = true;
-		try {
-			if (originalToCopy == null) originalToCopy = new IdentityMap();
-			Object existingCopy = originalToCopy.get(object);
-			if (existingCopy != null) return (T)existingCopy;
-
-			Object outerNeedsCopyReference = needsCopyReference, outerCopyReferenced = copyReferenced; // See copy(Object).
-			if (copyReferences) needsCopyReference = object;
-			copyReferenced = null;
-			Object copy;
-			if (object instanceof KryoCopyable)
-				copy = ((KryoCopyable)object).copy(this);
-			else
-				copy = getSerializer(object.getClass()).copy(this, object);
-			referenceCopy(object, copy);
-			needsCopyReference = outerNeedsCopyReference;
-			copyReferenced = outerCopyReferenced;
-			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy, -1);
-			return (T)copy;
-		} finally {
-			copyShallow = outerCopyShallow;
-			if (--copyDepth == 0) reset();
-		}
+		return copy(object, null, true);
 	}
 
 	/** Returns a shallow copy of the object using the specified serializer. Serializers for the classes involved must support
 	 * {@link Serializer#copy(Kryo, Object)}.
 	 * @param object May be null. */
 	public <T> T copyShallow (T object, Serializer serializer) {
+		return copy(object, serializer, true);
+	}
+
+	/** @param serializer May be null to use the registered serializer.
+	 * @param shallow If true, nested copies return the original objects. */
+	private <T> T copy (T object, Serializer serializer, boolean shallow) {
 		if (object == null) return null;
+		if (copyShallow && !shallow) return object;
 		copyDepth++;
-		boolean outerCopyShallow = copyShallow; // Restored, because a serializer can make a nested shallow copy.
-		copyShallow = true;
+		// Restored, because a serializer can make a nested shallow copy, and nested copies must not replace the object of an outer
+		// copy that the serializer has not referenced yet.
+		boolean outerCopyShallow = copyShallow;
+		Object outerNeedsCopyReference = needsCopyReference, outerCopyReferenced = copyReferenced;
+		int outerCopyGraphDepth = copyGraphDepth;
 		try {
 			if (originalToCopy == null) originalToCopy = new IdentityMap();
 			Object existingCopy = originalToCopy.get(object);
 			if (existingCopy != null) return (T)existingCopy;
 
-			Object outerNeedsCopyReference = needsCopyReference, outerCopyReferenced = copyReferenced; // See copy(Object).
+			copyShallow = shallow;
 			if (copyReferences) needsCopyReference = object;
 			copyReferenced = null;
+			copyGraphDepth = depth;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
 			else
-				copy = serializer.copy(this, object);
+				copy = (serializer != null ? serializer : getSerializer(object.getClass())).copy(this, object);
 			referenceCopy(object, copy);
-			needsCopyReference = outerNeedsCopyReference;
-			copyReferenced = outerCopyReferenced;
-			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy, -1);
+			if (TRACE || (DEBUG && copyDepth == 1)) log(shallow ? "Shallow copy" : "Copy", copy, -1);
 			return (T)copy;
 		} finally {
 			copyShallow = outerCopyShallow;
-			if (--copyDepth == 0) reset();
+			needsCopyReference = outerNeedsCopyReference;
+			copyReferenced = outerCopyReferenced;
+			copyGraphDepth = outerCopyGraphDepth;
+			if (--copyDepth == 0) {
+				if (depth == 0)
+					reset();
+				else
+					resetCopy();
+			}
 		}
 	}
 
