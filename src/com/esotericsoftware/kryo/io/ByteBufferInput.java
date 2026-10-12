@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 /** An {@link Input} that uses a ByteBuffer rather than a byte[].
  * <p>
@@ -759,6 +760,21 @@ public class ByteBufferInput extends Input {
 			return "";
 		}
 		charCount--;
+		// If the chars are in the buffer and all ASCII, the string is the bytes.
+		if (limit - position >= charCount) {
+			ByteBuffer byteBuffer = this.byteBuffer;
+			int p = position, n = p + charCount;
+			for (int nn = n - 7; p < nn; p += 8)
+				if ((byteBuffer.getLong(p) & 0x8080808080808080L) != 0) break;
+			while (p < n && byteBuffer.get(p) >= 0)
+				p++;
+			if (p == n) {
+				byte[] bytes = new byte[charCount];
+				byteBuffer.get(bytes);
+				position = n;
+				return new String(bytes, StandardCharsets.ISO_8859_1);
+			}
+		}
 		readUtf8Chars(charCount);
 		return new String(chars, 0, charCount);
 	}
