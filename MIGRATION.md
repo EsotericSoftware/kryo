@@ -6,7 +6,7 @@ Kryo 6 has not been released yet. This document collects the changes that affect
 
 * Kryo 6 requires Java 17 and Android 8.0 (API level 26), see [Requirements](#requirements).
 * Kryo has no required dependencies anymore: Objenesis and ASM are optional, ReflectASM and MinLog are gone. The imports of `Log` and of the instantiator strategies change, see [Import changes](#import-changes).
-* Data written by Kryo 5 can be read with `Kryo5Compatibility.configure(kryo)`, as far as Kryo's default serializers are concerned, see [Reading data written by Kryo 5](#reading-data-written-by-kryo-5). The Kryo 6 format is smaller and faster, so write data again with it where you can.
+* Data written by Kryo 5 can be read with the Kryo 5 format, `kryo.setFormat(Format.KRYO5)`, as far as Kryo's serializers are concerned, see [Reading data written by Kryo 5](#reading-data-written-by-kryo-5). The Kryo 6 format is smaller and faster, so write data again with it where you can.
 * The default format changed in a few places: strings are written without references, records are serialized by FieldSerializer, maps and chunked encoding write less, enums with constant bodies are treated as final, see [Serialization format](#serialization-format).
 * On Java 24+, fields are accessed with VarHandles instead of `sun.misc.Unsafe`, so Java doesn't warn about Kryo. The code that reads and writes the fields of a class can be generated, which is 1.8 to 2.8 times faster, see [Field access](#field-access).
 * Default serializers for about 20 more JDK types, eg `UUID`, `Pattern`, the atomic types, `ByteBuffer`, `EnumMap`, the blocking queues and the unmodifiable and synchronized collections, see [New default serializers](#new-default-serializers).
@@ -48,25 +48,24 @@ Kryo 6 has no required dependencies. [Objenesis](http://objenesis.org/) is an op
 
 ## Reading data written by Kryo 5
 
-Kryo 6 changes the default serialized format in the places described under [Serialization format](#serialization-format). To read data written by Kryo 5, configure Kryo after setting the default serializer:
+Kryo 6 changes the default serialized format in the places described under [Serialization format](#serialization-format). To read data written by Kryo 5, set the Kryo 5 format before registering classes:
 
 ```java
 Kryo kryo = new Kryo();
-kryo.setDefaultSerializer(...); // If not FieldSerializer.
-Kryo5Compatibility.configure(kryo);
+kryo.setFormat(Format.KRYO5);
 ```
 
-This restores the Kryo 5 format for Kryo's default serializers: it enables references for strings, uses RecordSerializer for records, the serializers Kryo 5 used for the types that have new default serializers, the Kryo 5 formats of MapSerializer and of the chunked encoding, and treats enums with constant bodies as not final. Serializers that are registered explicitly or added as default serializers later need these settings themselves, they are listed in each section below.
+Kryo's serializers and reference resolvers then write and read the Kryo 5 format, also when they are registered explicitly, added as default serializers, or subclassed without overriding `useReferences`; each section under [Serialization format](#serialization-format) says what changes. Serializers are configured for the format when they are created, so `setFormat` throws an exception once a class was registered or a serializer created. Serializers you registered with Kryo 5 for types that now have default serializers, eg `UUIDSerializer`, must still be registered, see [New default serializers](#new-default-serializers).
 
-`Kryo5Compatibility` is a best effort to read existing data with the default serializers. There is no guarantee that it covers a setup with custom serializers, custom class or reference resolvers, or settings that were changed after it was applied, and some Kryo 5 data can't be read at all, eg records with generic components or unmodifiable collections, see the sections below. Use it to keep reading data during a transition, or to read the data once and write it again with the Kryo 6 format, which is smaller, faster and loses no data in skipped fields. Like with the migration from Kryo 4 to Kryo 5, reading data across major versions isn't guaranteed.
+The Kryo 5 format is a best effort. It doesn't cover custom serializers or custom class or reference resolvers, and some Kryo 5 data can't be read at all, eg records with generic components or unmodifiable collections. Use it to keep reading data during a transition, or to read the data once and write it again with the Kryo 6 format, which is smaller, faster and loses no data in skipped fields. Like with the migration from Kryo 4 to Kryo 5, reading data across major versions isn't guaranteed.
 
-Kryo 5 can read data written with this configuration, unless it contains locales with a script or generic types that Kryo 6 resolves but Kryo 5 ignored, see [Collections and maps](#collections-and-maps).
+Kryo 5 can read data written with the Kryo 5 format, unless it contains locales with a script, generic types that Kryo 6 resolves but Kryo 5 ignored, see [Collections and maps](#collections-and-maps), or types Kryo 5 couldn't read, eg `EnumMap` or `ArrayBlockingQueue`.
 
-Like in Kryo 5, String fields of FieldSerializer and its subclasses decide when the serializer is created whether they use references: Kryo 5 wrote String fields without references if `setReferences(true)` was called after registering the classes, but strings in collections and arrays with references. To read such data, keep the order of `setReferences` and `register` the Kryo 5 code used, and call `Kryo5Compatibility.configure` before registering classes. Unlike Kryo 5, Kryo 6 throws an exception if `setReferences`, `setReferenceResolver` or `Kryo5Compatibility.configure` changes whether strings use references after a String field was created, because the data of that field would differ from the data of a Kryo instance that was configured before registering the classes.
+Like in Kryo 5, a String field of FieldSerializer and its subclasses decides when it is created whether it uses references: Kryo 5 wrote String fields without references if `setReferences(true)` was called after registering the classes, but strings in collections and arrays with references. To read such data, keep the order of `setReferences` and `register` the Kryo 5 code used. Unlike Kryo 5, Kryo 6 throws an exception if `setReferences` or `setReferenceResolver` changes whether strings use references after a String field was created.
 
 ## Serialization format
 
-The following changes affect data serialized with Kryo 5, the most common first. Each section says how to read the Kryo 5 data without `Kryo5Compatibility`.
+The following changes affect data serialized with Kryo 5, the most common first. Each section says how to read the Kryo 5 data.
 
 ### Strings with references
 
@@ -80,7 +79,7 @@ kryo.setReferenceResolver(new MapReferenceResolver() {
 });
 ```
 
-`Kryo5Compatibility` does this for Kryo's reference resolvers, also if none has been set yet. Subclasses of them and custom reference resolvers decide in `useReferences` as before.
+With the Kryo 5 format, Kryo's reference resolvers do this, and so do their subclasses that inherit `useReferences`. Custom reference resolvers decide in `useReferences` as before.
 
 ### Records
 
@@ -98,15 +97,7 @@ Copying a record creates a new record and copies the components, like the fields
 
 ### Maps
 
-If the class of the keys or values of a map is unknown, MapSerializer writes it only once if all keys or values are not null and have the same class. Kryo 5 wrote the class of each key and value. If the map contains no null key or value, which is written with the size of the map, keys and values are written without a null marker. Kryo 5 wrote a null marker for each key or value whose serializer doesn't accept null, eg for the values of a `Map<String, Integer>` field, and for each with references. To read data written by Kryo 5, disable this for the MapSerializer instances, eg for all maps that use the default MapSerializer:
-
-```java
-MapSerializer mapSerializer = new MapSerializer();
-mapSerializer.setWriteSameClassOnce(false);
-kryo.addDefaultSerializer(Map.class, mapSerializer);
-```
-
-Subclasses like TreeMapSerializer need the same setting.
+If the class of the keys or values of a map is unknown, MapSerializer writes it only once if all keys or values are not null and have the same class. Kryo 5 wrote the class of each key and value. If the map contains no null key or value, which is written with the size of the map, keys and values are written without a null marker. Kryo 5 wrote a null marker for each key or value whose serializer doesn't accept null, eg for the values of a `Map<String, Integer>` field, and for each with references. To read data written by Kryo 5, use the Kryo 5 format, which MapSerializer and its subclasses write and read.
 
 ### New default serializers
 
@@ -119,18 +110,18 @@ Kryo 6 adds default serializers for these JDK types, see [Default serializers](R
   kryo.register(UUID.class, new FieldSerializer<>(kryo, UUID.class));
   ```
 
-  These serializers were already available in Kryo 5, eg `UUIDSerializer`. If you registered them with Kryo 5, keep registering them, because `Kryo5Compatibility` only applies what Kryo 5 used by default. Registered serializers take precedence over its settings.
-* `ConcurrentSkipListSet` and `PriorityBlockingQueue`, which write the comparator like the serializers for `TreeSet` and `PriorityQueue`. Kryo 5 serialized them with CollectionSerializer, which lost the comparator. `Kryo5Compatibility` uses CollectionSerializer for them, or register it for both to read data written by Kryo 5:
+  These serializers were already available in Kryo 5, eg `UUIDSerializer`. If you registered them with Kryo 5, keep registering them, because the Kryo 5 format only applies what Kryo 5 used by default. Registered serializers take precedence.
+* `ConcurrentSkipListSet` and `PriorityBlockingQueue`, which write the comparator like the serializers for `TreeSet` and `PriorityQueue`. Kryo 5 serialized them with CollectionSerializer, which lost the comparator. The Kryo 5 format uses CollectionSerializer for them, or register it for both to read data written by Kryo 5:
 
   ```java
   kryo.register(ConcurrentSkipListSet.class, new CollectionSerializer());
   kryo.register(PriorityBlockingQueue.class, new CollectionSerializer());
   ```
-* `ArrayBlockingQueue`, `LinkedBlockingQueue` and `LinkedBlockingDeque`, which write the capacity. Kryo 5 couldn't read an `ArrayBlockingQueue`, and read a `LinkedBlockingQueue` or `LinkedBlockingDeque` with CollectionSerializer, which lost the capacity. `Kryo5Compatibility` uses CollectionSerializer for `LinkedBlockingQueue` and `LinkedBlockingDeque`.
+* `ArrayBlockingQueue`, `LinkedBlockingQueue` and `LinkedBlockingDeque`, which write the capacity. Kryo 5 couldn't read an `ArrayBlockingQueue`, and read a `LinkedBlockingQueue` or `LinkedBlockingDeque` with CollectionSerializer, which lost the capacity. The Kryo 5 format uses CollectionSerializer for `LinkedBlockingQueue` and `LinkedBlockingDeque`.
 * `EnumMap`, which writes the enum type of the keys. Kryo 5 couldn't serialize an `EnumMap` without registering an `EnumMapSerializer` for its enum type, which is unchanged.
-* `ByteBuffer`, for heap and direct buffers, which keeps the position, limit, capacity, byte order and whether it is read-only. Kryo 5 serialized heap buffers with FieldSerializer, which needs StdInstantiatorStrategy and on Java 17+ `--add-opens java.base/java.nio=ALL-UNNAMED`, and couldn't serialize direct buffers. `Kryo5Compatibility` uses the default serializer for `ByteBuffer`, like Kryo 5.
+* `ByteBuffer`, for heap and direct buffers, which keeps the position, limit, capacity, byte order and whether it is read-only. Kryo 5 serialized heap buffers with FieldSerializer, which needs StdInstantiatorStrategy and on Java 17+ `--add-opens java.base/java.nio=ALL-UNNAMED`, and couldn't serialize direct buffers. The Kryo 5 format uses the default serializer for `ByteBuffer`, like Kryo 5.
 * The set returned by `Collections.newSetFromMap`, and by `newSequencedSetFromMap` on Java 21+, which writes the map that backs it. Like for the unmodifiable and synchronized collections, the map is read from a private JDK field, and on Android a copy of the elements is written instead. Kryo 5 serialized the set with CollectionSerializer, which couldn't read it back, so there is no readable Kryo 5 data for it.
-* `File`, `InetAddress` and `InetSocketAddress`, which use only public API and don't look up host names. Kryo 5 serialized them with FieldSerializer, which can't access their fields on Java 17+ without `--add-opens`, and even with it lost the IP address of `InetAddress` and couldn't create `File` and `InetSocketAddress` without StdInstantiatorStrategy. `Kryo5Compatibility` uses the default serializer for them, like Kryo 5, so the data stays aligned. Without it, data written by Kryo 5 can be read with FileSerializer only for `File` without references, because FileSerializer writes the path like FieldSerializer did.
+* `File`, `InetAddress` and `InetSocketAddress`, which use only public API and don't look up host names. Kryo 5 serialized them with FieldSerializer, which can't access their fields on Java 17+ without `--add-opens`, and even with it lost the host name and IP address of `InetAddress`, read an `InetSocketAddress` that throws an exception when it is used, and couldn't create `File` and `InetSocketAddress` without StdInstantiatorStrategy. The Kryo 5 format uses the default serializer for `File`, like Kryo 5, so the data stays aligned. Without it, data written by Kryo 5 can be read with FileSerializer only for `File` without references, because FileSerializer writes the path like FieldSerializer did. There is no readable Kryo 5 data for `InetAddress` and `InetSocketAddress`, so the Kryo 5 format uses the new serializers for them.
 * The map entries of `Map.entry`, `AbstractMap.SimpleEntry` and `AbstractMap.SimpleImmutableEntry`, but not subclasses of the latter two. Kryo 5 serialized them with FieldSerializer, which can't access their fields on Java 16+ without `--add-opens java.base/java.util=ALL-UNNAMED`. The data is the same as FieldSerializer wrote: the key and the value with their classes, or without them if the type arguments of the field are final, eg `Map.Entry<String, Integer>`.
 * The unmodifiable and synchronized collections returned by `Collections`, eg `Collections.unmodifiableList`; on Android, which doesn't allow access to the wrapped collection, a copy of the elements is written. Kryo 5 serialized them with CollectionSerializer or MapSerializer, which couldn't read them back, so there is no readable Kryo 5 data for them. If you added these serializers with `addDefaultSerializers` in Kryo 5, the data is the same. See [Unmodifiable and synchronized collections](README.md#unmodifiable-and-synchronized-collections) for the JDK internals they access.
 * The comparators returned by `Collections.reverseOrder()`, `Collections.reverseOrder(Comparator)` and `String.CASE_INSENSITIVE_ORDER`, eg as the comparator of a `TreeSet`, and `java.sql.Date` and `java.sql.Time`. They write the same data as Kryo 5 where it could serialize these types, without reflection.
@@ -141,14 +132,7 @@ CompatibleFieldSerializer and TaggedFieldSerializer with chunked encoding write 
 
 The outermost object with chunked encoding is buffered until it is written completely, so it must be smaller than 2 GiB, Kryo 5 wrote it to the output in chunks. The field names are identified by class instead of their position, so a nested object can only be read as a different class than it was written if its class is written, which `readUnknownFieldData` (the default) does. Kryo 5 could read it, eg with `readUnknownFieldData` false after the final type of a field changed, although changing the type of a field is not supported.
 
-To read data written by Kryo 5 with chunked encoding, use `Kryo5Compatibility` or enable `legacyChunks`, which is deprecated because it is only needed for that:
-
-```java
-CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
-config.setChunkedEncoding(true);
-config.setLegacyChunks(true);
-kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
-```
+To read data written by Kryo 5 with chunked encoding, use the Kryo 5 format, which writes chunks like Kryo 5. Chunked encoding with the Kryo 5 format doesn't use [generated code](#field-access).
 
 A custom ClassResolver needs to implement `beginDeferredNames`, `endDeferredNames`, and `readDeferredNames`, and a custom ReferenceResolver `getObjectCount`, otherwise class names first written in a skipped field are lost, and the reference IDs of the objects read after a skipped field are shifted, like in Kryo 5. The new format is used anyway. DefaultClassResolver and the reference resolvers of Kryo implement them.
 
@@ -156,25 +140,15 @@ The end of a field is found with `Input#total()`, so a custom Input that reads o
 
 ### Generic fields with CompatibleFieldSerializer and TaggedFieldSerializer
 
-CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` no longer use the generic type of a field to optimize its value. Kryo 5 omitted the class of collection elements and map keys and values if the field's type arguments were final, eg `List<String>`, so the value could not be read anymore once the field was removed ([#1098](https://github.com/EsotericSoftware/kryo/issues/1098)). To read such data written by Kryo 5, enable `optimizeGenerics`, which `Kryo5Compatibility` does. This restores the Kryo 5 behavior, so data with such a field that has since been removed can only be read if it was written with chunked encoding. The setting is deprecated, because it is only needed for that: the collection and map serializers write the class of the elements once per collection anyway, so the optimization saves almost nothing.
-
-```java
-CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
-config.setOptimizeGenerics(true);
-kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
-```
+CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` no longer use the generic type of a field to optimize its value. Kryo 5 omitted the class of collection elements and map keys and values if the field's type arguments were final, eg `List<String>`, so the value could not be read anymore once the field was removed ([#1098](https://github.com/EsotericSoftware/kryo/issues/1098)). To read such data written by Kryo 5, use the Kryo 5 format, which uses the generic types like Kryo 5, so data with such a field that has since been removed can only be read if it was written with chunked encoding.
 
 ### Enums with constant bodies
 
-The class of an enum value is not written if the enum is known, eg from the type of a field, also if its constants have bodies like `PLUS { ... }`. Kryo 5 wrote the class for these enums, because they aren't final, so adding or removing a body changed the serialized bytes ([#454](https://github.com/EsotericSoftware/kryo/issues/454)). The name of an unregistered enum constant with a body is the name of its enum, which Kryo 5 can read too. This also applies to a `Class` value: the class of a constant with a body, eg `Op.PLUS.getClass()`, is read as the enum, like in Kryo 5 when the enum is registered. To read data written by Kryo 5, set this before registering classes, which `Kryo5Compatibility` does. The setting is deprecated, because it is only needed for that:
-
-```java
-kryo.setEnumsFinal(false);
-```
+The class of an enum value is not written if the enum is known, eg from the type of a field, also if its constants have bodies like `PLUS { ... }`. Kryo 5 wrote the class for these enums, because they aren't final, so adding or removing a body changed the serialized bytes ([#454](https://github.com/EsotericSoftware/kryo/issues/454)). The name of an unregistered enum constant with a body is the name of its enum, which Kryo 5 can read too. This also applies to a `Class` value: the class of a constant with a body, eg `Op.PLUS.getClass()`, is read as the enum, like in Kryo 5 when the enum is registered. To read data written by Kryo 5, use the Kryo 5 format, which treats these enums as not final.
 
 ### Immutable lists
 
-The serializer for immutable lists created by `List.of` and `Stream.toList` supports null elements, which `Stream.toList` allows ([#1239](https://github.com/EsotericSoftware/kryo/issues/1239)). It writes whether a list contains null elements. To read data written by Kryo 5, disable null elements:
+The serializer for immutable lists created by `List.of` and `Stream.toList` supports null elements, which `Stream.toList` allows ([#1239](https://github.com/EsotericSoftware/kryo/issues/1239)). It writes whether a list contains null elements. To read data written by Kryo 5, use the Kryo 5 format, or disable null elements:
 
 ```java
 ((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(false);
@@ -235,6 +209,7 @@ These changes don't affect the serialized format of the default configuration, e
 
 ### Changed APIs
 
+* `Kryo#setFormat(Format)` sets the serialization format, `KRYO6` by default or `KRYO5` to read data written by Kryo 5, see [Reading data written by Kryo 5](#reading-data-written-by-kryo-5). `Kryo#getFormat` returns it.
 * The instantiator API uses Kryo's own interfaces instead of the Objenesis ones: `InstantiatorStrategy` and `ObjectInstantiator` in `com.esotericsoftware.kryo.util`, with the same methods, and `StdInstantiatorStrategy` and `SerializingInstantiatorStrategy` in that package, so `new DefaultInstantiatorStrategy(new StdInstantiatorStrategy())` only needs the import changed from `org.objenesis.strategy`. On the JDK they create objects like Objenesis did, with the serialization constructors of `sun.reflect.ReflectionFactory`, so Objenesis is no longer needed there and is an optional dependency of the regular jar. It is still used on Android and other JVMs without these constructors: add `org.objenesis:objenesis` there. Other Objenesis strategies are used with `ObjenesisStrategy`. The versioned jar includes Objenesis as before, but its shaded Objenesis classes in `com.esotericsoftware.kryo.kryo6.objenesis` are not Kryo strategies: use `com.esotericsoftware.kryo.kryo6.util.StdInstantiatorStrategy` and wrap other Objenesis strategies in `ObjenesisStrategy`.
 * A custom ClassResolver needs to implement `beginDeferredNames`, `endDeferredNames`, and `readDeferredNames`, and a custom ReferenceResolver `getObjectCount`, for the [chunked encoding](#chunked-encoding) to keep the class names and references of skipped fields.
 * `Generics#pushTypeVariables(GenericsHierarchy, GenericType[])` was removed. Use `pushTypeVariables(GenericsHierarchy, GenericType)` with the declared type returned by the new `Generics#nextGenericType()`.
@@ -245,9 +220,6 @@ These changes don't affect the serialized format of the default configuration, e
 
 * RecordSerializer. Records are serialized by FieldSerializer and its subclasses. RecordSerializer is only needed to read records written by Kryo 5, see [Records](#records).
 * BlowfishSerializer. Blowfish is an outdated cipher, the key is shared by all instances, and an encrypted object can only be read as the last object of the input. Encrypt the serialized bytes instead, eg with AES-GCM. BlowfishSerializer will be removed in Kryo 7.
-* `Kryo#setEnumsFinal`, which is only needed to read data written by Kryo 5, see [Enums with constant bodies](#enums-with-constant-bodies).
-* `setOptimizeGenerics` of CompatibleFieldSerializerConfig and TaggedFieldSerializerConfig, which is only needed to read data written by Kryo 5, see [Generic fields](#generic-fields-with-compatiblefieldserializer-and-taggedfieldserializer).
-* `setLegacyChunks` and `setChunkSize` of CompatibleFieldSerializerConfig and TaggedFieldSerializerConfig, which are only needed to read data written by Kryo 5 with chunked encoding, see [Chunked encoding](#chunked-encoding).
 * `CachedField#setOptimizePositive` and `@Bind(optimizePositive)`, which never had an effect: int and long fields are always written optimized for both negative and positive values. They will be removed in Kryo 7.
 
 ### Removed APIs

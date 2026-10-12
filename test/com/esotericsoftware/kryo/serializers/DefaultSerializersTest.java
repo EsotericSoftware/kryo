@@ -23,12 +23,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
-import com.esotericsoftware.kryo.Kryo5Compatibility;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicIntegerSerializer;
-import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.Util;
 
@@ -79,7 +77,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
-import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 /** @author Nathan Sweet */
 class DefaultSerializersTest extends KryoTestCase {
@@ -816,27 +813,6 @@ class DefaultSerializersTest extends KryoTestCase {
 		public FixedBlockingDeque () {
 			super(7);
 		}
-	}
-
-	@Test
-	void testConcurrentSortedCollectionsKryo5 () {
-		// Kryo 5 wrote them with CollectionSerializer.
-		Kryo kryo = new Kryo();
-		Kryo5Compatibility.configure(kryo);
-		for (Class type : new Class[] {ConcurrentSkipListSet.class, PriorityBlockingQueue.class, LinkedBlockingQueue.class,
-			LinkedBlockingDeque.class})
-			assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(type).getClass());
-	}
-
-	@Test
-	void testFileAndInetAddressKryo5 () {
-		// Kryo 5 wrote them with the default serializer, which FieldSerializer can't create without --add-opens.
-		Kryo kryo = new Kryo();
-		kryo.setDefaultSerializer(JavaSerializer.class);
-		Kryo5Compatibility.configure(kryo);
-		for (Class type : new Class[] {File.class, Inet4Address.class, Inet6Address.class, InetSocketAddress.class,
-			ByteBuffer.allocate(0).getClass(), ByteBuffer.allocateDirect(0).getClass()})
-			assertInstanceOf(JavaSerializer.class, kryo.getDefaultSerializer(type), type.getName());
 	}
 
 	private <T> T writeRead (T object) {

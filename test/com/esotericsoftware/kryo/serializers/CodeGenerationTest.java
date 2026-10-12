@@ -697,7 +697,6 @@ class CodeGenerationTest extends KryoTestCase {
 		testCompatibleFieldSerializer(true, true, 0);
 	}
 
-	@SuppressWarnings("deprecation") // Kryo 5 chunks.
 	private void testCompatibleFieldSerializer (boolean readUnknownFieldData, boolean chunked, int length) {
 		CompatibleFieldSerializerFactory factory = compatible(readUnknownFieldData, chunked);
 		factory.getConfig().setCodeGeneration(true);
@@ -805,12 +804,6 @@ class CodeGenerationTest extends KryoTestCase {
 		cachedFields.register(Nested.class, new CompatibleFieldSerializer(cachedFields, Nested.class, cachedFieldsFactory.getConfig()));
 		assertArrayEquals(write(cachedFields, nested), write(kryo, nested));
 		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownFieldData);
-
-		// The chunked encoding of Kryo 5 uses the cached fields.
-		factory.getConfig().setChunkedEncoding(true);
-		factory.getConfig().setLegacyChunks(true);
-		kryo.register(Nested.class, new CompatibleFieldSerializer(kryo, Nested.class, factory.getConfig()));
-		assertNull(((FieldSerializer)kryo.getSerializer(Nested.class)).generated());
 	}
 
 	@Test
@@ -961,12 +954,6 @@ class CodeGenerationTest extends KryoTestCase {
 				assertTrue(ex.getMessage().contains("Read type is incompatible with the field type"), ex.getMessage());
 			}
 		}
-
-		// The chunked encoding of Kryo 5 uses the cached fields.
-		factory.getConfig().setChunkedEncoding(true);
-		factory.getConfig().setLegacyChunks(true);
-		kryo.register(Tagged.class, new TaggedFieldSerializer(kryo, Tagged.class, factory.getConfig()));
-		assertNull(((FieldSerializer)kryo.getSerializer(Tagged.class)).generated());
 	}
 
 	static private void writeTagged (Kryo kryo, Output output, int tag, boolean writeClass, Object value) {

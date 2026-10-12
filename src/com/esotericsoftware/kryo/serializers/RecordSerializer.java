@@ -38,7 +38,7 @@ import java.util.Comparator;
  * @author Julia Boes {@literal <julia.boes@oracle.com>}
  * @author Chris Hegarty {@literal <chris.hegarty@oracle.com>}
  * @deprecated FieldSerializer and its subclasses serialize records by default and are faster. Use this serializer only to read
- *             records written by Kryo 5, see {@link com.esotericsoftware.kryo.Kryo5Compatibility}. */
+ *             records written by Kryo 5, see {@link com.esotericsoftware.kryo.Kryo.Format#KRYO5}. */
 @Deprecated
 @IgnoreAndroid
 public class RecordSerializer<T> extends ImmutableSerializer<T> {

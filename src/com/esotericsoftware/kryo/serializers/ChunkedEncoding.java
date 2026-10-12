@@ -20,16 +20,17 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 /** Chunked encoding of {@link CompatibleFieldSerializer} and {@link TaggedFieldSerializer}, which allows skipping the data of a
  * field. Implemented by {@link DefaultChunkedEncoding} and, for the format of Kryo 5, by {@link LegacyChunkedEncoding}. */
 interface ChunkedEncoding {
-	/** Returns the chunked encoding for the serializer config, or null if chunked encoding is disabled. */
-	static ChunkedEncoding get (Kryo kryo, boolean chunked, boolean legacyChunks, int chunkSize) {
+	/** Returns the chunked encoding for the Kryo format, or null if chunked encoding is disabled. */
+	static ChunkedEncoding get (Kryo kryo, boolean chunked) {
 		if (!chunked) return null;
-		return legacyChunks ? LegacyChunkedEncoding.get(chunkSize) : DefaultChunkedEncoding.get(kryo);
+		return kryo.getFormat() == Format.KRYO5 ? LegacyChunkedEncoding.instance : DefaultChunkedEncoding.get(kryo);
 	}
 
 	/** Returns the output for the fields of an object. Must be followed by {@link #endWrite()}. */

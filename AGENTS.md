@@ -22,7 +22,7 @@ Things that are not in the README, MIGRATION.md or obvious from the code. `kryo-
 ## Compatibility
 
 - `SerializationCompatTest` reads golden files in `test/resources` and checks the length of the data written now. A format change updates the expected lengths; the golden files stay readable.
-- `Kryo5CompatibilityTest` reads data written by Kryo 5 (`test/resources/kryo5`). Kryo 6 must keep reading it with `Kryo5Compatibility`.
+- `Kryo5CompatibilityTest` reads data written by Kryo 5 (`test/resources/kryo5`). Kryo 6 must keep reading it with `kryo.setFormat(Format.KRYO5)`.
 - Registration IDs must be the same on all Java versions and platforms: register in a fixed order, and register a placeholder class for a class that doesn't exist (see `ImmutableCollectionsSerializers`).
 - japicmp compares the API with `kryo.api.baseline` in `main/pom.xml`. Bump it after every release, including RCs. Releases follow the wiki page HowTo-Release.
 - Changes to the format, behavior or public API get an entry in MIGRATION.md.

@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.benchmarks;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import com.esotericsoftware.kryo.benchmarks.data.Image;
 import com.esotericsoftware.kryo.benchmarks.data.Image.Size;
@@ -54,7 +55,7 @@ public class ChunkedEncodingBenchmark {
 
 	@State(Scope.Thread)
 	static public class BenchmarkState {
-		@Param({"false", "true"}) public boolean legacyChunks;
+		@Param({"KRYO6", "KRYO5"}) public Format format;
 		@Param({"false", "true"}) public boolean references;
 
 		Kryo kryo, skipKryo;
@@ -73,12 +74,11 @@ public class ChunkedEncodingBenchmark {
 			input.setBuffer(output.getBuffer(), 0, output.position());
 		}
 
-		@SuppressWarnings("deprecation") // legacyChunks
 		private Kryo kryo (boolean registerContent) {
 			Kryo kryo = new Kryo();
+			kryo.setFormat(format);
 			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
 			factory.getConfig().setChunkedEncoding(true);
-			factory.getConfig().setLegacyChunks(legacyChunks);
 			kryo.setDefaultSerializer(factory);
 			kryo.setReferences(references);
 			kryo.register(Envelope.class, 20);

@@ -130,9 +130,9 @@ public class AndroidTest {
 			check(roundTrip(kryo, pojo).equals(pojo));
 		});
 
-		test("Kryo5Compatibility", () -> {
+		test("Kryo 5 format", () -> {
 			Kryo kryo = kryo();
-			Kryo5Compatibility.configure(kryo);
+			kryo.setFormat(Kryo.Format.KRYO5);
 			Pojo pojo = Pojo.create();
 			check(roundTrip(kryo, pojo).equals(pojo));
 		});

@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static com.esotericsoftware.kryo.util.Util.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
@@ -96,6 +97,12 @@ public final class ImmutableCollectionsSerializers {
 		@Override
 		protected List<Object> create (Kryo kryo, Input input, Class<? extends List<Object>> type, int size) {
 			return new ArrayList<>(size);
+		}
+
+		/** Kryo 5 didn't support null elements in immutable lists. */
+		@Override
+		boolean elementsCanBeNull (Kryo kryo) {
+			return kryo.getFormat() != Format.KRYO5 && super.elementsCanBeNull(kryo);
 		}
 
 		@Override
