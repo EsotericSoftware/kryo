@@ -124,7 +124,7 @@ class ChunkedEncodingTest {
 
 	@Test
 	void testNestedStream () {
-		// DeflateSerializer writes Entity2 to its own stream, which starts a new scope with its own class names and field names.
+		// DeflateSerializer writes Entity2 to its own stream, whose class names and field names are written by the outermost object.
 		Entity entity = entity(true);
 		Kryo writer = compatibleKryo(true, true);
 		writer.register(Entity2.class, new DeflateSerializer(writer.getDefaultSerializer(Entity2.class)), 22);
@@ -147,8 +147,8 @@ class ChunkedEncodingTest {
 
 	@Test
 	void testNestedStreamClassName () {
-		// The class name first written in the field names of a nested scope is deferred to the outer scope, which writes it before
-		// the nested scope.
+		// The class name first written in the field names of an object in another stream is deferred to the outermost object, which
+		// writes it before its data.
 		for (boolean references : new boolean[] {false, true}) {
 			NestedOuter outer = new NestedOuter();
 			outer.inner = new NestedInner();
@@ -175,6 +175,66 @@ class ChunkedEncodingTest {
 		kryo.addDefaultSerializer(NestedInner.class, new BaseSerializerFactory() {
 			public Serializer newSerializer (Kryo kryo, Class type) {
 				return new DeflateSerializer(new CompatibleFieldSerializer(kryo, type, config));
+			}
+		});
+		return kryo;
+	}
+
+	@Test
+	void testOtherOutputAndInput () {
+		// A serializer writes a nested object to its own output and reads it from the same input, or the other way around. Only
+		// the outermost object writes the class names and field names, so both sides agree where they are.
+		for (boolean tagged : new boolean[] {false, true}) {
+			for (boolean references : new boolean[] {false, true}) {
+				for (boolean tempOutput : new boolean[] {false, true}) {
+					TempOuter outer = new TempOuter();
+					outer.wrapper = new TempWrapper();
+					outer.wrapper.inner = new Entity3(5);
+					outer.c = references ? outer.wrapper.inner : new Entity3(10);
+					outer.after = "after";
+					byte[] bytes = write(tempKryo(tagged, references, tempOutput), outer);
+					TempOuter read = tempKryo(tagged, references, tempOutput).readObject(new Input(bytes), TempOuter.class);
+					assertEquals(5, read.wrapper.inner.a);
+					assertEquals("s5", read.wrapper.inner.s);
+					if (references)
+						assertSame(read.wrapper.inner, read.c);
+					else
+						assertEquals(10, read.c.a);
+					assertEquals("after", read.after);
+				}
+			}
+		}
+	}
+
+	/** Unregistered classes, so class names are deferred to the outermost object. TempWrapper writes its object to its own output
+	 * and reads it inline, or writes it inline and reads it through its own input. */
+	private Kryo tempKryo (boolean tagged, boolean references, boolean tempOutput) {
+		Kryo kryo = tagged ? taggedKryo() : compatibleKryo(false, references);
+		kryo.setReferences(references);
+		kryo.register(TempWrapper.class, new Serializer<TempWrapper>() {
+			public void write (Kryo kryo, Output output, TempWrapper object) {
+				if (!tempOutput) {
+					kryo.writeObject(output, object.inner);
+					return;
+				}
+				Output temp = new Output(64, -1);
+				kryo.writeObject(temp, object.inner);
+				output.writeVarInt(temp.position(), true);
+				output.writeBytes(temp.getBuffer(), 0, temp.position());
+			}
+
+			public TempWrapper read (Kryo kryo, Input input, Class<? extends TempWrapper> type) {
+				TempWrapper wrapper = new TempWrapper();
+				kryo.reference(wrapper);
+				if (tempOutput) {
+					input.readVarInt(true);
+					wrapper.inner = kryo.readObject(input, Entity3.class);
+				} else {
+					Input wrapping = new Input(input.getBuffer(), input.position(), input.limit() - input.position());
+					wrapper.inner = kryo.readObject(wrapping, Entity3.class);
+					input.setPosition(wrapping.position());
+				}
+				return wrapper;
 			}
 		});
 		return kryo;
@@ -829,6 +889,16 @@ class ChunkedEncodingTest {
 
 	public static class TaggedEntity2 {
 		@Tag(1) public Entity3 x;
+	}
+
+	public static class TempOuter {
+		@Tag(1) public TempWrapper wrapper;
+		@Tag(2) public Entity3 c;
+		@Tag(3) public String after;
+	}
+
+	public static class TempWrapper {
+		public Entity3 inner;
 	}
 
 	public static class MisreadEntity {

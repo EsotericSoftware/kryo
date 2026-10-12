@@ -132,6 +132,8 @@ CompatibleFieldSerializer and TaggedFieldSerializer with chunked encoding write 
 
 The outermost object with chunked encoding is buffered until it is written completely, so it must be smaller than 2 GiB, Kryo 5 wrote it to the output in chunks. The field names are identified by class instead of their position, so a nested object can only be read as a different class than it was written if its class is written, which `readUnknownFieldData` (the default) does. Kryo 5 could read it, eg with `readUnknownFieldData` false after the final type of a field changed, although changing the type of a field is not supported.
 
+Only the outermost object writes the class names and field names, also for nested objects a serializer writes to its own output, eg DeflateSerializer. A serializer can write a nested object to its own output and read it from the same input, or the other way around.
+
 To read data written by Kryo 5 with chunked encoding, use the Kryo 5 format, which writes chunks like Kryo 5. Chunked encoding with the Kryo 5 format doesn't use [generated code](#field-access).
 
 A custom ClassResolver needs to implement `beginDeferredNames`, `endDeferredNames`, and `readDeferredNames`, and a custom ReferenceResolver `getObjectCount`, otherwise class names first written in a skipped field are lost, and the reference IDs of the objects read after a skipped field are shifted, like in Kryo 5. The new format is used anyway. DefaultClassResolver and the reference resolvers of Kryo implement them.
