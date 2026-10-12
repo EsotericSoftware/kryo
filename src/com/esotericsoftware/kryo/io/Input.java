@@ -26,6 +26,7 @@ import com.esotericsoftware.kryo.util.Util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /** An InputStream that reads data from a byte[] and optionally fills the byte[] from another InputStream as needed. Utility
  * methods are provided for efficiently reading primitive types and strings.
@@ -824,6 +825,19 @@ public class Input extends InputStream implements Poolable {
 			return "";
 		}
 		charCount--;
+		// If the chars are in the buffer and all ASCII, the string is the bytes.
+		if (limit - position >= charCount) {
+			byte[] buffer = this.buffer;
+			int start = position, p = start, n = start + charCount;
+			for (int nn = n - 7; p < nn; p += 8)
+				if ((Bytes.getLong(buffer, p) & 0x8080808080808080L) != 0) break;
+			while (p < n && buffer[p] >= 0)
+				p++;
+			if (p == n) {
+				position = n;
+				return new String(buffer, start, charCount, StandardCharsets.ISO_8859_1);
+			}
+		}
 		readUtf8Chars(charCount);
 		return new String(chars, 0, charCount);
 	}

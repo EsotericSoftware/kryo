@@ -32,12 +32,16 @@ import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Random;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
@@ -306,6 +310,71 @@ class InputOutputTest extends KryoTestCase {
 		runStringTest(1024 * 1025);
 		runStringTest(1024 * 1026);
 		runStringTest(1024 * 1024 * 2);
+	}
+
+	@Test
+	void testLongStrings () throws IOException {
+		runLongStringTest(Input::new, Input::new);
+		runLongStringTest(ByteBufferInput::new, ByteBufferInput::new);
+		runLongStringTest(bytes -> new ByteBufferInput(ByteBuffer.wrap(bytes)), ByteBufferInput::new);
+	}
+
+	/** Strings over 32 chars are written as UTF8. ASCII ones are read from the bytes if they are in the buffer. */
+	static void runLongStringTest (Function<byte[], Input> newInput, BiFunction<InputStream, Integer, Input> newStreamInput)
+		throws IOException {
+		ArrayList<String> values = new ArrayList();
+		for (int length : new int[] {33, 34, 35, 36, 37, 38, 39, 40, 41, 63, 64, 65, 100, 1000}) {
+			StringBuilder builder = new StringBuilder();
+			for (int i = 0; i < length; i++)
+				builder.append((char)(32 + i % 95));
+			String ascii = builder.toString();
+			values.add(ascii);
+			values.add(ascii.replace(' ', '\u007F'));
+			for (char c : new char[] {'\u0080', '\u00E9', '\u1234'}) {
+				values.add(c + ascii.substring(1)); // Start.
+				values.add(ascii.substring(0, length / 2) + c + ascii.substring(length / 2 + 1)); // Middle.
+				values.add(ascii.substring(0, length - 1) + c); // End.
+				values.add(ascii.substring(0, 7) + c + ascii.substring(8)); // In the first 8 bytes.
+				values.add(ascii.substring(0, length - 2) + c + ascii.substring(length - 1)); // In the tail.
+			}
+		}
+
+		for (String value : values) {
+			for (int offset = 0; offset < 10; offset++) {
+				Output output = new Output(4096, -1);
+				for (int i = 0; i < offset; i++)
+					output.writeByte(i);
+				output.writeString(value);
+				output.writeInt(1234);
+				output.writeString(value);
+				byte[] bytes = output.toBytes();
+
+				// All bytes in the buffer, the second string ends exactly at the end of the buffer.
+				Input input = newInput.apply(bytes);
+				input.skip(offset);
+				assertEquals(value, input.readString());
+				assertEquals(1234, input.readInt());
+				assertEquals(value, input.readString());
+				assertEquals(bytes.length, input.total());
+
+				input = newInput.apply(bytes);
+				input.skip(offset);
+				assertEquals(value, input.readStringBuilder().toString());
+				assertEquals(1234, input.readInt());
+				assertEquals(value, input.readStringBuilder().toString());
+				assertEquals(bytes.length, input.total());
+
+				// A buffer smaller than the string, so the string crosses fill.
+				for (int bufferSize : new int[] {16, 50}) {
+					input = newStreamInput.apply(new ByteArrayInputStream(bytes), bufferSize);
+					input.skip(offset);
+					assertEquals(value, input.readString());
+					assertEquals(1234, input.readInt());
+					assertEquals(value, input.readString());
+					assertEquals(bytes.length, input.total());
+				}
+			}
+		}
 	}
 
 	@Test
