@@ -57,16 +57,16 @@ import org.junit.jupiter.params.provider.ValueSource;
 @org.junit.jupiter.api.Tag("kryo5")
 class Kryo5RoundTripTest {
 	/** The fields of the test data that Kryo 5 can't round trip itself, so they are null in the round trips: its FieldSerializer
-	 * can't write the set from map and EnumMap, and loses data of Timestamp (nanos), URI (the components are transient), Pattern
-	 * (the flags) and InetAddress and InetSocketAddress. {@link #testKryo5Broken(Class)} checks the list. Except for
-	 * {@link #kryo6Serializer}, Kryo 6 writes them the same way with the Kryo 5 format, so the data is read the same with both
-	 * versions. */
+	 * can't write the set from map, loses data of Timestamp (nanos), URI (the components are transient) and Pattern (the flags),
+	 * reads an InetAddress without host name and address and an InetSocketAddress that can't be used.
+	 * {@link #testKryo5Broken(Class)} checks the list. Except for {@link #kryo6Serializer}, Kryo 6 writes them the same way with
+	 * the Kryo 5 format, so the data is read the same with both versions. */
 	static final Set<String> kryo5Broken = Set.of("_timestamp", "_uri", "_pattern", "_inetAddress", "_inetSocketAddress",
 		"_setFromMap");
 
 	/** The fields Kryo 6 writes with a serializer that Kryo 5 doesn't have, also with the Kryo 5 format, because Kryo 5 can't
 	 * read its own data for them. */
-	static final Set<String> kryo6Serializer = Set.of("_setFromMap");
+	static final Set<String> kryo6Serializer = Set.of("_setFromMap", "_inetAddress", "_inetSocketAddress");
 
 	/** The fields whose class names differ, also with the Kryo 5 format: Kryo 6 writes the name of the registration's type (see
 	 * DefaultClassResolver#writeName), so a time zone as java.util.TimeZone, each charset as java.nio.charset.Charset and an enum
