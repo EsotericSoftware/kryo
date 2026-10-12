@@ -53,11 +53,17 @@ import org.junit.jupiter.params.provider.ValueSource;
  * open, so the tagged tests run in the kryo5 surefire execution, which opens them. */
 @org.junit.jupiter.api.Tag("kryo5")
 class Kryo5RoundTripTest {
-	/** The fields of the test data that Kryo 5 can't round trip itself, so they are null in the tests: its FieldSerializer can't
-	 * write the set from map and EnumMap, and loses data of Timestamp (nanos), URI, Pattern (flags), InetAddress and
-	 * InetSocketAddress. {@link #testKryo5Broken(Class)} checks the list. */
+	/** The fields of the test data that Kryo 5 can't round trip itself, so they are null in the round trips: its FieldSerializer
+	 * can't write the set from map and EnumMap, and loses data of Timestamp (nanos), URI (the components are transient), Pattern
+	 * (the flags) and InetAddress and InetSocketAddress. {@link #testKryo5Broken(Class)} checks the list. Except for
+	 * {@link #kryo6Serializer}, Kryo 6 writes them the same way with the Kryo 5 format, so the data is read the same with both
+	 * versions. */
 	static final Set<String> kryo5Broken = Set.of("_timestamp", "_uri", "_pattern", "_inetAddress", "_inetSocketAddress",
 		"_enumMap", "_emptyEnumMap", "_setFromMap");
+
+	/** The fields Kryo 6 writes with a serializer that Kryo 5 doesn't have, also with the Kryo 5 format, because Kryo 5 can't
+	 * read its own data for them. */
+	static final Set<String> kryo6Serializer = Set.of("_enumMap", "_emptyEnumMap", "_setFromMap");
 
 	/** The fields whose class names differ, also with the Kryo 5 format: Kryo 6 writes the name of the registration's type (see
 	 * DefaultClassResolver#writeName), so a time zone as java.util.TimeZone, each charset as java.nio.charset.Charset and an enum
@@ -102,13 +108,14 @@ class Kryo5RoundTripTest {
 			assertArrayEquals(writeKryo5(data, byteBuffer), writeKryo6(data, byteBuffer));
 	}
 
-	/** The strict check: with all other fields null, each field is written to the same bytes. */
+	/** The strict check: with all other fields null, each field is written to the same bytes, also the fields Kryo 5 can't round
+	 * trip itself. */
 	@ParameterizedTest
 	@ValueSource(classes = {TestData.class, TestDataJava8.class, TestDataJava11.class, TestDataJava17.class})
 	void testSameBytes (Class<?> type) throws Exception {
 		List<String> different = new ArrayList<>();
 		for (Field field : fields(type)) {
-			if (kryo5Broken.contains(field.getName())) continue;
+			if (kryo6Serializer.contains(field.getName())) continue;
 			Object data = only(type, field);
 			byte[] kryo5Bytes = writeKryo5(data, false), kryo6Bytes = writeKryo6(data, false);
 			if (Arrays.equals(kryo5Bytes, kryo6Bytes) == classNameDiffers.contains(field.getName()))
