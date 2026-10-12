@@ -40,9 +40,11 @@ import java.util.Arrays;
  * Data that Kryo writes only the first time in an object graph, class names of unregistered classes and the field names of
  * CompatibleFieldSerializer, is not written inside the fields. The outermost object with chunked encoding starts a scope: it is
  * written to a buffer, and the data first written in it is written before the buffer. So skipping a field never loses it. Nested
- * objects are written to the same buffer, unless a serializer in between writes to its own output, eg DeflateSerializer, which
- * starts a nested scope. With references, the number of objects in each field is written too, so the reference IDs stay in sync
- * when a field is skipped.
+ * objects are written to the same buffer, unless a serializer in between writes to its own output, eg DeflateSerializer. Then
+ * they are written to a buffer of their own, for the field lengths, and the data first written in them is written by the
+ * outermost object too. Scopes are decided by nesting, not by the output, so a serializer can write a nested object to its own
+ * output and read it from the same input, or the other way around. With references, the number of objects in each field is
+ * written too, so the reference IDs stay in sync when a field is skipped.
  * <p>
  * Format of a scope: varint number of class names, each with varint name ID and name; varint number of field names shifted left
  * by 1, bit 1 if the first are those of the outermost object, each with the class and the field names; then the object data. A
@@ -76,8 +78,17 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 
 	private final Kryo kryo;
 	private final ArrayList<WriteScope> writeScopes = new ArrayList<>();
-	private final ArrayList<ReadScope> readScopes = new ArrayList<>();
+	/** The number of buffers being written and the number of objects being read. */
 	private int writeDepth, readDepth;
+	/** The field names written in the current scope and their classes, written before the object data. */
+	private final ArrayList<Class> writeFieldNameTypes = new ArrayList<>();
+	private final ArrayList<String[]> writeFieldNames = new ArrayList<>();
+	/** True if the first field names written in the current scope are those of the outermost object. */
+	private boolean writeOutermostFieldNames;
+	/** The mark of {@link com.esotericsoftware.kryo.ClassResolver#beginDeferredNames()}. */
+	private int namesMark;
+	/** The field names of the outermost object being read, if they were first written in the scope. */
+	private String[] outermostFieldNames;
 	/** The field names read in the current object graph and their classes. Usually there are only a few, so a list is faster than
 	 * a map, which would be cleared for each object graph. */
 	private final ArrayList<Class> fieldNameTypes = new ArrayList<>();
@@ -107,7 +118,8 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		return newGraph;
 	}
 
-	/** Returns the buffer of the current scope if the output is that buffer, otherwise the buffer of a new scope. */
+	/** Returns the current buffer if the output is that buffer, otherwise a new buffer, which starts a scope if the object is the
+	 * outermost. */
 	public Output beginWrite (Output output) {
 		if (writeDepth > 0) {
 			WriteScope scope = writeScopes.get(writeDepth - 1);
@@ -127,15 +139,17 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 			scope.buffer.reset();
 		// The object data is read from the input directly, which has the encoding of the output.
 		scope.buffer.setVariableLengthEncoding(output.getVariableLengthEncoding());
-		scope.outermostFieldNames = false;
-		// Not empty if an exception was thrown while writing the previous object graph.
-		scope.fieldNameTypes.clear();
-		scope.fieldNames.clear();
-		scope.namesMark = kryo.getClassResolver().beginDeferredNames();
+		if (writeDepth == 1) {
+			writeOutermostFieldNames = false;
+			// Not empty if an exception was thrown while writing the previous object graph.
+			writeFieldNameTypes.clear();
+			writeFieldNames.clear();
+			namesMark = kryo.getClassResolver().beginDeferredNames();
+		}
 		return scope.buffer;
 	}
 
-	/** If the object started the current scope, writes the data first written in it and then the object data. */
+	/** Writes the buffer if the object started it, after the data first written in the scope if the object is the outermost. */
 	public void endWrite () {
 		WriteScope scope = writeScopes.get(writeDepth - 1);
 		if (scope.nested > 0) {
@@ -144,26 +158,21 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		}
 		writeDepth--;
 		Output parent = scope.parent;
-		if (TRACE) {
-			trace("kryo", "Write scope: " + scope.fieldNameTypes.size() + " field names, " + scope.buffer.position() + " bytes"
-				+ pos(parent.position()));
+		if (writeDepth == 0) {
+			ArrayList<Class> types = writeFieldNameTypes;
+			if (TRACE) {
+				trace("kryo",
+					"Write scope: " + types.size() + " field names, " + scope.buffer.position() + " bytes" + pos(parent.position()));
+			}
+			kryo.getClassResolver().endDeferredNames(parent, namesMark);
+			parent.writeVarInt(types.size() << 1 | (writeOutermostFieldNames ? 1 : 0), true);
+			for (int i = 0, n = types.size(); i < n; i++) {
+				writeClass(parent, types.get(i));
+				writeStrings(parent, writeFieldNames.get(i));
+			}
+			types.clear();
+			writeFieldNames.clear();
 		}
-		kryo.getClassResolver().endDeferredNames(parent, scope.namesMark);
-		ArrayList<Class> types = scope.fieldNameTypes;
-		ArrayList<String[]> fieldNames = scope.fieldNames;
-		parent.writeVarInt(types.size() << 1 | (scope.outermostFieldNames ? 1 : 0), true);
-		for (int i = 0, n = types.size(); i < n; i++) {
-			writeClass(parent, types.get(i));
-			writeStrings(parent, fieldNames.get(i));
-		}
-		// The outer scope writes the field names too, in case this scope is skipped. It writes the class names anyway.
-		if (writeDepth > 0) {
-			WriteScope outer = writeScopes.get(writeDepth - 1);
-			outer.fieldNameTypes.addAll(types);
-			outer.fieldNames.addAll(fieldNames);
-		}
-		types.clear();
-		fieldNames.clear();
 
 		Output buffer = scope.buffer;
 		parent.writeBytes(buffer.getBuffer(), 0, buffer.position());
@@ -184,11 +193,10 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 
 	/** Remembers the field names to write them before the object data. */
 	public boolean writeFieldNames (Class type, String[] names) {
-		WriteScope scope = writeScopes.get(writeDepth - 1);
 		// The outermost object writes its field names before any nested object, so they are first.
-		if (scope.nested == 0) scope.outermostFieldNames = true;
-		scope.fieldNameTypes.add(type);
-		scope.fieldNames.add(names);
+		if (writeDepth == 1 && writeScopes.get(0).nested == 0) writeOutermostFieldNames = true;
+		writeFieldNameTypes.add(type);
+		writeFieldNames.add(names);
 		return true;
 	}
 
@@ -240,26 +248,16 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 			trace("kryo", "Write field: " + length + " bytes" + (references ? ", " + objects + " objects" : "") + pos(start));
 	}
 
-	/** Reads the data first written in the scope, if the input starts a new scope. */
+	/** Reads the data first written in the scope, if the object is the outermost. {@link #endRead()} is always called, so the
+	 * depth is not left over from a previous object graph. */
 	public Input beginRead (Input input) {
-		if (readDepth > 0) {
-			ReadScope scope = readScopes.get(readDepth - 1);
-			if (scope.input == input) {
-				scope.nested++;
-				return input;
-			}
-		}
+		if (readDepth++ > 0) return input;
 		if (newGraph(readGraphKey)) {
-			readDepth = 0;
 			longFieldDepth = 0;
 			fieldNameTypes.clear();
 			fieldNames.clear();
 		}
-		if (readDepth == readScopes.size()) readScopes.add(new ReadScope());
-		ReadScope scope = readScopes.get(readDepth++);
-		scope.input = input;
-		scope.nested = 0;
-		scope.outermostFieldNames = null;
+		outermostFieldNames = null;
 
 		if (TRACE) trace("kryo", "Read scope" + pos(input.position()));
 		kryo.getClassResolver().readDeferredNames(input);
@@ -269,7 +267,7 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 			String[] names = readStrings(input);
 			if (TRACE)
 				trace("kryo", "Read field names: " + (registration == null ? "<unknown class>" : className(registration.getType())));
-			if (i == 0 && (entries & 1) != 0) scope.outermostFieldNames = names;
+			if (i == 0 && (entries & 1) != 0) outermostFieldNames = names;
 			if (registration != null) {
 				fieldNameTypes.add(registration.getType());
 				fieldNames.add(names);
@@ -293,24 +291,17 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 	public String[] readFieldNames (Class type) {
 		for (int i = fieldNameTypes.size() - 1; i >= 0; i--)
 			if (fieldNameTypes.get(i) == type) return fieldNames.get(i);
-		// The object is read as a different class than it was written, if it started the scope and its field names were new.
-		ReadScope scope = readScopes.get(readDepth - 1);
-		if (scope.nested > 0 || scope.outermostFieldNames == null) {
+		// The object is read as a different class than it was written, if it is the outermost and its field names were new.
+		if (readDepth > 1 || outermostFieldNames == null) {
 			throw new KryoException("Field names not found for class: " + type.getName()
 				+ ". With chunked encoding, an object can only be read as a different class than it was written if its class is written, "
 				+ "eg if the type of a field changed, with readUnknownFieldData true.");
 		}
-		return scope.outermostFieldNames;
+		return outermostFieldNames;
 	}
 
 	public void endRead () {
-		ReadScope scope = readScopes.get(readDepth - 1);
-		if (scope.nested > 0)
-			scope.nested--;
-		else {
-			scope.input = null;
-			readDepth--;
-		}
+		readDepth--;
 	}
 
 	/** Starts a field, reading its length and the number of objects in it. Returns the number of objects read after the field and
@@ -385,17 +376,5 @@ final class DefaultChunkedEncoding implements ChunkedEncoding {
 		Output buffer, parent;
 		/** The number of nested objects being written to the buffer. */
 		int nested;
-		/** The mark of {@link com.esotericsoftware.kryo.ClassResolver#beginDeferredNames()}. */
-		int namesMark;
-		boolean outermostFieldNames;
-		final ArrayList<Class> fieldNameTypes = new ArrayList<>();
-		final ArrayList<String[]> fieldNames = new ArrayList<>();
-	}
-
-	static private class ReadScope {
-		Input input;
-		/** The number of nested objects being read from the input. */
-		int nested;
-		String[] outermostFieldNames;
 	}
 }
