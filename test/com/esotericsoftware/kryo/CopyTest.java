@@ -138,6 +138,77 @@ class CopyTest extends KryoTestCase {
 		assertSame(copy, ((List)copy.b).get(0));
 	}
 
+	@Test
+	void testSerializeInCopy () {
+		// A serializer that copies by serializing doesn't end the copy, so each copy is independent.
+		kryo.register(Box.class, new Serializer<Box>() {
+			public void write (Kryo kryo, Output output, Box object) {
+				kryo.writeClassAndObject(output, object.value);
+			}
+
+			public Box read (Kryo kryo, Input input, Class<? extends Box> type) {
+				return new Box(kryo.readClassAndObject(input));
+			}
+
+			public Box copy (Kryo kryo, Box original) {
+				Output output = new Output(1024);
+				kryo.writeObject(output, original);
+				return kryo.readObject(new Input(output.toBytes()), Box.class);
+			}
+		});
+		for (boolean references : new boolean[] {false, true}) {
+			kryo.setReferences(references);
+			ArrayList values = new ArrayList();
+			Box box = new Box(values);
+			ArrayList list = new ArrayList(List.of(box, box));
+			Box previous = null;
+			for (int i = 0; i < 3; i++) {
+				values.add(i);
+				ArrayList copy = kryo.copy(list);
+				assertNotSame(previous, copy.get(0));
+				assertSame(copy.get(0), copy.get(1));
+				assertEquals(values, ((Box)copy.get(0)).value);
+				previous = (Box)copy.get(0);
+			}
+			assertEquals(0, kryo.getDepth());
+		}
+
+		// The read in the copy resolves its own references.
+		Pair pair = new Pair();
+		pair.a = pair;
+		Pair copy = (Pair)kryo.copy(new Box(pair)).value;
+		assertNotSame(pair, copy);
+		assertSame(copy, copy.a);
+	}
+
+	@Test
+	void testCopyInWrite () {
+		// A serializer that copies the object before writing it doesn't reset the references of the write.
+		kryo.setReferences(true);
+		kryo.register(Box.class, new Serializer<Box>() {
+			public void write (Kryo kryo, Output output, Box object) {
+				kryo.writeClassAndObject(output, kryo.copy(object).value);
+			}
+
+			public Box read (Kryo kryo, Input input, Class<? extends Box> type) {
+				return new Box(kryo.readClassAndObject(input));
+			}
+
+			public Box copy (Kryo kryo, Box original) {
+				return new Box(kryo.copy(original.value));
+			}
+		});
+		Pair pair = new Pair();
+		pair.a = new Box("a");
+		pair.b = pair;
+		Output output = new Output(1024);
+		kryo.writeObject(output, pair);
+		assertEquals(0, kryo.getDepth());
+		Pair read = kryo.readObject(new Input(output.toBytes()), Pair.class);
+		assertEquals("a", ((Box)read.a).value);
+		assertSame(read, read.b);
+	}
+
 	static class Pair {
 		Object a, b;
 	}
