@@ -603,10 +603,11 @@ public class Kryo {
 	 * {@link #setAllowedUnregisteredClasses(Predicate)} allows the class, it is automatically registered using the
 	 * {@link Kryo#addDefaultSerializer(Class, Class) default serializer}.
 	 * <p>
-	 * An unregistered subclass of {@link EnumSet}, {@link Charset} or {@link TimeZone} uses the registration of EnumSet, Charset
-	 * or TimeZone, which is registered automatically under the same conditions, because the implementation classes differ between
-	 * Java vendors and Android. Likewise, an enum constant with a body uses the registration of its enum. A {@code Class} value of
-	 * such a class is read as the base class.
+	 * An unregistered JDK implementation class of {@link EnumSet}, {@link Charset} or {@link TimeZone} uses the registration of
+	 * EnumSet, Charset or TimeZone, which is registered automatically under the same conditions, because the implementation
+	 * classes differ between Java vendors and Android. Likewise, an enum constant with a body uses the registration of its enum. A
+	 * {@code Class} value of such a class is read as the base class. An application subclass of these classes is registered like
+	 * any other class.
 	 * @throws IllegalArgumentException if the class is not registered, {@link Kryo#setRegistrationRequired(boolean)} is true and
 	 *            the class is not allowed.
 	 * @see ClassResolver#getRegistration(Class) */
@@ -629,13 +630,14 @@ public class Kryo {
 					}
 				}
 			}
-			// The implementation classes of enum sets, charsets and time zones differ between Java vendors and Android, and their
-			// serializers don't depend on them. A Class value of an implementation class is read as the base class.
-			else if (type != EnumSet.class && EnumSet.class.isAssignableFrom(type))
+			// The JDK implementation classes of enum sets, charsets and time zones differ between Java vendors and Android, and their
+			// serializers don't depend on them. A Class value of an implementation class is read as the base class. An application
+			// subclass keeps its class, so its own default serializer applies.
+			else if (type != EnumSet.class && EnumSet.class.isAssignableFrom(type) && isJdkClass(type))
 				registration = getRegistration(EnumSet.class);
-			else if (type != Charset.class && Charset.class.isAssignableFrom(type))
+			else if (type != Charset.class && Charset.class.isAssignableFrom(type) && isJdkClass(type))
 				registration = getRegistration(Charset.class);
-			else if (type != TimeZone.class && TimeZone.class.isAssignableFrom(type))
+			else if (type != TimeZone.class && TimeZone.class.isAssignableFrom(type) && isJdkClass(type))
 				registration = getRegistration(TimeZone.class);
 			else if (isClosure(type)) {
 				registration = classResolver.getRegistration(ClosureSerializer.Closure.class);

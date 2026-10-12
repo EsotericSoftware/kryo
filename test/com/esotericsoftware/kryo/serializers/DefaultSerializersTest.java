@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.AtomicIntegerSerializer;
@@ -390,9 +391,10 @@ class DefaultSerializersTest extends KryoTestCase {
 	@Test
 	void testClassOfImplementationClasses () {
 		// The classes Kryo serializes as another class are read as that class, see ClassSerializer.
+		// Big5 is loaded by the platform class loader on the JDK, not by the bootstrap class loader.
 		Class[] classes = {TestEnumWithMethods.a.getClass(), EnumSet.of(TestEnum.a).getClass(), Charset.forName("UTF-8").getClass(),
-			TimeZone.getTimeZone("Europe/Berlin").getClass()};
-		Class[] expected = {TestEnumWithMethods.class, EnumSet.class, Charset.class, TimeZone.class};
+			Charset.forName("Big5").getClass(), TimeZone.getTimeZone("Europe/Berlin").getClass()};
+		Class[] expected = {TestEnumWithMethods.class, EnumSet.class, Charset.class, Charset.class, TimeZone.class};
 		for (boolean registered : new boolean[] {false, true}) {
 			kryo = new Kryo();
 			kryo.setRegistrationRequired(registered);
@@ -1079,6 +1081,72 @@ class DefaultSerializersTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		roundTrip(2 + TimeZone.class.getName().length() + timeZone.getID().length(), timeZone);
 		assertEquals(TimeZone.class, kryo.getRegistration(timeZone.getClass()).getType());
+	}
+
+	@Test
+	void testTimeZoneSubclass () {
+		// Only the JDK implementation classes are read as the base class. An application subclass keeps its class, so its own
+		// default serializer applies.
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		kryo.addDefaultSerializer(CustomTimeZone.class, CustomTimeZoneSerializer.class);
+		assertEquals(CustomTimeZone.class, kryo.getRegistration(CustomTimeZone.class).getType());
+		roundTrip(2 + CustomTimeZone.class.getName().length() + 4, new CustomTimeZone(3600000));
+
+		kryo = new Kryo();
+		kryo.register(CustomTimeZone.class, new CustomTimeZoneSerializer());
+		roundTrip(1 + 4, new CustomTimeZone(3600000));
+	}
+
+	public static class CustomTimeZone extends TimeZone {
+		private int offset;
+
+		public CustomTimeZone (int offset) {
+			this.offset = offset;
+			setID("custom");
+		}
+
+		public int getOffset (int era, int year, int month, int day, int dayOfWeek, int milliseconds) {
+			return offset;
+		}
+
+		public void setRawOffset (int offset) {
+			this.offset = offset;
+		}
+
+		public int getRawOffset () {
+			return offset;
+		}
+
+		public boolean useDaylightTime () {
+			return false;
+		}
+
+		public boolean inDaylightTime (Date date) {
+			return false;
+		}
+
+		public boolean equals (Object other) {
+			return other instanceof CustomTimeZone && ((CustomTimeZone)other).offset == offset;
+		}
+
+		public int hashCode () {
+			return offset;
+		}
+	}
+
+	public static class CustomTimeZoneSerializer extends Serializer<CustomTimeZone> {
+		public CustomTimeZoneSerializer () {
+			setImmutable(true);
+		}
+
+		public void write (Kryo kryo, Output output, CustomTimeZone timeZone) {
+			output.writeInt(timeZone.offset, false);
+		}
+
+		public CustomTimeZone read (Kryo kryo, Input input, Class<? extends CustomTimeZone> type) {
+			return new CustomTimeZone(input.readInt(false));
+		}
 	}
 
 	@Test
