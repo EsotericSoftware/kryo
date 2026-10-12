@@ -112,7 +112,7 @@ class Kryo5RoundTripTest {
 	}
 
 	/** The strict check: with all other fields null, each field is written to the same bytes, also the fields Kryo 5 can't round
-	 * trip itself. */
+	 * trip itself, with Output and ByteBufferOutput. */
 	@ParameterizedTest
 	@ValueSource(classes = {TestData.class, TestDataJava8.class, TestDataJava11.class, TestDataJava17.class})
 	void testSameBytes (Class<?> type) throws Exception {
@@ -120,10 +120,12 @@ class Kryo5RoundTripTest {
 		for (Field field : fields(type)) {
 			if (kryo6Serializer.contains(field.getName())) continue;
 			Object data = only(type, field);
-			byte[] kryo5Bytes = writeKryo5(data, false), kryo6Bytes = writeKryo6(data, false);
-			if (Arrays.equals(kryo5Bytes, kryo6Bytes) == classNameDiffers.contains(field.getName()))
-				different.add(
-					field.getName() + "\n  Kryo 5: " + Arrays.toString(kryo5Bytes) + "\n  Kryo 6: " + Arrays.toString(kryo6Bytes));
+			for (boolean byteBuffer : new boolean[] {false, true}) {
+				byte[] kryo5Bytes = writeKryo5(data, byteBuffer), kryo6Bytes = writeKryo6(data, byteBuffer);
+				if (Arrays.equals(kryo5Bytes, kryo6Bytes) == classNameDiffers.contains(field.getName()))
+					different.add(field.getName() + (byteBuffer ? " (ByteBufferOutput)" : "") + "\n  Kryo 5: " + Arrays.toString(kryo5Bytes)
+						+ "\n  Kryo 6: " + Arrays.toString(kryo6Bytes));
+			}
 		}
 		assertTrue(different.isEmpty(), "Same bytes not as expected:\n" + String.join("\n", different));
 	}
