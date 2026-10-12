@@ -83,6 +83,14 @@
 			<version>3.21.0</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- The released Kryo 5, relocated to com.esotericsoftware.kryo.kryo5, to test the Kryo 5 format against it. Update it by
+			hand after each 5.x release. -->
+		<dependency>
+			<groupId>com.esotericsoftware.kryo</groupId>
+			<artifactId>kryo5</artifactId>
+			<version>5.7.1</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -161,7 +169,32 @@
 						<argLine>
 							--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
 						</argLine>
+						<excludedGroups>kryo5</excludedGroups>
+						<!-- A test given with -Dtest runs in one of the executions. -->
+						<failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
 					</configuration>
+					<executions>
+						<!-- The tests against the released Kryo 5, which needs these packages open. Kryo 6 runs without them, so
+							the other tests don't open them. -->
+						<execution>
+							<id>kryo5</id>
+							<goals>
+								<goal>test</goal>
+							</goals>
+							<configuration>
+								<argLine>
+									--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
+									--add-opens java.base/java.io=ALL-UNNAMED
+									--add-opens java.base/java.net=ALL-UNNAMED
+									--add-opens java.base/java.nio=ALL-UNNAMED
+									--add-opens java.base/java.util=ALL-UNNAMED
+									--add-opens java.base/java.util.regex=ALL-UNNAMED
+								</argLine>
+								<groups>kryo5</groups>
+								<excludedGroups combine.self="override" />
+							</configuration>
+						</execution>
+					</executions>
 				</plugin>
 
 				<plugin>
