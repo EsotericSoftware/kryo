@@ -160,9 +160,47 @@ class Kryo5RoundTripTest {
 		});
 	}
 
-	/** Both directions and the same bytes, with the default serializer configured on each side. */
+	/** A chunk size other than the default, with a field larger than one chunk. */
+	@ParameterizedTest
+	@ValueSource(booleans = {false, true})
+	@SuppressWarnings("deprecation")
+	void testChunkSize (boolean tagged) {
+		String name = "x".repeat(300);
+		if (tagged) {
+			roundTrip(kryo -> {
+				TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
+				factory.getConfig().setChunkedEncoding(true);
+				factory.getConfig().setChunkSize(64);
+				kryo.setDefaultSerializer(factory);
+			}, kryo -> {
+				var factory = new com.esotericsoftware.kryo.kryo5.SerializerFactory.TaggedFieldSerializerFactory();
+				factory.getConfig().setChunkedEncoding(true);
+				factory.getConfig().setChunkSize(64);
+				kryo.setDefaultSerializer(factory);
+			}, name);
+		} else {
+			roundTrip(kryo -> {
+				CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
+				factory.getConfig().setChunkedEncoding(true);
+				factory.getConfig().setChunkSize(64);
+				kryo.setDefaultSerializer(factory);
+			}, kryo -> {
+				var factory = new com.esotericsoftware.kryo.kryo5.SerializerFactory.CompatibleFieldSerializerFactory();
+				factory.getConfig().setChunkedEncoding(true);
+				factory.getConfig().setChunkSize(64);
+				kryo.setDefaultSerializer(factory);
+			}, name);
+		}
+	}
+
 	private void roundTrip (Consumer<Kryo> kryo6Setup, Consumer<com.esotericsoftware.kryo.kryo5.Kryo> kryo5Setup) {
+		roundTrip(kryo6Setup, kryo5Setup, null);
+	}
+
+	/** Both directions and the same bytes, with the default serializer configured on each side. */
+	private void roundTrip (Consumer<Kryo> kryo6Setup, Consumer<com.esotericsoftware.kryo.kryo5.Kryo> kryo5Setup, String name) {
 		Entity entity = new Entity();
+		entity.name = name;
 		entity.child = new Entity();
 		entity.child.name = "child";
 		entity.same = entity.child; // A reference.

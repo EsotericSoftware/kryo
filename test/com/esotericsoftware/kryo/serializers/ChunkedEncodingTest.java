@@ -342,6 +342,35 @@ class ChunkedEncodingTest {
 		}
 	}
 
+	/** The chunk size is only used with the Kryo 5 format. */
+	@Test
+	@SuppressWarnings("deprecation")
+	void testChunkSizeIgnored () {
+		Entity entity = entity(true);
+		entity.c.s = "c".repeat(300);
+		Kryo kryo = compatibleKryo(false, true);
+		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		config.setChunkSize(64);
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		byte[] bytes = write(kryo, entity);
+		assertArrayEquals(write(compatibleKryo(false, true), entity), bytes);
+		assertEquals(entity.c.s, kryo.readObject(new Input(bytes), Entity.class).c.s);
+
+		TaggedEntity tagged = new TaggedEntity();
+		tagged.c = new Entity3(10);
+		tagged.c.s = "c".repeat(300);
+		kryo = taggedKryo();
+		TaggedFieldSerializerConfig taggedConfig = new TaggedFieldSerializerConfig();
+		taggedConfig.setChunkedEncoding(true);
+		taggedConfig.setReadUnknownTagData(true);
+		taggedConfig.setChunkSize(64);
+		kryo.setDefaultSerializer(new TaggedFieldSerializerFactory(taggedConfig));
+		bytes = write(kryo, tagged);
+		assertArrayEquals(write(taggedKryo(), tagged), bytes);
+		assertEquals(tagged.c.s, kryo.readObject(new Input(bytes), TaggedEntity.class).c.s);
+	}
+
 	@Test
 	void testStreams () {
 		// Small buffers, so field lengths and skipping span buffer boundaries.

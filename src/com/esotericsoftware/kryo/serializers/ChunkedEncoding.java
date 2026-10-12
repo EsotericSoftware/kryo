@@ -27,10 +27,13 @@ import com.esotericsoftware.kryo.io.Output;
 /** Chunked encoding of {@link CompatibleFieldSerializer} and {@link TaggedFieldSerializer}, which allows skipping the data of a
  * field. Implemented by {@link DefaultChunkedEncoding} and, for the format of Kryo 5, by {@link LegacyChunkedEncoding}. */
 interface ChunkedEncoding {
-	/** Returns the chunked encoding for the Kryo format, or null if chunked encoding is disabled. */
-	static ChunkedEncoding get (Kryo kryo, boolean chunked) {
+	/** Returns the chunked encoding for the Kryo format, or null if chunked encoding is disabled.
+	 * @param chunkSize The maximum size of each chunk, only used by {@link LegacyChunkedEncoding}. */
+	static ChunkedEncoding get (Kryo kryo, boolean chunked, int chunkSize) {
 		if (!chunked) return null;
-		return kryo.getFormat() == Format.KRYO5 ? LegacyChunkedEncoding.instance : DefaultChunkedEncoding.get(kryo);
+		if (kryo.getFormat() != Format.KRYO5) return DefaultChunkedEncoding.get(kryo);
+		return chunkSize == LegacyChunkedEncoding.defaultChunkSize ? LegacyChunkedEncoding.instance
+			: new LegacyChunkedEncoding(chunkSize);
 	}
 
 	/** Returns the output for the fields of an object. Must be followed by {@link #endWrite()}. */

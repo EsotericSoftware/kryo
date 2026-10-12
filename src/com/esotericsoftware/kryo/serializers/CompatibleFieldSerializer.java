@@ -108,7 +108,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 	public void write (Kryo kryo, Output output, T object) {
 		boolean readUnknownFieldData = config.readUnknownFieldData;
-		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked);
+		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.chunkSize);
 		boolean chunked = chunks != null;
 		Output fieldOutput = chunked ? chunks.beginWrite(output) : output;
 		int pop = pushTypeVariables();
@@ -175,7 +175,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				values = newRecordValues();
 
 			// After create, which can read data written before the object, eg by a subclass.
-			chunks = ChunkedEncoding.get(kryo, config.chunked);
+			chunks = ChunkedEncoding.get(kryo, config.chunked, config.chunkSize);
 			boolean chunked = chunks != null;
 			Input fieldInput = chunked ? chunks.beginRead(input) : input;
 
@@ -383,6 +383,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	/** Configuration for CompatibleFieldSerializer instances. */
 	public static class CompatibleFieldSerializerConfig extends FieldSerializerConfig {
 		boolean readUnknownFieldData = true, chunked;
+		int chunkSize = 1024;
 
 		public CompatibleFieldSerializerConfig clone () {
 			return (CompatibleFieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
@@ -422,6 +423,21 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 
 		public boolean getChunkedEncoding () {
 			return chunked;
+		}
+
+		/** The maximum size of each chunk for chunked encoding. It is only used with the Kryo 5 format ({@link Format#KRYO5}),
+		 * which writes chunks like Kryo 5. The Kryo 6 format has no chunk size. Default is 1024.
+		 * @deprecated The Kryo 6 format has no chunk size. */
+		@Deprecated
+		public void setChunkSize (int chunkSize) {
+			this.chunkSize = chunkSize;
+			if (TRACE) trace("kryo", "CompatibleFieldSerializerConfig setChunkSize: " + chunkSize);
+		}
+
+		/** @deprecated The Kryo 6 format has no chunk size. */
+		@Deprecated
+		public int getChunkSize () {
+			return chunkSize;
 		}
 	}
 }
