@@ -23,6 +23,7 @@ import static com.esotericsoftware.kryo.ReflectionAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo.Format;
+import com.esotericsoftware.kryo.SerializationCompatTestData.BodyEnum;
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestData;
 import com.esotericsoftware.kryo.SerializationCompatTestData.TestDataJava8;
 import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
@@ -31,6 +32,7 @@ import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.EnumMapSerializer;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
@@ -39,6 +41,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -59,17 +62,17 @@ class Kryo5RoundTripTest {
 	 * {@link #kryo6Serializer}, Kryo 6 writes them the same way with the Kryo 5 format, so the data is read the same with both
 	 * versions. */
 	static final Set<String> kryo5Broken = Set.of("_timestamp", "_uri", "_pattern", "_inetAddress", "_inetSocketAddress",
-		"_enumMap", "_emptyEnumMap", "_setFromMap");
+		"_setFromMap");
 
 	/** The fields Kryo 6 writes with a serializer that Kryo 5 doesn't have, also with the Kryo 5 format, because Kryo 5 can't
 	 * read its own data for them. */
-	static final Set<String> kryo6Serializer = Set.of("_enumMap", "_emptyEnumMap", "_setFromMap");
+	static final Set<String> kryo6Serializer = Set.of("_setFromMap");
 
 	/** The fields whose class names differ, also with the Kryo 5 format: Kryo 6 writes the name of the registration's type (see
 	 * DefaultClassResolver#writeName), so a time zone as java.util.TimeZone, each charset as java.nio.charset.Charset and an enum
-	 * constant with a body as its enum. Kryo 5 writes the implementation class, eg sun.util.calendar.ZoneInfo, sun.nio.cs.UTF_8 or
-	 * BodyEnum$2. Both versions read both names. */
-	static final Set<String> classNameDiffers = Set.of("_timeZone", "_charsets", "_bodyEnum");
+	 * constant with a body as its enum, also as a map key. Kryo 5 writes the implementation class, eg sun.util.calendar.ZoneInfo,
+	 * sun.nio.cs.UTF_8 or BodyEnum$2. Both versions read both names. */
+	static final Set<String> classNameDiffers = Set.of("_timeZone", "_charsets", "_bodyEnum", "_enumMap");
 
 	@ParameterizedTest
 	@ValueSource(classes = {TestData.class, TestDataJava8.class, TestDataJava11.class, TestDataJava17.class})
@@ -229,6 +232,8 @@ class Kryo5RoundTripTest {
 		com.esotericsoftware.kryo.kryo5.serializers.SynchronizedCollectionSerializers.addDefaultSerializers(kryo);
 		kryo.addDefaultSerializer(java.util.concurrent.ConcurrentHashMap.KeySetView.class,
 			new com.esotericsoftware.kryo.kryo5.serializers.DefaultSerializers.KeySetViewSerializer());
+		// Kryo 5 can't serialize EnumMap without a serializer for the enum type, which Kryo 6 has too.
+		kryo.addDefaultSerializer(EnumMap.class, new com.esotericsoftware.kryo.kryo5.serializers.EnumMapSerializer(BodyEnum.class));
 		return kryo;
 	}
 
@@ -239,6 +244,7 @@ class Kryo5RoundTripTest {
 		kryo.setReferences(true);
 		kryo.setRegistrationRequired(false);
 		kryo.register(EnumSet.class);
+		kryo.addDefaultSerializer(EnumMap.class, new EnumMapSerializer(BodyEnum.class)); // Like a Kryo 5 user who needed it.
 		return kryo;
 	}
 
