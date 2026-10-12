@@ -31,7 +31,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25">
 		<attributes>
 			<attribute name="module" value="true"/>
-			<attribute name="add-opens" value="java.base/java.util.concurrent.atomic=ALL-UNNAMED"/>
+			<attribute name="add-opens" value="java.base/java.util.concurrent.atomic=ALL-UNNAMED:java.base/java.io=ALL-UNNAMED:java.base/java.net=ALL-UNNAMED:java.base/java.nio=ALL-UNNAMED:java.base/java.util=ALL-UNNAMED:java.base/java.util.regex=ALL-UNNAMED"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="output" path="bin"/>
