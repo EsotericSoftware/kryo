@@ -305,8 +305,9 @@ public class Kryo {
 		addDefaultSerializer(Charset.class, CharsetSerializer::new);
 		addDefaultSerializer(URL.class, URLSerializer::new);
 		addKryo6DefaultSerializer(File.class, exactType(File.class, new FileSerializer()));
-		addKryo6DefaultSerializer(InetAddress.class, new SingletonSerializerFactory(new InetAddressSerializer()));
-		addKryo6DefaultSerializer(InetSocketAddress.class, exactType(InetSocketAddress.class, new InetSocketAddressSerializer()));
+		// Also with the Kryo 5 format: Kryo 5 couldn't read the data its FieldSerializer wrote for these types.
+		addDefaultSerializer(InetAddress.class, new SingletonSerializerFactory(new InetAddressSerializer()));
+		addDefaultSerializer(InetSocketAddress.class, exactType(InetSocketAddress.class, new InetSocketAddressSerializer()));
 		addDefaultSerializer(Arrays.asList().getClass(), ArraysAsListSerializer::new);
 		addDefaultSerializer(void.class, new VoidSerializer());
 		addDefaultSerializer(PriorityQueue.class, new PriorityQueueSerializer());

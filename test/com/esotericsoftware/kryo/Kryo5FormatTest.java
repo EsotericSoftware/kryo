@@ -30,6 +30,8 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.DateSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.InetAddressSerializer;
+import com.esotericsoftware.kryo.serializers.DefaultSerializers.InetSocketAddressSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimestampSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.UUIDSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
@@ -140,10 +142,14 @@ class Kryo5FormatTest {
 		Kryo kryo = new Kryo();
 		kryo.setFormat(Format.KRYO5);
 		kryo.setDefaultSerializer(JavaSerializer.class); // FieldSerializer can't access the fields of JDK classes without --add-opens.
-		for (Class type : new Class[] {UUID.class, File.class, Inet4Address.class, Inet6Address.class, InetSocketAddress.class,
-			ByteBuffer.allocate(0).getClass(), ByteBuffer.allocateDirect(0).getClass()})
+		for (Class type : new Class[] {UUID.class, File.class, ByteBuffer.allocate(0).getClass(),
+			ByteBuffer.allocateDirect(0).getClass()})
 			assertSame(JavaSerializer.class, kryo.getDefaultSerializer(type).getClass(), type.getName());
 		assertSame(DateSerializer.class, kryo.getDefaultSerializer(Timestamp.class).getClass());
+		// Kryo 5 couldn't read the data its FieldSerializer wrote for these types, so the Kryo 6 serializers are used.
+		for (Class type : new Class[] {Inet4Address.class, Inet6Address.class})
+			assertSame(InetAddressSerializer.class, kryo.getDefaultSerializer(type).getClass(), type.getName());
+		assertSame(InetSocketAddressSerializer.class, kryo.getDefaultSerializer(InetSocketAddress.class).getClass());
 		for (Class type : new Class[] {ConcurrentSkipListSet.class, PriorityBlockingQueue.class, LinkedBlockingQueue.class,
 			LinkedBlockingDeque.class})
 			assertSame(CollectionSerializer.class, kryo.getDefaultSerializer(type).getClass(), type.getName());
