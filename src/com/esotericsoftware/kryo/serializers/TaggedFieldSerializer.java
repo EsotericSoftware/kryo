@@ -133,11 +133,11 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		CachedField[] writeTags = this.writeTags;
 		output.writeVarInt(writeTags.length + 1, true);
 		boolean readUnknownTagData = config.readUnknownTagData;
-		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked);
+		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.chunkSize);
 		boolean chunked = chunks != null;
 		Output fieldOutput = chunked ? chunks.beginWrite(output) : output;
 		// The chunked encoding of Kryo 5 writes the tags and the header outside the chunks.
-		Output objectOutput = chunks == LegacyChunkedEncoding.instance ? output : fieldOutput;
+		Output objectOutput = chunks instanceof LegacyChunkedEncoding ? output : fieldOutput;
 		int pop = pushTypeVariables();
 		writeHeader(kryo, objectOutput, object);
 
@@ -184,7 +184,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		if (fieldCount == NULL) return null;
 		fieldCount--;
 
-		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked);
+		ChunkedEncoding chunks = ChunkedEncoding.get(kryo, config.chunked, config.chunkSize);
 		boolean chunked = chunks != null;
 		int pop = pushTypeVariables();
 		T object = null;
@@ -281,6 +281,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	/** Configuration for TaggedFieldSerializer instances. */
 	public static class TaggedFieldSerializerConfig extends FieldSerializerConfig {
 		boolean readUnknownTagData, chunked;
+		int chunkSize = 1024;
 
 		public TaggedFieldSerializerConfig clone () {
 			return (TaggedFieldSerializerConfig)super.clone(); // Clone is ok as we have only primitive fields.
@@ -321,6 +322,21 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 
 		public boolean getChunkedEncoding () {
 			return chunked;
+		}
+
+		/** The maximum size of each chunk for chunked encoding. It is only used with the Kryo 5 format ({@link Format#KRYO5}),
+		 * which writes chunks like Kryo 5. The Kryo 6 format has no chunk size. Default is 1024.
+		 * @deprecated The Kryo 6 format has no chunk size. */
+		@Deprecated
+		public void setChunkSize (int chunkSize) {
+			this.chunkSize = chunkSize;
+			if (TRACE) trace("kryo", "TaggedFieldSerializerConfig setChunkSize: " + chunkSize);
+		}
+
+		/** @deprecated The Kryo 6 format has no chunk size. */
+		@Deprecated
+		public int getChunkSize () {
+			return chunkSize;
 		}
 	}
 }
