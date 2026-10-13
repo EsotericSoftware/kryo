@@ -19,6 +19,10 @@
 		<kryo.root>../</kryo.root>
 		<!-- The classes compiled by the main module with release 17 are shaded, so they are not compiled again. -->
 		<maven.main.skip>true</maven.main.skip>
+		<!-- The main module runs the tests with these classes, the shaded jar gets a smoke test instead. -->
+		<maven.test.skip>true</maven.test.skip>
+		<!-- The java of the smoke test, like -Djvm for the tests of the main module. -->
+		<jvm>${java.home}/bin/java</jvm>
 	</properties>
 
 	<dependencies>
@@ -157,6 +161,46 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<!-- Smoke test of the shaded jar with the Java source launcher, with the default code generation backend and with ASM. -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.6.4</version>
+				<executions>
+					<execution>
+						<id>smoke-test</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+						<configuration>
+							<arguments>
+								<argument>-cp</argument>
+								<argument>${project.build.directory}/${project.build.finalName}.jar</argument>
+								<argument>${project.basedir}/smoke/VersionedJarSmokeTest.java</argument>
+							</arguments>
+						</configuration>
+					</execution>
+					<execution>
+						<id>smoke-test-asm</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+						<configuration>
+							<arguments>
+								<argument>-Dkryo.codeGeneration.backend=asm</argument>
+								<argument>-cp</argument>
+								<argument>${project.build.directory}/${project.build.finalName}.jar</argument>
+								<argument>${project.basedir}/smoke/VersionedJarSmokeTest.java</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
+				<configuration>
+					<executable>${jvm}</executable>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.felix</groupId>
