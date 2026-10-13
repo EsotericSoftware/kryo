@@ -702,6 +702,21 @@ class DefaultSerializersTest extends KryoTestCase {
 		}
 	}
 
+	// A null key, which EnumMap rejects, throws a KryoException instead of a NullPointerException.
+	@Test
+	void testInvalidEnumMapKey () {
+		kryo.register(EnumMap.class);
+		kryo.register(TestEnum.class);
+		EnumMap<TestEnum, Object> map = new EnumMap<>(TestEnum.class);
+		map.put(TestEnum.a, null);
+		Output output = new Output(64);
+		kryo.writeObject(output, map);
+		byte[] bytes = output.toBytes();
+		bytes[bytes.length - 2] = 0; // The key, followed by the null value.
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(bytes), EnumMap.class));
+		assertTrue(ex.getMessage().startsWith("Invalid EnumMap data"), ex.getMessage());
+	}
+
 	@Test
 	void testEnumMapKeyType () {
 		kryo.register(EnumMap.class);

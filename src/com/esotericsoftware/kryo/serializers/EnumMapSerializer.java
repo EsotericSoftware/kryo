@@ -58,6 +58,15 @@ public class EnumMapSerializer extends MapSerializer<EnumMap> {
 		return new EnumMap(registration.getType());
 	}
 
+	/** Throws a KryoException if the data contains a null key or a key of another enum, which EnumMap rejects. */
+	public EnumMap read (Kryo kryo, Input input, Class<? extends EnumMap> type) {
+		try {
+			return super.read(kryo, input, type);
+		} catch (NullPointerException | ClassCastException ex) {
+			throw new KryoException("Invalid EnumMap data: " + ex, ex);
+		}
+	}
+
 	protected EnumMap createCopy (Kryo kryo, EnumMap original) {
 		return new EnumMap(original);
 	}
