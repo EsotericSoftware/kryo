@@ -1388,14 +1388,15 @@ public class Kryo {
 	}
 
 	/** Sets the serialization format, see {@link Format}. Kryo's serializers and reference resolvers write and read the format of
-	 * their Kryo instance. Serializers are chosen and configured for the format when they are created, so the format must be set
-	 * before classes are registered or serializers are created. Default is {@link Format#KRYO6}.
-	 * @throws KryoException if the format was already used, see {@link #getFormat()}. */
+	 * their Kryo instance. Serializers are chosen and configured for the format when they are created and read it when they write
+	 * and read, so the format is fixed once it was read and must be set first, before classes are registered or serializers are
+	 * created. Default is {@link Format#KRYO6}.
+	 * @throws KryoException if the format was already read, see {@link #getFormat()}. */
 	public void setFormat (Format format) {
 		if (format == null) throw new IllegalArgumentException("format cannot be null.");
 		if (format == this.format) return;
 		if (formatUsed) {
-			throw new KryoException("The format can't be changed after it was used, because serializers are chosen and "
+			throw new KryoException("The format can't be changed after it was read, because serializers are chosen and "
 				+ "configured for the format when they are created. Set the format before registering classes.");
 		}
 		this.format = format;
