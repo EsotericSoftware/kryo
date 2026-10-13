@@ -14,21 +14,17 @@ java -cp benchmarks/target/classes:$(cat benchmarks/target/classpath.txt) com.es
 
 Where `[parameters]` should be replaced with JMH parameters. Building only the benchmarks, eg with `mvn -f benchmarks/pom.xml` or `-pl benchmarks`, runs them against the Kryo snapshot in the local Maven repository, which is usually stale.
 
-### Without Maven
+### From the IDE
 
-This assumes your IDE has compiled Kryo to the `bin` directory, including the benchmarks source and processing of the JMH annotations, like the Eclipse project in `eclipse`, which uses the JMH JARs in `benchmarks/lib`.
-```
-java -cp "bin:lib/*:benchmarks/lib/*" com.esotericsoftware.kryo.benchmarks.KryoBenchmarks [parameters]
-```
-Where `[parameters]` should be replaced with JMH parameters. On Windows, separate the classpath entries with `;` instead of `:`.
+The Eclipse project in `eclipse` compiles the benchmarks with the JMH annotation processor, both taken from the local Maven repository, so the Maven build above must have run once. Run `KryoBenchmarks` with the JMH parameters as program arguments.
 
 ### Parameters
 
-If no JMH parameters are given, the benchmarks are run with settings only suitable for development (fork 0, short runs). A full list of JMH parameters can be found by running:
+If no JMH parameters are given, the benchmarks are run with settings only suitable for development (fork 0, short runs). A full list of JMH parameters can be found by running, after the Maven build above:
 ```
-java -cp "benchmarks/lib/*" org.openjdk.jmh.Main -h
+java -cp benchmarks/target/classes:$(cat benchmarks/target/classpath.txt) org.openjdk.jmh.Main -h
 ```
-Or by digging through the [JMH source](http://hg.openjdk.java.net/code-tools/jmh/file/3769055ad883/jmh-core/src/main/java/org/openjdk/jmh/runner/options/CommandLineOptions.java).
+Or in the [JMH source](https://github.com/openjdk/jmh/blob/master/jmh-core/src/main/java/org/openjdk/jmh/runner/options/CommandLineOptions.java).
 
 Running without parameters is equivalent to:
 ```
