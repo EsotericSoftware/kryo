@@ -83,12 +83,6 @@ jobs:
         run: mvn -B test -pl main -Djvm=${{ steps.jdk27.outputs.path }}/bin/java
         env:
           JAVA_TOOL_OPTIONS: -Dkryo.codeGeneration=true
-      
-      - name: Set up settings.xml for Sonatype
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: 25
 
       - name: Publish SNAPSHOT version to Sonatype (we can skip tests, since we only deploy, if the build workflow succeeded)
         run: mvn -v && mvn -B -P requireSnapshot --no-transfer-progress -DskipTests deploy --settings build/settings-sonatype.xml -Dmaven.repository.credentialScope=id
