@@ -64,6 +64,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.SimpleTimeZone;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -1249,6 +1250,29 @@ class DefaultSerializersTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		roundTrip(2 + TimeZone.class.getName().length() + timeZone.getID().length(), timeZone);
 		assertEquals(TimeZone.class, kryo.getRegistration(timeZone.getClass()).getType());
+	}
+
+	// A time zone with an ID that TimeZone.getTimeZone doesn't know would be read as GMT, so it can't be written.
+	@Test
+	void testTimeZoneWithUnknownId () {
+		kryo.register(TimeZone.class);
+		kryo.register(SimpleTimeZone.class);
+		TimeZone unknown = new SimpleTimeZone(3600000, "Custom/Zone");
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.writeObject(new Output(64), unknown));
+		assertTrue(ex.getMessage().contains("\"Custom/Zone\""), ex.getMessage());
+		kryo.setRegistrationRequired(false);
+		Calendar calendar = Calendar.getInstance(unknown);
+		assertThrows(KryoException.class, () -> kryo.writeClassAndObject(new Output(64), calendar));
+
+		// Known and custom IDs of time zones of any class can be written.
+		for (TimeZone timeZone : new TimeZone[] {new SimpleTimeZone(3600000, "GMT+01:00"), new SimpleTimeZone(0, "GMT"),
+			new SimpleTimeZone(0, "UTC"), TimeZone.getTimeZone("GMT-08:00"), TimeZone.getTimeZone("Unknown/Zone")}) {
+			Output output = new Output(64);
+			kryo.writeClassAndObject(output, timeZone);
+			TimeZone read = (TimeZone)kryo.readClassAndObject(new Input(output.toBytes()));
+			assertEquals(timeZone.getID(), read.getID());
+			assertTrue(read.hasSameRules(timeZone));
+		}
 	}
 
 	@Test
