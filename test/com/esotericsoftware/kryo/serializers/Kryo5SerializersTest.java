@@ -48,11 +48,14 @@ import com.esotericsoftware.kryo.serializers.SyntheticFieldsTest.Outer;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSerializerConfig;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +72,30 @@ class Kryo5SerializersTest extends KryoTestCase {
 		map.put("a", 1);
 		map.put("b", 2);
 		roundTrip(12, map);
+	}
+
+	@Test
+	void testNegativeCollectionAndMapSize () {
+		// A corrupt negative size throws a KryoException. The size of a map has no flag in the Kryo 5 format.
+		kryo.setFormat(Format.KRYO5);
+		kryo.register(ArrayList.class);
+		kryo.register(TreeSet.class);
+		kryo.register(HashMap.class);
+		kryo.register(TreeMap.class);
+		for (int length : new int[] {-1, Integer.MIN_VALUE}) { // Size + 1.
+			for (Class type : new Class[] {ArrayList.class, TreeSet.class, HashMap.class, TreeMap.class}) {
+				Output output = new Output(16);
+				if (Map.class.isAssignableFrom(type))
+					output.writeVarInt(length, true);
+				else
+					output.writeVarIntFlag(false, length, true);
+				byte[] bytes = output.toBytes();
+				for (Input input : new Input[] {new Input(bytes), new Input(new ByteArrayInputStream(bytes))}) {
+					KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, type));
+					assertTrue(ex.getMessage().startsWith("Declared size is negative: " + (length - 1L)), ex.getMessage());
+				}
+			}
+		}
 	}
 
 	@Test

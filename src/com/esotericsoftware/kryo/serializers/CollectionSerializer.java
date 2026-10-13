@@ -242,7 +242,6 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				} else
 					length = input.readVarInt(true);
 				if (length == 0) return null;
-				// Checked before length-- would wrap MIN_VALUE to MAX_VALUE.
 				if (length < 0) throw new KryoException("Declared size is negative: " + (length - 1L));
 
 				length--;
@@ -254,7 +253,6 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				boolean sameType = input.readVarIntFlag();
 				length = input.readVarIntFlag(true);
 				if (length == 0) return null;
-				// Checked before length-- would wrap MIN_VALUE to MAX_VALUE.
 				if (length < 0) throw new KryoException("Declared size is negative: " + (length - 1L));
 
 				length--;
