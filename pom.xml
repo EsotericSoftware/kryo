@@ -318,6 +318,21 @@
 							</rules>
 						</configuration>
 					</execution>
+					<!-- ClassFileWriter is compiled against the Class-File API of JDK 24+, see README "Building from source". -->
+					<execution>
+						<id>enforce-build-jdk</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireJavaVersion>
+									<version>[24,)</version>
+									<message>Building Kryo requires JDK 24+, while Kryo runs on Java 17+. To test on another Java version, pass its java, eg -Djvm=/path/to/jdk17/bin/java.</message>
+								</requireJavaVersion>
+							</rules>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 		</plugins>
