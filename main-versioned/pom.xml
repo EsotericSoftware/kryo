@@ -21,6 +21,8 @@
 		<maven.main.skip>true</maven.main.skip>
 		<!-- The main module runs the tests with these classes, the shaded jar gets a smoke test instead. -->
 		<maven.test.skip>true</maven.test.skip>
+		<!-- The java of the smoke test, like -Djvm for the tests of the main module. -->
+		<jvm>${java.home}/bin/java</jvm>
 	</properties>
 
 	<dependencies>
@@ -197,7 +199,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<executable>${java.home}/bin/java</executable>
+					<executable>${jvm}</executable>
 				</configuration>
 			</plugin>
 			<plugin>
