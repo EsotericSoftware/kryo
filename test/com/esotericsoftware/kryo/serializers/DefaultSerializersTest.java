@@ -64,6 +64,7 @@ import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.TimeZone;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -755,7 +756,8 @@ class DefaultSerializersTest extends KryoTestCase {
 	void testSubclassWithoutConstructorArguments () {
 		kryo.register(Collections.reverseOrder().getClass());
 		for (Class type : new Class[] {FixedTreeSet.class, FixedSkipListSet.class, FixedPriorityQueue.class,
-			FixedPriorityBlockingQueue.class, FixedArrayBlockingQueue.class, FixedBlockingQueue.class, FixedBlockingDeque.class})
+			FixedPriorityBlockingQueue.class, FixedArrayBlockingQueue.class, FixedBlockingQueue.class, FixedBlockingDeque.class,
+			FixedTreeMap.class, FixedSkipListMap.class})
 			kryo.register(type);
 
 		// The comparator of the no-arg constructor is kept.
@@ -763,6 +765,11 @@ class DefaultSerializersTest extends KryoTestCase {
 			sorted.addAll(List.of(1, 2, 3));
 			assertEquals(List.of(3, 2, 1), new ArrayList<>(writeRead(sorted)));
 			assertEquals(List.of(3, 2, 1), new ArrayList<>(kryo.copy(sorted)));
+		}
+		for (Map<Integer, Integer> sorted : List.of(new FixedTreeMap(), new FixedSkipListMap())) {
+			sorted.putAll(Map.of(1, 1, 2, 2, 3, 3));
+			assertEquals(List.of(3, 2, 1), new ArrayList<>(writeRead(sorted).keySet()));
+			assertEquals(List.of(3, 2, 1), new ArrayList<>(kryo.copy(sorted).keySet()));
 		}
 		for (Queue<Integer> queue : List.of(new FixedPriorityQueue(), new FixedPriorityBlockingQueue())) {
 			queue.addAll(List.of(1, 2, 3));
@@ -789,6 +796,18 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	static class FixedSkipListSet extends ConcurrentSkipListSet<Integer> {
 		public FixedSkipListSet () {
+			super(Collections.reverseOrder());
+		}
+	}
+
+	static class FixedTreeMap extends TreeMap<Integer, Integer> {
+		public FixedTreeMap () {
+			super(Collections.reverseOrder());
+		}
+	}
+
+	static class FixedSkipListMap extends ConcurrentSkipListMap<Integer, Integer> {
+		public FixedSkipListMap () {
 			super(Collections.reverseOrder());
 		}
 	}

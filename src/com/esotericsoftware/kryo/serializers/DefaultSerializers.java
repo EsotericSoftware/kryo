@@ -781,26 +781,16 @@ public class DefaultSerializers {
 		}
 
 		protected TreeMap create (Kryo kryo, Input input, Class<? extends TreeMap> type, int size) {
-			return createTreeMap(type, (Comparator)kryo.readClassAndObject(input));
+			return createTreeMap(kryo, type, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected TreeMap createCopy (Kryo kryo, TreeMap original) {
-			return createTreeMap(original.getClass(), original.comparator());
+			return createTreeMap(kryo, original.getClass(), original.comparator());
 		}
 
-		private TreeMap createTreeMap (Class<? extends TreeMap> type, Comparator comparator) {
+		private TreeMap createTreeMap (Kryo kryo, Class<? extends TreeMap> type, Comparator comparator) {
 			if (type == TreeMap.class || type == null) return new TreeMap(comparator);
-			// Use reflection for subclasses.
-			try {
-				Constructor constructor = type.getConstructor(Comparator.class);
-				try {
-					constructor.setAccessible(true);
-				} catch (SecurityException ignored) {
-				}
-				return (TreeMap)constructor.newInstance(comparator);
-			} catch (Exception ex) {
-				throw new KryoException(ex);
-			}
+			return newInstance(kryo, type, new Class[] {Comparator.class}, comparator); // Subclass.
 		}
 	}
 
@@ -815,34 +805,21 @@ public class DefaultSerializers {
 		@Override
 		protected ConcurrentSkipListMap create (Kryo kryo, Input input, Class<? extends ConcurrentSkipListMap> type,
 			int size) {
-			return createConcurrentSkipListMap(type, (Comparator)kryo.readClassAndObject(input));
+			return createMap(kryo, type, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		@Override
 		protected ConcurrentSkipListMap createCopy (Kryo kryo, ConcurrentSkipListMap original) {
-			return createConcurrentSkipListMap(original.getClass(), original.comparator());
+			return createMap(kryo, original.getClass(), original.comparator());
 		}
 
-		private ConcurrentSkipListMap createConcurrentSkipListMap (Class<? extends ConcurrentSkipListMap> type,
-			Comparator comparator) {
-			if (type == ConcurrentSkipListMap.class || type == null) {
-				return new ConcurrentSkipListMap(comparator);
-			}
-			// Use reflection for subclasses.
-			try {
-				Constructor constructor = type.getConstructor(Comparator.class);
-				try {
-					constructor.setAccessible(true);
-				} catch (SecurityException ignored) {
-				}
-				return (ConcurrentSkipListMap)constructor.newInstance(comparator);
-			} catch (Exception ex) {
-				throw new KryoException(ex);
-			}
+		private ConcurrentSkipListMap createMap (Kryo kryo, Class<? extends ConcurrentSkipListMap> type, Comparator comparator) {
+			if (type == ConcurrentSkipListMap.class || type == null) return new ConcurrentSkipListMap(comparator);
+			return newInstance(kryo, type, new Class[] {Comparator.class}, comparator); // Subclass.
 		}
 	}
 
-	/** Serializer for {@link TreeMap} and any subclass.
+	/** Serializer for {@link TreeSet} and any subclass.
 	 * @author Tumi {@literal <serverperformance@gmail.com>} (enhacements) */
 	public static class TreeSetSerializer extends CollectionSerializer<TreeSet> {
 		protected void writeHeader (Kryo kryo, Output output, TreeSet treeSet) {
