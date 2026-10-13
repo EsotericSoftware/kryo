@@ -16,11 +16,11 @@ Where `[parameters]` should be replaced with JMH parameters. Building only the b
 
 ### Without Maven
 
-This assumes your IDE has compiled Kryo to the `bin` directory, including the benchmarks source and processing of the JMH annotations.
+This assumes your IDE has compiled Kryo to the `bin` directory, including the benchmarks source and processing of the JMH annotations, like the Eclipse project in `eclipse`, which uses the JMH JARs in `benchmarks/lib`.
 ```
-java -cp "bin;lib/*;benchmarks/lib/*" com.esotericsoftware.kryo.benchmarks.KryoBenchmarks [parameters]
+java -cp "bin:lib/*:benchmarks/lib/*" com.esotericsoftware.kryo.benchmarks.KryoBenchmarks [parameters]
 ```
-Where `[parameters]` should be replaced with JMH parameters.
+Where `[parameters]` should be replaced with JMH parameters. On Windows, separate the classpath entries with `;` instead of `:`.
 
 ### Parameters
 
