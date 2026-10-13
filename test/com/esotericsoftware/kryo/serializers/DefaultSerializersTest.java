@@ -41,6 +41,9 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.AbstractMap;
@@ -1101,6 +1104,55 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(1 + 4, new CustomTimeZone(3600000));
 	}
 
+	@Test
+	void testCharsetSubclass () {
+		// Same for a Charset subclass: it keeps its class and its own default serializer, registered or by name.
+		kryo = new Kryo();
+		kryo.setRegistrationRequired(false);
+		kryo.addDefaultSerializer(CustomCharset.class, CustomCharsetSerializer.class);
+		assertEquals(CustomCharset.class, kryo.getRegistration(CustomCharset.class).getType());
+		roundTrip(2 + CustomCharset.class.getName().length() + 4, new CustomCharset(3));
+
+		kryo = new Kryo();
+		kryo.register(CustomCharset.class, new CustomCharsetSerializer());
+		roundTrip(1 + 4, new CustomCharset(3));
+	}
+
+	public static class CustomCharset extends Charset {
+		private final int id;
+
+		public CustomCharset (int id) {
+			super("X-custom-" + id, null);
+			this.id = id;
+		}
+
+		public boolean contains (Charset cs) {
+			return false;
+		}
+
+		public CharsetDecoder newDecoder () {
+			return StandardCharsets.UTF_8.newDecoder();
+		}
+
+		public CharsetEncoder newEncoder () {
+			return StandardCharsets.UTF_8.newEncoder();
+		}
+	}
+
+	public static class CustomCharsetSerializer extends Serializer<CustomCharset> {
+		public CustomCharsetSerializer () {
+			setImmutable(true);
+		}
+
+		public void write (Kryo kryo, Output output, CustomCharset charset) {
+			output.writeInt(charset.id);
+		}
+
+		public CustomCharset read (Kryo kryo, Input input, Class<? extends CustomCharset> type) {
+			return new CustomCharset(input.readInt());
+		}
+	}
+
 	public static class CustomTimeZone extends TimeZone {
 		private int offset;
 
@@ -1144,11 +1196,11 @@ class DefaultSerializersTest extends KryoTestCase {
 		}
 
 		public void write (Kryo kryo, Output output, CustomTimeZone timeZone) {
-			output.writeInt(timeZone.offset, false);
+			output.writeInt(timeZone.offset);
 		}
 
 		public CustomTimeZone read (Kryo kryo, Input input, Class<? extends CustomTimeZone> type) {
-			return new CustomTimeZone(input.readInt(false));
+			return new CustomTimeZone(input.readInt());
 		}
 	}
 
