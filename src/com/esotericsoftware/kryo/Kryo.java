@@ -204,7 +204,7 @@ public class Kryo {
 	private boolean registrationRequired = true;
 	private boolean warnUnregisteredClasses;
 	private Format format = Format.KRYO6;
-	/** True once a serializer decided something for the format when it was created, after which the format can't change. */
+	/** True once the format was read, eg by a serializer, after which the format can't change. */
 	private boolean formatUsed;
 	private Predicate<Class> allowedUnregisteredClasses;
 
@@ -484,7 +484,6 @@ public class Kryo {
 	@SuppressWarnings("deprecation") // RecordSerializer
 	public Serializer getDefaultSerializer (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		formatUsed = true;
 
 		Serializer serializerForAnnotation = getDefaultSerializerForAnnotatedType(type);
 		if (serializerForAnnotation != null) return serializerForAnnotation;
@@ -493,9 +492,9 @@ public class Kryo {
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			// Kryo 5 had RecordSerializer as the first built-in default serializer, so a record that is also a Collection, Map or
 			// KryoSerializable was serialized as a record.
-			if (i == builtIn && format == Format.KRYO5 && isRecord(type)) return new RecordSerializer(type);
+			if (i == builtIn && getFormat() == Format.KRYO5 && isRecord(type)) return new RecordSerializer(type);
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
-			if (entry.kryo6Only && format == Format.KRYO5) continue;
+			if (entry.kryo6Only && getFormat() == Format.KRYO5) continue;
 			if (entry.type.isAssignableFrom(type) && entry.serializerFactory.isSupported(type))
 				return entry.serializerFactory.newSerializer(this, type);
 		}
@@ -1284,7 +1283,6 @@ public class Kryo {
 	 * strings. The first call fixes the result, after which it can't change, see {@link #setReferences(boolean)}.
 	 * {@link FieldSerializer} calls this when it creates a String field. */
 	public boolean usesStringReferences () {
-		formatUsed = true; // With the Kryo 5 format, strings use references.
 		if (stringFieldReferences == -1) stringFieldReferences = stringReferences(references, referenceResolver) ? 1 : 0;
 		return stringFieldReferences == 1;
 	}
@@ -1385,29 +1383,31 @@ public class Kryo {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (type.isArray()) type = Util.getElementClass(type);
 		if (type.isEnum()) {
-			formatUsed = true; // Serializers decide when they are created whether to write the class of a field value.
 			// Also with constant bodies, which are subclasses. Kryo 5 wrote the class of these enums, because they aren't final.
-			if (format != Format.KRYO5) return true;
+			if (getFormat() != Format.KRYO5) return true;
 		}
 		return Modifier.isFinal(type.getModifiers());
 	}
 
 	/** Sets the serialization format, see {@link Format}. Kryo's serializers and reference resolvers write and read the format of
-	 * their Kryo instance. Serializers are chosen and configured for the format when they are created, so the format must be set
-	 * before classes are registered or serializers are created. Default is {@link Format#KRYO6}.
-	 * @throws KryoException if the format was already used to create a serializer. */
+	 * their Kryo instance. Serializers are chosen and configured for the format when they are created and read it when they write
+	 * and read, so the format is fixed once it was read and must be set first, before classes are registered or serializers are
+	 * created. Default is {@link Format#KRYO6}.
+	 * @throws KryoException if the format was already read, see {@link #getFormat()}. */
 	public void setFormat (Format format) {
 		if (format == null) throw new IllegalArgumentException("format cannot be null.");
 		if (format == this.format) return;
 		if (formatUsed) {
-			throw new KryoException("The format can't be changed after it was used to create a serializer, because serializers "
-				+ "are chosen and configured for the format when they are created. Set the format before registering classes.");
+			throw new KryoException("The format can't be changed after it was read, because serializers are chosen and "
+				+ "configured for the format when they are created. Set the format before registering classes.");
 		}
 		this.format = format;
 		if (TRACE) trace("kryo", "Format: " + format);
 	}
 
+	/** Returns the serialization format. Reading it fixes the format, after which {@link #setFormat(Format)} throws. */
 	public Format getFormat () {
+		formatUsed = true;
 		return format;
 	}
 

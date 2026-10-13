@@ -35,6 +35,8 @@ import com.esotericsoftware.kryo.serializers.DefaultSerializers.InetSocketAddres
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.TimestampSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.UUIDSerializer;
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer;
@@ -134,6 +136,36 @@ class Kryo5FormatTest {
 
 	static public class WithEnum {
 		BodyOp op;
+	}
+
+	@Test
+	void testFormatBeforeBindSerializer () {
+		// A serializer created directly decides when it is created whether a @Bind field can be null, which depends on the format:
+		// Kryo 5 ignored @NotNull with @Bind.
+		Kryo kryo = new Kryo();
+		new FieldSerializer(kryo, WithBind.class);
+		assertThrows(KryoException.class, () -> kryo.setFormat(Format.KRYO5));
+		assertEquals(Format.KRYO6, kryo.getFormat());
+
+		Kryo kryo5 = new Kryo();
+		kryo5.setFormat(Format.KRYO5);
+		kryo5.register(WithBind.class);
+		Kryo kryo6 = new Kryo();
+		kryo6.register(WithBind.class);
+		WithBind object = new WithBind();
+		object.value = 1;
+		// The Kryo 5 format writes a null marker for the field.
+		assertEquals(write(kryo6, object).length + 1, write(kryo5, object).length);
+		assertEquals(1, kryo5.readObject(new Input(write(kryo5, object)), WithBind.class).value);
+
+		// Reading the format fixes it.
+		Kryo kryo7 = new Kryo();
+		kryo7.getFormat();
+		assertThrows(KryoException.class, () -> kryo7.setFormat(Format.KRYO5));
+	}
+
+	static public class WithBind {
+		@Bind @NotNull Integer value;
 	}
 
 	@Test
