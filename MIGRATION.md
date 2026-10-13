@@ -240,3 +240,4 @@ These changes don't affect the serialized format of the default configuration, e
 * `CuckooObjectMap`, which was deprecated in Kryo 5.3.0.
 * `UnmodifiableCollectionSerializers.registerSerializers(Kryo)` and `SynchronizedCollectionSerializers.registerSerializers(Kryo)`, which were deprecated in Kryo 5.7.1 because the IDs they assign depend on the JVM. Use `register(Kryo)` instead, which registers the classes in a fixed order. It assigns different IDs, so to read data written with `registerSerializers`, register the wrapper classes with the IDs that it assigned.
 * The deprecated no-arg constructor of RecordSerializer. Use `RecordSerializer(Class)` instead.
+* `Util#getPrimitiveClass` and `GenericsUtil#resolveTypeParameters`, which Kryo doesn't use.
