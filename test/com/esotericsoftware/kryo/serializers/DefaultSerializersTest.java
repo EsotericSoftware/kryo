@@ -435,6 +435,19 @@ class DefaultSerializersTest extends KryoTestCase {
 		assertInvalid("Invalid ordinal for enum \"" + TestEnum.class.getName() + "\": 8", bytes, EnumMap.class);
 	}
 
+	// The number of elements of an EnumSet is checked against maxArraySize before they are read.
+	@Test
+	void testEnumSetMaxArraySize () {
+		kryo.register(EnumSet.class);
+		kryo.register(TestEnum.class);
+		Output output = new Output(64);
+		kryo.writeObject(output, EnumSet.allOf(TestEnum.class));
+		Input input = new Input(output.toBytes());
+		input.setMaxArraySize(1);
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, EnumSet.class));
+		assertTrue(ex.getMessage().contains("maxArraySize"), ex.getMessage());
+	}
+
 	private void assertInvalid (String message, byte[] bytes, Class type) {
 		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(bytes), type));
 		assertTrue(ex.getMessage().startsWith(message), ex.getMessage());

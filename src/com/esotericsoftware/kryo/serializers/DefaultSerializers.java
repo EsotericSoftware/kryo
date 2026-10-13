@@ -561,7 +561,7 @@ public class DefaultSerializers {
 			Class enumType = registration.getType();
 			EnumSet object = EnumSet.noneOf(enumType);
 			Serializer serializer = registration.getSerializer();
-			int length = input.readVarInt(true);
+			int length = input.validateArrayLength(input.readVarInt(true), 0); // A custom enum serializer may read 0 bytes.
 			for (int i = 0; i < length; i++) {
 				Object element = serializer.read(kryo, input, enumType);
 				if (element == null) throw new KryoException("Invalid EnumSet element for enum \"" + enumType.getName() + "\": null");
