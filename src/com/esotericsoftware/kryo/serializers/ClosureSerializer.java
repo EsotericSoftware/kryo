@@ -139,7 +139,9 @@ public class ClosureSerializer extends Serializer {
 		}
 	}
 
-	/** Creates a new closure with copies of the captured arguments. */
+	/** Creates a new closure with copies of the captured arguments. A closure can only be created from its captured arguments, so
+	 * it is referenced after they are copied: a captured object that refers back to the closure gets another copy of it, like an
+	 * element of an immutable collection that refers to its collection. */
 	public Object copy (Kryo kryo, Object original) {
 		ClosureClass closureClass = Caches.closureClasses.get(original.getClass());
 		SerializedLambda lambda = toSerializedLambda(closureClass, original);
