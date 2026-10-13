@@ -169,11 +169,11 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	private void testAddedFieldToClassWithManyFields (int length, boolean references, boolean chunked,
-		boolean readUnknownTagData) {
+		boolean readUnknownFieldData) {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
-		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownTagData);
+		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownFieldData);
 		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(ClassWithManyFields.class, serializer);
 
@@ -334,11 +334,11 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	private void testRemovedFieldFromClassWithManyFields (int length, boolean references, boolean chunked,
-		boolean readUnknownTagData) {
+		boolean readUnknownFieldData) {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
-		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownTagData);
+		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownFieldData);
 		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(ClassWithManyFields.class, serializer);
 
@@ -411,11 +411,11 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	private void testRemovedMultipleFieldsFromClassWithManyFields (int length, boolean references, boolean chunked,
-		boolean readUnknownTagData) {
+		boolean readUnknownFieldData) {
 		kryo.setReferences(references);
 
 		CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, ClassWithManyFields.class);
-		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownTagData);
+		serializer.getCompatibleFieldSerializerConfig().setReadUnknownFieldData(readUnknownFieldData);
 		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
 		kryo.register(ClassWithManyFields.class, serializer);
 

@@ -226,6 +226,7 @@ These changes don't affect the serialized format of the default configuration, e
 * `FieldSerializer.CachedField` has the new abstract method `read(Input)`, which reads a field value without setting it, so a custom subclass of CachedField needs to implement it. Custom implementations of the `Generics` interface need to implement `nextGenericType()` and `pushTypeVariables(GenericsHierarchy, GenericType)`, which FieldSerializer calls with a null type if the declared type is not known, so the type variables of the class don't resolve to those of an enclosing object of the same class.
 * `CachedField#getField` returns a `Field` shared by all Kryo instances, see [FieldSerializer and its subclasses](#fieldserializer-and-its-subclasses).
 * `Output#longLength` takes a `long` instead of an `int`, like `Output#writeLong(long, boolean)`.
+* `CompatibleFieldSerializerConfig#getReadUnknownTagData` was renamed to `getReadUnknownFieldData`, like its setter.
 
 ### Deprecated APIs
 

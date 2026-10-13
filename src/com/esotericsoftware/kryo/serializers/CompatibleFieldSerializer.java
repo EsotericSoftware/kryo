@@ -384,11 +384,11 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		 * are not read and further deserialization receives the wrong references and fails.
 		 * <p>
 		 * Default is true. */
-		public void setReadUnknownFieldData (boolean readUnknownTagData) {
-			this.readUnknownFieldData = readUnknownTagData;
+		public void setReadUnknownFieldData (boolean readUnknownFieldData) {
+			this.readUnknownFieldData = readUnknownFieldData;
 		}
 
-		public boolean getReadUnknownTagData () {
+		public boolean getReadUnknownFieldData () {
 			return readUnknownFieldData;
 		}
 
