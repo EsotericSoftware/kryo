@@ -207,11 +207,16 @@ public class ByteBufferOutput extends Output {
 	public void flush () throws KryoException {
 		if (outputStream == null) return;
 		try {
-			byte[] tmp = new byte[position];
+			if (byteBuffer.hasArray())
+				outputStream.write(byteBuffer.array(), byteBuffer.arrayOffset(), position);
+			else {
+				byte[] tmp = new byte[position];
+				setBufferPosition(byteBuffer, 0);
+				byteBuffer.get(tmp);
+				outputStream.write(tmp, 0, position);
+			}
 			setBufferPosition(byteBuffer, 0);
-			byteBuffer.get(tmp);
-			setBufferPosition(byteBuffer, 0);
-			outputStream.write(tmp, 0, position);
+			outputStream.flush();
 		} catch (IOException ex) {
 			throw new KryoException(ex);
 		}
@@ -674,11 +679,13 @@ public class ByteBufferOutput extends Output {
 
 	@SuppressWarnings("deprecation") // The fastest copy of ASCII chars.
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
+		if (charCount == 0) return;
+		if (position == capacity) require(1); // Must be able to write at least one character.
 		ByteBuffer buffer = this.byteBuffer;
 		int charIndex = 0;
 		int charsToWrite = Math.min(charCount, capacity - position);
+		byte[] tmp = new byte[charCount];
 		while (charIndex < charCount) {
-			byte[] tmp = new byte[charCount];
 			value.getBytes(charIndex, charIndex + charsToWrite, tmp, 0);
 			buffer.put(tmp, 0, charsToWrite);
 			charIndex += charsToWrite;
@@ -691,7 +698,7 @@ public class ByteBufferOutput extends Output {
 	// Primitive arrays:
 
 	public void writeInts (int[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2) {
+		if (count <= capacity >> 2) { // Not capacity >= count << 2, which overflows.
 			require(count << 2);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -709,7 +716,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeLongs (long[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3) {
+		if (count <= capacity >> 3) {
 			require(count << 3);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -731,7 +738,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeFloats (float[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2) {
+		if (count <= capacity >> 2) {
 			require(count << 2);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -749,7 +756,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3) {
+		if (count <= capacity >> 3) {
 			require(count << 3);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -771,7 +778,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeShorts (short[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1) {
+		if (count <= capacity >> 1) {
 			require(count << 1);
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];
@@ -786,7 +793,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeChars (char[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1) {
+		if (count <= capacity >> 1) {
 			require(count << 1);
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];

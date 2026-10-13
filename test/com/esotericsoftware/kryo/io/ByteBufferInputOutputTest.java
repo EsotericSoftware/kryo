@@ -25,9 +25,11 @@ import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
@@ -202,4 +204,54 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 		}
 	}
 
+	@Test
+	void testFlush () {
+		// Heap buffers (also with an array offset) and direct buffers are written to the stream, which is flushed.
+		byte[] bytes = new byte[20];
+		for (int i = 0; i < bytes.length; i++)
+			bytes[i] = (byte)i;
+		for (ByteBuffer buffer : new ByteBuffer[] {ByteBuffer.allocate(8), ByteBuffer.wrap(new byte[12], 2, 8).slice(),
+			ByteBuffer.allocateDirect(8)}) {
+			int[] flushes = {0};
+			ByteArrayOutputStream stream = new ByteArrayOutputStream() {
+				public void flush () {
+					flushes[0]++;
+				}
+			};
+			ByteBufferOutput output = new ByteBufferOutput(buffer);
+			output.setOutputStream(stream);
+			output.writeBytes(bytes);
+			output.flush();
+			assertArrayEquals(bytes, stream.toByteArray());
+			assertEquals(3, flushes[0]);
+		}
+	}
+
+	@Test
+	void testConstructorOffsetCount () {
+		ByteBufferInput input = new ByteBufferInput(new byte[] {1, 2, 3, 4, 5}, 1, 3);
+		assertEquals(3, input.limit());
+		assertArrayEquals(new byte[] {2, 3, 4}, input.readBytes(3));
+		assertTrue(input.end());
+	}
+
+	@Test
+	void testWriteAsciiFullBuffer () {
+		// Writing ASCII to a full buffer must make room instead of looping forever.
+		String value = "abcdefghijklmnopqrstuvwxyz0123456789";
+		assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+			ByteArrayOutputStream stream = new ByteArrayOutputStream();
+			ByteBufferOutput output = new ByteBufferOutput(stream, 1);
+			output.writeByte(1);
+			output.writeAscii(value);
+			output.flush();
+			Input input = new Input(stream.toByteArray());
+			assertEquals(1, input.readByte());
+			assertEquals(value, input.readString());
+
+			output = new ByteBufferOutput(0, -1);
+			output.writeAscii(value);
+			assertEquals(value, new Input(output.toBytes()).readString());
+		});
+	}
 }
