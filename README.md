@@ -25,8 +25,6 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
 - [Installation](#installation)
    * [With Maven](#with-maven)
    * [Without Maven](#without-maven)
-   * [Building from source](#building-from-source)
-   * [Development](#development)
 - [Quickstart](#quickstart)
 - [IO](#io)
    * [Output](#output)
@@ -104,6 +102,7 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
 - [Benchmarks](#benchmarks)
    * [Kryo 5 and Kryo 6](#kryo-5-and-kryo-6)
    * [Kryo 6](#kryo-6)
+- [Development](#development)
 - [Links](#links)
    * [Projects using Kryo](#projects-using-kryo)
    * [Scala](#scala)
@@ -143,6 +142,8 @@ The names of the versioned jar contain the major version. For Kryo 5, they use `
 Both jars are OSGi bundles and declare an automatic module name, so they can be used on the Java module path. When using the versioned jar, all Kryo classes must be imported from the relocated package, for example `com.esotericsoftware.kryo.kryo6.Kryo`.
 
 Kryo JARs are available on the [releases page](https://github.com/EsotericSoftware/kryo/releases) and at [Maven Central](https://central.sonatype.com/artifact/com.esotericsoftware/kryo). The latest snapshots of Kryo, including snapshot builds of master, are in the [Maven Central snapshot repository](https://central.sonatype.com/repository/maven-snapshots/).
+
+To build Kryo from source, see [Development](#development).
 
 ### With Maven
 
@@ -192,24 +193,6 @@ To use the latest Kryo snapshot, use:
 ### Without Maven
 
 Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#installation) on your classpath, along with the optional Objenesis and ASM JARs found in [lib](lib) if needed.
-
-### Building from source
-
-Building Kryo from source requires JDK 24+ and Maven. To build all artifacts, run:
-
-```
-mvn clean && mvn install
-```
-
-The sources are compiled for Java 17 with `-source 17`. JDK 24+ is needed only for `ClassFileWriter`, which uses the Class-File API and is loaded only on Java 24+; on older Java versions code generation uses ASM, an optional dependency. Because of this, IntelliJ IDEA must not compile with `--release`: untick "Use '--release' option for cross-compilation" in Settings > Build, Execution, Deployment > Compiler > Java Compiler, otherwise it reports the Class-File API as unavailable.
-
-### Development
-
-* `mvn -pl main test` runs the tests. To run them on another Java version, pass its `java`, eg `mvn -pl main test -Djvm=/path/to/jdk17/bin/java`.
-* The tests can be run with other settings than the defaults, eg `JAVA_TOOL_OPTIONS=-Dkryo.fieldAccess=REFLECTION mvn -pl main test` or `JAVA_TOOL_OPTIONS=-Dkryo.codeGeneration=true mvn -pl main test`. With `-Dkryo.codeGeneration.backend=asm`, code generation uses ASM on Java 24+ too.
-* Eclipse: import the project in the `eclipse` directory, which needs a JDK 24+ JRE for `ClassFileWriter`.
-* The source code is formatted with the Eclipse formatter settings in `eclipse/code-format.xml`, which pull request builds check: `mvn -pl main formatter:format`.
-* The [benchmarks](benchmarks) have their own README.
 
 ## Quickstart
 
@@ -627,7 +610,7 @@ Comparators | `Collections.reverseOrder()`, `Collections.reverseOrder(Comparator
 Files and network | `File` and `InetSocketAddress` (not subclasses), `InetAddress`, `ByteBuffer`
 Kryo | Classes implementing [KryoSerializable](#kryoserializable)
 
-All other classes use the global default serializer, FieldSerializer unless it was changed, which also handles [records](#records). Lambdas use [ClosureSerializer](#closures).
+Every other class is serialized by the default serializer, which is FieldSerializer unless `setDefaultSerializer` was called. FieldSerializer also handles [records](#records). Lambdas use [ClosureSerializer](#closures).
 
 Some of these classes are JDK-internal, so when registration is required they can't be registered by name. Register them with an instance of the class instead:
 
@@ -1641,6 +1624,21 @@ Records are serialized by FieldSerializer in Kryo 6, which is 2.2 to 2.5 times f
 ![ArrayBenchmark](benchmarks/charts/array.svg)
 
 Kryo can be compared to many other serialization libraries in the [JVM Serializers](https://github.com/eishay/jvm-serializers/wiki) project. The benchmarks are small, dated, and homegrown rather than using JMH, so are less trustworthy. Also, it is very difficult to thoroughly compare serialization libraries using a benchmark. Libraries have many different features and often have different goals, so they may excel at solving completely different problems. To understand these benchmarks, the code being run and data being serialized should be analyzed and contrasted with your specific needs. Some serializers are highly optimized and use pages of code, others use only a few lines. This is good to show what is possible, but may not be a relevant comparison for many situations.
+
+## Development
+
+Building Kryo from source requires JDK 24+ and Maven. To build all artifacts, run:
+
+```
+mvn clean && mvn install
+```
+
+The sources are compiled for Java 17 with `-source 17`. JDK 24+ is needed only for `ClassFileWriter`, which uses the Class-File API and is loaded only on Java 24+; on older Java versions code generation uses ASM, an optional dependency. Because of this, IntelliJ IDEA must not compile with `--release`: untick "Use '--release' option for cross-compilation" in Settings > Build, Execution, Deployment > Compiler > Java Compiler, otherwise it reports the Class-File API as unavailable.
+
+* `mvn -pl main test` runs the tests. To run them on another Java version, pass its `java`, eg `mvn -pl main test -Djvm=/path/to/jdk17/bin/java`.
+* Eclipse: import the project in the `eclipse` directory, which needs a JDK 24+ JRE for `ClassFileWriter`.
+* The source code is formatted with the Eclipse formatter settings in `eclipse/code-format.xml`, which pull request builds check: `mvn -pl main formatter:format`.
+* The [benchmarks](benchmarks) have their own README.
 
 ## Links
 
