@@ -240,7 +240,7 @@ public class DefaultArraySerializers {
 		public boolean[] read (Kryo kryo, Input input, Class type) {
 			int length = input.readVarInt(true);
 			if (length == NULL) return null;
-			boolean[] array = new boolean[--length];
+			boolean[] array = new boolean[input.validateArrayLength(--length)];
 			for (int i = 0; i < length; i++)
 				array[i] = input.readBoolean();
 			return array;
@@ -339,10 +339,13 @@ public class DefaultArraySerializers {
 			int n = input.readVarInt(true);
 			if (n == NULL) return null;
 			n--;
-			Object[] object = (Object[])Array.newInstance(type.getComponentType(), n);
-			kryo.reference(object);
 			Class elementClass = type.getComponentType();
-			if (elementsAreSameType || kryo.isFinal(elementClass)) {
+			boolean sameType = elementsAreSameType || kryo.isFinal(elementClass);
+			// An element without a null marker or class can take 0 bytes, eg an object without fields.
+			Object[] object = (Object[])Array.newInstance(elementClass,
+				input.validateArrayLength(n, sameType && !elementsCanBeNull ? 0 : 1));
+			kryo.reference(object);
+			if (sameType) {
 				Serializer elementSerializer = kryo.getSerializer(elementClass);
 				if (elementsCanBeNull) {
 					for (int i = 0; i < n; i++)

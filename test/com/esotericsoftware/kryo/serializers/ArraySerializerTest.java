@@ -21,7 +21,10 @@ package com.esotericsoftware.kryo.serializers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
 
 import org.junit.jupiter.api.Test;
@@ -94,5 +97,36 @@ class ArraySerializerTest extends KryoTestCase {
 
 		kryo.setReferences(true);
 		roundTrip(44, array);
+	}
+
+	// All arrays check the length against maxArraySize before they are allocated.
+	@Test
+	void testMaxArraySize () {
+		kryo.register(boolean[].class);
+		kryo.register(int[].class);
+		kryo.register(String[].class);
+		kryo.register(Object[].class);
+		kryo.register(Empty.class);
+		kryo.register(Empty[].class);
+		for (Object array : new Object[] {new boolean[11], new int[11], new String[11], new Object[11], new Empty[11]}) {
+			Output output = new Output(64);
+			kryo.writeObject(output, array);
+			Input input = new Input(output.toBytes());
+			input.setMaxArraySize(10);
+			KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, array.getClass()));
+			assertTrue(ex.getMessage().contains("maxArraySize"), ex.getMessage());
+		}
+
+		// Elements of a final class without a null marker can take 0 bytes, so the length isn't checked against the bytes.
+		ObjectArraySerializer serializer = new ObjectArraySerializer(kryo, Empty[].class);
+		serializer.setElementsCanBeNull(false);
+		kryo.register(Empty[].class, serializer);
+		Output output = new Output(64);
+		kryo.writeObject(output, new Empty[] {new Empty(), new Empty(), new Empty()});
+		assertEquals(1, output.position());
+		assertEquals(3, kryo.readObject(new Input(output.toBytes()), Empty[].class).length);
+	}
+
+	public static final class Empty {
 	}
 }

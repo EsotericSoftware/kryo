@@ -64,6 +64,7 @@ import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.TimeZone;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -389,6 +390,67 @@ class DefaultSerializersTest extends KryoTestCase {
 		kryo.setReferences(true);
 		roundTrip(94, EnumSet.of(TestEnum.a, TestEnum.c)); // The name of EnumSet, not of the implementation class.
 		assertEquals(EnumSet.class, kryo.getRegistration(EnumSet.of(TestEnum.a).getClass()).getType());
+	}
+
+	// An enum set of an enum without constants is empty, so the element type is taken from the serialized form of the set.
+	@Test
+	void testEnumSetOfEnumWithoutConstants () {
+		kryo.register(EnumSet.class);
+		kryo.register(EmptyEnum.class);
+		EnumSet<EmptyEnum> set = roundTrip(3, EnumSet.noneOf(EmptyEnum.class));
+		assertEquals(EmptyEnum.class, EnumMapSerializer.enumType(set));
+	}
+
+	// Invalid enum data throws a KryoException that names the enum, not a NullPointerException.
+	@Test
+	void testInvalidEnumData () {
+		kryo.register(EnumSet.class);
+		kryo.register(EnumMap.class);
+		kryo.register(TestEnum.class);
+		kryo.register(String.class);
+
+		Output output = new Output(64);
+		kryo.writeObject(output, EnumSet.of(TestEnum.a));
+		byte[] bytes = output.toBytes();
+		bytes[bytes.length - 1] = 9; // Ordinal 8.
+		assertInvalid("Invalid ordinal for enum \"" + TestEnum.class.getName() + "\": 8", bytes, EnumSet.class);
+		bytes[bytes.length - 1] = 0; // Null.
+		assertInvalid("Invalid EnumSet element for enum \"" + TestEnum.class.getName() + "\": null", bytes, EnumSet.class);
+
+		output = new Output(64);
+		kryo.writeClass(output, String.class);
+		output.writeVarInt(0, true);
+		assertInvalid("Invalid EnumSet element type: java.lang.String", output.toBytes(), EnumSet.class);
+		output = new Output(64);
+		kryo.writeClass(output, null);
+		output.writeVarInt(0, true);
+		assertInvalid("Invalid EnumSet element type: null", output.toBytes(), EnumSet.class);
+
+		output = new Output(64);
+		EnumMap<TestEnum, Object> map = new EnumMap<>(TestEnum.class);
+		map.put(TestEnum.a, null);
+		kryo.writeObject(output, map);
+		bytes = output.toBytes();
+		bytes[bytes.length - 2] = 9; // Ordinal 8 of the key, followed by the null value.
+		assertInvalid("Invalid ordinal for enum \"" + TestEnum.class.getName() + "\": 8", bytes, EnumMap.class);
+	}
+
+	// The number of elements of an EnumSet is checked against maxArraySize before they are read.
+	@Test
+	void testEnumSetMaxArraySize () {
+		kryo.register(EnumSet.class);
+		kryo.register(TestEnum.class);
+		Output output = new Output(64);
+		kryo.writeObject(output, EnumSet.allOf(TestEnum.class));
+		Input input = new Input(output.toBytes());
+		input.setMaxArraySize(1);
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, EnumSet.class));
+		assertTrue(ex.getMessage().contains("maxArraySize"), ex.getMessage());
+	}
+
+	private void assertInvalid (String message, byte[] bytes, Class type) {
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(bytes), type));
+		assertTrue(ex.getMessage().startsWith(message), ex.getMessage());
 	}
 
 	@Test
@@ -755,7 +817,8 @@ class DefaultSerializersTest extends KryoTestCase {
 	void testSubclassWithoutConstructorArguments () {
 		kryo.register(Collections.reverseOrder().getClass());
 		for (Class type : new Class[] {FixedTreeSet.class, FixedSkipListSet.class, FixedPriorityQueue.class,
-			FixedPriorityBlockingQueue.class, FixedArrayBlockingQueue.class, FixedBlockingQueue.class, FixedBlockingDeque.class})
+			FixedPriorityBlockingQueue.class, FixedArrayBlockingQueue.class, FixedBlockingQueue.class, FixedBlockingDeque.class,
+			FixedTreeMap.class, FixedSkipListMap.class})
 			kryo.register(type);
 
 		// The comparator of the no-arg constructor is kept.
@@ -763,6 +826,11 @@ class DefaultSerializersTest extends KryoTestCase {
 			sorted.addAll(List.of(1, 2, 3));
 			assertEquals(List.of(3, 2, 1), new ArrayList<>(writeRead(sorted)));
 			assertEquals(List.of(3, 2, 1), new ArrayList<>(kryo.copy(sorted)));
+		}
+		for (Map<Integer, Integer> sorted : List.of(new FixedTreeMap(), new FixedSkipListMap())) {
+			sorted.putAll(Map.of(1, 1, 2, 2, 3, 3));
+			assertEquals(List.of(3, 2, 1), new ArrayList<>(writeRead(sorted).keySet()));
+			assertEquals(List.of(3, 2, 1), new ArrayList<>(kryo.copy(sorted).keySet()));
 		}
 		for (Queue<Integer> queue : List.of(new FixedPriorityQueue(), new FixedPriorityBlockingQueue())) {
 			queue.addAll(List.of(1, 2, 3));
@@ -789,6 +857,18 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	static class FixedSkipListSet extends ConcurrentSkipListSet<Integer> {
 		public FixedSkipListSet () {
+			super(Collections.reverseOrder());
+		}
+	}
+
+	static class FixedTreeMap extends TreeMap<Integer, Integer> {
+		public FixedTreeMap () {
+			super(Collections.reverseOrder());
+		}
+	}
+
+	static class FixedSkipListMap extends ConcurrentSkipListMap<Integer, Integer> {
+		public FixedSkipListMap () {
 			super(Collections.reverseOrder());
 		}
 	}
