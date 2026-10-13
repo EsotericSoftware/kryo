@@ -896,4 +896,21 @@ class UnsafeByteBufferInputOutputTest {
 		assertThrows(IllegalArgumentException.class, () -> output.writeBytes(null, 0, 1));
 		assertEquals(0, output.position());
 	}
+
+	@Test
+	void testReadArrayRangeOutOfBounds () {
+		UnsafeByteBufferInput input = new UnsafeByteBufferInput(new byte[] {1, 2, 3, 4, 5, 6, 7, 8});
+		assertThrows(IllegalArgumentException.class, () -> input.readBytes(null, 0, 1));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], -1, 2));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 0, -1));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 2, 3));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 5, 0));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 1, Integer.MAX_VALUE));
+		assertEquals(0, input.position());
+		byte[] bytes = new byte[4];
+		input.readBytes(bytes, 2, 2);
+		input.readBytes(bytes, 4, 0);
+		assertArrayEquals(new byte[] {0, 0, 1, 2}, bytes);
+		assertEquals(2, input.position());
+	}
 }
