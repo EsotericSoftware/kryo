@@ -54,6 +54,9 @@ import java.lang.reflect.RecordComponent;
  * FieldSerializer's compatibility drawbacks can be acceptable in many situations, such as when sending data over a network, but
  * may not be a good choice for long term data storage because the Java classes cannot evolve. Subclasses provided more flexible
  * compatibility.
+ * <p>
+ * A FieldSerializer and its subclasses belong to the Kryo instance they were created with and can't be shared with other Kryo
+ * instances, eg in a pool. Only stateless serializers can be shared.
  * @see Serializer
  * @see Kryo#register(Class, Serializer)
  * @see VersionFieldSerializer
