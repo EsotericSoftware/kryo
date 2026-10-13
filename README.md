@@ -1339,7 +1339,7 @@ public record Point(int x, int y) {}
 kryo.register(Point.class);
 ```
 
-FieldSerializer writes the record components sorted by name. When reading, it passes the values to the record's canonical constructor, so any validation in that constructor is applied to deserialized data. Components that are not present in the serialized data, for example because they were added later, are set to their default value (`0`, `false`, or `null`). Copying a record creates a new record and copies the components like other field values.
+FieldSerializer writes the record components sorted by name. When reading, it passes the values to the record's canonical constructor, so any validation in that constructor is applied to deserialized data. Components that are not present in the serialized data are set to their default value (`0`, `false`, or `null`), for example a component added later when older data is read with one of the subclasses below. Like for other classes, FieldSerializer itself can't read data written before a component was added or removed. Copying a record creates a new record and copies the components like other field values.
 
 The subclasses of FieldSerializer can also be used for records, for example CompatibleFieldSerializer or TaggedFieldSerializer to add or remove components without invalidating previously serialized bytes.
 
