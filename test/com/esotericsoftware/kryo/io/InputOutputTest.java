@@ -1321,4 +1321,39 @@ class InputOutputTest extends KryoTestCase {
 		// This test should pass as long as no exception thrown
 	}
 
+	@Test
+	void testBulkWriteCountOverflow () {
+		// The byte count of a huge array overflows int. The bulk path must not be taken with that negative count, so the values
+		// are written one at a time, which fails on the short array instead of writing past the buffer.
+		ArrayList<Integer> required = new ArrayList<>();
+		assertBulkWriteCountOverflow(new Output(16) {
+			protected boolean require (int count) {
+				required.add(count);
+				return super.require(count);
+			}
+		});
+		assertBulkWriteCountOverflow(new ByteBufferOutput(16) {
+			protected boolean require (int count) {
+				required.add(count);
+				return super.require(count);
+			}
+		});
+		for (int count : required)
+			assertTrue(count >= 0, "required: " + count);
+	}
+
+	private void assertBulkWriteCountOverflow (Output output) {
+		Class<ArrayIndexOutOfBoundsException> type = ArrayIndexOutOfBoundsException.class;
+		assertThrows(type, () -> output.writeInts(new int[1], 0, 1 << 29));
+		output.reset();
+		assertThrows(type, () -> output.writeLongs(new long[1], 0, 1 << 28));
+		output.reset();
+		assertThrows(type, () -> output.writeFloats(new float[1], 0, 1 << 29));
+		output.reset();
+		assertThrows(type, () -> output.writeDoubles(new double[1], 0, 1 << 28));
+		output.reset();
+		assertThrows(type, () -> output.writeShorts(new short[1], 0, 1 << 30));
+		output.reset();
+		assertThrows(type, () -> output.writeChars(new char[1], 0, 1 << 30));
+	}
 }

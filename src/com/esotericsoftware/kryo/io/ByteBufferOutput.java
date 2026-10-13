@@ -698,7 +698,7 @@ public class ByteBufferOutput extends Output {
 	// Primitive arrays:
 
 	public void writeInts (int[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2) {
+		if (count <= capacity >> 2) { // Not capacity >= count << 2, which overflows.
 			require(count << 2);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -716,7 +716,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeLongs (long[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3) {
+		if (count <= capacity >> 3) {
 			require(count << 3);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -738,7 +738,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeFloats (float[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2) {
+		if (count <= capacity >> 2) {
 			require(count << 2);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -756,7 +756,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3) {
+		if (count <= capacity >> 3) {
 			require(count << 3);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -778,7 +778,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeShorts (short[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1) {
+		if (count <= capacity >> 1) {
 			require(count << 1);
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];
@@ -793,7 +793,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeChars (char[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1) {
+		if (count <= capacity >> 1) {
 			require(count << 1);
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];
