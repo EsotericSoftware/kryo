@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
@@ -49,18 +50,24 @@ class CollectionSerializerTest extends KryoTestCase {
 	}
 
 	// A corrupt negative size throws a KryoException, not an IllegalArgumentException from the constructor, and doesn't read an
-	// empty collection where the size isn't used as a capacity.
+	// empty collection where the size isn't used as a capacity. MIN_VALUE must not wrap to MAX_VALUE.
 	@Test
 	void testNegativeSize () {
-		kryo.register(ArrayList.class);
-		kryo.register(TreeSet.class);
-		Output output = new Output(16);
-		output.writeVarIntFlag(false, -1, true); // Size + 1.
-		byte[] bytes = output.toBytes();
-		for (Class type : new Class[] {ArrayList.class, TreeSet.class}) {
-			for (Input input : new Input[] {new Input(bytes), new Input(new ByteArrayInputStream(bytes))}) {
-				KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, type));
-				assertTrue(ex.getMessage().startsWith("Declared size is negative: -2"), ex.getMessage());
+		for (Format format : Format.values()) {
+			Kryo kryo = new Kryo();
+			kryo.setFormat(format);
+			kryo.register(ArrayList.class);
+			kryo.register(TreeSet.class);
+			for (int length : new int[] {-1, Integer.MIN_VALUE}) { // Size + 1.
+				Output output = new Output(16);
+				output.writeVarIntFlag(false, length, true);
+				byte[] bytes = output.toBytes();
+				for (Class type : new Class[] {ArrayList.class, TreeSet.class}) {
+					for (Input input : new Input[] {new Input(bytes), new Input(new ByteArrayInputStream(bytes))}) {
+						KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, type));
+						assertTrue(ex.getMessage().startsWith("Declared size is negative: " + (length - 1L)), ex.getMessage());
+					}
+				}
 			}
 		}
 	}

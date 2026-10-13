@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Kryo.Format;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
@@ -248,6 +249,8 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		} else
 			length = input.readVarInt(true);
 		if (length == 0) return null;
+		// Checked before length-- would wrap MIN_VALUE to MAX_VALUE.
+		if (length < 0) throw new KryoException("Declared size is negative: " + (length - 1L));
 		length--;
 
 		T map = create(kryo, input, type, input.clampSize(length));

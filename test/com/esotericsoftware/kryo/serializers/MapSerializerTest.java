@@ -53,7 +53,7 @@ class MapSerializerTest extends KryoTestCase {
 	}
 
 	// A corrupt negative size throws a KryoException, not an IllegalArgumentException from the constructor, and doesn't read an
-	// empty map where the size isn't used as a capacity.
+	// empty map where the size isn't used as a capacity. MIN_VALUE must not wrap to MAX_VALUE.
 	@Test
 	void testNegativeSize () {
 		for (Format format : Format.values()) {
@@ -61,16 +61,18 @@ class MapSerializerTest extends KryoTestCase {
 			kryo.setFormat(format);
 			kryo.register(HashMap.class);
 			kryo.register(TreeMap.class);
-			Output output = new Output(16);
-			if (format == Format.KRYO5)
-				output.writeVarInt(-1, true); // Size + 1.
-			else
-				output.writeVarIntFlag(false, -1, true);
-			byte[] bytes = output.toBytes();
-			for (Class type : new Class[] {HashMap.class, TreeMap.class}) {
-				for (Input input : new Input[] {new Input(bytes), new Input(new ByteArrayInputStream(bytes))}) {
-					KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, type));
-					assertTrue(ex.getMessage().startsWith("Declared size is negative: -2"), ex.getMessage());
+			for (int length : new int[] {-1, Integer.MIN_VALUE}) { // Size + 1.
+				Output output = new Output(16);
+				if (format == Format.KRYO5)
+					output.writeVarInt(length, true);
+				else
+					output.writeVarIntFlag(false, length, true);
+				byte[] bytes = output.toBytes();
+				for (Class type : new Class[] {HashMap.class, TreeMap.class}) {
+					for (Input input : new Input[] {new Input(bytes), new Input(new ByteArrayInputStream(bytes))}) {
+						KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, type));
+						assertTrue(ex.getMessage().startsWith("Declared size is negative: " + (length - 1L)), ex.getMessage());
+					}
 				}
 			}
 		}
