@@ -503,9 +503,11 @@ public class DefaultSerializers {
 			setAcceptsNull(true);
 		}
 
+		private final Class<? extends Enum> type;
 		private Object[] enumConstants;
 
 		public EnumSerializer (Class<? extends Enum> type) {
+			this.type = type;
 			enumConstants = type.getEnumConstants();
 			// We allow the serialization of the (abstract!) Enum.class (instead of an actual "user" enum),
 			// which also creates an EnumSerializer instance during Kryo.writeClass with the following trace:
@@ -524,7 +526,7 @@ public class DefaultSerializers {
 			output.writeVarInt(object.ordinal() + 1, true);
 		}
 
-		public Enum read (Kryo kryo, Input input, Class<? extends Enum> type) {
+		public Enum read (Kryo kryo, Input input, Class<? extends Enum> ignored) {
 			int ordinal = input.readVarInt(true);
 			if (ordinal == NULL) return null;
 			ordinal--;
@@ -552,11 +554,18 @@ public class DefaultSerializers {
 
 		public EnumSet read (Kryo kryo, Input input, Class<? extends EnumSet> type) {
 			Registration registration = kryo.readClass(input);
-			EnumSet object = EnumSet.noneOf(registration.getType());
+			if (registration == null || !registration.getType().isEnum())
+				throw new KryoException(
+					"Invalid EnumSet element type: " + (registration == null ? null : registration.getType().getName()));
+			Class enumType = registration.getType();
+			EnumSet object = EnumSet.noneOf(enumType);
 			Serializer serializer = registration.getSerializer();
 			int length = input.readVarInt(true);
-			for (int i = 0; i < length; i++)
-				object.add(serializer.read(kryo, input, null));
+			for (int i = 0; i < length; i++) {
+				Object element = serializer.read(kryo, input, enumType);
+				if (element == null) throw new KryoException("Invalid EnumSet element for enum \"" + enumType.getName() + "\": null");
+				object.add(element);
+			}
 			return object;
 		}
 
