@@ -1381,6 +1381,9 @@ class InputOutputTest extends KryoTestCase {
 		assertTrue(ex.getMessage().contains("negative"), ex.getMessage());
 		assertThrows(KryoException.class, () -> input.validateArrayLength(Integer.MIN_VALUE, 4));
 		assertEquals(0, input.validateArrayLength(0));
+		ex = assertThrows(KryoException.class, () -> input.clampSize(-1));
+		assertTrue(ex.getMessage().contains("negative"), ex.getMessage());
+		assertEquals(0, input.clampSize(0));
 	}
 
 	@Test
