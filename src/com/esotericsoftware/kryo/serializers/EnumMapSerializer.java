@@ -58,6 +58,17 @@ public class EnumMapSerializer extends MapSerializer<EnumMap> {
 		return new EnumMap(registration.getType());
 	}
 
+	/** Throws a KryoException with the cause if the data contains a null key or a key of another enum, which {@code EnumMap.put}
+	 * rejects with a NullPointerException or ClassCastException. The same exceptions from a key or value serializer are wrapped
+	 * too, with their message. */
+	public EnumMap read (Kryo kryo, Input input, Class<? extends EnumMap> type) {
+		try {
+			return super.read(kryo, input, type);
+		} catch (NullPointerException | ClassCastException ex) {
+			throw new KryoException("Unable to read EnumMap: " + ex, ex);
+		}
+	}
+
 	protected EnumMap createCopy (Kryo kryo, EnumMap original) {
 		return new EnumMap(original);
 	}
