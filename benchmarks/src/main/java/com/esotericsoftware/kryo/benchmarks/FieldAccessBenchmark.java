@@ -42,8 +42,10 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
-/** Compares the FieldSerializer field access implementations, selected with {@link FieldSerializerConfig#setFieldAccess(FieldAccessType)}. Each
- * parameter combination runs in its own fork, so the property is set before FieldSerializer reads it. */
+/** Compares the field access implementations of FieldSerializer, selected for the Kryo instance with
+ * {@link FieldSerializerConfig#setFieldAccess(FieldAccessType)}, when writing, reading and copying objects of different types,
+ * eg with private or final fields. With {@code polluted}, other classes are serialized first, so the JIT sees megamorphic call
+ * sites. */
 public class FieldAccessBenchmark {
 	@Benchmark
 	public Object write (BenchmarkState state) {
