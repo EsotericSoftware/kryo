@@ -113,13 +113,13 @@ public class ByteBufferOutput extends Output {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}
 
-	/** Allocates a new direct ByteBuffer with the specified bytes and sets it as the new buffer.
+	/** Allocates a new direct ByteBuffer of {@code count} bytes with the specified bytes and sets it as the new buffer.
 	 * @see #setBuffer(ByteBuffer) */
 	public void setBuffer (byte[] bytes, int offset, int count) {
-		ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
+		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
+		ByteBuffer buffer = ByteBuffer.allocateDirect(count);
 		buffer.put(bytes, offset, count);
 		setBufferPosition(buffer, 0);
-		setBufferLimit(buffer, bytes.length);
 		setBuffer(buffer);
 	}
 
