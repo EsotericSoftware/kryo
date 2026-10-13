@@ -225,4 +225,12 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 			assertEquals(3, flushes[0]);
 		}
 	}
+
+	@Test
+	void testConstructorOffsetCount () {
+		ByteBufferInput input = new ByteBufferInput(new byte[] {1, 2, 3, 4, 5}, 1, 3);
+		assertEquals(3, input.limit());
+		assertArrayEquals(new byte[] {2, 3, 4}, input.readBytes(3));
+		assertTrue(input.end());
+	}
 }

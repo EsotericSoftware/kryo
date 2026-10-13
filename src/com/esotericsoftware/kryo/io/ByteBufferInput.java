@@ -57,12 +57,12 @@ public class ByteBufferInput extends Input {
 		this(bytes, 0, bytes.length);
 	}
 
-	/** Creates a new Input for reading from a {@link ByteBuffer} which is filled with the specified bytes.
-	 * @see #setBuffer(byte[], int, int) */
+	/** Creates a new Input for reading from a direct {@link ByteBuffer} which is filled with count bytes of the specified array,
+	 * starting at offset. */
 	public ByteBufferInput (byte[] bytes, int offset, int count) {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
-		ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
-		buffer.put(bytes);
+		ByteBuffer buffer = ByteBuffer.allocateDirect(count);
+		buffer.put(bytes, offset, count);
 		flipBuffer(buffer);
 		setBuffer(buffer);
 	}
