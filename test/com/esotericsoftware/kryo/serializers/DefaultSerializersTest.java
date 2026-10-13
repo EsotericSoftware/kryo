@@ -715,6 +715,24 @@ class DefaultSerializersTest extends KryoTestCase {
 		bytes[bytes.length - 2] = 0; // The key, followed by the null value.
 		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(bytes), EnumMap.class));
 		assertTrue(ex.getMessage().startsWith("Invalid EnumMap data"), ex.getMessage());
+		assertInstanceOf(NullPointerException.class, ex.getCause());
+
+		// A key of another enum: the data of a map of TestEnumWithMethods keys with the key type patched to TestEnum.
+		kryo.register(TestEnumWithMethods.class);
+		EnumMap<TestEnumWithMethods, Object> other = new EnumMap<>(TestEnumWithMethods.class);
+		other.put(TestEnumWithMethods.a, null);
+		output = new Output(64);
+		kryo.writeObject(output, other);
+		byte[] otherBytes = output.toBytes();
+		bytes[bytes.length - 2] = 1; // Restore the key.
+		assertEquals(bytes.length, otherBytes.length);
+		int keyType = 0;
+		while (bytes[keyType] == otherBytes[keyType])
+			keyType++;
+		otherBytes[keyType] = bytes[keyType];
+		ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(otherBytes), EnumMap.class));
+		assertTrue(ex.getMessage().startsWith("Invalid EnumMap data"), ex.getMessage());
+		assertInstanceOf(ClassCastException.class, ex.getCause());
 	}
 
 	@Test
