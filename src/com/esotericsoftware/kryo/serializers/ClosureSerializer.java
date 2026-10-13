@@ -139,11 +139,21 @@ public class ClosureSerializer extends Serializer {
 		}
 	}
 
+	/** Creates a new closure with copies of the captured arguments. */
 	public Object copy (Kryo kryo, Object original) {
 		ClosureClass closureClass = Caches.closureClasses.get(original.getClass());
 		SerializedLambda lambda = toSerializedLambda(closureClass, original);
+		Class<?> capturingClass = getCapturingClass(closureClass, original, lambda);
+		int count = lambda.getCapturedArgCount();
+		Object[] capturedArgs = new Object[count];
+		for (int i = 0; i < count; i++)
+			capturedArgs[i] = kryo.copy(lambda.getCapturedArg(i));
+		lambda = new SerializedLambda(capturingClass, lambda.getFunctionalInterfaceClass(),
+			lambda.getFunctionalInterfaceMethodName(), lambda.getFunctionalInterfaceMethodSignature(), lambda.getImplMethodKind(),
+			lambda.getImplClass(), lambda.getImplMethodName(), lambda.getImplMethodSignature(), lambda.getInstantiatedMethodType(),
+			capturedArgs);
 		try {
-			return readResolve(getCapturingClass(closureClass, original, lambda), lambda);
+			return readResolve(capturingClass, lambda);
 		} catch (Exception ex) {
 			throw new KryoException("Error copying closure.", ex);
 		}

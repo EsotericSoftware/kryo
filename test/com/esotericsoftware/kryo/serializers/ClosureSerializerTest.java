@@ -28,6 +28,8 @@ import com.esotericsoftware.kryo.io.Output;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
@@ -116,6 +118,28 @@ class ClosureSerializerTest extends KryoTestCase {
 		final Callable<Integer> closure2 = kryo.copy(closure1);
 
 		doAssertEquals(closure1, closure2);
+	}
+
+	// The captured arguments are copied, unless the copy is shallow.
+	@Test
+	void testCopyCapturedArguments () {
+		kryo.register(ArrayList.class);
+		ArrayList<Integer> list = new ArrayList<>(List.of(1, 2));
+		Supplier<List<Integer>> closure1 = (Supplier<List<Integer>> & java.io.Serializable)() -> list;
+
+		Supplier<List<Integer>> closure2 = kryo.copy(closure1);
+		assertNotSame(closure1, closure2);
+		assertNotSame(list, closure2.get());
+		assertEquals(list, closure2.get());
+
+		closure2 = kryo.copyShallow(closure1);
+		assertNotSame(closure1, closure2);
+		assertSame(list, closure2.get());
+
+		// With copy references, an object captured twice is copied once.
+		ArrayList<Integer> alias = list;
+		Supplier<Boolean> closure3 = (Supplier<Boolean> & java.io.Serializable)() -> list == alias;
+		assertTrue(kryo.copy(closure3).get());
 	}
 
 	@Test
