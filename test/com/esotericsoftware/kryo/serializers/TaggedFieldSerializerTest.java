@@ -112,6 +112,36 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testFieldSettingsUnchanged () {
+		// Writing and reading the classes of the values must not change the settings of the fields.
+		for (boolean chunked : new boolean[] {false, true}) {
+			Kryo kryo = new Kryo();
+			kryo.setRegistrationRequired(false);
+			TaggedFieldSerializer serializer = new TaggedFieldSerializer(kryo, TestClass.class);
+			serializer.getTaggedFieldSerializerConfig().setChunkedEncoding(chunked);
+			serializer.getTaggedFieldSerializerConfig().setReadUnknownTagData(true);
+			serializer.updateFields();
+			kryo.register(TestClass.class, serializer);
+			TestClass object = new TestClass();
+			object.child = new TestClass();
+			object.other = new AnotherClass();
+			object.other.value = "meow";
+			Output output = new Output(1024);
+			kryo.writeObject(output, object);
+			CompatibleFieldSerializerTest.assertFieldSettings(serializer);
+			assertEquals(object, kryo.readObject(new Input(output.toBytes()), TestClass.class));
+			CompatibleFieldSerializerTest.assertFieldSettings(serializer);
+
+			// With unknown tag data, the fields are read without the generated code.
+			serializer.removeField("text");
+			TestClass read = kryo.readObject(new Input(output.toBytes()), TestClass.class);
+			assertEquals("something", read.text);
+			assertEquals(object.other.value, read.other.value);
+			CompatibleFieldSerializerTest.assertFieldSettings(serializer);
+		}
+	}
+
+	@Test
 	void testAddedField () {
 		TestClass object1 = new TestClass();
 		object1.child = new TestClass();

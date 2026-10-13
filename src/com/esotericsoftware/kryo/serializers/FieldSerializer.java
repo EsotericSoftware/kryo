@@ -324,6 +324,52 @@ public class FieldSerializer<T> extends Serializer<T> {
 		}
 	}
 
+	/** Writes the class of the field value, then the value without null marker, like the generated code when classes are written,
+	 * so the data can be read without the field. Doesn't change the settings of the field. */
+	void writeFieldWithClass (CachedField field, Output output, Object object) {
+		if (field instanceof ReflectField reflectField) {
+			Object value;
+			try {
+				value = reflectField.get(object);
+			} catch (Throwable t) {
+				throw new KryoException("Error accessing field: " + field.name + " (" + object.getClass().getName() + ")", t);
+			}
+			reflectField.writeValueWithClass(output, object, value);
+			return;
+		}
+		// A primitive or String field, which writes its value the same way after the class.
+		Class valueClass = field.classOfValue(object);
+		kryo.writeClass(output, valueClass);
+		if (valueClass != null) writeField(field, output, object);
+	}
+
+	/** Reads a field like {@link #readField(CachedField, Input, Object, Object[])}. If the class of the value was read, an object
+	 * value is read without null marker with the serializer for the class, like the generated code when classes are written.
+	 * Doesn't change the settings of the field.
+	 * @param valueClass May be null if no class was read. */
+	void readField (CachedField field, Input input, Object object, Object[] values, Class valueClass) {
+		// Without a value class, or for a primitive or String field, which reads its value the same way.
+		if (valueClass == null || !(field instanceof ReflectField reflectField)) {
+			readField(field, input, object, values);
+			return;
+		}
+		Object value = reflectField.readValue(input, valueClass);
+		try {
+			if (values != null)
+				values[field.index] = value;
+			else if (field.isFinal)
+				setFinal(field, object, value);
+			else
+				reflectField.set(object, value);
+		} catch (IllegalAccessException ex) {
+			throw ReflectField.accessError(field.field, ex);
+		} catch (Throwable t) {
+			KryoException ex = ReflectField.error(t);
+			ex.addTrace(field.name + " (" + type.getName() + ")");
+			throw ex;
+		}
+	}
+
 	/** Reads a field and sets it, with {@link #setFinal(CachedField, Object, Object)} for a final field, or stores its value for a
 	 * record, naming the field in the exception if reading fails. */
 	void readField (CachedField field, Input input, Object object, Object[] values) {

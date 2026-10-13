@@ -1210,6 +1210,42 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	public record OldPrimitiveRecord(long x) { }
 
 	@Test
+	void testFieldSettingsUnchanged () {
+		// Writing and reading the classes of the values must not change the settings of the fields.
+		for (boolean chunked : new boolean[] {false, true}) {
+			Kryo kryo = new Kryo();
+			kryo.setRegistrationRequired(false);
+			CompatibleFieldSerializer serializer = new CompatibleFieldSerializer(kryo, TestClass.class);
+			serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(chunked);
+			kryo.register(TestClass.class, serializer);
+			TestClass object = new TestClass();
+			object.child = new TestClass();
+			object.other = new AnotherClass();
+			Output output = new Output(1024);
+			kryo.writeObject(output, object);
+			assertFieldSettings(serializer);
+			assertEquals(object, kryo.readObject(new Input(output.toBytes()), TestClass.class));
+			assertFieldSettings(serializer);
+
+			// With unknown field data, the fields are read without the generated code.
+			serializer.removeField("text");
+			TestClass read = kryo.readObject(new Input(output.toBytes()), TestClass.class);
+			assertEquals("something", read.text);
+			assertEquals(object.other, read.other);
+			assertFieldSettings(serializer);
+		}
+	}
+
+	static void assertFieldSettings (FieldSerializer serializer) {
+		for (String name : new String[] {"child", "other"}) {
+			FieldSerializer.CachedField field = serializer.getField(name);
+			assertNull(field.getValueClass(), name);
+			assertTrue(field.getCanBeNull(), name);
+			assertTrue(field.getReuseSerializer(), name);
+		}
+	}
+
+	@Test
 	void testReadThenWriteWithoutReset () {
 		// With autoReset false, field names read in the object graph must not prevent writing them.
 		for (boolean chunked : new boolean[] {false, true}) {
