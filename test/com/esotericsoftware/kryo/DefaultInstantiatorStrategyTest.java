@@ -81,6 +81,19 @@ public class DefaultInstantiatorStrategyTest {
         assertSame(ErrorConstructor.error, assertThrows(Error.class, () -> tryInstantiate(ErrorConstructor.class)));
     }
 
+    @Test
+    public void testPublicConstructorOfClassInPackageNotExported() throws Exception {
+        // sun.nio.cs.UTF_8 is public and has a public no-arg constructor, but java.base doesn't export sun.nio.cs, so the
+        // constructor can't be called and the fallback strategy is used.
+        Class type = Class.forName("sun.nio.cs.UTF_8");
+        assertTrue(java.lang.reflect.Modifier.isPublic(type.getModifiers()));
+        assertTrue(java.lang.reflect.Modifier.isPublic(type.getDeclaredConstructor().getModifiers()));
+        Object object = new DefaultInstantiatorStrategy(new StdInstantiatorStrategy()).newInstantiatorOf(type).newInstance();
+        assertEquals(type, object.getClass());
+        // Without a fallback strategy, the class can't be created.
+        assertThrows(KryoException.class, () -> new DefaultInstantiatorStrategy().newInstantiatorOf(type));
+    }
+
         public void tryInstantiate(Class type) {
         instantiatorStrategy.newInstantiatorOf(type).newInstance();
     }
