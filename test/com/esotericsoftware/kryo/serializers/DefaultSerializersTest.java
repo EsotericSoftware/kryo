@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -40,7 +41,9 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.PriorityQueue;
@@ -365,6 +368,33 @@ class DefaultSerializersTest extends KryoTestCase {
 		kryo = new Kryo();
 		kryo.setRegistrationRequired(false);
 		roundTrip(85, TestEnumWithMethods.c);
+	}
+
+	// A null key or a key of another enum, which EnumMap rejects, throws a KryoException with the cause.
+	@Test
+	void testInvalidEnumMapKey () {
+		kryo.register(TestEnum.class);
+		kryo.register(TestEnumWithMethods.class);
+		EnumMapSerializer serializer = new EnumMapSerializer(TestEnum.class);
+
+		HashMap<TestEnum, Object> nullKey = new HashMap<>();
+		nullKey.put(null, null);
+		Output output = new Output(64);
+		kryo.writeObject(output, nullKey, new MapSerializer());
+		byte[] nullKeyBytes = output.toBytes();
+		KryoException ex = assertThrows(KryoException.class,
+			() -> kryo.readObject(new Input(nullKeyBytes), EnumMap.class, serializer));
+		assertTrue(ex.getMessage().startsWith("Unable to read EnumMap"), ex.getMessage());
+		assertInstanceOf(NullPointerException.class, ex.getCause());
+
+		EnumMap<TestEnumWithMethods, Object> other = new EnumMap<>(TestEnumWithMethods.class);
+		other.put(TestEnumWithMethods.a, null);
+		output = new Output(64);
+		kryo.writeObject(output, other, new EnumMapSerializer(TestEnumWithMethods.class));
+		byte[] otherBytes = output.toBytes();
+		ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(otherBytes), EnumMap.class, serializer));
+		assertTrue(ex.getMessage().startsWith("Unable to read EnumMap"), ex.getMessage());
+		assertInstanceOf(ClassCastException.class, ex.getCause());
 	}
 
 	@Test

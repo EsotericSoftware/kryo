@@ -977,6 +977,7 @@ public class Input extends InputStream implements Poolable {
 	 * is bounded only by {@code maxArraySize} and the overflow check.
 	 * @param bytesPerElement the minimum number of bytes each element occupies in the input. */
 	public int validateArrayLength (int length, int bytesPerElement) {
+		if (length < 0) throw new KryoException("Declared size is negative: " + length);
 		if (length > maxArraySize)
 			throw new KryoException("Declared size larger than maxArraySize: " + length + " > " + maxArraySize);
 		long bytes = (long)length * bytesPerElement;

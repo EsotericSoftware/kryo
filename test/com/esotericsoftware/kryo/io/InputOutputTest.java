@@ -1325,6 +1325,15 @@ class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
+	void testNegativeArrayLength () {
+		Input input = new Input(new byte[16]);
+		KryoException ex = assertThrows(KryoException.class, () -> input.validateArrayLength(-1));
+		assertTrue(ex.getMessage().contains("negative"), ex.getMessage());
+		assertThrows(KryoException.class, () -> input.validateArrayLength(Integer.MIN_VALUE, 4));
+		assertEquals(0, input.validateArrayLength(0));
+	}
+
+	@Test
 	void testReadBooleanNonzero () {
 		// Any nonzero byte is true, as with readBooleans and the Unsafe inputs.
 		assertTrue(new Input(new byte[] {2}).readBoolean());
