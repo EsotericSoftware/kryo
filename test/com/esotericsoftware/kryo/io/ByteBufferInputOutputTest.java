@@ -236,6 +236,22 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 	}
 
 	@Test
+	void testSetBufferOffsetCount () {
+		// The buffer holds the count bytes from offset, like the ByteBufferInput constructor.
+		ByteBufferOutput output = new ByteBufferOutput();
+		output.setBuffer(new byte[] {1, 2, 3, 4, 5}, 1, 3);
+		assertEquals(0, output.position());
+		assertEquals(3, output.getMaxCapacity());
+		ByteBuffer buffer = output.getByteBuffer();
+		assertEquals(3, buffer.capacity());
+		assertEquals(3, buffer.limit());
+		assertEquals(2, buffer.get(0));
+		assertEquals(4, buffer.get(2));
+		output.writeBytes(new byte[] {6, 7, 8});
+		assertArrayEquals(new byte[] {6, 7, 8}, output.toBytes());
+	}
+
+	@Test
 	void testWriteAsciiFullBuffer () {
 		// Writing ASCII to a full buffer must make room instead of looping forever.
 		String value = "abcdefghijklmnopqrstuvwxyz0123456789";
