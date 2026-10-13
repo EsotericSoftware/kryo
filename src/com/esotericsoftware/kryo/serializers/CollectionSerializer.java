@@ -264,7 +264,6 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 					if (registration == null) { // All elements are null.
 						for (int i = 0; i < length; i++)
 							collection.add(null);
-						kryo.getGenerics().popGenericType();
 						return collection;
 					}
 					elementClass = registration.getType();
