@@ -993,7 +993,7 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
 }
 ```
 
-For serializers which pass type parameter information for nested objects in the object graph (somewhat advanced usage), first a GenericsHierarchy is built with Generics `buildHierarchy` to store the type parameters for a class. During serialization, Generics `pushTypeVariables` is called before generic types are resolved (if any). If >0 is returned, this must be followed by Generics `popTypeVariables`. See FieldSerializer for an example.
+For serializers which pass type parameter information for nested objects in the object graph (somewhat advanced usage), first a GenericsHierarchy is built with Generics `buildHierarchy` to store the type parameters for a class. During serialization, Generics `pushTypeVariables` is called before generic types are resolved (if any), also if the declared type returned by `nextGenericType` is null, so the type variables don't resolve to those of an enclosing object of the same class. If >0 is returned, this must be followed by Generics `popTypeVariables`. See FieldSerializer for an example.
 
 ```java
 public class SomeClass<T> {
@@ -1010,12 +1010,9 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
    public void write (Kryo kryo, Output output, SomeClass object) {
       Class valueClass = null;
       Generics generics = kryo.getGenerics();
-      int pop = 0;
-      GenericType genericType = generics.nextGenericType();
-      if (genericType != null) {
-         pop = generics.pushTypeVariables(genericsHierarchy, genericType);
-         valueClass = genericType.getTypeParameters()[0].resolve(generics);
-      }
+      GenericType genericType = generics.nextGenericType(); // May be null.
+      int pop = generics.pushTypeVariables(genericsHierarchy, genericType);
+      if (genericType != null) valueClass = genericType.getTypeParameters()[0].resolve(generics);
 
       if (valueClass != null && kryo.isFinal(valueClass)) {
          Serializer serializer = kryo.getSerializer(valueClass);
@@ -1032,12 +1029,9 @@ public class SomeClassSerializer extends Serializer<SomeClass> {
    public SomeClass read (Kryo kryo, Input input, Class<? extends SomeClass> type) {
       Class valueClass = null;
       Generics generics = kryo.getGenerics();
-      int pop = 0;
-      GenericType genericType = generics.nextGenericType();
-      if (genericType != null) {
-         pop = generics.pushTypeVariables(genericsHierarchy, genericType);
-         valueClass = genericType.getTypeParameters()[0].resolve(generics);
-      }
+      GenericType genericType = generics.nextGenericType(); // May be null.
+      int pop = generics.pushTypeVariables(genericsHierarchy, genericType);
+      if (genericType != null) valueClass = genericType.getTypeParameters()[0].resolve(generics);
 
       SomeClass object = new SomeClass();
       kryo.reference(object);
