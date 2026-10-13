@@ -1116,7 +1116,7 @@ Upgrading any dependency is a significant event, but a serialization library is 
 
 * At development time serialization compatibility is tested for the different binary formats and default serializers.
 * For each release a [changelog](https://github.com/EsotericSoftware/kryo/releases) is provided that also contains a section reporting the serialization, binary, and source compatibilities.
-* For reporting binary and source compatibility [japi-compliance-checker](https://github.com/lvc/japi-compliance-checker/) is used.
+* The build checks binary and source compatibility with the last release with [japicmp](https://github.com/siom79/japicmp). The compatibility reports of the releases in [compat_reports](compat_reports) are generated with [japi-compliance-checker](https://github.com/lvc/japi-compliance-checker/).
 
 ## Interoperability
 
