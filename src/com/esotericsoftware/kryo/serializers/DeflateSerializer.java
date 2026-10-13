@@ -65,7 +65,9 @@ public class DeflateSerializer extends Serializer {
 		try {
 			InputChunked inputChunked = new InputChunked(input, 256);
 			InflaterInputStream inflaterStream = new InflaterInputStream(inputChunked, inflater);
-			Object object = serializer.read(kryo, new Input(inflaterStream, 256), type);
+			Input inflaterInput = new Input(inflaterStream, 256);
+			inflaterInput.setMaxArraySize(input.getMaxArraySize());
+			Object object = serializer.read(kryo, inflaterInput, type);
 			// Skip compressed bytes the inflater didn't need, eg the end of the last deflate block, and the end of the chunks.
 			inputChunked.nextChunk();
 			return object;

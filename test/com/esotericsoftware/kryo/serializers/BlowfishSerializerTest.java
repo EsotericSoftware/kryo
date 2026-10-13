@@ -19,7 +19,13 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ByteArraySerializer;
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.StringSerializer;
 
 import javax.crypto.KeyGenerator;
@@ -34,5 +40,21 @@ class BlowfishSerializerTest extends KryoTestCase {
 		byte[] key = KeyGenerator.getInstance("Blowfish").generateKey().getEncoded();
 		kryo.register(String.class, new BlowfishSerializer(new StringSerializer(), key));
 		roundTrip(49, "abcdefabcdefabcdefabcdefabcdefabcdefabcdef");
+	}
+
+	// The input the decrypted object is read from has the maxArraySize of the outer input.
+	@Test
+	void testMaxArraySize () throws Exception {
+		byte[] key = KeyGenerator.getInstance("Blowfish").generateKey().getEncoded();
+		BlowfishSerializer serializer = new BlowfishSerializer(new ByteArraySerializer(), key);
+		Output output = new Output(64);
+		kryo.writeObject(output, new byte[11], serializer);
+		Input input = new Input(output.toBytes());
+		input.setMaxArraySize(11);
+		assertEquals(11, kryo.readObject(input, byte[].class, serializer).length);
+		Input limited = new Input(output.toBytes());
+		limited.setMaxArraySize(10);
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(limited, byte[].class, serializer));
+		assertTrue(ex.getMessage().contains("maxArraySize"), ex.getMessage());
 	}
 }
