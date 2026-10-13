@@ -98,6 +98,8 @@ class CachedFields implements Comparator<CachedField> {
 	static String codeGenerationUnavailable () {
 		if (isAndroid) return "Code generation is not available on Android.";
 		if (isNativeImage) return "Code generation is not available in a native image.";
+		if (javaVersion() >= 24) // The Class-File API is available, so the ASM backend was selected.
+			return "Code generation with the ASM backend (kryo.codeGeneration.backend=asm) needs ASM on the classpath (org.ow2.asm:asm).";
 		return "Code generation needs Java 24 or later, or ASM on the classpath (org.ow2.asm:asm), this is Java "
 			+ javaVersion() + " without ASM.";
 	}
