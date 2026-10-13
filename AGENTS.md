@@ -13,6 +13,7 @@ Things that are not in the README, MIGRATION.md or obvious from the code. `kryo-
 
 - `mvn -pl main test` runs the tests. `main-versioned` runs no tests; `verify` smoke tests its shaded jar (`main-versioned/smoke`) with both code generation backends.
 - CI runs the tests in several modes with `JAVA_TOOL_OPTIONS` (reflection, Unsafe, code generation with both backends). Run a change to field access or code generation in all of them, the same way. `JAVA_TOOL_OPTIONS` also reaches Maven's JVM.
+- Objenesis and ASM are optional dependencies, and CI also runs the tests without them. A test that uses them directly does so from a nested holder class, or the test class fails to load without them.
 - `--sun-misc-unsafe-memory-access=allow` makes Unsafe the default field access, so pass it only to runs that should use Unsafe.
 - Benchmarks need the reactor classpath like `benchmarks/run.sh` does; `-pl benchmarks` alone runs against a stale Kryo snapshot from `~/.m2`. Keep A/B runs to a few minutes and alternate the variants; JMH differences below about 2% are noise, and any run while `mvn test` is going is garbage. A JMH `-jvmArgsAppend` value that starts with `--` needs a `-D` in front of it, or JMH takes it as its own option.
 - The formatter covers `src` and `test-android`, not `test`.

@@ -24,6 +24,9 @@ import com.esotericsoftware.kryo.util.InstantiatorStrategy;
 import com.esotericsoftware.kryo.util.ObjenesisStrategy;
 import com.esotericsoftware.kryo.util.SerializingInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -162,8 +165,10 @@ public class DefaultInstantiatorStrategyTest {
     @Test
     public void testObjenesisStrategies() {
         // The Objenesis strategies create classes without a no-arg constructor, through Kryo's wrappers.
-        for (InstantiatorStrategy fallback : new InstantiatorStrategy[] {new StdInstantiatorStrategy(),
-            new ObjenesisStrategy(new org.objenesis.strategy.StdInstantiatorStrategy())}) {
+        List<InstantiatorStrategy> fallbacks = new ArrayList<>();
+        fallbacks.add(new StdInstantiatorStrategy());
+        if (objenesis()) fallbacks.add(Objenesis.std());
+        for (InstantiatorStrategy fallback : fallbacks) {
             InstantiatorStrategy strategy = new DefaultInstantiatorStrategy(fallback);
             NoArgless object = strategy.newInstantiatorOf(NoArgless.class).newInstance();
             assertEquals(0, object.value);
@@ -180,6 +185,23 @@ public class DefaultInstantiatorStrategyTest {
         for (Class type : new Class[] {SerializableInterface.class, AbstractSerializable.class})
             assertTrue(assertThrows(KryoException.class, () -> new SerializingInstantiatorStrategy().newInstantiatorOf(type))
                 .getMessage().startsWith("Class cannot be created (abstract)"));
+    }
+
+    /** True if Objenesis, an optional dependency, is on the class path. */
+    static boolean objenesis () {
+        try {
+            Class.forName("org.objenesis.Objenesis");
+            return true;
+        } catch (ClassNotFoundException ex) {
+            return false;
+        }
+    }
+
+    /** Separate class, so the test class can be loaded without Objenesis on the class path. */
+    static class Objenesis {
+        static InstantiatorStrategy std () {
+            return new ObjenesisStrategy(new org.objenesis.strategy.StdInstantiatorStrategy());
+        }
     }
 
     interface SerializableInterface extends java.io.Serializable {
