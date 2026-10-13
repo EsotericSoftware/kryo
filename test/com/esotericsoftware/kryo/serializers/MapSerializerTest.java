@@ -22,6 +22,7 @@ package com.esotericsoftware.kryo.serializers;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
@@ -49,6 +50,30 @@ import org.junit.jupiter.api.Test;
 class MapSerializerTest extends KryoTestCase {
 	{
 		supportsCopy = true;
+	}
+
+	// A corrupt negative size throws a KryoException, not an IllegalArgumentException from the constructor, and doesn't read an
+	// empty map where the size isn't used as a capacity.
+	@Test
+	void testNegativeSize () {
+		for (Format format : Format.values()) {
+			Kryo kryo = new Kryo();
+			kryo.setFormat(format);
+			kryo.register(HashMap.class);
+			kryo.register(TreeMap.class);
+			Output output = new Output(16);
+			if (format == Format.KRYO5)
+				output.writeVarInt(-1, true); // Size + 1.
+			else
+				output.writeVarIntFlag(false, -1, true);
+			byte[] bytes = output.toBytes();
+			for (Class type : new Class[] {HashMap.class, TreeMap.class}) {
+				for (Input input : new Input[] {new Input(bytes), new Input(new ByteArrayInputStream(bytes))}) {
+					KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, type));
+					assertTrue(ex.getMessage().startsWith("Declared size is negative: -2"), ex.getMessage());
+				}
+			}
+		}
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/1157

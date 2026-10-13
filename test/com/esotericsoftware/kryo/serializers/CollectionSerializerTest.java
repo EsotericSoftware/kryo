@@ -48,6 +48,23 @@ class CollectionSerializerTest extends KryoTestCase {
 		supportsCopy = true;
 	}
 
+	// A corrupt negative size throws a KryoException, not an IllegalArgumentException from the constructor, and doesn't read an
+	// empty collection where the size isn't used as a capacity.
+	@Test
+	void testNegativeSize () {
+		kryo.register(ArrayList.class);
+		kryo.register(TreeSet.class);
+		Output output = new Output(16);
+		output.writeVarIntFlag(false, -1, true); // Size + 1.
+		byte[] bytes = output.toBytes();
+		for (Class type : new Class[] {ArrayList.class, TreeSet.class}) {
+			for (Input input : new Input[] {new Input(bytes), new Input(new ByteArrayInputStream(bytes))}) {
+				KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, type));
+				assertTrue(ex.getMessage().startsWith("Declared size is negative: -2"), ex.getMessage());
+			}
+		}
+	}
+
 	@Test
 	void testSizeChanged () {
 		// The size doesn't match the elements, eg because the collection was modified concurrently (#1181).

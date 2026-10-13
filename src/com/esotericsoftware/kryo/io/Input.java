@@ -986,13 +986,14 @@ public class Input extends InputStream implements Poolable {
 		return length;
 	}
 
-	/** Clamps a declared collection or map size before it is used as an initial capacity. Throws if {@code size} exceeds
-	 * {@link #setMaxArraySize(int) maxArraySize}. Otherwise, for a buffer-backed input (no {@link InputStream}), caps it at the
-	 * bytes remaining so a corrupt size cannot force a large pre-allocation; the collection or map still grows as elements are
-	 * read. A stream-backed input is returned unchanged (the remaining size is unknown). Unlike
+	/** Clamps a declared collection or map size before it is used as an initial capacity. Throws if {@code size} is negative or
+	 * exceeds {@link #setMaxArraySize(int) maxArraySize}. Otherwise, for a buffer-backed input (no {@link InputStream}), caps it
+	 * at the bytes remaining so a corrupt size cannot force a large pre-allocation; the collection or map still grows as elements
+	 * are read. A stream-backed input is returned unchanged (the remaining size is unknown). Unlike
 	 * {@link #validateArrayLength(int, int)} the size is only clamped, not rejected, because it is an initial-capacity hint rather
 	 * than an exact element count. */
 	public int clampSize (int size) {
+		if (size < 0) throw new KryoException("Declared size is negative: " + size);
 		if (size > maxArraySize)
 			throw new KryoException("Declared size larger than maxArraySize: " + size + " > " + maxArraySize);
 		return inputStream == null ? Math.min(size, limit - position) : size;
