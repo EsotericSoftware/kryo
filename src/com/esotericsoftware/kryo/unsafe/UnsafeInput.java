@@ -178,6 +178,8 @@ public class UnsafeInput extends Input {
 	}
 
 	public void readBytes (byte[] bytes, int offset, int count) throws KryoException {
+		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
+		checkArrayRange(bytes.length, offset, count);
 		readBytes(bytes, byteArrayBaseOffset + offset, count);
 	}
 
