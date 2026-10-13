@@ -610,7 +610,7 @@ Comparators | `Collections.reverseOrder()`, `Collections.reverseOrder(Comparator
 Files and network | `File` and `InetSocketAddress` (not subclasses), `InetAddress`, `ByteBuffer`
 Kryo | Classes implementing [KryoSerializable](#kryoserializable)
 
-All other classes use the global default serializer, FieldSerializer unless it was changed, which also handles [records](#records). Lambdas use [ClosureSerializer](#closures).
+Every other class is serialized by the default serializer, which is FieldSerializer unless `setDefaultSerializer` was called. FieldSerializer also handles [records](#records). Lambdas use [ClosureSerializer](#closures).
 
 Some of these classes are JDK-internal, so when registration is required they can't be registered by name. Register them with an instance of the class instead:
 
