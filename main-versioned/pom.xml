@@ -173,10 +173,14 @@
 				</executions>
 				<configuration>
 					<instructions>
+						<!-- No wildcard: bnd analyzes the classes before they are relocated, so it would import the shaded Objenesis
+							and ASM packages. java.* packages need no import. -->
 						<Import-Package><![CDATA[
 						sun.reflect;resolution:=optional,
 						sun.misc;resolution:=optional,
-						sun.nio.ch;resolution:=optional
+						sun.nio.ch;resolution:=optional,
+						javax.crypto,
+						javax.crypto.spec
 						]]>
 						</Import-Package>
 						<Export-Package>
