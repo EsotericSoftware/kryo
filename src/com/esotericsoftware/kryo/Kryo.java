@@ -204,7 +204,7 @@ public class Kryo {
 	private boolean registrationRequired = true;
 	private boolean warnUnregisteredClasses;
 	private Format format = Format.KRYO6;
-	/** True once the format was used, eg read by a serializer, after which the format can't change. */
+	/** True once the format was read, eg by a serializer, after which the format can't change. */
 	private boolean formatUsed;
 	private Predicate<Class> allowedUnregisteredClasses;
 
@@ -484,7 +484,6 @@ public class Kryo {
 	@SuppressWarnings("deprecation") // RecordSerializer
 	public Serializer getDefaultSerializer (Class type) {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
-		formatUsed = true;
 
 		Serializer serializerForAnnotation = getDefaultSerializerForAnnotatedType(type);
 		if (serializerForAnnotation != null) return serializerForAnnotation;
@@ -493,9 +492,9 @@ public class Kryo {
 		for (int i = 0, n = defaultSerializers.size(); i < n; i++) {
 			// Kryo 5 had RecordSerializer as the first built-in default serializer, so a record that is also a Collection, Map or
 			// KryoSerializable was serialized as a record.
-			if (i == builtIn && format == Format.KRYO5 && isRecord(type)) return new RecordSerializer(type);
+			if (i == builtIn && getFormat() == Format.KRYO5 && isRecord(type)) return new RecordSerializer(type);
 			DefaultSerializerEntry entry = defaultSerializers.get(i);
-			if (entry.kryo6Only && format == Format.KRYO5) continue;
+			if (entry.kryo6Only && getFormat() == Format.KRYO5) continue;
 			if (entry.type.isAssignableFrom(type) && entry.serializerFactory.isSupported(type))
 				return entry.serializerFactory.newSerializer(this, type);
 		}
@@ -1282,7 +1281,6 @@ public class Kryo {
 	 * strings. The first call fixes the result, after which it can't change, see {@link #setReferences(boolean)}.
 	 * {@link FieldSerializer} calls this when it creates a String field. */
 	public boolean usesStringReferences () {
-		formatUsed = true; // With the Kryo 5 format, strings use references.
 		if (stringFieldReferences == -1) stringFieldReferences = stringReferences(references, referenceResolver) ? 1 : 0;
 		return stringFieldReferences == 1;
 	}
@@ -1383,9 +1381,8 @@ public class Kryo {
 		if (type == null) throw new IllegalArgumentException("type cannot be null.");
 		if (type.isArray()) type = Util.getElementClass(type);
 		if (type.isEnum()) {
-			formatUsed = true; // Serializers decide when they are created whether to write the class of a field value.
 			// Also with constant bodies, which are subclasses. Kryo 5 wrote the class of these enums, because they aren't final.
-			if (format != Format.KRYO5) return true;
+			if (getFormat() != Format.KRYO5) return true;
 		}
 		return Modifier.isFinal(type.getModifiers());
 	}
