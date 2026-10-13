@@ -209,9 +209,10 @@ public class DefaultClassResolver implements ClassResolver {
 			throw ex;
 		}
 		if (type == null) {
-			// Classes with a default serializer, eg JDK-internal classes, are found without reflection.
+			// JDK classes with a default serializer, eg JDK-internal classes, are found without reflection. Other classes are loaded
+			// with the class loader, which may have its own class with the name of a class that has a default serializer.
 			type = kryo.getDefaultSerializerType(className);
-			if (type == null) {
+			if (type == null || !isJdkClass(type)) {
 				try {
 					type = Class.forName(className, false, kryo.getClassLoader());
 				} catch (ClassNotFoundException ex) {

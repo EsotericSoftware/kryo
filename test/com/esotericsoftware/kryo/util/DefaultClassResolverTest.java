@@ -26,7 +26,9 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
 
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
@@ -193,6 +195,47 @@ class DefaultClassResolverTest {
 						kryo.readClass(input);
 				});
 			assertTrue(ex.getMessage().contains("null"), ex.getMessage());
+		}
+	}
+
+	@Test
+	void testClassLoaderWithDefaultSerializerClassName () {
+		// The class loader has its own class C. C of the application has a default serializer, the class loader's C is read anyway.
+		ChildFirstLoader loader = new ChildFirstLoader(C.class);
+		Class loaderC = loader.loadClass(C.class.getName(), false);
+		assertNotSame(C.class, loaderC);
+		Kryo kryo = kryo();
+		kryo.setRegistrationRequired(false);
+		kryo.setClassLoader(loader);
+		kryo.addDefaultSerializer(C.class, FieldSerializer.class);
+		Output output = new Output(64);
+		kryo.writeClass(output, loaderC);
+		assertSame(loaderC, kryo.readClass(new Input(output.toBytes())).getType());
+	}
+
+	/** Defines its own copy of one class and delegates all others to the parent. */
+	static class ChildFirstLoader extends ClassLoader {
+		private final Class type;
+
+		ChildFirstLoader (Class type) {
+			super(type.getClassLoader());
+			this.type = type;
+		}
+
+		protected Class loadClass (String name, boolean resolve) {
+			synchronized (getClassLoadingLock(name)) {
+				try {
+					if (!name.equals(type.getName())) return super.loadClass(name, resolve);
+					Class loaded = findLoadedClass(name);
+					if (loaded != null) return loaded;
+					try (InputStream input = getParent().getResourceAsStream(name.replace('.', '/') + ".class")) {
+						byte[] bytes = input.readAllBytes();
+						return defineClass(name, bytes, 0, bytes.length);
+					}
+				} catch (Exception ex) {
+					throw new RuntimeException(ex);
+				}
+			}
 		}
 	}
 
