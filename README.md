@@ -189,7 +189,7 @@ To use the latest Kryo snapshot, use:
 
 ### Without Maven
 
-Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#installation) on your classpath, along with the optional Objenesis and ASM JARs found in [lib](https://github.com/EsotericSoftware/kryo/tree/kryo-6/lib) if needed.
+Not everyone is a Maven fan. Using Kryo without Maven requires placing the [Kryo JAR](#installation) on your classpath, along with the optional Objenesis and ASM JARs found in [lib](lib) if needed.
 
 ### Building from source
 
@@ -473,7 +473,7 @@ Enabling references impacts performance because every object that is read or wri
 
 Under the covers, a ReferenceResolver handles tracking objects that have been read or written and provides int reference IDs. Multiple implementations are provided:
 
-1. MapReferenceResolver is used by default if a reference resolver is not specified. It uses Kryo's [IdentityObjectIntMap](https://github.com/EsotericSoftware/kryo/blob/kryo-6/src/com/esotericsoftware/kryo/util/IdentityObjectIntMap.java) to track written objects. This kind of map is fast and minimizes allocation.
+1. MapReferenceResolver is used by default if a reference resolver is not specified. It uses Kryo's [IdentityObjectIntMap](src/com/esotericsoftware/kryo/util/IdentityObjectIntMap.java) to track written objects. This kind of map is fast and minimizes allocation.
 2. HashMapReferenceResolver uses an IdentityHashMap to track written objects. This kind of map allocates for put, so it is generally slightly slower than MapReferenceResolver.
 3. ListReferenceResolver uses an ArrayList to track written objects. For object graphs with relatively few objects, this can be faster than using a map (~15% faster in some tests). This should not be used for graphs with many objects because it has a linear look up to find objects that have already been written.
 
@@ -1619,7 +1619,7 @@ The same Kryo instances serve both directions, see [Pooling](#pooling) above. A 
 
 ## Benchmarks
 
-Kryo provides a number of [JMH](https://openjdk.org/projects/code-tools/jmh/)-based [benchmarks](https://github.com/EsotericSoftware/kryo/tree/kryo-6/benchmarks). The charts are [generated](https://github.com/EsotericSoftware/kryo/tree/kryo-6/benchmarks#charts) from the benchmark results.
+Kryo provides a number of [JMH](https://openjdk.org/projects/code-tools/jmh/)-based [benchmarks](benchmarks). The charts are [generated](benchmarks#charts) from the benchmark results.
 
 ### Kryo 5 and Kryo 6
 
