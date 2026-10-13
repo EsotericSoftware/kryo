@@ -630,9 +630,9 @@ public class Kryo {
 					}
 				}
 			}
-			// The JDK implementation classes of enum sets, charsets and time zones differ between Java vendors and Android, and their
-			// serializers don't depend on them. A Class value of an implementation class is read as the base class. An application
-			// subclass keeps its class, so its own default serializer applies.
+			// The JDK implementation classes of enum sets, charsets and time zones differ between Java vendors and Android, and
+			// their serializers don't depend on them. A Class value of an implementation class is read as the base class. An
+			// application subclass keeps its class, so its own default serializer applies.
 			else if (type != EnumSet.class && EnumSet.class.isAssignableFrom(type) && isJdkClass(type))
 				registration = getRegistration(EnumSet.class);
 			else if (type != Charset.class && Charset.class.isAssignableFrom(type) && isJdkClass(type))
