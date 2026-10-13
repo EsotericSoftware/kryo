@@ -44,7 +44,7 @@ def variant_code_generation(params):
 
 
 BUFFER_TYPES = ["array", "byteBuffer", "unsafeArray", "unsafeByteBuffer"]
-KRYO5_VS_KRYO6 = ["Kryo 5", "Kryo 6", "Kryo 6, Unsafe", "Kryo 6, code generation"]
+KRYO5_VS_KRYO6 = ["Kryo 5, Unsafe", "Kryo 6, VarHandle", "Kryo 6, Unsafe", "Kryo 6, code generation"]
 RECORDS = ["Kryo 5, RecordSerializer", "Kryo 6, FieldSerializer", "Kryo 6, FieldSerializer, code generation"]
 
 # name: the chart file and, unless results is given, the results file. results: the results file, if it is shared with another
@@ -97,7 +97,7 @@ CHARTS = [
     {
         "name": "kryo5VsKryo6",
         "title": "Kryo 5 vs Kryo 6: ObjectGraphBenchmark, scale 4 with references",
-        "results": {"kryo5": "Kryo 5", "kryo6VarHandle": "Kryo 6", "kryo6Unsafe": "Kryo 6, Unsafe",
+        "results": {"kryo5": "Kryo 5, Unsafe", "kryo6VarHandle": "Kryo 6, VarHandle", "kryo6Unsafe": "Kryo 6, Unsafe",
             "kryo6CodeGeneration": "Kryo 6, code generation"},
         "unit": "ops/s",
         "axis": "Round trips per second (higher is better)",

@@ -96,9 +96,9 @@ text { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #4D4D4D
 <line class="line" x1="78" y1="376.7" x2="828" y2="376.7"/>
 <text class="legendTitle" x="844" y="182.5">Version</text>
 <rect class="bar" fill="#F8766D" x="844" y="190.5" width="17" height="17"/>
-<text class="legend" x="866" y="203.5">Kryo 5</text>
+<text class="legend" x="866" y="203.5">Kryo 5, Unsafe</text>
 <rect class="bar" fill="#7CAE00" x="844" y="207.5" width="17" height="17"/>
-<text class="legend" x="866" y="220.5">Kryo 6</text>
+<text class="legend" x="866" y="220.5">Kryo 6, VarHandle</text>
 <rect class="bar" fill="#00BFC4" x="844" y="224.5" width="17" height="17"/>
 <text class="legend" x="866" y="237.5">Kryo 6, Unsafe</text>
 <rect class="bar" fill="#C77CFF" x="844" y="241.5" width="17" height="17"/>
