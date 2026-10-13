@@ -433,7 +433,7 @@ public interface Generics {
 					buffer.append('>');
 				}
 			} else
-				buffer.append(type.toString()); // Java 8: getTypeName
+				buffer.append(type.toString());
 			if (array) {
 				for (int i = 0, n = getDimensionCount((Class)type); i < n; i++)
 					buffer.append("[]");

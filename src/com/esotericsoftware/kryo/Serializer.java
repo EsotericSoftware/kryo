@@ -45,7 +45,7 @@ public abstract class Serializer<T> {
 	/** Writes the bytes for the object to the output.
 	 * <p>
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} write methods that accept a
-	 * serialier.
+	 * serializer.
 	 * @param object May be null if {@link #getAcceptsNull()} is true. */
 	public abstract void write (Kryo kryo, Output output, T object);
 
@@ -56,7 +56,7 @@ public abstract class Serializer<T> {
 	 * be reentrant.
 	 * <p>
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} read methods that accept a
-	 * serialier.
+	 * serializer.
 	 * @return May be null if {@link #getAcceptsNull()} is true. */
 	public abstract T read (Kryo kryo, Input input, Class<? extends T> type);
 
@@ -84,13 +84,13 @@ public abstract class Serializer<T> {
 	}
 
 	/** Returns a copy of the specified object. The default implementation returns the original if {@link #isImmutable()} is true,
-	 * else throws {@link KryoException}. Subclasses can optionall override this method to support {@link Kryo#copy(Object)}.
+	 * else throws {@link KryoException}. Subclasses can optionally override this method to support {@link Kryo#copy(Object)}.
 	 * <p>
 	 * Before Kryo can be used to copy child objects, {@link Kryo#reference(Object)} must be called with the copy to ensure it can
 	 * be referenced by the child objects. A serializer that uses {@link Kryo} to copy a child object may need to be reentrant.
 	 * <p>
 	 * This method should not be called directly, instead this serializer can be passed to {@link Kryo} copy methods that accept a
-	 * serialier. */
+	 * serializer. */
 	public T copy (Kryo kryo, T original) {
 		if (isImmutable()) return original;
 		throw new KryoException("Serializer does not support copy: " + getClass().getName());

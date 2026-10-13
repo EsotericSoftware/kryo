@@ -89,7 +89,7 @@ public class GenericsUtil {
 		}
 
 		// Match the type variable name to the super class parameter.
-		String name = type.toString(); // Java 8: getTypeName
+		String name = type.toString();
 		TypeVariable[] params = superClass.getTypeParameters();
 		for (int i = 0, n = params.length; i < n; i++) {
 			TypeVariable param = params[i];

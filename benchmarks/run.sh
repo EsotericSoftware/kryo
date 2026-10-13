@@ -16,7 +16,7 @@ mkdir -p charts/results
 $jmh charts/results/fieldSerializer.json FieldSerializerBenchmark -p format=KRYO6
 # With and without code generation, for the objectGraph and codeGeneration charts.
 $jmh charts/results/objectGraph.json ObjectGraphBenchmark -p scale=4,16 -p chunked=false,true -p codeGeneration=false,true
-# The unsafe byte buffers need sun.nio.ch.DirectBuffer.
+# The unsafe byte buffers free the direct buffers they replace with sun.nio.ch.DirectBuffer.
 exports="--add-exports=java.base/sun.nio.ch=ALL-UNNAMED"
 $jmh charts/results/string.json StringBenchmark -jvmArgsAppend $exports
 $jmh charts/results/variableEncoding.json VariableEncodingBenchmark -jvmArgsAppend $exports

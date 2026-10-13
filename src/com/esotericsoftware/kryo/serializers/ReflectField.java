@@ -36,7 +36,7 @@ import java.lang.reflect.Modifier;
 
 /** Read and write a non-primitive field using reflection.
  * @author Nathan Sweet
- * @author Roman Levenstein <romixlev@gmail.com> */
+ * @author Roman Levenstein {@literal <romixlev@gmail.com>} */
 class ReflectField extends CachedField {
 	final FieldSerializer fieldSerializer;
 	final GenericType genericType;

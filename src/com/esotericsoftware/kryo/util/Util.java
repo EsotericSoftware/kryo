@@ -280,7 +280,7 @@ public class Util {
 
 	public static String simpleName (Type type) {
 		if (type instanceof Class) return ((Class)type).getSimpleName();
-		return type.toString(); // Java 8: getTypeName
+		return type.toString();
 	}
 
 	public static String simpleName (Class type, GenericType genericType) {
