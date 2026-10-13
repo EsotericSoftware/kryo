@@ -1356,4 +1356,21 @@ class InputOutputTest extends KryoTestCase {
 		output.reset();
 		assertThrows(type, () -> output.writeChars(new char[1], 0, 1 << 30));
 	}
+
+	@Test
+	void testCanReadVarLongPartlyBuffered () {
+		// 5 bytes, then a 9 byte var long. After reading the 5 bytes, 5 bytes of the var long are buffered, the rest is in
+		// the stream.
+		Output output = new Output(32);
+		output.writeBytes(new byte[5]);
+		output.writeVarLong(Long.MIN_VALUE, true);
+		assertEquals(14, output.position());
+		byte[] bytes = output.toBytes();
+		for (Input input : new Input[] {new Input(new ByteArrayInputStream(bytes), 10),
+			new ByteBufferInput(new ByteArrayInputStream(bytes), 10)}) {
+			input.readBytes(5);
+			assertTrue(input.canReadVarLong());
+			assertEquals(Long.MIN_VALUE, input.readVarLong(true));
+		}
+	}
 }
