@@ -29,8 +29,6 @@ import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
 
 /** A few utility methods, mostly for private use.
  * @author Nathan Sweet */
@@ -59,18 +57,6 @@ public class Util {
 
 	// Maximum reasonable array length. See: https://stackoverflow.com/questions/3038392/do-java-arrays-have-a-maximum-size
 	public static final int maxArraySize = Integer.MAX_VALUE - 8;
-
-	private static final Map<Class<?>, Class<?>> primitiveWrappers = new HashMap<>();
-	static {
-		primitiveWrappers.put(boolean.class, Boolean.class);
-		primitiveWrappers.put(byte.class, Byte.class);
-		primitiveWrappers.put(char.class, Character.class);
-		primitiveWrappers.put(double.class, Double.class);
-		primitiveWrappers.put(float.class, Float.class);
-		primitiveWrappers.put(int.class, Integer.class);
-		primitiveWrappers.put(long.class, Long.class);
-		primitiveWrappers.put(short.class, Short.class);
-	}
 
 	public static boolean isUnsafeAvailable () {
 		return unsafe;
@@ -256,19 +242,10 @@ public class Util {
 	public static boolean isAssignableTo (Class<?> from, Class<?> to) {
 		if (to == Object.class) return true;
 		if (to.isAssignableFrom(from)) return true;
-		if (from.isPrimitive()) return isPrimitiveWrapperOf(to, from) || to.isAssignableFrom(getPrimitiveWrapper(from));
-		if (to.isPrimitive()) return isPrimitiveWrapperOf(from, to);
+		if (from.isPrimitive()) return to.isAssignableFrom(getWrapperClass(from));
+		if (to.isPrimitive()) return getWrapperClass(to) == from;
 		if (from == ClosureSerializer.Closure.class) return to.isInterface();
 		return false;
-	}
-
-	private static boolean isPrimitiveWrapperOf (Class<?> targetClass, Class<?> primitive) {
-		return getPrimitiveWrapper(primitive) == targetClass;
-	}
-
-	private static Class<?> getPrimitiveWrapper (Class<?> primitive) {
-		if (!primitive.isPrimitive()) throw new IllegalArgumentException("Argument has to be primitive type");
-		return primitiveWrappers.get(primitive);
 	}
 
 	public static boolean isAscii (String value) {
