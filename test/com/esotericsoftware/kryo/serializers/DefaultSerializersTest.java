@@ -57,6 +57,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -1068,6 +1069,32 @@ class DefaultSerializersTest extends KryoTestCase {
 		calendar.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
 		calendar.set(1980, 7, 26, 12, 22, 46);
 		roundTrip(64, calendar);
+	}
+
+	// A calendar is read with the class that was written, not with the calendar of the default locale.
+	@SuppressWarnings("deprecation") // Locale.of needs Java 19.
+	@Test
+	void testCalendarClass () {
+		kryo.setRegistrationRequired(false);
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Calendar[] calendars = {new GregorianCalendar(TimeZone.getTimeZone("Asia/Bangkok")),
+				Calendar.getInstance(TimeZone.getTimeZone("Asia/Bangkok"), new Locale("th", "TH")),
+				Calendar.getInstance(TimeZone.getTimeZone("Asia/Tokyo"), new Locale("ja", "JP", "JP"))};
+			assertEquals(3, Arrays.stream(calendars).map(Object::getClass).distinct().count());
+			for (Locale locale : new Locale[] {new Locale("th", "TH"), new Locale("ja", "JP", "JP"), Locale.US}) {
+				Locale.setDefault(locale);
+				for (Calendar calendar : calendars) {
+					calendar.setTimeInMillis(335967766000L);
+					Calendar read = roundTrip(Integer.MIN_VALUE, calendar);
+					assertEquals(calendar.getClass(), read.getClass());
+					assertEquals(calendar.getTimeZone(), read.getTimeZone());
+					assertEquals(calendar.get(Calendar.YEAR), read.get(Calendar.YEAR));
+				}
+			}
+		} finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 	@Test

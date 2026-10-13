@@ -768,7 +768,7 @@ public class DefaultSerializers {
 		}
 
 		public Calendar read (Kryo kryo, Input input, Class<? extends Calendar> type) {
-			Calendar result = Calendar.getInstance(timeZoneSerializer.read(kryo, input, TimeZone.class));
+			Calendar result = create(type, timeZoneSerializer.read(kryo, input, TimeZone.class));
 			result.setTimeInMillis(input.readVarLong(true));
 			result.setLenient(input.readBoolean());
 			result.setFirstDayOfWeek(input.readInt(true));
@@ -777,6 +777,19 @@ public class DefaultSerializers {
 			if (gregorianChange != DEFAULT_GREGORIAN_CUTOVER)
 				if (result instanceof GregorianCalendar) ((GregorianCalendar)result).setGregorianChange(new Date(gregorianChange));
 			return result;
+		}
+
+		/** Creates a calendar of the class that was written. {@link Calendar#getInstance(TimeZone)} returns the calendar of the
+		 * default locale, eg a BuddhistCalendar for th_TH. */
+		private Calendar create (Class<? extends Calendar> type, TimeZone timeZone) {
+			if (type == GregorianCalendar.class) return new GregorianCalendar(timeZone);
+			String calendarType = type == null ? null : switch (type.getName()) {
+			case "sun.util.BuddhistCalendar" -> "buddhist";
+			case "java.util.JapaneseImperialCalendar" -> "japanese";
+			default -> null;
+			};
+			if (calendarType == null) return Calendar.getInstance(timeZone);
+			return new Calendar.Builder().setCalendarType(calendarType).setTimeZone(timeZone).build();
 		}
 
 		public Calendar copy (Kryo kryo, Calendar original) {
