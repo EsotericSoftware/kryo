@@ -21,7 +21,7 @@ Things that are not in the README, MIGRATION.md or obvious from the code. `kryo-
 
 ## Compatibility
 
-- `SerializationCompatTest` reads golden files in `test/resources` and checks the length of the data written now. A format change updates the expected lengths; the golden files stay readable.
+- `SerializationCompatTest` reads golden files in `test/resources` and checks the length of the data written now. A format change updates the expected lengths; the golden files stay readable. A missing golden file fails the test; `-Dkryo.writeGoldenFiles=true` writes it.
 - `Kryo5CompatibilityTest` reads data written by Kryo 5 (`test/resources/kryo5`). Kryo 6 must keep reading it with `kryo.setFormat(Format.KRYO5)`.
 - `Kryo5RoundTripTest` uses the released Kryo 5 (`com.esotericsoftware.kryo:kryo5`, a test dependency in the root pom, relocated to `com.esotericsoftware.kryo.kryo5`) as a live oracle for the Kryo 5 format: both versions read each other's data and write the same bytes. Kryo 5 needs packages of java.base open, so the test is tagged `kryo5` and runs in its own surefire execution with these `--add-opens`; the other tests run without them. Bump the version by hand after each 5.x release.
 - Registration IDs must be the same on all Java versions and platforms: register in a fixed order, and register a placeholder class for a class that doesn't exist (see `ImmutableCollectionsSerializers`).
