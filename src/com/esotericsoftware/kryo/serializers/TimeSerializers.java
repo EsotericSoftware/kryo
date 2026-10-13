@@ -40,9 +40,6 @@ import java.time.ZonedDateTime;
 
 /** Serializers for java.time.*, which are added as default serializers.
  *
- * Serializers are all private for now because they're not expected to be somehow used/extended/accessed by the user. If there
- * should be a case where this is needed it can be changed - for now the public api should be kept as spall as possible.
- *
  * Implementation note: All serialization is inspired by oracles java.time.Ser. */
 public final class TimeSerializers {
 	public static void addDefaultSerializers (Kryo kryo) {

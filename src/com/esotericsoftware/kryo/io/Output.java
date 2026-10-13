@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /** An OutputStream that writes data to a byte[] and optionally flushes to another OutputStream. Utility methods are provided for
- * efficiently writing primitive types and strings using big endian.
+ * efficiently writing primitive types and strings. Multi-byte primitive types are written in little endian byte order.
  * @author Nathan Sweet */
 public class Output extends OutputStream implements AutoCloseable, Poolable {
 	protected int maxCapacity;
@@ -162,7 +162,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		return total + position;
 	}
 
-	/** The maximum buffer size, or -1 for no maximum.
+	/** The maximum buffer size, or {@link Util#maxArraySize} for no maximum.
 	 * @see Output#Output(int, int) */
 	public int getMaxCapacity () {
 		return maxCapacity;
@@ -325,7 +325,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		Bytes.putInt(buffer, p, value);
 	}
 
-	/** Reads an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
+	/** Writes an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
 	 * {@link #writeVarInt(int, boolean)} explicitly when writing values that should always use variable length encoding (eg values
 	 * that appear many times).
 	 * @return The number of bytes written.
@@ -469,11 +469,11 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		Bytes.putLong(buffer, p, value);
 	}
 
-	/** Reads a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
+	/** Writes a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
 	 * {@link #writeVarLong(long, boolean)} explicitly when writing values that should always use variable length encoding (eg
 	 * values that appear many times).
 	 * @return The number of bytes written.
-	 * @see #longLength(int, boolean) */
+	 * @see #longLength(long, boolean) */
 	public int writeLong (long value, boolean optimizePositive) throws KryoException {
 		if (varEncoding) return writeVarLong(value, optimizePositive);
 		writeLong(value);
@@ -598,7 +598,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 	}
 
 	/** Returns the number of bytes that would be written with {@link #writeLong(long, boolean)}. */
-	public int longLength (int value, boolean optimizePositive) {
+	public int longLength (long value, boolean optimizePositive) {
 		if (varEncoding) return varLongLength(value, optimizePositive);
 		return 8;
 	}

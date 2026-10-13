@@ -89,7 +89,7 @@ public class GenericsUtil {
 		}
 
 		// Match the type variable name to the super class parameter.
-		String name = type.toString(); // Java 8: getTypeName
+		String name = type.toString();
 		TypeVariable[] params = superClass.getTypeParameters();
 		for (int i = 0, n = params.length; i < n; i++) {
 			TypeVariable param = params[i];
@@ -112,34 +112,6 @@ public class GenericsUtil {
 		// We have exhausted looking through superclasses for a concrete generic type
 		// definition, so we return the type variable instead.
 		return type;
-	}
-
-	/** Resolves type variables for the type parameters of the specified type by using the class hierarchy between the specified
-	 * classes.
-	 * @param toClass Must be a sub class of fromClass.
-	 * @return Null if the type has no type parameters, else contains Class entries for type parameters that were resolved and
-	 *         TypeVariable entries for type parameters that couldn't be resolved. */
-	public static Type[] resolveTypeParameters (Class fromClass, Class toClass, Type type) {
-		// Type which has a type parameter, eg ArrayList<T>.
-		if (type instanceof ParameterizedType) {
-			Type[] actualArgs = ((ParameterizedType)type).getActualTypeArguments();
-			int n = actualArgs.length;
-			Type[] generics = new Type[n];
-			for (int i = 0; i < n; i++)
-				generics[i] = resolveType(fromClass, toClass, actualArgs[i]);
-			return generics;
-		}
-
-		// Array which has a type parameter, eg "ArrayList<T>[]". Discard array types, resolve type parameter of the component type.
-		if (type instanceof GenericArrayType) {
-			while (true) {
-				type = ((GenericArrayType)type).getGenericComponentType();
-				if (!(type instanceof GenericArrayType)) break;
-			}
-			return resolveTypeParameters(fromClass, toClass, type);
-		}
-
-		return null; // No type parameters (is a class or type variable).
 	}
 
 }

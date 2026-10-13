@@ -580,7 +580,7 @@ public class Kryo {
 	 * {@link Kryo#getRegistration(Class)}. */
 	public Registration register (Registration registration) {
 		int id = registration.getId();
-		if (id < 0) throw new IllegalArgumentException("id must be > 0: " + id);
+		if (id < 0) throw new IllegalArgumentException("id must be >= 0: " + id);
 
 		Registration existing = classResolver.unregister(id);
 		if (DEBUG && existing != null && existing.getType() != registration.getType())
@@ -967,7 +967,7 @@ public class Kryo {
 	}
 
 	/** Returns {@link #REF} if a reference to a previously read object was read, which is stored in {@link #readObject}. Returns a
-	 * stack size (> 0) if a reference ID has been put on the stack. */
+	 * stack size ({@literal >} 0) if a reference ID has been put on the stack. */
 	int readReferenceOrNull (Input input, Class type, boolean mayBeNull) {
 		if (type.isPrimitive()) type = getWrapperClass(type);
 		boolean referencesSupported = referenceResolver.useReferences(type);

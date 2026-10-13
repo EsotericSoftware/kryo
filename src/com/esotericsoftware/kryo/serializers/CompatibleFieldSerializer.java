@@ -69,6 +69,8 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	}
 
 	void cachedFieldsChanged (CachedField[] fields) {
+		// CachedFields#rebuild reuses the array if the number of fields is the same.
+		fieldNamesFields = null;
 		// Fields are sorted by name, so fields with the same name are adjacent.
 		duplicateNames = false;
 		for (int i = 1, n = fields.length; i < n; i++) {
@@ -98,12 +100,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 	 * {@link Format#KRYO5}, which used it. */
 	protected boolean optimizeGenerics () {
 		return kryo.getFormat() == Format.KRYO5 || !config.readUnknownFieldData;
-	}
-
-	public void updateFields () {
-		super.updateFields();
-		// The fields may have changed, also if the array was reused. Not in initializeCachedFields, which subclasses can override.
-		fieldNamesFields = null;
 	}
 
 	public void write (Kryo kryo, Output output, T object) {
@@ -233,9 +229,9 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		return object;
 	}
 
-	/** Updates the field names if the fields changed, see {@link #updateFields()} and removeField, which creates a new array. The
-	 * bytes are the number of fields, then the names. All outputs of Kryo write varints and strings the same way, so the bytes can
-	 * be written to any output. */
+	/** Updates the field names if the fields changed, see {@link #cachedFieldsChanged(CachedField[])}. The bytes are the number of
+	 * fields, then the names. All outputs of Kryo write varints and strings the same way, so the bytes can be written to any
+	 * output. */
 	private void updateFieldNames (CachedField[] fields) {
 		if (fieldNamesFields == fields) return;
 		String[] names = new String[fields.length];
@@ -388,11 +384,11 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		 * are not read and further deserialization receives the wrong references and fails.
 		 * <p>
 		 * Default is true. */
-		public void setReadUnknownFieldData (boolean readUnknownTagData) {
-			this.readUnknownFieldData = readUnknownTagData;
+		public void setReadUnknownFieldData (boolean readUnknownFieldData) {
+			this.readUnknownFieldData = readUnknownFieldData;
 		}
 
-		public boolean getReadUnknownTagData () {
+		public boolean getReadUnknownFieldData () {
 			return readUnknownFieldData;
 		}
 

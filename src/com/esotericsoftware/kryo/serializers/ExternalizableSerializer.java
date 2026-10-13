@@ -37,7 +37,7 @@ import java.lang.reflect.Method;
  * with Kryo and Java's externalizable interface. However, there may be behavior problems if the class uses either the
  * 'readResolve' or 'writeReplace' methods. We will fall back onto the standard {@link JavaSerializer} if we detect either of
  * these methods.
- * <p/>
+ * <p>
  * Note that this class does not specialize the type on {@code Externalizable}. That is because if we fall back on the
  * {@code JavaSerializer} it may have an {@code readResolve} method that returns an object of a different type.
  *

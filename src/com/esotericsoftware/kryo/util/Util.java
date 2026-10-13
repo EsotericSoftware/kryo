@@ -175,21 +175,6 @@ public class Util {
 		return type;
 	}
 
-	/** Returns the primitive class for a primitive wrapper class. Otherwise returns the type parameter.
-	 * @param type Must be a wrapper class. */
-	public static Class getPrimitiveClass (Class type) {
-		if (type == Integer.class) return int.class;
-		if (type == Float.class) return float.class;
-		if (type == Boolean.class) return boolean.class;
-		if (type == Byte.class) return byte.class;
-		if (type == Long.class) return long.class;
-		if (type == Character.class) return char.class;
-		if (type == Double.class) return double.class;
-		if (type == Short.class) return short.class;
-		if (type == Void.class) return void.class;
-		return type;
-	}
-
 	/** Returns the array type for a given class */
 	public static Class getArrayType (Class type) {
 		if (type == String.class) return String[].class;
@@ -295,7 +280,7 @@ public class Util {
 
 	public static String simpleName (Type type) {
 		if (type instanceof Class) return ((Class)type).getSimpleName();
-		return type.toString(); // Java 8: getTypeName
+		return type.toString();
 	}
 
 	public static String simpleName (Class type, GenericType genericType) {

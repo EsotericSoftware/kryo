@@ -389,66 +389,40 @@ class CachedFields implements Comparator<CachedField> {
 
 	/** Removes a field so that it won't be serialized. */
 	public void removeField (String fieldName) {
-		boolean found = false;
-		for (int i = 0; i < fields.length; i++) {
-			CachedField cachedField = fields[i];
-			if (cachedField.name.equals(fieldName)) {
-				CachedField[] newFields = new CachedField[fields.length - 1];
-				System.arraycopy(fields, 0, newFields, 0, i);
-				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
-				fields = newFields;
-				removed(cachedField);
-				found = true;
-				break;
-			}
-		}
-		for (int i = 0; i < copyFields.length; i++) {
-			CachedField cachedField = copyFields[i];
-			if (cachedField.name.equals(fieldName)) {
-				CachedField[] newFields = new CachedField[copyFields.length - 1];
-				System.arraycopy(copyFields, 0, newFields, 0, i);
-				System.arraycopy(copyFields, i + 1, newFields, i, newFields.length - i);
-				copyFields = newFields;
-				removed(cachedField);
-				found = true;
-				break;
-			}
-		}
-		if (!found)
+		if (!remove(cachedField -> cachedField.name.equals(fieldName)))
 			throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + serializer.type.getName());
-		if (!initializing) serializer.fieldsChanged(fields);
 	}
 
 	/** Removes a field so that it won't be serialized. */
 	public void removeField (CachedField removeField) {
-		boolean found = false;
+		if (!remove(cachedField -> cachedField == removeField))
+			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
+	}
+
+	/** Removes the first matching field from the fields and the copy fields.
+	 * @return False if no field matches. */
+	private boolean remove (Predicate<CachedField> matches) {
+		CachedField[] newFields = remove(fields, matches), newCopyFields = remove(copyFields, matches);
+		if (newFields == fields && newCopyFields == copyFields) return false;
+		fields = newFields;
+		copyFields = newCopyFields;
+		if (!initializing) serializer.fieldsChanged(fields);
+		return true;
+	}
+
+	/** Returns a new array without the first matching field, or the same array if no field matches. */
+	private CachedField[] remove (CachedField[] fields, Predicate<CachedField> matches) {
 		for (int i = 0; i < fields.length; i++) {
 			CachedField cachedField = fields[i];
-			if (cachedField == removeField) {
+			if (matches.test(cachedField)) {
 				CachedField[] newFields = new CachedField[fields.length - 1];
 				System.arraycopy(fields, 0, newFields, 0, i);
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
-				fields = newFields;
 				removed(cachedField);
-				found = true;
-				break;
+				return newFields;
 			}
 		}
-		for (int i = 0; i < copyFields.length; i++) {
-			CachedField cachedField = copyFields[i];
-			if (cachedField == removeField) {
-				CachedField[] newFields = new CachedField[copyFields.length - 1];
-				System.arraycopy(copyFields, 0, newFields, 0, i);
-				System.arraycopy(copyFields, i + 1, newFields, i, newFields.length - i);
-				copyFields = newFields;
-				removed(cachedField);
-				found = true;
-				break;
-			}
-		}
-		if (!found)
-			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
-		if (!initializing) serializer.fieldsChanged(fields);
+		return fields;
 	}
 
 	/** Sets serializers using annotations.
