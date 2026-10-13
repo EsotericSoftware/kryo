@@ -153,8 +153,11 @@ The class of an enum value is not written if the enum is known, eg from the type
 The serializer for immutable lists created by `List.of` and `Stream.toList` supports null elements, which `Stream.toList` allows ([#1239](https://github.com/EsotericSoftware/kryo/issues/1239)). It writes whether a list contains null elements. To read data written by Kryo 5, use the Kryo 5 format, or disable null elements:
 
 ```java
+// With registration required, after ImmutableCollectionsSerializers.registerSerializers(kryo).
 ((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(false);
 ```
+
+The lists of `List.of` share one serializer, so this applies to all of them.
 
 `ImmutableCollectionsSerializers.registerSerializers` registers the same IDs on all platforms: on Android, the classes it lacks are registered with placeholders, and the classes only Android has, eg `Set0` before API level 34, share the ID of the JDK class they replace, so registered immutable collections can be read across the platforms. Kryo 5 skipped the missing classes, so the IDs differed between Android and the JVM. Written with their class names, some immutable collections can't be read across the platforms, see [Android](README.md#android).
 
