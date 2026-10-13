@@ -47,7 +47,7 @@
 		<javac.target>17</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<junit.version>6.1.3</junit.version>
-		<kotlin.version>2.4.20</kotlin.version>
+		<kotlin.version>2.4.21</kotlin.version>
 		<kotlin.compiler.incremental>false</kotlin.compiler.incremental>
 	</properties>
 
