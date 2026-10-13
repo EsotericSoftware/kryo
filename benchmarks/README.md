@@ -6,12 +6,13 @@ This subproject contains [JMH](http://openjdk.java.net/projects/code-tools/jmh/)
 
 ### With Maven
 
-To run benchmarks execute:
+Build Kryo and the benchmarks together and write the classpath, like `run.sh` does, then run the benchmarks from the repository root:
 ```
-mvn -f benchmarks/pom.xml compile exec:java -Dexec.args="[parameters]"
+mvn -q -pl main,benchmarks -DskipTests package dependency:build-classpath -Dmdep.outputFile=target/classpath.txt
+java -cp benchmarks/target/classes:$(cat benchmarks/target/classpath.txt) com.esotericsoftware.kryo.benchmarks.KryoBenchmarks [parameters]
 ```
 
-Where `[parameters]` should be replaced with JMH parameters.
+Where `[parameters]` should be replaced with JMH parameters. Building only the benchmarks, eg with `mvn -f benchmarks/pom.xml` or `-pl benchmarks`, runs them against the Kryo snapshot in the local Maven repository, which is usually stale.
 
 ### Without Maven
 
