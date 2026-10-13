@@ -33,6 +33,7 @@ import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.EnumMapSerializer;
+import com.esotericsoftware.kryo.serializers.PublicApiFields;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
@@ -191,6 +192,44 @@ class Kryo5RoundTripTest {
 				kryo.setDefaultSerializer(factory);
 			}, name);
 		}
+	}
+
+	/** Kryo 5 serialized no fields with setFieldsAsAccessible(false), also not the public ones: it skipped a field if
+	 * {@code Field.isAccessible()} was false, which it is for public fields too. */
+	@ParameterizedTest
+	@ValueSource(booleans = {false, true})
+	void testFieldsNotAsAccessible (boolean compatible) {
+		PublicApiFields object = new PublicApiFields();
+		object.a = 1;
+		var kryo5 = newKryo5();
+		if (compatible) {
+			var factory = new com.esotericsoftware.kryo.kryo5.SerializerFactory.CompatibleFieldSerializerFactory();
+			factory.getConfig().setFieldsAsAccessible(false);
+			kryo5.setDefaultSerializer(factory);
+		} else {
+			var factory = new com.esotericsoftware.kryo.kryo5.SerializerFactory.FieldSerializerFactory();
+			factory.getConfig().setFieldsAsAccessible(false);
+			kryo5.setDefaultSerializer(factory);
+		}
+		var kryo5Output = new com.esotericsoftware.kryo.kryo5.io.Output(1024, -1);
+		kryo5.writeObject(kryo5Output, object);
+		Kryo kryo6 = newKryo6();
+		if (compatible) {
+			var factory = new CompatibleFieldSerializerFactory();
+			factory.getConfig().setFieldsAsAccessible(false);
+			kryo6.setDefaultSerializer(factory);
+		} else {
+			var factory = new SerializerFactory.FieldSerializerFactory();
+			factory.getConfig().setFieldsAsAccessible(false);
+			kryo6.setDefaultSerializer(factory);
+		}
+		Output kryo6Output = new Output(1024, -1);
+		kryo6.writeObject(kryo6Output, object);
+
+		assertArrayEquals(kryo5Output.toBytes(), kryo6Output.toBytes());
+		assertEquals(0, kryo6.readObject(new Input(kryo5Output.toBytes()), PublicApiFields.class).a);
+		var kryo5Input = new com.esotericsoftware.kryo.kryo5.io.Input(kryo6Output.toBytes());
+		assertEquals(0, kryo5.readObject(kryo5Input, PublicApiFields.class).a);
 	}
 
 	private void roundTrip (Consumer<Kryo> kryo6Setup, Consumer<com.esotericsoftware.kryo.kryo5.Kryo> kryo5Setup) {
