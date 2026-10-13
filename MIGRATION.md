@@ -209,6 +209,7 @@ These changes don't affect the serialized format of the default configuration, e
 * If the class of a class name is not found, a later reference to the same class name throws the same exception. Kryo 5 read the following bytes as a class name.
 * A reference resolves to the object a serializer returns, also if the serializer called `Kryo.reference` with another object first, eg the mutable collection an immutable `List.of`, `Set.of` or `Map.of` is read or copied with. Kryo 5 resolved a second reference to such a collection to the mutable collection. An element that refers to its own immutable collection still gets the mutable collection, which doesn't exist yet when the element is read. A custom `ReferenceResolver` gets `setReadObject` a second time for the same id, with the returned object.
 * DefaultInstantiatorStrategy and BeanSerializer use method handles instead of ReflectASM. If a constructor throws an exception, that exception is the cause of the KryoException, like with ReflectASM in Kryo 5.
+* DefaultInstantiatorStrategy uses the fallback strategy for a public no-arg constructor of a public class in a package that is not exported to Kryo, eg a JDK implementation class. Kryo 5 kept the constructor and creating the object failed with an IllegalAccessException.
 
 ## API changes
 

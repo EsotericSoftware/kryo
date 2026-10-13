@@ -58,8 +58,11 @@ public class DefaultInstantiatorStrategy implements InstantiatorStrategy {
 			// Also for public constructors, so that they can be called if the class is not public.
 			ctor.setAccessible(true);
 		} catch (Exception ex) {
-			// Without setAccessible, the constructor can only be called if it and the class are public.
-			if (ctor != null && (!Modifier.isPublic(ctor.getModifiers()) || !Modifier.isPublic(type.getModifiers()))) ctor = null;
+			// Without setAccessible, the constructor can only be called if it and the class are public and the package is exported
+			// to Kryo. For such a constructor, setAccessible fails only with a SecurityException; if the package isn't exported, it
+			// fails with InaccessibleObjectException.
+			if (ctor != null && (!(ex instanceof SecurityException) || !Modifier.isPublic(ctor.getModifiers())
+				|| !Modifier.isPublic(type.getModifiers()))) ctor = null;
 		}
 
 		if (ctor != null) {
