@@ -392,6 +392,15 @@ class DefaultSerializersTest extends KryoTestCase {
 		assertEquals(EnumSet.class, kryo.getRegistration(EnumSet.of(TestEnum.a).getClass()).getType());
 	}
 
+	// An enum set of an enum without constants is empty, so the element type is taken from the serialized form of the set.
+	@Test
+	void testEnumSetOfEnumWithoutConstants () {
+		kryo.register(EnumSet.class);
+		kryo.register(EmptyEnum.class);
+		EnumSet<EmptyEnum> set = roundTrip(3, EnumSet.noneOf(EmptyEnum.class));
+		assertEquals(EmptyEnum.class, EnumMapSerializer.enumType(set));
+	}
+
 	// Invalid enum data throws a KryoException that names the enum, not a NullPointerException.
 	@Test
 	void testInvalidEnumData () {

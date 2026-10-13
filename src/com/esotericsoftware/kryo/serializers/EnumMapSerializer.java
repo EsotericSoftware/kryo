@@ -66,16 +66,23 @@ public class EnumMapSerializer extends MapSerializer<EnumMap> {
 	 * empty map it is taken from Java serialization. */
 	static Class keyType (EnumMap map) {
 		if (!map.isEmpty()) return ((Enum)map.keySet().iterator().next()).getDeclaringClass();
+		return enumType(map);
+	}
+
+	/** Returns the first enum class in the Java serialized form of an {@link EnumMap} or {@link java.util.EnumSet}, which is its
+	 * key or element type. */
+	static Class enumType (Object object) {
 		try (KeyTypeOutput output = new KeyTypeOutput()) {
-			output.writeObject(map);
-			if (output.keyType == null) throw new KryoException("EnumMap key type not found.");
+			output.writeObject(object);
+			if (output.keyType == null) throw new KryoException("Enum type not found: " + object.getClass().getName());
 			return output.keyType;
 		} catch (IOException ex) {
-			throw new KryoException("Unable to find the EnumMap key type.", ex);
+			throw new KryoException("Unable to find the enum type: " + object.getClass().getName(), ex);
 		}
 	}
 
-	/** Discards the data and remembers the first enum class written, which is the key type of an empty {@link EnumMap}. */
+	/** Discards the data and remembers the first enum class written, which is the key type of an empty {@link EnumMap} or the
+	 * element type of an empty {@link java.util.EnumSet}. */
 	static class KeyTypeOutput extends ObjectOutputStream {
 		Class keyType;
 

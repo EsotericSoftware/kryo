@@ -542,8 +542,9 @@ public class DefaultSerializers {
 			Serializer serializer;
 			if (object.isEmpty()) {
 				EnumSet tmp = EnumSet.complementOf(object);
-				if (tmp.isEmpty()) throw new KryoException("An EnumSet must have a defined Enum to be serialized.");
-				serializer = kryo.writeClass(output, tmp.iterator().next().getClass()).getSerializer();
+				// For an enum without constants, the element type is only in the serialized form of the set.
+				Class elementType = tmp.isEmpty() ? EnumMapSerializer.enumType(object) : tmp.iterator().next().getClass();
+				serializer = kryo.writeClass(output, elementType).getSerializer();
 			} else {
 				serializer = kryo.writeClass(output, object.iterator().next().getClass()).getSerializer();
 			}
