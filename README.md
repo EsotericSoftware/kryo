@@ -457,8 +457,6 @@ All the serializers being used need to support [copying](#serializer-copying). A
 
 Like with serialization, when copying, multiple references to the same object and circular references are handled by Kryo automatically if copy references are enabled, which they are by default.
 
-If using Kryo only for copying, registration can be safely disabled.
-
 Kryo `getOriginalToCopyMap` can be used after an object graph is copied to obtain a map of old to new objects. The map is cleared automatically by Kryo `reset`, so is only useful when Kryo `setAutoReset` is false.
 
 ### References
