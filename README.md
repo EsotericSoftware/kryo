@@ -102,6 +102,8 @@ Kryo maintenance and development is sponsored by the [Gecko fund](https://geckof
    * [Pooling](#pooling)
 - [Typical usage](#typical-usage)
 - [Benchmarks](#benchmarks)
+   * [Kryo 5 and Kryo 6](#kryo-5-and-kryo-6)
+   * [Kryo 6](#kryo-6)
 - [Links](#links)
    * [Projects using Kryo](#projects-using-kryo)
    * [Scala](#scala)
