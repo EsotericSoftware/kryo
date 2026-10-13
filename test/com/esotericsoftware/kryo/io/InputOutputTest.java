@@ -1373,4 +1373,11 @@ class InputOutputTest extends KryoTestCase {
 			assertEquals(Long.MIN_VALUE, input.readVarLong(true));
 		}
 	}
+
+	@Test
+	void testReadBooleanNonzero () {
+		// Any nonzero byte is true, as with readBooleans and the Unsafe inputs.
+		assertTrue(new Input(new byte[] {2}).readBoolean());
+		assertTrue(new ByteBufferInput(new byte[] {2}).readBoolean());
+	}
 }

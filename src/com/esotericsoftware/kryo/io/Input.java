@@ -806,7 +806,7 @@ public class Input extends InputStream implements Poolable {
 	/** Reads a 1 byte boolean. */
 	public boolean readBoolean () throws KryoException {
 		if (position == limit) require(1);
-		return buffer[position++] == 1;
+		return buffer[position++] != 0;
 	}
 
 	// String:

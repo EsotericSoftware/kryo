@@ -722,7 +722,7 @@ public class ByteBufferInput extends Input {
 	public boolean readBoolean () throws KryoException {
 		if (position == limit) require(1);
 		position++;
-		return byteBuffer.get() == 1 ? true : false;
+		return byteBuffer.get() != 0;
 	}
 
 	// short:
