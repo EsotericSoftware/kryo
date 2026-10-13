@@ -43,6 +43,8 @@ jobs:
         run: mvn -B test -pl main -Djvm=${{ steps.jdk17.outputs.path }}/bin/java
         env:
           JAVA_TOOL_OPTIONS: -Dkryo.fieldAccess=VARHANDLE
+      - name: Test with JDK 17 without the optional dependencies Objenesis and ASM
+        run: mvn -B test -pl main -Djvm=${{ steps.jdk17.outputs.path }}/bin/java -Dmaven.test.dependency.excludes=org.objenesis:objenesis,org.ow2.asm:asm
 
       - name: Check code formatting
         run: mvn -B --no-transfer-progress -pl main formatter:validate

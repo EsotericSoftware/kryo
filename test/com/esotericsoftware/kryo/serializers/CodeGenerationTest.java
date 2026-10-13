@@ -557,9 +557,16 @@ class CodeGenerationTest extends KryoTestCase {
 	/** Returns the class file with the constant pool in the order ASM writes it. The writers order the constant pool differently,
 	 * everything else is the same. */
 	static private byte[] canonical (byte[] classFile) {
-		ClassWriter writer = new ClassWriter(0);
-		new ClassReader(classFile).accept(writer, 0);
-		return writer.toByteArray();
+		return Asm.canonical(classFile);
+	}
+
+	/** Separate class, so the test class can be loaded without ASM on the class path. */
+	static private class Asm {
+		static byte[] canonical (byte[] classFile) {
+			ClassWriter writer = new ClassWriter(0);
+			new ClassReader(classFile).accept(writer, 0);
+			return writer.toByteArray();
+		}
 	}
 
 	@Test
