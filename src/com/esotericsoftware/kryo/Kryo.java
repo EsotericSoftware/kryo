@@ -204,7 +204,7 @@ public class Kryo {
 	private boolean registrationRequired = true;
 	private boolean warnUnregisteredClasses;
 	private Format format = Format.KRYO6;
-	/** True once a serializer decided something for the format when it was created, after which the format can't change. */
+	/** True once the format was used, eg read by a serializer, after which the format can't change. */
 	private boolean formatUsed;
 	private Predicate<Class> allowedUnregisteredClasses;
 
@@ -1393,19 +1393,21 @@ public class Kryo {
 	/** Sets the serialization format, see {@link Format}. Kryo's serializers and reference resolvers write and read the format of
 	 * their Kryo instance. Serializers are chosen and configured for the format when they are created, so the format must be set
 	 * before classes are registered or serializers are created. Default is {@link Format#KRYO6}.
-	 * @throws KryoException if the format was already used to create a serializer. */
+	 * @throws KryoException if the format was already used, see {@link #getFormat()}. */
 	public void setFormat (Format format) {
 		if (format == null) throw new IllegalArgumentException("format cannot be null.");
 		if (format == this.format) return;
 		if (formatUsed) {
-			throw new KryoException("The format can't be changed after it was used to create a serializer, because serializers "
-				+ "are chosen and configured for the format when they are created. Set the format before registering classes.");
+			throw new KryoException("The format can't be changed after it was used, because serializers are chosen and "
+				+ "configured for the format when they are created. Set the format before registering classes.");
 		}
 		this.format = format;
 		if (TRACE) trace("kryo", "Format: " + format);
 	}
 
+	/** Returns the serialization format. Reading it fixes the format, after which {@link #setFormat(Format)} throws. */
 	public Format getFormat () {
+		formatUsed = true;
 		return format;
 	}
 
