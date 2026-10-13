@@ -391,9 +391,10 @@ class DefaultSerializersTest extends KryoTestCase {
 	@Test
 	void testClassOfImplementationClasses () {
 		// The classes Kryo serializes as another class are read as that class, see ClassSerializer.
-		// Big5 is loaded by the platform class loader on the JDK, not by the bootstrap class loader.
+		// Big5 is loaded by the platform class loader on some JDKs (jdk.charsets module), by the bootstrap class loader on others.
 		Class big5 = Charset.forName("Big5").getClass();
-		assertSame(ClassLoader.getPlatformClassLoader(), big5.getClassLoader());
+		ClassLoader big5Loader = big5.getClassLoader();
+		assertTrue(big5Loader == null || big5Loader == ClassLoader.getPlatformClassLoader(), String.valueOf(big5Loader));
 		Class[] classes = {TestEnumWithMethods.a.getClass(), EnumSet.of(TestEnum.a).getClass(), Charset.forName("UTF-8").getClass(),
 			big5, TimeZone.getTimeZone("Europe/Berlin").getClass()};
 		Class[] expected = {TestEnumWithMethods.class, EnumSet.class, Charset.class, Charset.class, TimeZone.class};
