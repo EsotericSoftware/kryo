@@ -19,8 +19,9 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-/** A public top-level class for {@link FieldSerializerTest#testSetFieldsAsAccessibleFalse()}. Nested classes of the
- * package-private test class are not part of the public API. */
+/** A public top-level class for {@link FieldSerializerTest#testSetFieldsAsAccessibleFalse()} and
+ * {@code Kryo5RoundTripTest.testFieldsNotAsAccessible}. Nested classes of the package-private test classes are not part of the
+ * public API. */
 public class PublicApiFields {
 	public int a;
 	protected int b;

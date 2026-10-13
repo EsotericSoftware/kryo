@@ -182,9 +182,9 @@ class CachedFields implements Comparator<CachedField> {
 		}
 
 		// The components of a record are its public API through the accessors and the canonical constructor, which is set
-		// accessible anyway, so they are always serialized.
+		// accessible anyway, so they are always serialized. Kryo 5 serialized no fields, also not public ones.
 		if (!config.setFieldsAsAccessible && recordComponents == null) {
-			if (!isPublicApi(field)) return;
+			if (serializer.kryo.getFormat() == Format.KRYO5 || !isPublicApi(field)) return;
 		} else {
 			try {
 				field.setAccessible(true);
