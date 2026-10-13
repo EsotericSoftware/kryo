@@ -110,7 +110,7 @@ Kryo 6 adds default serializers for these JDK types, see [Default serializers](R
   kryo.register(UUID.class, new FieldSerializer<>(kryo, UUID.class));
   ```
 
-  These serializers were already available in Kryo 5, eg `UUIDSerializer`. If you registered them with Kryo 5, keep registering them, because the Kryo 5 format only applies what Kryo 5 used by default. Registered serializers take precedence.
+  FieldSerializer for `UUID` needs `--add-opens java.base/java.util=ALL-UNNAMED` on Java 16+ like in Kryo 5, because it reads the private fields of `UUID`. These serializers were already available in Kryo 5, eg `UUIDSerializer`. If you registered them with Kryo 5, keep registering them, because the Kryo 5 format only applies what Kryo 5 used by default. Registered serializers take precedence.
 * `ConcurrentSkipListSet` and `PriorityBlockingQueue`, which write the comparator like the serializers for `TreeSet` and `PriorityQueue`. Kryo 5 serialized them with CollectionSerializer, which lost the comparator. The Kryo 5 format uses CollectionSerializer for them, or register it for both to read data written by Kryo 5:
 
   ```java
