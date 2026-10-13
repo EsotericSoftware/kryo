@@ -52,7 +52,8 @@ public class DefaultClassResolver implements ClassResolver {
 	/** The classes whose names are deferred, in the order of their name IDs. */
 	protected ArrayList<Class> deferredClasses;
 
-	private int memoizedClassId = -1;
+	/** {@link Kryo#NULL} if none: readClass handles it before the memo, while any other value can be read from corrupt data. */
+	private int memoizedClassId = Kryo.NULL;
 	private Registration memoizedClassIdValue;
 	private Class memoizedClass;
 	private Registration memoizedClassValue;
@@ -62,7 +63,7 @@ public class DefaultClassResolver implements ClassResolver {
 	}
 
 	public Registration register (Registration registration) {
-		memoizedClassId = -1;
+		memoizedClassId = Kryo.NULL;
 		memoizedClass = null;
 		if (registration == null) throw new IllegalArgumentException("registration cannot be null.");
 		if (registration.getId() != NAME) {
@@ -85,7 +86,7 @@ public class DefaultClassResolver implements ClassResolver {
 		Registration registration = idToRegistration.remove(classID);
 		if (registration != null) {
 			classToRegistration.remove(registration.getType());
-			memoizedClassId = -1;
+			memoizedClassId = Kryo.NULL;
 			memoizedClass = null;
 			Class wrapperClass = getWrapperClass(registration.getType());
 			if (wrapperClass != registration.getType()) classToRegistration.remove(wrapperClass);
@@ -190,7 +191,7 @@ public class DefaultClassResolver implements ClassResolver {
 				if (className != null) throw new KryoException("Unable to find class: " + className);
 			}
 			// Only read the class name the first time encountered in object graph.
-			type = readName(nameId, input.readString());
+			type = readName(nameId, readClassName(input));
 		} else {
 			if (TRACE) trace("kryo", "Read class name reference " + nameId + ": " + className(type) + pos(input.position()));
 		}
@@ -231,6 +232,12 @@ public class DefaultClassResolver implements ClassResolver {
 		return type;
 	}
 
+	private String readClassName (Input input) {
+		String className = input.readString();
+		if (className == null) throw new KryoException("Invalid class name: null" + pos(input.position()));
+		return className;
+	}
+
 	/** Remembers the name of a class that is not found, so a later reference to the name ID is not read as a class name. */
 	private void unknownName (int nameId, String className) {
 		if (unknownNameIdToName == null) unknownNameIdToName = new IntMap<>();
@@ -264,7 +271,7 @@ public class DefaultClassResolver implements ClassResolver {
 		if (nameIdToClass == null) nameIdToClass = new IntMap<>();
 		for (int i = 0, n = input.readVarInt(true); i < n; i++) {
 			int nameId = input.readVarInt(true);
-			String className = input.readString();
+			String className = readClassName(input);
 			if (nameIdToClass.containsKey(nameId)) continue;
 			if (unknownNameIdToName != null && unknownNameIdToName.containsKey(nameId)) continue;
 			try {

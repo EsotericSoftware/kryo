@@ -158,6 +158,44 @@ class DefaultClassResolverTest {
 		assertTrue(contains(data, "$A"));
 	}
 
+	@Test
+	void testInvalidClassId () {
+		// -1 is not written for any registration ID. It was read as the memoized class after a registration cleared the memo.
+		Output output = new Output(16, -1);
+		output.writeVarInt(-1, true);
+		byte[] invalid = output.toBytes();
+		Kryo kryo = kryo();
+		assertThrows(KryoException.class, () -> kryo.readClass(new Input(invalid)));
+
+		kryo.register(A.class, 10);
+		Output a = new Output(16, -1);
+		kryo.writeClass(a, A.class);
+		assertSame(A.class, kryo.readClass(new Input(a.toBytes())).getType());
+		kryo.register(B.class, 11);
+		assertThrows(KryoException.class, () -> kryo.readClass(new Input(invalid)));
+		assertSame(A.class, kryo.readClass(new Input(a.toBytes())).getType());
+	}
+
+	@Test
+	void testNullClassName () {
+		for (boolean deferred : new boolean[] {false, true}) {
+			Output output = new Output(16, -1);
+			output.writeVarInt(1, true); // NAME + 2, or the number of deferred names.
+			output.writeVarInt(0, true); // Name ID.
+			output.writeString(null);
+			Kryo kryo = kryo();
+			Input input = new Input(output.toBytes());
+			KryoException ex = assertThrows(KryoException.class,
+				() -> {
+					if (deferred)
+						kryo.getClassResolver().readDeferredNames(input);
+					else
+						kryo.readClass(input);
+				});
+			assertTrue(ex.getMessage().contains("null"), ex.getMessage());
+		}
+	}
+
 	/** Without auto reset, because writeClass and readClass reset the object graph at the top level. */
 	private Kryo kryo () {
 		Kryo kryo = new Kryo();
