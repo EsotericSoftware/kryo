@@ -207,11 +207,16 @@ public class ByteBufferOutput extends Output {
 	public void flush () throws KryoException {
 		if (outputStream == null) return;
 		try {
-			byte[] tmp = new byte[position];
+			if (byteBuffer.hasArray())
+				outputStream.write(byteBuffer.array(), byteBuffer.arrayOffset(), position);
+			else {
+				byte[] tmp = new byte[position];
+				setBufferPosition(byteBuffer, 0);
+				byteBuffer.get(tmp);
+				outputStream.write(tmp, 0, position);
+			}
 			setBufferPosition(byteBuffer, 0);
-			byteBuffer.get(tmp);
-			setBufferPosition(byteBuffer, 0);
-			outputStream.write(tmp, 0, position);
+			outputStream.flush();
 		} catch (IOException ex) {
 			throw new KryoException(ex);
 		}
