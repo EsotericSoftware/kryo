@@ -616,6 +616,24 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testIncompatibleTypeVoid () {
+		// The ID of the written String class is registered for void.class by the reader.
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(ObjectField.class, 100);
+		Output output = new Output(64);
+		kryo.writeObject(output, new ObjectField());
+
+		Kryo reader = new Kryo();
+		reader.setDefaultSerializer(CompatibleFieldSerializer.class);
+		reader.register(NumberField.class, 100);
+		reader.register(void.class, kryo.getRegistration(String.class).getId());
+		KryoException ex = assertThrows(KryoException.class,
+			() -> reader.readObject(new Input(output.toBytes()), NumberField.class));
+		assertTrue(ex.getMessage().startsWith("Read type is incompatible with the field type: void -> java.lang.Number"),
+			ex.getMessage());
+	}
+
+	@Test
 	void testProxy () {
 		// A proxy is written as InvocationHandler, which is compatible with a field of an interface type.
 		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
