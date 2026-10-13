@@ -39,6 +39,7 @@ import java.lang.invoke.MutableCallSite;
 import java.lang.invoke.VarHandle;
 import java.lang.invoke.VarHandle.AccessMode;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntConsumer;
@@ -47,8 +48,8 @@ import java.util.function.IntConsumer;
  * {@link Bytecode}. Primitive and String fields are accessed with VarHandles that are constants of the hidden class (its class
  * data) and written directly to the {@link Output}, object fields are delegated to their {@link ReflectField}, which holds the
  * serializer, value class and generic type. Final fields are set with a MethodHandle, because VarHandles can't set them. The
- * hidden class depends only on the field names, kinds and encodings, so it is shared by all serializers and Kryo instances for a
- * class.
+ * hidden class depends only on the field names, kinds and encodings, and on whether final fields are Unsafe fields, so it is
+ * shared by all serializers and Kryo instances for a class.
  * <p>
  * For example, for {@code class Nested { String name; Nested next; final int value; }} with FieldSerializer, the hidden class is
  * equivalent to:
@@ -132,8 +133,8 @@ import java.util.function.IntConsumer;
  * cached fields, without reflection. Otherwise its first call obtains the setter of the field, because Java 26+ warns when that
  * is done, so it only happens when a final field is set. If setting the field with reflection is denied, the call site calls
  * {@link FieldSerializer#setFinal(CachedField, Object, Object)} instead, which uses the {@link FinalFieldSetter} of the cached
- * field. Unsafe fields are part of the signature of the hidden class, so serializers with other field access don't share its call
- * sites.
+ * field. Final Unsafe fields are part of the signature of the hidden class, so serializers with other field access don't share
+ * its call sites.
  * <p>
  * Not supported, so the cached fields are used: records with more than {@link #batchSize} components, because their constructor
  * call can't be split, records with removed components, which the cached fields set to their defaults, and custom
@@ -181,8 +182,9 @@ final class CodeGeneration {
 			signature.append(field.field.getDeclaringClass().getName()).append('.').append(field.field.getName()).append(':')
 				.append(kinds[i]);
 			if (tags != null) signature.append(':').append(tags[i]);
-			// The call site of a final field resolves its setter by the field access, so the classes for Unsafe fields are separate.
-			if (field.offset != 0) signature.append(":unsafe");
+			// The call site of a final field resolves its setter by the field access, so the classes for final Unsafe fields are
+			// separate.
+			if (field.offset != 0 && Modifier.isFinal(field.field.getModifiers())) signature.append(":unsafe");
 			signature.append(';');
 		}
 
