@@ -1291,7 +1291,6 @@ Setting | Description | Default value
 `valueClass` | Sets the concrete class of the values in the map. Used together with `valueSerializer`: when both are set, the class ID is not written for each value. | null
 `keySerializer` | Sets the serializer to use for every key in the map. If the key serializer is set, some serializers require the key class to also be set. If null, the serializer registered with Kryo for each key's class will be used. | null
 `valueSerializer` | Sets the serializer to use for every value in the map. If the value serializer is set, some serializers require the value class to also be set. If null, the serializer registered with Kryo for each value's class will be used. | null
-`writeSameClassOnce` | When true and the class of the keys or values is unknown, the class is written only once if all keys or values are not null and have the same class. The writer and reader must use the same setting. This is the default in Kryo 6. | false
 
 ### Unmodifiable and synchronized collections
 
