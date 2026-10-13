@@ -69,13 +69,22 @@ public class Util {
 	// Maximum reasonable array length. See: https://stackoverflow.com/questions/3038392/do-java-arrays-have-a-maximum-size
 	public static final int maxArraySize = Integer.MAX_VALUE - 8;
 
-	/** The parent of the system class loader: the platform class loader, or the boot class loader on Android. */
-	private static final ClassLoader platformClassLoader = ClassLoader.getSystemClassLoader().getParent();
+	/** The platform class loader, which loads some JDK modules, eg jdk.charsets on some JDKs. On Android, the boot class loader,
+	 * which loads all platform classes. */
+	private static final ClassLoader platformClassLoader = isAndroid ? Object.class.getClassLoader() : PlatformClassLoader.get();
 
 	/** Returns true if the class is a JDK class, loaded by the bootstrap or platform class loader. */
 	public static boolean isJdkClass (Class type) {
 		ClassLoader loader = type.getClassLoader();
 		return loader == Object.class.getClassLoader() || loader == platformClassLoader;
+	}
+
+	/** Separate class, which Android never loads, because it has no platform class loader. */
+	@IgnoreAndroid
+	static private final class PlatformClassLoader {
+		static ClassLoader get () {
+			return ClassLoader.getPlatformClassLoader();
+		}
 	}
 
 	private static final Map<Class<?>, Class<?>> primitiveWrappers = new HashMap<>();
