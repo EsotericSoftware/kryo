@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.HashSet;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
@@ -211,6 +212,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				} else
 					length = input.readVarInt(true);
 				if (length == 0) return null;
+				if (length < 0) throw new KryoException("Declared size is negative: " + (length - 1L));
 
 				length--;
 				collection = create(kryo, input, type, input.clampSize(length));
@@ -221,6 +223,7 @@ public class CollectionSerializer<T extends Collection> extends Serializer<T> {
 				boolean sameType = input.readVarIntFlag();
 				length = input.readVarIntFlag(true);
 				if (length == 0) return null;
+				if (length < 0) throw new KryoException("Declared size is negative: " + (length - 1L));
 
 				length--;
 				collection = create(kryo, input, type, input.clampSize(length));
