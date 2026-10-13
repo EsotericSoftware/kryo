@@ -141,19 +141,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 			long mark = chunked ? chunks.beginField(fieldOutput) : 0;
 
 			// Write the value class so the field data can be read even if the field is removed.
-			if (readUnknownFieldData) {
-				Class valueClass = cachedField.classOfValue(object);
-				kryo.writeClass(fieldOutput, valueClass);
-				if (valueClass == null) {
-					if (chunked) chunks.endField(fieldOutput, mark);
-					continue;
-				}
-				cachedField.setCanBeNull(false);
-				cachedField.setValueClass(valueClass);
-				cachedField.setReuseSerializer(false);
-			}
-
-			writeField(cachedField, fieldOutput, object);
+			if (readUnknownFieldData)
+				writeFieldWithClass(cachedField, fieldOutput, object);
+			else
+				writeField(cachedField, fieldOutput, object);
 			if (chunked) chunks.endField(fieldOutput, mark);
 		}
 
@@ -192,6 +183,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				CachedField cachedField = fields[i];
 				long end = chunked ? chunks.beginField(fieldInput) : 0;
 
+				Class valueClass = null;
 				if (readUnknownFieldData) {
 					Registration registration = GeneratedFields.readClass(this, fieldInput, cachedField,
 						cachedField == null ? "unknown" : cachedField.name, chunked);
@@ -205,7 +197,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 						if (chunked) chunks.endField(fieldInput, end);
 						continue;
 					}
-					Class valueClass = registration.getType();
+					valueClass = registration.getType();
 					if (cachedField == null) {
 						// Read unknown data in case it is a reference.
 						if (TRACE) trace("kryo", "Read unknown data, type: " + className(valueClass) + pos(input.position()));
@@ -220,10 +212,6 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 						if (chunked) chunks.endField(fieldInput, end);
 						continue;
 					}
-
-					cachedField.setCanBeNull(false);
-					cachedField.setValueClass(valueClass);
-					cachedField.setReuseSerializer(false);
 				} else if (cachedField == null) {
 					if (!chunked) throw new KryoException("Unknown field. (" + getType().getName() + ")");
 					if (TRACE) trace("kryo", "Skip unknown field.");
@@ -232,7 +220,7 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 				}
 
 				if (TRACE) log("Read", cachedField, input.position());
-				readField(cachedField, fieldInput, object, values);
+				readField(cachedField, fieldInput, object, values, valueClass);
 				if (chunked) chunks.endField(fieldInput, end);
 			}
 

@@ -155,19 +155,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 			long mark = chunked ? chunks.beginField(fieldOutput) : 0;
 
 			// Write the value class so the field data can be read even if the field is removed.
-			if (readUnknownTagData) {
-				Class valueClass = cachedField.classOfValue(object);
-				kryo.writeClass(fieldOutput, valueClass);
-				if (valueClass == null) {
-					if (chunked) chunks.endField(fieldOutput, mark);
-					continue;
-				}
-				cachedField.setCanBeNull(false);
-				cachedField.setValueClass(valueClass);
-				cachedField.setReuseSerializer(false);
-			}
-
-			writeField(cachedField, fieldOutput, object);
+			if (readUnknownTagData)
+				writeFieldWithClass(cachedField, fieldOutput, object);
+			else
+				writeField(cachedField, fieldOutput, object);
 			if (chunked) chunks.endField(fieldOutput, mark);
 		}
 
@@ -230,6 +221,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 	/** @param values The record values, or null to set the fields of the object. */
 	private void readTag (Input input, int tag, Object object, Object[] values, boolean chunked) {
 		CachedField cachedField = readTags.get(tag);
+		Class valueClass = null;
 		if (config.readUnknownTagData) {
 			Registration registration = GeneratedFields.readClass(this, input, cachedField,
 				cachedField == null ? "tag " + tag : cachedField.name, chunked);
@@ -239,7 +231,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				if (cachedField != null && values == null) setNull(cachedField, object);
 				return;
 			}
-			Class valueClass = registration.getType();
+			valueClass = registration.getType();
 			if (cachedField == null) {
 				// Read unknown tag data in case it is a reference.
 				if (TRACE) trace("kryo", "Read unknown tag " + tag + " data, type: " + className(valueClass));
@@ -253,10 +245,6 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 				}
 				return;
 			}
-
-			cachedField.setCanBeNull(false);
-			cachedField.setValueClass(valueClass);
-			cachedField.setReuseSerializer(false);
 		} else if (cachedField == null) {
 			if (!chunked) throw new KryoException("Unknown field tag: " + tag + " (" + getType().getName() + ")");
 			if (TRACE) trace("kryo", "Skip unknown field tag: " + tag);
@@ -264,7 +252,7 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		}
 
 		if (TRACE) log("Read", cachedField, input.position());
-		readField(cachedField, input, object, values);
+		readField(cachedField, input, object, values, valueClass);
 	}
 
 	public TaggedFieldSerializerConfig getTaggedFieldSerializerConfig () {
