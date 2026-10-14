@@ -83,11 +83,7 @@ final class FinalFieldSetter extends ObjectInputStream {
 	}
 
 	/** The serializable fields of a class do not change, so they are shared by all serializers. */
-	static private final ClassValue<ClassFields> classFieldsCache = new ClassValue<>() {
-		protected ClassFields computeValue (Class type) {
-			return new ClassFields(type);
-		}
-	};
+	static private final ClassCache<ClassFields> classFieldsCache = ClassCache.create(ClassFields::new);
 
 	private final ClassFields classFields;
 	/** The position of the field to set in the serializable fields of its class. */

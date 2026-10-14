@@ -70,32 +70,16 @@ import java.util.function.Predicate;
 class CachedFields implements Comparator<CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
 
-	/** Caches shared by all serializers and Kryo instances. Not used on Android, which has ClassValue only since API level 34. */
-	@IgnoreAndroid
-	static private final class SharedCaches {
-		/** The declared fields of a class. Class#getDeclaredFields() returns new Field objects for each call, which take as much
-		 * memory as the cached fields. */
-		static final ClassValue<Field[]> declaredFields = new ClassValue<>() {
-			protected Field[] computeValue (Class type) {
-				return type.getDeclaredFields();
-			}
-		};
-
-		/** The generic types of the fields of a serialized class, including the fields of its super classes. */
-		static final ClassValue<ConcurrentHashMap<Field, GenericType>> genericTypes = new ClassValue<>() {
-			protected ConcurrentHashMap<Field, GenericType> computeValue (Class type) {
-				return new ConcurrentHashMap<>();
-			}
-		};
-
-		/** The getter, setter and copier of the fields of a class that are accessed with VarHandles, see
-		 * {@link VarHandleField#handles(Field, Class)}. They are JDK objects, so they don't keep Kryo's class loader alive. */
-		static final ClassValue<ConcurrentHashMap<Field, MethodHandle[]>> varHandles = new ClassValue<>() {
-			protected ConcurrentHashMap<Field, MethodHandle[]> computeValue (Class type) {
-				return new ConcurrentHashMap<>();
-			}
-		};
-	}
+	/** The declared fields of a class. Class#getDeclaredFields() returns new Field objects for each call, which take as much
+	 * memory as the cached fields. */
+	static private final ClassCache<Field[]> declaredFields = ClassCache.create(Class::getDeclaredFields);
+	/** The generic types of the fields of a serialized class, including the fields of its super classes. */
+	static private final ClassCache<ConcurrentHashMap<Field, GenericType>> genericTypes = ClassCache.create(
+		type -> new ConcurrentHashMap<>());
+	/** The getter, setter and copier of the fields of a class that are accessed with VarHandles, see
+	 * {@link VarHandleField#handles(Field, Class)}. */
+	static private final ClassCache<ConcurrentHashMap<Field, MethodHandle[]>> methodHandles = ClassCache.create(
+		type -> new ConcurrentHashMap<>());
 
 	private final FieldSerializer serializer;
 
@@ -147,7 +131,7 @@ class CachedFields implements Comparator<CachedField> {
 		RecordComponent[] recordComponents = recordComponents(serializer.type);
 		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
-			for (Field field : declaredFields(nextClass))
+			for (Field field : declaredFields.get(nextClass))
 				addField(field, recordComponents, newFields, newCopyFields);
 			nextClass = nextClass.getSuperclass();
 		}
@@ -276,20 +260,13 @@ class CachedFields implements Comparator<CachedField> {
 		}
 	}
 
-	/** Returns the declared fields of a class, which all serializers and Kryo instances share, except on Android. */
-	@IgnoreAndroid
-	static private Field[] declaredFields (Class type) {
-		return isAndroid ? type.getDeclaredFields() : SharedCaches.declaredFields.get(type);
-	}
-
 	/** Returns the getter, setter and copier of a field that is accessed with a VarHandle, see
-	 * {@link VarHandleField#handles(Field, Class)}, which all serializers and Kryo instances share, except on Android.
+	 * {@link VarHandleField#handles(Field, Class)}, which all serializers and Kryo instances share.
 	 * @param type The type of the value, Object for a field that isn't a primitive or String field.
 	 * @throws KryoException if the field can't be accessed with a VarHandle. */
 	@IgnoreAndroid
 	static MethodHandle[] varHandles (Field field, Class type) {
-		if (isAndroid) return VarHandleField.handles(field, type);
-		MethodHandle[] handles = SharedCaches.varHandles.get(field.getDeclaringClass()).computeIfAbsent(field,
+		MethodHandle[] handles = methodHandles.get(field.getDeclaringClass()).computeIfAbsent(field,
 			key -> VarHandleField.handles(key, type));
 		// The same field can be a String field and an object field: with references for strings, or a type variable.
 		return handles[0].type().returnType() == type ? handles : VarHandleField.handles(field, type);
@@ -303,10 +280,9 @@ class CachedFields implements Comparator<CachedField> {
 
 	/** Returns the generic type of a field, which all serializers and Kryo instances share, like the Field objects. The generic
 	 * type of a primitive field is only needed while the field is added. */
-	@IgnoreAndroid
 	static private GenericType genericType (Class declaringClass, Class type, Field field) {
-		if (isAndroid || field.getType().isPrimitive()) return new GenericType(declaringClass, type, field.getGenericType());
-		return SharedCaches.genericTypes.get(type).computeIfAbsent(field,
+		if (field.getType().isPrimitive()) return new GenericType(declaringClass, type, field.getGenericType());
+		return genericTypes.get(type).computeIfAbsent(field,
 			key -> new GenericType(declaringClass, type, key.getGenericType()));
 	}
 

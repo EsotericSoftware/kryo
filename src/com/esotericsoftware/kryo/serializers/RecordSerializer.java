@@ -42,16 +42,8 @@ import java.util.Comparator;
 @Deprecated
 @IgnoreAndroid
 public class RecordSerializer<T> extends ImmutableSerializer<T> {
-	private static final ClassValue<Constructor<?>> CONSTRUCTOR = new ClassValue<Constructor<?>>() {
-		protected Constructor<?> computeValue (Class<?> type) {
-			return getCanonicalConstructor(type);
-		}
-	};
-	private static final ClassValue<Component[]> COMPONENTS = new ClassValue<Component[]>() {
-		protected Component[] computeValue (Class<?> type) {
-			return components(type);
-		}
-	};
+	private static final ClassCache<Constructor<?>> CONSTRUCTOR = ClassCache.create(RecordSerializer::getCanonicalConstructor);
+	private static final ClassCache<Component[]> COMPONENTS = ClassCache.create(RecordSerializer::components);
 
 	private boolean fixedFieldTypes = false;
 
