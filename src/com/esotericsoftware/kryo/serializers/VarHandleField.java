@@ -33,19 +33,20 @@ import java.lang.invoke.VarHandle;
 import java.lang.invoke.VarHandle.AccessMode;
 import java.lang.reflect.Field;
 
-/** Read and write a non-primitive, non-final field using a {@link VarHandle}.
+/** Read and write a non-primitive field using a {@link VarHandle}.
  * <p>
- * The VarHandle is converted to method handles with erased ({@link Object}) coordinates once, so that every access is an exact
- * invocation without type adaptation. */
+ * The VarHandle is converted to method handles with erased ({@link Object}) coordinates once per field, which all serializers and
+ * Kryo instances share, see {@link CachedFields#varHandles(Field, Class)}, so that every access is an exact invocation without
+ * type adaptation. */
 @IgnoreAndroid
 class VarHandleField extends ReflectField {
 	final MethodHandle getter, setter;
 
 	VarHandleField (Field field, FieldSerializer serializer, GenericType genericType) {
 		super(field, serializer, genericType);
-		VarHandle handle = varHandle(field);
-		getter = getter(handle, Object.class);
-		setter = setter(handle, Object.class, this);
+		MethodHandle[] handles = CachedFields.varHandles(field, Object.class);
+		getter = handles[0];
+		setter = handles[1];
 	}
 
 	public Object get (Object object) {
@@ -58,7 +59,10 @@ class VarHandleField extends ReflectField {
 
 	public void set (Object object, Object value) {
 		try {
-			setter.invokeExact(object, value);
+			if (setter == null)
+				FieldSerializer.setFinal(this, object, value);
+			else
+				setter.invokeExact(object, value);
 		} catch (Throwable t) {
 			throw new KryoException(t);
 		}
@@ -72,31 +76,17 @@ class VarHandleField extends ReflectField {
 		}
 	}
 
-	static MethodHandle getter (VarHandle handle, Class type) {
-		return handle.toMethodHandle(AccessMode.GET).asType(MethodType.methodType(type, Object.class));
-	}
-
-	/** Returns a method handle (Object object, T value)void that sets the field. VarHandles can't set final fields, those are set
-	 * with {@link FieldSerializer#setFinal(CachedField, Object, Object)}. */
-	static MethodHandle setter (VarHandle handle, Class type, CachedField field) {
-		MethodType setterType = MethodType.methodType(void.class, Object.class, type);
-		if (handle.isAccessModeSupported(AccessMode.SET)) return handle.toMethodHandle(AccessMode.SET).asType(setterType);
-		return MethodHandles.insertArguments(setFinal, 0, field).asType(setterType);
-	}
-
-	static private final MethodHandle setFinal;
-	static {
-		try {
-			setFinal = MethodHandles.lookup().findStatic(FieldSerializer.class, "setFinal",
-				MethodType.methodType(void.class, CachedField.class, Object.class, Object.class));
-		} catch (IllegalAccessException | NoSuchMethodException ex) {
-			throw new KryoException(ex);
-		}
-	}
-
-	/** Combines the setter and getter into a single method handle {@code (Object copy, Object original)} that copies the field. */
-	static MethodHandle copier (MethodHandle getter, MethodHandle setter) {
-		return MethodHandles.collectArguments(setter, 1, getter);
+	/** Returns the getter, setter and copier {@code (Object copy, Object original)} of a field, with erased ({@link Object})
+	 * coordinates and the type as the type of the value. The setter and copier are null for a final field, which VarHandles can't
+	 * set, it is set with {@link FieldSerializer#setFinal(CachedField, Object, Object)}.
+	 * @throws KryoException if the field can't be accessed with a VarHandle. */
+	static MethodHandle[] handles (Field field, Class type) {
+		VarHandle handle = varHandle(field);
+		MethodHandle getter = handle.toMethodHandle(AccessMode.GET).asType(MethodType.methodType(type, Object.class));
+		if (!handle.isAccessModeSupported(AccessMode.SET)) return new MethodHandle[] {getter, null, null};
+		MethodHandle setter = handle.toMethodHandle(AccessMode.SET)
+			.asType(MethodType.methodType(void.class, Object.class, type));
+		return new MethodHandle[] {getter, setter, MethodHandles.collectArguments(setter, 1, getter)};
 	}
 
 	@IgnoreAndroid
@@ -105,10 +95,10 @@ class VarHandleField extends ReflectField {
 
 		IntVarHandleField (Field field) {
 			super(field);
-			VarHandle handle = varHandle(field);
-			getter = getter(handle, int.class);
-			setter = setter(handle, int.class, this);
-			copier = copier(getter, setter);
+			MethodHandle[] handles = CachedFields.varHandles(field, int.class);
+			getter = handles[0];
+			setter = handles[1];
+			copier = handles[2];
 		}
 
 		public void write (Output output, Object object) {
@@ -124,7 +114,9 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (varEncoding)
+				if (setter == null)
+					FieldSerializer.setFinal(this, object, read(input));
+				else if (varEncoding)
 					setter.invokeExact(object, input.readVarInt(false));
 				else
 					setter.invokeExact(object, input.readInt());
@@ -142,7 +134,10 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				copier.invokeExact(copy, original);
+				if (setter == null)
+					FieldSerializer.setFinal(this, copy, (int)getter.invokeExact(original));
+				else
+					copier.invokeExact(copy, original);
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -155,10 +150,10 @@ class VarHandleField extends ReflectField {
 
 		LongVarHandleField (Field field) {
 			super(field);
-			VarHandle handle = varHandle(field);
-			getter = getter(handle, long.class);
-			setter = setter(handle, long.class, this);
-			copier = copier(getter, setter);
+			MethodHandle[] handles = CachedFields.varHandles(field, long.class);
+			getter = handles[0];
+			setter = handles[1];
+			copier = handles[2];
 		}
 
 		public void write (Output output, Object object) {
@@ -174,7 +169,9 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (varEncoding)
+				if (setter == null)
+					FieldSerializer.setFinal(this, object, read(input));
+				else if (varEncoding)
 					setter.invokeExact(object, input.readVarLong(false));
 				else
 					setter.invokeExact(object, input.readLong());
@@ -192,7 +189,10 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				copier.invokeExact(copy, original);
+				if (setter == null)
+					FieldSerializer.setFinal(this, copy, (long)getter.invokeExact(original));
+				else
+					copier.invokeExact(copy, original);
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -205,10 +205,10 @@ class VarHandleField extends ReflectField {
 
 		FloatVarHandleField (Field field) {
 			super(field);
-			VarHandle handle = varHandle(field);
-			getter = getter(handle, float.class);
-			setter = setter(handle, float.class, this);
-			copier = copier(getter, setter);
+			MethodHandle[] handles = CachedFields.varHandles(field, float.class);
+			getter = handles[0];
+			setter = handles[1];
+			copier = handles[2];
 		}
 
 		public void write (Output output, Object object) {
@@ -221,7 +221,10 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				setter.invokeExact(object, input.readFloat());
+				if (setter == null)
+					FieldSerializer.setFinal(this, object, read(input));
+				else
+					setter.invokeExact(object, input.readFloat());
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -233,7 +236,10 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				copier.invokeExact(copy, original);
+				if (setter == null)
+					FieldSerializer.setFinal(this, copy, (float)getter.invokeExact(original));
+				else
+					copier.invokeExact(copy, original);
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -246,10 +252,10 @@ class VarHandleField extends ReflectField {
 
 		DoubleVarHandleField (Field field) {
 			super(field);
-			VarHandle handle = varHandle(field);
-			getter = getter(handle, double.class);
-			setter = setter(handle, double.class, this);
-			copier = copier(getter, setter);
+			MethodHandle[] handles = CachedFields.varHandles(field, double.class);
+			getter = handles[0];
+			setter = handles[1];
+			copier = handles[2];
 		}
 
 		public void write (Output output, Object object) {
@@ -262,7 +268,10 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				setter.invokeExact(object, input.readDouble());
+				if (setter == null)
+					FieldSerializer.setFinal(this, object, read(input));
+				else
+					setter.invokeExact(object, input.readDouble());
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -274,7 +283,10 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				copier.invokeExact(copy, original);
+				if (setter == null)
+					FieldSerializer.setFinal(this, copy, (double)getter.invokeExact(original));
+				else
+					copier.invokeExact(copy, original);
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -287,10 +299,10 @@ class VarHandleField extends ReflectField {
 
 		BooleanVarHandleField (Field field) {
 			super(field);
-			VarHandle handle = varHandle(field);
-			getter = getter(handle, boolean.class);
-			setter = setter(handle, boolean.class, this);
-			copier = copier(getter, setter);
+			MethodHandle[] handles = CachedFields.varHandles(field, boolean.class);
+			getter = handles[0];
+			setter = handles[1];
+			copier = handles[2];
 		}
 
 		public void write (Output output, Object object) {
@@ -303,7 +315,10 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				setter.invokeExact(object, input.readBoolean());
+				if (setter == null)
+					FieldSerializer.setFinal(this, object, read(input));
+				else
+					setter.invokeExact(object, input.readBoolean());
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -315,7 +330,10 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				copier.invokeExact(copy, original);
+				if (setter == null)
+					FieldSerializer.setFinal(this, copy, (boolean)getter.invokeExact(original));
+				else
+					copier.invokeExact(copy, original);
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -328,10 +346,10 @@ class VarHandleField extends ReflectField {
 
 		ByteVarHandleField (Field field) {
 			super(field);
-			VarHandle handle = varHandle(field);
-			getter = getter(handle, byte.class);
-			setter = setter(handle, byte.class, this);
-			copier = copier(getter, setter);
+			MethodHandle[] handles = CachedFields.varHandles(field, byte.class);
+			getter = handles[0];
+			setter = handles[1];
+			copier = handles[2];
 		}
 
 		public void write (Output output, Object object) {
@@ -344,7 +362,10 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				setter.invokeExact(object, input.readByte());
+				if (setter == null)
+					FieldSerializer.setFinal(this, object, read(input));
+				else
+					setter.invokeExact(object, input.readByte());
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -356,7 +377,10 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				copier.invokeExact(copy, original);
+				if (setter == null)
+					FieldSerializer.setFinal(this, copy, (byte)getter.invokeExact(original));
+				else
+					copier.invokeExact(copy, original);
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -369,10 +393,10 @@ class VarHandleField extends ReflectField {
 
 		ShortVarHandleField (Field field) {
 			super(field);
-			VarHandle handle = varHandle(field);
-			getter = getter(handle, short.class);
-			setter = setter(handle, short.class, this);
-			copier = copier(getter, setter);
+			MethodHandle[] handles = CachedFields.varHandles(field, short.class);
+			getter = handles[0];
+			setter = handles[1];
+			copier = handles[2];
 		}
 
 		public void write (Output output, Object object) {
@@ -385,7 +409,10 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				setter.invokeExact(object, input.readShort());
+				if (setter == null)
+					FieldSerializer.setFinal(this, object, read(input));
+				else
+					setter.invokeExact(object, input.readShort());
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -397,7 +424,10 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				copier.invokeExact(copy, original);
+				if (setter == null)
+					FieldSerializer.setFinal(this, copy, (short)getter.invokeExact(original));
+				else
+					copier.invokeExact(copy, original);
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -410,10 +440,10 @@ class VarHandleField extends ReflectField {
 
 		CharVarHandleField (Field field) {
 			super(field);
-			VarHandle handle = varHandle(field);
-			getter = getter(handle, char.class);
-			setter = setter(handle, char.class, this);
-			copier = copier(getter, setter);
+			MethodHandle[] handles = CachedFields.varHandles(field, char.class);
+			getter = handles[0];
+			setter = handles[1];
+			copier = handles[2];
 		}
 
 		public void write (Output output, Object object) {
@@ -426,7 +456,10 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				setter.invokeExact(object, input.readChar());
+				if (setter == null)
+					FieldSerializer.setFinal(this, object, read(input));
+				else
+					setter.invokeExact(object, input.readChar());
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -438,7 +471,10 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				copier.invokeExact(copy, original);
+				if (setter == null)
+					FieldSerializer.setFinal(this, copy, (char)getter.invokeExact(original));
+				else
+					copier.invokeExact(copy, original);
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -451,10 +487,10 @@ class VarHandleField extends ReflectField {
 
 		StringVarHandleField (Field field) {
 			super(field);
-			VarHandle handle = varHandle(field);
-			getter = getter(handle, String.class);
-			setter = setter(handle, String.class, this);
-			copier = copier(getter, setter);
+			MethodHandle[] handles = CachedFields.varHandles(field, String.class);
+			getter = handles[0];
+			setter = handles[1];
+			copier = handles[2];
 		}
 
 		public Object get (Object object) {
@@ -475,7 +511,10 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				setter.invokeExact(object, input.readString());
+				if (setter == null)
+					FieldSerializer.setFinal(this, object, read(input));
+				else
+					setter.invokeExact(object, input.readString());
 			} catch (Throwable t) {
 				throw error(t);
 			}
@@ -487,7 +526,10 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				copier.invokeExact(copy, original);
+				if (setter == null)
+					FieldSerializer.setFinal(this, copy, (String)getter.invokeExact(original));
+				else
+					copier.invokeExact(copy, original);
 			} catch (Throwable t) {
 				throw error(t);
 			}

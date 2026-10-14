@@ -54,6 +54,7 @@ import com.esotericsoftware.kryo.serializers.UnsafeField.StringUnsafeField;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
@@ -83,6 +84,14 @@ class CachedFields implements Comparator<CachedField> {
 		/** The generic types of the fields of a serialized class, including the fields of its super classes. */
 		static final ClassValue<ConcurrentHashMap<Field, GenericType>> genericTypes = new ClassValue<>() {
 			protected ConcurrentHashMap<Field, GenericType> computeValue (Class type) {
+				return new ConcurrentHashMap<>();
+			}
+		};
+
+		/** The getter, setter and copier of the fields of a class that are accessed with VarHandles, see
+		 * {@link VarHandleField#handles(Field, Class)}. They are JDK objects, so they don't keep Kryo's class loader alive. */
+		static final ClassValue<ConcurrentHashMap<Field, MethodHandle[]>> varHandles = new ClassValue<>() {
+			protected ConcurrentHashMap<Field, MethodHandle[]> computeValue (Class type) {
 				return new ConcurrentHashMap<>();
 			}
 		};
@@ -271,6 +280,19 @@ class CachedFields implements Comparator<CachedField> {
 	@IgnoreAndroid
 	static private Field[] declaredFields (Class type) {
 		return isAndroid ? type.getDeclaredFields() : SharedCaches.declaredFields.get(type);
+	}
+
+	/** Returns the getter, setter and copier of a field that is accessed with a VarHandle, see
+	 * {@link VarHandleField#handles(Field, Class)}, which all serializers and Kryo instances share, except on Android.
+	 * @param type The type of the value, Object for a field that isn't a primitive or String field.
+	 * @throws KryoException if the field can't be accessed with a VarHandle. */
+	@IgnoreAndroid
+	static MethodHandle[] varHandles (Field field, Class type) {
+		if (isAndroid) return VarHandleField.handles(field, type);
+		MethodHandle[] handles = SharedCaches.varHandles.get(field.getDeclaringClass()).computeIfAbsent(field,
+			key -> VarHandleField.handles(key, type));
+		// The same field can be a String field and an object field: with references for strings, or a type variable.
+		return handles[0].type().returnType() == type ? handles : VarHandleField.handles(field, type);
 	}
 
 	/** Returns the components of a record, or null if the type is not a record. */

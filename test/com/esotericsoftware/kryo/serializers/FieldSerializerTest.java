@@ -46,6 +46,7 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import com.esotericsoftware.kryo.serializers.MapSerializer.BindMap;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
+import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import com.esotericsoftware.kryo.util.Util;
 import com.esotericsoftware.kryo.util.Log;
 import com.esotericsoftware.kryo.util.Log.Logger;
@@ -1773,6 +1774,67 @@ class FieldSerializerTest extends KryoTestCase {
 					fieldAccess.toString()); // finalNotNull is null.
 			}
 		}
+	}
+
+	@Test
+	void testVarHandlesShared () {
+		FieldSerializer first = varHandleSerializer(new Kryo()), second = varHandleSerializer(new Kryo());
+		assertSame(((VarHandleField.IntVarHandleField)first.getField("value")).getter,
+			((VarHandleField.IntVarHandleField)second.getField("value")).getter);
+		assertSame(((VarHandleField)first.getField("object")).setter, ((VarHandleField)second.getField("object")).setter);
+		assertSame(((VarHandleField.StringVarHandleField)first.getField("string")).copier,
+			((VarHandleField.StringVarHandleField)second.getField("string")).copier);
+
+		// With references for strings, a String field is an object field.
+		Kryo kryo = new Kryo();
+		kryo.setReferenceResolver(new MapReferenceResolver() {
+			public boolean useReferences (Class type) {
+				return true;
+			}
+		});
+		FieldSerializer references = varHandleSerializer(kryo);
+		assertEquals("VarHandleField", fieldClassName(references.getField("string")));
+		FieldAccessData data = new FieldAccessData("string", 5);
+		data.string = "other";
+		Output output = new Output(64, -1);
+		kryo.writeObject(output, data);
+		FieldAccessData read = kryo.readObject(new Input(output.toBytes()), FieldAccessData.class);
+		assertEquals("other", read.string);
+
+		// Final fields are set with FieldSerializer.setFinal, also when they are read or copied directly.
+		FieldAccessData original = new FieldAccessData("string", 5), copy = new FieldAccessData();
+		read = new FieldAccessData();
+		for (String name : new String[] {"finalString", "finalValue"}) {
+			CachedField field = first.getField(name);
+			output.reset();
+			field.write(output, original);
+			field.read(new Input(output.toBytes()), read);
+			field.copy(original, copy);
+		}
+		assertEquals("string", read.finalString);
+		assertEquals(5, read.finalValue);
+		assertEquals("string", copy.finalString);
+		assertEquals(5, copy.finalValue);
+		first.getField("finalObject").copy(original, copy);
+		assertNotSame(original.finalObject, copy.finalObject);
+		assertEquals(original.finalObject, copy.finalObject);
+
+		// Record components can't be set with VarHandles either, setFinal reports that they can't be set.
+		FieldSerializerConfig config = new FieldSerializerConfig();
+		config.setFieldAccess(FieldAccessType.VARHANDLE);
+		CachedField width = new FieldSerializer(new Kryo(), RecordClass.class, config).getField("width");
+		RecordClass record = new RecordClass("tall", 2, 3, 4.5);
+		KryoException ex = assertThrows(KryoException.class, () -> width.copy(record, new RecordClass("short", 1, 0, 0)));
+		assertTrue(ex.getMessage().contains("Unable to set final field"), ex.getMessage());
+	}
+
+	static private FieldSerializer varHandleSerializer (Kryo kryo) {
+		FieldSerializerConfig config = new FieldSerializerConfig();
+		config.setFieldAccess(FieldAccessType.VARHANDLE);
+		FieldSerializer serializer = new FieldSerializer(kryo, FieldAccessData.class, config);
+		kryo.register(FieldAccessData.class, serializer);
+		kryo.register(ArrayList.class);
+		return serializer;
 	}
 
 	public static class FieldAccessData {
