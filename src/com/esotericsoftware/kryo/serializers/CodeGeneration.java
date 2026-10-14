@@ -146,11 +146,8 @@ import java.util.function.IntConsumer;
 final class CodeGeneration {
 	/** The constructors of the hidden classes, by type and field signature. If defining a class failed, its KryoException, so it
 	 * isn't tried again for each serializer. */
-	static private final ClassValue<ConcurrentHashMap<String, Object>> constructors = new ClassValue<>() {
-		protected ConcurrentHashMap<String, Object> computeValue (Class type) {
-			return new ConcurrentHashMap<>();
-		}
-	};
+	static private final ClassCache<ConcurrentHashMap<String, Object>> constructors = ClassCache.create(
+		type -> new ConcurrentHashMap<>());
 
 	static private final MethodType constructorType = MethodType.methodType(void.class, FieldSerializer.class,
 		CachedField[].class);
