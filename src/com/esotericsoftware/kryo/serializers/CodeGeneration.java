@@ -41,8 +41,10 @@ import java.lang.invoke.VarHandle.AccessMode;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntConsumer;
+import java.util.stream.IntStream;
 
 /** Generates a hidden class per serialized class that writes, reads and copies its fields with straight line code, see
  * {@link Bytecode}. Primitive and String fields are accessed with VarHandles that are constants of the hidden class (its class
@@ -290,9 +292,9 @@ final class CodeGeneration {
 	static private byte[] write (Bytecode cb, String thisClass, Constructor recordConstructor, CachedField[] fields, Kind[] kinds,
 		boolean classes, int[] tags, ArrayList<Object> classData) {
 		int n = fields.length;
-		int[] setters = classData(fields, kinds, recordConstructor, classData);
+		int[] groups = classData(fields, kinds, recordConstructor, !classes && tags == null, classData);
 		boolean record = recordConstructor != null;
-		members(cb, thisClass, n, setters, record);
+		members(cb, thisClass, n, classData.size() - n - (record ? 1 : 0), record);
 		constructor(cb, thisClass);
 		// public void write (Output output, Object object) and write (Output output, Object object, ChunkedEncoding chunks)
 		// public void read (Input input, Object object) and read (Input input, Object object, ChunkedEncoding chunks)
@@ -303,49 +305,76 @@ final class CodeGeneration {
 			String readType = chunked ? descriptor(void.class, Input.class, Object.class, ChunkedEncoding.class)
 				: descriptor(void.class, Input.class, Object.class);
 			batches(cb, thisClass, "write", writeType, n, chunked,
-				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).write(from, to));
+				(code, from, to) -> new Emitter(code, thisClass, kinds, groups, tags, classes, chunked).write(from, to));
 			if (!record) batches(cb, thisClass, "read", readType, n, chunked,
-				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).read(from, to));
+				(code, from, to) -> new Emitter(code, thisClass, kinds, groups, tags, classes, chunked).read(from, to));
 		}
 		// public void copy (Object original, Object copy)
 		if (!record) batches(cb, thisClass, "copy", descriptor(void.class, Object.class, Object.class), n, false,
-			(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, false).copy(from, to));
+			(code, from, to) -> new Emitter(code, thisClass, kinds, groups, tags, classes, false).copy(from, to));
 		if (record) {
 			// public Object readRecord (Input input) and copyRecord (Object original)
 			cb.method("readRecord", descriptor(Object.class, Input.class), ACC_PUBLIC, code -> {
-				Emitter emitter = new Emitter(code, thisClass, kinds, setters, tags, classes, false);
+				Emitter emitter = new Emitter(code, thisClass, kinds, groups, tags, classes, false);
 				emitter.record(emitter::read, "readRecordError", InputDesc);
 			});
 			cb.method("copyRecord", descriptor(Object.class, Object.class), ACC_PUBLIC, code -> {
-				Emitter emitter = new Emitter(code, thisClass, kinds, setters, tags, classes, false);
+				Emitter emitter = new Emitter(code, thisClass, kinds, groups, tags, classes, false);
 				emitter.record(emitter::copyValue, "copyRecordError", "Ljava/lang/Object;");
 			});
 		}
 		return cb.bytes();
 	}
 
-	/** Collects the class data: the VarHandle of each field, then the call site invoker that sets each final field, which
-	 * VarHandles can't set, or the canonical constructor of a record, which sets its fields.
-	 * @return The class data index of the setter of each field, or -1. */
-	static private int[] classData (CachedField[] fields, Kind[] kinds, Constructor recordConstructor,
+	/** Collects the class data: the VarHandle of each field, then the call site invoker that sets each group of final fields,
+	 * which VarHandles can't set, or the canonical constructor of a record, which sets its fields.
+	 * @param batch If true, the final fields are set in groups: before a field whose value may refer to the object, eg add it to a
+	 *           HashSet, and at the end of each batch of fields. Otherwise, with tags or classes, a field may not be read, and
+	 *           each final field is its own group.
+	 * @return The group of each final field, numbered in field order, or -1. */
+	static private int[] classData (CachedField[] fields, Kind[] kinds, Constructor recordConstructor, boolean batch,
 		ArrayList<Object> classData) {
 		int n = fields.length;
 		for (int i = 0; i < n; i++)
 			classData.add(VarHandleField.varHandle(fields[i].field));
-		int[] setters = new int[n];
+		int[] groups = new int[n];
+		int count = 0;
+		boolean pending = false;
 		for (int i = 0; i < n; i++) {
-			setters[i] = -1;
+			if (pending && (!batch || i % batchSize == 0 || mayRefer(fields[i]))) {
+				count++;
+				pending = false;
+			}
+			groups[i] = -1;
 			if (recordConstructor == null && !((VarHandle)classData.get(i)).isAccessModeSupported(AccessMode.SET)) {
-				// The setter is obtained when the field is first set, until then the target of the call site is the resolver.
-				MutableCallSite callSite = new MutableCallSite(
-					MethodType.methodType(void.class, CachedField.class, Object.class, valueType(kinds[i], fields[i])));
-				callSite.setTarget(MethodHandles.insertArguments(resolveSetter, 0, callSite).asType(callSite.type()));
-				setters[i] = classData.size();
-				classData.add(callSite.dynamicInvoker());
+				groups[i] = count;
+				pending = true;
 			}
 		}
+		if (pending) count++;
+		for (int group = 0; group < count; group++)
+			classData.add(setters(fields, kinds, groups, group));
 		if (recordConstructor != null) classData.add(recordConstructor(recordConstructor, fields, kinds));
-		return setters;
+		return groups;
+	}
+
+	/** Returns true if the value of the field may refer to the object: it is not a primitive, a primitive wrapper or a String. */
+	static private boolean mayRefer (CachedField field) {
+		Class type = field.field.getType();
+		return !type.isPrimitive() && !isWrapperClass(type) && type != String.class;
+	}
+
+	/** Returns the invoker of a call site (CachedField[] fields, Object object, <the values>)void that sets the final fields of a
+	 * group. The setters are obtained when the fields are first set, until then the target of the call site is the resolver. */
+	static private MethodHandle setters (CachedField[] fields, Kind[] kinds, int[] groups, int group) {
+		ArrayList<Class<?>> types = new ArrayList<>(List.of(CachedField[].class, Object.class));
+		int[] members = IntStream.range(0, fields.length).filter(i -> groups[i] == group).toArray();
+		for (int i : members)
+			types.add(valueType(kinds[i], fields[i]));
+		MutableCallSite callSite = new MutableCallSite(MethodType.methodType(void.class, types));
+		callSite.setTarget(MethodHandles.insertArguments(resolveSetters, 0, callSite, members)
+			.asCollector(Object[].class, members.length).asType(callSite.type()));
+		return callSite.dynamicInvoker();
 	}
 
 	/** The type of the values the generated code passes: String for a type variable resolved to String, else the field type. */
@@ -375,44 +404,68 @@ final class CodeGeneration {
 		return MethodHandles.permuteArguments(handle, MethodType.methodType(Object.class, fieldTypes), reorder);
 	}
 
-	static private final MethodHandle resolveSetter, setFinal;
+	static private final MethodHandle resolveSetters, setFinals;
 	static {
 		try {
 			Lookup lookup = MethodHandles.lookup();
-			resolveSetter = lookup.findStatic(CodeGeneration.class, "resolveSetter",
-				MethodType.methodType(void.class, MutableCallSite.class, CachedField.class, Object.class, Object.class));
-			setFinal = lookup.findStatic(FieldSerializer.class, "setFinal",
-				MethodType.methodType(void.class, CachedField.class, Object.class, Object.class));
+			resolveSetters = lookup.findStatic(CodeGeneration.class, "resolveSetters", MethodType.methodType(void.class,
+				MutableCallSite.class, int[].class, CachedField[].class, Object.class, Object[].class));
+			setFinals = lookup.findStatic(CodeGeneration.class, "setFinals",
+				MethodType.methodType(void.class, int[].class, CachedField[].class, Object.class, Object[].class));
 		} catch (IllegalAccessException | NoSuchMethodException ex) {
 			throw new KryoException(ex);
 		}
 	}
 
-	/** The initial target of the call site of a final field. For an Unsafe field, makes
-	 * {@link FieldSerializer#setFinal(CachedField, Object, Object)} the target, which sets it with Unsafe. Otherwise obtains the
-	 * setter of the field, which Java 26+ warns about, so it only happens when the field is first set, and makes it the target, or
-	 * setFinal if setting the field with reflection is denied. Then sets the field. */
-	static private void resolveSetter (MutableCallSite callSite, CachedField field, Object object, Object value)
-		throws Throwable {
-		MethodHandle setter = setFinal;
-		if (field.offset == 0 && !FinalFieldSetter.force) { // Unsafe fields are set with Unsafe, without reflection.
-			try {
-				setter = MethodHandles.dropArguments(MethodHandles.lookup().unreflectSetter(field.field), 0, CachedField.class);
-			} catch (IllegalAccessException denied) {
+	/** The initial target of the call site of a group of final fields. Obtains the setters of the fields, which Java 26+ warns
+	 * about, so it only happens when the fields are first set, and makes them the target. For Unsafe fields, or if setting the
+	 * fields with reflection is denied, makes {@link #setFinals(int[], CachedField[], Object, Object[])} the target. Then sets the
+	 * fields. */
+	static private void resolveSetters (MutableCallSite callSite, int[] members, CachedField[] fields, Object object,
+		Object[] values) throws Throwable {
+		MethodType type = callSite.type();
+		MethodHandle target = MethodHandles.empty(type);
+		for (int j = members.length - 1; j >= 0; j--) {
+			CachedField field = fields[members[j]];
+			MethodHandle setter = null;
+			if (field.offset == 0 && !FinalFieldSetter.force) { // Unsafe fields are set with Unsafe, without reflection.
+				try {
+					setter = MethodHandles.lookup().unreflectSetter(field.field);
+				} catch (IllegalAccessException denied) {
+				}
 			}
+			if (setter == null) {
+				target = MethodHandles.insertArguments(setFinals, 0, members).asCollector(Object[].class, members.length)
+					.asType(type);
+				break;
+			}
+			setter = setter.asType(MethodType.methodType(void.class, Object.class, type.parameterType(2 + j)));
+			target = MethodHandles.foldArguments(target, MethodHandles.permuteArguments(setter, type, 1, 2 + j));
 		}
-		callSite.setTarget(setter.asType(callSite.type()));
-		callSite.getTarget().invoke(field, object, value);
+		callSite.setTarget(target);
+		target.asSpreader(Object[].class, members.length).invoke(fields, object, values);
 	}
 
-	/** Emits the fields: the VarHandle fi and setter si of each field and the constructor c of a record, initialized from the
-	 * class data, and the serializer and fields of the serializer instance. */
-	static private void members (Bytecode cb, String thisClass, int n, int[] setters, boolean record) {
-		// static final VarHandle f0; static final MethodHandle s0; ... static final MethodHandle c; for a record
-		for (int i = 0; i < n; i++) {
-			cb.field("f" + i, VarHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
-			if (setters[i] != -1) cb.field("s" + i, MethodHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
+	/** Sets final fields with {@link FieldSerializer#setFinal(CachedField, Object, Object)}, except those with a
+	 * {@link FinalFieldSetter}, which are set with one call per class. */
+	static private void setFinals (int[] members, CachedField[] fields, Object object, Object[] values) {
+		FinalFieldSetter[] setters = new FinalFieldSetter[members.length];
+		for (int j = 0; j < members.length; j++) {
+			CachedField field = fields[members[j]];
+			setters[j] = FieldSerializer.finalSetter(field);
+			if (setters[j] == null) FieldSerializer.setFinal(field, object, values[j]);
 		}
+		FinalFieldSetter.set(object, setters, values);
+	}
+
+	/** Emits the fields: the VarHandle fi of each field, the setter gi of each group of final fields and the constructor c of a
+	 * record, initialized from the class data, and the serializer and fields of the serializer instance. */
+	static private void members (Bytecode cb, String thisClass, int n, int groups, boolean record) {
+		// static final VarHandle f0; ... static final MethodHandle g0; ... static final MethodHandle c; for a record
+		for (int i = 0; i < n; i++)
+			cb.field("f" + i, VarHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
+		for (int i = 0; i < groups; i++)
+			cb.field("g" + i, MethodHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
 		if (record) cb.field("c", MethodHandleDesc, ACC_PRIVATE | ACC_STATIC | ACC_FINAL);
 		// final FieldSerializer serializer; final CachedField[] fields;
 		cb.field("serializer", FieldSerializerDesc, ACC_PRIVATE | ACC_FINAL);
@@ -423,10 +476,10 @@ final class CodeGeneration {
 			for (int i = 0; i < n; i++) {
 				loadClassData(code, i, VarHandleDesc, VarHandleName);
 				code.putstatic(thisClass, "f" + i, VarHandleDesc);
-				if (setters[i] != -1) {
-					loadClassData(code, setters[i], MethodHandleDesc, MethodHandleName);
-					code.putstatic(thisClass, "s" + i, MethodHandleDesc);
-				}
+			}
+			for (int i = 0; i < groups; i++) {
+				loadClassData(code, n + i, MethodHandleDesc, MethodHandleName);
+				code.putstatic(thisClass, "g" + i, MethodHandleDesc);
 			}
 			if (record) {
 				loadClassData(code, n, MethodHandleDesc, MethodHandleName);
@@ -496,8 +549,10 @@ final class CodeGeneration {
 		final Code code;
 		final String thisClass;
 		final Kind[] kinds;
-		/** The class data index of the setter of each final field, else -1. */
-		final int[] setters;
+		/** The group of each final field, else -1, see {@link CodeGeneration#classData}. */
+		final int[] groups;
+		/** The local that keeps the value of each final field until its group is set. */
+		final int[] locals;
 		/** The tag of each field, or null if the fields have no tags. */
 		final int[] tags;
 		/** If true, the class of each value is written before the value. */
@@ -507,11 +562,12 @@ final class CodeGeneration {
 		/** Locals: the index of the current field for the error, the tag read, the chunk mark when writing or end when reading. */
 		int index, tag, chunk;
 
-		Emitter (Code code, String thisClass, Kind[] kinds, int[] setters, int[] tags, boolean classes, boolean chunked) {
+		Emitter (Code code, String thisClass, Kind[] kinds, int[] groups, int[] tags, boolean classes, boolean chunked) {
 			this.code = code;
 			this.thisClass = thisClass;
 			this.kinds = kinds;
-			this.setters = setters;
+			this.groups = groups;
+			locals = new int[kinds.length];
 			this.tags = tags;
 			this.classes = classes;
 			this.chunked = chunked;
@@ -537,13 +593,24 @@ final class CodeGeneration {
 				local += 2;
 			}
 			index = local;
+			locals(local + 1, from, to);
 			fields(from, to, this::readField, "readError", InputDesc);
 		}
 
 		/** The body of copy for the fields from (inclusive) to (exclusive). */
 		void copy (int from, int to) {
 			index = 3; // After the parameters.
+			locals(4, from, to);
 			fields(from, to, this::copyField, "copyError", "Ljava/lang/Object;");
+		}
+
+		/** Assigns the locals of the final fields from (inclusive) to (exclusive), starting with the local. */
+		void locals (int local, int from, int to) {
+			for (int i = from; i < to; i++) {
+				if (groups[i] == -1) continue;
+				locals[i] = local;
+				local += kinds[i].type.equals("J") || kinds[i].type.equals("D") ? 2 : 1;
+			}
 		}
 
 		/** The body of readRecord or copyRecord: int index = 0; Object record; try { record = c.invokeExact(<value 0>, index = 1,
@@ -743,21 +810,34 @@ final class CodeGeneration {
 			}
 		}
 
-		/** fi.set(object, <value>), or si.invokeExact(fields[i], object, <value>) for a final field. */
+		/** fi.set(object, <value>), or for a final field: <local i> = <value>, and after the last field of its group
+		 * gN.invokeExact(fields, object, <the locals of the group>). An exception of the setter names the last field of the
+		 * group. */
 		void set (int i, Runnable value) {
 			Kind kind = kinds[i];
-			if (setters[i] == -1) {
+			if (groups[i] == -1) {
 				code.getstatic(thisClass, "f" + i, VarHandleDesc);
 				code.aload(2);
 				value.run();
 				code.invokevirtual(VarHandleName, "set", "(Ljava/lang/Object;" + kind.type + ")V");
-			} else {
-				code.getstatic(thisClass, "s" + i, MethodHandleDesc);
-				field(i);
-				code.aload(2);
-				value.run();
-				code.invokevirtual(MethodHandleName, "invokeExact", "(" + CachedFieldDesc + "Ljava/lang/Object;" + kind.type + ")V");
+				return;
 			}
+			value.run();
+			code.store(kind.type, locals[i]);
+			int group = groups[i];
+			for (int j = i + 1; j < kinds.length; j++)
+				if (groups[j] == group) return; // Not the last field of the group.
+			code.getstatic(thisClass, "g" + group, MethodHandleDesc);
+			code.aload(0);
+			code.getfield(thisClass, "fields", CachedFieldArrayDesc);
+			code.aload(2);
+			StringBuilder type = new StringBuilder("(" + CachedFieldArrayDesc + "Ljava/lang/Object;");
+			for (int j = 0; j <= i; j++) {
+				if (groups[j] != group) continue;
+				code.load(kinds[j].type, locals[j]);
+				type.append(kinds[j].type);
+			}
+			code.invokevirtual(MethodHandleName, "invokeExact", type + ")V");
 		}
 
 		/** The value of field i from the input, with its class first if classes are written. */

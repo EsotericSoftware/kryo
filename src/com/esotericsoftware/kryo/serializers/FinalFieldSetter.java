@@ -36,6 +36,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /** Sets a final field of a serializable class if setting final fields with reflection is denied (JEP 500, eg with
  * {@code --illegal-final-field-mutation=deny}). Otherwise final fields are set with reflection, see
@@ -93,6 +94,9 @@ final class FinalFieldSetter extends ObjectInputStream {
 	/** The position of the field to set in the serializable fields of its class. */
 	private final int position;
 	private Object object, value;
+	/** The values of the fields to set by position, {@link #current} for the other fields, when several fields are set. */
+	private Object[] slots;
+	static private final Object current = new Object();
 	private int next; // The method handle gets the fields in the order of the ObjectStreamClass.
 
 	private FinalFieldSetter (ClassFields classFields, int position) throws IOException {
@@ -139,6 +143,26 @@ final class FinalFieldSetter extends ObjectInputStream {
 		} finally {
 			this.object = null;
 			this.value = null;
+			slots = null;
+		}
+	}
+
+	/** Sets several final fields of the object, with one method handle call per class, for the generated code.
+	 * @param setters The setter of each field, or null if the field is set otherwise. Set to null when the field was set. */
+	static void set (Object object, FinalFieldSetter[] setters, Object[] values) {
+		for (int i = 0; i < setters.length; i++) {
+			FinalFieldSetter setter = setters[i];
+			if (setter == null) continue;
+			Object[] slots = new Object[setter.classFields.names.length];
+			Arrays.fill(slots, current);
+			for (int j = i; j < setters.length; j++) {
+				if (setters[j] != null && setters[j].classFields == setter.classFields) {
+					slots[setters[j].position] = values[j];
+					setters[j] = null;
+				}
+			}
+			setter.slots = slots;
+			setter.set(object, null);
 		}
 	}
 
@@ -166,7 +190,9 @@ final class FinalFieldSetter extends ObjectInputStream {
 				i = classFields.indexOf(name);
 				if (i == -1) throw new IllegalArgumentException(name);
 			}
-			if (i == position) return value;
+			if (slots != null) {
+				if (slots[i] != current) return slots[i];
+			} else if (i == position) return value;
 			try {
 				return classFields.fields[i].get(object);
 			} catch (IllegalAccessException ex) {
