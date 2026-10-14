@@ -36,7 +36,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 
 /** Sets a final field of a serializable class if setting final fields with reflection is denied (JEP 500, eg with
  * {@code --illegal-final-field-mutation=deny}). Otherwise final fields are set with reflection, see
@@ -94,9 +93,10 @@ final class FinalFieldSetter extends ObjectInputStream {
 	/** The position of the field to set in the serializable fields of its class. */
 	private final int position;
 	private Object object, value;
-	/** The values of the fields to set by position, {@link #current} for the other fields, when several fields are set. */
-	private Object[] slots;
-	static private final Object current = new Object();
+	/** When several fields are set: the position of each value in the serializable fields of the class, else -1, and the
+	 * values. */
+	private int[] positions;
+	private Object[] values;
 	private int next; // The method handle gets the fields in the order of the ObjectStreamClass.
 
 	private FinalFieldSetter (ClassFields classFields, int position) throws IOException {
@@ -143,7 +143,8 @@ final class FinalFieldSetter extends ObjectInputStream {
 		} finally {
 			this.object = null;
 			this.value = null;
-			slots = null;
+			positions = null;
+			values = null;
 		}
 	}
 
@@ -153,15 +154,16 @@ final class FinalFieldSetter extends ObjectInputStream {
 		for (int i = 0; i < setters.length; i++) {
 			FinalFieldSetter setter = setters[i];
 			if (setter == null) continue;
-			Object[] slots = new Object[setter.classFields.names.length];
-			Arrays.fill(slots, current);
-			for (int j = i; j < setters.length; j++) {
+			int[] positions = new int[setters.length];
+			for (int j = 0; j < setters.length; j++) {
+				positions[j] = -1;
 				if (setters[j] != null && setters[j].classFields == setter.classFields) {
-					slots[setters[j].position] = values[j];
+					positions[j] = setters[j].position;
 					setters[j] = null;
 				}
 			}
-			setter.slots = slots;
+			setter.positions = positions;
+			setter.values = values;
 			setter.set(object, null);
 		}
 	}
@@ -190,8 +192,9 @@ final class FinalFieldSetter extends ObjectInputStream {
 				i = classFields.indexOf(name);
 				if (i == -1) throw new IllegalArgumentException(name);
 			}
-			if (slots != null) {
-				if (slots[i] != current) return slots[i];
+			if (positions != null) {
+				for (int j = 0; j < positions.length; j++)
+					if (positions[j] == i) return values[j];
 			} else if (i == position) return value;
 			try {
 				return classFields.fields[i].get(object);

@@ -30,6 +30,7 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
 import com.esotericsoftware.kryo.util.IgnoreAndroid;
+import com.esotericsoftware.kryo.util.IntArray;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -41,10 +42,10 @@ import java.lang.invoke.VarHandle.AccessMode;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntConsumer;
-import java.util.stream.IntStream;
 
 /** Generates a hidden class per serialized class that writes, reads and copies its fields with straight line code, see
  * {@link Bytecode}. Primitive and String fields are accessed with VarHandles that are constants of the hidden class (its class
@@ -295,9 +296,9 @@ final class CodeGeneration {
 	static private byte[] write (Bytecode cb, String thisClass, Constructor recordConstructor, CachedField[] fields, Kind[] kinds,
 		boolean classes, int[] tags, ArrayList<Object> classData) {
 		int n = fields.length;
-		int[] groups = classData(fields, kinds, recordConstructor, !classes && tags == null, classData);
+		int[][] groups = classData(fields, kinds, recordConstructor, !classes && tags == null, classData);
 		boolean record = recordConstructor != null;
-		members(cb, thisClass, n, classData.size() - n - (record ? 1 : 0), record);
+		members(cb, thisClass, n, groups.length, record);
 		constructor(cb, thisClass);
 		// public void write (Output output, Object object) and write (Output output, Object object, ChunkedEncoding chunks)
 		// public void read (Input input, Object object) and read (Input input, Object object, ChunkedEncoding chunks)
@@ -334,31 +335,26 @@ final class CodeGeneration {
 	 * @param batch If true, the final fields are set in groups: before a field whose value may refer to the object, eg add it to a
 	 *           HashSet, and at the end of each batch of fields. Otherwise, with tags or classes, a field may not be read, and
 	 *           each final field is its own group.
-	 * @return The group of each final field, numbered in field order, or -1. */
-	static private int[] classData (CachedField[] fields, Kind[] kinds, Constructor recordConstructor, boolean batch,
+	 * @return The fields of each group of final fields, in field order. */
+	static private int[][] classData (CachedField[] fields, Kind[] kinds, Constructor recordConstructor, boolean batch,
 		ArrayList<Object> classData) {
 		int n = fields.length;
 		for (int i = 0; i < n; i++)
 			classData.add(VarHandleField.varHandle(fields[i].field));
-		int[] groups = new int[n];
-		int count = 0;
-		boolean pending = false;
+		ArrayList<int[]> groups = new ArrayList<>();
+		IntArray group = new IntArray();
 		for (int i = 0; i < n; i++) {
-			if (pending && (!batch || i % batchSize == 0 || mayRefer(fields[i]))) {
-				count++;
-				pending = false;
+			if (group.size > 0 && (!batch || i % batchSize == 0 || mayRefer(fields[i]))) {
+				groups.add(group.toArray());
+				group.clear();
 			}
-			groups[i] = -1;
-			if (recordConstructor == null && !((VarHandle)classData.get(i)).isAccessModeSupported(AccessMode.SET)) {
-				groups[i] = count;
-				pending = true;
-			}
+			if (recordConstructor == null && !((VarHandle)classData.get(i)).isAccessModeSupported(AccessMode.SET)) group.add(i);
 		}
-		if (pending) count++;
-		for (int group = 0; group < count; group++)
-			classData.add(setters(fields, kinds, groups, group));
+		if (group.size > 0) groups.add(group.toArray());
+		for (int[] members : groups)
+			classData.add(setters(fields, kinds, members));
 		if (recordConstructor != null) classData.add(recordConstructor(recordConstructor, fields, kinds));
-		return groups;
+		return groups.toArray(new int[0][]);
 	}
 
 	/** Returns true if the value of the field may refer to the object: it is not a primitive, a primitive wrapper or a String. */
@@ -369,9 +365,8 @@ final class CodeGeneration {
 
 	/** Returns the invoker of a call site (CachedField[] fields, Object object, <the values>)void that sets the final fields of a
 	 * group. The setters are obtained when the fields are first set, until then the target of the call site is the resolver. */
-	static private MethodHandle setters (CachedField[] fields, Kind[] kinds, int[] groups, int group) {
+	static private MethodHandle setters (CachedField[] fields, Kind[] kinds, int[] members) {
 		ArrayList<Class<?>> types = new ArrayList<>(List.of(CachedField[].class, Object.class));
-		int[] members = IntStream.range(0, fields.length).filter(i -> groups[i] == group).toArray();
 		for (int i : members)
 			types.add(valueType(kinds[i], fields[i]));
 		MutableCallSite callSite = new MutableCallSite(MethodType.methodType(void.class, types));
@@ -552,8 +547,9 @@ final class CodeGeneration {
 		final Code code;
 		final String thisClass;
 		final Kind[] kinds;
-		/** The group of each final field, else -1, see {@link CodeGeneration#classData}. */
-		final int[] groups;
+		/** The fields of each group of final fields, see {@link CodeGeneration#classData}, and the group of each field, else -1. */
+		final int[][] groups;
+		final int[] group;
 		/** The local that keeps the value of each final field until its group is set. */
 		final int[] locals;
 		/** The tag of each field, or null if the fields have no tags. */
@@ -565,11 +561,16 @@ final class CodeGeneration {
 		/** Locals: the index of the current field for the error, the tag read, the chunk mark when writing or end when reading. */
 		int index, tag, chunk;
 
-		Emitter (Code code, String thisClass, Kind[] kinds, int[] groups, int[] tags, boolean classes, boolean chunked) {
+		Emitter (Code code, String thisClass, Kind[] kinds, int[][] groups, int[] tags, boolean classes, boolean chunked) {
 			this.code = code;
 			this.thisClass = thisClass;
 			this.kinds = kinds;
 			this.groups = groups;
+			group = new int[kinds.length];
+			Arrays.fill(group, -1);
+			for (int g = 0; g < groups.length; g++)
+				for (int i : groups[g])
+					group[i] = g;
 			locals = new int[kinds.length];
 			this.tags = tags;
 			this.classes = classes;
@@ -610,9 +611,9 @@ final class CodeGeneration {
 		/** Assigns the locals of the final fields from (inclusive) to (exclusive), starting with the local. */
 		void locals (int local, int from, int to) {
 			for (int i = from; i < to; i++) {
-				if (groups[i] == -1) continue;
+				if (group[i] == -1) continue;
 				locals[i] = local;
-				local += kinds[i].type.equals("J") || kinds[i].type.equals("D") ? 2 : 1;
+				local += kinds[i].size;
 			}
 		}
 
@@ -818,7 +819,7 @@ final class CodeGeneration {
 		 * group. */
 		void set (int i, Runnable value) {
 			Kind kind = kinds[i];
-			if (groups[i] == -1) {
+			if (group[i] == -1) {
 				code.getstatic(thisClass, "f" + i, VarHandleDesc);
 				code.aload(2);
 				value.run();
@@ -827,16 +828,14 @@ final class CodeGeneration {
 			}
 			value.run();
 			code.store(kind.type, locals[i]);
-			int group = groups[i];
-			for (int j = i + 1; j < kinds.length; j++)
-				if (groups[j] == group) return; // Not the last field of the group.
-			code.getstatic(thisClass, "g" + group, MethodHandleDesc);
+			int[] members = groups[group[i]];
+			if (members[members.length - 1] != i) return; // Not the last field of the group.
+			code.getstatic(thisClass, "g" + group[i], MethodHandleDesc);
 			code.aload(0);
 			code.getfield(thisClass, "fields", CachedFieldArrayDesc);
 			code.aload(2);
 			StringBuilder type = new StringBuilder("(" + CachedFieldArrayDesc + "Ljava/lang/Object;");
-			for (int j = 0; j <= i; j++) {
-				if (groups[j] != group) continue;
+			for (int j : members) {
 				code.load(kinds[j].type, locals[j]);
 				type.append(kinds[j].type);
 			}
@@ -957,6 +956,8 @@ final class CodeGeneration {
 		/** The descriptor of the type and the internal name of its wrapper class. */
 		final String type, wrapper;
 		final boolean primitive;
+		/** The number of local variable slots. */
+		final int size;
 		/** The Output and Input methods and their descriptors. */
 		final String write, read, writeType, readType;
 		/** True for int and long, which are written with variable length if {@link CachedField#varEncoding}, with these methods. */
@@ -967,6 +968,7 @@ final class CodeGeneration {
 			this.type = type;
 			this.wrapper = wrapper;
 			primitive = type.length() == 1;
+			size = type.equals("J") || type.equals("D") ? 2 : 1;
 			this.write = write;
 			this.read = read;
 			// writeShort(int) takes its value as int.
