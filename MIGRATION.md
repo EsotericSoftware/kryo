@@ -59,7 +59,7 @@ Kryo's serializers and reference resolvers then write and read the Kryo 5 format
 
 The Kryo 5 format is a best effort. It doesn't cover custom serializers or custom class or reference resolvers, and some Kryo 5 data can't be read at all, eg unmodifiable collections, which Kryo 5 couldn't read back either. Use it to keep reading data during a transition, or to read the data once and write it again with the Kryo 6 format, which is smaller, faster and loses no data in skipped fields. Like with the migration from Kryo 4 to Kryo 5, reading data across major versions isn't guaranteed.
 
-Kryo 5 can read data written with the Kryo 5 format, unless it contains locales with a script, generic types that Kryo 6 resolves but Kryo 5 ignored, see [Collections and maps](#collections-and-maps), or types Kryo 5 couldn't read, eg `EnumMap` or `ArrayBlockingQueue`.
+Kryo 5 can read data written with the Kryo 5 format, unless it contains generic types that Kryo 6 resolves but Kryo 5 ignored, see [Collections and maps](#collections-and-maps), or types Kryo 5 couldn't read, eg `EnumMap` or `ArrayBlockingQueue`.
 
 Like in Kryo 5, a String field of FieldSerializer and its subclasses decides when it is created whether it uses references: Kryo 5 wrote String fields without references if `setReferences(true)` was called after registering the classes, but strings in collections and arrays with references. To read such data, keep the order of `setReferences` and `register` the Kryo 5 code used. Unlike Kryo 5, Kryo 6 throws an exception if `setReferences` or `setReferenceResolver` changes whether strings use references after a String field was created.
 
@@ -167,7 +167,7 @@ An unregistered enum set, charset or time zone is written with the class name `j
 
 ### Locales with a script
 
-LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language tag, so the script and extensions are kept ([#1053](https://github.com/EsotericSoftware/kryo/issues/1053)). Kryo 5 lost them. Other locales are written as before, so Kryo 6 reads all locales written by Kryo 5.
+LocaleSerializer writes locales with a script, eg `sr-Cyrl-RS`, as a language tag, so the script and extensions are kept ([#1053](https://github.com/EsotericSoftware/kryo/issues/1053)). Kryo 5 lost them. Other locales are written as before, so Kryo 6 reads all locales written by Kryo 5. With the Kryo 5 format, locales with a script are written like Kryo 5 wrote them, without the script and extensions.
 
 ## Behavior changes
 
