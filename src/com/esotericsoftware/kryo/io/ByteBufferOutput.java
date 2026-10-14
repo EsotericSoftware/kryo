@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /** An {@link Output} that uses a ByteBuffer rather than a byte[].
  * <p>
@@ -35,7 +34,6 @@ import java.nio.ByteOrder;
  * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 public class ByteBufferOutput extends Output {
-	private static final ByteOrder nativeOrder = ByteOrder.nativeOrder();
 
 	protected ByteBuffer byteBuffer;
 
@@ -87,13 +85,10 @@ public class ByteBufferOutput extends Output {
 		this.outputStream = outputStream;
 	}
 
-	public OutputStream getOutputStream () {
-		return outputStream;
-	}
-
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
+	@Deprecated
 	public byte[] getBuffer () {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #getByteBuffer().");
 	}
@@ -101,6 +96,7 @@ public class ByteBufferOutput extends Output {
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
+	@Deprecated
 	public void setBuffer (byte[] buffer) {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}
@@ -108,17 +104,18 @@ public class ByteBufferOutput extends Output {
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
+	@Deprecated
 	public void setBuffer (byte[] buffer, int maxBufferSize) {
 		throw new UnsupportedOperationException("This buffer does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}
 
-	/** Allocates a new direct ByteBuffer with the specified bytes and sets it as the new buffer.
+	/** Allocates a new direct ByteBuffer of {@code count} bytes with the specified bytes and sets it as the new buffer.
 	 * @see #setBuffer(ByteBuffer) */
 	public void setBuffer (byte[] bytes, int offset, int count) {
-		ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
+		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
+		ByteBuffer buffer = ByteBuffer.allocateDirect(count);
 		buffer.put(bytes, offset, count);
 		setBufferPosition(buffer, 0);
-		setBufferLimit(buffer, bytes.length);
 		setBuffer(buffer);
 	}
 
@@ -190,7 +187,7 @@ public class ByteBufferOutput extends Output {
 		}
 		if (capacity == 0) capacity = 16;
 		do {
-			capacity = Math.min(capacity * 2, maxCapacity);
+			capacity = (int)Math.min(capacity * 2L, maxCapacity); // Long, so it does not overflow above 1 GiB.
 		} while (capacity - position < required);
 		ByteBuffer newBuffer = !byteBuffer.isDirect() ? ByteBuffer.allocate(capacity) : ByteBuffer.allocateDirect(capacity);
 		setBufferPosition(byteBuffer, 0);
@@ -206,11 +203,16 @@ public class ByteBufferOutput extends Output {
 	public void flush () throws KryoException {
 		if (outputStream == null) return;
 		try {
-			byte[] tmp = new byte[position];
+			if (byteBuffer.hasArray())
+				outputStream.write(byteBuffer.array(), byteBuffer.arrayOffset(), position);
+			else {
+				byte[] tmp = new byte[position];
+				setBufferPosition(byteBuffer, 0);
+				byteBuffer.get(tmp);
+				outputStream.write(tmp, 0, position);
+			}
 			setBufferPosition(byteBuffer, 0);
-			byteBuffer.get(tmp);
-			setBufferPosition(byteBuffer, 0);
-			outputStream.write(tmp, 0, position);
+			outputStream.flush();
 		} catch (IOException ex) {
 			throw new KryoException(ex);
 		}
@@ -218,29 +220,10 @@ public class ByteBufferOutput extends Output {
 		position = 0;
 	}
 
-	public void close () throws KryoException {
-		flush();
-		if (outputStream != null) {
-			try {
-				outputStream.close();
-			} catch (IOException ignored) {
-			}
-		}
-	}
-
 	public void write (int value) throws KryoException {
 		if (position == capacity) require(1);
 		byteBuffer.put((byte)value);
 		position++;
-	}
-
-	public void write (byte[] bytes) throws KryoException {
-		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
-		writeBytes(bytes, 0, bytes.length);
-	}
-
-	public void write (byte[] bytes, int offset, int length) throws KryoException {
-		writeBytes(bytes, offset, length);
 	}
 
 	// byte:
@@ -257,11 +240,6 @@ public class ByteBufferOutput extends Output {
 		position++;
 	}
 
-	public void writeBytes (byte[] bytes) throws KryoException {
-		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
-		writeBytes(bytes, 0, bytes.length);
-	}
-
 	public void writeBytes (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int copyCount = Math.min(capacity - position, count);
@@ -271,7 +249,7 @@ public class ByteBufferOutput extends Output {
 			count -= copyCount;
 			if (count == 0) return;
 			offset += copyCount;
-			copyCount = Math.min(capacity, count);
+			copyCount = Math.min(Math.max(capacity, 1), count);
 			require(copyCount);
 		}
 	}
@@ -607,19 +585,16 @@ public class ByteBufferOutput extends Output {
 		writeVarIntFlag(true, charCount + 1, true);
 		int charIndex = 0;
 		if (capacity - position >= charCount) {
-			// Try to write 7 bit chars.
+			// Try to write 7 bit chars. A counted loop is required for the JIT to eliminate the charAt range checks and unroll.
 			ByteBuffer byteBuffer = this.byteBuffer;
-			while (true) {
+			int p = position;
+			for (; charIndex < charCount; charIndex++) {
 				int c = value.charAt(charIndex);
 				if (c > 127) break;
-				byteBuffer.put((byte)c);
-				charIndex++;
-				if (charIndex == charCount) {
-					position = getBufferPosition(byteBuffer);
-					return;
-				}
+				byteBuffer.put(p + charIndex, (byte)c);
 			}
-			position = getBufferPosition(byteBuffer);
+			position = p + charIndex;
+			setBufferPosition(byteBuffer, position);
 		}
 		if (charIndex < charCount) writeUtf8_slow(value, charCount, charIndex);
 	}
@@ -674,12 +649,15 @@ public class ByteBufferOutput extends Output {
 		}
 	}
 
+	@SuppressWarnings("deprecation") // The fastest copy of ASCII chars.
 	private void writeAscii_slow (String value, int charCount) throws KryoException {
+		if (charCount == 0) return;
+		if (position == capacity) require(1); // Must be able to write at least one character.
 		ByteBuffer buffer = this.byteBuffer;
 		int charIndex = 0;
 		int charsToWrite = Math.min(charCount, capacity - position);
+		byte[] tmp = new byte[charCount];
 		while (charIndex < charCount) {
-			byte[] tmp = new byte[charCount];
 			value.getBytes(charIndex, charIndex + charsToWrite, tmp, 0);
 			buffer.put(tmp, 0, charsToWrite);
 			charIndex += charsToWrite;
@@ -692,7 +670,7 @@ public class ByteBufferOutput extends Output {
 	// Primitive arrays:
 
 	public void writeInts (int[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2) {
+		if (count <= capacity >> 2) { // Not capacity >= count << 2, which overflows.
 			require(count << 2);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -710,7 +688,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeLongs (long[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3) {
+		if (count <= capacity >> 3) {
 			require(count << 3);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -732,7 +710,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeFloats (float[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2) {
+		if (count <= capacity >> 2) {
 			require(count << 2);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -750,7 +728,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3) {
+		if (count <= capacity >> 3) {
 			require(count << 3);
 			ByteBuffer byteBuffer = this.byteBuffer;
 			for (int n = offset + count; offset < n; offset++) {
@@ -772,7 +750,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeShorts (short[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1) {
+		if (count <= capacity >> 1) {
 			require(count << 1);
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];
@@ -787,7 +765,7 @@ public class ByteBufferOutput extends Output {
 	}
 
 	public void writeChars (char[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1) {
+		if (count <= capacity >> 1) {
 			require(count << 1);
 			for (int n = offset + count; offset < n; offset++) {
 				int value = array[offset];

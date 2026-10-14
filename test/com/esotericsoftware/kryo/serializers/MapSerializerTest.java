@@ -51,13 +51,107 @@ class MapSerializerTest extends KryoTestCase {
 		supportsCopy = true;
 	}
 
+	// A corrupt negative size throws a KryoException, not an IllegalArgumentException from the constructor, and doesn't read an
+	// empty map where the size isn't used as a capacity. MIN_VALUE must not wrap to MAX_VALUE. The Kryo 5 format is tested in
+	// Kryo5SerializersTest.
+	@Test
+	void testNegativeSize () {
+		kryo.register(HashMap.class);
+		kryo.register(TreeMap.class);
+		for (int length : new int[] {-1, Integer.MIN_VALUE}) { // Size + 1.
+			Output output = new Output(16);
+			output.writeVarIntFlag(false, length, true);
+			byte[] bytes = output.toBytes();
+			for (Class type : new Class[] {HashMap.class, TreeMap.class}) {
+				for (Input input : new Input[] {new Input(bytes), new Input(new ByteArrayInputStream(bytes))}) {
+					KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, type));
+					assertTrue(ex.getMessage().startsWith("Declared size is negative: " + (length - 1L)), ex.getMessage());
+				}
+			}
+		}
+	}
+
+	// https://github.com/EsotericSoftware/kryo/issues/1157
+	@Test
+	void testLinkedHashMapAccessOrder () {
+		kryo.register(LinkedHashMap.class, new LinkedHashMapSerializer());
+		kryo.register(LruCache.class, new LinkedHashMapSerializer());
+		for (boolean accessOrder : new boolean[] {true, false}) {
+			LinkedHashMap<String, Integer> map = new LinkedHashMap<>(16, 0.75f, accessOrder);
+			map.put("a", 1);
+			map.put("b", 2);
+			map.put("c", 3);
+			map.get("a"); // With access order, "a" is moved to the end.
+			for (LinkedHashMap<String, Integer> result : List.of(writeRead(map), kryo.copy(map))) {
+				assertEquals(new ArrayList<>(map.keySet()), new ArrayList<>(result.keySet()));
+				result.get("b");
+				assertEquals(accessOrder ? List.of("c", "a", "b") : List.of("a", "b", "c"), new ArrayList<>(result.keySet()));
+			}
+
+			LinkedHashMap<String, Integer> empty = writeRead(new LinkedHashMap<>(16, 0.75f, accessOrder));
+			empty.put("x", 1);
+			empty.put("y", 2);
+			empty.get("x");
+			assertEquals(accessOrder ? List.of("y", "x") : List.of("x", "y"), new ArrayList<>(empty.keySet()));
+		}
+
+		// A subclass sets the access order in its constructor.
+		LruCache cache = new LruCache();
+		cache.put("a", 1);
+		cache.put("b", 2);
+		LruCache read = writeRead(cache);
+		read.get("a");
+		assertEquals(List.of("b", "a"), new ArrayList<>(read.keySet()));
+	}
+
+	private <T> T writeRead (T object) {
+		Output output = new Output(1024);
+		kryo.writeObject(output, object);
+		return (T)kryo.readObject(new Input(output.toBytes()), object.getClass());
+	}
+
+	public static class LruCache extends LinkedHashMap<String, Integer> {
+		public LruCache () {
+			super(16, 0.75f, true);
+		}
+	}
+
+	@Test
+	void testSizeChanged () {
+		// The size doesn't match the entries, eg because the map was modified concurrently (#1181).
+		kryo.register(WrongSizeMap.class);
+		for (int sizeDelta : new int[] {-1, 1}) {
+			WrongSizeMap map = new WrongSizeMap(sizeDelta);
+			map.put("a", 1);
+			map.put("b", "c");
+			KryoException ex = assertThrows(KryoException.class, () -> kryo.writeObject(new Output(1024), map));
+			assertTrue(ex.getMessage().contains("changed while it was written"), ex.getMessage());
+		}
+	}
+
+	public static class WrongSizeMap extends HashMap<Object, Object> {
+		final int sizeDelta;
+
+		public WrongSizeMap () {
+			this(0);
+		}
+
+		public WrongSizeMap (int sizeDelta) {
+			this.sizeDelta = sizeDelta;
+		}
+
+		public int size () {
+			return super.size() + sizeDelta;
+		}
+	}
+
 	@Test
 	void testMaliciousMapSize () {
 		kryo.setReferences(false);
 		kryo.register(HashMap.class);
 		Output declared = new Output(8);
 		kryo.writeClass(declared, HashMap.class);
-		declared.writeVarInt(2000000001, true);
+		declared.writeVarIntFlag(false, 2000000001, true);
 		declared.flush();
 		assertThrows(KryoException.class, () -> kryo.readClassAndObject(new Input(declared.toBytes())));
 	}
@@ -68,11 +162,36 @@ class MapSerializerTest extends KryoTestCase {
 		kryo.register(HashMap.class);
 		Output declared = new Output(8);
 		kryo.writeClass(declared, HashMap.class);
-		declared.writeVarInt(2000000001, true);
+		declared.writeVarIntFlag(false, 2000000001, true);
 		declared.flush();
 		Input stream = new Input(new ByteArrayInputStream(declared.toBytes()));
 		stream.setMaxArraySize(1024);
 		assertThrows(KryoException.class, () -> kryo.readClassAndObject(stream));
+	}
+
+	@Test
+	void testKeyAndValueClassesWrittenOnce () {
+		kryo.register(LinkedHashMap.class);
+		// The class of the keys and values is written once if they all have the same class.
+		LinkedHashMap map = new LinkedHashMap();
+		map.put("a", 1);
+		map.put("b", 2);
+		roundTrip(10, map);
+		// Otherwise each key or value is written with its class.
+		map.put("c", "3");
+		roundTrip(17, map);
+		map.put("c", null);
+		roundTrip(15, map);
+		map.put(null, 3);
+		roundTrip(21, map);
+		// A null key doesn't prevent writing the value class once.
+		LinkedHashMap nullKey = new LinkedHashMap();
+		nullKey.put(null, 1);
+		nullKey.put("a", 2);
+		roundTrip(10, nullKey);
+		LinkedHashMap nullValues = new LinkedHashMap();
+		nullValues.put("a", null);
+		roundTrip(7, nullValues);
 	}
 
 	@Test
@@ -82,9 +201,9 @@ class MapSerializerTest extends KryoTestCase {
 		HashMap map = new HashMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(18, map);
+		roundTrip(16, map);
 		roundTrip(2, new LinkedHashMap());
-		roundTrip(18, new LinkedHashMap(map));
+		roundTrip(16, new LinkedHashMap(map));
 
 		MapSerializer serializer = new MapSerializer();
 		kryo.register(HashMap.class, serializer);
@@ -174,7 +293,7 @@ class MapSerializerTest extends KryoTestCase {
         map.put(9, "456");
         map.put(3, "abc");
         map.put(1, 122);
-        roundTrip(20, map);
+        roundTrip(19, map);
 
         kryo.register(KeyThatIsntComparable.class);
         kryo.register(KeyComparator.class);
@@ -185,7 +304,7 @@ class MapSerializerTest extends KryoTestCase {
         cMap.put(key1, "257");
         key2.value = "213";
         cMap.put(key2, "455");
-        roundTrip(19, cMap);
+        roundTrip(17, cMap);
 
         kryo.register(ConcurrentSkipListMapSubclass.class);
         ConcurrentSkipListMapSubclass cSubMap = new ConcurrentSkipListMapSubclass();
@@ -193,7 +312,7 @@ class MapSerializerTest extends KryoTestCase {
         cSubMap.put("2", 68);
         cSubMap.put("3", 63);
         cSubMap.put("4", 22);
-        roundTrip(25, cSubMap);
+        roundTrip(19, cSubMap);
     }
 
 	@Test
@@ -202,7 +321,7 @@ class MapSerializerTest extends KryoTestCase {
 		TreeMap map = new TreeMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(19, map);
+		roundTrip(17, map);
 
 		kryo.register(KeyThatIsntComparable.class);
 		kryo.register(KeyComparator.class);
@@ -213,7 +332,7 @@ class MapSerializerTest extends KryoTestCase {
 		map.put(key1, "456");
 		key2.value = "1234";
 		map.put(key2, "4567");
-		roundTrip(21, map);
+		roundTrip(19, map);
 
 		kryo.register(TreeMapSubclass.class);
 		map = new TreeMapSubclass();
@@ -221,7 +340,7 @@ class MapSerializerTest extends KryoTestCase {
 		map.put("2", 34);
 		map.put("3", 65);
 		map.put("4", 44);
-		roundTrip(24, map);
+		roundTrip(18, map);
 	}
 
 	@Test
@@ -231,7 +350,7 @@ class MapSerializerTest extends KryoTestCase {
 		TreeMap map = new TreeMap();
 		map.put("123", "456");
 		map.put("789", "abc");
-		roundTrip(24, map);
+		roundTrip(18, map);
 
 		kryo.register(KeyThatIsntComparable.class);
 		kryo.register(KeyComparator.class);
@@ -242,7 +361,7 @@ class MapSerializerTest extends KryoTestCase {
 		map.put(key1, "456");
 		key2.value = "1234";
 		map.put(key2, "4567");
-		roundTrip(29, map);
+		roundTrip(23, map);
 
 		kryo.register(TreeMapSubclass.class);
 		map = new TreeMapSubclass();
@@ -250,7 +369,7 @@ class MapSerializerTest extends KryoTestCase {
 		map.put("2", 34);
 		map.put("3", 65);
 		map.put("4", 44);
-		roundTrip(29, map);
+		roundTrip(19, map);
 	}
 
 	@Test

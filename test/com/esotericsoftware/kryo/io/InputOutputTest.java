@@ -32,17 +32,67 @@ import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Random;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
 /** @author Nathan Sweet */
 @SuppressWarnings("all")
 class InputOutputTest extends KryoTestCase {
+	@Test
+	void testStateAfterUnderflow () {
+		// After buffer underflow, the input is at the end and reading again throws instead of reading old bytes.
+		Input[] inputs = {new Input(new byte[8]), new Input(new ByteArrayInputStream(new byte[8]), 4),
+			new ByteBufferInput(ByteBuffer.allocate(8)), new ByteBufferInput(new ByteArrayInputStream(new byte[8]), 4)};
+		for (Input input : inputs) {
+			input.readInt();
+			input.readInt();
+			assertThrows(KryoBufferUnderflowException.class, input::readInt);
+			assertEquals(8, input.total(), input.getClass().getSimpleName());
+			assertTrue(input.end(), input.getClass().getSimpleName());
+			assertThrows(KryoBufferUnderflowException.class, input::readInt);
+		}
+
+		// The bytes that were not read yet stay readable, after compacting the buffer (4 bytes) or without it (3 bytes).
+		for (byte[] bytes : new byte[][] {{1, 2, 3, 4}, {1, 2, 3}}) {
+			for (Input input : new Input[] {new Input(new ByteArrayInputStream(bytes), 4),
+				new ByteBufferInput(new ByteArrayInputStream(bytes), 4)}) {
+				String name = input.getClass().getSimpleName() + " " + bytes.length;
+				assertEquals(1, input.readByte());
+				assertThrows(KryoBufferUnderflowException.class, input::readInt);
+				for (int i = 1; i < bytes.length; i++)
+					assertEquals(bytes[i], input.readByte(), name);
+				assertTrue(input.end(), name);
+			}
+		}
+	}
+
+	@Test
+	void testZeroCapacity () {
+		// Copying more bytes than a buffer with capacity 0 holds must throw instead of looping forever.
+		assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+			assertThrows(KryoException.class, () -> new Input(new byte[0]).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new Input(new byte[0]).skip(5));
+			assertThrows(KryoException.class, () -> new Input(new ByteArrayInputStream(new byte[10]), 0).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new ByteBufferInput(new byte[0]).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new ByteBufferInput(new byte[0]).skip(5));
+			assertThrows(KryoException.class, () -> new ByteBufferOutput(0).writeBytes(new byte[5]));
+
+			ByteBufferOutput output = new ByteBufferOutput(0, -1);
+			output.writeBytes(new byte[] {1, 2, 3});
+			assertArrayEquals(new byte[] {1, 2, 3}, output.toBytes());
+		});
+	}
+
 	@Test
 	void testByteBufferInputEnd () {
 		Input in = new Input(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
@@ -260,6 +310,71 @@ class InputOutputTest extends KryoTestCase {
 		runStringTest(1024 * 1025);
 		runStringTest(1024 * 1026);
 		runStringTest(1024 * 1024 * 2);
+	}
+
+	@Test
+	void testLongStrings () throws IOException {
+		runLongStringTest(Input::new, Input::new);
+		runLongStringTest(ByteBufferInput::new, ByteBufferInput::new);
+		runLongStringTest(bytes -> new ByteBufferInput(ByteBuffer.wrap(bytes)), ByteBufferInput::new);
+	}
+
+	/** Strings over 32 chars are written as UTF8. ASCII ones are read from the bytes if they are in the buffer. */
+	static void runLongStringTest (Function<byte[], Input> newInput, BiFunction<InputStream, Integer, Input> newStreamInput)
+		throws IOException {
+		ArrayList<String> values = new ArrayList();
+		for (int length : new int[] {33, 34, 35, 36, 37, 38, 39, 40, 41, 63, 64, 65, 100, 1000}) {
+			StringBuilder builder = new StringBuilder();
+			for (int i = 0; i < length; i++)
+				builder.append((char)(32 + i % 95));
+			String ascii = builder.toString();
+			values.add(ascii);
+			values.add(ascii.replace(' ', '\u007F'));
+			for (char c : new char[] {'\u0080', '\u00E9', '\u1234'}) {
+				values.add(c + ascii.substring(1)); // Start.
+				values.add(ascii.substring(0, length / 2) + c + ascii.substring(length / 2 + 1)); // Middle.
+				values.add(ascii.substring(0, length - 1) + c); // End.
+				values.add(ascii.substring(0, 7) + c + ascii.substring(8)); // In the first 8 bytes.
+				values.add(ascii.substring(0, length - 2) + c + ascii.substring(length - 1)); // In the tail.
+			}
+		}
+
+		for (String value : values) {
+			for (int offset = 0; offset < 10; offset++) {
+				Output output = new Output(4096, -1);
+				for (int i = 0; i < offset; i++)
+					output.writeByte(i);
+				output.writeString(value);
+				output.writeInt(1234);
+				output.writeString(value);
+				byte[] bytes = output.toBytes();
+
+				// All bytes in the buffer, the second string ends exactly at the end of the buffer.
+				Input input = newInput.apply(bytes);
+				input.skip(offset);
+				assertEquals(value, input.readString());
+				assertEquals(1234, input.readInt());
+				assertEquals(value, input.readString());
+				assertEquals(bytes.length, input.total());
+
+				input = newInput.apply(bytes);
+				input.skip(offset);
+				assertEquals(value, input.readStringBuilder().toString());
+				assertEquals(1234, input.readInt());
+				assertEquals(value, input.readStringBuilder().toString());
+				assertEquals(bytes.length, input.total());
+
+				// A buffer smaller than the string, so the string crosses fill.
+				for (int bufferSize : new int[] {16, 50}) {
+					input = newStreamInput.apply(new ByteArrayInputStream(bytes), bufferSize);
+					input.skip(offset);
+					assertEquals(value, input.readString());
+					assertEquals(1234, input.readInt());
+					assertEquals(value, input.readString());
+					assertEquals(bytes.length, input.total());
+				}
+			}
+		}
 	}
 
 	@Test
@@ -1154,7 +1269,6 @@ class InputOutputTest extends KryoTestCase {
 // objOutput.flush(); // this layer wasn't flushed prior to this bugfix, add it for a workaround
 
 		byte[] b = os.toByteArray();
-		System.out.println("size: " + b.length);
 
 		ByteArrayInputStream in = new ByteArrayInputStream(b);
 		ObjectInputStream objIn = new ObjectInputStream(in);
@@ -1207,4 +1321,75 @@ class InputOutputTest extends KryoTestCase {
 		// This test should pass as long as no exception thrown
 	}
 
+	@Test
+	void testBulkWriteCountOverflow () {
+		// The byte count of a huge array overflows int. The bulk path must not be taken with that negative count, so the values
+		// are written one at a time, which fails on the short array instead of writing past the buffer.
+		ArrayList<Integer> required = new ArrayList<>();
+		assertBulkWriteCountOverflow(new Output(16) {
+			protected boolean require (int count) {
+				required.add(count);
+				return super.require(count);
+			}
+		});
+		assertBulkWriteCountOverflow(new ByteBufferOutput(16) {
+			protected boolean require (int count) {
+				required.add(count);
+				return super.require(count);
+			}
+		});
+		for (int count : required)
+			assertTrue(count >= 0, "required: " + count);
+	}
+
+	private void assertBulkWriteCountOverflow (Output output) {
+		Class<ArrayIndexOutOfBoundsException> type = ArrayIndexOutOfBoundsException.class;
+		assertThrows(type, () -> output.writeInts(new int[1], 0, 1 << 29));
+		output.reset();
+		assertThrows(type, () -> output.writeLongs(new long[1], 0, 1 << 28));
+		output.reset();
+		assertThrows(type, () -> output.writeFloats(new float[1], 0, 1 << 29));
+		output.reset();
+		assertThrows(type, () -> output.writeDoubles(new double[1], 0, 1 << 28));
+		output.reset();
+		assertThrows(type, () -> output.writeShorts(new short[1], 0, 1 << 30));
+		output.reset();
+		assertThrows(type, () -> output.writeChars(new char[1], 0, 1 << 30));
+	}
+
+	@Test
+	void testCanReadVarLongPartlyBuffered () {
+		// 5 bytes, then a 9 byte var long. After reading the 5 bytes, 5 bytes of the var long are buffered, the rest is in
+		// the stream.
+		Output output = new Output(32);
+		output.writeBytes(new byte[5]);
+		output.writeVarLong(Long.MIN_VALUE, true);
+		assertEquals(14, output.position());
+		byte[] bytes = output.toBytes();
+		for (Input input : new Input[] {new Input(new ByteArrayInputStream(bytes), 10),
+			new ByteBufferInput(new ByteArrayInputStream(bytes), 10)}) {
+			input.readBytes(5);
+			assertTrue(input.canReadVarLong());
+			assertEquals(Long.MIN_VALUE, input.readVarLong(true));
+		}
+	}
+
+	@Test
+	void testNegativeArrayLength () {
+		Input input = new Input(new byte[16]);
+		KryoException ex = assertThrows(KryoException.class, () -> input.validateArrayLength(-1));
+		assertTrue(ex.getMessage().contains("negative"), ex.getMessage());
+		assertThrows(KryoException.class, () -> input.validateArrayLength(Integer.MIN_VALUE, 4));
+		assertEquals(0, input.validateArrayLength(0));
+		ex = assertThrows(KryoException.class, () -> input.clampSize(-1));
+		assertTrue(ex.getMessage().contains("negative"), ex.getMessage());
+		assertEquals(0, input.clampSize(0));
+	}
+
+	@Test
+	void testReadBooleanNonzero () {
+		// Any nonzero byte is true, as with readBooleans and the Unsafe inputs.
+		assertTrue(new Input(new byte[] {2}).readBoolean());
+		assertTrue(new ByteBufferInput(new byte[] {2}).readBoolean());
+	}
 }

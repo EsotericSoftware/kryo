@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.serializers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -74,6 +75,21 @@ class DeflateSerializerTest extends KryoTestCase {
 			assertArrayEquals(payload, kryo.readObject(input, byte[].class, serializer));
 			assertEquals("after", input.readString(), "size " + size);
 		}
+	}
+
+	// The input the compressed object is read from has the maxArraySize of the outer input.
+	@Test
+	void testMaxArraySize () {
+		DeflateSerializer serializer = new DeflateSerializer(new ByteArraySerializer());
+		Output output = new Output(64);
+		kryo.writeObject(output, new byte[11], serializer);
+		Input input = new Input(output.toBytes());
+		input.setMaxArraySize(11);
+		assertEquals(11, kryo.readObject(input, byte[].class, serializer).length);
+		Input limited = new Input(output.toBytes());
+		limited.setMaxArraySize(10);
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(limited, byte[].class, serializer));
+		assertTrue(ex.getMessage().contains("maxArraySize"), ex.getMessage());
 	}
 
 	public static class ServerPhysicsUpdate {

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="445" viewBox="0 0 760 445" role="img">
+<title>Kryo 5 vs Kryo 6: RecordSerializerBenchmark: round trips per second (higher is better)</title>
+<style>
+text { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #4D4D4D }
+.title { font-size: 19px; fill: #000000 }
+.axisTitle, .legendTitle { font-size: 16px; fill: #000000 }
+.legend { fill: #000000 }
+.background { fill: #FFFFFF }
+.plot { fill: #EBEBEB }
+.grid { stroke: #FFFFFF }
+.minor { stroke: #FFFFFF; stroke-width: 0.5 }
+.tick { stroke: #333333 }
+.bar, .line { stroke: #000000 }
+</style>
+<rect class="background" width="760" height="445"/>
+<text class="title" x="48" y="22">Kryo 5 vs Kryo 6: RecordSerializerBenchmark, JDK 27</text>
+<rect class="plot" x="78" y="34" width="376" height="359"/>
+<line class="minor" x1="78" y1="328.8" x2="454" y2="328.8"/>
+<line class="grid" x1="78" y1="280.9" x2="454" y2="280.9"/>
+<line class="minor" x1="78" y1="233.0" x2="454" y2="233.0"/>
+<line class="grid" x1="78" y1="185.1" x2="454" y2="185.1"/>
+<line class="minor" x1="78" y1="137.2" x2="454" y2="137.2"/>
+<line class="grid" x1="78" y1="89.3" x2="454" y2="89.3"/>
+<line class="minor" x1="78" y1="41.4" x2="454" y2="41.4"/>
+<line class="tick" x1="74" y1="376.7" x2="78" y2="376.7"/>
+<text x="71" y="381.2" text-anchor="end">0</text>
+<line class="tick" x1="74" y1="280.9" x2="78" y2="280.9"/>
+<text x="71" y="285.4" text-anchor="end">10M</text>
+<line class="tick" x1="74" y1="185.1" x2="78" y2="185.1"/>
+<text x="71" y="189.6" text-anchor="end">20M</text>
+<line class="tick" x1="74" y1="89.3" x2="78" y2="89.3"/>
+<text x="71" y="93.8" text-anchor="end">30M</text>
+<text class="axisTitle" transform="translate(22 213.5) rotate(-90)" text-anchor="middle">Round trips per second (higher is better)</text>
+<line class="grid" x1="180.5" y1="34" x2="180.5" y2="393"/>
+<line class="tick" x1="180.5" y1="393" x2="180.5" y2="397"/>
+<text x="180.5" y="412" text-anchor="middle">no references</text>
+<line class="grid" x1="351.5" y1="34" x2="351.5" y2="393"/>
+<line class="tick" x1="351.5" y1="393" x2="351.5" y2="397"/>
+<text x="351.5" y="412" text-anchor="middle">references</text>
+<text class="axisTitle" x="266.0" y="437" text-anchor="middle">Serializer settings</text>
+<rect class="bar" fill="#F8766D" x="103.6" y="322.5" width="51.3" height="54.2"/>
+<path class="line" fill="none" d="M129.3 322.7V322.2M119.0 322.7h20.5M119.0 322.2h20.5"/>
+<rect class="bar" fill="#00BA38" x="154.9" y="257.0" width="51.3" height="119.7"/>
+<path class="line" fill="none" d="M180.5 261.5V252.4M170.3 261.5h20.5M170.3 252.4h20.5"/>
+<rect class="bar" fill="#619CFF" x="206.2" y="52.2" width="51.3" height="324.5"/>
+<path class="line" fill="none" d="M231.8 54.1V50.3M221.6 54.1h20.5M221.6 50.3h20.5"/>
+<rect class="bar" fill="#F8766D" x="274.5" y="343.9" width="51.3" height="32.8"/>
+<path class="line" fill="none" d="M300.2 344.0V343.7M289.9 344.0h20.5M289.9 343.7h20.5"/>
+<rect class="bar" fill="#00BA38" x="325.8" y="293.3" width="51.3" height="83.4"/>
+<path class="line" fill="none" d="M351.5 295.4V291.2M341.2 295.4h20.5M341.2 291.2h20.5"/>
+<rect class="bar" fill="#619CFF" x="377.1" y="239.9" width="51.3" height="136.8"/>
+<path class="line" fill="none" d="M402.7 240.3V239.4M392.5 240.3h20.5M392.5 239.4h20.5"/>
+<line class="line" x1="78" y1="376.7" x2="454" y2="376.7"/>
+<text class="legendTitle" x="470" y="191.0">Version</text>
+<rect class="bar" fill="#F8766D" x="470" y="199.0" width="17" height="17"/>
+<text class="legend" x="492" y="212.0">Kryo 5, RecordSerializer</text>
+<rect class="bar" fill="#00BA38" x="470" y="216.0" width="17" height="17"/>
+<text class="legend" x="492" y="229.0">Kryo 6, FieldSerializer</text>
+<rect class="bar" fill="#619CFF" x="470" y="233.0" width="17" height="17"/>
+<text class="legend" x="492" y="246.0">Kryo 6, FieldSerializer, code generation</text>
+</svg>

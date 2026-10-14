@@ -2,11 +2,11 @@
 package com.esotericsoftware.kryo.util;
 
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Target;
 
 /** Do not use this annotation. It exists only to satisfy IDE configuration. Marking everything that cannot be null is tedious and
  * would add enormous clutter. Instead by convention in Kryo everything is implicitly non-null. */
-@Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER, ElementType.LOCAL_VARIABLE})
+// Qualified, Eclipse's null analysis may resolve these before the imports on a full build.
+@java.lang.annotation.Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER, ElementType.LOCAL_VARIABLE})
 @Deprecated
 @interface NonNull {
 }

@@ -21,6 +21,7 @@ package com.esotericsoftware.kryo.io;
 
 import static com.esotericsoftware.kryo.KryoAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 import com.esotericsoftware.kryo.Unsafe;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
@@ -29,6 +30,8 @@ import com.esotericsoftware.kryo.unsafe.UnsafeUtil;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 import org.junit.jupiter.api.Test;
@@ -37,31 +40,37 @@ import org.junit.jupiter.api.Test;
 @Unsafe
 @SuppressWarnings("restriction")
 class UnsafeByteBufferInputOutputTest {
+	@Test
+	void testReadOnlyBuffer () {
+		UnsafeByteBufferInput input = new UnsafeByteBufferInput(ByteBuffer.allocateDirect(8).asReadOnlyBuffer());
+		input.readInt();
+		assertThrows(KryoBufferUnderflowException.class, input::readLong);
+		ByteBufferInputOutputTest.assertReadOnlyOptionalReads(new UnsafeByteBufferInput(ByteBuffer.allocateDirect(3).asReadOnlyBuffer()));
+	}
 
+	@SuppressWarnings("removal") // Off-heap memory for UnsafeByteBufferOutput.
 	@Test
 	void testByteBufferOutputWithPreallocatedMemory () {
+		assumeTrue(UnsafeUtil.isNewDirectBufferAvailable(), "Streams with preallocated direct memory are not supported on this JVM");
 		long bufAddress = UnsafeUtil.unsafe.allocateMemory(4096);
 		try {
 			ByteBufferOutput outputBuffer = new ByteBufferOutput(UnsafeUtil.newDirectBuffer(bufAddress, 4096));
 			outputBuffer.writeInt(10);
 
-			ByteBufferInput inputBuffer = new ByteBufferInput(outputBuffer.getByteBuffer());
-			inputBuffer.readInt();
+			ByteBufferInput inputBuffer = new ByteBufferInput(UnsafeUtil.newDirectBuffer(bufAddress, 4096));
+			assertEquals(10, inputBuffer.readInt());
 
 			UnsafeUtil.dispose(inputBuffer.getByteBuffer());
 			UnsafeUtil.dispose(outputBuffer.getByteBuffer());
 
 			outputBuffer = new UnsafeByteBufferOutput(bufAddress, 4096);
-			outputBuffer.writeInt(10);
+			outputBuffer.writeInt(11);
 
-			inputBuffer = new UnsafeByteBufferInput(outputBuffer.getByteBuffer());
-			inputBuffer.readInt();
+			inputBuffer = new UnsafeByteBufferInput(bufAddress, 4096);
+			assertEquals(11, inputBuffer.readInt());
 
 			UnsafeUtil.dispose(inputBuffer.getByteBuffer());
 			UnsafeUtil.dispose(outputBuffer.getByteBuffer());
-		} catch (Throwable t) {
-			System.err.println("Streams with preallocated direct memory are not supported on this JVM");
-			t.printStackTrace();
 		} finally {
 			UnsafeUtil.unsafe.freeMemory(bufAddress);
 		}
@@ -127,6 +136,11 @@ class UnsafeByteBufferInputOutputTest {
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
 			61, 62, 63, 64, 65}, buffer.toBytes());
+	}
+
+	@Test
+	void testLongStrings () throws IOException {
+		InputOutputTest.runLongStringTest(UnsafeByteBufferInput::new, UnsafeByteBufferInput::new);
 	}
 
 	@Test
@@ -881,5 +895,22 @@ class UnsafeByteBufferInputOutputTest {
 		assertThrows(ArrayIndexOutOfBoundsException.class, () -> output.writeBytes(new byte[4], 2, 3));
 		assertThrows(IllegalArgumentException.class, () -> output.writeBytes(null, 0, 1));
 		assertEquals(0, output.position());
+	}
+
+	@Test
+	void testReadArrayRangeOutOfBounds () {
+		UnsafeByteBufferInput input = new UnsafeByteBufferInput(new byte[] {1, 2, 3, 4, 5, 6, 7, 8});
+		assertThrows(IllegalArgumentException.class, () -> input.readBytes(null, 0, 1));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], -1, 2));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 0, -1));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 2, 3));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 5, 0));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 1, Integer.MAX_VALUE));
+		assertEquals(0, input.position());
+		byte[] bytes = new byte[4];
+		input.readBytes(bytes, 2, 2);
+		input.readBytes(bytes, 4, 0);
+		assertArrayEquals(new byte[] {0, 0, 1, 2}, bytes);
+		assertEquals(2, input.position());
 	}
 }

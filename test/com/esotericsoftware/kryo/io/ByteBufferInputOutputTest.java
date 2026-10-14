@@ -21,17 +21,62 @@ package com.esotericsoftware.kryo.io;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("all")
 class ByteBufferInputOutputTest extends KryoTestCase {
+	@Test
+	void testReadOnlyBufferUnderflow () {
+		// Reading past the end of a read-only buffer throws buffer underflow, not ReadOnlyBufferException from compacting it.
+		for (ByteBuffer buffer : new ByteBuffer[] {ByteBuffer.allocate(8), ByteBuffer.allocateDirect(8)}) {
+			ByteBufferInput input = new ByteBufferInput(buffer.asReadOnlyBuffer());
+			input.readLong();
+			assertThrows(KryoBufferUnderflowException.class, input::readInt);
+			input = new ByteBufferInput(buffer.asReadOnlyBuffer());
+			input.readInt();
+			assertThrows(KryoBufferUnderflowException.class, input::readLong); // Some bytes remaining.
+		}
+
+		// A read-only buffer can't be filled from a stream.
+		ByteBufferInput input = new ByteBufferInput(ByteBuffer.allocate(8).asReadOnlyBuffer());
+		input.setInputStream(new ByteArrayInputStream(new byte[8]));
+		KryoException ex = assertThrows(KryoException.class, input::readInt);
+		assertTrue(ex.getMessage().contains("read-only"), ex.getMessage());
+	}
+
+	@Test
+	void testReadOnlyBufferOptionalReads () {
+		// The InputStream methods read the bytes of a read-only buffer and then report its end.
+		assertReadOnlyOptionalReads(new ByteBufferInput(ByteBuffer.allocate(3).asReadOnlyBuffer()));
+		assertReadOnlyOptionalReads(new ByteBufferInput(ByteBuffer.allocateDirect(3).asReadOnlyBuffer()));
+
+		// They can't fill it from a stream.
+		ByteBufferInput input = new ByteBufferInput(ByteBuffer.allocate(8).asReadOnlyBuffer());
+		input.setInputStream(new ByteArrayInputStream(new byte[8]));
+		KryoException ex = assertThrows(KryoException.class, input::read);
+		assertTrue(ex.getMessage().contains("read-only"), ex.getMessage());
+	}
+
+	/** Reads the 3 bytes of a read-only buffer with the InputStream methods, then checks that they report its end. */
+	static void assertReadOnlyOptionalReads (ByteBufferInput input) {
+		byte[] bytes = new byte[4];
+		assertEquals(2, input.read(bytes, 0, 2));
+		assertEquals(1, input.read(bytes, 0, 4));
+		assertEquals(-1, input.read());
+		assertEquals(-1, input.read(bytes, 0, 4));
+		assertTrue(input.end());
+	}
+
 	@Test
 	void testByteBufferInputEnd () {
 		ByteBufferInput in = new ByteBufferInput(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
@@ -159,4 +204,70 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 		}
 	}
 
+	@Test
+	void testFlush () {
+		// Heap buffers (also with an array offset) and direct buffers are written to the stream, which is flushed.
+		byte[] bytes = new byte[20];
+		for (int i = 0; i < bytes.length; i++)
+			bytes[i] = (byte)i;
+		for (ByteBuffer buffer : new ByteBuffer[] {ByteBuffer.allocate(8), ByteBuffer.wrap(new byte[12], 2, 8).slice(),
+			ByteBuffer.allocateDirect(8)}) {
+			int[] flushes = {0};
+			ByteArrayOutputStream stream = new ByteArrayOutputStream() {
+				public void flush () {
+					flushes[0]++;
+				}
+			};
+			ByteBufferOutput output = new ByteBufferOutput(buffer);
+			output.setOutputStream(stream);
+			output.writeBytes(bytes);
+			output.flush();
+			assertArrayEquals(bytes, stream.toByteArray());
+			assertEquals(3, flushes[0]);
+		}
+	}
+
+	@Test
+	void testConstructorOffsetCount () {
+		ByteBufferInput input = new ByteBufferInput(new byte[] {1, 2, 3, 4, 5}, 1, 3);
+		assertEquals(3, input.limit());
+		assertArrayEquals(new byte[] {2, 3, 4}, input.readBytes(3));
+		assertTrue(input.end());
+	}
+
+	@Test
+	void testSetBufferOffsetCount () {
+		// The buffer holds the count bytes from offset, like the ByteBufferInput constructor.
+		ByteBufferOutput output = new ByteBufferOutput();
+		output.setBuffer(new byte[] {1, 2, 3, 4, 5}, 1, 3);
+		assertEquals(0, output.position());
+		assertEquals(3, output.getMaxCapacity());
+		ByteBuffer buffer = output.getByteBuffer();
+		assertEquals(3, buffer.capacity());
+		assertEquals(3, buffer.limit());
+		assertEquals(2, buffer.get(0));
+		assertEquals(4, buffer.get(2));
+		output.writeBytes(new byte[] {6, 7, 8});
+		assertArrayEquals(new byte[] {6, 7, 8}, output.toBytes());
+	}
+
+	@Test
+	void testWriteAsciiFullBuffer () {
+		// Writing ASCII to a full buffer must make room instead of looping forever.
+		String value = "abcdefghijklmnopqrstuvwxyz0123456789";
+		assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+			ByteArrayOutputStream stream = new ByteArrayOutputStream();
+			ByteBufferOutput output = new ByteBufferOutput(stream, 1);
+			output.writeByte(1);
+			output.writeAscii(value);
+			output.flush();
+			Input input = new Input(stream.toByteArray());
+			assertEquals(1, input.readByte());
+			assertEquals(value, input.readString());
+
+			output = new ByteBufferOutput(0, -1);
+			output.writeAscii(value);
+			assertEquals(value, new Input(output.toBytes()).readString());
+		});
+	}
 }

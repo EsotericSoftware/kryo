@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="445" viewBox="0 0 1024 445" role="img">
+<title>StringBenchmark: nanoseconds per operation (lower is better)</title>
+<style>
+text { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #4D4D4D }
+.title { font-size: 19px; fill: #000000 }
+.axisTitle, .legendTitle { font-size: 16px; fill: #000000 }
+.legend { fill: #000000 }
+.background { fill: #FFFFFF }
+.plot { fill: #EBEBEB }
+.grid { stroke: #FFFFFF }
+.minor { stroke: #FFFFFF; stroke-width: 0.5 }
+.tick { stroke: #333333 }
+.bar, .line { stroke: #000000 }
+</style>
+<rect class="background" width="1024" height="445"/>
+<text class="title" x="48" y="22">StringBenchmark, JDK 27</text>
+<rect class="plot" x="78" y="34" width="796" height="359"/>
+<line class="minor" x1="78" y1="334.7" x2="874" y2="334.7"/>
+<line class="grid" x1="78" y1="292.7" x2="874" y2="292.7"/>
+<line class="minor" x1="78" y1="250.6" x2="874" y2="250.6"/>
+<line class="grid" x1="78" y1="208.6" x2="874" y2="208.6"/>
+<line class="minor" x1="78" y1="166.6" x2="874" y2="166.6"/>
+<line class="grid" x1="78" y1="124.6" x2="874" y2="124.6"/>
+<line class="minor" x1="78" y1="82.6" x2="874" y2="82.6"/>
+<line class="grid" x1="78" y1="40.6" x2="874" y2="40.6"/>
+<line class="tick" x1="74" y1="376.7" x2="78" y2="376.7"/>
+<text x="71" y="381.2" text-anchor="end">0</text>
+<line class="tick" x1="74" y1="292.7" x2="78" y2="292.7"/>
+<text x="71" y="297.2" text-anchor="end">20</text>
+<line class="tick" x1="74" y1="208.6" x2="78" y2="208.6"/>
+<text x="71" y="213.1" text-anchor="end">40</text>
+<line class="tick" x1="74" y1="124.6" x2="78" y2="124.6"/>
+<text x="71" y="129.1" text-anchor="end">60</text>
+<line class="tick" x1="74" y1="40.6" x2="78" y2="40.6"/>
+<text x="71" y="45.1" text-anchor="end">80</text>
+<text class="axisTitle" transform="translate(22 213.5) rotate(-90)" text-anchor="middle">Nanoseconds per operation (lower is better)</text>
+<line class="grid" x1="155.0" y1="34" x2="155.0" y2="393"/>
+<line class="tick" x1="155.0" y1="393" x2="155.0" y2="397"/>
+<text x="155.0" y="412" text-anchor="middle">readAsciiLong</text>
+<line class="grid" x1="283.4" y1="34" x2="283.4" y2="393"/>
+<line class="tick" x1="283.4" y1="393" x2="283.4" y2="397"/>
+<text x="283.4" y="412" text-anchor="middle">readString</text>
+<line class="grid" x1="411.8" y1="34" x2="411.8" y2="393"/>
+<line class="tick" x1="411.8" y1="393" x2="411.8" y2="397"/>
+<text x="411.8" y="412" text-anchor="middle">readStringLong</text>
+<line class="grid" x1="540.2" y1="34" x2="540.2" y2="393"/>
+<line class="tick" x1="540.2" y1="393" x2="540.2" y2="397"/>
+<text x="540.2" y="412" text-anchor="middle">writeAsciiLong</text>
+<line class="grid" x1="668.6" y1="34" x2="668.6" y2="393"/>
+<line class="tick" x1="668.6" y1="393" x2="668.6" y2="397"/>
+<text x="668.6" y="412" text-anchor="middle">writeString</text>
+<line class="grid" x1="797.0" y1="34" x2="797.0" y2="393"/>
+<line class="tick" x1="797.0" y1="393" x2="797.0" y2="397"/>
+<text x="797.0" y="412" text-anchor="middle">writeStringLong</text>
+<text class="axisTitle" x="476.0" y="437" text-anchor="middle">Operation</text>
+<rect class="bar" fill="#F8766D" x="97.3" y="217.5" width="28.9" height="159.2"/>
+<path class="line" fill="none" d="M111.7 220.4V214.6M105.9 220.4h11.6M105.9 214.6h11.6"/>
+<rect class="bar" fill="#7CAE00" x="126.1" y="55.2" width="28.9" height="321.5"/>
+<path class="line" fill="none" d="M140.6 56.2V54.3M134.8 56.2h11.6M134.8 54.3h11.6"/>
+<rect class="bar" fill="#00BFC4" x="155.0" y="215.8" width="28.9" height="160.9"/>
+<path class="line" fill="none" d="M169.5 219.1V212.4M163.7 219.1h11.6M163.7 212.4h11.6"/>
+<rect class="bar" fill="#C77CFF" x="183.9" y="54.1" width="28.9" height="322.6"/>
+<path class="line" fill="none" d="M198.4 57.9V50.3M192.6 57.9h11.6M192.6 50.3h11.6"/>
+<rect class="bar" fill="#F8766D" x="225.6" y="331.4" width="28.9" height="45.2"/>
+<path class="line" fill="none" d="M240.1 332.4V330.5M234.3 332.4h11.6M234.3 330.5h11.6"/>
+<rect class="bar" fill="#7CAE00" x="254.5" y="297.1" width="28.9" height="79.6"/>
+<path class="line" fill="none" d="M269.0 298.4V295.8M263.2 298.4h11.6M263.2 295.8h11.6"/>
+<rect class="bar" fill="#00BFC4" x="283.4" y="331.2" width="28.9" height="45.5"/>
+<path class="line" fill="none" d="M297.9 332.5V329.9M292.1 332.5h11.6M292.1 329.9h11.6"/>
+<rect class="bar" fill="#C77CFF" x="312.3" y="297.5" width="28.9" height="79.1"/>
+<path class="line" fill="none" d="M326.7 298.5V296.6M321.0 298.5h11.6M321.0 296.6h11.6"/>
+<rect class="bar" fill="#F8766D" x="354.0" y="308.5" width="28.9" height="68.2"/>
+<path class="line" fill="none" d="M368.5 310.4V306.6M362.7 310.4h11.6M362.7 306.6h11.6"/>
+<rect class="bar" fill="#7CAE00" x="382.9" y="235.9" width="28.9" height="140.7"/>
+<path class="line" fill="none" d="M397.4 244.1V227.8M391.6 244.1h11.6M391.6 227.8h11.6"/>
+<rect class="bar" fill="#00BFC4" x="411.8" y="308.3" width="28.9" height="68.4"/>
+<path class="line" fill="none" d="M426.2 309.7V307.0M420.5 309.7h11.6M420.5 307.0h11.6"/>
+<rect class="bar" fill="#C77CFF" x="440.7" y="243.3" width="28.9" height="133.4"/>
+<path class="line" fill="none" d="M455.1 246.0V240.5M449.4 246.0h11.6M449.4 240.5h11.6"/>
+<rect class="bar" fill="#F8766D" x="482.4" y="355.2" width="28.9" height="21.4"/>
+<path class="line" fill="none" d="M496.9 355.6V354.9M491.1 355.6h11.6M491.1 354.9h11.6"/>
+<rect class="bar" fill="#7CAE00" x="511.3" y="124.0" width="28.9" height="252.6"/>
+<path class="line" fill="none" d="M525.8 125.2V122.9M520.0 125.2h11.6M520.0 122.9h11.6"/>
+<rect class="bar" fill="#00BFC4" x="540.2" y="355.3" width="28.9" height="21.3"/>
+<path class="line" fill="none" d="M554.6 355.5V355.2M548.9 355.5h11.6M548.9 355.2h11.6"/>
+<rect class="bar" fill="#C77CFF" x="569.1" y="124.4" width="28.9" height="252.3"/>
+<path class="line" fill="none" d="M583.5 125.3V123.5M577.7 125.3h11.6M577.7 123.5h11.6"/>
+<rect class="bar" fill="#F8766D" x="610.8" y="366.0" width="28.9" height="10.7"/>
+<path class="line" fill="none" d="M625.2 366.2V365.8M619.5 366.2h11.6M619.5 365.8h11.6"/>
+<rect class="bar" fill="#7CAE00" x="639.7" y="342.9" width="28.9" height="33.8"/>
+<path class="line" fill="none" d="M654.1 343.0V342.7M648.4 343.0h11.6M648.4 342.7h11.6"/>
+<rect class="bar" fill="#00BFC4" x="668.6" y="366.0" width="28.9" height="10.7"/>
+<path class="line" fill="none" d="M683.0 366.1V366.0M677.2 366.1h11.6M677.2 366.0h11.6"/>
+<rect class="bar" fill="#C77CFF" x="697.5" y="342.9" width="28.9" height="33.8"/>
+<path class="line" fill="none" d="M711.9 343.1V342.6M706.1 343.1h11.6M706.1 342.6h11.6"/>
+<rect class="bar" fill="#F8766D" x="739.2" y="246.9" width="28.9" height="129.7"/>
+<path class="line" fill="none" d="M753.6 248.0V245.9M747.9 248.0h11.6M747.9 245.9h11.6"/>
+<rect class="bar" fill="#7CAE00" x="768.1" y="148.7" width="28.9" height="228.0"/>
+<path class="line" fill="none" d="M782.5 149.5V148.0M776.7 149.5h11.6M776.7 148.0h11.6"/>
+<rect class="bar" fill="#00BFC4" x="797.0" y="247.1" width="28.9" height="129.5"/>
+<path class="line" fill="none" d="M811.4 248.1V246.2M805.6 248.1h11.6M805.6 246.2h11.6"/>
+<rect class="bar" fill="#C77CFF" x="825.9" y="142.3" width="28.9" height="234.4"/>
+<path class="line" fill="none" d="M840.3 159.7V125.0M834.5 159.7h11.6M834.5 125.0h11.6"/>
+<line class="line" x1="78" y1="376.7" x2="874" y2="376.7"/>
+<text class="legendTitle" x="890" y="182.5">Buffer type</text>
+<rect class="bar" fill="#F8766D" x="890" y="190.5" width="17" height="17"/>
+<text class="legend" x="912" y="203.5">array</text>
+<rect class="bar" fill="#7CAE00" x="890" y="207.5" width="17" height="17"/>
+<text class="legend" x="912" y="220.5">byteBuffer</text>
+<rect class="bar" fill="#00BFC4" x="890" y="224.5" width="17" height="17"/>
+<text class="legend" x="912" y="237.5">unsafeArray</text>
+<rect class="bar" fill="#C77CFF" x="890" y="241.5" width="17" height="17"/>
+<text class="legend" x="912" y="254.5">unsafeByteBuffer</text>
+</svg>

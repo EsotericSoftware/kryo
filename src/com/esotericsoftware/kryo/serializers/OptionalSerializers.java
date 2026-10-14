@@ -19,8 +19,6 @@
 
 package com.esotericsoftware.kryo.serializers;
 
-import static com.esotericsoftware.kryo.util.Util.*;
-
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
@@ -31,15 +29,14 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
-/** Serializers for {@link Optional}, {@link OptionalInt}, {@link OptionalLong} and {@link OptionalDouble}. Are added as default
- * serializers for Java 8 or later. */
+/** Serializers for {@link Optional}, {@link OptionalInt}, {@link OptionalLong} and {@link OptionalDouble}, which are added as
+ * default serializers. */
 public final class OptionalSerializers {
 	public static void addDefaultSerializers (Kryo kryo) {
-		if (isClassAvailable("java.util.Optional")) kryo.addDefaultSerializer(Optional.class, OptionalSerializer.class);
-		if (isClassAvailable("java.util.OptionalInt")) kryo.addDefaultSerializer(OptionalInt.class, OptionalIntSerializer.class);
-		if (isClassAvailable("java.util.OptionalLong")) kryo.addDefaultSerializer(OptionalLong.class, OptionalLongSerializer.class);
-		if (isClassAvailable("java.util.OptionalDouble"))
-			kryo.addDefaultSerializer(OptionalDouble.class, OptionalDoubleSerializer.class);
+		kryo.addDefaultSerializer(Optional.class, OptionalSerializer::new);
+		kryo.addDefaultSerializer(OptionalInt.class, OptionalIntSerializer::new);
+		kryo.addDefaultSerializer(OptionalLong.class, OptionalLongSerializer::new);
+		kryo.addDefaultSerializer(OptionalDouble.class, OptionalDoubleSerializer::new);
 	}
 
 	public static class OptionalSerializer extends Serializer<Optional> {

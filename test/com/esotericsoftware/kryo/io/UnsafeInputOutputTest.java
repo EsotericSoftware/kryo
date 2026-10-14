@@ -23,13 +23,17 @@ import static com.esotericsoftware.kryo.KryoAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Unsafe;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
 import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
+import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferOutput;
 import com.esotericsoftware.kryo.unsafe.UnsafeInput;
 import com.esotericsoftware.kryo.unsafe.UnsafeOutput;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.Duration;
 import java.util.Random;
 
 import org.junit.jupiter.api.Test;
@@ -37,6 +41,24 @@ import org.junit.jupiter.api.Test;
 /** @author Nathan Sweet <misc@n4te.com> */
 @Unsafe
 class UnsafeInputOutputTest {
+	@Test
+	void testZeroCapacity () {
+		// Copying more bytes than a buffer with capacity 0 holds must throw instead of looping forever.
+		assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+			assertThrows(KryoException.class, () -> new UnsafeInput(new byte[0]).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new UnsafeInput(new ByteArrayInputStream(new byte[80]), 0).readLongs(5));
+			assertThrows(KryoException.class, () -> new UnsafeByteBufferInput(new byte[0]).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new UnsafeOutput(0, 0).writeLongs(new long[5], 0, 5));
+
+			UnsafeOutput output = new UnsafeOutput(0, -1);
+			output.writeBytes(new byte[] {1, 2, 3});
+			assertArrayEquals(new byte[] {1, 2, 3}, output.toBytes());
+			UnsafeByteBufferOutput bufferOutput = new UnsafeByteBufferOutput(0, -1);
+			bufferOutput.writeBytes(new byte[] {1, 2, 3});
+			assertArrayEquals(new byte[] {1, 2, 3}, bufferOutput.toBytes());
+		});
+	}
+
 	@Test
 	void testArrayLengthValidation () {
 		int hugeLength = 2000000000;
@@ -109,6 +131,11 @@ class UnsafeInputOutputTest {
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
 			61, 62, 63, 64, 65}, buffer.toBytes());
+	}
+
+	@Test
+	void testLongStrings () throws IOException {
+		InputOutputTest.runLongStringTest(UnsafeInput::new, UnsafeInput::new);
 	}
 
 	@Test
@@ -886,5 +913,22 @@ class UnsafeInputOutputTest {
 		assertThrows(ArrayIndexOutOfBoundsException.class, () -> output.writeBytes(new byte[4], 2, 3));
 		assertThrows(IllegalArgumentException.class, () -> output.writeBytes(null, 0, 1));
 		assertEquals(0, output.position());
+	}
+
+	@Test
+	void testReadArrayRangeOutOfBounds () {
+		UnsafeInput input = new UnsafeInput(new byte[] {1, 2, 3, 4, 5, 6, 7, 8});
+		assertThrows(IllegalArgumentException.class, () -> input.readBytes(null, 0, 1));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], -1, 2));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 0, -1));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 2, 3));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 5, 0));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.readBytes(new byte[4], 1, Integer.MAX_VALUE));
+		assertEquals(0, input.position());
+		byte[] bytes = new byte[4];
+		input.readBytes(bytes, 2, 2);
+		input.readBytes(bytes, 4, 0);
+		assertArrayEquals(new byte[] {0, 0, 1, 2}, bytes);
+		assertEquals(2, input.position());
 	}
 }

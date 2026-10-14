@@ -23,11 +23,12 @@ import static com.esotericsoftware.kryo.unsafe.UnsafeUtil.*;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 import com.esotericsoftware.kryo.util.Util;
 
 import java.io.OutputStream;
 
-/** An {@link Output} that reads data using sun.misc.Unsafe. Multi-byte primitive types use native byte order, so the native byte
+/** An {@link Output} that writes data using sun.misc.Unsafe. Multi-byte primitive types use native byte order, so the native byte
  * order on different computers which read and write the data must be the same.
  * <p>
  * Not available on all JVMs. {@link Util#unsafe} can be checked before using this class.
@@ -36,6 +37,7 @@ import java.io.OutputStream;
  * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 @SuppressWarnings("restriction")
+@IgnoreAndroid
 public class UnsafeOutput extends Output {
 	/** Creates an uninitialized Output, {@link #setBuffer(byte[], int)} must be called before the Output is used. */
 	public UnsafeOutput () {
@@ -189,7 +191,7 @@ public class UnsafeOutput extends Output {
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = (int)Math.min(capacity, count);
+			copyCount = (int)Math.min(Math.max(capacity, 1), count);
 			require(copyCount);
 		}
 	}

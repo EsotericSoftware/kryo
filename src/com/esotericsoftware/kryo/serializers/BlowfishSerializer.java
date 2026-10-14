@@ -33,7 +33,11 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.SecretKeySpec;
 
 /** Encrypts data using the blowfish cipher.
- * @author Nathan Sweet */
+ * @author Nathan Sweet
+ * @deprecated Blowfish is an outdated cipher. The key is shared by all instances, so the key of the last instance created is
+ *             used, and reading an encrypted object reads to the end of the input, so it only works for the last object. Encrypt
+ *             the serialized bytes instead, eg with AES-GCM from javax.crypto. This class will be removed in Kryo 7. */
+@Deprecated
 public class BlowfishSerializer extends Serializer {
 	private final Serializer serializer;
 	private static SecretKeySpec keySpec;
@@ -63,7 +67,9 @@ public class BlowfishSerializer extends Serializer {
 	public Object read (Kryo kryo, Input input, Class type) {
 		Cipher cipher = getCipher(Cipher.DECRYPT_MODE);
 		CipherInputStream cipherInput = new CipherInputStream(input, cipher);
-		return serializer.read(kryo, new Input(cipherInput, 256), type);
+		Input decryptedInput = new Input(cipherInput, 256);
+		decryptedInput.setMaxArraySize(input.getMaxArraySize());
+		return serializer.read(kryo, decryptedInput, type);
 	}
 
 	public Object copy (Kryo kryo, Object original) {
