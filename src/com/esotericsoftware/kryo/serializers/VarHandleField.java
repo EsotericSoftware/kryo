@@ -59,7 +59,7 @@ class VarHandleField extends ReflectField {
 
 	public void set (Object object, Object value) {
 		try {
-			if (isFinal)
+			if (setter == null)
 				FieldSerializer.setFinal(this, object, value);
 			else
 				setter.invokeExact(object, value);
@@ -114,7 +114,7 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, object, read(input));
 				else if (varEncoding)
 					setter.invokeExact(object, input.readVarInt(false));
@@ -134,7 +134,7 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, copy, (int)getter.invokeExact(original));
 				else
 					copier.invokeExact(copy, original);
@@ -169,7 +169,7 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, object, read(input));
 				else if (varEncoding)
 					setter.invokeExact(object, input.readVarLong(false));
@@ -189,7 +189,7 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, copy, (long)getter.invokeExact(original));
 				else
 					copier.invokeExact(copy, original);
@@ -221,7 +221,7 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, object, read(input));
 				else
 					setter.invokeExact(object, input.readFloat());
@@ -236,7 +236,7 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, copy, (float)getter.invokeExact(original));
 				else
 					copier.invokeExact(copy, original);
@@ -268,7 +268,7 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, object, read(input));
 				else
 					setter.invokeExact(object, input.readDouble());
@@ -283,7 +283,7 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, copy, (double)getter.invokeExact(original));
 				else
 					copier.invokeExact(copy, original);
@@ -315,7 +315,7 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, object, read(input));
 				else
 					setter.invokeExact(object, input.readBoolean());
@@ -330,7 +330,7 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, copy, (boolean)getter.invokeExact(original));
 				else
 					copier.invokeExact(copy, original);
@@ -362,7 +362,7 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, object, read(input));
 				else
 					setter.invokeExact(object, input.readByte());
@@ -377,7 +377,7 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, copy, (byte)getter.invokeExact(original));
 				else
 					copier.invokeExact(copy, original);
@@ -409,7 +409,7 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, object, read(input));
 				else
 					setter.invokeExact(object, input.readShort());
@@ -424,7 +424,7 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, copy, (short)getter.invokeExact(original));
 				else
 					copier.invokeExact(copy, original);
@@ -456,7 +456,7 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, object, read(input));
 				else
 					setter.invokeExact(object, input.readChar());
@@ -471,7 +471,7 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, copy, (char)getter.invokeExact(original));
 				else
 					copier.invokeExact(copy, original);
@@ -511,7 +511,7 @@ class VarHandleField extends ReflectField {
 
 		public void read (Input input, Object object) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, object, read(input));
 				else
 					setter.invokeExact(object, input.readString());
@@ -526,7 +526,7 @@ class VarHandleField extends ReflectField {
 
 		public void copy (Object original, Object copy) {
 			try {
-				if (isFinal)
+				if (setter == null)
 					FieldSerializer.setFinal(this, copy, (String)getter.invokeExact(original));
 				else
 					copier.invokeExact(copy, original);

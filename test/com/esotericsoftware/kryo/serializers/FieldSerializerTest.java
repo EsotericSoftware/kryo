@@ -1818,6 +1818,14 @@ class FieldSerializerTest extends KryoTestCase {
 		first.getField("finalObject").copy(original, copy);
 		assertNotSame(original.finalObject, copy.finalObject);
 		assertEquals(original.finalObject, copy.finalObject);
+
+		// Record components can't be set with VarHandles either, setFinal reports that they can't be set.
+		FieldSerializerConfig config = new FieldSerializerConfig();
+		config.setFieldAccess(FieldAccessType.VARHANDLE);
+		CachedField width = new FieldSerializer(new Kryo(), RecordClass.class, config).getField("width");
+		RecordClass record = new RecordClass("tall", 2, 3, 4.5);
+		KryoException ex = assertThrows(KryoException.class, () -> width.copy(record, new RecordClass("short", 1, 0, 0)));
+		assertTrue(ex.getMessage().contains("Unable to set final field"), ex.getMessage());
 	}
 
 	static private FieldSerializer varHandleSerializer (Kryo kryo) {
