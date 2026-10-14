@@ -21,7 +21,6 @@ package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
-import com.esotericsoftware.kryo.util.Util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -125,12 +124,6 @@ public class ByteBufferInput extends Input {
 
 	public ByteBuffer getByteBuffer () {
 		return byteBuffer;
-	}
-
-	public void setInputStream (InputStream inputStream) {
-		this.inputStream = inputStream;
-		limit = 0;
-		reset();
 	}
 
 	public void reset () {
@@ -263,10 +256,6 @@ public class ByteBufferInput extends Input {
 		return byteBuffer.get() & 0xFF;
 	}
 
-	public int read (byte[] bytes) throws KryoException {
-		return read(bytes, 0, bytes.length);
-	}
-
 	public int read (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int startingCount = count;
@@ -303,25 +292,6 @@ public class ByteBufferInput extends Input {
 		setBufferPosition(byteBuffer, position);
 	}
 
-	public long skip (long count) throws KryoException {
-		long remaining = count;
-		while (remaining > 0) {
-			int skip = (int)Math.min(Util.maxArraySize, remaining);
-			skip(skip);
-			remaining -= skip;
-		}
-		return count;
-	}
-
-	public void close () throws KryoException {
-		if (inputStream != null) {
-			try {
-				inputStream.close();
-			} catch (IOException ignored) {
-			}
-		}
-	}
-
 	private int getBufferPosition (Buffer buffer) {
 		return buffer.position();
 	}
@@ -350,12 +320,6 @@ public class ByteBufferInput extends Input {
 		if (position == limit) require(1);
 		position++;
 		return byteBuffer.get() & 0xFF;
-	}
-
-	public byte[] readBytes (int length) throws KryoException {
-		byte[] bytes = new byte[validateArrayLength(length)];
-		readBytes(bytes, 0, length);
-		return bytes;
 	}
 
 	public void readBytes (byte[] bytes, int offset, int count) throws KryoException {

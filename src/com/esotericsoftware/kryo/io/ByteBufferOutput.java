@@ -85,10 +85,6 @@ public class ByteBufferOutput extends Output {
 		this.outputStream = outputStream;
 	}
 
-	public OutputStream getOutputStream () {
-		return outputStream;
-	}
-
 	/** Throws {@link UnsupportedOperationException} because this output uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
@@ -224,29 +220,10 @@ public class ByteBufferOutput extends Output {
 		position = 0;
 	}
 
-	public void close () throws KryoException {
-		flush();
-		if (outputStream != null) {
-			try {
-				outputStream.close();
-			} catch (IOException ignored) {
-			}
-		}
-	}
-
 	public void write (int value) throws KryoException {
 		if (position == capacity) require(1);
 		byteBuffer.put((byte)value);
 		position++;
-	}
-
-	public void write (byte[] bytes) throws KryoException {
-		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
-		writeBytes(bytes, 0, bytes.length);
-	}
-
-	public void write (byte[] bytes, int offset, int length) throws KryoException {
-		writeBytes(bytes, offset, length);
 	}
 
 	// byte:
@@ -261,11 +238,6 @@ public class ByteBufferOutput extends Output {
 		if (position == capacity) require(1);
 		byteBuffer.put((byte)value);
 		position++;
-	}
-
-	public void writeBytes (byte[] bytes) throws KryoException {
-		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
-		writeBytes(bytes, 0, bytes.length);
 	}
 
 	public void writeBytes (byte[] bytes, int offset, int count) throws KryoException {
