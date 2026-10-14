@@ -58,9 +58,9 @@ import java.util.stream.IntStream;
  *
  * <pre>
  * final class Generated$Nested extends GeneratedFields {
- *    // The class data: the VarHandle of each field, then the call site invoker of each final field.
+ *    // The class data: the VarHandle of each field, then the call site invoker of each group of final fields.
  *    static final VarHandle f0, f1, f2;
- *    static final MethodHandle s2;
+ *    static final MethodHandle g0;
  *    static {
  *       f0 = (VarHandle)MethodHandles.classDataAt(MethodHandles.lookup(), "_", VarHandle.class, 0);
  *       ...
@@ -89,7 +89,8 @@ import java.util.stream.IntStream;
  *          index = 1;
  *          f1.set(object, ((ReflectField)fields[1]).readValue(input));
  *          index = 2;
- *          s2.invokeExact(fields[2], object, fields[2].varEncoding ? input.readVarInt(false) : input.readInt());
+ *          int value = fields[2].varEncoding ? input.readVarInt(false) : input.readInt();
+ *          g0.invokeExact(fields, object, value);
  *       } catch (Throwable t) {
  *          throw GeneratedFields.readError(t, fields[index], input);
  *       }
@@ -117,7 +118,8 @@ import java.util.stream.IntStream;
  *          index = 1;
  *          f1.set(copy, serializer.kryo.copy(f1.get(original)));
  *          index = 2;
- *          s2.invokeExact(fields[2], copy, (int)f2.get(original));
+ *          int value = (int)f2.get(original);
+ *          g0.invokeExact(fields, copy, value);
  *       } catch (Throwable t) {
  *          throw GeneratedFields.copyError(t, fields[index], original);
  *       }
@@ -130,13 +132,14 @@ import java.util.stream.IntStream;
  * and read falls back to {@link TaggedFieldSerializer#readTag(Input, int, Object, boolean)} when the tag isn't the expected one.
  * Classes with more than {@link #batchSize} fields get a private method per batch.
  * <p>
- * The method handle that sets a final field is the invoker of a {@link MutableCallSite}. For an Unsafe field, its first call
- * makes {@link FieldSerializer#setFinal(CachedField, Object, Object)} the target, which sets the field with Unsafe like the
- * cached fields, without reflection. Otherwise its first call obtains the setter of the field, because Java 26+ warns when that
- * is done, so it only happens when a final field is set. If setting the field with reflection is denied, the call site calls
- * {@link FieldSerializer#setFinal(CachedField, Object, Object)} instead, which uses the {@link FinalFieldSetter} of the cached
- * field. Final Unsafe fields are part of the signature of the hidden class, so serializers with other field access don't share
- * its call sites.
+ * The values of final fields are kept in locals and set in groups: before a field whose value may refer to the object, and at the
+ * end of a batch, so the object has its final fields before it can be used, eg added to a HashSet. With tags or classes, where a
+ * field may not be read, each final field is set right away. The method handle that sets a group is the invoker of a
+ * {@link MutableCallSite}. Its first call obtains the setters of the fields, because Java 26+ warns when that is done, so it only
+ * happens when a final field is set. For Unsafe fields, or if setting the fields with reflection is denied, the call site calls
+ * {@link FieldSerializer#setFinal(CachedField, Object, Object)} instead, except for fields with a {@link FinalFieldSetter}, which
+ * are set with one call per class. Final Unsafe fields are part of the signature of the hidden class, so serializers with other
+ * field access don't share its call sites.
  * <p>
  * Not supported, so the cached fields are used: records with more than {@link #batchSize} components, because their constructor
  * call can't be split, records with removed components, which the cached fields set to their defaults, and custom
