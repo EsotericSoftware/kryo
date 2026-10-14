@@ -93,6 +93,10 @@ final class FinalFieldSetter extends ObjectInputStream {
 	/** The position of the field to set in the serializable fields of its class. */
 	private final int position;
 	private Object object, value;
+	/** When several fields are set: the position of each value in the serializable fields of the class, else -1, and the
+	 * values. */
+	private int[] positions;
+	private Object[] values;
 	private int next; // The method handle gets the fields in the order of the ObjectStreamClass.
 
 	private FinalFieldSetter (ClassFields classFields, int position) throws IOException {
@@ -139,6 +143,28 @@ final class FinalFieldSetter extends ObjectInputStream {
 		} finally {
 			this.object = null;
 			this.value = null;
+			positions = null;
+			values = null;
+		}
+	}
+
+	/** Sets several final fields of the object, with one method handle call per class, for the generated code.
+	 * @param setters The setter of each field, or null if the field is set otherwise. Set to null when the field was set. */
+	static void set (Object object, FinalFieldSetter[] setters, Object[] values) {
+		for (int i = 0; i < setters.length; i++) {
+			FinalFieldSetter setter = setters[i];
+			if (setter == null) continue;
+			int[] positions = new int[setters.length];
+			for (int j = 0; j < setters.length; j++) {
+				positions[j] = -1;
+				if (setters[j] != null && setters[j].classFields == setter.classFields) {
+					positions[j] = setters[j].position;
+					setters[j] = null;
+				}
+			}
+			setter.positions = positions;
+			setter.values = values;
+			setter.set(object, null);
 		}
 	}
 
@@ -166,7 +192,10 @@ final class FinalFieldSetter extends ObjectInputStream {
 				i = classFields.indexOf(name);
 				if (i == -1) throw new IllegalArgumentException(name);
 			}
-			if (i == position) return value;
+			if (positions != null) {
+				for (int j = 0; j < positions.length; j++)
+					if (positions[j] == i) return values[j];
+			} else if (i == position) return value;
 			try {
 				return classFields.fields[i].get(object);
 			} catch (IllegalAccessException ex) {
