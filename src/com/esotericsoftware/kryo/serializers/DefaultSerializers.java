@@ -24,6 +24,7 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import static java.lang.Long.numberOfLeadingZeros;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoSerializable;
 import com.esotericsoftware.kryo.Registration;
@@ -1231,7 +1232,7 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, Locale l) {
-			if (!l.getScript().isEmpty()) {
+			if (!l.getScript().isEmpty() && kryo.getFormat() != Format.KRYO5) {
 				// A null language, which Kryo 5 never wrote, marks a language tag. It also contains the script and extensions.
 				output.writeAscii(null);
 				output.writeAscii(l.toLanguageTag());

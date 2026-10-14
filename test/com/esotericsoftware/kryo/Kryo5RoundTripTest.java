@@ -45,10 +45,12 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -129,6 +131,17 @@ class Kryo5RoundTripTest {
 			}
 		}
 		assertTrue(different.isEmpty(), "Same bytes not as expected:\n" + String.join("\n", different));
+	}
+
+	/** Kryo 5 writes the language, country and variant of a locale, so it loses the script. Kryo 6 writes a language tag for a
+	 * locale with a script, but not with the Kryo 5 format, Kryo 5 can't read it. */
+	@Test
+	void testLocaleWithScript () {
+		Locale locale = Locale.forLanguageTag("zh-Hant-TW");
+		for (boolean byteBuffer : new boolean[] {false, true})
+			assertArrayEquals(writeKryo5(locale, byteBuffer), writeKryo6(locale, byteBuffer));
+		var input = new com.esotericsoftware.kryo.kryo5.io.Input(writeKryo6(locale, false));
+		assertEquals(Locale.forLanguageTag("zh-TW"), newKryo5().readObject(input, Locale.class));
 	}
 
 	@ParameterizedTest
