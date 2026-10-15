@@ -81,28 +81,32 @@ public class VariableEncodingBenchmark {
 
 	@State(Scope.Thread)
 	static public class ReadInt extends InputOutputState {
-		public ReadInt () {
+		public void setup () {
+			super.setup();
 			new VariableEncodingBenchmark().writeInt(this);
 		}
 	}
 
 	@State(Scope.Thread)
 	static public class ReadVarInt extends InputOutputState {
-		public ReadVarInt () {
+		public void setup () {
+			super.setup();
 			new VariableEncodingBenchmark().readVarInt(this);
 		}
 	}
 
 	@State(Scope.Thread)
 	static public class ReadLong extends InputOutputState {
-		public ReadLong () {
+		public void setup () {
+			super.setup();
 			new VariableEncodingBenchmark().writeLong(this);
 		}
 	}
 
 	@State(Scope.Thread)
 	static public class ReadVarLong extends InputOutputState {
-		public ReadVarLong () {
+		public void setup () {
+			super.setup();
 			new VariableEncodingBenchmark().writeVarLong(this);
 		}
 	}
