@@ -180,9 +180,10 @@ public class TaggedFieldSerializer<T> extends FieldSerializer<T> {
 		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownTagData;
 		Input fieldInput;
 		InputChunked inputChunked = null;
-		if (chunked)
+		if (chunked) {
 			fieldInput = inputChunked = new InputChunked(input, config.chunkSize);
-		else
+			inputChunked.setMaxArraySize(input.getMaxArraySize());
+		} else
 			fieldInput = input;
 		IntMap<CachedField> readTags = this.readTags;
 		for (int i = 0; i < fieldCount; i++) {
