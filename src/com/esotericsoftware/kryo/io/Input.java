@@ -728,7 +728,7 @@ public class Input extends InputStream implements Poolable {
 	/** Returns true if enough bytes are available to read a long with {@link #readVarLong(boolean)}. */
 	public boolean canReadVarLong () throws KryoException {
 		if (limit - position >= 9) return true;
-		if (optional(9) <= 0) return false;
+		if (optional(5) <= 0) return false;
 		int p = position, limit = this.limit;
 		byte[] buffer = this.buffer;
 		if ((buffer[p++] & 0x80) == 0) return true;

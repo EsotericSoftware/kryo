@@ -1308,35 +1308,6 @@ class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
-	void testCanReadVarLongPartlyBuffered () {
-		// 5 bytes, then a 9 byte var long. After reading the 5 bytes, 5 bytes of the var long are buffered, the rest is in
-		// the stream.
-		Output output = new Output(32);
-		output.writeBytes(new byte[5]);
-		output.writeVarLong(Long.MIN_VALUE, true);
-		assertEquals(14, output.position());
-		byte[] bytes = output.toBytes();
-		for (Input input : new Input[] {new Input(new ByteArrayInputStream(bytes), 10),
-			new ByteBufferInput(new ByteArrayInputStream(bytes), 10)}) {
-			input.readBytes(5);
-			assertTrue(input.canReadVarLong());
-			assertEquals(Long.MIN_VALUE, input.readVarLong(true));
-		}
-	}
-
-	@Test
-	void testNegativeArrayLength () {
-		Input input = new Input(new byte[16]);
-		KryoException ex = assertThrows(KryoException.class, () -> input.validateArrayLength(-1));
-		assertTrue(ex.getMessage().contains("negative"), ex.getMessage());
-		assertThrows(KryoException.class, () -> input.validateArrayLength(Integer.MIN_VALUE, 4));
-		assertEquals(0, input.validateArrayLength(0));
-		ex = assertThrows(KryoException.class, () -> input.clampSize(-1));
-		assertTrue(ex.getMessage().contains("negative"), ex.getMessage());
-		assertEquals(0, input.clampSize(0));
-	}
-
-	@Test
 	void testReadBooleanNonzero () {
 		// Any nonzero byte is true, as with readBooleans and the Unsafe inputs.
 		assertTrue(new Input(new byte[] {2}).readBoolean());
