@@ -128,7 +128,7 @@ class ArraySerializerTest extends KryoTestCase {
 		assertEquals(3, kryo.readObject(new Input(output.toBytes()), Empty[].class).length);
 
 		kryo.register(Empty.class, new EmptySerializer());
-		kryo.register(Empty[].class);
+		kryo.register(Empty[].class, new ObjectArraySerializer(kryo, Empty[].class));
 		output = new Output(64);
 		kryo.writeObject(output, new Empty[] {new Empty(), new Empty(), new Empty()});
 		assertEquals(1, output.position());
