@@ -21,8 +21,10 @@ package com.esotericsoftware.kryo.serializers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
@@ -117,7 +119,8 @@ class ArraySerializerTest extends KryoTestCase {
 			assertTrue(ex.getMessage().contains("maxArraySize"), ex.getMessage());
 		}
 
-		// Elements of a final class without a null marker can take 0 bytes, so the length isn't checked against the bytes.
+		// Elements can take 0 bytes, so the length of an Object[] isn't checked against the bytes remaining: without a null
+		// marker, and with a serializer that accepts null and writes nothing.
 		ObjectArraySerializer serializer = new ObjectArraySerializer(kryo, Empty[].class);
 		serializer.setElementsCanBeNull(false);
 		kryo.register(Empty[].class, serializer);
@@ -125,6 +128,26 @@ class ArraySerializerTest extends KryoTestCase {
 		kryo.writeObject(output, new Empty[] {new Empty(), new Empty(), new Empty()});
 		assertEquals(1, output.position());
 		assertEquals(3, kryo.readObject(new Input(output.toBytes()), Empty[].class).length);
+
+		kryo.register(Empty.class, new EmptySerializer());
+		kryo.register(Empty[].class, new ObjectArraySerializer(kryo, Empty[].class));
+		output = new Output(64);
+		kryo.writeObject(output, new Empty[] {new Empty(), new Empty(), new Empty()});
+		assertEquals(1, output.position());
+		assertEquals(3, kryo.readObject(new Input(output.toBytes()), Empty[].class).length);
+	}
+
+	static class EmptySerializer extends Serializer<Empty> {
+		{
+			setAcceptsNull(true);
+		}
+
+		public void write (Kryo kryo, Output output, Empty object) {
+		}
+
+		public Empty read (Kryo kryo, Input input, Class<? extends Empty> type) {
+			return new Empty();
+		}
 	}
 
 	public static final class Empty {
