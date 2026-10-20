@@ -432,6 +432,24 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testIncompatibleTypeVoid () {
+		// The ID of the written String class is registered for void.class by the reader.
+		kryo.setDefaultSerializer(CompatibleFieldSerializer.class);
+		kryo.register(ObjectField.class, 100);
+		Output output = new Output(64);
+		kryo.writeObject(output, new ObjectField());
+
+		Kryo reader = new Kryo();
+		reader.setDefaultSerializer(CompatibleFieldSerializer.class);
+		reader.register(IntegerField.class, 100);
+		reader.register(void.class, kryo.getRegistration(String.class).getId());
+		KryoException ex = assertThrows(KryoException.class,
+			() -> reader.readObject(new Input(output.toBytes()), IntegerField.class));
+		assertTrue(ex.getMessage().startsWith("Read type is incompatible with the field type: void -> Integer"),
+			ex.getMessage());
+	}
+
+	@Test
 	void testExtendedClass () {
 		testExtendedClass(270, false, false);
 		testExtendedClass(294, false, true);
@@ -827,5 +845,13 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 			ClassWithGenericField<?> that = (ClassWithGenericField<?>)o;
 			return Objects.equals(value, that.value);
 		}
+	}
+
+	public static class ObjectField {
+		public Object value = "x";
+	}
+
+	public static class IntegerField {
+		public Integer value;
 	}
 }

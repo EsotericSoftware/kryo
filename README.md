@@ -1365,7 +1365,7 @@ Kryo is not thread safe. Each thread should have its own Kryo, Input, and Output
 
 ### Pooling
 
-Because Kryo is not thread safe and constructing and configuring a Kryo instance is relatively expensive, in a multithreaded environment ThreadLocal or pooling might be considered.
+Because Kryo is not thread safe and constructing and configuring a Kryo instance is relatively expensive, in a multithreaded environment ThreadLocal or pooling might be considered. Configure each Kryo instance with its own serializers: FieldSerializer and its subclasses belong to the Kryo instance they were created with, only stateless serializers can be shared between Kryo instances.
 
 ```java
 static private final ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {

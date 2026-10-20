@@ -99,7 +99,7 @@ public class Input extends InputStream implements Poolable {
 		inputStream = null;
 	}
 
-	/** Returns the buffer. The bytes between 0 and {@link #position()} are the data that can be read. */
+	/** Returns the buffer. The bytes between {@link #position()} and {@link #limit()} are the data that can be read. */
 	public byte[] getBuffer () {
 		return buffer;
 	}
@@ -189,7 +189,7 @@ public class Input extends InputStream implements Poolable {
 			position += skipCount;
 			count -= skipCount;
 			if (count == 0) break;
-			skipCount = Math.min(count, capacity);
+			skipCount = Math.min(count, Math.max(capacity, 1));
 			require(skipCount);
 		}
 	}
@@ -237,6 +237,7 @@ public class Input extends InputStream implements Poolable {
 			count = fill(buffer, remaining, capacity - remaining);
 			if (count == -1) {
 				if (remaining >= required) break;
+				limit = remaining; // The compacted bytes, so the input is consistent after the exception.
 				throw new KryoBufferUnderflowException("Buffer underflow.");
 			}
 			remaining += count;
@@ -387,7 +388,7 @@ public class Input extends InputStream implements Poolable {
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = Math.min(count, capacity);
+			copyCount = Math.min(count, Math.max(capacity, 1));
 			require(copyCount);
 		}
 	}
@@ -824,7 +825,7 @@ public class Input extends InputStream implements Poolable {
 	/** Reads a 1 byte boolean. */
 	public boolean readBoolean () throws KryoException {
 		if (position == limit) require(1);
-		return buffer[position++] == 1;
+		return buffer[position++] != 0;
 	}
 
 	// String:
@@ -976,6 +977,7 @@ public class Input extends InputStream implements Poolable {
 	 * is bounded only by {@code maxArraySize} and the overflow check.
 	 * @param bytesPerElement the minimum number of bytes each element occupies in the input. */
 	public int validateArrayLength (int length, int bytesPerElement) {
+		if (length < 0) throw new KryoException("Declared size is negative: " + length);
 		if (length > maxArraySize)
 			throw new KryoException("Declared size larger than maxArraySize: " + length + " > " + maxArraySize);
 		long bytes = (long)length * bytesPerElement;
@@ -990,13 +992,14 @@ public class Input extends InputStream implements Poolable {
 		return length;
 	}
 
-	/** Clamps a declared collection or map size before it is used as an initial capacity. Throws if {@code size} exceeds
-	 * {@link #setMaxArraySize(int) maxArraySize}. Otherwise, for a buffer-backed input (no {@link InputStream}), caps it at the
-	 * bytes remaining so a corrupt size cannot force a large pre-allocation; the collection or map still grows as elements are
-	 * read. A stream-backed input is returned unchanged (the remaining size is unknown). Unlike
+	/** Clamps a declared collection or map size before it is used as an initial capacity. Throws if {@code size} is negative or
+	 * exceeds {@link #setMaxArraySize(int) maxArraySize}. Otherwise, for a buffer-backed input (no {@link InputStream}), caps it
+	 * at the bytes remaining so a corrupt size cannot force a large pre-allocation; the collection or map still grows as elements
+	 * are read. A stream-backed input is returned unchanged (the remaining size is unknown). Unlike
 	 * {@link #validateArrayLength(int, int)} the size is only clamped, not rejected, because it is an initial-capacity hint rather
 	 * than an exact element count. */
 	public int clampSize (int size) {
+		if (size < 0) throw new KryoException("Declared size is negative: " + size);
 		if (size > maxArraySize)
 			throw new KryoException("Declared size larger than maxArraySize: " + size + " > " + maxArraySize);
 		return inputStream == null ? Math.min(size, limit - position) : size;

@@ -36,6 +36,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Random;
 
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,51 @@ import org.junit.jupiter.api.Test;
 /** @author Nathan Sweet */
 @SuppressWarnings("all")
 class InputOutputTest extends KryoTestCase {
+	@Test
+	void testStateAfterUnderflow () {
+		// After buffer underflow, the input is at the end and reading again throws instead of reading old bytes.
+		Input[] inputs = {new Input(new byte[8]), new Input(new ByteArrayInputStream(new byte[8]), 4),
+			new ByteBufferInput(ByteBuffer.allocate(8)), new ByteBufferInput(new ByteArrayInputStream(new byte[8]), 4)};
+		for (Input input : inputs) {
+			input.readInt();
+			input.readInt();
+			assertThrows(KryoBufferUnderflowException.class, input::readInt);
+			assertEquals(8, input.total(), input.getClass().getSimpleName());
+			assertTrue(input.end(), input.getClass().getSimpleName());
+			assertThrows(KryoBufferUnderflowException.class, input::readInt);
+		}
+
+		// The bytes that were not read yet stay readable, after compacting the buffer (4 bytes) or without it (3 bytes).
+		for (byte[] bytes : new byte[][] {{1, 2, 3, 4}, {1, 2, 3}}) {
+			for (Input input : new Input[] {new Input(new ByteArrayInputStream(bytes), 4),
+				new ByteBufferInput(new ByteArrayInputStream(bytes), 4)}) {
+				String name = input.getClass().getSimpleName() + " " + bytes.length;
+				assertEquals(1, input.readByte());
+				assertThrows(KryoBufferUnderflowException.class, input::readInt);
+				for (int i = 1; i < bytes.length; i++)
+					assertEquals(bytes[i], input.readByte(), name);
+				assertTrue(input.end(), name);
+			}
+		}
+	}
+
+	@Test
+	void testZeroCapacity () {
+		// Copying more bytes than a buffer with capacity 0 holds must throw instead of looping forever.
+		assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+			assertThrows(KryoException.class, () -> new Input(new byte[0]).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new Input(new byte[0]).skip(5));
+			assertThrows(KryoException.class, () -> new Input(new ByteArrayInputStream(new byte[10]), 0).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new ByteBufferInput(new byte[0]).readBytes(new byte[5]));
+			assertThrows(KryoException.class, () -> new ByteBufferInput(new byte[0]).skip(5));
+			assertThrows(KryoException.class, () -> new ByteBufferOutput(0).writeBytes(new byte[5]));
+
+			ByteBufferOutput output = new ByteBufferOutput(0, -1);
+			output.writeBytes(new byte[] {1, 2, 3});
+			assertArrayEquals(new byte[] {1, 2, 3}, output.toBytes());
+		});
+	}
+
 	@Test
 	void testByteBufferInputEnd () {
 		Input in = new Input(new ByteArrayInputStream(new byte[] {123, 0, 0, 0}));
@@ -1224,4 +1271,46 @@ class InputOutputTest extends KryoTestCase {
 		// This test should pass as long as no exception thrown
 	}
 
+	@Test
+	void testBulkWriteCountOverflow () {
+		// The byte count of a huge array overflows int. The bulk path must not be taken with that negative count, so the values
+		// are written one at a time, which fails on the short array instead of writing past the buffer.
+		ArrayList<Integer> required = new ArrayList<>();
+		assertBulkWriteCountOverflow(new Output(16) {
+			protected boolean require (int count) {
+				required.add(count);
+				return super.require(count);
+			}
+		});
+		assertBulkWriteCountOverflow(new ByteBufferOutput(16) {
+			protected boolean require (int count) {
+				required.add(count);
+				return super.require(count);
+			}
+		});
+		for (int count : required)
+			assertTrue(count >= 0, "required: " + count);
+	}
+
+	private void assertBulkWriteCountOverflow (Output output) {
+		Class<ArrayIndexOutOfBoundsException> type = ArrayIndexOutOfBoundsException.class;
+		assertThrows(type, () -> output.writeInts(new int[1], 0, 1 << 29));
+		output.reset();
+		assertThrows(type, () -> output.writeLongs(new long[1], 0, 1 << 28));
+		output.reset();
+		assertThrows(type, () -> output.writeFloats(new float[1], 0, 1 << 29));
+		output.reset();
+		assertThrows(type, () -> output.writeDoubles(new double[1], 0, 1 << 28));
+		output.reset();
+		assertThrows(type, () -> output.writeShorts(new short[1], 0, 1 << 30));
+		output.reset();
+		assertThrows(type, () -> output.writeChars(new char[1], 0, 1 << 30));
+	}
+
+	@Test
+	void testReadBooleanNonzero () {
+		// Any nonzero byte is true, as with readBooleans and the Unsafe inputs.
+		assertTrue(new Input(new byte[] {2}).readBoolean());
+		assertTrue(new ByteBufferInput(new byte[] {2}).readBoolean());
+	}
 }

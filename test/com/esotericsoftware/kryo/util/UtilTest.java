@@ -42,6 +42,11 @@ class UtilTest {
 
         assertFalse(Util.isAssignableTo(String.class, Long.class));
         assertFalse(Util.isAssignableTo(String.class, long.class));
+        assertFalse(Util.isAssignableTo(int.class, Long.class));
+        assertFalse(Util.isAssignableTo(Integer.class, long.class));
+        assertFalse(Util.isAssignableTo(void.class, Number.class));
+        assertFalse(Util.isAssignableTo(Void.class, void.class));
+        assertTrue(Util.isAssignableTo(void.class, void.class));
     }
 
     @Test

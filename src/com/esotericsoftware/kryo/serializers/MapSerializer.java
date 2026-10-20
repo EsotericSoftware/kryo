@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.io.Input;
@@ -106,8 +107,8 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		return this.valueSerializer;
 	}
 
-	/** @param valuesCanBeNull True if values are not null. This saves 1 byte per value if keyClass is set. False if it is not
-	 *           known (default). */
+	/** @param valuesCanBeNull False if all values are not null. This saves 1 byte per value if valueClass is set. True if it is
+	 *           not known (default). */
 	public void setValuesCanBeNull (boolean valuesCanBeNull) {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
@@ -186,6 +187,7 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 	public T read (Kryo kryo, Input input, Class<? extends T> type) {
 		int length = input.readVarInt(true);
 		if (length == 0) return null;
+		if (length < 0) throw new KryoException("Declared size is negative: " + (length - 1L));
 		length--;
 
 		T map = create(kryo, input, type, input.clampSize(length));

@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /** An OutputStream that writes data to a byte[] and optionally flushes to another OutputStream. Utility methods are provided for
- * efficiently writing primitive types and strings using big endian.
+ * efficiently writing primitive types and strings. Multi-byte primitive types are written in little endian byte order.
  * @author Nathan Sweet */
 public class Output extends OutputStream implements AutoCloseable, Poolable {
 	protected int maxCapacity;
@@ -162,7 +162,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		return total + position;
 	}
 
-	/** The maximum buffer size, or -1 for no maximum.
+	/** The maximum buffer size, or {@link Util#maxArraySize} for no maximum.
 	 * @see Output#Output(int, int) */
 	public int getMaxCapacity () {
 		return maxCapacity;
@@ -188,7 +188,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		}
 		if (capacity == 0) capacity = 16;
 		do {
-			capacity = Math.min(capacity * 2, maxCapacity);
+			capacity = (int)Math.min(capacity * 2L, maxCapacity); // Long, so it does not overflow above 1 GiB.
 		} while (capacity - position < required);
 		byte[] newBuffer = new byte[capacity];
 		System.arraycopy(buffer, 0, newBuffer, 0, position);
@@ -329,7 +329,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		buffer[p + 3] = (byte)(value >> 24);
 	}
 
-	/** Reads an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
+	/** Writes an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
 	 * {@link #writeVarInt(int, boolean)} explicitly when writing values that should always use variable length encoding (eg values
 	 * that appear many times).
 	 * @return The number of bytes written.
@@ -470,7 +470,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		buffer[p + 7] = (byte)(value >>> 56);
 	}
 
-	/** Reads a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
+	/** Writes a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
 	 * {@link #writeVarLong(long, boolean)} explicitly when writing values that should always use variable length encoding (eg
 	 * values that appear many times).
 	 * @return The number of bytes written.
@@ -798,7 +798,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes an int array in bulk. This may be more efficient than writing them individually. */
 	public void writeInts (int[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2) {
+		if (count <= capacity >> 2) { // Not capacity >= count << 2, which overflows.
 			require(count << 2);
 			byte[] buffer = this.buffer;
 			int p = position;
@@ -828,7 +828,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes a long array in bulk. This may be more efficient than writing them individually. */
 	public void writeLongs (long[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3) {
+		if (count <= capacity >> 3) {
 			require(count << 3);
 			byte[] buffer = this.buffer;
 			int p = position;
@@ -862,7 +862,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes a float array in bulk. This may be more efficient than writing them individually. */
 	public void writeFloats (float[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 2) {
+		if (count <= capacity >> 2) {
 			require(count << 2);
 			byte[] buffer = this.buffer;
 			int p = position;
@@ -882,7 +882,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes a double array in bulk. This may be more efficient than writing them individually. */
 	public void writeDoubles (double[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 3) {
+		if (count <= capacity >> 3) {
 			require(count << 3);
 			byte[] buffer = this.buffer;
 			int p = position;
@@ -906,7 +906,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes a short array in bulk. This may be more efficient than writing them individually. */
 	public void writeShorts (short[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1) {
+		if (count <= capacity >> 1) {
 			require(count << 1);
 			byte[] buffer = this.buffer;
 			int p = position;
@@ -924,7 +924,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 
 	/** Writes a char array in bulk. This may be more efficient than writing them individually. */
 	public void writeChars (char[] array, int offset, int count) throws KryoException {
-		if (capacity >= count << 1) {
+		if (count <= capacity >> 1) {
 			require(count << 1);
 			byte[] buffer = this.buffer;
 			int p = position;

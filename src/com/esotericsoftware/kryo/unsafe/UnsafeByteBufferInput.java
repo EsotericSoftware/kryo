@@ -227,6 +227,8 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 	}
 
 	public void readBytes (byte[] bytes, int offset, int count) throws KryoException {
+		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
+		checkArrayRange(bytes.length, offset, count);
 		readBytes(bytes, byteArrayBaseOffset + offset, count);
 	}
 
@@ -239,7 +241,7 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 			count -= copyCount;
 			if (count == 0) break;
 			offset += copyCount;
-			copyCount = Math.min(count, capacity);
+			copyCount = Math.min(count, Math.max(capacity, 1));
 			require(copyCount);
 		}
 		setBufferPosition(byteBuffer, position);
