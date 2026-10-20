@@ -268,7 +268,7 @@ public final class TimeSerializers {
 		}
 
 		public Year read (Kryo kryo, Input in, Class type) {
-			return Year.of(in.readInt(true));
+			return Year.of(in.readVarInt(true));
 		}
 	}
 
@@ -279,7 +279,7 @@ public final class TimeSerializers {
 		}
 
 		public YearMonth read (Kryo kryo, Input in, Class type) {
-			int year = in.readInt(true);
+			int year = in.readVarInt(true);
 			byte month = in.readByte();
 			return YearMonth.of(year, month);
 		}
@@ -306,9 +306,9 @@ public final class TimeSerializers {
 		}
 
 		public Period read (Kryo kryo, Input in, Class type) {
-			int years = in.readInt(true);
-			int months = in.readInt(true);
-			int days = in.readInt(true);
+			int years = in.readVarInt(true);
+			int months = in.readVarInt(true);
+			int days = in.readVarInt(true);
 			return Period.of(years, months, days);
 		}
 	}
