@@ -21,7 +21,12 @@ package com.esotericsoftware.kryo.serializers;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ObjectArraySerializer;
 
 import org.junit.jupiter.api.Test;
@@ -94,5 +99,55 @@ class ArraySerializerTest extends KryoTestCase {
 
 		kryo.setReferences(true);
 		roundTrip(28, array);
+	}
+
+	// boolean[] and Object[] check the length against maxArraySize like the other arrays.
+	@Test
+	void testMaxArraySize () {
+		kryo.register(boolean[].class);
+		kryo.register(Object[].class);
+		kryo.register(Empty.class);
+		kryo.register(Empty[].class);
+		for (Object array : new Object[] {new boolean[11], new Object[11], new Empty[11]}) {
+			Output output = new Output(64);
+			kryo.writeObject(output, array);
+			Input input = new Input(output.toBytes());
+			input.setMaxArraySize(10);
+			KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(input, array.getClass()));
+			assertTrue(ex.getMessage().contains("maxArraySize"), ex.getMessage());
+		}
+
+		// Elements can take 0 bytes, so the length of an Object[] isn't checked against the bytes remaining: without a null
+		// marker, and with a serializer that accepts null and writes nothing.
+		ObjectArraySerializer serializer = new ObjectArraySerializer(kryo, Empty[].class);
+		serializer.setElementsCanBeNull(false);
+		kryo.register(Empty[].class, serializer);
+		Output output = new Output(64);
+		kryo.writeObject(output, new Empty[] {new Empty(), new Empty(), new Empty()});
+		assertEquals(1, output.position());
+		assertEquals(3, kryo.readObject(new Input(output.toBytes()), Empty[].class).length);
+
+		kryo.register(Empty.class, new EmptySerializer());
+		kryo.register(Empty[].class);
+		output = new Output(64);
+		kryo.writeObject(output, new Empty[] {new Empty(), new Empty(), new Empty()});
+		assertEquals(1, output.position());
+		assertEquals(3, kryo.readObject(new Input(output.toBytes()), Empty[].class).length);
+	}
+
+	public static final class Empty {
+	}
+
+	static class EmptySerializer extends Serializer<Empty> {
+		{
+			setAcceptsNull(true);
+		}
+
+		public void write (Kryo kryo, Output output, Empty object) {
+		}
+
+		public Empty read (Kryo kryo, Input input, Class<? extends Empty> type) {
+			return new Empty();
+		}
 	}
 }
