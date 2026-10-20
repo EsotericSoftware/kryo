@@ -370,6 +370,45 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(85, TestEnumWithMethods.c);
 	}
 
+	// Invalid enum data throws a KryoException that names the enum, not a NullPointerException.
+	@Test
+	void testInvalidEnumData () {
+		kryo.register(EnumSet.class);
+		kryo.register(EnumMap.class, new EnumMapSerializer(TestEnum.class));
+		kryo.register(TestEnum.class);
+		kryo.register(String.class);
+
+		Output output = new Output(64);
+		kryo.writeObject(output, EnumSet.of(TestEnum.a));
+		byte[] bytes = output.toBytes();
+		bytes[bytes.length - 1] = 9; // Ordinal 8.
+		assertInvalid("Invalid ordinal for enum \"" + TestEnum.class.getName() + "\": 8", bytes, EnumSet.class);
+		bytes[bytes.length - 1] = 0; // Null.
+		assertInvalid("Invalid EnumSet element for enum \"" + TestEnum.class.getName() + "\": null", bytes, EnumSet.class);
+
+		output = new Output(64);
+		kryo.writeClass(output, String.class);
+		output.writeVarInt(0, true);
+		assertInvalid("Invalid EnumSet element type: java.lang.String", output.toBytes(), EnumSet.class);
+		output = new Output(64);
+		kryo.writeClass(output, null);
+		output.writeVarInt(0, true);
+		assertInvalid("Invalid EnumSet element type: null", output.toBytes(), EnumSet.class);
+
+		output = new Output(64);
+		EnumMap<TestEnum, Object> map = new EnumMap<>(TestEnum.class);
+		map.put(TestEnum.a, null);
+		kryo.writeObject(output, map);
+		bytes = output.toBytes();
+		bytes[bytes.length - 2] = 9; // Ordinal 8 of the key, followed by the null value.
+		assertInvalid("Invalid ordinal for enum \"" + TestEnum.class.getName() + "\": 8", bytes, EnumMap.class);
+	}
+
+	private void assertInvalid (String message, byte[] bytes, Class type) {
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(new Input(bytes), type));
+		assertTrue(ex.getMessage().startsWith(message), ex.getMessage());
+	}
+
 	// A null key or a key of another enum, which EnumMap rejects, throws a KryoException with the cause.
 	@Test
 	void testInvalidEnumMapKey () {
