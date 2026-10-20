@@ -133,15 +133,16 @@ class Kryo5RoundTripTest {
 		assertTrue(different.isEmpty(), "Same bytes not as expected:\n" + String.join("\n", different));
 	}
 
-	/** Kryo 5 writes the language, country and variant of a locale, so it loses the script. Kryo 6 writes a language tag for a
-	 * locale with a script, but not with the Kryo 5 format, Kryo 5 can't read it. */
-	@Test
-	void testLocaleWithScript () {
-		Locale locale = Locale.forLanguageTag("zh-Hant-TW");
+	/** Kryo 5 writes the language, country and variant of a locale, so it loses the script and extensions. Kryo 6 writes a
+	 * language tag for a locale with a script or extensions, but not with the Kryo 5 format, Kryo 5 can't read it. */
+	@ParameterizedTest
+	@ValueSource(strings = {"zh-Hant-TW", "en-US-u-ca-buddhist"})
+	void testLocaleWithScriptOrExtensions (String languageTag) {
+		Locale locale = Locale.forLanguageTag(languageTag);
 		for (boolean byteBuffer : new boolean[] {false, true})
 			assertArrayEquals(writeKryo5(locale, byteBuffer), writeKryo6(locale, byteBuffer));
 		var input = new com.esotericsoftware.kryo.kryo5.io.Input(writeKryo6(locale, false));
-		assertEquals(Locale.forLanguageTag("zh-TW"), newKryo5().readObject(input, Locale.class));
+		assertEquals(new Locale(locale.getLanguage(), locale.getCountry()), newKryo5().readObject(input, Locale.class));
 	}
 
 	@ParameterizedTest

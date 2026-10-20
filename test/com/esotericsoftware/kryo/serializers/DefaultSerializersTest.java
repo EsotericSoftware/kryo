@@ -1145,11 +1145,16 @@ class DefaultSerializersTest extends KryoTestCase {
 
 	@SuppressWarnings("deprecation") // Locale.of needs Java 19.
 	@Test
-	void testLocaleWithScript () {
+	void testLocaleWithScriptOrExtensions () {
 		kryo.register(Locale.class);
 
 		roundTrip(12, new Locale.Builder().setLanguage("sr").setScript("Cyrl").setRegion("RS").build());
 		roundTrip(25, new Locale.Builder().setLanguage("de").setScript("Latn").setRegion("DE").setExtension('u', "co-phonebk").build());
+		roundTrip(21, Locale.forLanguageTag("en-US-u-ca-buddhist"));
+		roundTrip(13, Locale.forLanguageTag("de-DE-x-foo"));
+		// The variant makes the extensions of ja_JP_JP and th_TH_TH, so they are written like in Kryo 5.
+		roundTrip(7, new Locale("ja", "JP", "JP"));
+		roundTrip(7, new Locale("th", "TH", "TH"));
 		// A language that looks like a language tag is not read as one.
 		roundTrip(8, new Locale("en-US"));
 

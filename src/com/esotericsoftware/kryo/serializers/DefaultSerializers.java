@@ -1234,7 +1234,7 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, Locale l) {
-			if (!l.getScript().isEmpty() && kryo.getFormat() != Format.KRYO5) {
+			if (needsLanguageTag(l) && kryo.getFormat() != Format.KRYO5) {
 				// A null language, which Kryo 5 never wrote, marks a language tag. It also contains the script and extensions.
 				output.writeAscii(null);
 				output.writeAscii(l.toLanguageTag());
@@ -1251,6 +1251,13 @@ public class DefaultSerializers {
 			String country = input.readString();
 			String variant = input.readString();
 			return create(language, country, variant);
+		}
+
+		/** Returns true if the language, country and variant don't make the locale, because it has a script or extensions.
+		 * {@code ja_JP_JP} and {@code th_TH_TH} get their extensions from the variant. */
+		private static boolean needsLanguageTag (Locale l) {
+			if (!l.getScript().isEmpty()) return true;
+			return l.hasExtensions() && !l.equals(new Locale(l.getLanguage(), l.getCountry(), l.getVariant()));
 		}
 
 		protected static boolean isSameLocale (Locale locale, String language, String country, String variant) {
