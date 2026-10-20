@@ -169,6 +169,10 @@ An unregistered enum set, charset or time zone is written with the class name `j
 
 LocaleSerializer writes locales with a script or extensions, eg `sr-Cyrl-RS` or `en-US-u-ca-buddhist`, as a language tag, so the script and extensions are kept ([#1053](https://github.com/EsotericSoftware/kryo/issues/1053)). Kryo 5 lost them. Other locales, also `ja_JP_JP` and `th_TH_TH`, whose extensions come from the variant, are written as before, so Kryo 6 reads all locales written by Kryo 5. With the Kryo 5 format, locales with a script or extensions are written like Kryo 5 wrote them, without the script and extensions.
 
+### ZonedDateTime with the later offset in an overlap
+
+ZonedDateTimeSerializer writes the offset of a `ZonedDateTime` that has the later of the two offsets in an overlap, eg `2026-11-01T01:30-05:00[America/New_York]` when clocks are set back, so the offset is kept. Kryo 5 wrote only the date, time and zone, so it was read with the earlier offset, `2026-11-01T01:30-04:00[America/New_York]`, an instant one hour earlier. Other `ZonedDateTime`s are written as before, so Kryo 6 reads all `ZonedDateTime`s written by Kryo 5. With the Kryo 5 format, they are written like Kryo 5 wrote them, without the offset.
+
 ## Behavior changes
 
 These changes don't affect the serialized format of the default configuration, except where a change says so, eg the generic types that Kryo 6 resolves but Kryo 5 ignored. They are grouped by the part of Kryo they concern, the most common first.

@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -251,14 +252,30 @@ public final class TimeSerializers {
 		public void write (Kryo kryo, Output out, ZonedDateTime obj) {
 			LocalDateSerializer.write(out, obj.toLocalDate());
 			LocalTimeSerializer.write(out, obj.toLocalTime());
+			if (isLaterOffsetAtOverlap(obj) && kryo.getFormat() != Format.KRYO5) {
+				// A null zone ID, which Kryo 5 never wrote, marks the offset. Without it, the earlier offset is read.
+				out.writeString(null);
+				ZoneOffsetSerializer.write(out, obj.getOffset());
+			}
 			ZoneIdSerializer.write(out, obj.getZone());
 		}
 
 		public ZonedDateTime read (Kryo kryo, Input in, Class type) {
 			LocalDate date = LocalDateSerializer.read(in);
 			LocalTime time = LocalTimeSerializer.read(in);
-			ZoneId zone = ZoneIdSerializer.read(in);
-			return ZonedDateTime.of(date, time, zone);
+			String id = in.readString();
+			ZoneOffset offset = null;
+			if (id == null) {
+				offset = ZoneOffsetSerializer.read(in);
+				id = in.readString();
+			}
+			// The offset is used if it is valid for the date and time in the zone, else the earlier offset of an overlap.
+			return ZonedDateTime.ofLocal(LocalDateTime.of(date, time), ZoneId.of(id), offset);
+		}
+
+		/** Returns true if the date and time are in an overlap, eg when clocks are set back, and have the later offset. */
+		private static boolean isLaterOffsetAtOverlap (ZonedDateTime dateTime) {
+			return !dateTime.getOffset().equals(dateTime.withEarlierOffsetAtOverlap().getOffset());
 		}
 	}
 
