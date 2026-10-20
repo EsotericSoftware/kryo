@@ -60,7 +60,9 @@ final class LegacyChunkedEncoding implements ChunkedEncoding {
 	}
 
 	public Input beginRead (Input input) {
-		return new InputChunked(input, chunkSize);
+		InputChunked inputChunked = new InputChunked(input, chunkSize);
+		inputChunked.setMaxArraySize(input.getMaxArraySize()); // The limit also applies to the field values.
+		return inputChunked;
 	}
 
 	public void endRead () {
