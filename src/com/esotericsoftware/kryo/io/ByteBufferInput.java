@@ -665,7 +665,7 @@ public class ByteBufferInput extends Input {
 
 	public boolean canReadVarLong () throws KryoException {
 		if (limit - position >= 9) return true;
-		if (optional(5) <= 0) return false;
+		if (optional(9) <= 0) return false;
 		int p = position, limit = this.limit;
 		ByteBuffer byteBuffer = this.byteBuffer;
 		if ((byteBuffer.get(p++) & 0x80) == 0) return true;
@@ -722,7 +722,7 @@ public class ByteBufferInput extends Input {
 	public boolean readBoolean () throws KryoException {
 		if (position == limit) require(1);
 		position++;
-		return byteBuffer.get() == 1 ? true : false;
+		return byteBuffer.get() != 0;
 	}
 
 	// short:
