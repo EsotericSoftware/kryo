@@ -123,9 +123,10 @@ public class CompatibleFieldSerializer<T> extends FieldSerializer<T> {
 		boolean chunked = config.chunked, readUnknownTagData = config.readUnknownFieldData;
 		Input fieldInput;
 		InputChunked inputChunked = null;
-		if (chunked)
+		if (chunked) {
 			fieldInput = inputChunked = new InputChunked(input, config.chunkSize);
-		else
+			inputChunked.setMaxArraySize(input.getMaxArraySize());
+		} else
 			fieldInput = input;
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField cachedField = fields[i];
