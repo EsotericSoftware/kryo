@@ -57,12 +57,14 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.SimpleTimeZone;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -1070,6 +1072,32 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(64, calendar);
 	}
 
+	// A calendar is read with the class that was written, not with the calendar of the default locale.
+	@SuppressWarnings("deprecation") // Locale.of needs Java 19.
+	@Test
+	void testCalendarClass () {
+		kryo.setRegistrationRequired(false);
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Calendar[] calendars = {new GregorianCalendar(TimeZone.getTimeZone("Asia/Bangkok")),
+				Calendar.getInstance(TimeZone.getTimeZone("Asia/Bangkok"), new Locale("th", "TH")),
+				Calendar.getInstance(TimeZone.getTimeZone("Asia/Tokyo"), new Locale("ja", "JP", "JP"))};
+			assertEquals(3, Arrays.stream(calendars).map(Object::getClass).distinct().count());
+			for (Locale locale : new Locale[] {new Locale("th", "TH"), new Locale("ja", "JP", "JP"), Locale.US}) {
+				Locale.setDefault(locale);
+				for (Calendar calendar : calendars) {
+					calendar.setTimeInMillis(335967766000L);
+					Calendar read = roundTrip(Integer.MIN_VALUE, calendar);
+					assertEquals(calendar.getClass(), read.getClass());
+					assertEquals(calendar.getTimeZone(), read.getTimeZone());
+					assertEquals(calendar.get(Calendar.YEAR), read.get(Calendar.YEAR));
+				}
+			}
+		} finally {
+			Locale.setDefault(defaultLocale);
+		}
+	}
+
 	@Test
 	void testBitSet () {
 		kryo.register(BitSet.class);
@@ -1222,6 +1250,33 @@ class DefaultSerializersTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		roundTrip(2 + TimeZone.class.getName().length() + timeZone.getID().length(), timeZone);
 		assertEquals(TimeZone.class, kryo.getRegistration(timeZone.getClass()).getType());
+	}
+
+	// A time zone with an ID that TimeZone.getTimeZone doesn't know would be read as GMT, so it can't be written.
+	@Test
+	void testTimeZoneWithUnknownId () {
+		kryo.register(TimeZone.class);
+		kryo.register(SimpleTimeZone.class);
+		TimeZone unknown = new SimpleTimeZone(3600000, "Custom/Zone");
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.writeObject(new Output(64), unknown));
+		assertTrue(ex.getMessage().contains("\"Custom/Zone\""), ex.getMessage());
+		kryo.setRegistrationRequired(false);
+		Calendar calendar = Calendar.getInstance(unknown);
+		assertThrows(KryoException.class, () -> kryo.writeClassAndObject(new Output(64), calendar));
+		// Also a time zone of the class getTimeZone returns, whose ID was changed.
+		TimeZone changed = TimeZone.getTimeZone("UTC");
+		changed.setID("Custom/Zone");
+		assertThrows(KryoException.class, () -> kryo.writeClassAndObject(new Output(64), changed));
+
+		// Known and custom IDs of time zones of any class can be written.
+		for (TimeZone timeZone : new TimeZone[] {new SimpleTimeZone(3600000, "GMT+01:00"), new SimpleTimeZone(0, "GMT"),
+			new SimpleTimeZone(0, "UTC"), TimeZone.getTimeZone("GMT-08:00"), TimeZone.getTimeZone("Unknown/Zone")}) {
+			Output output = new Output(64);
+			kryo.writeClassAndObject(output, timeZone);
+			TimeZone read = (TimeZone)kryo.readClassAndObject(new Input(output.toBytes()));
+			assertEquals(timeZone.getID(), read.getID());
+			assertTrue(read.hasSameRules(timeZone));
+		}
 	}
 
 	@Test

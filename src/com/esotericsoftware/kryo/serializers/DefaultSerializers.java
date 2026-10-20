@@ -735,11 +735,28 @@ public class DefaultSerializers {
 		}
 	}
 
-	/** Serializer for {@link TimeZone}. Assumes the timezones are immutable.
+	/** Serializer for {@link TimeZone}, which writes the ID and reads the time zone with {@link TimeZone#getTimeZone(String)}.
+	 * Assumes the timezones are immutable. Writing a time zone with an ID that {@code getTimeZone} doesn't know, eg a
+	 * {@link java.util.SimpleTimeZone} with a custom ID, throws an exception, because it would be read as GMT. With the Kryo 5
+	 * format, it is written like Kryo 5 did.
 	 * @author Tumi {@literal <serverperformance@gmail.com>} */
 	public static class TimeZoneSerializer extends ImmutableSerializer<TimeZone> {
+		/** The IDs {@link TimeZone#getTimeZone(String)} knows, so each is looked up once. Static, because the serializer is
+		 * stateless and may be shared by Kryo instances. Unknown IDs are not added. */
+		private static final Set<String> knownIds = ConcurrentHashMap.newKeySet();
+
 		public void write (Kryo kryo, Output output, TimeZone object) {
-			output.writeString(object.getID());
+			String id = object.getID(); // Of any time zone, also of one returned by getTimeZone, whose ID can be set.
+			if (!knownIds.contains(id) && kryo.getFormat() != Format.KRYO5) {
+				// getTimeZone returns GMT for an unknown ID.
+				if (!id.equals("GMT") && TimeZone.getTimeZone(id).getID().equals("GMT")) {
+					throw new KryoException("Unable to write the time zone " + className(object.getClass()) + " with the ID \"" + id
+						+ "\": TimeZone.getTimeZone doesn't know the ID and would read it as GMT. Use a known ID or a custom ID like "
+						+ "GMT+01:00, or register a serializer for the time zone.");
+				}
+				knownIds.add(id);
+			}
+			output.writeString(id);
 		}
 
 		public TimeZone read (Kryo kryo, Input input, Class<? extends TimeZone> type) {
@@ -768,7 +785,7 @@ public class DefaultSerializers {
 		}
 
 		public Calendar read (Kryo kryo, Input input, Class<? extends Calendar> type) {
-			Calendar result = Calendar.getInstance(timeZoneSerializer.read(kryo, input, TimeZone.class));
+			Calendar result = create(type, timeZoneSerializer.read(kryo, input, TimeZone.class));
 			result.setTimeInMillis(input.readVarLong(true));
 			result.setLenient(input.readBoolean());
 			result.setFirstDayOfWeek(input.readInt(true));
@@ -777,6 +794,19 @@ public class DefaultSerializers {
 			if (gregorianChange != DEFAULT_GREGORIAN_CUTOVER)
 				if (result instanceof GregorianCalendar) ((GregorianCalendar)result).setGregorianChange(new Date(gregorianChange));
 			return result;
+		}
+
+		/** Creates a calendar of the class that was written. {@link Calendar#getInstance(TimeZone)} returns the calendar of the
+		 * default locale, eg a BuddhistCalendar for th_TH. */
+		private Calendar create (Class<? extends Calendar> type, TimeZone timeZone) {
+			if (type == GregorianCalendar.class) return new GregorianCalendar(timeZone);
+			String calendarType = switch (type.getName()) {
+			case "sun.util.BuddhistCalendar" -> "buddhist";
+			case "java.util.JapaneseImperialCalendar" -> "japanese";
+			default -> null;
+			};
+			if (calendarType == null) return Calendar.getInstance(timeZone);
+			return new Calendar.Builder().setCalendarType(calendarType).setTimeZone(timeZone).build();
 		}
 
 		public Calendar copy (Kryo kryo, Calendar original) {
