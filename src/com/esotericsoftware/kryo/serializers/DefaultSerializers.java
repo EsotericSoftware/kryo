@@ -882,9 +882,11 @@ public class DefaultSerializers {
 		public static final Locale SPAIN = new Locale("es", "ES", "");
 
 		protected Locale create (String language, String country, String variant) {
-			// Fast-path for default locale in this system (may not be in the Locale constants list)
+			// Fast-path for default locale in this system (may not be in the Locale constants list). Not if it has a script or
+			// extensions, which language, country and variant don't include.
 			Locale defaultLocale = Locale.getDefault();
-			if (isSameLocale(defaultLocale, language, country, variant)) return defaultLocale;
+			if (isSameLocale(defaultLocale, language, country, variant) && defaultLocale.getScript().isEmpty()
+				&& !defaultLocale.hasExtensions()) return defaultLocale;
 			// Fast-paths for constants declared in java.util.Locale :
 			// 1. "US" locale (typical forced default in many applications)
 			if (defaultLocale != Locale.US && isSameLocale(Locale.US, language, country, variant)) return Locale.US;

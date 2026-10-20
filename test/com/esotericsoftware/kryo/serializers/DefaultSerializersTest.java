@@ -582,6 +582,23 @@ class DefaultSerializersTest extends KryoTestCase {
 		roundTrip(16, new Locale("es", "ES", "\u00E1\u00E9\u00ED\u00F3\u00FA"));
 	}
 
+	// Language, country and variant don't include the script and extensions, so the default locale must not be read if it has a
+	// script or extensions (#1523).
+	@Test
+	void testLocaleSerializerDefaultWithScriptOrExtensions () {
+		kryo.register(Locale.class);
+
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Locale.setDefault(Locale.forLanguageTag("zh-Hans-CN"));
+			roundTrip(6, Locale.SIMPLIFIED_CHINESE);
+			Locale.setDefault(Locale.forLanguageTag("en-US-u-ca-buddhist"));
+			roundTrip(6, Locale.US);
+		} finally {
+			Locale.setDefault(defaultLocale);
+		}
+	}
+
 	@Test
 	void testCharset () {
 		List<String> css = Arrays.asList("ISO-8859-1", "US-ASCII", "UTF-8", "UTF-16", "UTF-16BE", "UTF-16LE");
