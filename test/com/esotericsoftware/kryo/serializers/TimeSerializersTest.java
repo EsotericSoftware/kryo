@@ -151,6 +151,25 @@ class TimeSerializersTest extends KryoTestCase {
 			ZonedDateTime.of(Year.MAX_VALUE, Month.DECEMBER.getValue(), 31, 23, 59, 59, 999999999, ZoneId.of("Europe/Berlin")));
 	}
 
+	// The zone gives the earlier offset for the date and time in an overlap, eg when clocks are set back, so the later offset is
+	// written (#1531).
+	@Test
+	void testZonedDateTimeOverlap () {
+		ZoneId zone = ZoneId.of("America/New_York");
+		ZonedDateTime earlier = ZonedDateTime.of(2026, 11, 1, 1, 30, 0, 0, zone);
+		roundTrip(23, earlier);
+		roundTrip(25, earlier.withLaterOffsetAtOverlap());
+
+		// An offset that is not valid for the date and time in the zone, eg because its rules changed, is not used.
+		Output output = new Output(32);
+		kryo.writeObject(output, LocalDateTime.of(2026, 7, 1, 12, 0));
+		output.writeString(null);
+		kryo.writeObject(output, ZoneOffset.ofHours(-5));
+		output.writeString(zone.getId());
+		assertEquals(ZonedDateTime.of(2026, 7, 1, 12, 0, 0, 0, zone),
+			kryo.readObject(new Input(output.toBytes()), ZonedDateTime.class));
+	}
+
 	@Test
 	void testYear () {
 		roundTrip(6, Year.of(Year.MIN_VALUE));

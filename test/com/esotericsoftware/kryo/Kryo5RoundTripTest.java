@@ -40,6 +40,8 @@ import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -143,6 +145,18 @@ class Kryo5RoundTripTest {
 			assertArrayEquals(writeKryo5(locale, byteBuffer), writeKryo6(locale, byteBuffer));
 		var input = new com.esotericsoftware.kryo.kryo5.io.Input(writeKryo6(locale, false));
 		assertEquals(new Locale(locale.getLanguage(), locale.getCountry()), newKryo5().readObject(input, Locale.class));
+	}
+
+	/** Kryo 5 writes the date, time and zone of a ZonedDateTime, so it loses the later offset in an overlap. Kryo 6 writes the
+	 * offset for it, but not with the Kryo 5 format, Kryo 5 can't read it. */
+	@Test
+	void testZonedDateTimeLaterOffsetAtOverlap () {
+		ZonedDateTime earlier = ZonedDateTime.of(2026, 11, 1, 1, 30, 0, 0, ZoneId.of("America/New_York"));
+		ZonedDateTime later = earlier.withLaterOffsetAtOverlap();
+		for (boolean byteBuffer : new boolean[] {false, true})
+			assertArrayEquals(writeKryo5(later, byteBuffer), writeKryo6(later, byteBuffer));
+		var input = new com.esotericsoftware.kryo.kryo5.io.Input(writeKryo6(later, false));
+		assertEquals(earlier, newKryo5().readObject(input, ZonedDateTime.class));
 	}
 
 	@ParameterizedTest
