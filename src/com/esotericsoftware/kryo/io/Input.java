@@ -399,6 +399,8 @@ public class Input extends InputStream implements Poolable {
 		int p = position;
 		position = p + count;
 		switch (count) {
+		case 0:
+			return 0;
 		case 1:
 			return buffer[p];
 		case 2:
