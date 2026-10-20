@@ -709,6 +709,25 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/774
+	// The chunked input the field values are read from has the maxArraySize of the outer input.
+	@Test
+	void testMaxArraySizeWithChunkedEncoding () {
+		CompatibleFieldSerializer<ClassWithObjectField> serializer = new CompatibleFieldSerializer<>(kryo, ClassWithObjectField.class);
+		serializer.getCompatibleFieldSerializerConfig().setChunkedEncoding(true);
+		kryo.register(ClassWithObjectField.class, serializer);
+		kryo.register(byte[].class);
+
+		Output output = new Output(64);
+		kryo.writeObject(output, new ClassWithObjectField(new byte[11]));
+		Input input = new Input(output.toBytes());
+		input.setMaxArraySize(11);
+		assertEquals(11, ((byte[])kryo.readObject(input, ClassWithObjectField.class).value).length);
+		Input limited = new Input(output.toBytes());
+		limited.setMaxArraySize(10);
+		KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(limited, ClassWithObjectField.class));
+		assertTrue(ex.getMessage().contains("maxArraySize"), ex.getMessage());
+	}
+
 	@Test
 	void testClassWithObjectField() {
 		CompatibleFieldSerializer<ClassWithObjectField> serializer = new CompatibleFieldSerializer<>(kryo, ClassWithObjectField.class);

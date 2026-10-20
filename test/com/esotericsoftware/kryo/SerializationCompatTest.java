@@ -54,7 +54,7 @@ import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
  * if the deserialized object is equals the expected object. The test files were created once with this test (it writes missing
  * test files when run with {@code -Dkryo.writeGoldenFiles=true}, otherwise a missing file fails the test), serializing an
  * instance of {@link TestData} that contains fields for each default serializer (respectively the related type) and some
- * arbitratry other fields (just to have a class that's not too trivial).
+ * arbitrary other fields (just to have a class that's not too trivial).
  *
  * If any of these checks fail it may have different reasons: 1) the serialization format of an IO variant has changed 2) the
  * serialization format of a serializer has changed 3) the {@link TestData} structure/fields have changed
