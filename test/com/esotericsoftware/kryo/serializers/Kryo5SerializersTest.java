@@ -50,10 +50,13 @@ import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.TaggedFieldSe
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SimpleTimeZone;
+import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -267,6 +270,22 @@ class Kryo5SerializersTest extends KryoTestCase {
 		kryo.register(ArrayList.class, 31);
 		kryo.register(HashMap.class, 32);
 		return kryo;
+	}
+
+	@Test
+	void testTimeZoneWithUnknownId () {
+		// Written like Kryo 5 did, and read as GMT, instead of throwing.
+		kryo.setFormat(Format.KRYO5);
+		kryo.register(TimeZone.class);
+		kryo.register(SimpleTimeZone.class);
+		TimeZone unknown = new SimpleTimeZone(3600000, "Custom/Zone");
+		Output output = new Output(64);
+		kryo.writeObject(output, unknown);
+		assertEquals("GMT", kryo.readObject(new Input(output.toBytes()), TimeZone.class).getID());
+		kryo.setRegistrationRequired(false);
+		output = new Output(64);
+		kryo.writeClassAndObject(output, Calendar.getInstance(unknown));
+		assertEquals("GMT", ((Calendar)kryo.readClassAndObject(new Input(output.toBytes()))).getTimeZone().getID());
 	}
 
 	@Test

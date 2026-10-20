@@ -737,7 +737,8 @@ public class DefaultSerializers {
 
 	/** Serializer for {@link TimeZone}, which writes the ID and reads the time zone with {@link TimeZone#getTimeZone(String)}.
 	 * Assumes the timezones are immutable. Writing a time zone with an ID that {@code getTimeZone} doesn't know, eg a
-	 * {@link java.util.SimpleTimeZone} with a custom ID, throws an exception, because it would be read as GMT.
+	 * {@link java.util.SimpleTimeZone} with a custom ID, throws an exception, because it would be read as GMT. With the Kryo 5
+	 * format, it is written like Kryo 5 did.
 	 * @author Tumi {@literal <serverperformance@gmail.com>} */
 	public static class TimeZoneSerializer extends ImmutableSerializer<TimeZone> {
 		/** The class of the time zones {@link TimeZone#getTimeZone(String)} returns, whose IDs are known. */
@@ -746,7 +747,8 @@ public class DefaultSerializers {
 		public void write (Kryo kryo, Output output, TimeZone object) {
 			String id = object.getID();
 			// getTimeZone returns GMT for an unknown ID.
-			if (object.getClass() != zoneClass && !id.equals("GMT") && TimeZone.getTimeZone(id).getID().equals("GMT")) {
+			if (object.getClass() != zoneClass && kryo.getFormat() != Format.KRYO5 && !id.equals("GMT")
+				&& TimeZone.getTimeZone(id).getID().equals("GMT")) {
 				throw new KryoException("Unable to write the time zone " + className(object.getClass()) + " with the ID \"" + id
 					+ "\": TimeZone.getTimeZone doesn't know the ID and would read it as GMT. Use a known ID or a custom ID like "
 					+ "GMT+01:00, or register a serializer for the time zone.");
@@ -795,7 +797,7 @@ public class DefaultSerializers {
 		 * default locale, eg a BuddhistCalendar for th_TH. */
 		private Calendar create (Class<? extends Calendar> type, TimeZone timeZone) {
 			if (type == GregorianCalendar.class) return new GregorianCalendar(timeZone);
-			String calendarType = type == null ? null : switch (type.getName()) {
+			String calendarType = switch (type.getName()) {
 			case "sun.util.BuddhistCalendar" -> "buddhist";
 			case "java.util.JapaneseImperialCalendar" -> "japanese";
 			default -> null;
