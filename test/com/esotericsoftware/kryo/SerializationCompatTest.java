@@ -52,9 +52,10 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
  * Because the various {@link Input}/{@link Output} variants are not compatible, this test is done for each of these variants.
  *
  * This test uses previously created "canonical" tests files (one for each IO variant): it deserializes their content and checks
- * if the deserialized object is equals the expected object. The test files were created once with this test (it writes test files
- * if they're not yet existing), serializing an instance of {@link TestData} that contains fields for each default serializer
- * (respectively the related type) and some arbitratry other fields (just to have a class that's not too trivial).
+ * if the deserialized object is equals the expected object. The test files were created once with this test (it writes missing
+ * test files when run with {@code -Dkryo.writeGoldenFiles=true}, otherwise a missing file fails the test), serializing an
+ * instance of {@link TestData} that contains fields for each default serializer (respectively the related type) and some
+ * arbitratry other fields (just to have a class that's not too trivial).
  *
  * If any of these checks fail it may have different reasons: 1) the serialization format of an IO variant has changed 2) the
  * serialization format of a serializer has changed 3) the {@link TestData} structure/fields have changed
@@ -64,13 +65,16 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
  *
  * In case 3) - assuming that this was intentional - new test files have to be created.
  *
- * To create new test files, just delete the existing ones and run this test. It will write new files so that you only have to
- * commit the changes. Depending on the situation you may consider creating new files from the smallest version of the same major
- * version (e.g. for 3.1.4 this is 3.0.0) - to do this just save this test and the {@link SerializationCompatTest}, go back to the
+ * To create new test files, delete the existing ones and run this test with {@code -Dkryo.writeGoldenFiles=true}, eg
+ * {@code mvn -pl main test -Dkryo.writeGoldenFiles=true}. It will write new files so that you only have to commit the changes.
+ * Depending on the situation you may consider creating new files from the smallest version of the same major version (e.g. for
+ * 3.1.4 this is 3.0.0) - to do this just save this test and the {@link SerializationCompatTest}, go back to the
  * related tag and run the test (there's nothing here to automate creation of test files for a different version). */
 class SerializationCompatTest extends KryoTestCase {
 	// Set to true to delete failed test files, then set back to false, set expected bytes, and run again to generate new files.
 	private static final boolean DELETE_FAILED_TEST_FILES = false;
+	// Missing test files are written only with -Dkryo.writeGoldenFiles=true, otherwise they fail the test.
+	private static final boolean WRITE_GOLDEN_FILES = Boolean.getBoolean("kryo.writeGoldenFiles");
 
 	private static final int JAVA_VERSION;
 	static {
@@ -124,8 +128,9 @@ class SerializationCompatTest extends KryoTestCase {
 				"The registered default serializers have changed.\n" //
 						+ "Because serialization compatibility shall be checked for default serializers, you must extend " //
 						+ "SerializationCompatTestData.TestData to have a field for the type of the new default serializer.\n" //
-						+ "After that's done, you must create new versions of 'test/resources/data*' because the new TestData instance will " //
-						+ "no longer be equals the formerly written/serialized one.");
+						+ "After that's done, you must create new versions of 'test/resources/TestData*-standard.ser' " //
+						+ "and 'test/resources/TestData*-bytebuffer.ser' because the new TestData instance will no " //
+						+ "longer be equals the formerly written/serialized one (see SerializationCompatTest's class doc).");
 	}
 
 	@Test
@@ -156,7 +161,6 @@ class SerializationCompatTest extends KryoTestCase {
 
 	private void runTests (String variant, Function1<File, Input> inputFactory, Function1<File, Output> outputFactory)
 		throws Exception {
-		setUp();
 		for (TestDataDescription description : TEST_DATAS)
 			runTest(description, variant, inputFactory, outputFactory);
 	}
@@ -165,25 +169,30 @@ class SerializationCompatTest extends KryoTestCase {
 		Function1<File, Output> outputFactory) throws Exception {
 		File testDir = new File("test");
 		if (!testDir.exists()) testDir = new File("../test"); // Could be running in Eclipse subdirectory.
-		File file = new File(testDir, "resources/" + description.classSimpleName() + "-" + variant + ".ser");
+		File file = new File(testDir, "resources/" + description.classSimpleName() + "-" + variant + ".ser").toPath()
+			.toAbsolutePath().normalize().toFile();
 		file.getParentFile().mkdirs();
 
 		if (file.exists()) {
 			Log.info("Reading and testing " + description.classSimpleName() + " with mode '" + variant + "' from file "
 				+ file.getAbsolutePath());
-			Input in = inputFactory.apply(file);
-			try {
+			try (Input in = inputFactory.apply(file)) {
 				readAndRunTest(description, in);
 			} catch (Throwable ex) {
 				if (DELETE_FAILED_TEST_FILES) {
 					System.out.println("Failed: " + file.getAbsolutePath());
-					in.close();
 					file.delete();
-				} else
-					throw ex;
+				} else {
+					throw new AssertionError("Failed with the test file " + file.getPath() + ". If the serialization format is "
+						+ "broken, see " + getClass().getSimpleName() + "'s class doc for what this means and how to proceed. "
+						+ ex, ex);
+				}
 			}
-			in.close();
 		} else {
+			if (!WRITE_GOLDEN_FILES) {
+				fail("The test file " + file.getPath() + " is missing. Write it with: "
+					+ "mvn -pl main test -Dkryo.writeGoldenFiles=true (see " + getClass().getSimpleName() + "'s class doc).");
+			}
 			Log.info("Testing and writing " + description.classSimpleName() + " with mode '" + variant + "' to file "
 				+ file.getAbsolutePath());
 			Output out = outputFactory.apply(file);
@@ -202,13 +211,7 @@ class SerializationCompatTest extends KryoTestCase {
 	private void readAndRunTest (TestDataDescription<?> description, Input in) throws FileNotFoundException {
 		TestData actual = kryo.readObject(in, description.testDataClass());
 		roundTrip(description.length, description.noGenericsLength, actual);
-		try {
-			assertReflectionEquals(actual, description.testData);
-		} catch (AssertionError e) {
-			Log.info("Serialization format is broken, please check " + getClass().getSimpleName() + "'s class doc to see"
-				+ " what this means and how to proceed.");
-			throw e;
-		}
+		assertReflectionEquals(actual, description.testData);
 	}
 
 	private void runTestAndWrite (TestDataDescription description, Output out) throws FileNotFoundException {
@@ -217,11 +220,7 @@ class SerializationCompatTest extends KryoTestCase {
 	}
 
 	protected void doAssertEquals (final Object one, final Object another) {
-		try {
-			assertReflectionEquals(one, another);
-		} catch (Exception e) {
-			fail("Test failed: " + e);
-		}
+		assertReflectionEquals(one, another);
 	}
 
 	private interface Function1<A, B> {
