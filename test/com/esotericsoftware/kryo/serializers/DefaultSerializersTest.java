@@ -1263,6 +1263,10 @@ class DefaultSerializersTest extends KryoTestCase {
 		kryo.setRegistrationRequired(false);
 		Calendar calendar = Calendar.getInstance(unknown);
 		assertThrows(KryoException.class, () -> kryo.writeClassAndObject(new Output(64), calendar));
+		// Also a time zone of the class getTimeZone returns, whose ID was changed.
+		TimeZone changed = TimeZone.getTimeZone("UTC");
+		changed.setID("Custom/Zone");
+		assertThrows(KryoException.class, () -> kryo.writeClassAndObject(new Output(64), changed));
 
 		// Known and custom IDs of time zones of any class can be written.
 		for (TimeZone timeZone : new TimeZone[] {new SimpleTimeZone(3600000, "GMT+01:00"), new SimpleTimeZone(0, "GMT"),

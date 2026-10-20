@@ -741,17 +741,20 @@ public class DefaultSerializers {
 	 * format, it is written like Kryo 5 did.
 	 * @author Tumi {@literal <serverperformance@gmail.com>} */
 	public static class TimeZoneSerializer extends ImmutableSerializer<TimeZone> {
-		/** The class of the time zones {@link TimeZone#getTimeZone(String)} returns, whose IDs are known. */
-		private static final Class zoneClass = TimeZone.getTimeZone("UTC").getClass();
+		/** The IDs {@link TimeZone#getTimeZone(String)} knows, so each is looked up once. Static, because the serializer is
+		 * stateless and may be shared by Kryo instances. Unknown IDs are not added. */
+		private static final Set<String> knownIds = ConcurrentHashMap.newKeySet();
 
 		public void write (Kryo kryo, Output output, TimeZone object) {
-			String id = object.getID();
-			// getTimeZone returns GMT for an unknown ID.
-			if (object.getClass() != zoneClass && kryo.getFormat() != Format.KRYO5 && !id.equals("GMT")
-				&& TimeZone.getTimeZone(id).getID().equals("GMT")) {
-				throw new KryoException("Unable to write the time zone " + className(object.getClass()) + " with the ID \"" + id
-					+ "\": TimeZone.getTimeZone doesn't know the ID and would read it as GMT. Use a known ID or a custom ID like "
-					+ "GMT+01:00, or register a serializer for the time zone.");
+			String id = object.getID(); // Of any time zone, also of one returned by getTimeZone, whose ID can be set.
+			if (!knownIds.contains(id) && kryo.getFormat() != Format.KRYO5) {
+				// getTimeZone returns GMT for an unknown ID.
+				if (!id.equals("GMT") && TimeZone.getTimeZone(id).getID().equals("GMT")) {
+					throw new KryoException("Unable to write the time zone " + className(object.getClass()) + " with the ID \"" + id
+						+ "\": TimeZone.getTimeZone doesn't know the ID and would read it as GMT. Use a known ID or a custom ID like "
+						+ "GMT+01:00, or register a serializer for the time zone.");
+				}
+				knownIds.add(id);
 			}
 			output.writeString(id);
 		}
