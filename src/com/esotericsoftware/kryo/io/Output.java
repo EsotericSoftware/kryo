@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /** An OutputStream that writes data to a byte[] and optionally flushes to another OutputStream. Utility methods are provided for
- * efficiently writing primitive types and strings using big endian.
+ * efficiently writing primitive types and strings. Multi-byte primitive types are written in little endian byte order.
  * @author Nathan Sweet */
 public class Output extends OutputStream implements AutoCloseable, Poolable {
 	protected int maxCapacity;
@@ -162,7 +162,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		return total + position;
 	}
 
-	/** The maximum buffer size, or -1 for no maximum.
+	/** The maximum buffer size, or {@link Util#maxArraySize} for no maximum.
 	 * @see Output#Output(int, int) */
 	public int getMaxCapacity () {
 		return maxCapacity;
@@ -329,7 +329,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		buffer[p + 3] = (byte)(value >> 24);
 	}
 
-	/** Reads an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
+	/** Writes an int using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
 	 * {@link #writeVarInt(int, boolean)} explicitly when writing values that should always use variable length encoding (eg values
 	 * that appear many times).
 	 * @return The number of bytes written.
@@ -470,7 +470,7 @@ public class Output extends OutputStream implements AutoCloseable, Poolable {
 		buffer[p + 7] = (byte)(value >>> 56);
 	}
 
-	/** Reads a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
+	/** Writes a long using fixed or variable length encoding, depending on {@link #setVariableLengthEncoding(boolean)}. Use
 	 * {@link #writeVarLong(long, boolean)} explicitly when writing values that should always use variable length encoding (eg
 	 * values that appear many times).
 	 * @return The number of bytes written.

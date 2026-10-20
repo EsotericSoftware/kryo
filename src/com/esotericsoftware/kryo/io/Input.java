@@ -99,7 +99,7 @@ public class Input extends InputStream implements Poolable {
 		inputStream = null;
 	}
 
-	/** Returns the buffer. The bytes between 0 and {@link #position()} are the data that can be read. */
+	/** Returns the buffer. The bytes between {@link #position()} and {@link #limit()} are the data that can be read. */
 	public byte[] getBuffer () {
 		return buffer;
 	}

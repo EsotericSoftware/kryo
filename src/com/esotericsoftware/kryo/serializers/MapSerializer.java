@@ -107,8 +107,8 @@ public class MapSerializer<T extends Map> extends Serializer<T> {
 		return this.valueSerializer;
 	}
 
-	/** @param valuesCanBeNull True if values are not null. This saves 1 byte per value if keyClass is set. False if it is not
-	 *           known (default). */
+	/** @param valuesCanBeNull False if all values are not null. This saves 1 byte per value if valueClass is set. True if it is
+	 *           not known (default). */
 	public void setValuesCanBeNull (boolean valuesCanBeNull) {
 		this.valuesCanBeNull = valuesCanBeNull;
 	}
