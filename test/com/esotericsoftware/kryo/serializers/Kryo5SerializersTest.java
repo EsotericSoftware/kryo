@@ -270,6 +270,34 @@ class Kryo5SerializersTest extends KryoTestCase {
 	}
 
 	@Test
+	void testChunkedMaxArraySize () {
+		// The chunked input the field values are read from has the maxArraySize of the outer input.
+		kryo.setFormat(Format.KRYO5);
+		kryo.register(byte[].class);
+		CompatibleFieldSerializerConfig compatible = new CompatibleFieldSerializerConfig();
+		compatible.setChunkedEncoding(true);
+		kryo.register(ArrayHolder.class, new CompatibleFieldSerializer(kryo, ArrayHolder.class, compatible));
+		TaggedFieldSerializerConfig tagged = new TaggedFieldSerializerConfig();
+		tagged.setChunkedEncoding(true);
+		kryo.register(TaggedArrayHolder.class, new TaggedFieldSerializer(kryo, TaggedArrayHolder.class, tagged));
+		ArrayHolder holder = new ArrayHolder();
+		holder.value = new byte[11];
+		TaggedArrayHolder taggedHolder = new TaggedArrayHolder();
+		taggedHolder.value = new byte[11];
+		for (Object object : new Object[] {holder, taggedHolder}) {
+			Output output = new Output(64);
+			kryo.writeObject(output, object);
+			Input input = new Input(output.toBytes());
+			input.setMaxArraySize(11);
+			kryo.readObject(input, object.getClass());
+			Input limited = new Input(output.toBytes());
+			limited.setMaxArraySize(10);
+			KryoException ex = assertThrows(KryoException.class, () -> kryo.readObject(limited, object.getClass()));
+			assertTrue(ex.getMessage().contains("maxArraySize"), ex.getMessage());
+		}
+	}
+
+	@Test
 	void testNoGeneratedCodeWithChunks () {
 		// The chunked encoding of Kryo 5 uses the cached fields, without chunks the generated code is used.
 		assumeTrue(CachedFields.codeGeneration, "Code generation is not supported on this platform.");
@@ -392,4 +420,11 @@ class Kryo5SerializersTest extends KryoTestCase {
 		@Tag(3) public String z;
 	}
 
+	public static class ArrayHolder {
+		public Object value;
+	}
+
+	public static class TaggedArrayHolder {
+		@Tag(1) public Object value;
+	}
 }
