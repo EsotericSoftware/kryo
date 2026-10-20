@@ -9,7 +9,7 @@
 			<directory>.</directory>
 			<includes>
 				<include>README*</include>
-				<include>LICENCE*</include>
+				<include>LICENSE*</include>
 				<include>CHANGES*</include>
 				<include>lib/</include>
 				<include>src/</include>

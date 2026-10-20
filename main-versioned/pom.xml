@@ -141,7 +141,9 @@
 						jrockit*;resolution:=optional,
 						sun.reflect;resolution:=optional,
 						sun.misc;resolution:=optional,
-						sun.nio.ch;resolution:=optional
+						sun.nio.ch;resolution:=optional,
+						javax.crypto;resolution:=optional,
+						javax.crypto.spec;resolution:=optional
 						]]>
 						</Import-Package>
 						<Export-Package>
