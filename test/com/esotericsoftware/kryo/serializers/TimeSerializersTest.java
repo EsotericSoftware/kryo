@@ -19,7 +19,11 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.esotericsoftware.kryo.KryoTestCase;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -172,6 +176,23 @@ class TimeSerializersTest extends KryoTestCase {
 		roundTrip(4, Period.ZERO);
 		roundTrip(16, Period.of(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE));
 		roundTrip(16, Period.of(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE));
+	}
+
+	// Year, YearMonth and Period are written with varints, so they must be read with varints also when variable length encoding
+	// is disabled (#1521).
+	@Test
+	void testVariableLengthEncodingDisabled () {
+		Object[] values = {Year.of(2016), YearMonth.of(2016, Month.FEBRUARY), Period.of(1, 2, 3)};
+		for (Object value : values) {
+			Output output = new Output(32);
+			output.setVariableLengthEncoding(false);
+			kryo.writeObject(output, value);
+			output.writeString("after");
+			Input input = new Input(output.toBytes());
+			input.setVariableLengthEncoding(false);
+			assertEquals(value, kryo.readObject(input, value.getClass()));
+			assertEquals("after", input.readString());
+		}
 	}
 
 }
