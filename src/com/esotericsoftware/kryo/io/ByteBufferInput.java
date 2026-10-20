@@ -342,6 +342,8 @@ public class ByteBufferInput extends Input {
 		position += count;
 		ByteBuffer byteBuffer = this.byteBuffer;
 		switch (count) {
+		case 0:
+			return 0;
 		case 1:
 			return byteBuffer.get();
 		case 2:

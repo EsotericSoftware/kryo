@@ -924,6 +924,23 @@ class InputOutputTest extends KryoTestCase {
 		}
 	}
 
+	// A count of 0 is valid, like for writeInt (int, int) and writeLong (long, int), which write no bytes.
+	@Test
+	void testIntsAndLongsWithZeroBytes () {
+		Output write = new Output(16);
+		write.writeInt(123, 0);
+		write.writeLong(123, 0);
+		write.writeByte(1);
+		byte[] bytes = write.toBytes();
+		assertEquals(1, bytes.length);
+
+		for (Input read : new Input[] {new Input(bytes), new ByteBufferInput(bytes)}) {
+			assertEquals(0, read.readInt(0));
+			assertEquals(0, read.readLong(0));
+			assertEquals(1, read.readByte());
+		}
+	}
+
 	@Test
 	void testShorts () throws IOException {
 		runShortTest(new Output(4096));
