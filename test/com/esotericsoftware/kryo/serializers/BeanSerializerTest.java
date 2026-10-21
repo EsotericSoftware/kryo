@@ -19,6 +19,8 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.esotericsoftware.kryo.KryoTestCase;
 
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,25 @@ class BeanSerializerTest extends KryoTestCase {
 		roundTrip(37, test);
 		test.setNullField(null);
 		roundTrip(33, test);
+	}
+
+	// A copy has copies of the property values, so it doesn't share mutable objects with the original, and a property that
+	// references the bean references the copy.
+	@Test
+	void testCopy () {
+		kryo.register(TestClass.class, new BeanSerializer(kryo, TestClass.class));
+
+		TestClass test = new TestClass();
+		test.setChild(new TestClass());
+		test.setChild2(test);
+		TestClass copy = kryo.copy(test);
+		assertEquals(test, copy);
+		assertNotSame(test.getChild(), copy.getChild());
+		assertSame(copy, copy.getChild2());
+
+		copy = kryo.copyShallow(test);
+		assertSame(test.getChild(), copy.getChild());
+		assertSame(test, copy.getChild2());
 	}
 
 	public static class TestClass {
