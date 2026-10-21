@@ -195,7 +195,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 	}
 
 	public V get (int key, @Null V defaultValue) {
-		if (key == 0) return hasZeroValue ? zeroValue : null;
+		if (key == 0) return hasZeroValue ? zeroValue : defaultValue;
 		for (int i = place(key);; i = i + 1 & mask) {
 			int other = keyTable[i];
 			if (other == 0) return defaultValue;
@@ -230,6 +230,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 			next = next + 1 & mask;
 		}
 		keyTable[i] = 0;
+		valueTable[i] = null;
 		size--;
 		return oldValue;
 	}
@@ -515,6 +516,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 			int i = currentIndex;
 			if (i == INDEX_ZERO && map.hasZeroValue) {
 				map.hasZeroValue = false;
+				map.zeroValue = null;
 			} else if (i < 0) {
 				throw new IllegalStateException("next must be called before remove.");
 			} else {
@@ -531,6 +533,7 @@ public class IntMap<V> implements Iterable<IntMap.Entry<V>> {
 					next = next + 1 & mask;
 				}
 				keyTable[i] = 0;
+				valueTable[i] = null;
 				if (i != currentIndex) --nextIndex;
 			}
 			currentIndex = INDEX_ILLEGAL;
