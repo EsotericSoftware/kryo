@@ -49,7 +49,8 @@ class CollectionSerializerTest extends KryoTestCase {
 	}
 
 	// A corrupt negative size throws a KryoException, not an IllegalArgumentException from the constructor, and doesn't read an
-	// empty collection where the size isn't used as a capacity. MIN_VALUE must not wrap to MAX_VALUE.
+	// empty collection where the size isn't used as a capacity. MIN_VALUE must not wrap to MAX_VALUE. The Kryo 5 format is tested
+	// in Kryo5SerializersTest.
 	@Test
 	void testNegativeSize () {
 		kryo.register(ArrayList.class);
@@ -68,13 +69,54 @@ class CollectionSerializerTest extends KryoTestCase {
 	}
 
 	@Test
+	void testSizeChanged () {
+		// The size doesn't match the elements, eg because the collection was modified concurrently (#1181).
+		kryo.register(WrongSizeList.class);
+		for (int sizeDelta : new int[] {-1, 1}) {
+			for (List<Object> elements : List.<List<Object>> of(List.of("a", "b"), Arrays.asList("a", null), List.of("a", 1),
+				Arrays.asList(null, null))) {
+				WrongSizeList list = new WrongSizeList(sizeDelta);
+				list.addAll(elements);
+				KryoException ex = assertThrows(KryoException.class, () -> kryo.writeObject(new Output(1024), list));
+				assertTrue(ex.getMessage().contains("changed while it was written"), ex.getMessage());
+			}
+		}
+		// With a known element serializer.
+		CollectionSerializer serializer = new CollectionSerializer();
+		serializer.setElementClass(String.class, new StringSerializer());
+		serializer.setElementsCanBeNull(false);
+		kryo.register(WrongSizeList.class, serializer);
+		WrongSizeList list = new WrongSizeList(1);
+		list.add("a");
+		assertThrows(KryoException.class, () -> kryo.writeObject(new Output(1024), list));
+	}
+
+	public static class WrongSizeList extends ArrayList<Object> {
+		final int sizeDelta;
+
+		public WrongSizeList () {
+			this(0);
+		}
+
+		public WrongSizeList (int sizeDelta) {
+			this.sizeDelta = sizeDelta;
+		}
+
+		public int size () {
+			return super.size() + sizeDelta;
+		}
+	}
+
+	@Test
 	void testWriteSameClassOnce () {
 		kryo.register(ArrayList.class);
 		ArrayList<String> list = new ArrayList<>(Arrays.asList("a", "b", "c"));
 		roundTrip(10, list); // The class of the elements is written once.
 
 		CollectionSerializer serializer = new CollectionSerializer();
+		assertTrue(serializer.getWriteSameClassOnce());
 		serializer.setWriteSameClassOnce(false);
+		assertFalse(serializer.getWriteSameClassOnce());
 		kryo.register(ArrayList.class, serializer);
 		Output output = new Output(64);
 		kryo.writeClassAndObject(output, list);

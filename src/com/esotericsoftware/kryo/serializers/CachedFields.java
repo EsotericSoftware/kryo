@@ -20,23 +20,16 @@
 package com.esotericsoftware.kryo.serializers;
 
 import static com.esotericsoftware.kryo.util.Util.*;
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.kryo.util.Log.*;
 
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
 import com.esotericsoftware.kryo.SerializerFactory.ReflectionSerializerFactory;
-import com.esotericsoftware.kryo.serializers.AsmField.BooleanAsmField;
-import com.esotericsoftware.kryo.serializers.AsmField.ByteAsmField;
-import com.esotericsoftware.kryo.serializers.AsmField.CharAsmField;
-import com.esotericsoftware.kryo.serializers.AsmField.DoubleAsmField;
-import com.esotericsoftware.kryo.serializers.AsmField.FloatAsmField;
-import com.esotericsoftware.kryo.serializers.AsmField.IntAsmField;
-import com.esotericsoftware.kryo.serializers.AsmField.LongAsmField;
-import com.esotericsoftware.kryo.serializers.AsmField.ShortAsmField;
-import com.esotericsoftware.kryo.serializers.AsmField.StringAsmField;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Bind;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.CachedField;
+import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldAccessType;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.FieldSerializerConfig;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.NotNull;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
@@ -48,6 +41,7 @@ import com.esotericsoftware.kryo.serializers.ReflectField.FloatReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.IntReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.LongReflectField;
 import com.esotericsoftware.kryo.serializers.ReflectField.ShortReflectField;
+import com.esotericsoftware.kryo.serializers.ReflectField.StringReflectField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.BooleanUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.ByteUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.CharUnsafeField;
@@ -58,45 +52,87 @@ import com.esotericsoftware.kryo.serializers.UnsafeField.LongUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.ShortUnsafeField;
 import com.esotericsoftware.kryo.serializers.UnsafeField.StringUnsafeField;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
-import com.esotericsoftware.reflectasm.FieldAccess;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.security.AccessControlException;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 /** @author Nathan Sweet */
 class CachedFields implements Comparator<CachedField> {
 	static final CachedField[] emptyCachedFields = new CachedField[0];
 
+	/** The declared fields of a class. Class#getDeclaredFields() returns new Field objects for each call, which take as much
+	 * memory as the cached fields. */
+	static private final ClassCache<Field[]> declaredFields = ClassCache.create(Class::getDeclaredFields);
+	/** The generic types of the fields of a serialized class, including the fields of its super classes. */
+	static private final ClassCache<ConcurrentHashMap<Field, GenericType>> genericTypes = ClassCache.create(
+		type -> new ConcurrentHashMap<>());
+	/** The getter, setter and copier of the fields of a class that are accessed with VarHandles, see
+	 * {@link VarHandleField#handles(Field, Class)}. */
+	static private final ClassCache<ConcurrentHashMap<Field, MethodHandle[]>> methodHandles = ClassCache.create(
+		type -> new ConcurrentHashMap<>());
+
 	private final FieldSerializer serializer;
-	CachedField[] fields = new CachedField[0];
-	CachedField[] copyFields = new CachedField[0];
+
+	/** True if {@link CodeGeneration} can be used: Java 24+ or ASM on the classpath, not on Android or in a native image. Checked
+	 * before the class is used, which can't be loaded on older Java versions. */
+	static final boolean codeGeneration = !isAndroid && !isNativeImage && (Bytecode.classFileApi || Bytecode.asm);
+
+	/** Returns why {@link #codeGeneration} is false, for logging. */
+	static String codeGenerationUnavailable () {
+		if (isAndroid) return "Code generation is not available on Android.";
+		if (isNativeImage) return "Code generation is not available in a native image.";
+		if (javaVersion() >= 24) // The Class-File API is available, so the ASM backend was selected.
+			return "Code generation with the ASM backend (kryo.codeGeneration.backend=asm) needs ASM on the classpath (org.ow2.asm:asm).";
+		return "Code generation needs Java 24 or later, or ASM on the classpath (org.ow2.asm:asm), this is Java "
+			+ javaVersion() + " without ASM.";
+	}
+
+	/** The fields to write and read, see {@link #fields()}, and the fields to copy, see {@link #copyFields()}. */
+	private CachedField[] fields = new CachedField[0];
+	private CachedField[] copyFields = new CachedField[0];
 	private final ArrayList<Field> removedFields = new ArrayList();
-	private Object access;
+	/** True while {@link FieldSerializer#initializeCachedFields()} is called. */
+	private boolean initializing;
 
 	public CachedFields (FieldSerializer serializer) {
 		this.serializer = serializer;
+	}
+
+	private FieldAccessType fieldAccess () {
+		return fieldAccess(serializer.config.fieldAccess, unsafe, isAndroid);
+	}
+
+	/** Returns the configured field access, or if Unsafe is configured but not available, VarHandles, or reflection on Android,
+	 * which has VarHandles only since API level 33. */
+	static FieldAccessType fieldAccess (FieldAccessType configured, boolean unsafe, boolean android) {
+		if (configured != FieldAccessType.UNSAFE || unsafe) return configured;
+		return android ? FieldAccessType.REFLECTION : FieldAccessType.VARHANDLE;
 	}
 
 	public void rebuild () {
 		if (serializer.type.isInterface()) { // No fields to serialize.
 			fields = emptyCachedFields;
 			copyFields = emptyCachedFields;
-			serializer.initializeCachedFields();
+			initialize();
 			return;
 		}
 
 		ArrayList<CachedField> newFields = new ArrayList(), newCopyFields = new ArrayList();
-		boolean asm = !unsafe && !isAndroid && !isNativeImage && Modifier.isPublic(serializer.type.getModifiers());
+		RecordComponent[] recordComponents = recordComponents(serializer.type);
 		Class nextClass = serializer.type;
 		while (nextClass != Object.class) {
-			for (Field field : nextClass.getDeclaredFields())
-				addField(field, asm, newFields, newCopyFields);
+			for (Field field : declaredFields.get(nextClass))
+				addField(field, recordComponents, newFields, newCopyFields);
 			nextClass = nextClass.getSuperclass();
 		}
 
@@ -108,20 +144,44 @@ class CachedFields implements Comparator<CachedField> {
 		newCopyFields.toArray(copyFields);
 		Arrays.sort(copyFields, this);
 
-		serializer.initializeCachedFields();
+		initialize();
 	}
 
-	private void addField (Field field, boolean asm, ArrayList<CachedField> fields, ArrayList<CachedField> copyFields) {
+	private void initialize () {
+		initializing = true;
+		try {
+			serializer.initializeCachedFields();
+		} finally {
+			initializing = false;
+		}
+		serializer.fieldsChanged(fields);
+	}
+
+	/** Called after a field was removed. A field removed by {@link FieldSerializer#initializeCachedFields()} is not remembered,
+	 * because it is removed again when the fields are rebuilt. */
+	private void removed (CachedField cachedField) {
+		if (!initializing) removedFields.add(cachedField.field);
+	}
+
+	/** @param recordComponents May be null if the type is not a record. */
+	private void addField (Field field, RecordComponent[] recordComponents, ArrayList<CachedField> fields,
+		ArrayList<CachedField> copyFields) {
 		int modifiers = field.getModifiers();
 		if (Modifier.isStatic(modifiers)) return;
 		FieldSerializerConfig config = serializer.config;
-		if (field.isSynthetic() && config.ignoreSyntheticFields) return;
+		if (field.isSynthetic() && config.ignoreSyntheticFields) {
+			if (TRACE) trace("kryo", "Ignoring synthetic field: " + field);
+			return;
+		}
 
-		if (!field.isAccessible()) {
-			if (!config.setFieldsAsAccessible) return;
+		// The components of a record are its public API through the accessors and the canonical constructor, which is set
+		// accessible anyway, so they are always serialized. Kryo 5 serialized no fields, also not public ones.
+		if (!config.setFieldsAsAccessible && recordComponents == null) {
+			if (serializer.kryo.getFormat() == Format.KRYO5 || !isPublicApi(field)) return;
+		} else {
 			try {
 				field.setAccessible(true);
-			} catch (AccessControlException ex) {
+			} catch (SecurityException ex) {
 				if (DEBUG) debug("kryo", "Unable to set field as accessible: " + field);
 				return;
 			}
@@ -138,31 +198,28 @@ class CachedFields implements Comparator<CachedField> {
 		boolean isTransient = Modifier.isTransient(modifiers);
 		if (isTransient && !config.serializeTransient && !config.copyTransient) return;
 
+		Class type = serializer.type;
 		Class declaringClass = field.getDeclaringClass();
-		GenericType genericType = new GenericType(declaringClass, serializer.type, field.getGenericType());
+		GenericType genericType = genericType(declaringClass, type, field);
 		Class fieldClass = genericType.getType() instanceof Class ? (Class)genericType.getType() : field.getType();
-		int accessIndex = -1;
-		if (asm //
-			&& !Modifier.isFinal(modifiers) //
-			&& Modifier.isPublic(modifiers) //
-			&& Modifier.isPublic(fieldClass.getModifiers())) {
-			try {
-				if (access == null) access = FieldAccess.get(serializer.type);
-				accessIndex = ((FieldAccess)access).getIndex(field);
-			} catch (RuntimeException | LinkageError ex) {
-				if (DEBUG) debug("kryo", "Unable to use ReflectASM.", ex);
-			}
-		}
-
 		CachedField cachedField;
-		if (unsafe)
+		FieldAccessType fieldAccess = fieldAccess();
+		boolean isFinal = Modifier.isFinal(modifiers);
+		if (fieldAccess == FieldAccessType.UNSAFE && !isRecord(type)) // Unsafe fields set final fields themselves.
 			cachedField = newUnsafeField(field, fieldClass, genericType);
-		else if (accessIndex != -1) {
-			cachedField = newAsmField(field, fieldClass, genericType);
-			cachedField.access = (FieldAccess)access;
-			cachedField.accessIndex = accessIndex;
-		} else
-			cachedField = newReflectField(field, fieldClass, genericType);
+		else {
+			if (fieldAccess != FieldAccessType.REFLECTION
+				// Android has VarHandles only since API level 33, so they are only used there if configured explicitly, and not for
+				// final fields, which ReflectField sets with reflection there.
+				&& (!isAndroid || (fieldAccess == FieldAccessType.VARHANDLE && !isFinal)))
+				cachedField = newVarHandleField(field, fieldClass, genericType);
+			else
+				cachedField = newReflectField(field, fieldClass, genericType);
+			// VarHandles can read but not set final fields, so the serializer sets them with reflection, which may be denied. That
+			// is checked when the field is first set. Records set their fields with their constructor. FinalFieldSetter is not
+			// loaded on Android, which has ClassValue only since API level 34.
+			if (isFinal && recordComponents == null && !isAndroid) cachedField.isFinal = cachedField.finalUnresolved = true;
+		}
 
 		cachedField.varEncoding = config.varEncoding;
 		if (config.extendedFieldNames)
@@ -174,16 +231,22 @@ class CachedFields implements Comparator<CachedField> {
 			cachedField.canBeNull = config.fieldsCanBeNull && !field.isAnnotationPresent(NotNull.class);
 			if (serializer.kryo.isFinal(fieldClass) || config.fixedFieldTypes) cachedField.valueClass = fieldClass;
 
-			if (TRACE) {
-				trace("kryo",
-					"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
-			}
 		} else { // Must be a primitive or String.
 			cachedField.canBeNull = fieldClass == String.class && config.fieldsCanBeNull;
 			cachedField.valueClass = fieldClass;
+		}
+		if (TRACE) {
+			trace("kryo", "Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass)
+				+ ") with " + cachedField.getClass().getSimpleName());
+		}
 
-			if (TRACE) trace("kryo",
-				"Cached " + fieldClass.getSimpleName() + " field: " + field.getName() + " (" + className(declaringClass) + ")");
+		if (recordComponents != null) {
+			for (int i = 0; i < recordComponents.length; i++) {
+				if (recordComponents[i].getName().equals(field.getName())) {
+					cachedField.index = i;
+					break;
+				}
+			}
 		}
 
 		applyAnnotations(cachedField);
@@ -197,6 +260,52 @@ class CachedFields implements Comparator<CachedField> {
 		}
 	}
 
+	/** Returns the getter, setter and copier of a field that is accessed with a VarHandle, see
+	 * {@link VarHandleField#handles(Field, Class)}, which all serializers and Kryo instances share.
+	 * @param type The type of the value, Object for a field that isn't a primitive or String field.
+	 * @throws KryoException if the field can't be accessed with a VarHandle. */
+	@IgnoreAndroid
+	static MethodHandle[] varHandles (Field field, Class type) {
+		MethodHandle[] handles = methodHandles.get(field.getDeclaringClass()).computeIfAbsent(field,
+			key -> VarHandleField.handles(key, type));
+		// The same field can be a String field and an object field: with references for strings, or a type variable.
+		return handles[0].type().returnType() == type ? handles : VarHandleField.handles(field, type);
+	}
+
+	/** Returns the components of a record, or null if the type is not a record. */
+	@IgnoreAndroid
+	static RecordComponent[] recordComponents (Class type) {
+		return isRecord(type) ? type.getRecordComponents() : null;
+	}
+
+	/** Returns the generic type of a field, which all serializers and Kryo instances share, like the Field objects. The generic
+	 * type of a primitive field is only needed while the field is added. */
+	static private GenericType genericType (Class declaringClass, Class type, Field field) {
+		if (field.getType().isPrimitive()) return new GenericType(declaringClass, type, field.getGenericType());
+		return genericTypes.get(type).computeIfAbsent(field,
+			key -> new GenericType(declaringClass, type, key.getGenericType()));
+	}
+
+	/** Returns true if the field can be read and written without {@link Field#setAccessible(boolean)}: a public, non-final field
+	 * of a public class. */
+	static private boolean isPublicApi (Field field) {
+		int modifiers = field.getModifiers();
+		if (!Modifier.isPublic(modifiers) || Modifier.isFinal(modifiers)) return false;
+		for (Class type = field.getDeclaringClass(); type != null; type = type.getEnclosingClass())
+			if (!Modifier.isPublic(type.getModifiers())) return false;
+		return true;
+	}
+
+	/** Returns true if a String field is written directly as a string, which all field access types decide the same way, so they
+	 * write the same data, eg for a final field that VarHandles can't set. Not with references for strings, and not with
+	 * {@link Bind} or {@link NotNull}, which only the fields for objects apply, except with {@link Format#KRYO5}: Kryo 5 ignored
+	 * them for String fields with Unsafe and ReflectASM. Kryo remembers the decision for strings, so it can't change afterward. */
+	private boolean isStringField (Field field, Class fieldClass) {
+		if (fieldClass != String.class || serializer.kryo.usesStringReferences()) return false;
+		return serializer.kryo.getFormat() == Format.KRYO5
+			|| !field.isAnnotationPresent(Bind.class) && !field.isAnnotationPresent(NotNull.class);
+	}
+
 	private CachedField newUnsafeField (Field field, Class fieldClass, GenericType genericType) {
 		if (fieldClass.isPrimitive()) {
 			if (fieldClass == int.class) return new IntUnsafeField(field);
@@ -208,27 +317,52 @@ class CachedFields implements Comparator<CachedField> {
 			if (fieldClass == char.class) return new CharUnsafeField(field);
 			if (fieldClass == byte.class) return new ByteUnsafeField(field);
 		}
-		if (fieldClass == String.class
-			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-			return new StringUnsafeField(field);
+		if (isStringField(field, fieldClass)) return new StringUnsafeField(field);
 		return new UnsafeField(field, serializer, genericType);
 	}
 
-	private CachedField newAsmField (Field field, Class fieldClass, GenericType genericType) {
-		if (fieldClass.isPrimitive()) {
-			if (fieldClass == int.class) return new IntAsmField(field);
-			if (fieldClass == float.class) return new FloatAsmField(field);
-			if (fieldClass == boolean.class) return new BooleanAsmField(field);
-			if (fieldClass == long.class) return new LongAsmField(field);
-			if (fieldClass == double.class) return new DoubleAsmField(field);
-			if (fieldClass == short.class) return new ShortAsmField(field);
-			if (fieldClass == char.class) return new CharAsmField(field);
-			if (fieldClass == byte.class) return new ByteAsmField(field);
+	private CachedField newVarHandleField (Field field, Class fieldClass, GenericType genericType) {
+		try {
+			return newVarHandleField(field, fieldClass, isStringField(field, fieldClass), genericType);
+		} catch (KryoException ex) {
+			// Eg a public field in a package that is exported but not open to Kryo, which can be accessed with reflection.
+			if (DEBUG) debug("kryo", "Unable to access field with a VarHandle, using reflection: " + field, ex);
+			return newReflectField(field, fieldClass, genericType);
 		}
-		if (fieldClass == String.class
-			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
-			return new StringAsmField(field);
-		return new AsmField(field, serializer, genericType);
+	}
+
+	/** Returns the fields to write and read. */
+	CachedField[] fields () {
+		return fields;
+	}
+
+	/** Returns the fields to copy. */
+	CachedField[] copyFields () {
+		return copyFields;
+	}
+
+	/** Removes the fields for which the predicate is true, see {@link #removeField(CachedField)}, for
+	 * {@link FieldSerializer#initializeCachedFields()}. */
+	void removeFields (Predicate<CachedField> remove) {
+		for (CachedField cachedField : fields.clone())
+			if (remove.test(cachedField)) removeField(cachedField);
+	}
+
+	/** @param string True for a String field that is written without references, which may be a type variable.
+	 * @throws KryoException if the field can't be accessed with a VarHandle. */
+	private CachedField newVarHandleField (Field field, Class fieldClass, boolean string, GenericType genericType) {
+		if (fieldClass.isPrimitive()) {
+			if (fieldClass == int.class) return new VarHandleField.IntVarHandleField(field);
+			if (fieldClass == float.class) return new VarHandleField.FloatVarHandleField(field);
+			if (fieldClass == boolean.class) return new VarHandleField.BooleanVarHandleField(field);
+			if (fieldClass == long.class) return new VarHandleField.LongVarHandleField(field);
+			if (fieldClass == double.class) return new VarHandleField.DoubleVarHandleField(field);
+			if (fieldClass == short.class) return new VarHandleField.ShortVarHandleField(field);
+			if (fieldClass == char.class) return new VarHandleField.CharVarHandleField(field);
+			if (fieldClass == byte.class) return new VarHandleField.ByteVarHandleField(field);
+		}
+		if (string) return new VarHandleField.StringVarHandleField(field);
+		return new VarHandleField(field, serializer, genericType);
 	}
 
 	private CachedField newReflectField (Field field, Class fieldClass, GenericType genericType) {
@@ -242,6 +376,7 @@ class CachedFields implements Comparator<CachedField> {
 			if (fieldClass == char.class) return new CharReflectField(field);
 			if (fieldClass == byte.class) return new ByteReflectField(field);
 		}
+		if (isStringField(field, fieldClass)) return new StringReflectField(field);
 		return new ReflectField(field, serializer, genericType);
 	}
 
@@ -252,64 +387,40 @@ class CachedFields implements Comparator<CachedField> {
 
 	/** Removes a field so that it won't be serialized. */
 	public void removeField (String fieldName) {
-		boolean found = false;
-		for (int i = 0; i < fields.length; i++) {
-			CachedField cachedField = fields[i];
-			if (cachedField.name.equals(fieldName)) {
-				CachedField[] newFields = new CachedField[fields.length - 1];
-				System.arraycopy(fields, 0, newFields, 0, i);
-				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
-				fields = newFields;
-				removedFields.add(cachedField.field);
-				found = true;
-				break;
-			}
-		}
-		for (int i = 0; i < copyFields.length; i++) {
-			CachedField cachedField = copyFields[i];
-			if (cachedField.name.equals(fieldName)) {
-				CachedField[] newFields = new CachedField[copyFields.length - 1];
-				System.arraycopy(copyFields, 0, newFields, 0, i);
-				System.arraycopy(copyFields, i + 1, newFields, i, newFields.length - i);
-				copyFields = newFields;
-				removedFields.add(cachedField.field);
-				found = true;
-				break;
-			}
-		}
-		if (!found)
+		if (!remove(cachedField -> cachedField.name.equals(fieldName)))
 			throw new IllegalArgumentException("Field \"" + fieldName + "\" not found on class: " + serializer.type.getName());
 	}
 
 	/** Removes a field so that it won't be serialized. */
 	public void removeField (CachedField removeField) {
-		boolean found = false;
+		if (!remove(cachedField -> cachedField == removeField))
+			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
+	}
+
+	/** Removes the first matching field from the fields and the copy fields.
+	 * @return False if no field matches. */
+	private boolean remove (Predicate<CachedField> matches) {
+		CachedField[] newFields = remove(fields, matches), newCopyFields = remove(copyFields, matches);
+		if (newFields == fields && newCopyFields == copyFields) return false;
+		fields = newFields;
+		copyFields = newCopyFields;
+		if (!initializing) serializer.fieldsChanged(fields);
+		return true;
+	}
+
+	/** Returns a new array without the first matching field, or the same array if no field matches. */
+	private CachedField[] remove (CachedField[] fields, Predicate<CachedField> matches) {
 		for (int i = 0; i < fields.length; i++) {
 			CachedField cachedField = fields[i];
-			if (cachedField == removeField) {
+			if (matches.test(cachedField)) {
 				CachedField[] newFields = new CachedField[fields.length - 1];
 				System.arraycopy(fields, 0, newFields, 0, i);
 				System.arraycopy(fields, i + 1, newFields, i, newFields.length - i);
-				fields = newFields;
-				removedFields.add(cachedField.field);
-				found = true;
-				break;
+				removed(cachedField);
+				return newFields;
 			}
 		}
-		for (int i = 0; i < copyFields.length; i++) {
-			CachedField cachedField = copyFields[i];
-			if (cachedField == removeField) {
-				CachedField[] newFields = new CachedField[copyFields.length - 1];
-				System.arraycopy(copyFields, 0, newFields, 0, i);
-				System.arraycopy(copyFields, i + 1, newFields, i, newFields.length - i);
-				copyFields = newFields;
-				removedFields.add(cachedField.field);
-				found = true;
-				break;
-			}
-		}
-		if (!found)
-			throw new IllegalArgumentException("Field \"" + removeField + "\" not found on class: " + serializer.type.getName());
+		return fields;
 	}
 
 	/** Sets serializers using annotations.
@@ -335,9 +446,10 @@ class CachedFields implements Comparator<CachedField> {
 				"@Bind serializer and serializerFactory require valueClass");
 			if (serializer != null) cachedField.setSerializer(serializer);
 
-			cachedField.setCanBeNull(annotation.canBeNull());
+			// Kryo 5 ignored @NotNull with @Bind.
+			cachedField.setCanBeNull(annotation.canBeNull()
+				&& (this.serializer.kryo.getFormat() == Format.KRYO5 || !field.isAnnotationPresent(NotNull.class)));
 			cachedField.setVariableLengthEncoding(annotation.variableLengthEncoding());
-			cachedField.setOptimizePositive(annotation.optimizePositive());
 		}
 
 		// Set CollectionSerializer settings for a collection field.

@@ -31,6 +31,11 @@
 			<locationURI>PARENT-1-PROJECT_LOC/lib</locationURI>
 		</link>
 		<link>
+			<name>native-image</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/native-image</locationURI>
+		</link>
+		<link>
 			<name>src</name>
 			<type>2</type>
 			<locationURI>PARENT-1-PROJECT_LOC/src</locationURI>
@@ -39,6 +44,11 @@
 			<name>test</name>
 			<type>2</type>
 			<locationURI>PARENT-1-PROJECT_LOC/test</locationURI>
+		</link>
+		<link>
+			<name>test-android</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/test-android</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="890" viewBox="0 0 1024 890" role="img">
+<title>FieldSerializerBenchmark: round trips per second (higher is better)</title>
+<style>
+text { font-family: Arial, Helvetica, sans-serif; font-size: 13px; fill: #4D4D4D }
+.title { font-size: 19px; fill: #000000 }
+.axisTitle, .legendTitle { font-size: 16px; fill: #000000 }
+.legend { fill: #000000 }
+.background { fill: #FFFFFF }
+.plot { fill: #EBEBEB }
+.grid { stroke: #FFFFFF }
+.minor { stroke: #FFFFFF; stroke-width: 0.5 }
+.tick { stroke: #333333 }
+.bar, .line { stroke: #000000 }
+</style>
+<rect class="background" width="1024" height="890"/>
+<text class="title" x="48" y="22">FieldSerializerBenchmark, JDK 27</text>
+<rect class="plot" x="78" y="34" width="757" height="359"/>
+<line class="minor" x1="78" y1="343.6" x2="835" y2="343.6"/>
+<line class="grid" x1="78" y1="310.6" x2="835" y2="310.6"/>
+<line class="minor" x1="78" y1="277.5" x2="835" y2="277.5"/>
+<line class="grid" x1="78" y1="244.5" x2="835" y2="244.5"/>
+<line class="minor" x1="78" y1="211.4" x2="835" y2="211.4"/>
+<line class="grid" x1="78" y1="178.4" x2="835" y2="178.4"/>
+<line class="minor" x1="78" y1="145.3" x2="835" y2="145.3"/>
+<line class="grid" x1="78" y1="112.3" x2="835" y2="112.3"/>
+<line class="minor" x1="78" y1="79.2" x2="835" y2="79.2"/>
+<line class="grid" x1="78" y1="46.2" x2="835" y2="46.2"/>
+<line class="tick" x1="74" y1="376.7" x2="78" y2="376.7"/>
+<text x="71" y="381.2" text-anchor="end">0</text>
+<line class="tick" x1="74" y1="310.6" x2="78" y2="310.6"/>
+<text x="71" y="315.1" text-anchor="end">500K</text>
+<line class="tick" x1="74" y1="244.5" x2="78" y2="244.5"/>
+<text x="71" y="249.0" text-anchor="end">1M</text>
+<line class="tick" x1="74" y1="178.4" x2="78" y2="178.4"/>
+<text x="71" y="182.9" text-anchor="end">1.5M</text>
+<line class="tick" x1="74" y1="112.3" x2="78" y2="112.3"/>
+<text x="71" y="116.8" text-anchor="end">2M</text>
+<line class="tick" x1="74" y1="46.2" x2="78" y2="46.2"/>
+<text x="71" y="50.7" text-anchor="end">2.5M</text>
+<text class="axisTitle" transform="translate(22 213.5) rotate(-90)" text-anchor="middle">Round trips per second (higher is better)</text>
+<line class="grid" x1="165.3" y1="34" x2="165.3" y2="393"/>
+<line class="tick" x1="165.3" y1="393" x2="165.3" y2="397"/>
+<text x="165.3" y="412" text-anchor="middle">field</text>
+<line class="grid" x1="310.9" y1="34" x2="310.9" y2="393"/>
+<line class="tick" x1="310.9" y1="393" x2="310.9" y2="397"/>
+<text x="310.9" y="412" text-anchor="middle">version</text>
+<line class="grid" x1="456.5" y1="34" x2="456.5" y2="393"/>
+<line class="tick" x1="456.5" y1="393" x2="456.5" y2="397"/>
+<text x="456.5" y="412" text-anchor="middle">compatible</text>
+<line class="grid" x1="602.1" y1="34" x2="602.1" y2="393"/>
+<line class="tick" x1="602.1" y1="393" x2="602.1" y2="397"/>
+<text x="602.1" y="412" text-anchor="middle">tagged</text>
+<line class="grid" x1="747.7" y1="34" x2="747.7" y2="393"/>
+<line class="tick" x1="747.7" y1="393" x2="747.7" y2="397"/>
+<text x="747.7" y="412" text-anchor="middle">custom</text>
+<text class="axisTitle" x="456.5" y="437" text-anchor="middle">Sample</text>
+<rect class="bar" fill="#F8766D" x="99.8" y="224.3" width="65.5" height="152.3"/>
+<path class="line" fill="none" d="M132.6 230.8V217.9M119.5 230.8h26.2M119.5 217.9h26.2"/>
+<rect class="bar" fill="#7CAE00" x="165.3" y="176.9" width="65.5" height="199.8"/>
+<path class="line" fill="none" d="M198.1 177.1V176.8M185.0 177.1h26.2M185.0 176.8h26.2"/>
+<rect class="bar" fill="#F8766D" x="245.4" y="220.0" width="65.5" height="156.7"/>
+<path class="line" fill="none" d="M278.2 220.5V219.5M265.1 220.5h26.2M265.1 219.5h26.2"/>
+<rect class="bar" fill="#7CAE00" x="310.9" y="188.6" width="65.5" height="188.0"/>
+<path class="line" fill="none" d="M343.7 223.8V153.4M330.6 223.8h26.2M330.6 153.4h26.2"/>
+<rect class="bar" fill="#F8766D" x="391.0" y="275.9" width="32.8" height="100.7"/>
+<path class="line" fill="none" d="M407.4 277.3V274.5M400.8 277.3h13.1M400.8 274.5h13.1"/>
+<rect class="bar" fill="#7CAE00" x="423.7" y="261.2" width="32.8" height="115.5"/>
+<path class="line" fill="none" d="M440.1 261.6V260.7M433.6 261.6h13.1M433.6 260.7h13.1"/>
+<rect class="bar" fill="#00BFC4" x="456.5" y="326.7" width="32.8" height="49.9"/>
+<path class="line" fill="none" d="M472.9 329.9V323.6M466.3 329.9h13.1M466.3 323.6h13.1"/>
+<rect class="bar" fill="#C77CFF" x="489.3" y="320.5" width="32.8" height="56.2"/>
+<path class="line" fill="none" d="M505.6 322.8V318.3M499.1 322.8h13.1M499.1 318.3h13.1"/>
+<rect class="bar" fill="#F8766D" x="536.6" y="242.2" width="32.8" height="134.5"/>
+<path class="line" fill="none" d="M552.9 242.7V241.8M546.4 242.7h13.1M546.4 241.8h13.1"/>
+<rect class="bar" fill="#7CAE00" x="569.3" y="209.4" width="32.8" height="167.2"/>
+<path class="line" fill="none" d="M585.7 210.0V208.9M579.1 210.0h13.1M579.1 208.9h13.1"/>
+<rect class="bar" fill="#00BFC4" x="602.1" y="294.7" width="32.8" height="82.0"/>
+<path class="line" fill="none" d="M618.5 294.9V294.5M611.9 294.9h13.1M611.9 294.5h13.1"/>
+<rect class="bar" fill="#C77CFF" x="634.8" y="275.1" width="32.8" height="101.5"/>
+<path class="line" fill="none" d="M651.2 275.7V274.5M644.7 275.7h13.1M644.7 274.5h13.1"/>
+<rect class="bar" fill="#F8766D" x="682.1" y="155.5" width="65.5" height="221.2"/>
+<path class="line" fill="none" d="M714.9 156.2V154.7M701.8 156.2h26.2M701.8 154.7h26.2"/>
+<rect class="bar" fill="#7CAE00" x="747.7" y="54.3" width="65.5" height="322.4"/>
+<path class="line" fill="none" d="M780.4 58.2V50.3M767.3 58.2h26.2M767.3 50.3h26.2"/>
+<line class="line" x1="78" y1="376.7" x2="835" y2="376.7"/>
+<text class="legendTitle" x="851" y="182.5">Serializer settings</text>
+<rect class="bar" fill="#F8766D" x="851" y="190.5" width="17" height="17"/>
+<text class="legend" x="873" y="203.5">references</text>
+<rect class="bar" fill="#7CAE00" x="851" y="207.5" width="17" height="17"/>
+<text class="legend" x="873" y="220.5">no references</text>
+<rect class="bar" fill="#00BFC4" x="851" y="224.5" width="17" height="17"/>
+<text class="legend" x="873" y="237.5">references, chunked</text>
+<rect class="bar" fill="#C77CFF" x="851" y="241.5" width="17" height="17"/>
+<text class="legend" x="873" y="254.5">no references, chunked</text>
+<rect class="plot" x="78" y="479" width="757" height="359"/>
+<line class="minor" x1="78" y1="780.7" x2="835" y2="780.7"/>
+<line class="grid" x1="78" y1="739.6" x2="835" y2="739.6"/>
+<line class="minor" x1="78" y1="698.6" x2="835" y2="698.6"/>
+<line class="grid" x1="78" y1="657.6" x2="835" y2="657.6"/>
+<line class="minor" x1="78" y1="616.6" x2="835" y2="616.6"/>
+<line class="grid" x1="78" y1="575.6" x2="835" y2="575.6"/>
+<line class="minor" x1="78" y1="534.6" x2="835" y2="534.6"/>
+<line class="grid" x1="78" y1="493.5" x2="835" y2="493.5"/>
+<line class="tick" x1="74" y1="821.7" x2="78" y2="821.7"/>
+<text x="71" y="826.2" text-anchor="end">0</text>
+<line class="tick" x1="74" y1="739.6" x2="78" y2="739.6"/>
+<text x="71" y="744.1" text-anchor="end">500K</text>
+<line class="tick" x1="74" y1="657.6" x2="78" y2="657.6"/>
+<text x="71" y="662.1" text-anchor="end">1M</text>
+<line class="tick" x1="74" y1="575.6" x2="78" y2="575.6"/>
+<text x="71" y="580.1" text-anchor="end">1.5M</text>
+<line class="tick" x1="74" y1="493.5" x2="78" y2="493.5"/>
+<text x="71" y="498.0" text-anchor="end">2M</text>
+<text class="axisTitle" transform="translate(22 658.5) rotate(-90)" text-anchor="middle">Round trips per second (higher is better)</text>
+<line class="grid" x1="165.3" y1="479" x2="165.3" y2="838"/>
+<line class="tick" x1="165.3" y1="838" x2="165.3" y2="842"/>
+<text x="165.3" y="857" text-anchor="middle">field</text>
+<line class="grid" x1="310.9" y1="479" x2="310.9" y2="838"/>
+<line class="tick" x1="310.9" y1="838" x2="310.9" y2="842"/>
+<text x="310.9" y="857" text-anchor="middle">version</text>
+<line class="grid" x1="456.5" y1="479" x2="456.5" y2="838"/>
+<line class="tick" x1="456.5" y1="838" x2="456.5" y2="842"/>
+<text x="456.5" y="857" text-anchor="middle">compatible</text>
+<line class="grid" x1="602.1" y1="479" x2="602.1" y2="838"/>
+<line class="tick" x1="602.1" y1="838" x2="602.1" y2="842"/>
+<text x="602.1" y="857" text-anchor="middle">tagged</text>
+<line class="grid" x1="747.7" y1="479" x2="747.7" y2="838"/>
+<line class="tick" x1="747.7" y1="838" x2="747.7" y2="842"/>
+<text x="747.7" y="857" text-anchor="middle">custom</text>
+<text class="axisTitle" x="456.5" y="882" text-anchor="middle">Media</text>
+<rect class="bar" fill="#F8766D" x="99.8" y="692.8" width="65.5" height="128.9"/>
+<path class="line" fill="none" d="M132.6 694.5V691.2M119.5 694.5h26.2M119.5 691.2h26.2"/>
+<rect class="bar" fill="#7CAE00" x="165.3" y="672.6" width="65.5" height="149.1"/>
+<path class="line" fill="none" d="M198.1 672.8V672.4M185.0 672.8h26.2M185.0 672.4h26.2"/>
+<rect class="bar" fill="#F8766D" x="245.4" y="696.0" width="65.5" height="125.7"/>
+<path class="line" fill="none" d="M278.2 697.4V694.7M265.1 697.4h26.2M265.1 694.7h26.2"/>
+<rect class="bar" fill="#7CAE00" x="310.9" y="672.4" width="65.5" height="149.3"/>
+<path class="line" fill="none" d="M343.7 674.0V670.8M330.6 674.0h26.2M330.6 670.8h26.2"/>
+<rect class="bar" fill="#F8766D" x="391.0" y="731.1" width="32.8" height="90.6"/>
+<path class="line" fill="none" d="M407.4 731.4V730.7M400.8 731.4h13.1M400.8 730.7h13.1"/>
+<rect class="bar" fill="#7CAE00" x="423.7" y="714.5" width="32.8" height="107.2"/>
+<path class="line" fill="none" d="M440.1 718.4V710.5M433.6 718.4h13.1M433.6 710.5h13.1"/>
+<rect class="bar" fill="#00BFC4" x="456.5" y="771.2" width="32.8" height="50.4"/>
+<path class="line" fill="none" d="M472.9 772.1V770.4M466.3 772.1h13.1M466.3 770.4h13.1"/>
+<rect class="bar" fill="#C77CFF" x="489.3" y="759.8" width="32.8" height="61.9"/>
+<path class="line" fill="none" d="M505.6 760.0V759.6M499.1 760.0h13.1M499.1 759.6h13.1"/>
+<rect class="bar" fill="#F8766D" x="536.6" y="707.6" width="32.8" height="114.1"/>
+<path class="line" fill="none" d="M552.9 708.9V706.3M546.4 708.9h13.1M546.4 706.3h13.1"/>
+<rect class="bar" fill="#7CAE00" x="569.3" y="690.5" width="32.8" height="131.2"/>
+<path class="line" fill="none" d="M585.7 690.9V690.1M579.1 690.9h13.1M579.1 690.1h13.1"/>
+<rect class="bar" fill="#00BFC4" x="602.1" y="752.2" width="32.8" height="69.5"/>
+<path class="line" fill="none" d="M618.5 752.5V751.9M611.9 752.5h13.1M611.9 751.9h13.1"/>
+<rect class="bar" fill="#C77CFF" x="634.8" y="731.0" width="32.8" height="90.7"/>
+<path class="line" fill="none" d="M651.2 731.3V730.7M644.7 731.3h13.1M644.7 730.7h13.1"/>
+<rect class="bar" fill="#F8766D" x="682.1" y="610.3" width="65.5" height="211.3"/>
+<path class="line" fill="none" d="M714.9 611.1V609.6M701.8 611.1h26.2M701.8 609.6h26.2"/>
+<rect class="bar" fill="#7CAE00" x="747.7" y="504.4" width="65.5" height="317.3"/>
+<path class="line" fill="none" d="M780.4 513.5V495.3M767.3 513.5h26.2M767.3 495.3h26.2"/>
+<line class="line" x1="78" y1="821.7" x2="835" y2="821.7"/>
+<text class="legendTitle" x="851" y="627.5">Serializer settings</text>
+<rect class="bar" fill="#F8766D" x="851" y="635.5" width="17" height="17"/>
+<text class="legend" x="873" y="648.5">references</text>
+<rect class="bar" fill="#7CAE00" x="851" y="652.5" width="17" height="17"/>
+<text class="legend" x="873" y="665.5">no references</text>
+<rect class="bar" fill="#00BFC4" x="851" y="669.5" width="17" height="17"/>
+<text class="legend" x="873" y="682.5">references, chunked</text>
+<rect class="bar" fill="#C77CFF" x="851" y="686.5" width="17" height="17"/>
+<text class="legend" x="873" y="699.5">no references, chunked</text>
+</svg>

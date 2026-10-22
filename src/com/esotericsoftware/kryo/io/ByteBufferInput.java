@@ -21,13 +21,12 @@ package com.esotericsoftware.kryo.io;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.KryoBufferUnderflowException;
-import com.esotericsoftware.kryo.util.Util;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 
 /** An {@link Input} that uses a ByteBuffer rather than a byte[].
  * <p>
@@ -36,7 +35,6 @@ import java.nio.ByteOrder;
  * @author Roman Levenstein {@literal <romixlev@gmail.com>}
  * @author Nathan Sweet */
 public class ByteBufferInput extends Input {
-	private static final ByteOrder nativeOrder = ByteOrder.nativeOrder();
 
 	protected ByteBuffer byteBuffer;
 	private byte[] tempBuffer;
@@ -58,12 +56,12 @@ public class ByteBufferInput extends Input {
 		this(bytes, 0, bytes.length);
 	}
 
-	/** Creates a new Input for reading from a {@link ByteBuffer} which is filled with the specified bytes.
-	 * @see #setBuffer(byte[], int, int) */
+	/** Creates a new Input for reading from a direct {@link ByteBuffer} which is filled with count bytes of the specified array,
+	 * starting at offset. */
 	public ByteBufferInput (byte[] bytes, int offset, int count) {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
-		ByteBuffer buffer = ByteBuffer.allocateDirect(bytes.length);
-		buffer.put(bytes);
+		ByteBuffer buffer = ByteBuffer.allocateDirect(count);
+		buffer.put(bytes, offset, count);
 		flipBuffer(buffer);
 		setBuffer(buffer);
 	}
@@ -90,6 +88,7 @@ public class ByteBufferInput extends Input {
 	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #getByteBuffer() */
+	@Deprecated
 	public byte[] getBuffer () {
 		throw new UnsupportedOperationException("This input does not used a byte[], see #getByteBuffer().");
 	}
@@ -97,6 +96,7 @@ public class ByteBufferInput extends Input {
 	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #setBuffer(ByteBuffer) */
+	@Deprecated
 	public void setBuffer (byte[] bytes) {
 		throw new UnsupportedOperationException("This input does not used a byte[], see #setByteBuffer(ByteBuffer).");
 	}
@@ -104,6 +104,7 @@ public class ByteBufferInput extends Input {
 	/** Throws {@link UnsupportedOperationException} because this input uses a ByteBuffer, not a byte[].
 	 * @deprecated
 	 * @see #setBuffer(ByteBuffer) */
+	@Deprecated
 	public void setBuffer (byte[] bytes, int offset, int count) {
 		throw new UnsupportedOperationException("This input does not used a byte[], see #setByteBufferByteBuffer().");
 	}
@@ -123,12 +124,6 @@ public class ByteBufferInput extends Input {
 
 	public ByteBuffer getByteBuffer () {
 		return byteBuffer;
-	}
-
-	public void setInputStream (InputStream inputStream) {
-		this.inputStream = inputStream;
-		limit = 0;
-		reset();
 	}
 
 	public void reset () {
@@ -261,10 +256,6 @@ public class ByteBufferInput extends Input {
 		return byteBuffer.get() & 0xFF;
 	}
 
-	public int read (byte[] bytes) throws KryoException {
-		return read(bytes, 0, bytes.length);
-	}
-
 	public int read (byte[] bytes, int offset, int count) throws KryoException {
 		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
 		int startingCount = count;
@@ -301,25 +292,6 @@ public class ByteBufferInput extends Input {
 		setBufferPosition(byteBuffer, position);
 	}
 
-	public long skip (long count) throws KryoException {
-		long remaining = count;
-		while (remaining > 0) {
-			int skip = (int)Math.min(Util.maxArraySize, remaining);
-			skip(skip);
-			remaining -= skip;
-		}
-		return count;
-	}
-
-	public void close () throws KryoException {
-		if (inputStream != null) {
-			try {
-				inputStream.close();
-			} catch (IOException ignored) {
-			}
-		}
-	}
-
 	private int getBufferPosition (Buffer buffer) {
 		return buffer.position();
 	}
@@ -348,12 +320,6 @@ public class ByteBufferInput extends Input {
 		if (position == limit) require(1);
 		position++;
 		return byteBuffer.get() & 0xFF;
-	}
-
-	public byte[] readBytes (int length) throws KryoException {
-		byte[] bytes = new byte[validateArrayLength(length)];
-		readBytes(bytes, 0, length);
-		return bytes;
 	}
 
 	public void readBytes (byte[] bytes, int offset, int count) throws KryoException {
@@ -665,7 +631,7 @@ public class ByteBufferInput extends Input {
 
 	public boolean canReadVarLong () throws KryoException {
 		if (limit - position >= 9) return true;
-		if (optional(5) <= 0) return false;
+		if (optional(9) <= 0) return false;
 		int p = position, limit = this.limit;
 		ByteBuffer byteBuffer = this.byteBuffer;
 		if ((byteBuffer.get(p++) & 0x80) == 0) return true;
@@ -760,6 +726,21 @@ public class ByteBufferInput extends Input {
 			return "";
 		}
 		charCount--;
+		// If the chars are in the buffer and all ASCII, the string is the bytes.
+		if (limit - position >= charCount) {
+			ByteBuffer byteBuffer = this.byteBuffer;
+			int p = position, n = p + charCount;
+			for (int nn = n - 7; p < nn; p += 8)
+				if ((byteBuffer.getLong(p) & 0x8080808080808080L) != 0) break;
+			while (p < n && byteBuffer.get(p) >= 0)
+				p++;
+			if (p == n) {
+				byte[] bytes = new byte[charCount];
+				byteBuffer.get(bytes);
+				position = n;
+				return new String(bytes, StandardCharsets.ISO_8859_1);
+			}
+		}
 		readUtf8Chars(charCount);
 		return new String(chars, 0, charCount);
 	}

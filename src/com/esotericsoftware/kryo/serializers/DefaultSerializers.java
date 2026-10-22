@@ -24,23 +24,36 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import static java.lang.Long.numberOfLeadingZeros;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoSerializable;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Generics;
+import com.esotericsoftware.kryo.util.Generics.GenericType;
+import com.esotericsoftware.kryo.util.IgnoreAndroid;
+import com.esotericsoftware.kryo.util.Null;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -62,13 +75,19 @@ import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentHashMap.KeySetView;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
 /** Contains many serializer classes that are provided by {@link Kryo#addDefaultSerializer(Class, Class) default}.
@@ -227,11 +246,9 @@ public class DefaultSerializers {
 		private static BigInteger newBigIntegerSubclass (Class<? extends BigInteger> type, byte[] bytes) {
 			try {
 				Constructor<? extends BigInteger> constructor = type.getConstructor(byte[].class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
+				try {
+					constructor.setAccessible(true);
+				} catch (SecurityException ignored) {
 				}
 				return constructor.newInstance(bytes);
 			} catch (Exception ex) {
@@ -333,11 +350,9 @@ public class DefaultSerializers {
 		private static BigDecimal newBigDecimalSubclass (Class<? extends BigDecimal> type, BigInteger unscaledValue, int scale) {
 			try {
 				Constructor<? extends BigDecimal> constructor = type.getConstructor(BigInteger.class, int.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
+				try {
+					constructor.setAccessible(true);
+				} catch (SecurityException ignored) {
 				}
 				return constructor.newInstance(unscaledValue, scale);
 			} catch (Exception ex) {
@@ -346,6 +361,9 @@ public class DefaultSerializers {
 		}
 	}
 
+	/** Serializer for {@link Class}. A class that Kryo serializes as another class is read as that class, see
+	 * {@link Kryo#getRegistration(Class)}: the class of an enum constant with a body is read as its enum, and the unregistered
+	 * implementation classes of enum sets, charsets and time zones as {@link EnumSet}, {@link Charset} and {@link TimeZone}. */
 	public static class ClassSerializer extends ImmutableSerializer<Class> {
 		{
 			setAcceptsNull(true);
@@ -382,11 +400,9 @@ public class DefaultSerializers {
 				// (which is expected to initialize the instance with the current time)
 				if (type != constructorType) {
 					constructor = type.getConstructor(long.class);
-					if (!constructor.isAccessible()) {
-						try {
-							constructor.setAccessible(true);
-						} catch (SecurityException ignored) {
-						}
+					try {
+						constructor.setAccessible(true);
+					} catch (SecurityException ignored) {
 					}
 					constructorType = type;
 				}
@@ -412,6 +428,34 @@ public class DefaultSerializers {
 		}
 	}
 
+	/** Serializer for {@link java.sql.Date}, which creates it without reflection, so it needs no metadata in a GraalVM native
+	 * image. Subclasses are created like by {@link DateSerializer}. */
+	public static class SqlDateSerializer extends DateSerializer {
+		public Date read (Kryo kryo, Input input, Class<? extends Date> type) {
+			if (type == java.sql.Date.class) return new java.sql.Date(input.readVarLong(true));
+			return super.read(kryo, input, type);
+		}
+
+		public Date copy (Kryo kryo, Date original) {
+			if (original.getClass() == java.sql.Date.class) return new java.sql.Date(original.getTime());
+			return super.copy(kryo, original);
+		}
+	}
+
+	/** Serializer for {@link java.sql.Time}, which creates it without reflection, so it needs no metadata in a GraalVM native
+	 * image. Subclasses are created like by {@link DateSerializer}. */
+	public static class SqlTimeSerializer extends DateSerializer {
+		public Date read (Kryo kryo, Input input, Class<? extends Date> type) {
+			if (type == java.sql.Time.class) return new java.sql.Time(input.readVarLong(true));
+			return super.read(kryo, input, type);
+		}
+
+		public Date copy (Kryo kryo, Date original) {
+			if (original.getClass() == java.sql.Time.class) return new java.sql.Time(original.getTime());
+			return super.copy(kryo, original);
+		}
+	}
+
 	/** Serializer for {@link Timestamp} which preserves the nanoseconds field. */
 	public static class TimestampSerializer extends Serializer<Timestamp> {
 		public void write (Kryo kryo, Output output, Timestamp object) {
@@ -420,21 +464,38 @@ public class DefaultSerializers {
 		}
 
 		public Timestamp read (Kryo kryo, Input input, Class<? extends Timestamp> type) {
-			return create(input.readVarLong(true), input.readVarInt(true));
+			return create(kryo, type, input.readVarLong(true), input.readVarInt(true));
 		}
 
 		public Timestamp copy (Kryo kryo, Timestamp original) {
-			return create(integralTimeComponent(original), original.getNanos());
+			return create(kryo, original.getClass(), integralTimeComponent(original), original.getNanos());
 		}
 
 		private long integralTimeComponent (Timestamp object) {
 			return object.getTime() - (object.getNanos() / 1_000_000);
 		}
 
-		private Timestamp create (long time, int nanos) {
-			Timestamp t = new Timestamp(time);
+		private Timestamp create (Kryo kryo, Class<? extends Timestamp> type, long time, int nanos) {
+			Timestamp t = newTimestamp(kryo, type, time);
 			t.setNanos(nanos);
 			return t;
+		}
+
+		private Timestamp newTimestamp (Kryo kryo, Class<? extends Timestamp> type, long time) {
+			if (type == Timestamp.class || type == null) return new Timestamp(time);
+			// Use reflection for subclasses.
+			try {
+				Constructor<? extends Timestamp> constructor = type.getConstructor(long.class);
+				try {
+					constructor.setAccessible(true);
+				} catch (SecurityException ignored) {
+				}
+				return constructor.newInstance(time);
+			} catch (Exception ex) {
+				Timestamp t = kryo.newInstance(type);
+				t.setTime(time);
+				return t;
+			}
 		}
 	}
 
@@ -482,8 +543,9 @@ public class DefaultSerializers {
 			Serializer serializer;
 			if (object.isEmpty()) {
 				EnumSet tmp = EnumSet.complementOf(object);
-				if (tmp.isEmpty()) throw new KryoException("An EnumSet must have a defined Enum to be serialized.");
-				serializer = kryo.writeClass(output, tmp.iterator().next().getClass()).getSerializer();
+				// For an enum without constants, the element type is only in the serialized form of the set.
+				Class elementType = tmp.isEmpty() ? EnumMapSerializer.enumType(object) : tmp.iterator().next().getClass();
+				serializer = kryo.writeClass(output, elementType).getSerializer();
 			} else {
 				serializer = kryo.writeClass(output, object.iterator().next().getClass()).getSerializer();
 			}
@@ -494,18 +556,15 @@ public class DefaultSerializers {
 
 		public EnumSet read (Kryo kryo, Input input, Class<? extends EnumSet> type) {
 			Registration registration = kryo.readClass(input);
-			if (registration == null) throw new KryoException("Invalid EnumSet element type: null");
+			if (registration == null || !registration.getType().isEnum())
+				throw new KryoException(
+					"Invalid EnumSet element type: " + (registration == null ? null : registration.getType().getName()));
 			Class enumType = registration.getType();
-			EnumSet object;
-			try {
-				object = EnumSet.noneOf(enumType);
-			} catch (ClassCastException ex) {
-				throw new KryoException("Invalid EnumSet element type: " + enumType.getName(), ex);
-			}
+			EnumSet object = EnumSet.noneOf(enumType);
 			Serializer serializer = registration.getSerializer();
-			int length = input.readVarInt(true);
+			int length = input.validateArrayLength(input.readVarInt(true), 0); // A custom enum serializer may read 0 bytes.
 			for (int i = 0; i < length; i++) {
-				Object element = serializer.read(kryo, input, null);
+				Object element = serializer.read(kryo, input, enumType);
 				if (element == null) throw new KryoException("Invalid EnumSet element for enum \"" + enumType.getName() + "\": null");
 				object.add(element);
 			}
@@ -676,11 +735,28 @@ public class DefaultSerializers {
 		}
 	}
 
-	/** Serializer for {@link TimeZone}. Assumes the timezones are immutable.
+	/** Serializer for {@link TimeZone}, which writes the ID and reads the time zone with {@link TimeZone#getTimeZone(String)}.
+	 * Assumes the timezones are immutable. Writing a time zone with an ID that {@code getTimeZone} doesn't know, eg a
+	 * {@link java.util.SimpleTimeZone} with a custom ID, throws an exception, because it would be read as GMT. With the Kryo 5
+	 * format, it is written like Kryo 5 did.
 	 * @author Tumi {@literal <serverperformance@gmail.com>} */
 	public static class TimeZoneSerializer extends ImmutableSerializer<TimeZone> {
+		/** The IDs {@link TimeZone#getTimeZone(String)} knows, so each is looked up once. Static, because the serializer is
+		 * stateless and may be shared by Kryo instances. Unknown IDs are not added. */
+		private static final Set<String> knownIds = ConcurrentHashMap.newKeySet();
+
 		public void write (Kryo kryo, Output output, TimeZone object) {
-			output.writeString(object.getID());
+			String id = object.getID(); // Of any time zone, also of one returned by getTimeZone, whose ID can be set.
+			if (!knownIds.contains(id) && kryo.getFormat() != Format.KRYO5) {
+				// getTimeZone returns GMT for an unknown ID.
+				if (!id.equals("GMT") && TimeZone.getTimeZone(id).getID().equals("GMT")) {
+					throw new KryoException("Unable to write the time zone " + className(object.getClass()) + " with the ID \"" + id
+						+ "\": TimeZone.getTimeZone doesn't know the ID and would read it as GMT. Use a known ID or a custom ID like "
+						+ "GMT+01:00, or register a serializer for the time zone.");
+				}
+				knownIds.add(id);
+			}
+			output.writeString(id);
 		}
 
 		public TimeZone read (Kryo kryo, Input input, Class<? extends TimeZone> type) {
@@ -709,7 +785,7 @@ public class DefaultSerializers {
 		}
 
 		public Calendar read (Kryo kryo, Input input, Class<? extends Calendar> type) {
-			Calendar result = Calendar.getInstance(timeZoneSerializer.read(kryo, input, TimeZone.class));
+			Calendar result = create(type, timeZoneSerializer.read(kryo, input, TimeZone.class));
 			result.setTimeInMillis(input.readVarLong(true));
 			result.setLenient(input.readBoolean());
 			result.setFirstDayOfWeek(input.readInt(true));
@@ -718,6 +794,19 @@ public class DefaultSerializers {
 			if (gregorianChange != DEFAULT_GREGORIAN_CUTOVER)
 				if (result instanceof GregorianCalendar) ((GregorianCalendar)result).setGregorianChange(new Date(gregorianChange));
 			return result;
+		}
+
+		/** Creates a calendar of the class that was written. {@link Calendar#getInstance(TimeZone)} returns the calendar of the
+		 * default locale, eg a BuddhistCalendar for th_TH. */
+		private Calendar create (Class<? extends Calendar> type, TimeZone timeZone) {
+			if (type == GregorianCalendar.class) return new GregorianCalendar(timeZone);
+			String calendarType = switch (type.getName()) {
+			case "sun.util.BuddhistCalendar" -> "buddhist";
+			case "java.util.JapaneseImperialCalendar" -> "japanese";
+			default -> null;
+			};
+			if (calendarType == null) return Calendar.getInstance(timeZone);
+			return new Calendar.Builder().setCalendarType(calendarType).setTimeZone(timeZone).build();
 		}
 
 		public Calendar copy (Kryo kryo, Calendar original) {
@@ -733,28 +822,16 @@ public class DefaultSerializers {
 		}
 
 		protected TreeMap create (Kryo kryo, Input input, Class<? extends TreeMap> type, int size) {
-			return createTreeMap(type, (Comparator)kryo.readClassAndObject(input));
+			return createTreeMap(kryo, type, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected TreeMap createCopy (Kryo kryo, TreeMap original) {
-			return createTreeMap(original.getClass(), original.comparator());
+			return createTreeMap(kryo, original.getClass(), original.comparator());
 		}
 
-		private TreeMap createTreeMap (Class<? extends TreeMap> type, Comparator comparator) {
+		private TreeMap createTreeMap (Kryo kryo, Class<? extends TreeMap> type, Comparator comparator) {
 			if (type == TreeMap.class || type == null) return new TreeMap(comparator);
-			// Use reflection for subclasses.
-			try {
-				Constructor constructor = type.getConstructor(Comparator.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
-				}
-				return (TreeMap)constructor.newInstance(comparator);
-			} catch (Exception ex) {
-				throw new KryoException(ex);
-			}
+			return newInstance(kryo, type, new Class[] {Comparator.class}, comparator); // Subclass.
 		}
 	}
 
@@ -769,36 +846,21 @@ public class DefaultSerializers {
 		@Override
 		protected ConcurrentSkipListMap create (Kryo kryo, Input input, Class<? extends ConcurrentSkipListMap> type,
 			int size) {
-			return createConcurrentSkipListMap(type, (Comparator)kryo.readClassAndObject(input));
+			return createMap(kryo, type, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		@Override
 		protected ConcurrentSkipListMap createCopy (Kryo kryo, ConcurrentSkipListMap original) {
-			return createConcurrentSkipListMap(original.getClass(), original.comparator());
+			return createMap(kryo, original.getClass(), original.comparator());
 		}
 
-		private ConcurrentSkipListMap createConcurrentSkipListMap (Class<? extends ConcurrentSkipListMap> type,
-			Comparator comparator) {
-			if (type == ConcurrentSkipListMap.class || type == null) {
-				return new ConcurrentSkipListMap(comparator);
-			}
-			// Use reflection for subclasses.
-			try {
-				Constructor constructor = type.getConstructor(Comparator.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
-				}
-				return (ConcurrentSkipListMap)constructor.newInstance(comparator);
-			} catch (Exception ex) {
-				throw new KryoException(ex);
-			}
+		private ConcurrentSkipListMap createMap (Kryo kryo, Class<? extends ConcurrentSkipListMap> type, Comparator comparator) {
+			if (type == ConcurrentSkipListMap.class || type == null) return new ConcurrentSkipListMap(comparator);
+			return newInstance(kryo, type, new Class[] {Comparator.class}, comparator); // Subclass.
 		}
 	}
 
-	/** Serializer for {@link TreeMap} and any subclass.
+	/** Serializer for {@link TreeSet} and any subclass.
 	 * @author Tumi {@literal <serverperformance@gmail.com>} (enhacements) */
 	public static class TreeSetSerializer extends CollectionSerializer<TreeSet> {
 		protected void writeHeader (Kryo kryo, Output output, TreeSet treeSet) {
@@ -806,28 +868,16 @@ public class DefaultSerializers {
 		}
 
 		protected TreeSet create (Kryo kryo, Input input, Class<? extends TreeSet> type, int size) {
-			return createTreeSet(type, (Comparator)kryo.readClassAndObject(input));
+			return createTreeSet(kryo, type, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected TreeSet createCopy (Kryo kryo, TreeSet original) {
-			return createTreeSet(original.getClass(), original.comparator());
+			return createTreeSet(kryo, original.getClass(), original.comparator());
 		}
 
-		private TreeSet createTreeSet (Class<? extends Collection> type, Comparator comparator) {
+		private TreeSet createTreeSet (Kryo kryo, Class<? extends TreeSet> type, Comparator comparator) {
 			if (type == TreeSet.class || type == null) return new TreeSet(comparator);
-			// Use reflection for subclasses.
-			try {
-				Constructor constructor = type.getConstructor(Comparator.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
-				}
-				return (TreeSet)constructor.newInstance(comparator);
-			} catch (Exception ex) {
-				throw new KryoException(ex);
-			}
+			return newInstance(kryo, type, new Class[] {Comparator.class}, comparator); // Subclass.
 		}
 	}
 
@@ -839,29 +889,308 @@ public class DefaultSerializers {
 		}
 
 		protected PriorityQueue create (Kryo kryo, Input input, Class<? extends PriorityQueue> type, int size) {
-			return createPriorityQueue(type, size, (Comparator)kryo.readClassAndObject(input));
+			return createPriorityQueue(kryo, type, size, (Comparator)kryo.readClassAndObject(input));
 		}
 
 		protected PriorityQueue createCopy (Kryo kryo, PriorityQueue original) {
-			return createPriorityQueue(original.getClass(), original.size(), original.comparator());
+			return createPriorityQueue(kryo, original.getClass(), original.size(), original.comparator());
 		}
 
-		private PriorityQueue createPriorityQueue (Class<? extends Collection> type, int size, Comparator comparator) {
-			final int initialCapacity = Math.max(size, 1);
+		private PriorityQueue createPriorityQueue (Kryo kryo, Class<? extends PriorityQueue> type, int size,
+			Comparator comparator) {
+			int initialCapacity = Math.max(size, 1);
 			if (type == PriorityQueue.class || type == null) return new PriorityQueue(initialCapacity, comparator);
-			// Use reflection for subclasses.
-			try {
-				Constructor constructor = type.getConstructor(int.class, Comparator.class);
-				if (!constructor.isAccessible()) {
-					try {
-						constructor.setAccessible(true);
-					} catch (SecurityException ignored) {
-					}
-				}
-				return (PriorityQueue)constructor.newInstance(initialCapacity, comparator);
-			} catch (Exception ex) {
-				throw new KryoException(ex);
+			return newInstance(kryo, type, new Class[] {int.class, Comparator.class}, initialCapacity, comparator); // Subclass.
+		}
+	}
+
+	/** Serializer for {@link ConcurrentSkipListSet} and any subclass, which writes its comparator like
+	 * {@link TreeSetSerializer}. */
+	public static class ConcurrentSkipListSetSerializer extends CollectionSerializer<ConcurrentSkipListSet> {
+		protected void writeHeader (Kryo kryo, Output output, ConcurrentSkipListSet set) {
+			kryo.writeClassAndObject(output, set.comparator());
+		}
+
+		protected ConcurrentSkipListSet create (Kryo kryo, Input input, Class<? extends ConcurrentSkipListSet> type, int size) {
+			return createSet(kryo, type, (Comparator)kryo.readClassAndObject(input));
+		}
+
+		protected ConcurrentSkipListSet createCopy (Kryo kryo, ConcurrentSkipListSet original) {
+			return createSet(kryo, original.getClass(), original.comparator());
+		}
+
+		private ConcurrentSkipListSet createSet (Kryo kryo, Class<? extends ConcurrentSkipListSet> type, Comparator comparator) {
+			if (type == ConcurrentSkipListSet.class || type == null) return new ConcurrentSkipListSet(comparator);
+			return newInstance(kryo, type, new Class[] {Comparator.class}, comparator); // Subclass.
+		}
+	}
+
+	/** Serializer for {@link PriorityBlockingQueue} and any subclass, which writes its comparator like
+	 * {@link PriorityQueueSerializer}. */
+	public static class PriorityBlockingQueueSerializer extends CollectionSerializer<PriorityBlockingQueue> {
+		protected void writeHeader (Kryo kryo, Output output, PriorityBlockingQueue queue) {
+			kryo.writeClassAndObject(output, queue.comparator());
+		}
+
+		protected PriorityBlockingQueue create (Kryo kryo, Input input, Class<? extends PriorityBlockingQueue> type, int size) {
+			return createQueue(kryo, type, size, (Comparator)kryo.readClassAndObject(input));
+		}
+
+		protected PriorityBlockingQueue createCopy (Kryo kryo, PriorityBlockingQueue original) {
+			return createQueue(kryo, original.getClass(), original.size(), original.comparator());
+		}
+
+		private PriorityBlockingQueue createQueue (Kryo kryo, Class<? extends PriorityBlockingQueue> type, int size,
+			Comparator comparator) {
+			int initialCapacity = Math.max(size, 1);
+			if (type == PriorityBlockingQueue.class || type == null) return new PriorityBlockingQueue(initialCapacity, comparator);
+			return newInstance(kryo, type, new Class[] {int.class, Comparator.class}, initialCapacity, comparator); // Subclass.
+		}
+	}
+
+	/** Serializer for {@link ArrayBlockingQueue} and any subclass, which writes the capacity. The fairness is not written, because
+	 * it can't be read with public API, so the queue is read as not fair. */
+	public static class ArrayBlockingQueueSerializer extends CollectionSerializer<ArrayBlockingQueue> {
+		protected void writeHeader (Kryo kryo, Output output, ArrayBlockingQueue queue) {
+			output.writeVarInt(queue.size() + queue.remainingCapacity(), true);
+		}
+
+		protected ArrayBlockingQueue create (Kryo kryo, Input input, Class<? extends ArrayBlockingQueue> type, int size) {
+			return createQueue(kryo, type, readCapacity(input, size, true));
+		}
+
+		protected ArrayBlockingQueue createCopy (Kryo kryo, ArrayBlockingQueue original) {
+			return createQueue(kryo, original.getClass(), original.size() + original.remainingCapacity());
+		}
+
+		private ArrayBlockingQueue createQueue (Kryo kryo, Class<? extends ArrayBlockingQueue> type, int capacity) {
+			if (type == ArrayBlockingQueue.class || type == null) return new ArrayBlockingQueue(capacity);
+			return newInstance(kryo, type, new Class[] {int.class}, capacity); // Subclass.
+		}
+	}
+
+	/** Serializer for {@link LinkedBlockingQueue} and any subclass, which writes the capacity. */
+	public static class LinkedBlockingQueueSerializer extends CollectionSerializer<LinkedBlockingQueue> {
+		protected void writeHeader (Kryo kryo, Output output, LinkedBlockingQueue queue) {
+			output.writeVarInt(queue.size() + queue.remainingCapacity(), true); // Integer.MAX_VALUE if not bounded.
+		}
+
+		protected LinkedBlockingQueue create (Kryo kryo, Input input, Class<? extends LinkedBlockingQueue> type, int size) {
+			return createQueue(kryo, type, readCapacity(input, size, false));
+		}
+
+		protected LinkedBlockingQueue createCopy (Kryo kryo, LinkedBlockingQueue original) {
+			return createQueue(kryo, original.getClass(), original.size() + original.remainingCapacity());
+		}
+
+		private LinkedBlockingQueue createQueue (Kryo kryo, Class<? extends LinkedBlockingQueue> type, int capacity) {
+			if (type == LinkedBlockingQueue.class || type == null) return new LinkedBlockingQueue(capacity);
+			return newInstance(kryo, type, new Class[] {int.class}, capacity); // Subclass.
+		}
+	}
+
+	/** Serializer for {@link LinkedBlockingDeque} and any subclass, which writes the capacity. */
+	public static class LinkedBlockingDequeSerializer extends CollectionSerializer<LinkedBlockingDeque> {
+		protected void writeHeader (Kryo kryo, Output output, LinkedBlockingDeque deque) {
+			output.writeVarInt(deque.size() + deque.remainingCapacity(), true); // Integer.MAX_VALUE if not bounded.
+		}
+
+		protected LinkedBlockingDeque create (Kryo kryo, Input input, Class<? extends LinkedBlockingDeque> type, int size) {
+			return createDeque(kryo, type, readCapacity(input, size, false));
+		}
+
+		protected LinkedBlockingDeque createCopy (Kryo kryo, LinkedBlockingDeque original) {
+			return createDeque(kryo, original.getClass(), original.size() + original.remainingCapacity());
+		}
+
+		private LinkedBlockingDeque createDeque (Kryo kryo, Class<? extends LinkedBlockingDeque> type, int capacity) {
+			if (type == LinkedBlockingDeque.class || type == null) return new LinkedBlockingDeque(capacity);
+			return newInstance(kryo, type, new Class[] {int.class}, capacity); // Subclass.
+		}
+	}
+
+	/** Serializer for {@link ByteBuffer}, which writes the bytes up to the limit, the position, limit and capacity, the byte order
+	 * and whether it is direct or read-only. The mark can't be read with public API and is not written. A buffer that shares its
+	 * content, eg a slice, is read with its own content. */
+	@IgnoreAndroid // The Android API level 26 has no covariant ByteBuffer methods like position(int), but D8 replaces them.
+	public static class ByteBufferSerializer extends Serializer<ByteBuffer> {
+		private static final int DIRECT = 1, READ_ONLY = 2, LITTLE_ENDIAN = 4;
+
+		public void write (Kryo kryo, Output output, ByteBuffer buffer) {
+			output.writeByte((buffer.isDirect() ? DIRECT : 0) | (buffer.isReadOnly() ? READ_ONLY : 0)
+				| (buffer.order() == ByteOrder.LITTLE_ENDIAN ? LITTLE_ENDIAN : 0));
+			int limit = buffer.limit();
+			output.writeVarInt(buffer.capacity(), true);
+			output.writeVarInt(limit, true);
+			output.writeVarInt(buffer.position(), true);
+			if (buffer.hasArray())
+				output.writeBytes(buffer.array(), buffer.arrayOffset(), limit);
+			else {
+				byte[] bytes = new byte[limit];
+				buffer.duplicate().position(0).get(bytes);
+				output.writeBytes(bytes);
 			}
+		}
+
+		public ByteBuffer read (Kryo kryo, Input input, Class<? extends ByteBuffer> type) {
+			int flags = input.readByte(), capacity = input.readVarInt(true), limit = input.readVarInt(true);
+			int position = input.readVarInt(true);
+			if (position < 0 || position > limit || limit > capacity || capacity > input.getMaxArraySize())
+				throw new KryoException(
+					"Invalid ByteBuffer, position: " + position + ", limit: " + limit + ", capacity: " + capacity);
+			ByteBuffer buffer = (flags & DIRECT) != 0 ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
+			if (buffer.hasArray())
+				input.readBytes(buffer.array(), 0, limit);
+			else
+				buffer.put(input.readBytes(limit));
+			buffer.limit(limit).position(position);
+			if ((flags & READ_ONLY) != 0) buffer = buffer.asReadOnlyBuffer();
+			return buffer.order((flags & LITTLE_ENDIAN) != 0 ? ByteOrder.LITTLE_ENDIAN : ByteOrder.BIG_ENDIAN);
+		}
+
+		public ByteBuffer copy (Kryo kryo, ByteBuffer original) {
+			ByteBuffer copy = original.isDirect() ? ByteBuffer.allocateDirect(original.capacity())
+				: ByteBuffer.allocate(original.capacity());
+			copy.put(original.duplicate().clear()).limit(original.limit()).position(original.position());
+			if (original.isReadOnly()) copy = copy.asReadOnlyBuffer();
+			return copy.order(original.order());
+		}
+	}
+
+	/** Reads the capacity of a bounded queue, which must hold its elements.
+	 * @param allocates If true, the queue allocates an array for the capacity. The capacity isn't backed by bytes in the input, so
+	 *           {@link Input#getMaxArraySize()} is the only limit for a corrupt or malicious capacity. */
+	static int readCapacity (Input input, int size, boolean allocates) {
+		int capacity = input.readVarInt(true);
+		if (capacity < Math.max(size, 1)) throw new KryoException("Invalid capacity: " + capacity + ", size: " + size);
+		if (allocates && capacity > input.getMaxArraySize())
+			throw new KryoException("Capacity larger than maxArraySize: " + capacity + " > " + input.getMaxArraySize());
+		return capacity;
+	}
+
+	/** Serializer for {@link Collections#reverseOrder()} and {@link Comparator#reverseOrder()}. It has no fields, so the data is
+	 * the same as with FieldSerializer, which can't create it without a no-arg constructor. */
+	public static class ReverseOrderSerializer extends ImmutableSerializer<Comparator> {
+		public void write (Kryo kryo, Output output, Comparator comparator) {
+		}
+
+		public Comparator read (Kryo kryo, Input input, Class<? extends Comparator> type) {
+			return Collections.reverseOrder();
+		}
+	}
+
+	/** Serializer for {@link Collections#reverseOrder(Comparator)}. It writes the reversed comparator like FieldSerializer writes
+	 * its field, which is private in java.util. */
+	public static class ReverseOrderComparatorSerializer extends ImmutableSerializer<Comparator> {
+		public void write (Kryo kryo, Output output, Comparator comparator) {
+			kryo.writeClassAndObject(output, comparator.reversed());
+		}
+
+		public Comparator read (Kryo kryo, Input input, Class<? extends Comparator> type) {
+			return Collections.reverseOrder((Comparator)kryo.readClassAndObject(input));
+		}
+	}
+
+	/** Serializer for {@link String#CASE_INSENSITIVE_ORDER}. It has no fields, so the data is the same as with FieldSerializer,
+	 * which can't create it without a no-arg constructor. */
+	public static class CaseInsensitiveOrderSerializer extends ImmutableSerializer<Comparator> {
+		public void write (Kryo kryo, Output output, Comparator comparator) {
+		}
+
+		public Comparator read (Kryo kryo, Input input, Class<? extends Comparator> type) {
+			return String.CASE_INSENSITIVE_ORDER;
+		}
+	}
+
+	/** Creates an instance of a subclass with the public constructor for the parameter types, or with
+	 * {@link Kryo#newInstance(Class)} if it has none, eg a subclass that passes a fixed comparator or capacity to the super
+	 * constructor. Like CollectionSerializer, this creates a broken object if the instantiator strategy doesn't call a
+	 * constructor, eg StdInstantiatorStrategy for a class without a no-arg constructor. */
+	static <T> T newInstance (Kryo kryo, Class<? extends T> type, Class[] parameterTypes, Object... arguments) {
+		Constructor<? extends T> constructor;
+		try {
+			constructor = type.getConstructor(parameterTypes);
+		} catch (NoSuchMethodException ex) {
+			return kryo.newInstance(type);
+		}
+		try {
+			try {
+				constructor.setAccessible(true); // A public constructor of a class that isn't public.
+			} catch (RuntimeException ignored) {
+			}
+			return constructor.newInstance(arguments);
+		} catch (Exception ex) {
+			throw new KryoException("Unable to create " + className(type) + " with a constructor for " + classNames(parameterTypes)
+				+ ".", ex);
+		}
+	}
+
+	/** Serializer for {@link File}, which writes its path. */
+	public static class FileSerializer extends ImmutableSerializer<File> {
+		public void write (Kryo kryo, Output output, File file) {
+			output.writeString(file.getPath());
+		}
+
+		public File read (Kryo kryo, Input input, Class<? extends File> type) {
+			return new File(input.readString());
+		}
+	}
+
+	/** Serializer for {@link InetAddress}, {@link java.net.Inet4Address} and {@link Inet6Address}, which writes the host name, if
+	 * known, and the IP address. Reading doesn't look up the host name or the address. */
+	public static class InetAddressSerializer extends ImmutableSerializer<InetAddress> {
+		public void write (Kryo kryo, Output output, InetAddress address) {
+			write(output, address);
+		}
+
+		public InetAddress read (Kryo kryo, Input input, Class<? extends InetAddress> type) {
+			return read(input);
+		}
+
+		static void write (Output output, InetAddress address) {
+			// toString is "host name/IP address", with an empty host name if it is not known. getHostName would look it up.
+			String string = address.toString();
+			int slash = string.indexOf('/');
+			output.writeString(slash > 0 ? string.substring(0, slash) : null);
+			byte[] bytes = address.getAddress();
+			output.writeByte(bytes.length);
+			output.writeBytes(bytes);
+			if (address instanceof Inet6Address inet6) {
+				// -1 if no scope is set, getScopeId returns 0 then.
+				output.writeVarInt(string.indexOf('%', slash) == -1 ? -1 : inet6.getScopeId(), false);
+			}
+		}
+
+		static InetAddress read (Input input) {
+			String host = input.readString();
+			byte[] bytes = input.readBytes(input.readByte());
+			try {
+				// Inet6Address keeps the class for IPv4-mapped addresses, which InetAddress.getByAddress returns as Inet4Address.
+				if (bytes.length == 16) return Inet6Address.getByAddress(host, bytes, input.readVarInt(false));
+				return InetAddress.getByAddress(host, bytes);
+			} catch (UnknownHostException ex) { // Invalid address length.
+				throw new KryoException("Invalid IP address length: " + bytes.length, ex);
+			}
+		}
+	}
+
+	/** Serializer for {@link InetSocketAddress}, which writes the address or, if it is unresolved, the host name, and the port.
+	 * Reading doesn't resolve an unresolved address. */
+	public static class InetSocketAddressSerializer extends ImmutableSerializer<InetSocketAddress> {
+		public void write (Kryo kryo, Output output, InetSocketAddress address) {
+			output.writeVarInt(address.getPort(), true);
+			boolean unresolved = address.isUnresolved();
+			output.writeBoolean(unresolved);
+			if (unresolved)
+				output.writeString(address.getHostString());
+			else
+				InetAddressSerializer.write(output, address.getAddress());
+		}
+
+		public InetSocketAddress read (Kryo kryo, Input input, Class<? extends InetSocketAddress> type) {
+			int port = input.readVarInt(true);
+			if (input.readBoolean()) return InetSocketAddress.createUnresolved(input.readString(), port);
+			return new InetSocketAddress(InetAddressSerializer.read(input), port);
 		}
 	}
 
@@ -882,7 +1211,8 @@ public class DefaultSerializers {
 		}
 
 		private ConcurrentHashMap.KeySetView createKeySetView (ConcurrentHashMap map, Object mappedValue) {
-			return map.keySet(mappedValue);
+			// Map#keySet(), because ConcurrentHashMap#keySet() returns a Set on Android.
+			return mappedValue == null ? (ConcurrentHashMap.KeySetView)((Map)map).keySet() : map.keySet(mappedValue);
 		}
 	}
 
@@ -934,6 +1264,12 @@ public class DefaultSerializers {
 		}
 
 		public void write (Kryo kryo, Output output, Locale l) {
+			if (needsLanguageTag(l) && kryo.getFormat() != Format.KRYO5) {
+				// A null language, which Kryo 5 never wrote, marks a language tag. It also contains the script and extensions.
+				output.writeAscii(null);
+				output.writeAscii(l.toLanguageTag());
+				return;
+			}
 			output.writeAscii(l.getLanguage());
 			output.writeAscii(l.getCountry());
 			output.writeString(l.getVariant());
@@ -941,9 +1277,17 @@ public class DefaultSerializers {
 
 		public Locale read (Kryo kryo, Input input, Class<? extends Locale> type) {
 			String language = input.readString();
+			if (language == null) return Locale.forLanguageTag(input.readString());
 			String country = input.readString();
 			String variant = input.readString();
 			return create(language, country, variant);
+		}
+
+		/** Returns true if the language, country and variant don't make the locale, because it has a script or extensions.
+		 * {@code ja_JP_JP} and {@code th_TH_TH} get their extensions from the variant. */
+		private static boolean needsLanguageTag (Locale l) {
+			if (!l.getScript().isEmpty()) return true;
+			return l.hasExtensions() && !l.equals(new Locale(l.getLanguage(), l.getCountry(), l.getVariant()));
 		}
 
 		protected static boolean isSameLocale (Locale locale, String language, String country, String variant) {
@@ -1068,11 +1412,20 @@ public class DefaultSerializers {
 		}
 
 		public AtomicBoolean read (Kryo kryo, Input input, Class<? extends AtomicBoolean> type) {
-			return new AtomicBoolean(input.readBoolean());
+			AtomicBoolean object = create(kryo, type);
+			object.set(input.readBoolean());
+			return object;
 		}
 
 		public AtomicBoolean copy (Kryo kryo, AtomicBoolean original) {
-			return new AtomicBoolean(original.get());
+			AtomicBoolean copy = create(kryo, original.getClass());
+			copy.set(original.get());
+			return copy;
+		}
+
+		private AtomicBoolean create (Kryo kryo, Class<? extends AtomicBoolean> type) {
+			if (type == AtomicBoolean.class || type == null) return new AtomicBoolean();
+			return kryo.newInstance(type);
 		}
 	}
 
@@ -1083,11 +1436,20 @@ public class DefaultSerializers {
 		}
 
 		public AtomicInteger read (Kryo kryo, Input input, Class<? extends AtomicInteger> type) {
-			return new AtomicInteger(input.readInt());
+			AtomicInteger object = create(kryo, type);
+			object.set(input.readInt());
+			return object;
 		}
 
 		public AtomicInteger copy (Kryo kryo, AtomicInteger original) {
-			return new AtomicInteger(original.get());
+			AtomicInteger copy = create(kryo, original.getClass());
+			copy.set(original.get());
+			return copy;
+		}
+
+		private AtomicInteger create (Kryo kryo, Class<? extends AtomicInteger> type) {
+			if (type == AtomicInteger.class || type == null) return new AtomicInteger();
+			return kryo.newInstance(type);
 		}
 	}
 
@@ -1098,11 +1460,20 @@ public class DefaultSerializers {
 		}
 
 		public AtomicLong read (Kryo kryo, Input input, Class<? extends AtomicLong> type) {
-			return new AtomicLong(input.readLong());
+			AtomicLong object = create(kryo, type);
+			object.set(input.readLong());
+			return object;
 		}
 
 		public AtomicLong copy (Kryo kryo, AtomicLong original) {
-			return new AtomicLong(original.get());
+			AtomicLong copy = create(kryo, original.getClass());
+			copy.set(original.get());
+			return copy;
+		}
+
+		private AtomicLong create (Kryo kryo, Class<? extends AtomicLong> type) {
+			if (type == AtomicLong.class || type == null) return new AtomicLong();
+			return kryo.newInstance(type);
 		}
 	}
 
@@ -1113,12 +1484,93 @@ public class DefaultSerializers {
 		}
 
 		public AtomicReference read (Kryo kryo, Input input, Class<? extends AtomicReference> type) {
-			final Object value = kryo.readClassAndObject(input);
-			return new AtomicReference(value);
+			AtomicReference object = create(kryo, type);
+			kryo.reference(object);
+			object.set(kryo.readClassAndObject(input));
+			return object;
 		}
 
 		public AtomicReference copy (Kryo kryo, AtomicReference original) {
-			return new AtomicReference<>(kryo.copy(original.get()));
+			AtomicReference copy = create(kryo, original.getClass());
+			kryo.reference(copy);
+			copy.set(kryo.copy(original.get()));
+			return copy;
+		}
+
+		private AtomicReference create (Kryo kryo, Class<? extends AtomicReference> type) {
+			if (type == AtomicReference.class || type == null) return new AtomicReference();
+			return kryo.newInstance(type);
+		}
+	}
+
+	/** Serializer for the map entries of the JDK: {@code Map.entry}, {@link AbstractMap.SimpleEntry} and
+	 * {@link AbstractMap.SimpleImmutableEntry}. Writes the key and the value like FieldSerializer does, which can't access their
+	 * fields on Java 16+ without {@code --add-opens java.base/java.util=ALL-UNNAMED}: with their classes, or without them if the
+	 * type arguments of the entry are known and final, eg from a field {@code Map.Entry<String, Integer>}. With references, the
+	 * value of a mutable entry can reference the entry, but its key can't, because the entry is created with the key. The key and
+	 * the value of an immutable entry can't, because the entry is created after they are read. */
+	public static class MapEntrySerializer extends Serializer<Entry> {
+		private static final Class[] noTypes = new Class[2];
+		private final BiFunction<Object, Object, Entry> factory;
+		private final boolean mutable;
+
+		/** @param factory Creates an entry from a key and a value.
+		 * @param mutable If true, the entry is created with a null value and the value is set with {@link Entry#setValue(Object)}
+		 *           after the entry is registered as a reference, so the value can reference the entry. */
+		public MapEntrySerializer (BiFunction<Object, Object, Entry> factory, boolean mutable) {
+			this.factory = factory;
+			this.mutable = mutable;
+		}
+
+		public void write (Kryo kryo, Output output, Entry object) {
+			Class[] types = types(kryo);
+			writeObject(kryo, output, object.getKey(), types[0]);
+			writeObject(kryo, output, object.getValue(), types[1]);
+		}
+
+		/** Returns the classes of the key and the value if the type arguments of the entry are known and final, otherwise null.
+		 * Like FieldSerializer, which doesn't resolve the type arguments of a type variable field, the type arguments of the key
+		 * and the value, eg {@code List<String>}, are not used for their elements, so the data is the same as FieldSerializer
+		 * wrote. */
+		private Class[] types (Kryo kryo) {
+			Generics generics = kryo.getGenerics();
+			GenericType[] genericTypes = generics.nextGenericTypes(Entry.class);
+			if (genericTypes == null) return noTypes;
+			generics.popGenericType(); // Pushed by nextGenericTypes for the value.
+			Class keyType = genericTypes[0].resolve(generics), valueType = genericTypes[1].resolve(generics);
+			return new Class[] {keyType != null && kryo.isFinal(keyType) ? keyType : null,
+				valueType != null && kryo.isFinal(valueType) ? valueType : null};
+		}
+
+		private void writeObject (Kryo kryo, Output output, Object value, @Null Class type) {
+			if (type == null)
+				kryo.writeClassAndObject(output, value);
+			else
+				kryo.writeObjectOrNull(output, value, kryo.getSerializer(type));
+		}
+
+		public Entry read (Kryo kryo, Input input, Class<? extends Entry> type) {
+			Class[] types = types(kryo);
+			Object key = readObject(kryo, input, types[0]);
+			if (!mutable) return factory.apply(key, readObject(kryo, input, types[1]));
+			Entry entry = factory.apply(key, null);
+			kryo.reference(entry);
+			entry.setValue(readObject(kryo, input, types[1]));
+			return entry;
+		}
+
+		private Object readObject (Kryo kryo, Input input, @Null Class type) {
+			if (type == null) return kryo.readClassAndObject(input);
+			return kryo.readObjectOrNull(input, type, kryo.getSerializer(type));
+		}
+
+		public Entry copy (Kryo kryo, Entry original) {
+			Object key = kryo.copy(original.getKey());
+			if (!mutable) return factory.apply(key, kryo.copy(original.getValue()));
+			Entry entry = factory.apply(key, null);
+			kryo.reference(entry);
+			entry.setValue(kryo.copy(original.getValue()));
+			return entry;
 		}
 	}
 }

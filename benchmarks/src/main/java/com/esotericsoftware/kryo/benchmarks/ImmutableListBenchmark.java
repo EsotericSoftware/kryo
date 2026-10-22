@@ -22,15 +22,10 @@ package com.esotericsoftware.kryo.benchmarks;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.serializers.CollectionSerializer;
 import com.esotericsoftware.kryo.serializers.ImmutableCollectionsSerializers;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
@@ -53,17 +48,6 @@ public class ImmutableListBenchmark {
 		return state.kryo.copy(state.list);
 	}
 
-	/** {@code Stream.toList}, which is only available on Java 16+. */
-	static final MethodHandle toList = toListHandle();
-
-	static MethodHandle toListHandle () {
-		try {
-			return MethodHandles.publicLookup().findVirtual(Stream.class, "toList", MethodType.methodType(List.class));
-		} catch (ReflectiveOperationException ex) {
-			return null;
-		}
-	}
-
 	@State(Scope.Thread)
 	public static class BenchmarkState {
 		@Param({"0", "1", "2", "3", "10", "100", "1000"}) public int size;
@@ -75,13 +59,11 @@ public class ImmutableListBenchmark {
 		List<Object> list;
 
 		@Setup(Level.Trial)
-		public void setup () throws Throwable {
+		public void setup () {
 			ImmutableCollectionsSerializers.registerSerializers(kryo);
-			if (nulls) {
-				if (toList == null) throw new IllegalStateException("Lists with null elements require Stream.toList (Java 16+).");
-				((CollectionSerializer)kryo.getSerializer(List.of().getClass())).setElementsCanBeNull(true);
-				list = (List)toList.invokeExact(IntStream.range(0, size).mapToObj(i -> i == size - 1 ? null : (Object)i));
-			} else
+			if (nulls)
+				list = IntStream.range(0, size).mapToObj(i -> i == size - 1 ? null : (Object)i).toList();
+			else
 				list = List.of(IntStream.range(0, size).boxed().toArray());
 			kryo.writeClassAndObject(output, list);
 			input = new Input(output.toBytes());

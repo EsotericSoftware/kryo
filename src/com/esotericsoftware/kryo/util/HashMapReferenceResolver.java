@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.util;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.ReferenceResolver;
 
 import java.util.ArrayList;
@@ -64,13 +65,19 @@ public class HashMapReferenceResolver implements ReferenceResolver {
 		return readObjects.get(id);
 	}
 
+	public int getObjectCount () {
+		return writtenObjects.size() + readObjects.size();
+	}
+
 	public void reset () {
 		readObjects.clear();
 		writtenObjects.clear();
 	}
 
-	/** Returns false for all primitive wrappers and enums. */
+	/** Returns false for all primitive wrappers, enums and strings. Strings are rarely shared, so tracking them costs more than it
+	 * saves. With {@link Format#KRYO5}, strings use references like in Kryo 5. */
 	public boolean useReferences (Class type) {
-		return !Util.isWrapperClass(type) && !Util.isEnum(type);
+		return !Util.isWrapperClass(type) && !Util.isEnum(type)
+			&& (type != String.class || kryo != null && kryo.getFormat() == Format.KRYO5);
 	}
 }

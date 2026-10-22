@@ -77,7 +77,7 @@ public interface SerializerFactory<T extends Serializer> {
 						try {
 							return serializerClass.getConstructor(Class.class).newInstance(type);
 						} catch (NoSuchMethodException ex3) {
-							return serializerClass.newInstance();
+							return serializerClass.getDeclaredConstructor().newInstance();
 						}
 					}
 				}

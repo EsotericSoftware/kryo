@@ -31,7 +31,7 @@ import java.util.Objects;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
-import org.objenesis.strategy.StdInstantiatorStrategy;
+import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
 class ParallelSerializationTest {
 

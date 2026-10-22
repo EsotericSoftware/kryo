@@ -339,12 +339,13 @@ public class DefaultArraySerializers {
 			int n = input.readVarInt(true);
 			if (n == NULL) return null;
 			n--;
+			Class elementClass = type.getComponentType();
+			boolean sameType = elementsAreSameType || kryo.isFinal(elementClass);
 			// Only maxArraySize is checked: an element can take 0 bytes, eg an object without fields, or with a serializer that
 			// accepts null and writes nothing.
-			Object[] object = (Object[])Array.newInstance(type.getComponentType(), input.validateArrayLength(n, 0));
+			Object[] object = (Object[])Array.newInstance(elementClass, input.validateArrayLength(n, 0));
 			kryo.reference(object);
-			Class elementClass = type.getComponentType();
-			if (elementsAreSameType || kryo.isFinal(elementClass)) {
+			if (sameType) {
 				Serializer elementSerializer = kryo.getSerializer(elementClass);
 				if (elementsCanBeNull) {
 					for (int i = 0; i < n; i++)

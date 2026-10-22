@@ -19,7 +19,6 @@
 
 package com.esotericsoftware.kryo.benchmarks;
 
-import com.esotericsoftware.kryo.util.CuckooObjectMap;
 import com.esotericsoftware.kryo.util.IdentityMap;
 import com.esotericsoftware.kryo.util.ObjectMap;
 
@@ -64,7 +63,7 @@ public class MapBenchmark {
 
 	@State(Scope.Thread)
 	public static class AbstractBenchmarkState {
-		@Param({"object", "identity", "cuckoo", "hash"}) public MapType mapType;
+		@Param({"object", "identity", "hash"}) public MapType mapType;
 		@Param({"integers", "strings", "classes"}) public DataSource dataSource;
 		@Param({"100", "500", "1000", "2500", "5000", "10000"}) public int numClasses;
 		@Param({"51"}) public int initialCapacity;
@@ -149,7 +148,7 @@ public class MapBenchmark {
 	}
 
 	public enum MapType {
-		object, identity, cuckoo, hash
+		object, identity, hash
 	}
 
 	public enum DataSource {
@@ -191,8 +190,6 @@ public class MapBenchmark {
 
 	static MapAdapter<Object, Integer> createMap(MapType mapType, int initialCapacity, float loadFactor, int maxCapacity) {
 		switch (mapType) {
-		case cuckoo:
-			return new CuckooMapAdapter<>(new CuckooObjectMap<>(initialCapacity, loadFactor), maxCapacity);
 		case object:
 			return new ObjectMapAdapter<>(new ObjectMap<>(initialCapacity, loadFactor), maxCapacity);
 		case identity:
@@ -217,32 +214,6 @@ public class MapBenchmark {
 		private final int maxCapacity;
 
 		public ObjectMapAdapter (ObjectMap<K, Integer> delegate, int maxCapacity) {
-			this.delegate = delegate;
-			this.maxCapacity = maxCapacity;
-		}
-
-		@Override
-		public Integer get (K key) {
-			return delegate.get(key, -1);
-		}
-
-		@Override
-		public Integer put (K key, Integer value) {
-			delegate.put(key, value);
-			return null;
-		}
-
-		@Override
-		public void clear () {
-			delegate.clear(maxCapacity);
-		}
-	}
-
-	static class CuckooMapAdapter<K> implements MapAdapter<K, Integer> {
-		private final CuckooObjectMap<K, Integer> delegate;
-		private final int maxCapacity;
-
-		public CuckooMapAdapter (CuckooObjectMap<K, Integer> delegate, int maxCapacity) {
 			this.delegate = delegate;
 			this.maxCapacity = maxCapacity;
 		}

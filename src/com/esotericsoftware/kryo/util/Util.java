@@ -19,7 +19,7 @@
 
 package com.esotericsoftware.kryo.util;
 
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.kryo.util.Log.*;
 
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
@@ -28,22 +28,31 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.util.Generics.GenericType;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 
 /** A few utility methods, mostly for private use.
  * @author Nathan Sweet */
 public class Util {
 	public static final boolean isAndroid = "Dalvik".equals(System.getProperty("java.vm.name"));
 
-	/** True if running in a GraalVM native image, which can't define classes at runtime, so ReflectASM can't be used. */
+	/** True if running in a GraalVM native image, which can't define classes at runtime. */
 	public static final boolean isNativeImage = System.getProperty("org.graalvm.nativeimage.imagecode") != null;
 
-	/** True if Unsafe is available. Unsafe can be disabled by setting the system property "kryo.unsafe" to "false". */
+	/** True if records are available, which is not the case on Android before API level 34. */
+	public static final boolean records = !isAndroid || isClassAvailable("java.lang.Record");
+
+	/** True if Unsafe is available. Unsafe can be disabled by setting the system property "kryo.unsafe" to "false". It is not
+	 * available if Unsafe memory access is denied with {@code --sun-misc-unsafe-memory-access=deny}. */
 	public static final boolean unsafe;
 	static {
 		boolean found = false;
 		if ("false".equals(System.getProperty("kryo.unsafe"))) {
 			if (TRACE) trace("kryo", "Unsafe is disabled.");
+		} else if ("deny".equals(System.getProperty("sun.misc.unsafe.memory.access"))) {
+			if (TRACE) trace("kryo", "Unsafe memory access is denied.");
 		} else {
 			try {
 				found = Class.forName("com.esotericsoftware.kryo.unsafe.UnsafeUtil", true, FieldSerializer.class.getClassLoader())
@@ -58,18 +67,85 @@ public class Util {
 	// Maximum reasonable array length. See: https://stackoverflow.com/questions/3038392/do-java-arrays-have-a-maximum-size
 	public static final int maxArraySize = Integer.MAX_VALUE - 8;
 
+	/** The platform class loader, which loads some JDK modules, eg jdk.charsets on some JDKs. On Android, the boot class loader,
+	 * which loads all platform classes. */
+	private static final ClassLoader platformClassLoader = isAndroid ? Object.class.getClassLoader() : PlatformClassLoader.get();
+
+	/** Returns true if the class is a JDK class, loaded by the bootstrap or platform class loader. */
+	public static boolean isJdkClass (Class type) {
+		ClassLoader loader = type.getClassLoader();
+		return loader == Object.class.getClassLoader() || loader == platformClassLoader;
+	}
+
+	/** Separate class, which Android never loads, because it has no platform class loader. */
+	@IgnoreAndroid
+	static private final class PlatformClassLoader {
+		static ClassLoader get () {
+			return ClassLoader.getPlatformClassLoader();
+		}
+	}
+
 	public static boolean isUnsafeAvailable () {
 		return unsafe;
 	}
 
-	public static boolean isClassAvailable (String className) {
-		try {
-			Class.forName(className);
+	/** Returns true if the type is a record. Unlike {@link Class#isRecord()}, this can be called on Android before API level 34,
+	 * which doesn't have records. */
+	@IgnoreAndroid
+	public static boolean isRecord (Class type) {
+		return records && type.isRecord();
+	}
+
+	/** Returns true if the bytes of both arrays in the ranges are equal. Unlike
+	 * {@link Arrays#equals(byte[], int, int, byte[], int, int)}, this can be called on Android before API level 33. */
+	@IgnoreAndroid
+	public static boolean rangeEquals (byte[] a, int aFromIndex, byte[] b, int bFromIndex, int length) {
+		if (isAndroid) {
+			for (int i = 0; i < length; i++)
+				if (a[aFromIndex + i] != b[bFromIndex + i]) return false;
 			return true;
+		}
+		return Arrays.equals(a, aFromIndex, aFromIndex + length, b, bFromIndex, bFromIndex + length);
+	}
+
+	/** Returns the name of Kryo's module for command line options like {@code --add-opens}: the module name if Kryo is in a named
+	 * module, otherwise {@code ALL-UNNAMED}. */
+	@IgnoreAndroid
+	public static String moduleName () {
+		if (isAndroid) return "ALL-UNNAMED"; // Android has no modules.
+		Module module = Util.class.getModule();
+		return module.isNamed() ? module.getName() : "ALL-UNNAMED";
+	}
+
+	/** Returns the feature version of Java, eg 17. Not for Android, which has {@link Runtime#version()} only since API level
+	 * 33. */
+	@IgnoreAndroid
+	public static int javaVersion () {
+		return Runtime.version().feature();
+	}
+
+	public static boolean isClassAvailable (String className) {
+		return classForName(className) != null;
+	}
+
+	/** Returns the class with the name, or null if it is not available. In a GraalVM native image, the class needs reflection
+	 * metadata, unless it is taken from an instance, see {@link #classForName(String, Object)}. */
+	static private @Null Class classForName (String className) {
+		try {
+			return Class.forName(className);
 		} catch (Exception ex) {
 			debug("kryo", "Class not available: " + className);
-			return false;
+			return null;
 		}
+	}
+
+	/** Returns the class of the instance if it has the name, otherwise the class with the name, or null if it is not available. A
+	 * GraalVM native image needs no reflection metadata for the class of an instance. On Android, D8 replaces some JDK methods
+	 * below the API level that has them, eg {@code List.of} below API level 30, so the instance can have another class.
+	 * @param instance May be null. */
+	public static @Null Class classForName (String className, @Null Object instance) {
+		if (instance != null && instance.getClass().getName().equals(className)) return instance.getClass();
+		return classForName(className);
 	}
 
 	/** Returns the primitive wrapper class for a primitive class, or the specified class if it is not primitive. */
@@ -82,21 +158,6 @@ public class Util {
 		if (type == char.class) return Character.class;
 		if (type == double.class) return Double.class;
 		if (type == short.class) return Short.class;
-		return type;
-	}
-
-	/** Returns the primitive class for a primitive wrapper class. Otherwise returns the type parameter.
-	 * @param type Must be a wrapper class. */
-	public static Class getPrimitiveClass (Class type) {
-		if (type == Integer.class) return int.class;
-		if (type == Float.class) return float.class;
-		if (type == Boolean.class) return boolean.class;
-		if (type == Byte.class) return byte.class;
-		if (type == Long.class) return long.class;
-		if (type == Character.class) return char.class;
-		if (type == Double.class) return double.class;
-		if (type == Short.class) return short.class;
-		if (type == Void.class) return void.class;
 		return type;
 	}
 
@@ -118,6 +179,12 @@ public class Util {
 	public static boolean isWrapperClass (Class type) {
 		return type == Integer.class || type == Float.class || type == Boolean.class || type == Byte.class || type == Long.class
 			|| type == Character.class || type == Double.class || type == Short.class;
+	}
+
+	/** Returns true for an anonymous class, a local class, or a non-static member class. These classes have synthetic fields for
+	 * the outer instance and captured variables, which they need to work. */
+	public static boolean isInnerClass (Class type) {
+		return type.isAnonymousClass() || type.isLocalClass() || (type.isMemberClass() && !Modifier.isStatic(type.getModifiers()));
 	}
 
 	public static boolean isEnum (Class type) {
@@ -199,7 +266,7 @@ public class Util {
 
 	public static String simpleName (Type type) {
 		if (type instanceof Class) return ((Class)type).getSimpleName();
-		return type.toString(); // Java 8: getTypeName
+		return type.toString();
 	}
 
 	public static String simpleName (Class type, GenericType genericType) {
@@ -245,6 +312,7 @@ public class Util {
 		if (from.isPrimitive()) return to.isAssignableFrom(getWrapperClass(from));
 		if (to.isPrimitive()) return getWrapperClass(to) == from;
 		if (from == ClosureSerializer.Closure.class) return to.isInterface();
+		if (from == InvocationHandler.class) return to.isInterface(); // A proxy is written as InvocationHandler.
 		return false;
 	}
 
@@ -264,7 +332,7 @@ public class Util {
 				} catch (NoSuchMethodException ex) {
 				}
 			}
-			return factoryClass.newInstance();
+			return factoryClass.getDeclaredConstructor().newInstance();
 		} catch (Exception ex) {
 			if (serializerClass == null)
 				throw new IllegalArgumentException("Unable to create serializer factory: " + factoryClass.getName(), ex);
