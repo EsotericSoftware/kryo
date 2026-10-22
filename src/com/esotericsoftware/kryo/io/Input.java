@@ -293,7 +293,8 @@ public class Input extends InputStream implements Poolable {
 	// InputStream:
 
 	public int available () throws IOException {
-		return limit - position + (inputStream != null ? inputStream.available() : 0);
+		long available = (long)limit - position + (inputStream != null ? inputStream.available() : 0);
+		return (int)Math.min(available, Integer.MAX_VALUE);
 	}
 
 	/** Reads a single byte as an int from 0 to 255, or -1 if there are no more bytes are available. */

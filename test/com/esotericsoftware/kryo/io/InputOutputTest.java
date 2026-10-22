@@ -32,6 +32,7 @@ import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.Buffer;
@@ -113,6 +114,25 @@ class InputOutputTest extends KryoTestCase {
 			31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, //
 			51, 52, 53, 54, 55, 56, 57, 58, //
 			61, 62, 63, 64, 65}, buffer.toByteArray());
+	}
+
+	@Test
+	void testAvailableDoesNotOverflow () throws IOException {
+		InputStream stream = new InputStream() {
+			public int read () {
+				return 0;
+			}
+
+			public int available () {
+				return Integer.MAX_VALUE;
+			}
+		};
+		for (Input input : new Input[] {new Input(stream, 8), new ByteBufferInput(stream, 8)}) {
+			assertEquals(Integer.MAX_VALUE, input.available());
+			assertEquals(0, input.read());
+			assertEquals(7, input.limit() - input.position());
+			assertEquals(Integer.MAX_VALUE, input.available());
+		}
 	}
 
 	@Test
