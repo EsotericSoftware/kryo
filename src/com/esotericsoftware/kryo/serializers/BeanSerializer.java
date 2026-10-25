@@ -169,10 +169,11 @@ public class BeanSerializer<T> extends Serializer<T> {
 
 	public T copy (Kryo kryo, T original) {
 		T copy = (T)kryo.newInstance(original.getClass());
+		kryo.reference(copy);
 		for (int i = 0, n = properties.length; i < n; i++) {
 			CachedProperty property = properties[i];
 			try {
-				Object value = property.get(original);
+				Object value = kryo.copy(property.get(original));
 				property.set(copy, value);
 			} catch (KryoException ex) {
 				ex.addTrace(property + " (" + copy.getClass().getName() + ")");

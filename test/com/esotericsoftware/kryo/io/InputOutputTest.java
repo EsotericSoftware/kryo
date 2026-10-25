@@ -119,6 +119,25 @@ class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
+	void testAvailableDoesNotOverflow () throws IOException {
+		InputStream stream = new InputStream() {
+			public int read () {
+				return 0;
+			}
+
+			public int available () {
+				return Integer.MAX_VALUE;
+			}
+		};
+		for (Input input : new Input[] {new Input(stream, 8), new ByteBufferInput(stream, 8)}) {
+			assertEquals(Integer.MAX_VALUE, input.available());
+			assertEquals(0, input.read());
+			assertEquals(7, input.limit() - input.position());
+			assertEquals(Integer.MAX_VALUE, input.available());
+		}
+	}
+
+	@Test
 	void testInputStream () throws IOException {
 		byte[] bytes = new byte[] { //
 			11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, //
