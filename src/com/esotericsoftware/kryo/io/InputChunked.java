@@ -69,8 +69,8 @@ public class InputChunked extends Input {
 	protected int fill (byte[] buffer, int offset, int count) throws KryoException {
 		if (chunkSize == -1) { // No current chunk, expect a new chunk.
 			if (!readChunkSize()) return -1;
-		} else if (chunkSize == 0) // End of chunk.
-			return -1;
+		}
+		if (chunkSize == 0) return -1; // End of chunk, also if the chunk is empty.
 		int actual = super.fill(buffer, offset, Math.min(chunkSize, count));
 		chunkSize -= actual;
 		if (chunkSize == 0 && !readChunkSize()) return -1;

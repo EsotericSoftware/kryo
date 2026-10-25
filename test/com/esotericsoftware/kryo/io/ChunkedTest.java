@@ -77,4 +77,32 @@ class ChunkedTest {
 		assertEquals(2, inputChunked.readInt());
 		input.close();
 	}
+
+	@Test
+	void testEmptyChunks () {
+		Output output = new Output(512);
+		OutputChunked outputChunked = new OutputChunked(output);
+		outputChunked.endChunk();
+		outputChunked.writeInt(1);
+		outputChunked.endChunk();
+		outputChunked.endChunk();
+		outputChunked.endChunk();
+		outputChunked.writeInt(2);
+		outputChunked.endChunk();
+		output.close();
+
+		Input input = new Input(output.getBuffer());
+		InputChunked inputChunked = new InputChunked(input);
+		assertTrue(inputChunked.end());
+		inputChunked.nextChunk();
+		assertEquals(1, inputChunked.readInt());
+		assertTrue(inputChunked.end());
+		inputChunked.nextChunk();
+		assertEquals(-1, inputChunked.read());
+		inputChunked.nextChunk();
+		assertThrows(KryoException.class, inputChunked::readInt);
+		inputChunked.nextChunk();
+		assertEquals(2, inputChunked.readInt());
+		input.close();
+	}
 }
