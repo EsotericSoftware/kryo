@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.util;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -28,6 +29,7 @@ import java.lang.reflect.TypeVariable;
  * @author Nathan Sweet */
 public final class DefaultGenerics implements Generics {
 	private final Kryo kryo;
+	private Format format;
 
 	private int genericTypesSize;
 	private GenericType[] genericTypes = new GenericType[16];
@@ -43,7 +45,7 @@ public final class DefaultGenerics implements Generics {
 	@Override
 	public GenericsHierarchy buildHierarchy (Class type) {
 		// Type variables are only stored for the type parameters of the class itself.
-		if (type.getTypeParameters().length == 0) return GenericsHierarchy.EMPTY;
+		if (type.getTypeParameters().length == 0 && !kryo5()) return GenericsHierarchy.EMPTY;
 		return new GenericsHierarchy(type);
 	}
 
@@ -99,6 +101,7 @@ public final class DefaultGenerics implements Generics {
 
 	@Override
 	public GenericType[] nextGenericTypes (Class superType) {
+		if (kryo5()) return nextGenericTypes(); // Kryo 5 used the type arguments by position.
 		int index = genericTypesSize;
 		if (index > 0) {
 			index--;
@@ -123,6 +126,7 @@ public final class DefaultGenerics implements Generics {
 
 	@Override
 	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType type) {
+		if (kryo5()) return pushTypeVariablesByPosition(hierarchy, type);
 		int startSize = argumentsSize;
 		if (type == null) {
 			// The type arguments are unknown. The type variables hide those of an enclosing object of the same class, if any.
@@ -172,6 +176,34 @@ public final class DefaultGenerics implements Generics {
 		}
 
 		return argumentsSize - startSize;
+	}
+
+	/** Assigns the type arguments of the declared type by position to the type parameters of the class, like Kryo 5, and doesn't
+	 * hide the type variables of an enclosing object of the same class if the declared type is not known. */
+	private int pushTypeVariablesByPosition (GenericsHierarchy hierarchy, GenericType type) {
+		if (type == null) return 0;
+		GenericType[] args = type.arguments;
+		if (hierarchy.total == 0 || hierarchy.rootTotal > args.length || args.length > hierarchy.counts.length) return 0;
+		int startSize = argumentsSize;
+		ensureCapacity(hierarchy.total);
+		int[] counts = hierarchy.counts;
+		TypeVariable[] params = hierarchy.parameters;
+		for (int i = 0, p = 0, n = args.length; i < n; i++) {
+			Class resolved = args[i].resolve(this);
+			if (resolved == null) continue; // Like Kryo 5, the next argument is assigned to these type parameters.
+			for (int nn = p + counts[i]; p < nn; p++) {
+				arguments[argumentsSize++] = params[p];
+				arguments[argumentsSize++] = resolved;
+			}
+		}
+		return argumentsSize - startSize;
+	}
+
+	/** Returns true if type variables are resolved like Kryo 5. The format can't change once it was read. */
+	private boolean kryo5 () {
+		Format format = this.format;
+		if (format == null) this.format = format = kryo.getFormat();
+		return format == Format.KRYO5;
 	}
 
 	/** Ensures there is room for the specified number of type variables and their classes. */

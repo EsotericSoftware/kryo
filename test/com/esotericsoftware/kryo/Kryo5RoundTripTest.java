@@ -159,6 +159,25 @@ class Kryo5RoundTripTest {
 		assertEquals(earlier, newKryo5().readObject(input, ZonedDateTime.class));
 	}
 
+	/** Kryo 6 resolves these type variables differently than Kryo 5, but not with the Kryo 5 format. */
+	@Test
+	void testGenerics () {
+		Sub<String> sub = new Sub<>();
+		sub.t = "a";
+		sub.u = "b";
+		GenericTypes generics = new GenericTypes();
+		generics.positional = sub;
+		generics.elements = new Elements<>();
+		generics.elements.add("c");
+		generics.node = new Node<>();
+		generics.node.value = "d";
+		generics.node.next = new Node<>();
+		((Node)generics.node.next).value = "e";
+		byte[] bytes = writeKryo5(generics, false);
+		assertArrayEquals(bytes, writeKryo6(generics, false));
+		assertReflectionEquals(newKryo6().readObject(new Input(bytes), GenericTypes.class), generics);
+	}
+
 	@ParameterizedTest
 	@ValueSource(booleans = {false, true})
 	void testCompatibleFieldSerializer (boolean chunked) {
@@ -367,5 +386,30 @@ class Kryo5RoundTripTest {
 		@com.esotericsoftware.kryo.kryo5.serializers.TaggedFieldSerializer.Tag(4) public List<String> list;
 		@Tag(5)
 		@com.esotericsoftware.kryo.kryo5.serializers.TaggedFieldSerializer.Tag(5) public int number;
+	}
+
+	public static class GenericTypes {
+		/** Kryo 5 assigned the type argument String to U by position (#1329). */
+		public Base<String> positional;
+		/** Kryo 5 used Object for the elements instead of String from the super class (#1361). */
+		public Elements<Object> elements;
+		/** Kryo 5 resolved T of the nested node, whose declared type is not known, to String of the enclosing node (#1473). */
+		public Node<String> node;
+	}
+
+	public static class Base<T> {
+		public T t;
+	}
+
+	public static class Sub<U> extends Base<String> {
+		public U u;
+	}
+
+	public static class Elements<T> extends ArrayList<String> {
+	}
+
+	public static class Node<T> {
+		public T value;
+		public Object next;
 	}
 }
