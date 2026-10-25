@@ -78,10 +78,16 @@ public class GenericsUtil {
 	 *         resolved. */
 	private static Type resolveTypeVariable (Class fromClass, Class current, Type type, boolean first) {
 		Type genericSuper = current.getGenericSuperclass();
-		if (!(genericSuper instanceof ParameterizedType)) return type; // No type arguments passed to super class.
+		Class superClass = current.getSuperclass();
+		if (!(genericSuper instanceof ParameterizedType)) { // No type arguments passed to super class.
+			if (current == fromClass || superClass == fromClass || superClass == null) return type;
+			// The super class or a class above it can bind the type variable, eg T of Base<T> for Top extends Bind and Bind
+			// extends Base<Integer>. A type variable can't be passed further down.
+			Type resolved = resolveTypeVariable(fromClass, superClass, type, false);
+			return resolved instanceof Class ? resolved : type;
+		}
 
 		// Search fromClass to current inclusive, using the call stack to traverse the class hierarchy in super class first order.
-		Class superClass = current.getSuperclass();
 		if (superClass != fromClass) {
 			Type resolved = resolveTypeVariable(fromClass, superClass, type, false);
 			if (resolved instanceof Class) return resolved; // Resolved in a super class.

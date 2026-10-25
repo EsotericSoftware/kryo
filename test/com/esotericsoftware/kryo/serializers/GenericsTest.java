@@ -187,6 +187,29 @@ class GenericsTest extends KryoTestCase {
 		roundTrip(265, container);
 	}
 
+	// Test for https://github.com/EsotericSoftware/kryo/issues/1541
+	@Test
+	void testTypeVariableBoundAboveSuperClassWithoutTypeArguments () {
+		kryo.setRegistrationRequired(false);
+
+		// T is Integer, not the type argument of the enclosing Base<E>.
+		BindHolder holder = new BindHolder();
+		holder.base = new BindBase<>();
+		holder.base.child = new BindTop<>();
+		holder.base.child.values = new Integer[] {1};
+		roundTrip(Integer.MIN_VALUE, holder);
+
+		// The class of the values isn't written.
+		BindTop<Long> top = new BindTop<>();
+		top.values = new Integer[] {1};
+		roundTrip(64, top);
+
+		// T isn't the type argument of a sub class for its own type parameter named T.
+		BindNamedLeaf leaf = new BindNamedLeaf();
+		leaf.values = new Integer[] {1};
+		roundTrip(70, leaf);
+	}
+
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
 	void testClassWithMultipleGenericTypes() {
@@ -1148,6 +1171,43 @@ class GenericsTest extends KryoTestCase {
 			public boolean equals (Object o) {
 				return o instanceof HolderPair h && Objects.equals(pair, h.pair);
 			}
+		}
+	}
+
+	public enum BindEnum {
+		A
+	}
+
+	public static class BindBase<T> {
+		public T[] values;
+		public BindTop<Long> child;
+
+		public boolean equals (Object o) {
+			return o instanceof BindBase b && Arrays.equals(values, b.values) && Objects.equals(child, b.child)
+				&& (values == null || values.getClass() == b.values.getClass());
+		}
+	}
+
+	public static class BindMid<U> extends BindBase<U> {
+	}
+
+	public static class Bind extends BindMid<Integer> {
+	}
+
+	public static class BindTop<V> extends Bind {
+	}
+
+	public static class BindNamedT<T> extends Bind {
+	}
+
+	public static class BindNamedLeaf extends BindNamedT<String> {
+	}
+
+	public static class BindHolder {
+		public BindBase<BindEnum> base;
+
+		public boolean equals (Object o) {
+			return o instanceof BindHolder h && Objects.equals(base, h.base);
 		}
 	}
 }
