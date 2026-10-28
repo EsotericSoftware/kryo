@@ -829,6 +829,28 @@ class FieldSerializerTest extends KryoTestCase {
 		fail("Exception was expected");
 	}
 
+	@Test
+	void testIncompatibleClassInData () {
+		// The class in the data is not assignable to the field type. Unsafe doesn't check the type, so the field would hold a
+		// value of the wrong type.
+		Kryo writer = new Kryo();
+		writer.register(ObjectValue.class, 100);
+		Output output = new Output(64);
+		writer.writeObject(output, new ObjectValue());
+
+		Kryo reader = new Kryo();
+		reader.register(NumberValue.class, 100);
+		assertThrows(KryoException.class, () -> reader.readObject(new Input(output.toBytes()), NumberValue.class));
+	}
+
+	public static class ObjectValue {
+		public Object value = "string";
+	}
+
+	public static class NumberValue {
+		public Number value;
+	}
+
 	public static class DefaultTypes {
 		// Primitives.
 		public boolean booleanField;
