@@ -178,6 +178,7 @@ public interface Generics {
 	class GenericType {
 		Type type; // Either a Class or TypeVariable.
 		GenericType[] arguments;
+		int dimensions; // If type is a TypeVariable, the array dimensions, eg 1 for T[].
 
 		public GenericType (Class fromClass, Class toClass, Type context) {
 			initialize(fromClass, toClass, context);
@@ -196,25 +197,30 @@ public interface Generics {
 					arguments[i] = new GenericType(fromClass, toClass, actualArgs[i]);
 
 			} else if (context instanceof GenericArrayType) {
-				// Array with a type parameter, eg "ArrayList<T>[]". Discard array types, resolve type parameter of component type.
-				int dimensions = 1;
+				// Array with a type parameter, eg "ArrayList<T>[]" or "T[]". Resolve the type parameter of the component type.
+				int arrayDimensions = 1;
 				while (true) {
 					context = ((GenericArrayType)context).getGenericComponentType();
 					if (!(context instanceof GenericArrayType)) break;
-					dimensions++;
+					arrayDimensions++;
 				}
 				initialize(fromClass, toClass, context);
-				Type componentType = GenericsUtil.resolveType(fromClass, toClass, context);
-				if (componentType instanceof Class) {
-					if (dimensions == 1)
-						type = Array.newInstance((Class)componentType, 0).getClass();
+				if (type instanceof Class) {
+					if (arrayDimensions == 1)
+						type = Array.newInstance((Class)type, 0).getClass();
 					else
-						type = Array.newInstance((Class)componentType, new int[dimensions]).getClass();
-				}
+						type = Array.newInstance((Class)type, new int[arrayDimensions]).getClass();
+				} else
+					dimensions += arrayDimensions; // The type variable is resolved when serializing.
 
 			} else {
 				// No type parameters (is a class or type variable).
 				type = GenericsUtil.resolveType(fromClass, toClass, context);
+				// An array of a type variable passed to a super class, eg T[] for Super<T[]>.
+				while (type instanceof GenericArrayType) {
+					type = ((GenericArrayType)type).getGenericComponentType();
+					dimensions++;
+				}
 			}
 		}
 
@@ -222,7 +228,10 @@ public interface Generics {
 		 * @return May be null. */
 		public Class resolve (Generics generics) {
 			if (type instanceof Class) return (Class)type;
-			return generics.resolveTypeVariable((TypeVariable)type);
+			Class resolved = generics.resolveTypeVariable((TypeVariable)type);
+			for (int i = 0; i < dimensions && resolved != null; i++)
+				resolved = Util.getArrayType(resolved);
+			return resolved;
 		}
 
 		public Type getType () {
@@ -249,8 +258,11 @@ public interface Generics {
 					}
 					buffer.append('>');
 				}
-			} else
+			} else {
 				buffer.append(type.toString()); // Java 8: getTypeName
+				for (int i = 0; i < dimensions; i++)
+					buffer.append("[]");
+			}
 			if (array) {
 				for (int i = 0, n = getDimensionCount((Class)type); i < n; i++)
 					buffer.append("[]");
