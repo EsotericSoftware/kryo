@@ -906,4 +906,37 @@ class UnsafeByteBufferInputOutputTest {
 		assertArrayEquals(new byte[] {0, 0, 1, 2}, bytes);
 		assertEquals(2, input.position());
 	}
+
+	@Test
+	void testCallerBufferNotReleased () {
+		ByteBuffer buffer = ByteBuffer.allocateDirect(64);
+		UnsafeByteBufferOutput output = new UnsafeByteBufferOutput();
+		output.setBuffer(buffer, -1);
+		output.writeBytes(new byte[128]);
+		assertNotReleased(buffer);
+
+		buffer = ByteBuffer.allocateDirect(64);
+		output.setBuffer(buffer, -1);
+		output.setBuffer(ByteBuffer.allocateDirect(64), -1);
+		assertNotReleased(buffer);
+
+		buffer = ByteBuffer.allocateDirect(64);
+		UnsafeByteBufferInput input = new UnsafeByteBufferInput(buffer);
+		input.setBuffer(ByteBuffer.allocateDirect(64));
+		assertNotReleased(buffer);
+	}
+
+	/** If the buffer's memory was freed, new direct buffers of the same size can be given the same memory. */
+	private static void assertNotReleased (ByteBuffer buffer) {
+		for (int i = 0; i < 64; i++)
+			buffer.put(i, (byte)1);
+		ByteBuffer[] others = new ByteBuffer[16];
+		for (int i = 0; i < others.length; i++) {
+			others[i] = ByteBuffer.allocateDirect(64);
+			for (int ii = 0; ii < 64; ii++)
+				others[i].put(ii, (byte)2);
+		}
+		for (int i = 0; i < 64; i++)
+			assertEquals(1, buffer.get(i));
+	}
 }

@@ -43,6 +43,8 @@ import sun.nio.ch.DirectBuffer;
 public class UnsafeByteBufferInput extends ByteBufferInput {
 	/** Start address of the memory buffer. It must be non-movable, which normally means that is is allocated off-heap. */
 	private long bufferAddress;
+	/** True if the buffer was allocated by this input, so it can be released when it is replaced. */
+	private boolean ownsBuffer;
 
 	/** Creates an uninitialized Input, {@link #setBuffer(ByteBuffer)} must be called before the Input is used. */
 	public UnsafeByteBufferInput () {
@@ -53,18 +55,21 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 	 *           {@link #fill(ByteBuffer, int, int)} does not supply more bytes. */
 	public UnsafeByteBufferInput (int bufferSize) {
 		super(bufferSize);
+		ownsBuffer = true;
 		updateBufferAddress();
 	}
 
 	/** Creates a new Input for reading from a {@link ByteBuffer} which is filled with the specified bytes. */
 	public UnsafeByteBufferInput (byte[] bytes) {
 		super(bytes);
+		ownsBuffer = true;
 		updateBufferAddress();
 	}
 
 	/** Creates a new Input for reading from a {@link ByteBuffer} which is filled with the specified bytes. */
 	public UnsafeByteBufferInput (byte[] bytes, int offset, int count) {
 		super(bytes, offset, count);
+		ownsBuffer = true;
 		updateBufferAddress();
 	}
 
@@ -84,18 +89,23 @@ public class UnsafeByteBufferInput extends ByteBufferInput {
 	/** Creates a new Input for reading from an InputStream with a buffer size of 4096. */
 	public UnsafeByteBufferInput (InputStream inputStream) {
 		super(inputStream);
+		ownsBuffer = true;
 		updateBufferAddress();
 	}
 
 	/** Creates a new Input for reading from an InputStream with the specified buffer size. */
 	public UnsafeByteBufferInput (InputStream inputStream, int bufferSize) {
 		super(inputStream, bufferSize);
+		ownsBuffer = true;
 		updateBufferAddress();
 	}
 
 	public void setBuffer (ByteBuffer buffer) {
 		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
-		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
+		if (buffer != byteBuffer) {
+			if (ownsBuffer) UnsafeUtil.dispose(byteBuffer);
+			ownsBuffer = false;
+		}
 		super.setBuffer(buffer);
 		updateBufferAddress();
 	}
