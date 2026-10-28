@@ -31,7 +31,8 @@ import java.lang.reflect.WildcardType;
 /** @author Nathan Sweet */
 public class GenericsUtil {
 	/** Returns the class for the specified type after replacing any type variables using the class hierarchy between the specified
-	 * classes.
+	 * classes. A type variable that can't be resolved is returned, or a GenericArrayType for an array of a type variable passed to
+	 * a super class, eg {@code T[]} for {@code Super<T[]>}.
 	 * @param toClass Must be a sub class of fromClass. */
 	public static Type resolveType (Class fromClass, Class toClass, Type type) {
 		// Explicit type, eg String.
@@ -75,7 +76,7 @@ public class GenericsUtil {
 	 * which explicitly specifies the type variable's class.
 	 * @param current Must be a sub class of fromClass.
 	 * @return A Class if the type variable was resolved, else a TypeVariable to continue searching or if the type could not be
-	 *         resolved. */
+	 *         resolved, or a GenericArrayType for an array of a type variable passed to a super class. */
 	private static Type resolveTypeVariable (Class fromClass, Class current, Type type, boolean first) {
 		Type genericSuper = current.getGenericSuperclass();
 		Class superClass = current.getSuperclass();
@@ -94,19 +95,38 @@ public class GenericsUtil {
 			type = resolved;
 		}
 
+		// An array of a type variable that the super class passed to its super class, eg T[] for Super<T[]>.
+		int dimensions = 0;
+		Type variable = type;
+		while (variable instanceof GenericArrayType) {
+			variable = ((GenericArrayType)variable).getGenericComponentType();
+			dimensions++;
+		}
+
 		// Match the type variable name to the super class parameter.
-		String name = type.toString();
+		String name = variable.toString();
 		TypeVariable[] params = superClass.getTypeParameters();
 		for (int i = 0, n = params.length; i < n; i++) {
 			TypeVariable param = params[i];
 			if (param.getName().equals(name)) {
 				// Use the super class' type variable index to find the actual class in the sub class declaration.
 				Type arg = ((ParameterizedType)genericSuper).getActualTypeArguments()[i];
+				for (int d = 0; d < dimensions; d++)
+					arg = new ArrayOfType(arg);
 
 				// Success, the type variable was explicitly declared.
 				if (arg instanceof Class) return arg;
 				if (arg instanceof ParameterizedType) return resolveType(fromClass, current, arg);
-				if (arg instanceof GenericArrayType) return resolveType(fromClass, current, arg);
+				if (arg instanceof GenericArrayType) {
+					// An array of a type variable of the sub class, eg T[] for Super<T[]>, is resolved by the next sub class or when
+					// serializing. Resolving the type variable here would drop the dimensions, and recurse endlessly if it has
+					// the name of the super class parameter.
+					Type component = arg;
+					while (component instanceof GenericArrayType)
+						component = ((GenericArrayType)component).getGenericComponentType();
+					if (component instanceof TypeVariable) return arg;
+					return resolveType(fromClass, current, arg);
+				}
 
 				if (arg instanceof TypeVariable) {
 					if (first) return type; // Failure, no more sub classes.
@@ -120,4 +140,29 @@ public class GenericsUtil {
 		return type;
 	}
 
+	/** An array of a type argument, which keeps the dimensions of a type variable passed to a super class as an array, eg T[] for
+	 * {@code Super<T[]>}, while the type variable is replaced by the type argument of a sub class. */
+	static private final class ArrayOfType implements GenericArrayType {
+		private final Type componentType;
+
+		ArrayOfType (Type componentType) {
+			this.componentType = componentType;
+		}
+
+		public Type getGenericComponentType () {
+			return componentType;
+		}
+
+		public boolean equals (Object obj) {
+			return obj instanceof GenericArrayType && componentType.equals(((GenericArrayType)obj).getGenericComponentType());
+		}
+
+		public int hashCode () {
+			return componentType.hashCode();
+		}
+
+		public String toString () {
+			return componentType + "[]";
+		}
+	}
 }

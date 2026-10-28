@@ -229,7 +229,10 @@ public final class DefaultGenerics implements Generics {
 	 * entries of the enclosing object. */
 	private Class resolve (GenericType argument, int size) {
 		if (argument.type instanceof Class) return (Class)argument.type;
-		return resolveTypeVariable((TypeVariable)argument.type, size);
+		Class resolved = resolveTypeVariable((TypeVariable)argument.type, size);
+		for (int i = 0; i < argument.dimensions && resolved != null; i++)
+			resolved = Util.getArrayType(resolved);
+		return resolved;
 	}
 
 	@Override

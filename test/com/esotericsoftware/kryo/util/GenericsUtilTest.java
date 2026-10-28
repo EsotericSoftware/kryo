@@ -111,7 +111,8 @@ class GenericsUtilTest {
 	 * classes.
 	 * @param toClass Must be a sub class of fromClass.
 	 * @return Null if the type has no type parameters, else contains Class entries for type parameters that were resolved and
-	 *         TypeVariable entries for type parameters that couldn't be resolved. */
+	 *         TypeVariable entries for type parameters that couldn't be resolved, or GenericArrayType entries for arrays of type
+	 *         variables passed to a super class, eg {@code T[]} for {@code Super<T[]>}. */
 	private static Type[] resolveTypeParameters (Class fromClass, Class toClass, Type type) {
 		// Type which has a type parameter, eg ArrayList<T>.
 		if (type instanceof ParameterizedType) {
@@ -133,6 +134,29 @@ class GenericsUtilTest {
 		}
 
 		return null; // No type parameters (is a class or type variable).
+	}
+
+	// Test for https://github.com/EsotericSoftware/kryo/issues/1539
+	@Test
+	void testArrayOfSubClassTypeVariable () throws Exception {
+		// T of ArrayBox is V[] in ArraySub and W[] in ArraySubSub, equal to the type of the array field.
+		Type type = resolveType(ArrayBox.class, ArraySubSub.class, ArrayBox.class.getField("value").getGenericType());
+		Type fieldType = ArraySubSub.class.getField("array").getGenericType();
+		assertTrue(type instanceof GenericArrayType, type.toString());
+		assertEquals(fieldType, type);
+		assertEquals(type, fieldType);
+		assertEquals(fieldType.hashCode(), type.hashCode());
+	}
+
+	public static class ArrayBox<T> {
+		public T value;
+	}
+
+	public static class ArraySub<V> extends ArrayBox<V[]> {
+	}
+
+	public static class ArraySubSub<W> extends ArraySub<W> {
+		public W[] array;
 	}
 
 	public static class Test1<FLOAT, STRING, NULL> {

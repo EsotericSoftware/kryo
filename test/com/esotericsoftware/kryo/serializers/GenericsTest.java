@@ -210,6 +210,39 @@ class GenericsTest extends KryoTestCase {
 		roundTrip(70, leaf);
 	}
 
+	// Test for https://github.com/EsotericSoftware/kryo/issues/1539
+	@Test
+	void testGenericArrayTypeArguments () {
+		GenericArraysHolder holder = new GenericArraysHolder();
+		holder.strings = new GenericArrays<>();
+		holder.strings.value = new ArrayValue<>(new String[] {"1"});
+		holder.strings.list = new ArrayList<>();
+		holder.strings.list.add(new String[] {"2"});
+		holder.strings.map = new HashMap<>();
+		holder.strings.map.put("3", new String[] {"4"});
+		holder.strings.array = new String[][] {{"5"}};
+
+		kryo.setRegistrationRequired(false);
+
+		roundTrip(258, 307, holder);
+	}
+
+	// Test for https://github.com/EsotericSoftware/kryo/issues/1539
+	@Test
+	void testGenericArrayTypeArgumentsOfSuperClass () {
+		SuperClassArraysHolder holder = new SuperClassArraysHolder();
+		holder.sub = new ArrayValueSub<>();
+		holder.sub.value = new String[] {"1"};
+		holder.mid = new ArrayValueMid<>();
+		holder.mid.value = new String[] {"2"};
+		holder.leaf = new ArrayValueLeaf();
+		holder.leaf.value = new String[] {"3"};
+
+		kryo.setRegistrationRequired(false);
+
+		roundTrip(283, 306, holder);
+	}
+
 	// Test for https://github.com/EsotericSoftware/kryo/issues/655
 	@Test
 	void testClassWithMultipleGenericTypes() {
@@ -1208,6 +1241,74 @@ class GenericsTest extends KryoTestCase {
 
 		public boolean equals (Object o) {
 			return o instanceof BindHolder h && Objects.equals(base, h.base);
+		}
+	}
+
+	public static class ArrayValue<T> {
+		public T value;
+
+		public ArrayValue () {
+		}
+
+		public ArrayValue (T value) {
+			this.value = value;
+		}
+
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			ArrayValue<?> that = (ArrayValue<?>)o;
+			return Objects.deepEquals(value, that.value);
+		}
+	}
+
+	/** The type parameter has the name of the type parameter of the super class. */
+	public static class ArrayValueSub<T> extends ArrayValue<T[]> {
+	}
+
+	public static class ArrayValueMid<V> extends ArrayValue<V[]> {
+	}
+
+	public static class ArrayValueLeaf extends ArrayValueMid<String> {
+	}
+
+	public static class GenericArrays<T> {
+		public ArrayValue<T[]> value;
+		public List<T[]> list;
+		public Map<String, T[]> map;
+		public T[][] array;
+
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			GenericArrays<?> that = (GenericArrays<?>)o;
+			return Objects.equals(value, that.value) && Arrays.deepEquals(list.toArray(), that.list.toArray())
+				&& map.keySet().equals(that.map.keySet()) && Arrays.deepEquals(map.values().toArray(), that.map.values().toArray())
+				&& Arrays.deepEquals(array, that.array);
+		}
+	}
+
+	public static class GenericArraysHolder {
+		public GenericArrays<String> strings;
+
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			GenericArraysHolder that = (GenericArraysHolder)o;
+			return Objects.equals(strings, that.strings);
+		}
+	}
+
+	public static class SuperClassArraysHolder {
+		public ArrayValueSub<String> sub;
+		public ArrayValueMid<String> mid;
+		public ArrayValueLeaf leaf;
+
+		public boolean equals (Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			SuperClassArraysHolder that = (SuperClassArraysHolder)o;
+			return Objects.equals(sub, that.sub) && Objects.equals(mid, that.mid) && Objects.equals(leaf, that.leaf);
 		}
 	}
 }
