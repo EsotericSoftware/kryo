@@ -147,6 +147,14 @@ public class GenericsUtil {
 			return componentType;
 		}
 
+		public boolean equals (Object obj) {
+			return obj instanceof GenericArrayType && componentType.equals(((GenericArrayType)obj).getGenericComponentType());
+		}
+
+		public int hashCode () {
+			return componentType.hashCode();
+		}
+
 		public String toString () {
 			return componentType + "[]";
 		}
@@ -156,7 +164,8 @@ public class GenericsUtil {
 	 * classes.
 	 * @param toClass Must be a sub class of fromClass.
 	 * @return Null if the type has no type parameters, else contains Class entries for type parameters that were resolved and
-	 *         TypeVariable entries for type parameters that couldn't be resolved. */
+	 *         TypeVariable entries for type parameters that couldn't be resolved, or GenericArrayType entries for arrays of type
+	 *         variables passed to a super class, eg {@code T[]} for {@code Super<T[]>}. */
 	public static Type[] resolveTypeParameters (Class fromClass, Class toClass, Type type) {
 		// Type which has a type parameter, eg ArrayList<T>.
 		if (type instanceof ParameterizedType) {

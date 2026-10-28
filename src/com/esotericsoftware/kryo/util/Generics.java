@@ -198,20 +198,20 @@ public interface Generics {
 
 			} else if (context instanceof GenericArrayType) {
 				// Array with a type parameter, eg "ArrayList<T>[]" or "T[]". Resolve the type parameter of the component type.
-				int dimensions = 1;
+				int arrayDimensions = 1;
 				while (true) {
 					context = ((GenericArrayType)context).getGenericComponentType();
 					if (!(context instanceof GenericArrayType)) break;
-					dimensions++;
+					arrayDimensions++;
 				}
 				initialize(fromClass, toClass, context);
 				if (type instanceof Class) {
-					if (dimensions == 1)
+					if (arrayDimensions == 1)
 						type = Array.newInstance((Class)type, 0).getClass();
 					else
-						type = Array.newInstance((Class)type, new int[dimensions]).getClass();
+						type = Array.newInstance((Class)type, new int[arrayDimensions]).getClass();
 				} else
-					this.dimensions += dimensions; // The type variable is resolved when serializing.
+					dimensions += arrayDimensions; // The type variable is resolved when serializing.
 
 			} else {
 				// No type parameters (is a class or type variable).

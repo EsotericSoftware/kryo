@@ -23,6 +23,7 @@ import static com.esotericsoftware.kryo.util.GenericsUtil.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
@@ -106,6 +107,29 @@ class GenericsUtilTest {
 			System.out.println();
 			assertTrue(value1.equalsIgnoreCase(value2), value1 + " != " + value2);
 		}
+	}
+
+	// Test for https://github.com/EsotericSoftware/kryo/issues/1539
+	@Test
+	void testArrayOfSubClassTypeVariable () throws Exception {
+		// T of ArrayBox is V[] in ArraySub and W[] in ArraySubSub, equal to the type of the array field.
+		Type type = resolveType(ArrayBox.class, ArraySubSub.class, ArrayBox.class.getField("value").getGenericType());
+		Type fieldType = ArraySubSub.class.getField("array").getGenericType();
+		assertTrue(type instanceof GenericArrayType, type.toString());
+		assertEquals(fieldType, type);
+		assertEquals(type, fieldType);
+		assertEquals(fieldType.hashCode(), type.hashCode());
+	}
+
+	public static class ArrayBox<T> {
+		public T value;
+	}
+
+	public static class ArraySub<V> extends ArrayBox<V[]> {
+	}
+
+	public static class ArraySubSub<W> extends ArraySub<W> {
+		public W[] array;
 	}
 
 	public static class Test1<FLOAT, STRING, NULL> {
