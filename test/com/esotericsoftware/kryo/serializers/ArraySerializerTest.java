@@ -98,17 +98,19 @@ class ArraySerializerTest extends KryoTestCase {
 		roundTrip(43, array);
 
 		kryo.setReferences(true);
-		roundTrip(28, array);
+		roundTrip(44, array);
 	}
 
-	// boolean[] and Object[] check the length against maxArraySize like the other arrays.
+	// All arrays check the length against maxArraySize before they are allocated.
 	@Test
 	void testMaxArraySize () {
 		kryo.register(boolean[].class);
+		kryo.register(int[].class);
+		kryo.register(String[].class);
 		kryo.register(Object[].class);
 		kryo.register(Empty.class);
 		kryo.register(Empty[].class);
-		for (Object array : new Object[] {new boolean[11], new Object[11], new Empty[11]}) {
+		for (Object array : new Object[] {new boolean[11], new int[11], new String[11], new Object[11], new Empty[11]}) {
 			Output output = new Output(64);
 			kryo.writeObject(output, array);
 			Input input = new Input(output.toBytes());
@@ -135,9 +137,6 @@ class ArraySerializerTest extends KryoTestCase {
 		assertEquals(3, kryo.readObject(new Input(output.toBytes()), Empty[].class).length);
 	}
 
-	public static final class Empty {
-	}
-
 	static class EmptySerializer extends Serializer<Empty> {
 		{
 			setAcceptsNull(true);
@@ -149,5 +148,8 @@ class ArraySerializerTest extends KryoTestCase {
 		public Empty read (Kryo kryo, Input input, Class<? extends Empty> type) {
 			return new Empty();
 		}
+	}
+
+	public static final class Empty {
 	}
 }

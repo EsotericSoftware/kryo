@@ -1,33 +1,30 @@
 # Kryo Benchmarks
 
-This subproject contains [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmarks for Kryo. The [R/ggplot2 files](https://github.com/EsotericSoftware/kryo/tree/master/benchmarks/charts) are used to generate charts from the benchmark results.
+This subproject contains [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmarks for Kryo. The [charts](#charts) are generated from the benchmark results by a Python script.
 
 ## Usage
 
 ### With Maven
 
-To run benchmarks execute:
+Build Kryo and the benchmarks together and write the classpath, like `run.sh` does, then run the benchmarks from the repository root:
 ```
-mvn -f benchmarks/pom.xml compile exec:java -Dexec.args="[parameters]"
+mvn -q -pl main,benchmarks -DskipTests package dependency:build-classpath -Dmdep.outputFile=target/classpath.txt
+java -cp benchmarks/target/classes:$(cat benchmarks/target/classpath.txt) com.esotericsoftware.kryo.benchmarks.KryoBenchmarks [parameters]
 ```
 
-Where `[parameters]` should be replaced with JMH parameters.
+Where `[parameters]` should be replaced with JMH parameters. Building only the benchmarks, eg with `mvn -f benchmarks/pom.xml` or `-pl benchmarks`, runs them against the Kryo snapshot in the local Maven repository, which is usually stale.
 
-### Without Maven
+### From the IDE
 
-This assumes your IDE has compiled Kryo to the `bin` directory, including the benchmarks source and processing of the JMH annotations.
-```
-java -cp "bin;lib/*;benchmarks/lib/*" com.esotericsoftware.kryo.benchmarks.KryoBenchmarks [parameters]
-```
-Where `[parameters]` should be replaced with JMH parameters.
+The Eclipse project in `eclipse` compiles the benchmarks with the JMH annotation processor, both taken from the local Maven repository, so the Maven build above must have run once. Run `KryoBenchmarks` with the JMH parameters as program arguments.
 
 ### Parameters
 
-If no JMH parameters are given, the benchmarks are run with settings only suitable for development (fork 0, short runs). A full list of JMH parameters can be found by running:
+If no JMH parameters are given, the benchmarks are run with settings only suitable for development (fork 0, short runs). A full list of JMH parameters can be found by running, after the Maven build above:
 ```
-java -cp "benchmarks/lib/*" org.openjdk.jmh.Main -h
+java -cp benchmarks/target/classes:$(cat benchmarks/target/classpath.txt) org.openjdk.jmh.Main -h
 ```
-Or by digging through the [JMH source](http://hg.openjdk.java.net/code-tools/jmh/file/3769055ad883/jmh-core/src/main/java/org/openjdk/jmh/runner/options/CommandLineOptions.java).
+Or in the [JMH source](https://github.com/openjdk/jmh/blob/master/jmh-core/src/main/java/org/openjdk/jmh/runner/options/CommandLineOptions.java).
 
 Running without parameters is equivalent to:
 ```
@@ -48,3 +45,64 @@ To run only a subset of a benchmark, specify the benchmark class name and the me
 ```
 -f 4 -wi 5 -i 3 -t 2 -w 2s -r 2s FieldSerializerBenchmark.field FieldSerializerBenchmark.tagged
 ```
+
+## Charts
+
+`run.sh` builds Kryo, runs the benchmarks for the charts with `-f 4 -wi 5 -i 3 -w 2s -r 2s` and writes the results as JSON to `charts/results`. Then it runs `charts/charts.py`, which writes the SVG files to `charts`. The charts of the serializer benchmarks show round trips per second, the charts of the input and output benchmarks show nanoseconds per operation. ObjectGraphBenchmark is run with and without code generation, which needs Java 24+ or ASM on the classpath, a dependency of the benchmarks, and its results make two charts: `objectGraph` with the cached fields and `codeGeneration` with both. Python 3 is needed, without additional packages.
+
+```
+benchmarks/run.sh
+```
+
+JMH parameters given to the script replace the defaults, eg to try the script with a short run:
+
+```
+benchmarks/run.sh -f 1 -wi 1 -i 2 -w 200ms -r 200ms
+```
+
+`kryo5-vs-kryo6.sh` runs the benchmarks for the charts that compare Kryo 5 with Kryo 6 and generates the charts: `kryo5VsKryo6` is ObjectGraphBenchmark at scale 4 with references, with Kryo 6 by default (VarHandles), with Unsafe field access and with code generation, and `records` is RecordSerializerBenchmark. The Kryo 5 bars come from the same benchmarks compiled against Kryo 5.7.1 without the `codeGeneration` parameter, which Kryo 5 doesn't have, in `target/kryo5`. Both versions use their default settings. The results are written to `charts/results` like the other charts, the script takes the same JMH parameters as `run.sh`.
+
+```
+benchmarks/kryo5-vs-kryo6.sh -f 2 -wi 5 -i 5 -w 1s -r 1s
+```
+
+To generate the charts again from existing results:
+
+```
+python3 benchmarks/charts/charts.py [results directory] [output directory]
+```
+
+## ObjectGraphBenchmark
+
+Most benchmarks serialize a single small object. `ObjectGraphBenchmark` does a round trip of a larger object graph that resembles the state of an application: 78 classes in the `data.graph` package with about 10 fields each, lists, maps, fields with an abstract type, and 20% shared objects. It has a method for each field serializer (`field`, `compatible`, `tagged`, `version`) and these parameters:
+
+Parameter | Description | Default
+--- | --- | ---
+`references` | Whether references are enabled. Without references, shared objects are written multiple times. | true
+`scale` | The size of the object graph: 4 is about 1,400 objects and 25 KB, 16 about 5,200 objects. | 4
+`chunked` | Chunked encoding, for `compatible` and `tagged`. | false
+`codeGeneration` | Whether the field serializers use [generated code](../README.md#code-generation), which needs Java 24+ or ASM on the classpath. | false
+
+```
+-f 1 -wi 5 -i 8 -w 1s -r 2s ObjectGraphBenchmark.field -p scale=16
+```
+
+The field access can be chosen with a system property, eg `-jvmArgsAppend "-Dkryo.fieldAccess=REFLECTION"`.
+
+The classes are generated by `object-graph-generator.py`, which always generates the same classes and data. To change the object model, change the script and run it again:
+
+```
+python3 benchmarks/object-graph-generator.py benchmarks/src/main/java [class count] [--no-strings]
+```
+
+## FieldSerializerBenchmark
+
+`FieldSerializerBenchmark` does a round trip of a small object with a method for each field serializer (`field`, `compatible`, `tagged`, `version`) and a hand-written serializer (`custom`), and these parameters, of which JMH runs all combinations of the default values:
+
+Parameter | Description | Default
+--- | --- | ---
+`references` | Whether references are enabled. | true, false
+`objectType` | The object: `sample`, with primitive fields, wrappers and arrays, or `media`, with strings, enums and lists. | sample, media
+`codeGeneration` | Whether the field serializers use [generated code](../README.md#code-generation), which needs Java 24+ or ASM on the classpath. | false
+`chunked` | Chunked encoding, for `compatible` and `tagged`. | true, false
+`format` | The serialization format, `KRYO6` or `KRYO5`, for `compatible` and `tagged`, eg to compare the chunked encodings, see [MIGRATION.md](../MIGRATION.md#chunked-encoding). | KRYO6, KRYO5

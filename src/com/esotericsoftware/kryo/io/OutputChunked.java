@@ -20,7 +20,7 @@
 package com.esotericsoftware.kryo.io;
 
 import static com.esotericsoftware.kryo.util.Util.*;
-import static com.esotericsoftware.minlog.Log.*;
+import static com.esotericsoftware.kryo.util.Log.*;
 
 import com.esotericsoftware.kryo.KryoException;
 

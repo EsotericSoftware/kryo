@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
@@ -102,11 +103,37 @@ class GenericsUtilTest {
 			value2 += fieldClassName.replaceAll("[^\\[\\]]", "");
 			value2 += " " + name;
 
-			System.out.println(value1);
-			System.out.println(value2);
-			System.out.println();
 			assertTrue(value1.equalsIgnoreCase(value2), value1 + " != " + value2);
 		}
+	}
+
+	/** Resolves type variables for the type parameters of the specified type by using the class hierarchy between the specified
+	 * classes.
+	 * @param toClass Must be a sub class of fromClass.
+	 * @return Null if the type has no type parameters, else contains Class entries for type parameters that were resolved and
+	 *         TypeVariable entries for type parameters that couldn't be resolved, or GenericArrayType entries for arrays of type
+	 *         variables passed to a super class, eg {@code T[]} for {@code Super<T[]>}. */
+	private static Type[] resolveTypeParameters (Class fromClass, Class toClass, Type type) {
+		// Type which has a type parameter, eg ArrayList<T>.
+		if (type instanceof ParameterizedType) {
+			Type[] actualArgs = ((ParameterizedType)type).getActualTypeArguments();
+			int n = actualArgs.length;
+			Type[] generics = new Type[n];
+			for (int i = 0; i < n; i++)
+				generics[i] = resolveType(fromClass, toClass, actualArgs[i]);
+			return generics;
+		}
+
+		// Array which has a type parameter, eg "ArrayList<T>[]". Discard array types, resolve type parameter of the component type.
+		if (type instanceof GenericArrayType) {
+			while (true) {
+				type = ((GenericArrayType)type).getGenericComponentType();
+				if (!(type instanceof GenericArrayType)) break;
+			}
+			return resolveTypeParameters(fromClass, toClass, type);
+		}
+
+		return null; // No type parameters (is a class or type variable).
 	}
 
 	// Test for https://github.com/EsotericSoftware/kryo/issues/1539

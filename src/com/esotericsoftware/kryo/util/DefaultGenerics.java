@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.util;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -28,6 +29,7 @@ import java.lang.reflect.TypeVariable;
  * @author Nathan Sweet */
 public final class DefaultGenerics implements Generics {
 	private final Kryo kryo;
+	private Format format;
 
 	private int genericTypesSize;
 	private GenericType[] genericTypes = new GenericType[16];
@@ -42,6 +44,8 @@ public final class DefaultGenerics implements Generics {
 
 	@Override
 	public GenericsHierarchy buildHierarchy (Class type) {
+		// Type variables are only stored for the type parameters of the class itself.
+		if (type.getTypeParameters().length == 0 && !kryo5()) return GenericsHierarchy.EMPTY;
 		return new GenericsHierarchy(type);
 	}
 
@@ -74,7 +78,7 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
-	public GenericType[] nextGenericTypes () {
+	public GenericType nextGenericType () {
 		int index = genericTypesSize;
 		if (index > 0) {
 			index--;
@@ -83,7 +87,31 @@ public final class DefaultGenerics implements Generics {
 			// The depth must match to prevent the types being wrong if a serializer doesn't call nextGenericTypes.
 			if (depths[index] == kryo.getDepth() - 1) {
 				pushGenericType(genericType.arguments[genericType.arguments.length - 1]);
-				return genericType.arguments;
+				return genericType;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public GenericType[] nextGenericTypes () {
+		GenericType genericType = nextGenericType();
+		return genericType == null ? null : genericType.arguments;
+	}
+
+	@Override
+	public GenericType[] nextGenericTypes (Class superType) {
+		if (kryo5()) return nextGenericTypes(); // Kryo 5 used the type arguments by position.
+		int index = genericTypesSize;
+		if (index > 0) {
+			index--;
+			GenericType genericType = genericTypes[index];
+			if (genericType.arguments == null) return null;
+			// The depth must match to prevent the types being wrong if a serializer doesn't call nextGenericTypes.
+			if (depths[index] == kryo.getDepth() - 1) {
+				GenericType[] arguments = genericType.superTypeArguments(superType);
+				pushGenericType(arguments[arguments.length - 1]);
+				return arguments;
 			}
 		}
 		return null;
@@ -97,41 +125,95 @@ public final class DefaultGenerics implements Generics {
 	}
 
 	@Override
-	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType[] args) {
-		// Do not store type variables if hierarchy is empty, or we do not have arguments for all root parameters, or we have more
-		// arguments than the hierarchy has parameters.
-		if (hierarchy.total == 0 || hierarchy.rootTotal > args.length || args.length > hierarchy.counts.length) return 0;
-
-		int startSize = this.argumentsSize;
-
-		// Ensure arguments capacity.
-		int sizeNeeded = startSize + hierarchy.total;
-		if (sizeNeeded > arguments.length) {
-			Type[] newArray = new Type[Math.max(sizeNeeded, arguments.length << 1)];
-			System.arraycopy(arguments, 0, newArray, 0, startSize);
-			arguments = newArray;
+	public int pushTypeVariables (GenericsHierarchy hierarchy, GenericType type) {
+		if (kryo5()) return pushTypeVariablesByPosition(hierarchy, type);
+		int startSize = argumentsSize;
+		if (type == null) {
+			// The type arguments are unknown. The type variables hide those of an enclosing object of the same class, if any.
+			if (startSize == 0) return 0;
+			TypeVariable[] params = hierarchy.parameters;
+			ensureCapacity(params.length);
+			for (TypeVariable param : params) {
+				arguments[argumentsSize++] = param;
+				arguments[argumentsSize++] = null;
+			}
+			return argumentsSize - startSize;
 		}
+		Class declared = (Class)type.type; // Always a class, because the type has type arguments.
+		GenericType[] args = type.arguments;
 
-		// Resolve and store the type arguments.
-		int[] counts = hierarchy.counts;
-		TypeVariable[] params = hierarchy.parameters;
-		for (int i = 0, p = 0, n = args.length; i < n; i++) {
-			GenericType arg = args[i];
-			Class resolved = arg.resolve(this);
-			if (resolved == null) continue;
-			int count = counts[i];
-			if (arg == null)
-				p += count;
-			else {
-				for (int nn = p + count; p < nn; p++) {
-					arguments[argumentsSize] = params[p];
-					arguments[argumentsSize + 1] = resolved;
-					argumentsSize += 2;
+		// The type parameters of the class, which come first in the hierarchy. The arguments are for the declared type, which can
+		// be a super type of the class with different type parameters. An unknown argument is stored as null, so the type variable
+		// doesn't resolve to that of an enclosing object of the same class.
+		boolean resolvedAny = false;
+		if (hierarchy.rootTotal > 0) {
+			int[] indices = hierarchy.argumentIndices(declared);
+			ensureCapacity(hierarchy.total);
+			int[] counts = hierarchy.counts;
+			TypeVariable[] params = hierarchy.parameters;
+			for (int i = 0, p = 0, n = indices.length; i < n; i++) {
+				int index = indices[i];
+				Class resolved = index == -1 ? null : resolve(args[index], startSize);
+				if (resolved != null) resolvedAny = true;
+				for (int nn = p + counts[i]; p < nn; p++) {
+					arguments[argumentsSize++] = params[p];
+					arguments[argumentsSize++] = resolved;
 				}
 			}
 		}
 
+		// If no type parameters of the class are passed to the declared super class, eg because the class extends it as a raw type,
+		// use the arguments for the type parameters of the declared class.
+		if (!resolvedAny && declared != hierarchy.type && !declared.isInterface()) {
+			TypeVariable[] params = type.typeVariables();
+			ensureCapacity(params.length);
+			for (int i = 0; i < params.length; i++) {
+				Class resolved = resolve(args[i], startSize);
+				if (resolved == null) continue;
+				arguments[argumentsSize++] = params[i];
+				arguments[argumentsSize++] = resolved;
+			}
+		}
+
 		return argumentsSize - startSize;
+	}
+
+	/** Assigns the type arguments of the declared type by position to the type parameters of the class, like Kryo 5, and doesn't
+	 * hide the type variables of an enclosing object of the same class if the declared type is not known. */
+	private int pushTypeVariablesByPosition (GenericsHierarchy hierarchy, GenericType type) {
+		if (type == null) return 0;
+		GenericType[] args = type.arguments;
+		if (hierarchy.total == 0 || hierarchy.rootTotal > args.length || args.length > hierarchy.counts.length) return 0;
+		int startSize = argumentsSize;
+		ensureCapacity(hierarchy.total);
+		int[] counts = hierarchy.counts;
+		TypeVariable[] params = hierarchy.parameters;
+		for (int i = 0, p = 0, n = args.length; i < n; i++) {
+			Class resolved = args[i].resolve(this);
+			if (resolved == null) continue; // Like Kryo 5, the next argument is assigned to these type parameters.
+			for (int nn = p + counts[i]; p < nn; p++) {
+				arguments[argumentsSize++] = params[p];
+				arguments[argumentsSize++] = resolved;
+			}
+		}
+		return argumentsSize - startSize;
+	}
+
+	/** Returns true if type variables are resolved like Kryo 5. The format can't change once it was read. */
+	private boolean kryo5 () {
+		Format format = this.format;
+		if (format == null) this.format = format = kryo.getFormat();
+		return format == Format.KRYO5;
+	}
+
+	/** Ensures there is room for the specified number of type variables and their classes. */
+	private void ensureCapacity (int count) {
+		int sizeNeeded = argumentsSize + count * 2;
+		if (sizeNeeded > arguments.length) {
+			Type[] newArray = new Type[Math.max(sizeNeeded, arguments.length << 1)];
+			System.arraycopy(arguments, 0, newArray, 0, argumentsSize);
+			arguments = newArray;
+		}
 	}
 
 	@Override
@@ -142,9 +224,24 @@ public final class DefaultGenerics implements Generics {
 			arguments[i++] = null;
 	}
 
+	/** Resolves a type argument of the declared type against the entries below the ones being pushed: the declared type can use
+	 * the type variables of the class itself, eg a field {@code Pair<Y, X>} in {@code Pair<X, Y>}, which must resolve to the
+	 * entries of the enclosing object. */
+	private Class resolve (GenericType argument, int size) {
+		if (argument.type instanceof Class) return (Class)argument.type;
+		Class resolved = resolveTypeVariable((TypeVariable)argument.type, size);
+		for (int i = 0; i < argument.dimensions && resolved != null; i++)
+			resolved = Util.getArrayType(resolved);
+		return resolved;
+	}
+
 	@Override
 	public Class resolveTypeVariable (TypeVariable typeVariable) {
-		for (int i = argumentsSize - 2; i >= 0; i -= 2) {
+		return resolveTypeVariable(typeVariable, argumentsSize);
+	}
+
+	private Class resolveTypeVariable (TypeVariable typeVariable, int size) {
+		for (int i = size - 2; i >= 0; i -= 2) {
 			final Type arg = arguments[i];
 			if (arg == typeVariable || arg.equals(typeVariable)) return (Class)arguments[i + 1];
 		}
@@ -175,7 +272,7 @@ public final class DefaultGenerics implements Generics {
 			if (i != 0) buffer.append(", ");
 			buffer.append(((TypeVariable)arguments[i]).getName());
 			buffer.append("=");
-			buffer.append(((Class)arguments[i + 1]).getSimpleName());
+			buffer.append(arguments[i + 1] == null ? "?" : ((Class)arguments[i + 1]).getSimpleName());
 		}
 		return buffer.toString();
 	}

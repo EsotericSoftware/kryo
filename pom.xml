@@ -3,7 +3,7 @@
 
 	<groupId>com.esotericsoftware</groupId>
 	<artifactId>kryo-parent</artifactId>
-	<version>5.8.0-SNAPSHOT</version>
+	<version>6.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>Kryo Parent</name>
@@ -42,12 +42,13 @@
 
 	<properties>
 		<kryo.root>${basedir}</kryo.root>
-		<kryo.major.version>5</kryo.major.version>
-		<javac.target>1.8</javac.target>
+		<!-- Also the artifactId in main-versioned/pom.xml, which the build checks. -->
+		<kryo.major.version>6</kryo.major.version>
+		<javac.target>17</javac.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<junit.version>5.13.4</junit.version>
+		<junit.version>6.1.3</junit.version>
 		<kotlin.version>2.4.21</kotlin.version>
-		<kotlin.compiler.incremental>true</kotlin.compiler.incremental>
+		<kotlin.compiler.incremental>false</kotlin.compiler.incremental>
 	</properties>
 
 	<modules>
@@ -82,6 +83,14 @@
 			<version>3.21.0</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- The released Kryo 5, relocated to com.esotericsoftware.kryo.kryo5, to test the Kryo 5 format against it. Update it by
+			hand after each 5.x release. -->
+		<dependency>
+			<groupId>com.esotericsoftware.kryo</groupId>
+			<artifactId>kryo5</artifactId>
+			<version>5.7.1</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -105,12 +114,27 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.15.0</version>
+					<version>3.16.0</version>
 					<configuration>
 						<source>${javac.target}</source>
 						<target>${javac.target}</target>
 						<encoding>utf-8</encoding>
+						<compilerArgs>
+							<!-- The code that needs a newer JDK and the tests, which use JDK internals, are compiled with source and
+								target instead of release, which javac warns about. -->
+							<arg>-Xlint:-options</arg>
+						</compilerArgs>
 					</configuration>
+					<executions>
+						<execution>
+							<id>default-testCompile</id>
+							<configuration>
+								<compilerArgs combine.children="append">
+									<arg>-parameters</arg>
+								</compilerArgs>
+							</configuration>
+						</execution>
+					</executions>
 				</plugin>
 
 				<plugin>
@@ -141,6 +165,36 @@
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
 					<version>3.6.1</version>
+					<configuration>
+						<argLine>
+							--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
+						</argLine>
+						<excludedGroups>kryo5</excludedGroups>
+						<!-- A test given with -Dtest runs in one of the executions. -->
+						<failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+					</configuration>
+					<executions>
+						<!-- The tests against the released Kryo 5, which needs these packages open. Kryo 6 runs without them, so
+							the other tests don't open them. -->
+						<execution>
+							<id>kryo5</id>
+							<goals>
+								<goal>test</goal>
+							</goals>
+							<configuration>
+								<argLine>
+									--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
+									--add-opens java.base/java.io=ALL-UNNAMED
+									--add-opens java.base/java.net=ALL-UNNAMED
+									--add-opens java.base/java.nio=ALL-UNNAMED
+									--add-opens java.base/java.util=ALL-UNNAMED
+									--add-opens java.base/java.util.regex=ALL-UNNAMED
+								</argLine>
+								<groups>kryo5</groups>
+								<excludedGroups combine.self="override" />
+							</configuration>
+						</execution>
+					</executions>
 				</plugin>
 
 				<plugin>
@@ -164,10 +218,11 @@
 					<artifactId>maven-javadoc-plugin</artifactId>
 					<version>3.12.0</version>
 					<configuration>
-						<!-- Required for java8, so that javadoc errors don't fail the build. -->
+						<!-- Don't fail the build on javadoc errors. -->
 						<doclint>none</doclint>
-						<!-- Required for build with java11, to prevent "error: package sun.nio.ch is not visible" failing javadoc -->
-						<source>8</source>
+						<source>${javac.target}</source>
+						<!-- Document the sources on the class path, not as a module, like they are compiled. -->
+						<legacyMode>true</legacyMode>
 					</configuration>
 				</plugin>
 
@@ -198,7 +253,7 @@
 				<plugin>
 					<groupId>org.apache.felix</groupId>
 					<artifactId>maven-bundle-plugin</artifactId>
-					<version>5.1.9</version>
+					<version>6.2.0</version>
 				</plugin>
 
 				<plugin>
@@ -260,6 +315,21 @@
 								<requireMavenVersion>
 									<version>3.6.3</version>
 								</requireMavenVersion>
+							</rules>
+						</configuration>
+					</execution>
+					<!-- ClassFileWriter is compiled against the Class-File API of JDK 24+, see README "Building from source". -->
+					<execution>
+						<id>enforce-build-jdk</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireJavaVersion>
+									<version>[24,)</version>
+									<message>Building Kryo requires JDK 24+, while Kryo runs on Java 17+. To test on another Java version, pass its java, eg -Djvm=/path/to/jdk17/bin/java.</message>
+								</requireJavaVersion>
 							</rules>
 						</configuration>
 					</execution>
@@ -329,7 +399,7 @@
 								<configuration>
 									<rules>
 										<requireJavaVersion>
-											<version>[11, 12)</version>
+											<version>[25, 26)</version>
 										</requireJavaVersion>
 									</rules>
 								</configuration>
@@ -425,121 +495,6 @@
 					<scope>test</scope>
 				</dependency>
 			</dependencies>
-		</profile>
-		<!-- Include any tests that require JDK11+ -->
-		<profile>
-			<id>jdk11ge</id>
-			<activation>
-				<jdk>[11,)</jdk>
-			</activation>
-			<build>
-				<pluginManagement>
-					<plugins>
-						<plugin>
-							<groupId>org.codehaus.mojo</groupId>
-							<artifactId>build-helper-maven-plugin</artifactId>
-							<executions>
-								<execution>
-									<id>add-test-source</id>
-									<phase>generate-test-sources</phase>
-									<goals>
-										<goal>add-test-source</goal>
-									</goals>
-									<configuration>
-										<sources>
-											<source>${kryo.root}/test-kotlin</source>
-											<source>${kryo.root}/test-jdk11</source>
-										</sources>
-									</configuration>
-								</execution>
-							</executions>
-						</plugin>
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-compiler-plugin</artifactId>
-						</plugin>
-					</plugins>
-				</pluginManagement>
-			</build>
-		</profile>
-		<!-- Include any tests that require JDK17+ -->
-		<profile>
-			<id>jdk17ge</id>
-			<activation>
-				<jdk>[17,)</jdk>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<configuration>
-							<excludes>
-								<exclude>**/java11/*Test.java</exclude>
-							</excludes>
-						</configuration>
-					</plugin>
-				</plugins>
-				<pluginManagement>
-					<plugins>
-						<plugin>
-							<groupId>org.codehaus.mojo</groupId>
-							<artifactId>build-helper-maven-plugin</artifactId>
-							<executions>
-								<execution>
-									<id>add-test-source</id>
-									<phase>generate-test-sources</phase>
-									<goals>
-										<goal>add-test-source</goal>
-									</goals>
-									<configuration>
-										<sources>
-											<source>${kryo.root}/test-kotlin</source>
-											<source>${kryo.root}/test-jdk11</source>
-											<source>${kryo.root}/test-jdk17</source>
-										</sources>
-									</configuration>
-								</execution>
-							</executions>
-						</plugin>
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-compiler-plugin</artifactId>
-							<configuration>
-								<!-- Enable Java 17+ for test sources so that Intellij picks the right language level. Main sources must
-									always target Java 8, see javac.target. -->
-								<testSource>${java.vm.specification.version}</testSource>
-								<testTarget>${java.vm.specification.version}</testTarget>
-							</configuration>
-							<executions>
-								<execution>
-									<id>default-testCompile</id>
-									<configuration>
-										<compilerArgs>
-											<arg>-parameters</arg>
-											<arg>--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED</arg>
-											<arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
-										</compilerArgs>
-									</configuration>
-								</execution>
-							</executions>
-						</plugin>
-						<plugin>
-							<groupId>org.apache.maven.plugins</groupId>
-							<artifactId>maven-surefire-plugin</artifactId>
-							<configuration>
-								<argLine>
-									--enable-preview
-									--add-opens java.base/sun.nio.ch=ALL-UNNAMED
-									--add-opens java.base/java.lang.invoke=ALL-UNNAMED
-									--add-opens java.base/java.nio=ALL-UNNAMED
-									--add-opens java.base/java.util.concurrent.atomic=ALL-UNNAMED
-								</argLine>
-							</configuration>
-						</plugin>
-					</plugins>
-				</pluginManagement>
-			</build>
 		</profile>
 	</profiles>
 </project>

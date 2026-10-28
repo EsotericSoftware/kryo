@@ -19,15 +19,17 @@
 
 package com.esotericsoftware.kryo.benchmarks.io;
 
+import java.util.concurrent.TimeUnit;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
-@BenchmarkMode(Mode.SingleShotTime)
-@Measurement(batchSize = 150000000)
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class VariableEncodingBenchmark {
 	@Benchmark
 	public void writeInt (InputOutputState state) {
@@ -72,7 +74,7 @@ public class VariableEncodingBenchmark {
 	}
 
 	@Benchmark
-	public long readVarLong (ReadLong state) {
+	public long readVarLong (ReadVarLong state) {
 		state.reset();
 		return state.input.readVarLong(true);
 	}
@@ -91,7 +93,7 @@ public class VariableEncodingBenchmark {
 	static public class ReadVarInt extends InputOutputState {
 		public void setup () {
 			super.setup();
-			new VariableEncodingBenchmark().readVarInt(this);
+			new VariableEncodingBenchmark().writeVarInt(this);
 		}
 	}
 

@@ -22,8 +22,8 @@ package com.esotericsoftware.kryo;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.minlog.Log;
-import com.esotericsoftware.minlog.Log.Logger;
+import com.esotericsoftware.kryo.util.Log;
+import com.esotericsoftware.kryo.util.Log.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
