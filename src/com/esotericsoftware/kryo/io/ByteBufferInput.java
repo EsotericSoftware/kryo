@@ -832,6 +832,10 @@ public class ByteBufferInput extends Input {
 				int b3 = byteBuffer.get();
 				chars[charIndex] = (char)((b & 0x0F) << 12 | (b2 & 0x3F) << 6 | b3 & 0x3F);
 				break;
+			default:
+				// A continuation byte without a lead byte, or a 4 byte sequence, which Output never writes. Without this the char
+				// is left unassigned and keeps the value from a previously read string.
+				throw new KryoException("Invalid UTF8 string, unexpected byte: " + b);
 			}
 			charIndex++;
 		}
