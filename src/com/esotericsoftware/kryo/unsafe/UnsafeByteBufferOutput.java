@@ -44,6 +44,8 @@ import sun.nio.ch.DirectBuffer;
 public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	/** Start address of the memory buffer. It must be non-movable, which normally means that is is allocated off-heap. */
 	private long bufferAddress;
+	/** True if the buffer was allocated by this output, so it can be released when it is replaced. */
+	private boolean ownsBuffer;
 
 	/** Creates an uninitialized Output, {@link #setBuffer(ByteBuffer)} must be called before the Output is used. */
 	public UnsafeByteBufferOutput () {
@@ -54,6 +56,7 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	 *           does not empty the buffer. */
 	public UnsafeByteBufferOutput (int bufferSize) {
 		super(bufferSize);
+		ownsBuffer = true;
 		updateBufferAddress();
 	}
 
@@ -63,18 +66,21 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 	 *           maxBufferSize and an exception is thrown. Can be -1 for no maximum. */
 	public UnsafeByteBufferOutput (int bufferSize, int maxBufferSize) {
 		super(bufferSize, maxBufferSize);
+		ownsBuffer = true;
 		updateBufferAddress();
 	}
 
 	/** Creates a new Output for writing to an OutputStream. A buffer size of 4096 is used. */
 	public UnsafeByteBufferOutput (OutputStream outputStream) {
 		super(outputStream);
+		ownsBuffer = true;
 		updateBufferAddress();
 	}
 
 	/** Creates a new Output for writing to an OutputStream with the specified buffer size. */
 	public UnsafeByteBufferOutput (OutputStream outputStream, int bufferSize) {
 		super(outputStream, bufferSize);
+		ownsBuffer = true;
 		updateBufferAddress();
 	}
 
@@ -85,9 +91,17 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		updateBufferAddress();
 	}
 
+	public void setBuffer (byte[] bytes, int offset, int count) {
+		super.setBuffer(bytes, offset, count);
+		ownsBuffer = true; // The direct buffer holding the bytes was allocated by this output.
+	}
+
 	public void setBuffer (ByteBuffer buffer, int maxBufferSize) {
 		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
-		if (buffer != byteBuffer) UnsafeUtil.dispose(byteBuffer);
+		if (buffer != byteBuffer) {
+			if (ownsBuffer) UnsafeUtil.dispose(byteBuffer);
+			ownsBuffer = false;
+		}
 		super.setBuffer(buffer, maxBufferSize);
 		updateBufferAddress();
 	}
@@ -100,7 +114,8 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		ByteBuffer oldBuffer = byteBuffer;
 		boolean result = super.require(required);
 		if (byteBuffer != oldBuffer) {
-			UnsafeUtil.dispose(oldBuffer);
+			if (ownsBuffer) UnsafeUtil.dispose(oldBuffer);
+			ownsBuffer = true;
 			updateBufferAddress();
 		}
 		return result;

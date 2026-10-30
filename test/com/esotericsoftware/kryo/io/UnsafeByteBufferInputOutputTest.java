@@ -906,4 +906,67 @@ class UnsafeByteBufferInputOutputTest {
 		assertArrayEquals(new byte[] {0, 0, 1, 2}, bytes);
 		assertEquals(2, input.position());
 	}
+
+	@Test
+	void testCallerBufferNotReleased () {
+		ByteBuffer buffer = ByteBuffer.allocateDirect(64);
+		UnsafeByteBufferOutput output = new UnsafeByteBufferOutput();
+		output.setBuffer(buffer, -1);
+		output.writeBytes(new byte[128]);
+		assertNotReleased(buffer);
+
+		buffer = ByteBuffer.allocateDirect(64);
+		output.setBuffer(buffer, -1);
+		output.setBuffer(ByteBuffer.allocateDirect(64), -1);
+		assertNotReleased(buffer);
+
+		buffer = ByteBuffer.allocateDirect(64);
+		UnsafeByteBufferInput input = new UnsafeByteBufferInput(buffer);
+		input.setBuffer(ByteBuffer.allocateDirect(64));
+		assertNotReleased(buffer);
+	}
+
+	@Test
+	void testOwnedBufferReleased () {
+		// The direct buffer allocated for a byte[] belongs to the output, so it is still released when replaced.
+		byte[] bytes = new byte[64];
+		for (int i = 0; i < 64; i++)
+			bytes[i] = 1;
+		UnsafeByteBufferOutput output = new UnsafeByteBufferOutput();
+		output.setBuffer(bytes, 0, 64);
+		ByteBuffer buffer = output.getByteBuffer();
+		output.setBuffer(ByteBuffer.allocateDirect(64), -1);
+		assertReleased(buffer);
+	}
+
+	/** If the buffer's memory was freed, new direct buffers of the same size can be given the same memory. */
+	private static void assertNotReleased (ByteBuffer buffer) {
+		for (int i = 0; i < 64; i++)
+			buffer.put(i, (byte)1);
+		assertFalse(isReleased(buffer));
+	}
+
+	/** The buffer must have been filled with 1s before it was released. Only checks when releasing a buffer can be observed on
+	 * this JVM, {@link UnsafeUtil#dispose(ByteBuffer)} does nothing without access to jdk.internal.ref. */
+	private static void assertReleased (ByteBuffer buffer) {
+		ByteBuffer disposed = ByteBuffer.allocateDirect(64);
+		for (int i = 0; i < 64; i++)
+			disposed.put(i, (byte)1);
+		UnsafeUtil.dispose(disposed);
+		assumeTrue(isReleased(disposed), "Releasing direct buffers cannot be observed on this JVM");
+		assertTrue(isReleased(buffer));
+	}
+
+	/** Only reads the buffer, which may have been freed. */
+	private static boolean isReleased (ByteBuffer buffer) {
+		ByteBuffer[] others = new ByteBuffer[16];
+		for (int i = 0; i < others.length; i++) {
+			others[i] = ByteBuffer.allocateDirect(64);
+			for (int ii = 0; ii < 64; ii++)
+				others[i].put(ii, (byte)2);
+		}
+		for (int i = 0; i < 64; i++)
+			if (buffer.get(i) != 1) return true;
+		return false;
+	}
 }
