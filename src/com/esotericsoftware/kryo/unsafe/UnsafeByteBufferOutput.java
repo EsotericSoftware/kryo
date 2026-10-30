@@ -91,6 +91,11 @@ public class UnsafeByteBufferOutput extends ByteBufferOutput {
 		updateBufferAddress();
 	}
 
+	public void setBuffer (byte[] bytes, int offset, int count) {
+		super.setBuffer(bytes, offset, count);
+		ownsBuffer = true; // The direct buffer holding the bytes was allocated by this output.
+	}
+
 	public void setBuffer (ByteBuffer buffer, int maxBufferSize) {
 		if (!(buffer instanceof DirectBuffer)) throw new IllegalArgumentException("buffer must be direct.");
 		if (buffer != byteBuffer) {
