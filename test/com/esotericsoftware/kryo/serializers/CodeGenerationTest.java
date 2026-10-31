@@ -528,6 +528,7 @@ class CodeGenerationTest extends KryoTestCase {
 		CachedField[] fields = ((FieldSerializer)kryo.getSerializer(AllKinds.class)).getFields();
 		assertSameBytes(AllKinds.class, fields, false, null);
 		assertSameBytes(AllKinds.class, fields, true, null); // CompatibleFieldSerializer with unknown field data.
+		assertSameBytes(AllKinds.class, fields, true, true, null); // With the Kryo 6 format.
 		assertSameBytes(NoFields.class, new CachedField[0], false, null);
 		kryo.register(Point.class);
 		assertSameBytes(Point.class, ((FieldSerializer)kryo.getSerializer(Point.class)).getFields(), false, null);
@@ -543,15 +544,21 @@ class CodeGenerationTest extends KryoTestCase {
 			tags[i] = fields[i].tag;
 		assertSameBytes(Tagged.class, fields, false, tags);
 		assertSameBytes(Tagged.class, fields, true, tags); // TaggedFieldSerializer with unknown tag data.
+		assertSameBytes(Tagged.class, fields, true, true, tags); // With the Kryo 6 format.
 	}
 
 	static private void assertSameBytes (Class type, CachedField[] fields, boolean classes, int[] tags) throws Exception {
+		assertSameBytes(type, fields, classes, false, tags);
+	}
+
+	static private void assertSameBytes (Class type, CachedField[] fields, boolean classes, boolean wrapperEncoding, int[] tags)
+		throws Exception {
 		Constructor recordConstructor = type.isRecord() ? type.getDeclaredConstructor(Arrays
 			.stream(type.getRecordComponents()).map(RecordComponent::getType).toArray(Class[]::new)) : null;
-		byte[] classFile = CodeGeneration.classFile(false, type, recordConstructor, fields, classes, tags);
-		byte[] asm = CodeGeneration.classFile(true, type, recordConstructor, fields, classes, tags);
+		byte[] classFile = CodeGeneration.classFile(false, type, recordConstructor, fields, classes, wrapperEncoding, tags);
+		byte[] asm = CodeGeneration.classFile(true, type, recordConstructor, fields, classes, wrapperEncoding, tags);
 		assertArrayEquals(canonical(classFile), canonical(asm),
-			type.getSimpleName() + (classes ? ", classes" : "") + (tags != null ? ", tags" : ""));
+			type.getSimpleName() + (classes ? ", classes" : "") + (wrapperEncoding ? ", wrappers" : "") + (tags != null ? ", tags" : ""));
 	}
 
 	/** Returns the class file with the constant pool in the order ASM writes it. The writers order the constant pool differently,

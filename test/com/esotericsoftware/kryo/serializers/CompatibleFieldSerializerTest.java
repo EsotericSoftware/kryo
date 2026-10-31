@@ -1246,6 +1246,138 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 	public record RecordClass(String height, int width, long x, double y) { }
 	public record OldPrimitiveRecord(long x) { }
 
+	/** The class of a value is the wrapper class, so a removed int or long field is read with the serializer for that class. */
+	@Test
+	void testRemovedPrimitiveFields () {
+		for (boolean codeGeneration : new boolean[] {false, true}) {
+			for (boolean chunked : new boolean[] {false, true}) {
+				for (boolean fieldVarEncoding : new boolean[] {false, true}) {
+					for (boolean bufferVarEncoding : new boolean[] {false, true}) {
+						for (int value : new int[] {0, 5, -1, 300, Integer.MAX_VALUE, Integer.MIN_VALUE}) {
+							CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
+							factory.getConfig().setCodeGeneration(codeGeneration);
+							factory.getConfig().setChunkedEncoding(chunked);
+							factory.getConfig().setVariableLengthEncoding(fieldVarEncoding);
+							Kryo writer = new Kryo();
+							writer.setDefaultSerializer(factory);
+							writer.register(WithPrimitiveFields.class, 100);
+							Kryo reader = new Kryo();
+							reader.setDefaultSerializer(factory);
+							reader.register(WithoutPrimitiveFields.class, 100);
+
+							Output output = new Output(64, -1);
+							output.setVariableLengthEncoding(bufferVarEncoding);
+							writer.writeObject(output, new WithPrimitiveFields(value));
+							output.writeString("next");
+
+							Input input = new Input(output.toBytes());
+							input.setVariableLengthEncoding(bufferVarEncoding);
+							WithoutPrimitiveFields read = reader.readObject(input, WithoutPrimitiveFields.class);
+							String name = codeGeneration + " " + chunked + " " + fieldVarEncoding + " " + bufferVarEncoding + " " + value;
+							assertEquals(7, read.tail, name);
+							assertEquals("text", read.text, name);
+							assertEquals("next", input.readString(), name);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/** Without the field setting in the data, it can't be used when the class of each value is written. */
+	@Test
+	void testPrimitiveFieldsWrittenLikeWrappers () {
+		for (boolean codeGeneration : new boolean[] {false, true}) {
+			for (boolean bufferVarEncoding : new boolean[] {false, true}) {
+				CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
+				factory.getConfig().setCodeGeneration(codeGeneration);
+				factory.getConfig().setVariableLengthEncoding(false);
+				Kryo primitives = new Kryo();
+				primitives.setDefaultSerializer(factory);
+				primitives.register(PrimitiveValues.class, 100);
+				Kryo wrappers = new Kryo();
+				wrappers.setDefaultSerializer(factory);
+				wrappers.register(WrapperValues.class, 100);
+
+				PrimitiveValues primitive = new PrimitiveValues();
+				primitive.a = 5;
+				primitive.b = 6;
+				WrapperValues wrapper = new WrapperValues();
+				wrapper.a = 5;
+				wrapper.b = 6L;
+
+				Output primitiveOutput = new Output(64, -1);
+				primitiveOutput.setVariableLengthEncoding(bufferVarEncoding);
+				primitives.writeObject(primitiveOutput, primitive);
+				Output wrapperOutput = new Output(64, -1);
+				wrapperOutput.setVariableLengthEncoding(bufferVarEncoding);
+				wrappers.writeObject(wrapperOutput, wrapper);
+				assertArrayEquals(wrapperOutput.toBytes(), primitiveOutput.toBytes());
+
+				// A field can change between the primitive and its wrapper class.
+				Input input = new Input(primitiveOutput.toBytes());
+				input.setVariableLengthEncoding(bufferVarEncoding);
+				WrapperValues readWrapper = wrappers.readObject(input, WrapperValues.class);
+				assertEquals(5, readWrapper.a);
+				assertEquals(6L, readWrapper.b);
+				input = new Input(wrapperOutput.toBytes());
+				input.setVariableLengthEncoding(bufferVarEncoding);
+				PrimitiveValues readPrimitive = primitives.readObject(input, PrimitiveValues.class);
+				assertEquals(5, readPrimitive.a);
+				assertEquals(6, readPrimitive.b);
+
+				// The settings of the fields are unchanged.
+				for (Kryo kryo : new Kryo[] {primitives, wrappers}) {
+					for (Object field : ((FieldSerializer)kryo.getRegistration(100).getSerializer()).getFields())
+						assertFalse(((FieldSerializer.CachedField)field).getVariableLengthEncoding());
+				}
+			}
+		}
+	}
+
+	@Test
+	void testPrimitiveFieldsWithoutClasses () {
+		for (boolean codeGeneration : new boolean[] {false, true}) {
+			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
+			factory.getConfig().setCodeGeneration(codeGeneration);
+			factory.getConfig().setVariableLengthEncoding(false);
+			factory.getConfig().setReadUnknownFieldData(false);
+			Kryo kryo = new Kryo();
+			kryo.setDefaultSerializer(factory);
+			kryo.register(PrimitiveValues.class);
+			PrimitiveValues object = new PrimitiveValues();
+			object.a = 5;
+			object.b = 6;
+			Output output = new Output(64, -1);
+			kryo.writeObject(output, object);
+			assertEquals(1 + 2 + 2 + 4 + 8, output.position()); // Field count, field names, then the fixed values.
+			PrimitiveValues read = kryo.readObject(new Input(output.toBytes()), PrimitiveValues.class);
+			assertEquals(5, read.a);
+			assertEquals(6, read.b);
+		}
+	}
+
+	@Test
+	void testRemovedPrimitiveRecordComponents () {
+		for (boolean codeGeneration : new boolean[] {false, true}) {
+			CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
+			factory.getConfig().setCodeGeneration(codeGeneration);
+			factory.getConfig().setVariableLengthEncoding(false);
+			Kryo kryo = new Kryo();
+			kryo.setDefaultSerializer(factory);
+			kryo.register(RecordWithRemoved.class, 100);
+			Kryo other = new Kryo();
+			other.setDefaultSerializer(factory);
+			other.register(RecordWithoutRemoved.class, 100);
+			Output output = new Output(64, -1);
+			kryo.writeObject(output, new RecordWithRemoved(5, 6, 7));
+			output.writeString("next");
+			Input input = new Input(output.toBytes());
+			assertEquals(new RecordWithoutRemoved(7), other.readObject(input, RecordWithoutRemoved.class));
+			assertEquals("next", input.readString());
+		}
+	}
+
 	@Test
 	void testFieldSettingsUnchanged () {
 		// Writing and reading the classes of the values must not change the settings of the fields.
@@ -1365,6 +1497,44 @@ class CompatibleFieldSerializerTest extends KryoTestCase {
 			this.value = value;
 		}
 	}
+
+	public static class WithPrimitiveFields {
+		public int removedInt;
+		public long removedLong;
+		public Integer removedInteger;
+		public Long removedLongWrapper;
+		public int tail = 7;
+		public String text = "text";
+
+		public WithPrimitiveFields () {
+		}
+
+		public WithPrimitiveFields (int value) {
+			removedInt = value;
+			removedLong = value;
+			removedInteger = value;
+			removedLongWrapper = (long)value;
+		}
+	}
+
+	public static class WithoutPrimitiveFields {
+		public int tail;
+		public String text;
+	}
+
+	public static class PrimitiveValues {
+		public int a;
+		public long b;
+	}
+
+	public static class WrapperValues {
+		public Integer a;
+		public Long b;
+	}
+
+	public record RecordWithRemoved(int removedInt, long removedLong, int tail) { }
+
+	public record RecordWithoutRemoved(int tail) { }
 
 	public record NullableRecord(Integer value) { }
 

@@ -23,6 +23,7 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.kryo.util.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.serializers.Bytecode.Code;
@@ -124,9 +125,11 @@ import java.util.function.IntConsumer;
  * </pre>
  *
  * With the classes written, like CompatibleFieldSerializer with unknown field data, the class is written before each value and
- * read with the helpers of {@link GeneratedFields}. With tags, like TaggedFieldSerializer, the tag is written before each field,
- * and read falls back to {@link TaggedFieldSerializer#readTag(Input, int, Object, boolean)} when the tag isn't the expected one.
- * Classes with more than {@link #batchSize} fields get a private method per batch.
+ * read with the helpers of {@link GeneratedFields}. An int or long value is then written like the serializer for its wrapper
+ * class, except with {@link Format#KRYO5}, see {@link FieldSerializer#writeFieldWithClass(CachedField, Output, Object)}. With
+ * tags, like TaggedFieldSerializer, the tag is written before each field, and read falls back to
+ * {@link TaggedFieldSerializer#readTag(Input, int, Object, boolean)} when the tag isn't the expected one. Classes with more than
+ * {@link #batchSize} fields get a private method per batch.
  * <p>
  * The method handle that sets a final field is the invoker of a {@link MutableCallSite}. For an Unsafe field, its first call
  * makes {@link FieldSerializer#setFinal(CachedField, Object, Object)} the target, which sets the field with Unsafe like the
@@ -173,7 +176,8 @@ final class CodeGeneration {
 				+ " components or removed components: " + className(serializer.type));
 			return null;
 		}
-		StringBuilder signature = new StringBuilder(writeClasses ? "classes;" : "");
+		boolean wrapperEncoding = writeClasses && serializer.kryo.getFormat() != Format.KRYO5;
+		StringBuilder signature = new StringBuilder(wrapperEncoding ? "classes,wrappers;" : writeClasses ? "classes;" : "");
 		for (int i = 0, n = fields.length; i < n; i++) {
 			CachedField field = fields[i];
 			signature.append(field.field.getDeclaringClass().getName()).append('.').append(field.field.getName()).append(':')
@@ -187,7 +191,7 @@ final class CodeGeneration {
 
 		Object constructor = constructors.get(serializer.type).computeIfAbsent(signature.toString(), key -> {
 			try {
-				return define(serializer.type, recordConstructor, fields, kinds, writeClasses, tags);
+				return define(serializer.type, recordConstructor, fields, kinds, writeClasses, wrapperEncoding, tags);
 			} catch (KryoException ex) {
 				return ex;
 			}
@@ -242,12 +246,12 @@ final class CodeGeneration {
 
 	/** Defines the hidden class for the fields and returns its constructor. */
 	static private MethodHandle define (Class type, Constructor recordConstructor, CachedField[] fields, Kind[] kinds,
-		boolean classes, int[] tags) {
+		boolean classes, boolean wrapperEncoding, int[] tags) {
 		int n = fields.length;
 		ArrayList<Object> classData = new ArrayList<>(n);
 		String thisClass = name(type);
 		byte[] bytes = write(Bytecode.create(thisClass, GeneratedFieldsName), thisClass, recordConstructor, fields, kinds, classes,
-			tags, classData);
+			wrapperEncoding, tags, classData);
 		try {
 			Lookup hidden = MethodHandles.lookup().defineHiddenClassWithClassData(bytes, classData, true);
 			if (TRACE) trace("kryo", "Generated code for the fields of: " + className(type) + " (" + n + " fields"
@@ -272,20 +276,20 @@ final class CodeGeneration {
 	 * @param recordConstructor The canonical constructor if the type is a record, else null.
 	 * @throws KryoException if code can't be generated for a field. */
 	static byte[] classFile (boolean asm, Class type, Constructor recordConstructor, CachedField[] fields, boolean classes,
-		int[] tags) {
+		boolean wrapperEncoding, int[] tags) {
 		Kind[] kinds = kinds(type, fields);
 		if (kinds == null) throw new KryoException("Code generation is not supported for a field of: " + className(type));
 		String thisClass = name(type);
 		Bytecode cb = asm ? Bytecode.asmWriter(thisClass, GeneratedFieldsName)
 			: Bytecode.classFileWriter(thisClass, GeneratedFieldsName);
-		return write(cb, thisClass, recordConstructor, fields, kinds, classes, tags, new ArrayList<>());
+		return write(cb, thisClass, recordConstructor, fields, kinds, classes, wrapperEncoding, tags, new ArrayList<>());
 	}
 
 	/** Writes the hidden class for the fields.
 	 * @param recordConstructor The canonical constructor if the type is a record, else null.
 	 * @param classData Receives the class data of the hidden class. */
 	static private byte[] write (Bytecode cb, String thisClass, Constructor recordConstructor, CachedField[] fields, Kind[] kinds,
-		boolean classes, int[] tags, ArrayList<Object> classData) {
+		boolean classes, boolean wrapperEncoding, int[] tags, ArrayList<Object> classData) {
 		int n = fields.length;
 		int[] setters = classData(fields, kinds, recordConstructor, classData);
 		boolean record = recordConstructor != null;
@@ -300,21 +304,23 @@ final class CodeGeneration {
 			String readType = chunked ? descriptor(void.class, Input.class, Object.class, ChunkedEncoding.class)
 				: descriptor(void.class, Input.class, Object.class);
 			batches(cb, thisClass, "write", writeType, n, chunked,
-				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).write(from, to));
+				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, wrapperEncoding, chunked).write(from,
+					to));
 			if (!record) batches(cb, thisClass, "read", readType, n, chunked,
-				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, chunked).read(from, to));
+				(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, wrapperEncoding, chunked).read(from,
+					to));
 		}
 		// public void copy (Object original, Object copy)
 		if (!record) batches(cb, thisClass, "copy", descriptor(void.class, Object.class, Object.class), n, false,
-			(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, false).copy(from, to));
+			(code, from, to) -> new Emitter(code, thisClass, kinds, setters, tags, classes, wrapperEncoding, false).copy(from, to));
 		if (record) {
 			// public Object readRecord (Input input) and copyRecord (Object original)
 			cb.method("readRecord", descriptor(Object.class, Input.class), ACC_PUBLIC, code -> {
-				Emitter emitter = new Emitter(code, thisClass, kinds, setters, tags, classes, false);
+				Emitter emitter = new Emitter(code, thisClass, kinds, setters, tags, classes, wrapperEncoding, false);
 				emitter.record(emitter::read, "readRecordError", InputDesc);
 			});
 			cb.method("copyRecord", descriptor(Object.class, Object.class), ACC_PUBLIC, code -> {
-				Emitter emitter = new Emitter(code, thisClass, kinds, setters, tags, classes, false);
+				Emitter emitter = new Emitter(code, thisClass, kinds, setters, tags, classes, wrapperEncoding, false);
 				emitter.record(emitter::copyValue, "copyRecordError", "Ljava/lang/Object;");
 			});
 		}
@@ -499,18 +505,22 @@ final class CodeGeneration {
 		final int[] tags;
 		/** If true, the class of each value is written before the value. */
 		final boolean classes;
+		/** If true, int and long values are written like the serializers for their wrapper classes. */
+		final boolean wrapperEncoding;
 		/** If true, each field is written in a chunk. */
 		final boolean chunked;
 		/** Locals: the index of the current field for the error, the tag read, the chunk mark when writing or end when reading. */
 		int index, tag, chunk;
 
-		Emitter (Code code, String thisClass, Kind[] kinds, int[] setters, int[] tags, boolean classes, boolean chunked) {
+		Emitter (Code code, String thisClass, Kind[] kinds, int[] setters, int[] tags, boolean classes, boolean wrapperEncoding,
+			boolean chunked) {
 			this.code = code;
 			this.thisClass = thisClass;
 			this.kinds = kinds;
 			this.setters = setters;
 			this.tags = tags;
 			this.classes = classes;
+			this.wrapperEncoding = wrapperEncoding;
 			this.chunked = chunked;
 		}
 
@@ -656,7 +666,7 @@ final class CodeGeneration {
 				code.aload(1);
 				value(i, kind.type);
 				if (kind.varEncodable) {
-					varEncoding(i);
+					varEncoding(i, OutputName);
 					code.ifThenElse(IFNE, () -> {
 						code.iconst(0);
 						code.invokevirtual(OutputName, kind.writeVar, kind.writeVarType);
@@ -783,7 +793,7 @@ final class CodeGeneration {
 					"(" + FieldSerializerDesc + InputDesc + CachedFieldDesc + "Ljava/lang/Object;Z)Ljava/lang/String;");
 			} else if (kind.varEncodable) {
 				// fields[i].varEncoding ? input.readVarX(false) : input.readX()
-				varEncoding(i);
+				varEncoding(i, InputName);
 				code.ifThenElse(IFNE, () -> {
 					code.aload(1);
 					code.iconst(0);
@@ -827,10 +837,19 @@ final class CodeGeneration {
 			code.aaload();
 		}
 
-		/** fields[i].varEncoding */
-		void varEncoding (int i) {
-			field(i);
-			code.getfield(CachedFieldName, "varEncoding", "Z");
+		/** fields[i].varEncoding. With wrapper encoding, a long is true and an int is buffer.getVariableLengthEncoding(), like
+		 * {@link FieldSerializer#writeFieldWithClass(CachedField, Output, Object)}.
+		 * @param bufferName The internal name of the Output or Input in local 1. */
+		void varEncoding (int i, String bufferName) {
+			if (!wrapperEncoding) {
+				field(i);
+				code.getfield(CachedFieldName, "varEncoding", "Z");
+			} else if (kinds[i].type.equals("J"))
+				code.iconst(1);
+			else {
+				code.aload(1);
+				code.invokevirtual(bufferName, "getVariableLengthEncoding", "()Z");
+			}
 		}
 
 		/** serializer */
