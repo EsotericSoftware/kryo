@@ -173,6 +173,10 @@ LocaleSerializer writes locales with a script or extensions, eg `sr-Cyrl-RS` or 
 
 ZonedDateTimeSerializer writes the offset of a `ZonedDateTime` that has the later of the two offsets in an overlap, eg `2026-11-01T01:30-05:00[America/New_York]` when clocks are set back, so the offset is kept. Kryo 5 wrote only the date, time and zone, so it was read with the earlier offset, `2026-11-01T01:30-04:00[America/New_York]`, an instant one hour earlier. Other `ZonedDateTime`s are written as before, so Kryo 6 reads all `ZonedDateTime`s written by Kryo 5. With the Kryo 5 format, they are written like Kryo 5 wrote them, without the offset.
 
+### JavaSerializer through several outputs
+
+JavaSerializer writes the object stream of an object graph to the output of the current object and reads it from its input, so a serializer can be used for several objects of a graph through different outputs, eg with DeflateSerializer. There is still one stream per graph. Kryo 5 kept it on the output of the first object, so writing failed with "write beyond end of stream" if that was finished, and a later value used through DeflateSerializer was written in front of the compressed data, not compressed. Data with one output for all objects is the same. To read data written by Kryo 5, use the Kryo 5 format, which keeps the stream on the first output like Kryo 5, so it has these problems too.
+
 ## Behavior changes
 
 These changes don't affect the serialized format of the default configuration, except where a change says so, eg the generic types that Kryo 6 resolves but Kryo 5 ignored. They are grouped by the part of Kryo they concern, the most common first.
@@ -210,6 +214,7 @@ These changes don't affect the serialized format of the default configuration, e
 
 * Serializing or copying a closure throws an exception if `ClosureSerializer.Closure` is not registered, also if `registrationRequired` is false ([#1137](https://github.com/EsotericSoftware/kryo/issues/1137)). Kryo 5 registered the closure's class implicitly and wrote it with the default serializer, which can't be read because the class of a closure can't be found by its name.
 * ClosureSerializer accesses no JDK internals: it no longer needs `--add-opens java.base/java.lang.invoke=ALL-UNNAMED` and logs no warnings without it. It resolves closures like Java serialization, with the `$deserializeLambda$` method of the capturing class, and caches the reflective access per class, so writing a closure is as fast as in Kryo 5 with the JDK internals open and 2.5x faster without. On the module path, the package of the capturing class must be open to Kryo, like for the private fields of a class.
+* The value that JavaSerializer stores in the graph context is no longer an `ObjectOutputStream` or `ObjectInputStream`, so a subclass that casts this value or stores its own stream there needs to use its own key.
 * If the class of a class name is not found, a later reference to the same class name throws the same exception. Kryo 5 read the following bytes as a class name.
 * Writing a time zone with an ID that `TimeZone.getTimeZone` doesn't know, eg a `SimpleTimeZone` with a custom ID, throws an exception, also in a `Calendar`. Kryo 5 wrote the ID, which was read as GMT. Custom IDs like `GMT+01:00` are known. With the Kryo 5 format, such a time zone is written like Kryo 5 did.
 * A `Calendar` is read with the class that was written, eg `GregorianCalendar`, `BuddhistCalendar` or `JapaneseImperialCalendar`. Kryo 5 read every calendar with `Calendar.getInstance`, so the class, and with it the year, depended on the default locale of the reader, eg a `GregorianCalendar` was read as a `BuddhistCalendar` with the default locale `th_TH`. The data is unchanged.

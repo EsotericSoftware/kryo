@@ -32,12 +32,15 @@ import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.DeflateSerializer;
 import com.esotericsoftware.kryo.serializers.EnumMapSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.esotericsoftware.kryo.serializers.PublicApiFields;
 import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer.Tag;
 import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.StdInstantiatorStrategy;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.time.ZoneId;
@@ -208,6 +211,55 @@ class Kryo5RoundTripTest {
 		});
 	}
 
+	/** Kryo 5 keeps the object stream of a JavaSerializer on the first output of a graph, so a later value through DeflateSerializer
+	 * isn't compressed. Kryo 6 writes it to the current output, but not with the Kryo 5 format. */
+	@Test
+	void testJavaSerializerThenDeflate () {
+		ArrayList<Object> list = new ArrayList<>(List.of(new JavaValue("a"), new DeflatedJavaValue("b")));
+
+		com.esotericsoftware.kryo.kryo5.Kryo kryo5 = newKryo5();
+		var kryo5Serializer = new com.esotericsoftware.kryo.kryo5.serializers.JavaSerializer();
+		kryo5.register(JavaValue.class, kryo5Serializer);
+		kryo5.register(DeflatedJavaValue.class,
+			new com.esotericsoftware.kryo.kryo5.serializers.DeflateSerializer(kryo5Serializer));
+		var kryo5Output = new com.esotericsoftware.kryo.kryo5.io.Output(1024, -1);
+		kryo5.writeObject(kryo5Output, list);
+
+		Kryo kryo6 = newKryo6();
+		JavaSerializer kryo6Serializer = new JavaSerializer();
+		kryo6.register(JavaValue.class, kryo6Serializer);
+		kryo6.register(DeflatedJavaValue.class, new DeflateSerializer(kryo6Serializer));
+		Output kryo6Output = new Output(1024, -1);
+		kryo6.writeObject(kryo6Output, list);
+
+		assertArrayEquals(kryo5Output.toBytes(), kryo6Output.toBytes());
+		assertReflectionEquals(kryo6.readObject(new Input(kryo5Output.toBytes()), ArrayList.class), list);
+	}
+
+	/** Kryo 5 and the Kryo 5 format write the later values to the chunks of the first object, so they are read as null. */
+	@Test
+	void testJavaSerializerChunked () {
+		ArrayList<Object> list = new ArrayList<>(List.of(new JavaValueHolder("a"), new JavaValueHolder("b")));
+
+		com.esotericsoftware.kryo.kryo5.Kryo kryo5 = newKryo5();
+		var kryo5Factory = new com.esotericsoftware.kryo.kryo5.SerializerFactory.CompatibleFieldSerializerFactory();
+		kryo5Factory.getConfig().setChunkedEncoding(true);
+		kryo5.setDefaultSerializer(kryo5Factory);
+		kryo5.register(JavaValue.class, new com.esotericsoftware.kryo.kryo5.serializers.JavaSerializer());
+		var kryo5Output = new com.esotericsoftware.kryo.kryo5.io.Output(1024, -1);
+		kryo5.writeObject(kryo5Output, list);
+
+		Kryo kryo6 = newKryo6();
+		CompatibleFieldSerializerFactory kryo6Factory = new CompatibleFieldSerializerFactory();
+		kryo6Factory.getConfig().setChunkedEncoding(true);
+		kryo6.setDefaultSerializer(kryo6Factory);
+		kryo6.register(JavaValue.class, new JavaSerializer());
+		Output kryo6Output = new Output(1024, -1);
+		kryo6.writeObject(kryo6Output, list);
+
+		assertArrayEquals(kryo5Output.toBytes(), kryo6Output.toBytes());
+	}
+
 	/** A chunk size other than the default, with a field larger than one chunk. */
 	@ParameterizedTest
 	@ValueSource(booleans = {false, true})
@@ -375,6 +427,37 @@ class Kryo5RoundTripTest {
 	}
 
 	/** Tagged for the TaggedFieldSerializer of both versions. */
+	public static class JavaValue implements Serializable {
+		public String value;
+
+		public JavaValue () {
+		}
+
+		public JavaValue (String value) {
+			this.value = value;
+		}
+	}
+
+	public static class DeflatedJavaValue extends JavaValue {
+		public DeflatedJavaValue () {
+		}
+
+		public DeflatedJavaValue (String value) {
+			super(value);
+		}
+	}
+
+	public static class JavaValueHolder {
+		public JavaValue value;
+
+		public JavaValueHolder () {
+		}
+
+		public JavaValueHolder (String value) {
+			this.value = new JavaValue(value);
+		}
+	}
+
 	public static class Entity {
 		@Tag(1)
 		@com.esotericsoftware.kryo.kryo5.serializers.TaggedFieldSerializer.Tag(1) public String name;

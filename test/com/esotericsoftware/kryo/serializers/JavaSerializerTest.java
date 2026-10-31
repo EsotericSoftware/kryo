@@ -19,6 +19,14 @@
 
 package com.esotericsoftware.kryo.serializers;
 
+import java.util.Objects;
+import java.io.ObjectOutputStream;
+import java.io.ObjectInputStream;
+import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer.CompatibleFieldSerializerConfig;
+import com.esotericsoftware.kryo.SerializerFactory.CompatibleFieldSerializerFactory;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -145,6 +153,232 @@ class JavaSerializerTest extends KryoTestCase {
 
 	public static class Holder implements Serializable {
 		Object payload;
+	}
+
+	// The same serializer writes the objects of a graph to different outputs and reads them from different inputs.
+	@Test
+	void testDeflateSerializer () {
+		kryo.register(ArrayList.class);
+		kryo.register(TestClass.class, new DeflateSerializer(new JavaSerializer()));
+
+		ArrayList<TestClass> list = new ArrayList<>();
+		for (int i = 0; i < 3; i++)
+			list.add(testClass(i));
+		roundTrip(Integer.MIN_VALUE, list);
+	}
+
+	@Test
+	void testChunkedEncoding () {
+		CompatibleFieldSerializerConfig config = new CompatibleFieldSerializerConfig();
+		config.setChunkedEncoding(true);
+		kryo.setDefaultSerializer(new CompatibleFieldSerializerFactory(config));
+		kryo.register(ArrayList.class);
+		kryo.register(ValueHolder.class);
+		kryo.register(TestClass.class, new JavaSerializer());
+
+		ArrayList<ValueHolder> list = new ArrayList<>();
+		for (int i = 0; i < 3; i++)
+			list.add(new ValueHolder(testClass(i)));
+		roundTrip(Integer.MIN_VALUE, list);
+	}
+
+	@Test
+	void testOutputsAlternate () {
+		JavaSerializer serializer = new JavaSerializer();
+		kryo.register(ArrayList.class);
+		kryo.register(TestClass.class, new DeflateSerializer(serializer));
+		kryo.register(ValueHolder.class, serializer);
+
+		ArrayList<Object> list = new ArrayList<>();
+		list.add(testClass(0));
+		list.add(new ValueHolder(testClass(1)));
+		list.add(testClass(2));
+		list.add(new ValueHolder(testClass(3)));
+		roundTrip(Integer.MIN_VALUE, list);
+	}
+
+	// All objects of a graph use one stream, so what they share is written once, also if they are written to different outputs.
+	@Test
+	void testSharedAcrossOutputs () {
+		kryo.register(ArrayList.class);
+		kryo.register(ValueHolder.class, new DeflateSerializer(new JavaSerializer()));
+
+		TestClass shared = testClass(0);
+		ArrayList<ValueHolder> list = new ArrayList<>();
+		list.add(new ValueHolder(shared));
+		list.add(new ValueHolder(shared));
+
+		Output output = new Output(1024, -1);
+		kryo.writeObject(output, list);
+		output.writeString("after");
+
+		Input input = new Input(output.toBytes());
+		ArrayList<ValueHolder> read = kryo.readObject(input, ArrayList.class);
+		assertEquals(list, read);
+		assertSame(read.get(0).value, read.get(1).value);
+		assertEquals("after", input.readString());
+	}
+
+	// A value written after others with the same serializer must end up in the output it is written to, here to be compressed.
+	@Test
+	void testDirectThenDeflate () {
+		JavaSerializer serializer = new JavaSerializer();
+		kryo.register(ArrayList.class);
+		kryo.register(TestClass.class, new DeflateSerializer(serializer));
+		kryo.register(ValueHolder.class, serializer);
+
+		TestClass compressible = new TestClass();
+		StringBuilder text = new StringBuilder();
+		for (int i = 0; i < 10000; i++)
+			text.append('x');
+		compressible.stringField = text.toString();
+
+		ArrayList<Object> list = new ArrayList<>();
+		list.add(new ValueHolder(testClass(0)));
+		list.add(compressible);
+
+		Output output = new Output(1024, -1);
+		kryo.writeObject(output, list);
+		assertTrue(output.position() < 1000, "Not compressed: " + output.position());
+		output.writeString("after");
+
+		Input input = new Input(output.toBytes());
+		assertEquals(list, kryo.readObject(input, ArrayList.class));
+		assertEquals("after", input.readString());
+	}
+
+	// The writeObject and readObject methods of a value can use the same serializer, over the object stream.
+	@Test
+	void testNested () {
+		Nested.kryo = kryo;
+		Nested.serializer = new JavaSerializer();
+		kryo.register(Nested.class, Nested.serializer);
+		kryo.register(ArrayList.class);
+
+		ArrayList<Nested> list = new ArrayList<>();
+		list.add(new Nested(testClass(0)));
+		list.add(new Nested(testClass(1)));
+
+		Output output = new Output(1024, -1);
+		kryo.writeObject(output, list);
+		output.writeString("after");
+
+		Input input = new Input(output.toBytes());
+		assertEquals(list, kryo.readObject(input, ArrayList.class));
+		assertEquals("after", input.readString());
+	}
+
+	@Test
+	void testFlushesOutput () {
+		ByteArrayOutputStream stream = new ByteArrayOutputStream();
+		kryo.writeObject(new Output(stream, 1024), testClass(0), new JavaSerializer());
+		assertTrue(stream.size() > 0);
+	}
+
+	@Test
+	void testCloseInObject () {
+		boolean[] closed = new boolean[2];
+		JavaSerializer serializer = new JavaSerializer();
+		ByteArrayOutputStream stream = new ByteArrayOutputStream() {
+			public void close () {
+				closed[0] = true;
+			}
+		};
+		Output output = new Output(stream, 1024);
+		kryo.writeObject(output, new Closes(), serializer);
+		output.flush();
+		assertTrue(closed[0]);
+
+		kryo.readObject(new Input(new ByteArrayInputStream(stream.toByteArray()) {
+			public void close () {
+				closed[1] = true;
+			}
+		}), Closes.class, serializer);
+		assertTrue(closed[1]);
+	}
+
+	@Test
+	void testAvailable () {
+		JavaSerializer serializer = new JavaSerializer();
+		Output output = new Output(1024, -1);
+		kryo.writeObject(output, new CustomData(), serializer);
+		CustomData read = kryo.readObject(new Input(output.toBytes()), CustomData.class, serializer);
+		assertEquals(4, read.available);
+	}
+
+	private TestClass testClass (int value) {
+		TestClass test = new TestClass();
+		test.stringField = "value " + value;
+		test.intField = value;
+		return test;
+	}
+
+	public static class Nested implements Serializable {
+		static Kryo kryo;
+		static JavaSerializer serializer;
+
+		transient TestClass value;
+
+		public Nested () {
+		}
+
+		public Nested (TestClass value) {
+			this.value = value;
+		}
+
+		private void writeObject (ObjectOutputStream out) throws IOException {
+			Output output = new Output(out);
+			kryo.writeObject(output, value, serializer);
+			output.flush();
+			out.writeUTF("after");
+		}
+
+		private void readObject (ObjectInputStream in) throws IOException {
+			value = kryo.readObject(new Input(in), TestClass.class, serializer);
+			assertEquals("after", in.readUTF());
+		}
+
+		public boolean equals (Object obj) {
+			return obj instanceof Nested && value.equals(((Nested)obj).value);
+		}
+	}
+
+	public static class Closes implements Serializable {
+		private void writeObject (ObjectOutputStream out) throws IOException {
+			out.close();
+		}
+
+		private void readObject (ObjectInputStream in) throws IOException {
+			in.close();
+		}
+	}
+
+	public static class CustomData implements Serializable {
+		transient int available;
+
+		private void writeObject (ObjectOutputStream out) throws IOException {
+			out.writeInt(1);
+		}
+
+		private void readObject (ObjectInputStream in) throws IOException {
+			available = in.available();
+			in.readInt();
+		}
+	}
+
+	public static class ValueHolder implements Serializable {
+		TestClass value;
+
+		public ValueHolder () {
+		}
+
+		public ValueHolder (TestClass value) {
+			this.value = value;
+		}
+
+		public boolean equals (Object obj) {
+			return obj instanceof ValueHolder && Objects.equals(value, ((ValueHolder)obj).value);
+		}
 	}
 
 	public static class TestClass implements Serializable {
