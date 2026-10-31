@@ -919,6 +919,10 @@ public class Input extends InputStream implements Poolable {
 				position = p + 2;
 				chars[charIndex] = (char)((b & 0x0F) << 12 | (buffer[p] & 0x3F) << 6 | buffer[p + 1] & 0x3F);
 				break;
+			default:
+				// A continuation byte without a lead byte, or a 4 byte sequence, which Output never writes. Without this the char
+				// is left unassigned and keeps the value from a previously read string.
+				throw new KryoException("Invalid UTF8 string, unexpected byte: " + b);
 			}
 			charIndex++;
 		}

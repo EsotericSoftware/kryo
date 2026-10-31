@@ -265,6 +265,38 @@ class InputOutputTest extends KryoTestCase {
 	}
 
 	@Test
+	void testMalformedUtf8String () throws IOException {
+		String previous = "previous \u00e9 string";
+		// Declares 9 chars, followed by UTF8 continuation bytes with no lead byte.
+		Output output = new Output(64);
+		output.writeString(previous);
+		output.writeVarIntFlag(true, 9 + 1, true);
+		for (int i = 0; i < 9; i++)
+			output.writeByte(0x80 | i);
+		output.flush();
+		byte[] continuation = output.toBytes();
+
+		// Declares 2 chars, followed by a 4 byte UTF8 lead byte.
+		output.reset();
+		output.writeString(previous);
+		output.writeVarIntFlag(true, 2 + 1, true);
+		output.writeByte(0xF0);
+		output.writeByte(0x9F);
+		output.flush();
+		byte[] lead = output.toBytes();
+
+		for (byte[] bytes : new byte[][] {continuation, lead}) {
+			Input input = new Input(bytes);
+			assertEquals(previous, input.readString());
+			assertThrows(KryoException.class, () -> input.readString());
+
+			ByteBufferInput byteBufferInput = new ByteBufferInput(bytes);
+			assertEquals(previous, byteBufferInput.readString());
+			assertThrows(KryoException.class, () -> byteBufferInput.readString());
+		}
+	}
+
+	@Test
 	void testMaxArraySize () throws IOException {
 		Input stream = new Input(new ByteArrayInputStream(new byte[16]));
 		stream.setMaxArraySize(1024);
