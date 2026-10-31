@@ -144,6 +144,16 @@ The end of a field is found with `Input#total()`, so a custom Input that reads o
 
 CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` no longer use the generic type of a field to optimize its value. Kryo 5 omitted the class of collection elements and map keys and values if the field's type arguments were final, eg `List<String>`, so the value could not be read anymore once the field was removed ([#1098](https://github.com/EsotericSoftware/kryo/issues/1098)). To read such data written by Kryo 5, use the Kryo 5 format, which uses the generic types like Kryo 5, so data with such a field that has since been removed can only be read if it was written with chunked encoding.
 
+### Int and long fields with CompatibleFieldSerializer and TaggedFieldSerializer
+
+CompatibleFieldSerializer with `readUnknownFieldData` (the default) and TaggedFieldSerializer with `readUnknownTagData` write an `int` field like `IntSerializer`, which follows `Output#setVariableLengthEncoding`, and a `long` field like `LongSerializer`, which always uses variable length encoding. The `variableLengthEncoding` setting of the field has no effect then. Kryo 5 used it, but the class written before the value is the same for each encoding, so a removed field with another encoding than its serializer was skipped at the wrong position and the data after it was read wrongly, often without an exception ([#1548](https://github.com/EsotericSoftware/kryo/issues/1548)).
+
+The data only changes if `variableLengthEncoding` is false for an `int` or `long` field, or if `Output#setVariableLengthEncoding` is false with an `int` field. These cases need attention:
+
+* The Output and Input must have the same `setVariableLengthEncoding` setting with `int` fields too, as with other values. Different settings worked for these fields in Kryo 5, and now fail or read wrong values.
+* A serializer registered for `int` or `long` is used to skip a removed field but not to write the field. So a fixed length serializer, which could read a removed field without variable length encoding in Kryo 5, now fails, and it is no longer needed for this.
+* To read such data written by Kryo 5, use the Kryo 5 format, which uses the setting of the field like Kryo 5, so such a removed field can still be skipped at the wrong position, unless the data was written with chunked encoding.
+
 ### Enums with constant bodies
 
 The class of an enum value is not written if the enum is known, eg from the type of a field, also if its constants have bodies like `PLUS { ... }`. Kryo 5 wrote the class for these enums, because they aren't final, so adding or removing a body changed the serialized bytes ([#454](https://github.com/EsotericSoftware/kryo/issues/454)). The name of an unregistered enum constant with a body is the name of its enum, which Kryo 5 can read too. This also applies to a `Class` value: the class of a constant with a body, eg `Op.PLUS.getClass()`, is read as the enum, like in Kryo 5 when the enum is registered. To read data written by Kryo 5, use the Kryo 5 format, which treats these enums as not final.

@@ -23,6 +23,7 @@ import static com.esotericsoftware.kryo.util.Util.*;
 import static com.esotericsoftware.kryo.util.Log.*;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.SerializerFactory;
@@ -325,7 +326,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 	}
 
 	/** Writes the class of the field value, then the value without null marker, like the generated code when classes are written,
-	 * so the data can be read without the field. Doesn't change the settings of the field. */
+	 * so the data can be read without the field. An int or long value is therefore written like the serializer for its wrapper
+	 * class, whatever the setting of the field, except with {@link Format#KRYO5}. The settings of the field are the same
+	 * afterward. */
 	void writeFieldWithClass (CachedField field, Output output, Object object) {
 		if (field instanceof ReflectField reflectField) {
 			Object value;
@@ -340,17 +343,50 @@ public class FieldSerializer<T> extends Serializer<T> {
 		// A primitive or String field, which writes its value the same way after the class.
 		Class valueClass = field.classOfValue(object);
 		kryo.writeClass(output, valueClass);
-		if (valueClass != null) writeField(field, output, object);
+		if (valueClass == null) return;
+		boolean varEncoding = field.varEncoding, wrapperEncoding = wrapperEncoding(field, output.getVariableLengthEncoding());
+		if (wrapperEncoding == varEncoding) {
+			writeField(field, output, object);
+			return;
+		}
+		field.varEncoding = wrapperEncoding;
+		try {
+			writeField(field, output, object);
+		} finally {
+			field.varEncoding = varEncoding;
+		}
+	}
+
+	/** Returns the {@link CachedField#varEncoding} setting to write or read an int or long value like the serializer for its
+	 * wrapper class, {@link DefaultSerializers.IntSerializer} follows the output or input and
+	 * {@link DefaultSerializers.LongSerializer} always uses variable length encoding. */
+	private boolean wrapperEncoding (CachedField field, boolean bufferVarEncoding) {
+		if (kryo.getFormat() == Format.KRYO5) return field.varEncoding;
+		return bufferVarEncoding || field.field.getType() == long.class;
 	}
 
 	/** Reads a field like {@link #readField(CachedField, Input, Object, Object[])}. If the class of the value was read, an object
-	 * value is read without null marker with the serializer for the class, like the generated code when classes are written.
-	 * Doesn't change the settings of the field.
+	 * value is read without null marker with the serializer for the class, like the generated code when classes are written. The
+	 * settings of the field are the same afterward.
 	 * @param valueClass May be null if no class was read. */
 	void readField (CachedField field, Input input, Object object, Object[] values, Class valueClass) {
-		// Without a value class, or for a primitive or String field, which reads its value the same way.
-		if (valueClass == null || !(field instanceof ReflectField reflectField)) {
+		if (valueClass == null) {
 			readField(field, input, object, values);
+			return;
+		}
+		// A primitive or String field, which reads its value the same way, see writeFieldWithClass.
+		if (!(field instanceof ReflectField reflectField)) {
+			boolean varEncoding = field.varEncoding, wrapperEncoding = wrapperEncoding(field, input.getVariableLengthEncoding());
+			if (wrapperEncoding == varEncoding) {
+				readField(field, input, object, values);
+				return;
+			}
+			field.varEncoding = wrapperEncoding;
+			try {
+				readField(field, input, object, values);
+			} finally {
+				field.varEncoding = varEncoding;
+			}
 			return;
 		}
 		Object value = reflectField.readValue(input, valueClass);
@@ -668,7 +704,9 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return canBeNull;
 		}
 
-		/** When true, variable length encoding is used for int or long fields. Default is true.
+		/** When true, variable length encoding is used for int or long fields. Default is true. It has no effect if the class of
+		 * each value is written, except with {@link Format#KRYO5}: an int follows the setting of the Output and Input and a long
+		 * uses variable length encoding, like their serializers.
 		 * @see FieldSerializerConfig#setVariableLengthEncoding(boolean)
 		 * @see Output#setVariableLengthEncoding(boolean)
 		 * @see Input#setVariableLengthEncoding(boolean) */
@@ -943,7 +981,8 @@ public class FieldSerializer<T> extends Serializer<T> {
 			return serializeTransient;
 		}
 
-		/** When true, variable length values are used for int and long fields. Default is true.
+		/** When true, variable length values are used for int and long fields. Default is true. It has no effect if the class of
+		 * each value is written, see {@link CachedField#setVariableLengthEncoding(boolean)}.
 		 * @see CachedField#setVariableLengthEncoding(boolean)
 		 * @see Output#setVariableLengthEncoding(boolean)
 		 * @see Input#setVariableLengthEncoding(boolean) */

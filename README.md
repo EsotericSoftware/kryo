@@ -320,7 +320,7 @@ Input input = new Input(bytes);
 input.setVariableLengthEncoding(false);
 ```
 
-Values that are always written with `writeVarInt` or `writeVarLong`, such as lengths and class IDs, are not affected. For fields serialized by FieldSerializer, variable length encoding is configured by FieldSerializer's `variableLengthEncoding` [setting](#fieldserializer-settings) instead. To disable variable length encoding for all values, the `writeVarInt`, `writeVarLong`, `readVarInt`, and `readVarLong` methods would need to be overridden.
+Values that are always written with `writeVarInt` or `writeVarLong`, such as lengths and class IDs, are not affected. For int and long fields serialized by FieldSerializer, variable length encoding is configured by FieldSerializer's `variableLengthEncoding` [setting](#fieldserializer-settings) instead, unless the class of each value is written. To disable variable length encoding for all values, the `writeVarInt`, `writeVarLong`, `readVarInt`, and `readVarLong` methods would need to be overridden.
 
 ### Chunked encoding
 
@@ -1147,7 +1147,7 @@ Setting | Description | Default value
 `fixedFieldTypes` | If true, it is assumed every field value's concrete type matches the field's type. This removes the need to write the class ID for field values. | false
 `copyTransient` | If true, all transient fields will be copied. | true
 `serializeTransient` | If true, transient fields will be serialized. | false
-`variableLengthEncoding` | If true, variable length values are used for int and long fields. | true
+`variableLengthEncoding` | If true, variable length values are used for int and long fields. It has no effect if the class of each value is written, see [CompatibleFieldSerializer](#compatiblefieldserializer-settings) `readUnknownFieldData` and [TaggedFieldSerializer](#taggedfieldserializer-settings) `readUnknownTagData`: an int follows the setting of the Output and Input and a long uses variable length, except with the Kryo 5 format. | true
 `extendedFieldNames` | If true, field names are prefixed by their declaring class. This can avoid conflicts when a subclass has a field with the same name as a super class. | false
 `fieldAccess` | How fields are read and written: `UNSAFE` (fastest, but deprecated for removal by Java and warns on Java 24+), `VARHANDLE` (slower than Unsafe without `codeGeneration`), `REFLECTION`. If a field can't be accessed this way, VarHandles are used, and reflection if they can't be used either, eg for final fields. | `UNSAFE` before Java 24 or with `--sun-misc-unsafe-memory-access=allow`, otherwise `VARHANDLE`. Also `VARHANDLE` if Unsafe is not available or disabled with `-Dkryo.unsafe=false`. `REFLECTION` on Android. The system property `kryo.fieldAccess` overrides the default, eg `-Dkryo.fieldAccess=UNSAFE`.
 `codeGeneration` | If true, the code that writes, reads and copies the fields of a class is generated, which is 1.8 to 2.8 times faster, see [Code generation](#code-generation). | false, or true if the system property `kryo.codeGeneration` is `true`.
@@ -1191,7 +1191,7 @@ Setting | Description | Default value
 `canBeNull` | When false it is assumed the field value is never null, which can save 0-1 byte. | true
 `valueClass` | Sets the concrete class and serializer to use for the field value. This removes the need to write the class ID for the value. If the field value's class is a primitive, primitive wrapper, or final, or if `fixedFieldTypes` is true, this setting defaults to the field's class. | null
 `serializer` | Sets the serializer to use for the field value. If the serializer is set, some serializers require the value class to also be set. If null, the serializer registered with Kryo for the field value's class will be used. | null
-`variableLengthEncoding` | If true, variable length values are used. This only applies to int or long fields. | true
+`variableLengthEncoding` | If true, variable length values are used. This only applies to int or long fields, and it has no effect if the class of each value is written, see [FieldSerializer settings](#fieldserializer-settings). | true
 
 #### FieldSerializer annotations
 

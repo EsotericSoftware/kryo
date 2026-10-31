@@ -481,6 +481,45 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 	}
 
 	// https://github.com/EsotericSoftware/kryo/issues/1098
+	/** The class of a value is the wrapper class, so a removed int or long field is read with the serializer for that class. */
+	@Test
+	void testRemovedPrimitiveFields () {
+		for (boolean codeGeneration : new boolean[] {false, true}) {
+			for (boolean chunked : new boolean[] {false, true}) {
+				for (boolean fieldVarEncoding : new boolean[] {false, true}) {
+					for (boolean bufferVarEncoding : new boolean[] {false, true}) {
+						for (int value : new int[] {0, 5, -1, 300, Integer.MAX_VALUE, Integer.MIN_VALUE}) {
+							TaggedFieldSerializer.TaggedFieldSerializerConfig config = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
+							config.setReadUnknownTagData(true);
+							config.setCodeGeneration(codeGeneration);
+							config.setChunkedEncoding(chunked);
+							config.setVariableLengthEncoding(fieldVarEncoding);
+							Kryo writer = new Kryo();
+							writer.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
+							writer.register(WithPrimitiveFields.class, 100);
+							Kryo reader = new Kryo();
+							reader.setDefaultSerializer(new TaggedFieldSerializerFactory(config));
+							reader.register(WithoutPrimitiveFields.class, 100);
+
+							Output output = new Output(64, -1);
+							output.setVariableLengthEncoding(bufferVarEncoding);
+							writer.writeObject(output, new WithPrimitiveFields(value));
+							output.writeString("next");
+
+							Input input = new Input(output.toBytes());
+							input.setVariableLengthEncoding(bufferVarEncoding);
+							WithoutPrimitiveFields read = reader.readObject(input, WithoutPrimitiveFields.class);
+							String name = codeGeneration + " " + chunked + " " + fieldVarEncoding + " " + bufferVarEncoding + " " + value;
+							assertEquals(7, read.tail, name);
+							assertEquals("text", read.text, name);
+							assertEquals("next", input.readString(), name);
+						}
+					}
+				}
+			}
+		}
+	}
+
 	@Test
 	void testRemovedGenericField () {
 		TaggedFieldSerializer.TaggedFieldSerializerConfig config = new TaggedFieldSerializer.TaggedFieldSerializerConfig();
@@ -546,5 +585,29 @@ class TaggedFieldSerializerTest extends KryoTestCase {
 		public DefaultValue (Integer value) {
 			this.value = value;
 		}
+	}
+
+	public static class WithPrimitiveFields {
+		@Tag(1) public int removedInt;
+		@Tag(2) public long removedLong;
+		@Tag(3) public Integer removedInteger;
+		@Tag(4) public Long removedLongWrapper;
+		@Tag(5) public int tail = 7;
+		@Tag(6) public String text = "text";
+
+		public WithPrimitiveFields () {
+		}
+
+		public WithPrimitiveFields (int value) {
+			removedInt = value;
+			removedLong = value;
+			removedInteger = value;
+			removedLongWrapper = (long)value;
+		}
+	}
+
+	public static class WithoutPrimitiveFields {
+		@Tag(5) public int tail;
+		@Tag(6) public String text;
 	}
 }

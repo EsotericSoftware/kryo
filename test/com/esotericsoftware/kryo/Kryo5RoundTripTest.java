@@ -279,6 +279,46 @@ class Kryo5RoundTripTest {
 		assertEquals(0, kryo5.readObject(kryo5Input, PublicApiFields.class).a);
 	}
 
+	/** The Kryo 5 format uses the setting of int and long fields with the classes written. Generated code for the Kryo 6 format
+	 * exists for the same fields. */
+	@ParameterizedTest
+	@ValueSource(booleans = {false, true})
+	void testPrimitiveFieldsWithoutVariableLengthEncoding (boolean codeGeneration) {
+		PrimitiveFields object = new PrimitiveFields();
+		object.a = 5;
+		object.b = 6;
+
+		var kryo5 = newKryo5();
+		var kryo5Factory = new com.esotericsoftware.kryo.kryo5.SerializerFactory.CompatibleFieldSerializerFactory();
+		kryo5Factory.getConfig().setVariableLengthEncoding(false);
+		kryo5.setDefaultSerializer(kryo5Factory);
+		var kryo5Output = new com.esotericsoftware.kryo.kryo5.io.Output(1024, -1);
+		kryo5.writeObject(kryo5Output, object);
+
+		CompatibleFieldSerializerFactory factory = new CompatibleFieldSerializerFactory();
+		factory.getConfig().setVariableLengthEncoding(false);
+		factory.getConfig().setCodeGeneration(codeGeneration);
+		Kryo kryo6Format = new Kryo();
+		kryo6Format.setRegistrationRequired(false);
+		kryo6Format.setDefaultSerializer(factory);
+		Output output = new Output(1024, -1);
+		kryo6Format.writeObject(output, object);
+
+		Kryo kryo6 = newKryo6();
+		kryo6.setDefaultSerializer(factory);
+		Output kryo6Output = new Output(1024, -1);
+		kryo6.writeObject(kryo6Output, object);
+
+		assertArrayEquals(kryo5Output.toBytes(), kryo6Output.toBytes());
+		assertFalse(Arrays.equals(kryo6Output.toBytes(), output.toBytes()));
+		PrimitiveFields read = kryo6.readObject(new Input(kryo5Output.toBytes()), PrimitiveFields.class);
+		assertEquals(5, read.a);
+		assertEquals(6, read.b);
+		read = kryo5.readObject(new com.esotericsoftware.kryo.kryo5.io.Input(kryo6Output.toBytes()), PrimitiveFields.class);
+		assertEquals(5, read.a);
+		assertEquals(6, read.b);
+	}
+
 	private void roundTrip (Consumer<Kryo> kryo6Setup, Consumer<com.esotericsoftware.kryo.kryo5.Kryo> kryo5Setup) {
 		roundTrip(kryo6Setup, kryo5Setup, null);
 	}
@@ -411,5 +451,10 @@ class Kryo5RoundTripTest {
 	public static class Node<T> {
 		public T value;
 		public Object next;
+	}
+
+	public static class PrimitiveFields {
+		public int a;
+		public long b;
 	}
 }
