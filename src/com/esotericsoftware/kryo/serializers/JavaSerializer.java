@@ -20,6 +20,7 @@
 package com.esotericsoftware.kryo.serializers;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Kryo.Format;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoSerializable;
 import com.esotericsoftware.kryo.Serializer;
@@ -34,6 +35,7 @@ import java.io.ObjectInputFilter;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
+import java.io.OutputStream;
 
 /** Serializes objects using Java's built in serialization mechanism. Note that this is very inefficient and should be avoided if
  * possible.
@@ -66,13 +68,20 @@ public class JavaSerializer extends Serializer {
 	public void write (Kryo kryo, Output output, Object object) {
 		try {
 			ObjectMap graphContext = kryo.getGraphContext();
-			ObjectOutputStream objectStream = (ObjectOutputStream)graphContext.get(this);
-			if (objectStream == null) {
-				objectStream = new ObjectOutputStream(output);
-				graphContext.put(this, objectStream);
+			GraphOutputStream stream = (GraphOutputStream)graphContext.get(this);
+			if (stream == null) {
+				stream = new GraphOutputStream(output);
+				graphContext.put(this, stream);
 			}
-			objectStream.writeObject(object);
-			objectStream.flush();
+			// A nested call comes from the writeObject method of a value, which is written to the object stream already. The Kryo 5
+			// format stays on the first output, so the data is the same as Kryo 5 wrote.
+			if (stream.depth++ == 0 && kryo.getFormat() != Format.KRYO5) stream.output = output;
+			try {
+				stream.objectStream.writeObject(object);
+				stream.objectStream.flush();
+			} finally {
+				stream.depth--;
+			}
 		} catch (Exception ex) {
 			throw new KryoException("Error during Java serialization.", ex);
 		}
@@ -81,13 +90,18 @@ public class JavaSerializer extends Serializer {
 	public Object read (Kryo kryo, Input input, Class type) {
 		try {
 			ObjectMap graphContext = kryo.getGraphContext();
-			ObjectInputStream objectStream = (ObjectInputStream)graphContext.get(readKey);
-			if (objectStream == null) {
-				objectStream = new ObjectInputStreamWithKryoClassLoader(input, kryo);
-				if (objectInputFilter != null) applyObjectInputFilter(objectStream);
-				graphContext.put(readKey, objectStream);
+			GraphInputStream stream = (GraphInputStream)graphContext.get(readKey);
+			if (stream == null) {
+				stream = new GraphInputStream(input, kryo);
+				if (objectInputFilter != null) applyObjectInputFilter(stream.objectStream);
+				graphContext.put(readKey, stream);
 			}
-			return objectStream.readObject();
+			if (stream.depth++ == 0 && kryo.getFormat() != Format.KRYO5) stream.input = input;
+			try {
+				return stream.objectStream.readObject();
+			} finally {
+				stream.depth--;
+			}
 		} catch (Exception ex) {
 			throw new KryoException("Error during Java deserialization.", ex);
 		}
@@ -97,6 +111,63 @@ public class JavaSerializer extends Serializer {
 	@IgnoreAndroid
 	private void applyObjectInputFilter (ObjectInputStream objectStream) {
 		objectStream.setObjectInputFilter(objectInputFilter);
+	}
+
+	/** The object stream of a graph, which writes to the current output: the objects of a graph can be written to different
+	 * outputs, eg with {@link DeflateSerializer} or chunked encoding. */
+	private static class GraphOutputStream extends OutputStream {
+		final ObjectOutputStream objectStream;
+		Output output;
+		int depth;
+
+		GraphOutputStream (Output output) throws IOException {
+			this.output = output;
+			objectStream = new ObjectOutputStream(this);
+		}
+
+		public void write (int value) {
+			output.write(value);
+		}
+
+		public void write (byte[] bytes, int offset, int length) {
+			output.write(bytes, offset, length);
+		}
+
+		public void flush () {
+			output.flush();
+		}
+
+		public void close () {
+			output.close();
+		}
+	}
+
+	/** The object stream of a graph, which reads from the current input. See {@link GraphOutputStream}. */
+	private static class GraphInputStream extends InputStream {
+		final ObjectInputStream objectStream;
+		Input input;
+		int depth;
+
+		GraphInputStream (Input input, Kryo kryo) throws IOException {
+			this.input = input;
+			objectStream = new ObjectInputStreamWithKryoClassLoader(this, kryo);
+		}
+
+		public int read () {
+			return input.read();
+		}
+
+		public int read (byte[] bytes, int offset, int count) {
+			return input.read(bytes, offset, count);
+		}
+
+		public int available () throws IOException {
+			return input.available();
+		}
+
+		public void close () {
+			input.close();
+		}
 	}
 
 	/** {@link ObjectInputStream} uses the last user-defined {@link ClassLoader}, which may not be the correct one. This is a known
