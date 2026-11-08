@@ -1230,6 +1230,8 @@ Setting | Description | Default value
 
 TaggedFieldSerializer also inherits all the settings of FieldSerializer.
 
+When `readUnknownTagData` is true and `chunkedEncoding` is false, removing an `int` or `long` field has the same limitation as with [CompatibleFieldSerializer](#compatiblefieldserializer).
+
 ### CompatibleFieldSerializer
 
 CompatibleFieldSerializer extends FieldSerializer to provide both forward and backward compatibility. This means fields can be added or removed without invalidating previously serialized bytes. Renaming or changing the type of a field is not supported. Like FieldSerializer, it can serialize most classes without needing annotations.
@@ -1245,6 +1247,8 @@ Setting | Description | Default value
 `chunkSize` | The maximum size of each chunk for chunked encoding. | 1024
 
 CompatibleFieldSerializer also inherits all the settings of FieldSerializer.
+
+When `readUnknownFieldData` is true and `chunkedEncoding` is false, the data of a removed field is skipped by reading it with the serializer for the class written before the value. For an `int` or `long` field this is IntSerializer or LongSerializer, which read the value correctly only if the field's `variableLengthEncoding` [setting](#fieldserializer-settings) matches: for an `int` field it must be the same as the Input's [variable length encoding](#variable-length-encoding), for a `long` field it must be true. Otherwise the data after the removed field is read wrongly, often without an exception. Such fields can only be removed if `chunkedEncoding` was true when the data was written.
 
 ### BeanSerializer
 
