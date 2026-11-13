@@ -72,6 +72,12 @@ public class UnsafeInput extends Input {
 		super(inputStream, bufferSize);
 	}
 
+	public void setBuffer (byte[] bytes, int offset, int count) {
+		if (bytes == null) throw new IllegalArgumentException("bytes cannot be null.");
+		checkArrayRange(bytes.length, offset, count);
+		super.setBuffer(bytes, offset, count);
+	}
+
 	public int read () throws KryoException {
 		if (optional(1) <= 0) return -1;
 		return unsafe.getByte(buffer, byteArrayBaseOffset + position++) & 0xFF;
