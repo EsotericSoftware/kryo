@@ -925,4 +925,20 @@ class UnsafeInputOutputTest {
 		assertArrayEquals(new byte[] {0, 0, 1, 2}, bytes);
 		assertEquals(2, input.position());
 	}
+
+	@Test
+	void testBufferRangeOutOfBounds () {
+		assertThrows(IllegalArgumentException.class, () -> new UnsafeInput(null, 0, 0));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> new UnsafeInput(new byte[4], -1, 2));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> new UnsafeInput(new byte[4], 0, -1));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> new UnsafeInput(new byte[4], 0, 16));
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> new UnsafeInput(new byte[4], 1, Integer.MAX_VALUE));
+		UnsafeInput input = new UnsafeInput();
+		assertThrows(ArrayIndexOutOfBoundsException.class, () -> input.setBuffer(new byte[4], 2, 3));
+		input.setBuffer(new byte[] {1, 2, 3, 4, 5, 6, 7, 8}, 4, 4);
+		assertEquals(4, input.position());
+		assertEquals(8, input.limit());
+		input.setBuffer(new byte[4], 4, 0);
+		assertTrue(input.end());
+	}
 }
