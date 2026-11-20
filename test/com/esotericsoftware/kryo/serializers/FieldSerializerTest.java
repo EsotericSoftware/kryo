@@ -851,6 +851,36 @@ class FieldSerializerTest extends KryoTestCase {
 		public Number value;
 	}
 
+	@Test
+	void testStringFieldClassNotAssignableToFieldType () {
+		// T of GenericNumberValue is matched by name to T of GenericSubclass and resolved to String, though the field is a Number.
+		Kryo writer = new Kryo();
+		writer.register(StringValue.class, 100);
+		Output output = new Output(64);
+		writer.writeObject(output, new StringValue());
+
+		Kryo reader = new Kryo();
+		reader.register(StringTypeArgument.class, 100);
+		assertThrows(KryoException.class, () -> reader.readObject(new Input(output.toBytes()), StringTypeArgument.class));
+	}
+
+	public static class StringValue {
+		public String value = "string";
+	}
+
+	public static class GenericNumberValue<T extends Number> {
+		public T value;
+	}
+
+	public static class IntegerValue extends GenericNumberValue<Integer> {
+	}
+
+	public static class GenericSubclass<T> extends IntegerValue {
+	}
+
+	public static class StringTypeArgument extends GenericSubclass<String> {
+	}
+
 	public static class DefaultTypes {
 		// Primitives.
 		public boolean booleanField;

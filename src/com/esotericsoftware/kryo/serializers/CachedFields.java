@@ -208,7 +208,9 @@ class CachedFields implements Comparator<CachedField> {
 			if (fieldClass == char.class) return new CharUnsafeField(field);
 			if (fieldClass == byte.class) return new ByteUnsafeField(field);
 		}
-		if (fieldClass == String.class
+		// The field type is checked too, because a type variable can be resolved to String for a field that can't hold a String and
+		// StringUnsafeField stores without a type check.
+		if (fieldClass == String.class && field.getType().isAssignableFrom(String.class)
 			&& (!serializer.kryo.getReferences() || !serializer.kryo.getReferenceResolver().useReferences(String.class)))
 			return new StringUnsafeField(field);
 		return new UnsafeField(field, serializer, genericType);
