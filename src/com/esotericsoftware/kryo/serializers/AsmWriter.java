@@ -84,6 +84,14 @@ final class AsmWriter extends Bytecode {
 			code.visitVarInsn(Opcodes.LSTORE, local);
 		}
 
+		public void load (String descriptor, int local) {
+			code.visitVarInsn(Type.getType(descriptor).getOpcode(Opcodes.ILOAD), local);
+		}
+
+		public void store (String descriptor, int local) {
+			code.visitVarInsn(Type.getType(descriptor).getOpcode(Opcodes.ISTORE), local);
+		}
+
 		public void iconst (int value) {
 			if (value >= -1 && value <= 5)
 				code.visitInsn(Opcodes.ICONST_0 + value);

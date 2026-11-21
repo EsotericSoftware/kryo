@@ -102,6 +102,14 @@ final class ClassFileWriter extends Bytecode {
 			code.lstore(local);
 		}
 
+		public void load (String descriptor, int local) {
+			code.loadLocal(java.lang.classfile.TypeKind.fromDescriptor(descriptor), local);
+		}
+
+		public void store (String descriptor, int local) {
+			code.storeLocal(java.lang.classfile.TypeKind.fromDescriptor(descriptor), local);
+		}
+
 		public void iconst (int value) {
 			code.loadConstant(value);
 		}

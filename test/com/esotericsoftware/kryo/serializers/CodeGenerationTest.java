@@ -45,6 +45,7 @@ import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -318,6 +319,89 @@ class CodeGenerationTest extends KryoTestCase {
 		} finally {
 			FinalFieldSetter.force = false;
 		}
+	}
+
+	@Test
+	void testFinalFieldGroupsDenied () {
+		// The final fields are kept in locals and set in groups: before a field whose value may refer to the object and at the end.
+		// If setting final fields with reflection is denied, a group is set with one FinalFieldSetter call per class. The class is
+		// only used here, because the setters of a group are resolved once per JVM.
+		assumeTrue(Runtime.version().feature() >= 24, "FinalFieldSetter needs Java 24+.");
+		try {
+			FinalFieldSetter.force = true;
+			kryo.setReferences(true);
+			kryo.register(HashSet.class);
+			FieldSerializerFactory factory = new FieldSerializerFactory();
+			denied(factory.getConfig());
+			FieldSerializer serializer = factory.newSerializer(kryo, DeniedFinalFields.class);
+			kryo.register(DeniedFinalFields.class, serializer);
+			// a, b, c and d of both classes before e refers to the object, then f and h.
+			assertEquals(2, groups(assertGenerated(DeniedFinalFields.class)));
+			assertFinalFields(new DeniedFinalFields(1, 2, 3, "d", 5, 6, true));
+			assertNotNull(serializer.getField("a").finalSetter);
+			assertNotNull(serializer.getField("b").finalSetter);
+		} finally {
+			FinalFieldSetter.force = false;
+		}
+	}
+
+	@Test
+	void testFinalFieldGroupsBatches () {
+		// A group doesn't span batches of fields. The fields of a group are set with their setters, chained in one call site.
+		CodeGeneration.batchSize = 3;
+		try {
+			kryo.setReferences(true);
+			kryo.register(HashSet.class);
+			kryo.register(BatchedFinalFields.class, codeGeneration().newSerializer(kryo, BatchedFinalFields.class));
+			// a, b, c in the first batch, d before e, f at the end of the second batch, h in the third batch.
+			assertEquals(4, groups(assertGenerated(BatchedFinalFields.class)));
+			assertFinalFields(new BatchedFinalFields(1, 2, 3, "d", 5, 6, true));
+		} finally {
+			CodeGeneration.batchSize = 64;
+		}
+	}
+
+	@Test
+	void testFinalFieldGroupsTagged () {
+		// With tags a field may not be read, so each final field is read and set right away, in its own group. The generated code
+		// to copy has no tags, it sets the final fields in groups.
+		assumeTrue(Runtime.version().feature() >= 24, "FinalFieldSetter needs Java 24+.");
+		try {
+			FinalFieldSetter.force = true;
+			kryo.setReferences(true);
+			kryo.register(HashSet.class);
+			TaggedFieldSerializerFactory factory = new TaggedFieldSerializerFactory();
+			denied(factory.getConfig());
+			FieldSerializer serializer = factory.newSerializer(kryo, TaggedFinalFields.class);
+			kryo.register(TaggedFinalFields.class, serializer);
+			assertEquals(6, groups(assertGenerated(TaggedFinalFields.class)));
+			assertFinalFields(new TaggedFinalFields(1, 2, 3, "d", 5, 6, true));
+		} finally {
+			FinalFieldSetter.force = false;
+		}
+	}
+
+	private void assertFinalFields (DeniedFinalFields object) {
+		object.e.add(object);
+		DeniedFinalFields read = read(kryo, write(kryo, object), object.getClass());
+		assertEquals(object, read);
+		// The hash code uses the final fields, which were set before the set was read.
+		assertTrue(read.e.contains(read));
+		DeniedFinalFields copy = kryo.copy(object);
+		assertEquals(object, copy);
+		assertTrue(copy.e.contains(copy));
+	}
+
+	/** Generated code with VarHandle field access, Unsafe fields set final fields themselves. */
+	static private void denied (FieldSerializer.FieldSerializerConfig config) {
+		config.setCodeGeneration(true);
+		config.setFieldAccess(FieldAccessType.VARHANDLE);
+	}
+
+	/** Returns the number of groups of final fields of the generated code. */
+	static private int groups (GeneratedFields generated) {
+		return (int)Arrays.stream(generated.getClass().getDeclaredFields()).filter(field -> field.getName().matches("g\\d+"))
+			.count();
 	}
 
 	@Test
@@ -1195,6 +1279,71 @@ class CodeGenerationTest extends KryoTestCase {
 
 		public VarHandleFirst (int value, String name) {
 			super(value, name);
+		}
+	}
+
+	static public class DeniedFinalBase implements java.io.Serializable {
+		@Tag(2) final long b;
+		@Tag(4) final String d;
+
+		public DeniedFinalBase () {
+			this(0, null);
+		}
+
+		public DeniedFinalBase (long b, String d) {
+			this.b = b;
+			this.d = d;
+		}
+	}
+
+	/** Final fields in two classes, e refers to the object, g is not final. */
+	static public class DeniedFinalFields extends DeniedFinalBase {
+		@Tag(1) final int a;
+		@Tag(3) final double c;
+		@Tag(5) HashSet<DeniedFinalFields> e = new HashSet<>();
+		@Tag(6) final float f;
+		@Tag(7) int g;
+		@Tag(8) final boolean h;
+
+		public DeniedFinalFields () {
+			this(0, 0, 0, null, 0, 0, false);
+		}
+
+		public DeniedFinalFields (int a, long b, double c, String d, float f, int g, boolean h) {
+			super(b, d);
+			this.a = a;
+			this.c = c;
+			this.f = f;
+			this.g = g;
+			this.h = h;
+		}
+
+		public int hashCode () {
+			return Objects.hash(a, b, c, d);
+		}
+
+		public boolean equals (Object obj) {
+			return obj instanceof DeniedFinalFields other && other.getClass() == getClass() && a == other.a && b == other.b
+				&& c == other.c && Objects.equals(d, other.d) && e.size() == other.e.size() && f == other.f && g == other.g
+				&& h == other.h;
+		}
+	}
+
+	static public class BatchedFinalFields extends DeniedFinalFields {
+		public BatchedFinalFields () {
+		}
+
+		public BatchedFinalFields (int a, long b, double c, String d, float f, int g, boolean h) {
+			super(a, b, c, d, f, g, h);
+		}
+	}
+
+	static public class TaggedFinalFields extends DeniedFinalFields {
+		public TaggedFinalFields () {
+		}
+
+		public TaggedFinalFields (int a, long b, double c, String d, float f, int g, boolean h) {
+			super(a, b, c, d, f, g, h);
 		}
 	}
 

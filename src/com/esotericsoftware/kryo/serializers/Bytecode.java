@@ -145,6 +145,12 @@ abstract class Bytecode {
 
 		abstract public void lstore (int local);
 
+		/** Loads a local of the type with the descriptor, eg I or Ljava/lang/Object;. */
+		abstract public void load (String descriptor, int local);
+
+		/** Stores a local of the type with the descriptor. */
+		abstract public void store (String descriptor, int local);
+
 		/** Loads an int constant. */
 		abstract public void iconst (int value);
 
