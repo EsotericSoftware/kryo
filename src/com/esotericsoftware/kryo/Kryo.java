@@ -162,7 +162,7 @@ public class Kryo {
 	private int copyDepth;
 	private boolean copyShallow;
 	private IdentityMap originalToCopy;
-	private Object needsCopyReference;
+	private Object needsCopyReference, copyReferenced;
 	private Generics generics = new DefaultGenerics(this);
 
 	/** Creates a new Kryo with a {@link DefaultClassResolver} and references disabled. */
@@ -774,8 +774,9 @@ public class Kryo {
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, false);
 				if (stackSize == REF) return (T)readObject;
+				int id = readReferenceIds.peek();
 				object = (T)getRegistration(type).getSerializer().read(this, input, type);
-				if (stackSize == readReferenceIds.size) reference(object);
+				reference(stackSize, id, object);
 			} else
 				object = (T)getRegistration(type).getSerializer().read(this, input, type);
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
@@ -796,8 +797,9 @@ public class Kryo {
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, false);
 				if (stackSize == REF) return (T)readObject;
+				int id = readReferenceIds.peek();
 				object = (T)serializer.read(this, input, type);
-				if (stackSize == readReferenceIds.size) reference(object);
+				reference(stackSize, id, object);
 			} else
 				object = (T)serializer.read(this, input, type);
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
@@ -818,8 +820,9 @@ public class Kryo {
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, true);
 				if (stackSize == REF) return (T)readObject;
+				int id = readReferenceIds.peek();
 				object = (T)getRegistration(type).getSerializer().read(this, input, type);
-				if (stackSize == readReferenceIds.size) reference(object);
+				reference(stackSize, id, object);
 			} else {
 				Serializer serializer = getRegistration(type).getSerializer();
 				if (!serializer.getAcceptsNull() && input.readByte() == NULL) {
@@ -847,8 +850,9 @@ public class Kryo {
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, true);
 				if (stackSize == REF) return (T)readObject;
+				int id = readReferenceIds.peek();
 				object = (T)serializer.read(this, input, type);
-				if (stackSize == readReferenceIds.size) reference(object);
+				reference(stackSize, id, object);
 			} else {
 				if (!serializer.getAcceptsNull() && input.readByte() == NULL) {
 					if (TRACE || (DEBUG && depth == 1)) log("Read", null, input.position());
@@ -877,8 +881,9 @@ public class Kryo {
 			if (references) {
 				int stackSize = readReferenceOrNull(input, type, false);
 				if (stackSize == REF) return readObject;
+				int id = readReferenceIds.peek();
 				object = registration.getSerializer().read(this, input, type);
-				if (stackSize == readReferenceIds.size) reference(object);
+				reference(stackSize, id, object);
 			} else
 				object = registration.getSerializer().read(this, input, type);
 			if (TRACE || (DEBUG && depth == 1)) log("Read", object, input.position());
@@ -941,11 +946,33 @@ public class Kryo {
 				if (object == null) throw new IllegalArgumentException("object cannot be null.");
 				originalToCopy.put(needsCopyReference, object);
 				needsCopyReference = null;
+				copyReferenced = object;
 			}
 		} else if (references && object != null) {
 			int id = readReferenceIds.pop();
 			if (id != NO_REF) referenceResolver.setReadObject(id, object);
 		}
+	}
+
+	/** References the object a serializer returned: with the reserved id if the serializer didn't call {@link #reference(Object)},
+	 * else replacing the object it referenced, eg a mutable collection it then copied to an immutable one. Later references
+	 * resolve to the returned object, like the written references were to it.
+	 * @param stackSize The size of readReferenceIds after the id was reserved.
+	 * @param id The reserved id, or NO_REF. */
+	private void reference (int stackSize, int id, Object object) {
+		if (stackSize == readReferenceIds.size)
+			reference(object);
+		else if (id != NO_REF) referenceResolver.setReadObject(id, object);
+	}
+
+	/** Maps the original to the copy a serializer returned, unless the serializer referenced that copy: if it referenced another
+	 * copy, eg a mutable collection it then copied to an immutable one, the returned copy replaces it. */
+	private void referenceCopy (Object original, Object copy) {
+		if (copyReferences) {
+			if (copy == null) throw new IllegalArgumentException("object cannot be null.");
+			if (copyReferenced != copy) originalToCopy.put(original, copy);
+		}
+		needsCopyReference = null;
 	}
 
 	/** Resets object graph state: unregistered class names, references to previously serialized or deserialized objects, the
@@ -964,6 +991,8 @@ public class Kryo {
 
 		copyDepth = 0;
 		if (originalToCopy != null) originalToCopy.clear(2048);
+		needsCopyReference = null;
+		copyReferenced = null;
 
 		if (TRACE) trace("kryo", "Object graph complete.");
 	}
@@ -980,12 +1009,15 @@ public class Kryo {
 			if (existingCopy != null) return (T)existingCopy;
 
 			if (copyReferences) needsCopyReference = object;
+			Object outerCopyReferenced = copyReferenced;
+			copyReferenced = null;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
 			else
 				copy = getSerializer(object.getClass()).copy(this, object);
-			if (needsCopyReference != null) reference(copy);
+			referenceCopy(object, copy);
+			copyReferenced = outerCopyReferenced;
 			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy, -1);
 			return (T)copy;
 		} finally {
@@ -1006,12 +1038,15 @@ public class Kryo {
 			if (existingCopy != null) return (T)existingCopy;
 
 			if (copyReferences) needsCopyReference = object;
+			Object outerCopyReferenced = copyReferenced;
+			copyReferenced = null;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
 			else
 				copy = serializer.copy(this, object);
-			if (needsCopyReference != null) reference(copy);
+			referenceCopy(object, copy);
+			copyReferenced = outerCopyReferenced;
 			if (TRACE || (DEBUG && copyDepth == 1)) log("Copy", copy, -1);
 			return (T)copy;
 		} finally {
@@ -1032,12 +1067,15 @@ public class Kryo {
 			if (existingCopy != null) return (T)existingCopy;
 
 			if (copyReferences) needsCopyReference = object;
+			Object outerCopyReferenced = copyReferenced;
+			copyReferenced = null;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
 			else
 				copy = getSerializer(object.getClass()).copy(this, object);
-			if (needsCopyReference != null) reference(copy);
+			referenceCopy(object, copy);
+			copyReferenced = outerCopyReferenced;
 			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy, -1);
 			return (T)copy;
 		} finally {
@@ -1059,12 +1097,15 @@ public class Kryo {
 			if (existingCopy != null) return (T)existingCopy;
 
 			if (copyReferences) needsCopyReference = object;
+			Object outerCopyReferenced = copyReferenced;
+			copyReferenced = null;
 			Object copy;
 			if (object instanceof KryoCopyable)
 				copy = ((KryoCopyable)object).copy(this);
 			else
 				copy = serializer.copy(this, object);
-			if (needsCopyReference != null) reference(copy);
+			referenceCopy(object, copy);
+			copyReferenced = outerCopyReferenced;
 			if (TRACE || (DEBUG && copyDepth == 1)) log("Shallow copy", copy, -1);
 			return (T)copy;
 		} finally {
