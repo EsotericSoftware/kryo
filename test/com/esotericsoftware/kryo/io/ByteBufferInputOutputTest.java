@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.KryoTestCase;
-import com.esotericsoftware.kryo.unsafe.UnsafeByteBufferInput;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -82,14 +81,16 @@ class ByteBufferInputOutputTest extends KryoTestCase {
 	void testByteArrayOffsetAndCount () {
 		// Only the count bytes at the offset are read, like Input(byte[], int, int).
 		byte[] bytes = {1, 2, 3, 4, 5, 6, 7, 8};
-		for (ByteBufferInput input : new ByteBufferInput[] {new ByteBufferInput(bytes, 2, 4),
-			new UnsafeByteBufferInput(bytes, 2, 4)}) {
-			assertEquals(0, input.position());
-			assertEquals(4, input.limit());
-			assertArrayEquals(new byte[] {3, 4, 5, 6}, input.readBytes(4));
-			assertThrows(KryoBufferUnderflowException.class, input::readByte);
-		}
+		assertByteArrayOffsetAndCount(new ByteBufferInput(bytes, 2, 4));
 		assertThrows(IndexOutOfBoundsException.class, () -> new ByteBufferInput(bytes, 6, 4));
+	}
+
+	/** Checks that an input constructed from {1, 2, 3, 4, 5, 6, 7, 8} with offset 2 and count 4 holds only those 4 bytes. */
+	static void assertByteArrayOffsetAndCount (ByteBufferInput input) {
+		assertEquals(0, input.position());
+		assertEquals(4, input.limit());
+		assertArrayEquals(new byte[] {3, 4, 5, 6}, input.readBytes(4));
+		assertThrows(KryoBufferUnderflowException.class, input::readByte);
 	}
 
 	@Test

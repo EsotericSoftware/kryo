@@ -48,6 +48,14 @@ class UnsafeByteBufferInputOutputTest {
 	}
 
 	@Test
+	void testByteArrayOffsetAndCount () {
+		// Only the count bytes at the offset are read, like Input(byte[], int, int).
+		byte[] bytes = {1, 2, 3, 4, 5, 6, 7, 8};
+		ByteBufferInputOutputTest.assertByteArrayOffsetAndCount(new UnsafeByteBufferInput(bytes, 2, 4));
+		assertThrows(IndexOutOfBoundsException.class, () -> new UnsafeByteBufferInput(bytes, 6, 4));
+	}
+
+	@Test
 	void testByteBufferOutputWithPreallocatedMemory () {
 		assumeTrue(UnsafeUtil.isNewDirectBufferAvailable(), "Streams with preallocated direct memory are not supported on this JVM");
 		long bufAddress = UnsafeUtil.unsafe.allocateMemory(4096);
